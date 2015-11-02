@@ -1071,7 +1071,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             boolean dotFiltered = false, dotdotFiltered = false;
             for (Iterator<SftpClient.DirEntry> it = dirEntries.iterator(); it.hasNext(); ) {
                 SftpClient.DirEntry entry = it.next();
-                String name = entry.filename;
+                String name = entry.getFilename();
                 if (".".equals(name) && (!dotFiltered)) {
                     it.remove();
                     dotFiltered = true;
@@ -1118,7 +1118,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         boolean dotFiltered = false, dotdotFiltered = false;
         for (SftpClient.DirEntry entry : sftp.readDir(dir)) {
             assertNotNull("Unexpected null entry", entry);
-            String name = entry.filename;
+            String name = entry.getFilename();
             if (".".equals(name) && (!dotFiltered)) {
                 dotFiltered = true;
             } else if ("..".equals(name) && (!dotdotFiltered)) {

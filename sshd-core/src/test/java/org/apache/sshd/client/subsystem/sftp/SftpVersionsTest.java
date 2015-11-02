@@ -33,7 +33,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
+import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.SftpHelper;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
 import org.apache.sshd.util.test.Utils;
 import org.junit.After;
@@ -100,6 +102,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
             }
         }
     }
+
     @Test   // see SSHD-572
     public void testSftpFileTimesUpdate() throws Exception {
         Path targetPath = detectTargetFolder();
@@ -140,4 +143,59 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         }
     }
 
+    @Test   // see SSHD-573
+    public void testSftpFileTypeAndPermissionsUpdate() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path subFolder = Files.createDirectories(lclSftp.resolve("sub-folder"));
+        String subFolderName = subFolder.getFileName().toString();
+        Path lclFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-" + version + ".txt");
+        String lclFileName = lclFile.getFileName().toString();
+        Files.write(lclFile, getClass().getName().getBytes(StandardCharsets.UTF_8));
+
+        Path parentPath = targetPath.getParent();
+        String remotePath = Utils.resolveRelativeRemotePath(parentPath, lclSftp);
+        try (SshClient client = setupTestClient()) {
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                try (SftpClient sftp = session.createSftpClient(version)) {
+                    for (DirEntry entry : sftp.readDir(remotePath)) {
+                        String fileName = entry.getFilename();
+                        if (".".equals(fileName) || "..".equals(fileName)) {
+                            continue;
+                        }
+
+                        Attributes attrs = validateSftpFileTypeAndPermissions(fileName, version, entry.getAttributes());
+                        if (subFolderName.equals(fileName)) {
+                            assertEquals("Mismatched sub-folder type", SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY, attrs.getType());
+                            assertTrue("Sub-folder not marked as directory", attrs.isDirectory());
+                        } else if (lclFileName.equals(fileName)) {
+                            assertEquals("Mismatched sub-file type", SftpConstants.SSH_FILEXFER_TYPE_REGULAR, attrs.getType());
+                            assertTrue("Sub-folder not marked as directory", attrs.isRegularFile());
+                        }
+                    }
+                }
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    private static Attributes validateSftpFileTypeAndPermissions(String fileName, int version, Attributes attrs) {
+        int actualPerms = attrs.getPermissions();
+        if (version == SftpConstants.SFTP_V3) {
+            int expected = SftpHelper.permissionsToFileType(actualPerms);
+            assertEquals(fileName + ": Mismatched file type", expected, attrs.getType());
+        } else {
+            int expected = SftpHelper.fileTypeToPermission(attrs.getType());
+            assertTrue(fileName + ": Missing permision=0x" + Integer.toHexString(expected) + " in 0x" + Integer.toHexString(actualPerms),
+                       (actualPerms & expected) == expected);
+        }
+
+        return attrs;
+    }
 }

@@ -234,6 +234,59 @@ public final class SftpHelper {
     }
 
     /**
+     * Converts a POSIX permissions mask to a file type value
+     *
+     * @param perms The POSIX permissions mask
+     * @return The file type - see {@code SSH_FILEXFER_TYPE_xxx} values
+     */
+    public static int permissionsToFileType(int perms) {
+        if ((SftpConstants.S_IFLNK & perms) == SftpConstants.S_IFLNK) {
+            return SftpConstants.SSH_FILEXFER_TYPE_SYMLINK;
+        } else if ((SftpConstants.S_IFREG & perms) == SftpConstants.S_IFREG) {
+            return SftpConstants.SSH_FILEXFER_TYPE_REGULAR;
+        } else if ((SftpConstants.S_IFDIR & perms) == SftpConstants.S_IFDIR) {
+            return SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY;
+        } else if ((SftpConstants.S_IFSOCK & perms) == SftpConstants.S_IFSOCK) {
+            return SftpConstants.SSH_FILEXFER_TYPE_SOCKET;
+        } else if ((SftpConstants.S_IFBLK & perms) == SftpConstants.S_IFBLK) {
+            return SftpConstants.SSH_FILEXFER_TYPE_BLOCK_DEVICE;
+        } else if ((SftpConstants.S_IFCHR & perms) == SftpConstants.S_IFCHR) {
+            return SftpConstants.SSH_FILEXFER_TYPE_CHAR_DEVICE;
+        } else if ((SftpConstants.S_IFIFO & perms) == SftpConstants.S_IFIFO) {
+            return SftpConstants.SSH_FILEXFER_TYPE_FIFO;
+        } else {
+            return SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN;
+        }
+    }
+
+    /**
+     * Converts a file type into a POSIX permission mask value
+
+     * @param type File type - see {@code SSH_FILEXFER_TYPE_xxx} values
+     * @return The matching POSIX permission mask value
+     */
+    public static int fileTypeToPermission(int type) {
+        switch (type) {
+            case SftpConstants.SSH_FILEXFER_TYPE_REGULAR:
+                return SftpConstants.S_IFREG;
+            case SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY:
+                return SftpConstants.S_IFDIR;
+            case SftpConstants.SSH_FILEXFER_TYPE_SYMLINK:
+                return SftpConstants.S_IFLNK;
+            case SftpConstants.SSH_FILEXFER_TYPE_SOCKET:
+                return SftpConstants.S_IFSOCK;
+            case SftpConstants.SSH_FILEXFER_TYPE_BLOCK_DEVICE:
+                return SftpConstants.S_IFBLK;
+            case SftpConstants.SSH_FILEXFER_TYPE_CHAR_DEVICE:
+                return SftpConstants.S_IFCHR;
+            case SftpConstants.SSH_FILEXFER_TYPE_FIFO:
+                return SftpConstants.S_IFIFO;
+            default:
+                return 0;
+        }
+    }
+
+    /**
      * Translates a mask of permissions into its enumeration values equivalents
      *
      * @param perms The permissions mask

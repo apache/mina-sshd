@@ -329,8 +329,9 @@ public class SftpCommand implements Channel {
             String path = resolveRemotePath(pathArg);
             SftpClient sftp = getClient();
             for (SftpClient.DirEntry entry : sftp.readDir(path)) {
-                SftpClient.Attributes attrs = entry.attributes;
-                appendFileAttributes(stdout.append('\t').append(entry.filename), sftp, path + "/" + entry.filename, attrs).println();
+                String fileName = entry.getFilename();
+                SftpClient.Attributes attrs = entry.getAttributes();
+                appendFileAttributes(stdout.append('\t').append(fileName), sftp, path + "/" + fileName, attrs).println();
             }
 
             return false;

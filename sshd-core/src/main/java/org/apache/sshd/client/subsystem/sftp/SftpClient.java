@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.subsystem.SubsystemClient;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
+import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -129,12 +130,9 @@ public interface SftpClient extends SubsystemClient {
     }
     // CHECKSTYLE:ON
 
-    class Attributes {
-        // CHECKSTYLE:OFF
-        public final Set<Attribute> flags = EnumSet.noneOf(Attribute.class);
-        public int type;
-        // CHECKSTYLE:ON
-
+    class Attributes implements Cloneable {
+        private Set<Attribute> flags = EnumSet.noneOf(Attribute.class);
+        private int type = SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN;
         private int perms;
         private int uid;
         private int gid;
@@ -149,19 +147,21 @@ public interface SftpClient extends SubsystemClient {
             super();
         }
 
-        @Override
-        public String toString() {
-            return "type=" + type
-                 + ";size=" + getSize()
-                 + ";uid=" + getUserId()
-                 + ";gid=" + getGroupId()
-                 + ";perms=0x" + Integer.toHexString(getPermissions())
-                 + ";flags=" + flags
-                 + ";owner=" + getOwner()
-                 + ";group=" + getGroup()
-                 + ";aTime=" + getAccessTime()
-                 + ";cTime=" + getCreateTime()
-                 + ";mTime=" + getModifyTime();
+        public Set<Attribute> getFlags() {
+            return flags;
+        }
+
+        public Attributes addFlag(Attribute flag) {
+            flags.add(flag);
+            return this;
+        }
+
+        public int getType() {
+            return type;
+        }
+
+        public void setType(int type) {
+            this.type = type;
         }
 
         public long getSize() {
@@ -322,19 +322,60 @@ public interface SftpClient extends SubsystemClient {
         public boolean isOther() {
             return !isRegularFile() && !isDirectory() && !isSymbolicLink();
         }
+
+        @Override
+        public Attributes clone()  {
+            try {
+                Attributes cloned = getClass().cast(super.clone());
+                cloned.flags = EnumSet.copyOf(getFlags());
+                return cloned;
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException("Failed to clone " + toString() + ": " + e.getMessage(), e);
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "type=" + getType()
+                 + ";size=" + getSize()
+                 + ";uid=" + getUserId()
+                 + ";gid=" + getGroupId()
+                 + ";perms=0x" + Integer.toHexString(getPermissions())
+                 + ";flags=" + flags
+                 + ";owner=" + getOwner()
+                 + ";group=" + getGroup()
+                 + ";aTime=" + getAccessTime()
+                 + ";cTime=" + getCreateTime()
+                 + ";mTime=" + getModifyTime();
+        }
     }
 
     class DirEntry {
-        // CHECKSTYLE:OFF
-        public String filename;
-        public String longFilename;
-        public Attributes attributes;
-        // CHECKSTYLE:ON
+        private final String filename;
+        private final String longFilename;
+        private final Attributes attributes;
 
         DirEntry(String filename, String longFilename, Attributes attributes) {
             this.filename = filename;
             this.longFilename = longFilename;
             this.attributes = attributes;
+        }
+
+        public String getFilename() {
+            return filename;
+        }
+
+        public String getLongFilename() {
+            return longFilename;
+        }
+
+        public Attributes getAttributes() {
+            return attributes;
+        }
+
+        @Override
+        public String toString() {
+            return getFilename() + "[" + getLongFilename() + "]: " + getAttributes();
         }
     }
 

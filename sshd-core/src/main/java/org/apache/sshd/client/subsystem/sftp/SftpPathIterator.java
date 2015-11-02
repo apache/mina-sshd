@@ -56,13 +56,13 @@ public class SftpPathIterator implements Iterator<Path> {
 
         SftpClient.DirEntry entry = curEntry;
         curEntry = nextEntry();
-        return p.resolve(entry.filename);
+        return p.resolve(entry.getFilename());
     }
 
     private SftpClient.DirEntry nextEntry() {
         while ((it != null) && it.hasNext()) {
             SftpClient.DirEntry entry = it.next();
-            String name = entry.filename;
+            String name = entry.getFilename();
             if (".".equals(name) && (!dotIgnored)) {
                 dotIgnored = true;
             } else if ("..".equals(name) && (!dotdotIgnored)) {

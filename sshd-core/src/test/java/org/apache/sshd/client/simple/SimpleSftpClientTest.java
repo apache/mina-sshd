@@ -122,7 +122,7 @@ public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
                 boolean matchFound = false;
                 for (Iterator<SftpClient.DirEntry> it = dirEntries.iterator(); it.hasNext(); ) {
                     SftpClient.DirEntry entry = it.next();
-                    String name = entry.filename;
+                    String name = entry.getFilename();
                     if (clientFileName.equals(name)) {
                         matchFound = true;
                         break;

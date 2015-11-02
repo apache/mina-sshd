@@ -43,71 +43,6 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_APPEND_DATA;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_READ_ATTRIBUTES;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_READ_DATA;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_WRITE_ATTRIBUTES;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_WRITE_DATA;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V3;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V4;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V5;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V6;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_ALL;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_CREATETIME;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_SIZE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_UIDGID;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_TYPE_REGULAR;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_TYPE_SYMLINK;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_APPEND;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_CREAT;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_CREATE_NEW;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_CREATE_TRUNCATE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_EXCL;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_OPEN_EXISTING;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_OPEN_OR_CREATE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_READ;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_TRUNC;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_TRUNCATE_EXISTING;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_WRITE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_ATTRS;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_BLOCK;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_CLOSE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_DATA;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_FSETSTAT;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_FSTAT;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_HANDLE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_LINK;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_LSTAT;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_MKDIR;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_NAME;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_OPEN;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_OPENDIR;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_READ;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_READDIR;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_READLINK;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_REALPATH;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_REMOVE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_RENAME;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_RENAME_ATOMIC;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_RENAME_OVERWRITE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_RMDIR;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_SETSTAT;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_STAT;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_STATUS;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_SYMLINK;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_UNBLOCK;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_WRITE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FX_EOF;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FX_OK;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFDIR;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFLNK;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFREG;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -279,7 +214,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
-        if (type == SSH_FXP_STATUS) {
+        if (type == SftpConstants.SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
@@ -302,7 +237,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             log.trace("checkStatus(id=" + id + ") status: " + substatus + " [" + lang + "]" + msg);
         }
 
-        if (substatus != SSH_FX_OK) {
+        if (substatus != SftpConstants.SSH_FX_OK) {
             throwStatusException(id, substatus, msg, lang);
         }
     }
@@ -330,11 +265,11 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
-        if (type == SSH_FXP_HANDLE) {
+        if (type == SftpConstants.SSH_FXP_HANDLE) {
             return ValidateUtils.checkNotNullAndNotEmpty(buffer.getBytes(), "Null/empty handle in buffer", GenericUtils.EMPTY_OBJECT_ARRAY);
         }
 
-        if (type == SSH_FXP_STATUS) {
+        if (type == SftpConstants.SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
@@ -366,11 +301,11 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
-        if (type == SSH_FXP_ATTRS) {
+        if (type == SftpConstants.SSH_FXP_ATTRS) {
             return readAttributes(buffer);
         }
 
-        if (type == SSH_FXP_STATUS) {
+        if (type == SftpConstants.SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
@@ -402,7 +337,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
-        if (type == SSH_FXP_NAME) {
+        if (type == SftpConstants.SSH_FXP_NAME) {
             int len = buffer.getInt();
             if (len != 1) {
                 throw new SshException("SFTP error: received " + len + " names instead of 1");
@@ -410,7 +345,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             String name = buffer.getString();
             String longName = null;
             int version = getVersion();
-            if (version == SFTP_V3) {
+            if (version == SftpConstants.SFTP_V3) {
                 longName = buffer.getString();
             }
             Attributes attrs = readAttributes(buffer);
@@ -420,7 +355,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             return name;
         }
 
-        if (type == SSH_FXP_STATUS) {
+        if (type == SftpConstants.SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
@@ -438,56 +373,48 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         Attributes attrs = new Attributes();
         int flags = buffer.getInt();
         int version = getVersion();
-        if (version == SFTP_V3) {
-            if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {
+        if (version == SftpConstants.SFTP_V3) {
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_SIZE) != 0) {
                 attrs.setSize(buffer.getLong());
             }
-            if ((flags & SSH_FILEXFER_ATTR_UIDGID) != 0) {
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_UIDGID) != 0) {
                 attrs.owner(buffer.getInt(), buffer.getInt());
             }
-            if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
-                attrs.setPermissions(buffer.getInt());
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
+                int perms = buffer.getInt();
+                attrs.setPermissions(perms);
+                attrs.setType(SftpHelper.permissionsToFileType(perms));
             }
-            if ((flags & SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
+
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
                 attrs.setAccessTime(readTime(buffer, flags));
                 attrs.setModifyTime(readTime(buffer, flags));
             }
-        } else if (version >= SFTP_V4) {
-            attrs.type = buffer.getUByte();
-            if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {
+        } else if (version >= SftpConstants.SFTP_V4) {
+            attrs.setType(buffer.getUByte());
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_SIZE) != 0) {
                 attrs.setSize(buffer.getLong());
             }
-            if ((flags & SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
                 attrs.setOwner(buffer.getString());
                 attrs.setGroup(buffer.getString());
             }
-            if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
                 attrs.setPermissions(buffer.getInt());
             }
 
             // update the permissions according to the type
             int perms = attrs.getPermissions();
-            switch (attrs.type) {
-                case SSH_FILEXFER_TYPE_REGULAR:
-                    perms |= S_IFREG;
-                    break;
-                case SSH_FILEXFER_TYPE_DIRECTORY:
-                    perms |= S_IFDIR;
-                    break;
-                case SSH_FILEXFER_TYPE_SYMLINK:
-                    perms |= S_IFLNK;
-                    break;
-                default:    // do nothing
-            }
+            perms |= SftpHelper.fileTypeToPermission(attrs.getType());
             attrs.setPermissions(perms);
 
-            if ((flags & SSH_FILEXFER_ATTR_ACCESSTIME) != 0) {
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME) != 0) {
                 attrs.setAccessTime(readTime(buffer, flags));
             }
-            if ((flags & SSH_FILEXFER_ATTR_CREATETIME) != 0) {
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_CREATETIME) != 0) {
                 attrs.setCreateTime(readTime(buffer, flags));
             }
-            if ((flags & SSH_FILEXFER_ATTR_MODIFYTIME) != 0) {
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME) != 0) {
                 attrs.setModifyTime(readTime(buffer, flags));
             }
             // TODO: acl
@@ -503,96 +430,97 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     protected void writeAttributes(Buffer buffer, Attributes attributes) throws IOException {
         int version = getVersion();
-        if (version == SFTP_V3) {
-            int flags = 0;
-            for (Attribute a : attributes.flags) {
+        Collection<Attribute> flags = ValidateUtils.checkNotNull(attributes, "No attributes").getFlags();
+        if (version == SftpConstants.SFTP_V3) {
+            int flagsMask = 0;
+            for (Attribute a : flags) {
                 switch (a) {
                     case Size:
-                        flags |= SSH_FILEXFER_ATTR_SIZE;
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_SIZE;
                         break;
                     case UidGid:
-                        flags |= SSH_FILEXFER_ATTR_UIDGID;
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_UIDGID;
                         break;
                     case Perms:
-                        flags |= SSH_FILEXFER_ATTR_PERMISSIONS;
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS;
                         break;
                     case AccessTime:
-                        if (attributes.flags.contains(Attribute.ModifyTime)) {
-                            flags |= SSH_FILEXFER_ATTR_ACMODTIME;
+                        if (flags.contains(Attribute.ModifyTime)) {
+                            flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME;
                         }
                         break;
                     case ModifyTime:
-                        if (attributes.flags.contains(Attribute.AccessTime)) {
-                            flags |= SSH_FILEXFER_ATTR_ACMODTIME;
+                        if (flags.contains(Attribute.AccessTime)) {
+                            flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME;
                         }
                         break;
                     default:    // do nothing
                 }
             }
-            buffer.putInt(flags);
-            if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {
+            buffer.putInt(flagsMask);
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_SIZE) != 0) {
                 buffer.putLong(attributes.getSize());
             }
-            if ((flags & SSH_FILEXFER_ATTR_UIDGID) != 0) {
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_UIDGID) != 0) {
                 buffer.putInt(attributes.getUserId());
                 buffer.putInt(attributes.getGroupId());
             }
-            if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
                 buffer.putInt(attributes.getPermissions());
             }
 
-            if ((flags & SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
-                SftpHelper.writeTime(buffer, version, flags, attributes.getAccessTime());
-                SftpHelper.writeTime(buffer, version, flags, attributes.getModifyTime());
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
+                SftpHelper.writeTime(buffer, version, flagsMask, attributes.getAccessTime());
+                SftpHelper.writeTime(buffer, version, flagsMask, attributes.getModifyTime());
             }
-        } else if (version >= SFTP_V4) {
-            int flags = 0;
-            for (Attribute a : attributes.flags) {
+        } else if (version >= SftpConstants.SFTP_V4) {
+            int flagsMask = 0;
+            for (Attribute a : flags) {
                 switch (a) {
                     case Size:
-                        flags |= SSH_FILEXFER_ATTR_SIZE;
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_SIZE;
                         break;
                     case OwnerGroup:
-                        flags |= SSH_FILEXFER_ATTR_OWNERGROUP;
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP;
                         break;
                     case Perms:
-                        flags |= SSH_FILEXFER_ATTR_PERMISSIONS;
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS;
                         break;
                     case AccessTime:
-                        flags |= SSH_FILEXFER_ATTR_ACCESSTIME;
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME;
                         break;
                     case ModifyTime:
-                        flags |= SSH_FILEXFER_ATTR_MODIFYTIME;
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME;
                         break;
                     case CreateTime:
-                        flags |= SSH_FILEXFER_ATTR_CREATETIME;
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_CREATETIME;
                         break;
                     default:    // do nothing
                 }
             }
-            buffer.putInt(flags);
-            buffer.putByte((byte) attributes.type);
-            if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {
+            buffer.putInt(flagsMask);
+            buffer.putByte((byte) attributes.getType());
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_SIZE) != 0) {
                 buffer.putLong(attributes.getSize());
             }
-            if ((flags & SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
                 String owner = attributes.getOwner();
                 buffer.putString(GenericUtils.isEmpty(owner) ? "OWNER@" : owner);
 
                 String group = attributes.getGroup();
                 buffer.putString(GenericUtils.isEmpty(group) ? "GROUP@" : group);
             }
-            if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
                 buffer.putInt(attributes.getPermissions());
             }
-            if ((flags & SSH_FILEXFER_ATTR_ACCESSTIME) != 0) {
-                SftpHelper.writeTime(buffer, version, flags, attributes.getAccessTime());
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME) != 0) {
+                SftpHelper.writeTime(buffer, version, flagsMask, attributes.getAccessTime());
             }
-            if ((flags & SSH_FILEXFER_ATTR_CREATETIME) != 0) {
-                SftpHelper.writeTime(buffer, version, flags, attributes.getCreateTime());
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_CREATETIME) != 0) {
+                SftpHelper.writeTime(buffer, version, flagsMask, attributes.getCreateTime());
             }
-            if ((flags & SSH_FILEXFER_ATTR_MODIFYTIME) != 0) {
-                SftpHelper.writeTime(buffer, version, flags, attributes.getModifyTime());
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME) != 0) {
+                SftpHelper.writeTime(buffer, version, flagsMask, attributes.getModifyTime());
             }
             // TODO: for v6+ add CTIME (see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-21)
             // TODO: acl
@@ -618,61 +546,61 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         buffer.putString(path);
         int version = getVersion();
         int mode = 0;
-        if (version == SFTP_V3) {
+        if (version == SftpConstants.SFTP_V3) {
             for (OpenMode m : options) {
                 switch (m) {
                     case Read:
-                        mode |= SSH_FXF_READ;
+                        mode |= SftpConstants.SSH_FXF_READ;
                         break;
                     case Write:
-                        mode |= SSH_FXF_WRITE;
+                        mode |= SftpConstants.SSH_FXF_WRITE;
                         break;
                     case Append:
-                        mode |= SSH_FXF_APPEND;
+                        mode |= SftpConstants.SSH_FXF_APPEND;
                         break;
                     case Create:
-                        mode |= SSH_FXF_CREAT;
+                        mode |= SftpConstants.SSH_FXF_CREAT;
                         break;
                     case Truncate:
-                        mode |= SSH_FXF_TRUNC;
+                        mode |= SftpConstants.SSH_FXF_TRUNC;
                         break;
                     case Exclusive:
-                        mode |= SSH_FXF_EXCL;
+                        mode |= SftpConstants.SSH_FXF_EXCL;
                         break;
                     default:    // do nothing
                 }
             }
         } else {
-            if (version >= SFTP_V5) {
+            if (version >= SftpConstants.SFTP_V5) {
                 int access = 0;
                 if (options.contains(OpenMode.Read)) {
-                    access |= ACE4_READ_DATA | ACE4_READ_ATTRIBUTES;
+                    access |= SftpConstants.ACE4_READ_DATA | SftpConstants.ACE4_READ_ATTRIBUTES;
                 }
                 if (options.contains(OpenMode.Write)) {
-                    access |= ACE4_WRITE_DATA | ACE4_WRITE_ATTRIBUTES;
+                    access |= SftpConstants.ACE4_WRITE_DATA | SftpConstants.ACE4_WRITE_ATTRIBUTES;
                 }
                 if (options.contains(OpenMode.Append)) {
-                    access |= ACE4_APPEND_DATA;
+                    access |= SftpConstants.ACE4_APPEND_DATA;
                 }
                 buffer.putInt(access);
             }
 
             if (options.contains(OpenMode.Create) && options.contains(OpenMode.Exclusive)) {
-                mode |= SSH_FXF_CREATE_NEW;
+                mode |= SftpConstants.SSH_FXF_CREATE_NEW;
             } else if (options.contains(OpenMode.Create) && options.contains(OpenMode.Truncate)) {
-                mode |= SSH_FXF_CREATE_TRUNCATE;
+                mode |= SftpConstants.SSH_FXF_CREATE_TRUNCATE;
             } else if (options.contains(OpenMode.Create)) {
-                mode |= SSH_FXF_OPEN_OR_CREATE;
+                mode |= SftpConstants.SSH_FXF_OPEN_OR_CREATE;
             } else if (options.contains(OpenMode.Truncate)) {
-                mode |= SSH_FXF_TRUNCATE_EXISTING;
+                mode |= SftpConstants.SSH_FXF_TRUNCATE_EXISTING;
             } else {
-                mode |= SSH_FXF_OPEN_EXISTING;
+                mode |= SftpConstants.SSH_FXF_OPEN_EXISTING;
             }
         }
         buffer.putInt(mode);
         writeAttributes(buffer, new Attributes());
 
-        CloseableHandle handle = new DefaultCloseableHandle(this, checkHandle(SSH_FXP_OPEN, buffer));
+        CloseableHandle handle = new DefaultCloseableHandle(this, checkHandle(SftpConstants.SSH_FXP_OPEN, buffer));
         if (log.isTraceEnabled()) {
             log.trace("open({})[{}] options={}: {}", getClientSession(), path, options, handle);
         }
@@ -692,7 +620,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         byte[] id = ValidateUtils.checkNotNull(handle, "No handle").getIdentifier();
         Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* some extra fields */);
         buffer.putBytes(id);
-        checkStatus(SSH_FXP_CLOSE, buffer);
+        checkStatus(SftpConstants.SSH_FXP_CLOSE, buffer);
     }
 
     @Override
@@ -707,7 +635,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
         buffer.putString(path);
-        checkStatus(SSH_FXP_REMOVE, buffer);
+        checkStatus(SftpConstants.SSH_FXP_REMOVE, buffer);
     }
 
     @Override
@@ -726,16 +654,16 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
         int numOptions = GenericUtils.size(options);
         int version = getVersion();
-        if (version >= SFTP_V5) {
+        if (version >= SftpConstants.SFTP_V5) {
             int opts = 0;
             if (numOptions > 0) {
                 for (CopyMode opt : options) {
                     switch (opt) {
                         case Atomic:
-                            opts |= SSH_FXP_RENAME_ATOMIC;
+                            opts |= SftpConstants.SSH_FXP_RENAME_ATOMIC;
                             break;
                         case Overwrite:
-                            opts |= SSH_FXP_RENAME_OVERWRITE;
+                            opts |= SftpConstants.SSH_FXP_RENAME_OVERWRITE;
                             break;
                         default:    // do nothing
                     }
@@ -746,7 +674,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throw new UnsupportedOperationException("rename(" + oldPath + " => " + newPath + ")"
                     + " - copy options can not be used with this SFTP version: " + options);
         }
-        checkStatus(SSH_FXP_RENAME, buffer);
+        checkStatus(SftpConstants.SSH_FXP_RENAME, buffer);
     }
 
     @Override
@@ -760,7 +688,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         buffer.putBytes(id);
         buffer.putLong(fileOffset);
         buffer.putInt(len);
-        return checkData(SSH_FXP_READ, buffer, dstOffset, dst);
+        return checkData(SftpConstants.SSH_FXP_READ, buffer, dstOffset, dst);
     }
 
     protected int checkData(int cmd, Buffer request, int dstOffset, byte[] dst) throws IOException {
@@ -773,13 +701,13 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
-        if (type == SSH_FXP_DATA) {
+        if (type == SftpConstants.SSH_FXP_DATA) {
             int len = buffer.getInt();
             buffer.getRawBytes(dst, dstoff, len);
             return len;
         }
 
-        if (type == SSH_FXP_STATUS) {
+        if (type == SftpConstants.SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
@@ -787,7 +715,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
                 log.trace("checkData(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
             }
 
-            if (substatus == SSH_FX_EOF) {
+            if (substatus == SftpConstants.SSH_FX_EOF) {
                 return -1;
             }
 
@@ -819,7 +747,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         buffer.putBytes(id);
         buffer.putLong(fileOffset);
         buffer.putBytes(src, srcOffset, len);
-        checkStatus(SSH_FXP_WRITE, buffer);
+        checkStatus(SftpConstants.SSH_FXP_WRITE, buffer);
     }
 
     @Override
@@ -837,11 +765,11 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         buffer.putInt(0);
 
         int version = getVersion();
-        if (version != SFTP_V3) {
+        if (version != SftpConstants.SFTP_V3) {
             buffer.putByte((byte) 0);
         }
 
-        checkStatus(SSH_FXP_MKDIR, buffer);
+        checkStatus(SftpConstants.SSH_FXP_MKDIR, buffer);
     }
 
     @Override
@@ -856,7 +784,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
         buffer.putString(path);
-        checkStatus(SSH_FXP_RMDIR, buffer);
+        checkStatus(SftpConstants.SSH_FXP_RMDIR, buffer);
     }
 
     @Override
@@ -868,7 +796,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
         buffer.putString(path);
 
-        CloseableHandle handle = new DefaultCloseableHandle(this, checkHandle(SSH_FXP_OPENDIR, buffer));
+        CloseableHandle handle = new DefaultCloseableHandle(this, checkHandle(SftpConstants.SSH_FXP_OPENDIR, buffer));
         if (log.isTraceEnabled()) {
             log.trace("openDir({})[{}}: {}", getClientSession(), path, handle);
         }
@@ -885,20 +813,20 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         byte[] id = handle.getIdentifier();
         Buffer buffer = new ByteArrayBuffer(id.length + Byte.SIZE /* some extra fields */);
         buffer.putBytes(id);
-        return checkDir(receive(send(SSH_FXP_READDIR, buffer)));
+        return checkDir(receive(send(SftpConstants.SSH_FXP_READDIR, buffer)));
     }
 
     protected List<DirEntry> checkDir(Buffer buffer) throws IOException {
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
-        if (type == SSH_FXP_NAME) {
+        if (type == SftpConstants.SSH_FXP_NAME) {
             int len = buffer.getInt();
             List<DirEntry> entries = new ArrayList<DirEntry>(len);
             for (int i = 0; i < len; i++) {
                 String name = buffer.getString();
                 int version = getVersion();
-                String longName = (version == SFTP_V3) ? buffer.getString() : null;
+                String longName = (version == SftpConstants.SFTP_V3) ? buffer.getString() : null;
                 Attributes attrs = readAttributes(buffer);
                 if (log.isTraceEnabled()) {
                     log.trace("checkDir(id={})[{}] ({})[{}]: {}", Integer.valueOf(id), Integer.valueOf(i), name, longName, attrs);
@@ -909,7 +837,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             return entries;
         }
 
-        if (type == SSH_FXP_STATUS) {
+        if (type == SftpConstants.SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
@@ -917,7 +845,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
                 log.trace("checkDir(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
             }
 
-            if (substatus == SSH_FX_EOF) {
+            if (substatus == SftpConstants.SSH_FX_EOF) {
                 return null;
             }
 
@@ -935,7 +863,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
         Buffer buffer = new ByteArrayBuffer();
         buffer.putString(path);
-        return checkOneName(SSH_FXP_REALPATH, buffer);
+        return checkOneName(SftpConstants.SSH_FXP_REALPATH, buffer);
     }
 
     @Override
@@ -948,11 +876,11 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         buffer.putString(path);
 
         int version = getVersion();
-        if (version >= SFTP_V4) {
-            buffer.putInt(SSH_FILEXFER_ATTR_ALL);
+        if (version >= SftpConstants.SFTP_V4) {
+            buffer.putInt(SftpConstants.SSH_FILEXFER_ATTR_ALL);
         }
 
-        return checkAttributes(SSH_FXP_STAT, buffer);
+        return checkAttributes(SftpConstants.SSH_FXP_STAT, buffer);
     }
 
     @Override
@@ -965,11 +893,11 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         buffer.putString(path);
 
         int version = getVersion();
-        if (version >= SFTP_V4) {
-            buffer.putInt(SSH_FILEXFER_ATTR_ALL);
+        if (version >= SftpConstants.SFTP_V4) {
+            buffer.putInt(SftpConstants.SSH_FILEXFER_ATTR_ALL);
         }
 
-        return checkAttributes(SSH_FXP_LSTAT, buffer);
+        return checkAttributes(SftpConstants.SSH_FXP_LSTAT, buffer);
     }
 
     @Override
@@ -983,11 +911,11 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         buffer.putBytes(id);
 
         int version = getVersion();
-        if (version >= SFTP_V4) {
-            buffer.putInt(SSH_FILEXFER_ATTR_ALL);
+        if (version >= SftpConstants.SFTP_V4) {
+            buffer.putInt(SftpConstants.SSH_FILEXFER_ATTR_ALL);
         }
 
-        return checkAttributes(SSH_FXP_FSTAT, buffer);
+        return checkAttributes(SftpConstants.SSH_FXP_FSTAT, buffer);
     }
 
     @Override
@@ -1003,7 +931,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         Buffer buffer = new ByteArrayBuffer();
         buffer.putString(path);
         writeAttributes(buffer, attributes);
-        checkStatus(SSH_FXP_SETSTAT, buffer);
+        checkStatus(SftpConstants.SSH_FXP_SETSTAT, buffer);
     }
 
     @Override
@@ -1019,7 +947,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         Buffer buffer = new ByteArrayBuffer(id.length + (2 * Long.SIZE) /* some extras */);
         buffer.putBytes(id);
         writeAttributes(buffer, attributes);
-        checkStatus(SSH_FXP_FSETSTAT, buffer);
+        checkStatus(SftpConstants.SSH_FXP_FSETSTAT, buffer);
     }
 
     @Override
@@ -1030,7 +958,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
         buffer.putString(path);
-        return checkOneName(SSH_FXP_READLINK, buffer);
+        return checkOneName(SftpConstants.SSH_FXP_READLINK, buffer);
     }
 
     @Override
@@ -1045,18 +973,18 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
         Buffer buffer = new ByteArrayBuffer(linkPath.length() + targetPath.length() + Long.SIZE /* some extra fields */);
         int version = getVersion();
-        if (version < SFTP_V6) {
+        if (version < SftpConstants.SFTP_V6) {
             if (!symbolic) {
                 throw new UnsupportedOperationException("Hard links are not supported in sftp v" + version);
             }
             buffer.putString(targetPath);
             buffer.putString(linkPath);
-            checkStatus(SSH_FXP_SYMLINK, buffer);
+            checkStatus(SftpConstants.SSH_FXP_SYMLINK, buffer);
         } else {
             buffer.putString(targetPath);
             buffer.putString(linkPath);
             buffer.putBoolean(symbolic);
-            checkStatus(SSH_FXP_LINK, buffer);
+            checkStatus(SftpConstants.SSH_FXP_LINK, buffer);
         }
     }
 
@@ -1077,7 +1005,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         buffer.putLong(offset);
         buffer.putLong(length);
         buffer.putInt(mask);
-        checkStatus(SSH_FXP_BLOCK, buffer);
+        checkStatus(SftpConstants.SSH_FXP_BLOCK, buffer);
     }
 
     @Override
@@ -1095,7 +1023,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         buffer.putBytes(id);
         buffer.putLong(offset);
         buffer.putLong(length);
-        checkStatus(SSH_FXP_UNBLOCK, buffer);
+        checkStatus(SftpConstants.SSH_FXP_UNBLOCK, buffer);
     }
 
     @Override
