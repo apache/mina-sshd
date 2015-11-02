@@ -40,10 +40,9 @@ public class JSchLogger implements Logger {
     @Override
     public boolean isEnabled(int level) {
         switch (level) {
+            case INFO:  // INFO is too "chatty" so we map it to debug
             case DEBUG:
                 return log.isDebugEnabled();
-            case INFO:
-                return log.isInfoEnabled();
             case WARN:
                 return log.isWarnEnabled();
             case ERROR:
@@ -58,18 +57,14 @@ public class JSchLogger implements Logger {
     @Override
     public void log(int level, String message) {
         switch (level) {
+            case INFO:  // INFO is too "chatty" so we map it to debug
             case DEBUG:
                 log.debug(message);
-                break;
-            case INFO:
-                log.info(message);
                 break;
             case WARN:
                 log.warn(message);
                 break;
             case ERROR:
-                log.error(message);
-                break;
             case FATAL:
                 log.error(message);
                 break;
