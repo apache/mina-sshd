@@ -76,6 +76,7 @@ import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.SftpHelper;
 import org.apache.sshd.common.subsystem.sftp.extensions.SpaceAvailableExtensionInfo;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.AbstractOpenSSHExtensionParser.OpenSSHExtension;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionParser;
@@ -431,8 +432,7 @@ public class SftpSubsystem
         int type = buffer.getUByte();
         int id = buffer.getInt();
         if (log.isDebugEnabled()) {
-            log.debug("process(length={}, type={}, id={})",
-                    length, type, id);
+            log.debug("process(length={}, type={}, id={})", length, type, id);
         }
 
         switch (type) {
@@ -2397,7 +2397,7 @@ public class SftpSubsystem
          *      The server will respond with a SSH_FXP_NAME packet containing only
          *      one name and a dummy attributes value.
          */
-        SftpHelper.writeAttrs(version, buffer, Collections.<String, Object>emptyMap());
+        SftpHelper.writeAttrs(buffer, version, Collections.<String, Object>emptyMap());
         send(buffer);
     }
 
@@ -2580,7 +2580,7 @@ public class SftpSubsystem
     }
 
     protected void writeAttrs(Buffer buffer, Map<String, ?> attributes) throws IOException {
-        SftpHelper.writeAttrs(version, buffer, attributes);
+        SftpHelper.writeAttrs(buffer, version, attributes);
     }
 
     protected Map<String, Object> getAttributes(Path file, LinkOption... options) throws IOException {
@@ -2897,7 +2897,7 @@ public class SftpSubsystem
     }
 
     protected Map<String, Object> readAttrs(Buffer buffer) throws IOException {
-        return SftpHelper.readAttrs(version, buffer);
+        return SftpHelper.readAttrs(buffer, version);
     }
 
     /**

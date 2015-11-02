@@ -31,7 +31,7 @@ public class JSchLogger implements Logger {
         JSch.setLogger(new JSchLogger());
     }
 
-    private final org.slf4j.Logger log = LoggerFactory.getLogger("org.jcraft.jsch.JSch");
+    private final org.slf4j.Logger log = LoggerFactory.getLogger(JSch.class);
 
     public JSchLogger() {
         super();

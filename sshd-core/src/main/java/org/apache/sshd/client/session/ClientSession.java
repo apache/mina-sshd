@@ -231,6 +231,19 @@ public interface ClientSession extends Session, KeyPairProviderHolder {
     SftpClient createSftpClient() throws IOException;
 
     /**
+     * Creates an SFTP client using the specified version
+     *
+     * @param version The version to use - <B>Note:</B> if the specified
+     *                version is not supported by the server then an exception
+     *                will occur
+     * @return The created {@link SftpClient}
+     * @throws IOException If failed to create the client or use the specified version
+     */
+    SftpClient createSftpClient(int version) throws IOException;
+
+    /**
+     * Creates an SFTP client while allowing the selection of a specific version
+     *
      * @param selector The {@link SftpVersionSelector} to use - <B>Note:</B>
      *                 if the server does not support versions re-negotiation then the
      *                 selector will be presented with only one &quot;choice&quot; - the
@@ -242,9 +255,13 @@ public interface ClientSession extends Session, KeyPairProviderHolder {
 
     FileSystem createSftpFileSystem() throws IOException;
 
+    FileSystem createSftpFileSystem(int version) throws IOException;
+
     FileSystem createSftpFileSystem(SftpVersionSelector selector) throws IOException;
 
     FileSystem createSftpFileSystem(int readBufferSize, int writeBufferSize) throws IOException;
+
+    FileSystem createSftpFileSystem(int version, int readBufferSize, int writeBufferSize) throws IOException;
 
     FileSystem createSftpFileSystem(SftpVersionSelector selector, int readBufferSize, int writeBufferSize) throws IOException;
 

@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.file.util.BaseFileSystem;
 import org.apache.sshd.common.file.util.ImmutableList;
@@ -47,7 +48,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
-public class SftpFileSystem extends BaseFileSystem<SftpPath> {
+public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSessionHolder {
     public static final String POOL_SIZE_PROP = "sftp-fs-pool-size";
     public static final int DEFAULT_POOL_SIZE = 8;
 
@@ -59,7 +60,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
                             )));
 
     private final String id;
-    private final ClientSession session;
+    private final ClientSession clientSession;
     private final SftpVersionSelector selector;
     private final Queue<SftpClient> pool;
     private final ThreadLocal<Wrapper> wrappers = new ThreadLocal<>();
@@ -71,7 +72,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
     public SftpFileSystem(SftpFileSystemProvider provider, String id, ClientSession session, SftpVersionSelector selector) throws IOException {
         super(provider);
         this.id = id;
-        this.session = session;
+        this.clientSession = ValidateUtils.checkNotNull(session, "No client session");
         this.selector = ValidateUtils.checkNotNull(selector, "No SFTP version selector provided");
         this.stores = Collections.unmodifiableList(Collections.<FileStore>singletonList(new SftpFileStore(id, this)));
         this.pool = new LinkedBlockingQueue<>(PropertyResolverUtils.getIntProperty(session, POOL_SIZE_PROP, DEFAULT_POOL_SIZE));
@@ -127,8 +128,9 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         return new SftpPath(this, root, names);
     }
 
-    public ClientSession getSession() {
-        return session;
+    @Override
+    public ClientSession getClientSession() {
+        return clientSession;
     }
 
     @SuppressWarnings("synthetic-access")
@@ -138,6 +140,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
             while (wrapper == null) {
                 SftpClient client = pool.poll();
                 if (client == null) {
+                    ClientSession session = getClientSession();
                     client = session.createSftpClient(getSftpVersionSelector());
                 }
                 if (!client.isClosing()) {
@@ -157,6 +160,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
             SftpFileSystemProvider provider = provider();
             String fsId = getId();
             SftpFileSystem fs = provider.removeFileSystem(fsId);
+            ClientSession session = getClientSession();
             session.close(true);
 
             if ((fs != null) && (fs != this)) {
@@ -167,6 +171,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
 
     @Override
     public boolean isOpen() {
+        ClientSession session = getClientSession();
         return session.isOpen();
     }
 
@@ -183,6 +188,11 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
     @Override
     public SftpPath getDefaultDir() {
         return defaultDir;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[" + String.valueOf(getClientSession()) + "]";
     }
 
     private final class Wrapper extends AbstractSftpClient {

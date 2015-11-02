@@ -145,8 +145,8 @@ public class SftpCommand implements Channel {
     }
 
     protected <A extends Appendable> A appendFileAttributes(A stdout, SftpClient sftp, String path, Attributes attrs) throws IOException {
-        stdout.append('\t').append(Long.toString(attrs.size))
-              .append('\t').append(SftpFileSystemProvider.getRWXPermissions(attrs.perms));
+        stdout.append('\t').append(Long.toString(attrs.getSize()))
+              .append('\t').append(SftpFileSystemProvider.getRWXPermissions(attrs.getPermissions()));
         if (attrs.isSymbolicLink()) {
             String linkValue = sftp.readLink(path);
             stdout.append(" => ")

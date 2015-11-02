@@ -200,6 +200,9 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
         fileSystem.setReadBufferSize(PropertyResolverUtils.getIntProperty(resolver, READ_BUFFER_PROP_NAME, DEFAULT_READ_BUFFER_SIZE));
         fileSystem.setWriteBufferSize(PropertyResolverUtils.getIntProperty(resolver, WRITE_BUFFER_PROP_NAME, DEFAULT_WRITE_BUFFER_SIZE));
+        if (log.isDebugEnabled()) {
+            log.debug("newFileSystem({}): {}", uri.toASCIIString(), fileSystem);
+        }
         return fileSystem;
     }
 
@@ -216,6 +219,10 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
         fileSystem.setReadBufferSize(PropertyResolverUtils.getIntProperty(session, READ_BUFFER_PROP_NAME, DEFAULT_READ_BUFFER_SIZE));
         fileSystem.setWriteBufferSize(PropertyResolverUtils.getIntProperty(session, WRITE_BUFFER_PROP_NAME, DEFAULT_WRITE_BUFFER_SIZE));
+        if (log.isDebugEnabled()) {
+            log.debug("newFileSystem: {}", fileSystem);
+        }
+
         return fileSystem;
     }
 
@@ -238,9 +245,15 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             return null;
         }
 
+        SftpFileSystem removed;
         synchronized (fileSystems) {
-            return fileSystems.remove(id);
+            removed = fileSystems.remove(id);
         }
+
+        if (log.isDebugEnabled()) {
+            log.debug("removeFileSystem({}): {}", id, removed);
+        }
+        return removed;
     }
 
     /**
@@ -315,6 +328,9 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
         SftpPath p = toSftpPath(dir);
         SftpFileSystem fs = p.getFileSystem();
+        if (log.isDebugEnabled()) {
+            log.debug("createDirectory({}) {} ({})", fs, dir, Arrays.asList(attrs));
+        }
         try (SftpClient sftp = fs.getClient()) {
             try {
                 sftp.mkdir(dir.toString());
@@ -347,6 +363,10 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         checkAccess(p, AccessMode.WRITE);
 
         SftpFileSystem fs = p.getFileSystem();
+        if (log.isDebugEnabled()) {
+            log.debug("delete({}) {}", fs, path);
+        }
+
         try (SftpClient sftp = fs.getClient()) {
             BasicFileAttributes attributes = readAttributes(path, BasicFileAttributes.class);
             if (attributes.isDirectory()) {
@@ -386,6 +406,10 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         Boolean status = IoUtils.checkFileExists(target, linkOptions);
         if (status == null) {
             throw new AccessDeniedException("Existence cannot be determined for copy target: " + target);
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("copy({})[{}] {} => {}", src.getFileSystem(), Arrays.asList(options), src, dst);
         }
 
         if (replaceExisting) {
@@ -447,13 +471,17 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         // attributes of source file
         BasicFileAttributes attrs = readAttributes(source, BasicFileAttributes.class, linkOptions);
         if (attrs.isSymbolicLink()) {
-            throw new IOException("Moving of source symbolic link not supported: " + source);
+            throw new IOException("Moving of source symbolic link (" + source + ") to " + target + " not supported");
         }
 
         // delete target if it exists and REPLACE_EXISTING is specified
         Boolean status = IoUtils.checkFileExists(target, linkOptions);
         if (status == null) {
             throw new AccessDeniedException("Existence cannot be determined for move target " + target);
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("move({})[{}] {} => {}", src.getFileSystem(), Arrays.asList(options), src, dst);
         }
 
         if (replaceExisting) {
@@ -525,6 +553,11 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         if (fsLink != t.getFileSystem()) {
             throw new ProviderMismatchException("Mismatched file system providers for " + l + " vs. " + t);
         }
+
+        if (log.isDebugEnabled()) {
+            log.debug("createSymbolicLink({})[{}] {} => {}", fsLink, Arrays.asList(attrs), link, target);
+        }
+
         try (SftpClient client = fsLink.getClient()) {
             client.symLink(l.toString(), t.toString());
         }
@@ -535,7 +568,12 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         SftpPath l = toSftpPath(link);
         SftpFileSystem fsLink = l.getFileSystem();
         try (SftpClient client = fsLink.getClient()) {
-            return fsLink.getPath(client.readLink(l.toString()));
+            String linkPath = client.readLink(l.toString());
+            if (log.isDebugEnabled()) {
+                log.debug("readSymbolicLink({})[{}] {} => {}", fsLink, link, linkPath);
+            }
+
+            return fsLink.getPath(linkPath);
         }
     }
 
@@ -658,7 +696,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                     break;
                 default:
                     if (log.isTraceEnabled()) {
-                        log.trace("readAttributes({})[{}] ignored {}={}", path, attributes, attr, v);
+                        log.trace("readAttributes({})[{}] ignored {}={} for {}", fs, path, attr, v, attributes);
                     }
             }
         }
@@ -687,13 +725,13 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         SftpClient.Attributes attributes = new SftpClient.Attributes();
         switch (attr) {
             case "lastModifiedTime":
-                attributes.mtime((int) ((FileTime) value).to(TimeUnit.SECONDS));
+                attributes.modifyTime((int) ((FileTime) value).to(TimeUnit.SECONDS));
                 break;
             case "lastAccessTime":
-                attributes.atime((int) ((FileTime) value).to(TimeUnit.SECONDS));
+                attributes.accessTime((int) ((FileTime) value).to(TimeUnit.SECONDS));
                 break;
             case "creationTime":
-                attributes.ctime((int) ((FileTime) value).to(TimeUnit.SECONDS));
+                attributes.createTime((int) ((FileTime) value).to(TimeUnit.SECONDS));
                 break;
             case "size":
                 attributes.size(((Number) value).longValue());
@@ -718,8 +756,12 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                         + " unknown view=" + view + " attribute: " + attr);
             default:
                 if (log.isTraceEnabled()) {
-                    log.trace("setAttribute({})[{}] ignore {}={}", path, attribute, attr, value);
+                    log.trace("setAttribute({})[{}] ignore {}/{}={}", fs, path, attribute, attr, value);
                 }
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("setAttribute({}) {}: {}", fs, path, attributes);
         }
 
         try (SftpClient client = fs.getClient()) {

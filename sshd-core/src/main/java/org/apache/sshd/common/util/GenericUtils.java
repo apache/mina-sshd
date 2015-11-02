@@ -21,6 +21,7 @@ package org.apache.sshd.common.util;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.UndeclaredThrowableException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,6 +29,7 @@ import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -214,7 +216,15 @@ public final class GenericUtils {
         return length(a) <= 0;
     }
 
+    public static boolean isEmpty(int[] a) {
+        return length(a) <= 0;
+    }
+
     public static int length(byte... a) {
+        return a == null ? 0 : a.length;
+    }
+
+    public static int length(int... a) {
         return a == null ? 0 : a.length;
     }
 
@@ -266,6 +276,30 @@ public final class GenericUtils {
         }
 
         return result;
+    }
+
+    @SafeVarargs
+    public static <T> List<T> asList(T ... values) {
+        int len = length(values);
+        if (len <= 0) {
+            return Collections.emptyList();
+        } else {
+            return Arrays.asList(values);
+        }
+    }
+
+    public static List<Integer> asList(int ... values) {
+        int len = length(values);
+        if (len <= 0) {
+            return Collections.emptyList();
+        }
+
+        List<Integer> l = new ArrayList<>(len);
+        for (int v : values) {
+            l.add(Integer.valueOf(v));
+        }
+
+        return l;
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

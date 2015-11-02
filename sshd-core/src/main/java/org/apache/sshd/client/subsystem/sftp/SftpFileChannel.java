@@ -217,7 +217,7 @@ public class SftpFileChannel extends FileChannel {
     @Override
     public long size() throws IOException {
         ensureOpen(Collections.<SftpClient.OpenMode>emptySet());
-        return sftp.stat(handle).size;
+        return sftp.stat(handle).getSize();
     }
 
     @Override

@@ -108,7 +108,7 @@ public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
 
                 SftpClient.Attributes attrs = sftp.stat(h);
                 assertNotNull("No handle attributes", attrs);
-                assertEquals("Mismatched remote file size", written.length, attrs.size);
+                assertEquals("Mismatched remote file size", written.length, attrs.getSize());
             }
 
             assertTrue("Remote file not created: " + clientFile, Files.exists(clientFile, IoUtils.EMPTY_LINK_OPTIONS));

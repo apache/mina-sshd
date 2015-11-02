@@ -442,9 +442,14 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         return new DefaultScpClient(this, listener);
     }
 
-    @Override
+    @Override   // TODO make this a default method in JDK-8
     public SftpClient createSftpClient() throws IOException {
         return createSftpClient(SftpVersionSelector.CURRENT);
+    }
+
+    @Override   // TODO make this a default method in JDK-8
+    public SftpClient createSftpClient(final int version) throws IOException {
+        return createSftpClient(SftpVersionSelector.Utils.fixedVersionSelector(version));
     }
 
     @Override
@@ -460,8 +465,18 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     @Override
+    public FileSystem createSftpFileSystem(int version) throws IOException {
+        return createSftpFileSystem(SftpVersionSelector.Utils.fixedVersionSelector(version));
+    }
+
+    @Override
     public FileSystem createSftpFileSystem(SftpVersionSelector selector) throws IOException {
         return createSftpFileSystem(selector, SftpClient.DEFAULT_READ_BUFFER_SIZE, SftpClient.DEFAULT_WRITE_BUFFER_SIZE);
+    }
+
+    @Override
+    public FileSystem createSftpFileSystem(int version, int readBufferSize, int writeBufferSize) throws IOException {
+        return createSftpFileSystem(SftpVersionSelector.Utils.fixedVersionSelector(version), readBufferSize, writeBufferSize);
     }
 
     @Override

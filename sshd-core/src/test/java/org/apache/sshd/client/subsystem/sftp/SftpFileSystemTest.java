@@ -148,7 +148,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
             Files.write(file, (getCurrentTestName() + "\n").getBytes(StandardCharsets.UTF_8));
 
             Map<String, Object> attrs = Files.readAttributes(file, "posix:*");
-            assertNotNull("NO attributes read for " + file, attrs);
+            assertNotNull("No attributes read for " + file, attrs);
 
             Files.setAttribute(file, "basic:size", Long.valueOf(2L));
             Files.setAttribute(file, "posix:permissions", PosixFilePermissions.fromString("rwxr-----"));
@@ -352,7 +352,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
         String remFile3Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve("file-3.txt"));
         Path file3 = fs.getPath(remFile3Path);
         try {
-            Files.move(file2, file3);
+            Files.move(file2, file3, LinkOption.NOFOLLOW_LINKS);
             fail("Unexpected success in moving " + file2 + " => " + file3);
         } catch (NoSuchFileException e) {
             // expected
@@ -360,13 +360,15 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
         Files.write(file2, "h".getBytes(StandardCharsets.UTF_8));
         try {
-            Files.move(file1, file2);
+            Files.move(file1, file2, LinkOption.NOFOLLOW_LINKS);
             fail("Unexpected success in moving " + file1 + " => " + file2);
         } catch (FileAlreadyExistsException e) {
             // expected
         }
-        Files.move(file1, file2, StandardCopyOption.REPLACE_EXISTING);
-        Files.move(file2, file1);
+        System.out.append('\t').append("Move ").append(file1.toString()).append(" => ").println(file2);
+        Files.move(file1, file2, LinkOption.NOFOLLOW_LINKS, StandardCopyOption.REPLACE_EXISTING);
+        System.out.append('\t').append("Move ").append(file2.toString()).append(" => ").println(file1);
+        Files.move(file2, file1, LinkOption.NOFOLLOW_LINKS);
 
         Map<String, Object> attrs = Files.readAttributes(file1, "*");
         System.out.append('\t').append(file1.toString()).append(" attributes: ").println(attrs);
@@ -382,11 +384,13 @@ public class SftpFileSystemTest extends BaseTestSupport {
             Path link = fs.getPath(remFile2Path);
             Path linkParent = link.getParent();
             Path relPath = linkParent.relativize(file1);
+            System.out.append('\t').append("Create symlink ").append(link.toString()).append(" => ").println(relPath);
             Files.createSymbolicLink(link, relPath);
             assertTrue("Not a symbolic link: " + link, Files.isSymbolicLink(link));
 
             Path symLink = Files.readSymbolicLink(link);
             assertEquals("mismatched symbolic link name", relPath.toString(), symLink.toString());
+            System.out.append('\t').append("Delete symlink ").println(link);
             Files.delete(link);
         }
 
@@ -397,12 +401,11 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
         try (FileChannel channel = FileChannel.open(file1)) {
             try (FileLock lock = channel.lock()) {
-                System.out.println("Locked " + lock.toString());
+                System.out.append('\t').append("Lock ").append(file1.toString()).append(": ").println(lock.toString());
 
                 try (FileChannel channel2 = FileChannel.open(file1)) {
                     try (FileLock lock2 = channel2.lock()) {
-                        System.out.println("Locked " + lock2.toString());
-                        fail("Unexpected success in re-locking " + file1);
+                        fail("Unexpected success in re-locking " + file1 + ": " + lock2);
                     } catch (OverlappingFileLockException e) {
                         // expected
                     }

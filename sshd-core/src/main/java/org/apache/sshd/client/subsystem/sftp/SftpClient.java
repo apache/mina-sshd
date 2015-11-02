@@ -66,18 +66,17 @@ public interface SftpClient extends SubsystemClient {
         Size,
         UidGid,
         Perms,
-        AcModTime,
         OwnerGroup,
         AccessTime,
         ModifyTime,
-        CreateTime,
+        CreateTime
     }
 
     class Handle {
         private final byte[] id;
 
         Handle(byte[] id) {
-            // clone the original so the handle is imutable
+            // clone the original so the handle is immutable
             this.id = ValidateUtils.checkNotNullAndNotEmpty(id, "No handle ID").clone();
         }
 
@@ -133,58 +132,92 @@ public interface SftpClient extends SubsystemClient {
     class Attributes {
         // CHECKSTYLE:OFF
         public final Set<Attribute> flags = EnumSet.noneOf(Attribute.class);
-        public long size;
         public int type;
-        public int uid;
-        public int gid;
-        public int perms;
-        public int atime;
-        public int ctime;
-        public int mtime;
-        public String owner;
-        public String group;
-        public FileTime accessTime;
-        public FileTime createTime;
-        public FileTime modifyTime;
         // CHECKSTYLE:ON
+
+        private int perms;
+        private int uid;
+        private int gid;
+        private String owner;
+        private String group;
+        private long size;
+        private FileTime accessTime;
+        private FileTime createTime;
+        private FileTime modifyTime;
+
+        public Attributes() {
+            super();
+        }
 
         @Override
         public String toString() {
             return "type=" + type
-                    + ";size=" + size
-                    + ";uid=" + uid
-                    + ";gid=" + gid
-                    + ";perms=0x" + Integer.toHexString(perms)
-                    + ";flags=" + flags
-                    + ";owner=" + owner
-                    + ";group=" + group
-                    + ";aTime=(" + atime + ")[" + accessTime + "]"
-                    + ";cTime=(" + ctime + ")[" + createTime + "]"
-                    + ";mTime=(" + mtime + ")[" + modifyTime + "]";
+                 + ";size=" + getSize()
+                 + ";uid=" + getUserId()
+                 + ";gid=" + getGroupId()
+                 + ";perms=0x" + Integer.toHexString(getPermissions())
+                 + ";flags=" + flags
+                 + ";owner=" + getOwner()
+                 + ";group=" + getGroup()
+                 + ";aTime=" + getAccessTime()
+                 + ";cTime=" + getCreateTime()
+                 + ";mTime=" + getModifyTime();
+        }
+
+        public long getSize() {
+            return size;
         }
 
         public Attributes size(long size) {
-            flags.add(Attribute.Size);
-            this.size = size;
+            setSize(size);
             return this;
         }
 
+        public void setSize(long size) {
+            flags.add(Attribute.Size);
+            this.size = size;
+        }
+
+        public String getOwner() {
+            return owner;
+        }
+
         public Attributes owner(String owner) {
+            setOwner(owner);
+            return this;
+        }
+
+        public void setOwner(String owner) {
             flags.add(Attribute.OwnerGroup);
             this.owner = owner;
             if (GenericUtils.isEmpty(group)) {
                 group = "GROUP@";
             }
-            return this;
+        }
+
+        public String getGroup() {
+            return group;
         }
 
         public Attributes group(String group) {
+            setGroup(group);
+            return this;
+        }
+
+        public void setGroup(String group) {
             flags.add(Attribute.OwnerGroup);
             this.group = group;
             if (GenericUtils.isEmpty(owner)) {
                 owner = "OWNER@";
             }
-            return this;
+        }
+
+        public int getUserId() {
+            return uid;
+        }
+
+        public int getGroupId() {
+            return gid;
         }
 
         public Attributes owner(int uid, int gid) {
@@ -194,59 +227,84 @@ public interface SftpClient extends SubsystemClient {
             return this;
         }
 
+        public int getPermissions() {
+            return perms;
+        }
+
         public Attributes perms(int perms) {
+            setPermissions(perms);
+            return this;
+        }
+
+        public void setPermissions(int perms) {
             flags.add(Attribute.Perms);
             this.perms = perms;
-            return this;
         }
 
-        public Attributes atime(int atime) {
-            flags.add(Attribute.AccessTime);
-            this.atime = atime;
-            this.accessTime = FileTime.from(atime, TimeUnit.SECONDS);
-            return this;
+        public FileTime getAccessTime() {
+            return accessTime;
         }
 
-        public Attributes ctime(int ctime) {
-            flags.add(Attribute.CreateTime);
-            this.ctime = ctime;
-            this.createTime = FileTime.from(atime, TimeUnit.SECONDS);
-            return this;
+        public Attributes accessTime(long atime) {
+            return accessTime(atime, TimeUnit.SECONDS);
         }
 
-        public Attributes mtime(int mtime) {
-            flags.add(Attribute.ModifyTime);
-            this.mtime = mtime;
-            this.modifyTime = FileTime.from(atime, TimeUnit.SECONDS);
-            return this;
-        }
-
-        public Attributes time(int atime, int mtime) {
-            flags.add(Attribute.AcModTime);
-            this.atime = atime;
-            this.mtime = mtime;
-            return this;
+        public Attributes accessTime(long atime, TimeUnit unit) {
+            return accessTime(FileTime.from(atime, unit));
         }
 
         public Attributes accessTime(FileTime atime) {
-            flags.add(Attribute.AccessTime);
-            this.atime = (int) atime.to(TimeUnit.SECONDS);
-            this.accessTime = atime;
+            setAccessTime(atime);
             return this;
+        }
+
+        public void setAccessTime(FileTime atime) {
+            flags.add(Attribute.AccessTime);
+            accessTime = ValidateUtils.checkNotNull(atime, "No access time");
+        }
+
+        public FileTime getCreateTime() {
+            return createTime;
+        }
+
+        public Attributes createTime(long ctime) {
+            return createTime(ctime, TimeUnit.SECONDS);
+        }
+
+        public Attributes createTime(long ctime, TimeUnit unit) {
+            return createTime(FileTime.from(ctime, unit));
         }
 
         public Attributes createTime(FileTime ctime) {
-            flags.add(Attribute.CreateTime);
-            this.ctime = (int) ctime.to(TimeUnit.SECONDS);
-            this.createTime = ctime;
+            setCreateTime(ctime);
             return this;
         }
 
+        public void setCreateTime(FileTime ctime) {
+            flags.add(Attribute.CreateTime);
+            createTime = ValidateUtils.checkNotNull(ctime, "No create time");
+        }
+
+        public FileTime getModifyTime() {
+            return modifyTime;
+        }
+
+        public Attributes modifyTime(long mtime) {
+            return modifyTime(mtime, TimeUnit.SECONDS);
+        }
+
+        public Attributes modifyTime(long mtime, TimeUnit unit) {
+            return modifyTime(FileTime.from(mtime, unit));
+        }
+
         public Attributes modifyTime(FileTime mtime) {
-            flags.add(Attribute.ModifyTime);
-            this.mtime = (int) mtime.to(TimeUnit.SECONDS);
-            this.modifyTime = mtime;
+            setModifyTime(mtime);
             return this;
+        }
+
+        public void setModifyTime(FileTime mtime) {
+            flags.add(Attribute.ModifyTime);
+            modifyTime = ValidateUtils.checkNotNull(mtime, "No modify time");
         }
 
         public boolean isRegularFile() {

@@ -25,9 +25,8 @@ import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -50,32 +49,34 @@ public class SftpPosixFileAttributes implements PosixFileAttributes {
 
     @Override
     public UserPrincipal owner() {
-        return attributes.owner != null ? new SftpFileSystem.DefaultGroupPrincipal(attributes.owner) : null;
+        String owner = attributes.getOwner();
+        return GenericUtils.isEmpty(owner) ? null : new SftpFileSystem.DefaultGroupPrincipal(owner);
     }
 
     @Override
     public GroupPrincipal group() {
-        return attributes.group != null ? new SftpFileSystem.DefaultGroupPrincipal(attributes.group) : null;
+        String group = attributes.getGroup();
+        return GenericUtils.isEmpty(group) ? null : new SftpFileSystem.DefaultGroupPrincipal(group);
     }
 
     @Override
     public Set<PosixFilePermission> permissions() {
-        return SftpFileSystemProvider.permissionsToAttributes(attributes.perms);
+        return SftpFileSystemProvider.permissionsToAttributes(attributes.getPermissions());
     }
 
     @Override
     public FileTime lastModifiedTime() {
-        return FileTime.from(attributes.mtime, TimeUnit.SECONDS);
+        return attributes.getModifyTime();
     }
 
     @Override
     public FileTime lastAccessTime() {
-        return FileTime.from(attributes.atime, TimeUnit.SECONDS);
+        return attributes.getAccessTime();
     }
 
     @Override
     public FileTime creationTime() {
-        return FileTime.from(attributes.ctime, TimeUnit.SECONDS);
+        return attributes.getCreateTime();
     }
 
     @Override
@@ -100,7 +101,7 @@ public class SftpPosixFileAttributes implements PosixFileAttributes {
 
     @Override
     public long size() {
-        return attributes.size;
+        return attributes.getSize();
     }
 
     @Override

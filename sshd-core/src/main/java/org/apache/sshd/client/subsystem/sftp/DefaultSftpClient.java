@@ -219,8 +219,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         int id = cmdId.incrementAndGet();
         int len = buffer.available();
         if (log.isTraceEnabled()) {
-            log.trace("send(cmd={}, len={}) id = {}",
-                    cmd, len, id);
+            log.trace("send(cmd={}, len={}) id={}", cmd, len, id);
         }
 
         OutputStream dos = channel.getInvertedIn();

@@ -400,7 +400,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     }
 
                     // NOTE: on Windows files are always readable
-                    int perms = sftp.stat(file).perms;
+                    int perms = sftp.stat(file).getPermissions();
                     int permsMask = SftpConstants.S_IWUSR | (isWindows ? 0 : SftpConstants.S_IRUSR);
                     assertEquals("Mismatched permissions for " + file + ": 0x" + Integer.toHexString(perms), 0, (perms & permsMask));
 
@@ -1299,6 +1299,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             }
             assertFalse("Target link exists before linking: " + linkPath, Files.exists(linkPath, options));
 
+            System.out.append('\t').append("Symlink ").append(remLinkPath).append(" => ").println(remSrcPath);
             c.symlink(remSrcPath, remLinkPath);
 
             assertTrue("Symlink not created: " + linkPath, Files.exists(linkPath, options));
