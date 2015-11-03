@@ -2816,6 +2816,9 @@ public class SftpSubsystem
                 case "lastAccessTime":
                     view = "basic";
                     break;
+                case "extended":
+                    view = "extended";
+                    break;
                 default:    // ignored
             }
             if ((view != null) && (value != null)) {
@@ -2838,8 +2841,33 @@ public class SftpSubsystem
             @SuppressWarnings("unchecked")
             Set<PosixFilePermission> perms = (Set<PosixFilePermission>) value;
             setFilePermissions(file, perms, options);
+        } else if ("extended".equalsIgnoreCase(view) && "extended".equalsIgnoreCase(attribute)) {
+            @SuppressWarnings("unchecked")
+            Map<String, byte[]> extensions = (Map<String, byte[]>) value;
+            setFileExtensions(file, extensions, options);
         } else {
             Files.setAttribute(file, view + ":" + attribute, value, options);
+        }
+    }
+
+    protected void setFileExtensions(Path file, Map<String, byte[]> extensions, LinkOption ... options) throws IOException {
+        if (GenericUtils.isEmpty(extensions)) {
+            return;
+        }
+
+        /* According to v3,4,5:
+         *
+         *      Implementations SHOULD ignore extended data fields that they do not understand.
+         *
+         * But according to v6 (https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-28):
+         *      Implementations MUST return SSH_FX_UNSUPPORTED if there are any unrecognized extensions.
+         */
+        if (version < SftpConstants.SFTP_V6) {
+            if (log.isDebugEnabled()) {
+                log.debug("setFileExtensions({})[{}]: {}", getServerSession(), file, extensions);
+            }
+        } else {
+            throw new UnsupportedOperationException("File extensions not supported for " + file);
         }
     }
 

@@ -466,6 +466,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throw new IllegalStateException("readAttributes - unsupported version: " + version);
         }
 
+        if ((flags & SftpConstants.SSH_FILEXFER_ATTR_EXTENDED) != 0) {
+            attrs.setExtensions(SftpHelper.readExtensions(buffer));
+        }
+
         return attrs;
     }
 
@@ -494,6 +498,9 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
                         if (flags.contains(Attribute.AccessTime)) {
                             flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME;
                         }
+                        break;
+                    case Extensions:
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_EXTENDED;
                         break;
                     default:    // do nothing
                 }
@@ -538,6 +545,9 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
                     case Acl:
                         flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_ACL;
                         break;
+                    case Extensions:
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_EXTENDED;
+                        break;
                     default:    // do nothing
                 }
             }
@@ -572,6 +582,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             // TODO: for v6+ add CTIME (see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-21)
         } else {
             throw new UnsupportedOperationException("writeAttributes(" + attributes + ") unsupported version: " + version);
+        }
+
+        if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_EXTENDED) != 0) {
+            SftpHelper.writeExtensions(buffer, attributes.getExtensions());
         }
     }
 

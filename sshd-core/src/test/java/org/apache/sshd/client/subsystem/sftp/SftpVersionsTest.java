@@ -332,9 +332,128 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         assertEquals("Mismatched invocations count", numInvoked, numInvocations.get());
     }
 
+    @Test   // see SSHD-575
+    public void testSftpExtensionsEncodeDecode() throws Exception {
+        final Class<?> anchor = getClass();
+        final Map<String, String> expExtensions = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER) {
+            private static final long serialVersionUID = 1L;    // we're not serializing it
+
+            {
+                put("class", anchor.getSimpleName());
+                put("package", anchor.getPackage().getName());
+                put("method", getCurrentTestName());
+            }
+        };
+
+        final AtomicInteger numInvocations = new AtomicInteger(0);
+        SftpSubsystemFactory factory = new SftpSubsystemFactory() {
+            @Override
+            public Command create() {
+                SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy()) {
+                    @Override
+                    protected Map<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options) throws IOException {
+                        Map<String, Object> attrs = super.resolveFileAttributes(file, flags, options);
+                        if (GenericUtils.isEmpty(attrs)) {
+                            attrs = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
+                        }
+
+                        @SuppressWarnings("unchecked")
+                        Map<String, String> actExtensions = (Map<String, String>) attrs.put("extended", expExtensions);
+                        if (actExtensions != null) {
+                            log.info("resolveFileAttributes(" + file + ") replaced extensions: " + actExtensions);
+                        }
+                        return attrs;
+                    }
+
+                    @Override
+                    protected void setFileExtensions(Path file, Map<String, byte[]> extensions, LinkOption ... options) throws IOException {
+                        assertExtensionsMapEquals("setFileExtensions(" + file + ")", expExtensions, extensions);
+                        numInvocations.incrementAndGet();
+
+                        int currentVersion = getTestedVersion();
+                        try {
+                            super.setFileExtensions(file, extensions, options);
+                            assertFalse("Expected exception not generated for version=" + currentVersion, currentVersion >= SftpConstants.SFTP_V6);
+                        } catch(UnsupportedOperationException e) {
+                            assertTrue("Unexpected exception for version=" + currentVersion, currentVersion >= SftpConstants.SFTP_V6);
+                        }
+                    }
+                };
+                Collection<? extends SftpEventListener> listeners = getRegisteredListeners();
+                if (GenericUtils.size(listeners) > 0) {
+                    for (SftpEventListener l : listeners) {
+                        subsystem.addSftpEventListener(l);
+                    }
+                }
+
+                return subsystem;
+            }
+        };
+
+        factory.addSftpEventListener(new AbstractSftpEventListenerAdapter() {
+            @Override
+            public void modifyingAttributes(ServerSession session, Path path, Map<String, ?> attrs) {
+                @SuppressWarnings("unchecked")
+                Map<String, byte[]> actExtensions = GenericUtils.isEmpty(attrs) ? null : (Map<String, byte[]>) attrs.get("extended");
+                assertExtensionsMapEquals("modifying(" + path + ")", expExtensions, actExtensions);
+            }
+
+            @Override
+            public void modifiedAttributes(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown) {
+                @SuppressWarnings("unchecked")
+                Map<String, byte[]> actExtensions = GenericUtils.isEmpty(attrs) ? null : (Map<String, byte[]>) attrs.get("extended");
+                assertExtensionsMapEquals("modified(" + path + ")", expExtensions, actExtensions);
+            }
+        });
+
+        sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(factory));
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Files.createDirectories(lclSftp.resolve("sub-folder"));
+        Path lclFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-" + getTestedVersion() + ".txt");
+        Files.write(lclFile, getClass().getName().getBytes(StandardCharsets.UTF_8));
+
+        Path parentPath = targetPath.getParent();
+        String remotePath = Utils.resolveRelativeRemotePath(parentPath, lclSftp);
+        int numInvoked = 0;
+        try (SshClient client = setupTestClient()) {
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                try (SftpClient sftp = session.createSftpClient(getTestedVersion())) {
+                    for (DirEntry entry : sftp.readDir(remotePath)) {
+                        String fileName = entry.getFilename();
+                        if (".".equals(fileName) || "..".equals(fileName)) {
+                            continue;
+                        }
+
+                        Attributes attrs = validateSftpFileTypeAndPermissions(fileName, getTestedVersion(), entry.getAttributes());
+                        Map<String, byte[]> actExtensions = attrs.getExtensions();
+                        assertExtensionsMapEquals("dirEntry=" + fileName, expExtensions, actExtensions);
+                        attrs.getFlags().clear();
+                        attrs.setStringExtensions(expExtensions);
+                        sftp.setStat(remotePath + "/" + fileName, attrs);
+                        numInvoked++;
+                    }
+                }
+            } finally {
+                client.stop();
+            }
+        }
+
+        assertEquals("Mismatched invocations count", numInvoked, numInvocations.get());
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "[" + getTestedVersion() + "]";
+    }
+
+    public static void assertExtensionsMapEquals(String message, Map<String, String> expected, Map<String, byte[]> actual) {
+        assertMapEquals(message, expected, SftpHelper.toStringExtensions(actual));
     }
 
     private static Attributes validateSftpFileTypeAndPermissions(String fileName, int version, Attributes attrs) {

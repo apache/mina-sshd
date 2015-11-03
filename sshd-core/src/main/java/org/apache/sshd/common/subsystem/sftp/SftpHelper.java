@@ -21,6 +21,7 @@ package org.apache.sshd.common.subsystem.sftp;
 import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
@@ -100,10 +101,12 @@ public final class SftpHelper {
         Number size = (Number) attributes.get("size");
         FileTime lastModifiedTime = (FileTime) attributes.get("lastModifiedTime");
         FileTime lastAccessTime = (FileTime) attributes.get("lastAccessTime");
+        Map<?, ?> extensions = (Map<?, ?>) attributes.get("extended");
         int flags = ((isReg || isLnk) && (size != null) ? SftpConstants.SSH_FILEXFER_ATTR_SIZE : 0)
                   | (attributes.containsKey("uid") && attributes.containsKey("gid") ? SftpConstants.SSH_FILEXFER_ATTR_UIDGID : 0)
                   | ((perms != null) ? SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS : 0)
-                  | (((lastModifiedTime != null) && (lastAccessTime != null)) ? SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME : 0);
+                  | (((lastModifiedTime != null) && (lastAccessTime != null)) ? SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME : 0)
+                  | ((extensions != null) ? SftpConstants.SSH_FILEXFER_ATTR_EXTENDED : 0);
         buffer.putInt(flags);
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_SIZE) != 0) {
             buffer.putLong(size.longValue());
@@ -118,6 +121,9 @@ public final class SftpHelper {
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
             writeTime(buffer, version, flags, lastAccessTime);
             writeTime(buffer, version, flags, lastModifiedTime);
+        }
+        if ((flags & SftpConstants.SSH_FILEXFER_ATTR_EXTENDED) != 0) {
+            writeExtensions(buffer, extensions);
         }
     }
 
@@ -142,13 +148,15 @@ public final class SftpHelper {
         FileTime creationTime = (FileTime) attributes.get("creationTime");
         @SuppressWarnings("unchecked")
         Collection<AclEntry> acl = (Collection<AclEntry>) attributes.get("acl");
+        Map<?, ?> extensions = (Map<?, ?>) attributes.get("extended");
         int flags = (((isReg || isLnk) && (size != null)) ? SftpConstants.SSH_FILEXFER_ATTR_SIZE : 0)
                   | ((attributes.containsKey("owner") && attributes.containsKey("group")) ? SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP : 0)
                   | ((perms != null) ? SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS : 0)
                   | ((lastModifiedTime != null) ? SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME : 0)
                   | ((creationTime != null) ? SftpConstants.SSH_FILEXFER_ATTR_CREATETIME : 0)
                   | ((lastAccessTime != null) ? SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME : 0)
-                  | ((acl != null) ? SftpConstants.SSH_FILEXFER_ATTR_ACL : 0);
+                  | ((acl != null) ? SftpConstants.SSH_FILEXFER_ATTR_ACL : 0)
+                  | ((extensions != null) ? SftpConstants.SSH_FILEXFER_ATTR_EXTENDED : 0);
         buffer.putInt(flags);
         buffer.putByte((byte) (isReg ? SftpConstants.SSH_FILEXFER_TYPE_REGULAR
                 : isDir ? SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY
@@ -180,7 +188,9 @@ public final class SftpHelper {
         }
         // TODO: ctime
         // TODO: bits
-        // TODO: extensions
+        if ((flags & SftpConstants.SSH_FILEXFER_ATTR_EXTENDED) != 0) {
+            writeExtensions(buffer, extensions);
+        }
     }
 
     /**
@@ -470,7 +480,76 @@ public final class SftpHelper {
             }
         }
 
+        if ((flags & SftpConstants.SSH_FILEXFER_ATTR_EXTENDED) != 0) {
+            attrs.put("extended", readExtensions(buffer));
+        }
+
         return attrs;
+    }
+
+    public static Map<String, byte[]> readExtensions(Buffer buffer) {
+        int count = buffer.getInt();
+        // NOTE
+        Map<String, byte[]> extended = new TreeMap<String, byte[]>(String.CASE_INSENSITIVE_ORDER);
+        for (int i = 0; i < count; i++) {
+            String key = buffer.getString();
+            byte[] val = buffer.getBytes();
+            byte[] prev = extended.put(key, val);
+            ValidateUtils.checkTrue(prev == null, "Duplicate values for extended key=%s", key);
+        }
+
+        return extended;
+    }
+
+    public static void writeExtensions(Buffer buffer, Map<?, ?> extensions) {
+        int numExtensions = GenericUtils.size(extensions);
+        buffer.putInt(numExtensions);
+        if (numExtensions > 0) {
+            for (Map.Entry<?, ?> ee : extensions.entrySet()) {
+                Object key = ValidateUtils.checkNotNull(ee.getKey(), "No extension type");
+                Object value = ValidateUtils.checkNotNull(ee.getValue(), "No extension value");
+                buffer.putString(key.toString());
+                if (value instanceof byte[]) {
+                    buffer.putBytes((byte[]) value);
+                } else {
+                    buffer.putString(value.toString());
+                }
+            }
+        }
+    }
+
+    public static Map<String, String> toStringExtensions(Map<String, ?> extensions) {
+        if (GenericUtils.isEmpty(extensions)) {
+            return Collections.emptyMap();
+        }
+
+        // NOTE: even though extensions are probably case sensitive we do not allow duplicate name that differs only in case
+        Map<String, String> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (Map.Entry<String, ?> ee : extensions.entrySet()) {
+            String key = ee.getKey();
+            Object value = ValidateUtils.checkNotNull(ee.getValue(), "No value for extension=%s", key);
+            String prev = map.put(key, (value instanceof byte[]) ? new String((byte[]) value, StandardCharsets.UTF_8) : value.toString());
+            ValidateUtils.checkTrue(prev == null, "Multiple values for extension=%s", key);
+        }
+
+        return map;
+    }
+
+    public static Map<String, byte[]> toBinaryExtensions(Map<String, String> extensions) {
+        if (GenericUtils.isEmpty(extensions)) {
+            return Collections.emptyMap();
+        }
+
+        // NOTE: even though extensions are probably case sensitive we do not allow duplicate name that differs only in case
+        Map<String, byte[]> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (Map.Entry<String, String> ee : extensions.entrySet()) {
+            String key = ee.getKey();
+            String value = ValidateUtils.checkNotNull(ee.getValue(), "No value for extension=%s", key);
+            byte[] prev = map.put(key, value.getBytes(StandardCharsets.UTF_8));
+            ValidateUtils.checkTrue(prev == null, "Multiple values for extension=%s", key);
+        }
+
+        return map;
     }
 
     // for v4,5 see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-05#page-15

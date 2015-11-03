@@ -26,6 +26,7 @@ import java.nio.channels.Channel;
 import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.FileTime;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.client.subsystem.SubsystemClient;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.SftpHelper;
 import org.apache.sshd.common.subsystem.sftp.SftpUniversalOwnerAndGroup;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -68,7 +70,8 @@ public interface SftpClient extends SubsystemClient {
         AccessTime,
         ModifyTime,
         CreateTime,
-        Acl
+        Acl,
+        Extensions
     }
 
     class Handle {
@@ -141,6 +144,7 @@ public interface SftpClient extends SubsystemClient {
         private FileTime createTime;
         private FileTime modifyTime;
         private List<AclEntry> acl;
+        private Map<String, byte[]> extensions = Collections.emptyMap();
 
         public Attributes() {
             super();
@@ -173,8 +177,8 @@ public interface SftpClient extends SubsystemClient {
         }
 
         public void setSize(long size) {
-            flags.add(Attribute.Size);
             this.size = size;
+            addFlag(Attribute.Size);
         }
 
         public String getOwner() {
@@ -187,10 +191,10 @@ public interface SftpClient extends SubsystemClient {
         }
 
         public void setOwner(String owner) {
-            flags.add(Attribute.OwnerGroup);
-            this.owner = owner;
-            if (GenericUtils.isEmpty(group)) {
-                group = SftpUniversalOwnerAndGroup.Group.getName();
+            this.owner = ValidateUtils.checkNotNullAndNotEmpty(owner, "No owner");
+            addFlag(Attribute.OwnerGroup);
+            if (GenericUtils.isEmpty(getGroup())) {
+                setGroup(SftpUniversalOwnerAndGroup.Group.getName());
             }
         }
 
@@ -204,10 +208,10 @@ public interface SftpClient extends SubsystemClient {
         }
 
         public void setGroup(String group) {
-            flags.add(Attribute.OwnerGroup);
-            this.group = group;
-            if (GenericUtils.isEmpty(owner)) {
-                owner = SftpUniversalOwnerAndGroup.Owner.getName();
+            this.group = ValidateUtils.checkNotNullAndNotEmpty(group, "No group");
+            addFlag(Attribute.OwnerGroup);
+            if (GenericUtils.isEmpty(getOwner())) {
+                setOwner(SftpUniversalOwnerAndGroup.Owner.getName());
             }
         }
 
@@ -220,9 +224,9 @@ public interface SftpClient extends SubsystemClient {
         }
 
         public Attributes owner(int uid, int gid) {
-            flags.add(Attribute.UidGid);
             this.uid = uid;
             this.gid = gid;
+            addFlag(Attribute.UidGid);
             return this;
         }
 
@@ -236,8 +240,8 @@ public interface SftpClient extends SubsystemClient {
         }
 
         public void setPermissions(int perms) {
-            flags.add(Attribute.Perms);
             this.perms = perms;
+            addFlag(Attribute.Perms);
         }
 
         public FileTime getAccessTime() {
@@ -258,8 +262,8 @@ public interface SftpClient extends SubsystemClient {
         }
 
         public void setAccessTime(FileTime atime) {
-            flags.add(Attribute.AccessTime);
             accessTime = ValidateUtils.checkNotNull(atime, "No access time");
+            addFlag(Attribute.AccessTime);
         }
 
         public FileTime getCreateTime() {
@@ -280,8 +284,8 @@ public interface SftpClient extends SubsystemClient {
         }
 
         public void setCreateTime(FileTime ctime) {
-            flags.add(Attribute.CreateTime);
             createTime = ValidateUtils.checkNotNull(ctime, "No create time");
+            addFlag(Attribute.CreateTime);
         }
 
         public FileTime getModifyTime() {
@@ -302,8 +306,8 @@ public interface SftpClient extends SubsystemClient {
         }
 
         public void setModifyTime(FileTime mtime) {
-            flags.add(Attribute.ModifyTime);
             modifyTime = ValidateUtils.checkNotNull(mtime, "No modify time");
+            addFlag(Attribute.ModifyTime);
         }
 
         public List<AclEntry> getAcl() {
@@ -316,8 +320,26 @@ public interface SftpClient extends SubsystemClient {
         }
 
         public void setAcl(List<AclEntry> acl) {
-            this.flags.add(Attribute.Acl);
-            this.acl = acl;
+            this.acl = ValidateUtils.checkNotNull(acl, "No ACLs");
+            addFlag(Attribute.Acl);
+        }
+
+        public Map<String, byte[]> getExtensions() {
+            return extensions;
+        }
+
+        public Attributes extensions(Map<String, byte[]> extensions) {
+            setExtensions(extensions);
+            return this;
+        }
+
+        public void setStringExtensions(Map<String, String> extensions) {
+            setExtensions(SftpHelper.toBinaryExtensions(extensions));
+        }
+
+        public void setExtensions(Map<String, byte[]> extensions) {
+            this.extensions = ValidateUtils.checkNotNull(extensions, "No extensions");
+            addFlag(Attribute.Extensions);
         }
 
         public boolean isRegularFile() {
@@ -343,12 +365,13 @@ public interface SftpClient extends SubsystemClient {
                  + ";uid=" + getUserId()
                  + ";gid=" + getGroupId()
                  + ";perms=0x" + Integer.toHexString(getPermissions())
-                 + ";flags=" + flags
+                 + ";flags=" + getFlags()
                  + ";owner=" + getOwner()
                  + ";group=" + getGroup()
                  + ";aTime=" + getAccessTime()
                  + ";cTime=" + getCreateTime()
-                 + ";mTime=" + getModifyTime();
+                 + ";mTime=" + getModifyTime()
+                 + ";extensions=" + getExtensions().keySet();
         }
     }
 
