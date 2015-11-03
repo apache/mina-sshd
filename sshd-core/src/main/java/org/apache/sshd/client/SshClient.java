@@ -571,6 +571,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
           Main class implementation
      *=================================*/
 
+    private static boolean showError(PrintStream stderr, String message) {
+        stderr.println(message);
+        return true;
+    }
+
     // NOTE: ClientSession#getFactoryManager is the SshClient
     public static ClientSession setupClientSession(
             String portOption, final BufferedReader stdin, final PrintStream stdout, final PrintStream stderr, String... args)
@@ -583,60 +588,51 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         List<File> identities = new ArrayList<>();
         Map<String, String> options = new LinkedHashMap<>();
         int numArgs = GenericUtils.length(args);
-        for (int i = 0; i < numArgs; i++) {
+        for (int i = 0; (!error) && (i < numArgs); i++) {
             String argName = args[i];
             if (portOption.equals(argName)) {
                 if (i + 1 >= numArgs) {
-                    stderr.println("option requires an argument: " + argName);
-                    error = true;
+                    error = showError(stderr, "option requires an argument: " + argName);
                     break;
                 }
 
                 if (port > 0) {
-                    stderr.println(argName + " option value re-specified: " + port);
-                    error = true;
+                    error = showError(stderr, argName + " option value re-specified: " + port);
                     break;
                 }
 
                 port = Integer.parseInt(args[++i]);
                 if (port <= 0) {
-                    stderr.println("Bad option value for " + argName + ": " + port);
-                    error = true;
+                    error = showError(stderr, "Bad option value for " + argName + ": " + port);
                     break;
                 }
             } else if ("-i".equals(argName)) {
                 if (i + 1 >= numArgs) {
-                    stderr.println("option requires and argument: " + argName);
-                    error = true;
+                    error = showError(stderr, "option requires and argument: " + argName);
                     break;
                 }
 
-                File f = new File(args[++i]);
-                identities.add(f);
+                identities.add(new File(args[++i]));
             } else if ("-o".equals(argName)) {
                 if (i + 1 >= numArgs) {
-                    stderr.println("option requires and argument: " + argName);
-                    error = true;
+                    error = showError(stderr, "option requires and argument: " + argName);
                     break;
                 }
                 String opt = args[++i];
                 int idx = opt.indexOf('=');
                 if (idx <= 0) {
-                    stderr.println("bad syntax for option: " + opt);
-                    error = true;
+                    error = showError(stderr, "bad syntax for option: " + opt);
                     break;
                 }
                 options.put(opt.substring(0, idx), opt.substring(idx + 1));
             } else if ("-l".equals(argName)) {
                 if (i + 1 >= numArgs) {
-                    stderr.println("option requires an argument: " + argName);
-                    error = true;
+                    error = showError(stderr, "option requires an argument: " + argName);
                     break;
                 }
 
                 if (login != null) {
-                    stderr.println(argName + " option value re-specified: " + port);
-                    error = true;
+                    error = showError(stderr, argName + " option value re-specified: " + port);
                     break;
                 }
 
@@ -653,8 +649,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                         login = host.substring(0, pos);
                         host = host.substring(pos + 1);
                     } else {
-                        stderr.println("Login already specified using -l option (" + login + "): " + host);
-                        error = true;
+                        error = showError(stderr, "Login already specified using -l option (" + login + "): " + host);
                         break;
                     }
                 }
@@ -662,8 +657,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         if ((!error) && GenericUtils.isEmpty(host)) {
-            stderr.println("Hostname not specified");
-            error = true;
+            error = showError(stderr, "Hostname not specified");
         }
 
         if (login == null) {
@@ -694,7 +688,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     provider.setFiles(identities);
                     client.setKeyPairProvider(provider);
                 } catch (Throwable t) {
-                    stderr.println("Error loading user keys: " + t.getMessage());
+                    error = showError(stderr, t.getClass().getSimpleName() + " while loading user keys: " + t.getMessage());
                 }
             }
 
