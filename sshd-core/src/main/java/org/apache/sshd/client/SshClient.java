@@ -642,12 +642,20 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
                 login = args[++i];
             } else if (argName.charAt(0) != '-') {
+                if (host != null) { // assume part of a command following it
+                    break;
+                }
+
                 host = argName;
-                if (login == null) {
-                    int pos = host.indexOf('@');  // check if user@host
-                    if (pos > 0) {
+                int pos = host.indexOf('@');  // check if user@host
+                if (pos > 0) {
+                    if (login == null) {
                         login = host.substring(0, pos);
                         host = host.substring(pos + 1);
+                    } else {
+                        stderr.println("Login already specified using -l option (" + login + "): " + host);
+                        error = true;
+                        break;
                     }
                 }
             }
