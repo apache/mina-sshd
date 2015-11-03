@@ -147,7 +147,6 @@ public abstract class Buffer implements Readable {
         // TODO use Long.BYTES for JDK-8
         ensureAvailable(Long.SIZE / Byte.SIZE);
         getRawBytes(workBuf, 0, Long.SIZE / Byte.SIZE);
-        @SuppressWarnings("cast")
         long l = ((long) workBuf[0] << 56) & 0xff00000000000000L;
         l |= ((long) workBuf[1] << 48) & 0x00ff000000000000L;
         l |= ((long) workBuf[2] << 40) & 0x0000ff0000000000L;
@@ -155,7 +154,7 @@ public abstract class Buffer implements Readable {
         l |= ((long) workBuf[4] << 24) & 0x00000000ff000000L;
         l |= ((long) workBuf[5] << 16) & 0x0000000000ff0000L;
         l |= ((long) workBuf[6] << 8) & 0x000000000000ff00L;
-        l |= ((long) workBuf[7]) & 0x00000000000000ffL;
+        l |= (workBuf[7]) & 0x00000000000000ffL;
         return l;
     }
 

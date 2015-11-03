@@ -20,7 +20,6 @@ package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.IOException;
 import java.nio.file.LinkOption;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
@@ -30,77 +29,45 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.Set;
 
-import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
-import org.apache.sshd.common.subsystem.sftp.SftpConstants;
-import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SftpPosixFileAttributeView implements PosixFileAttributeView {
-    private final SftpFileSystemProvider provider;
-    private final Path path;
-    private final LinkOption[] options;
-
+public class SftpPosixFileAttributeView extends AbstractSftpFileAttributeView implements PosixFileAttributeView {
     public SftpPosixFileAttributeView(SftpFileSystemProvider provider, Path path, LinkOption... options) {
-        this.provider = ValidateUtils.checkNotNull(provider, "No file system provider instance");
-        this.path = path;
-        this.options = options;
+        super(provider, path, options);
     }
 
     @Override
     public String name() {
-        return "view";
-    }
-
-    /**
-     * @return The underlying {@link SftpFileSystemProvider} used to
-     * provide the view functionality
-     */
-    public final SftpFileSystemProvider provider() {
-        return provider;
-    }
-
-    /**
-     * @return The referenced view {@link Path}
-     */
-    public final Path getPath() {
-        return path;
+        return "posix";
     }
 
     @Override
     public PosixFileAttributes readAttributes() throws IOException {
-        SftpPath p = provider.toSftpPath(path);
-        SftpFileSystem fs = p.getFileSystem();
-        final Attributes attributes;
-        try (SftpClient client = fs.getClient()) {
-            try {
-                if (IoUtils.followLinks(options)) {
-                    attributes = client.stat(p.toString());
-                } else {
-                    attributes = client.lstat(p.toString());
-                }
-            } catch (SftpException e) {
-                if (e.getStatus() == SftpConstants.SSH_FX_NO_SUCH_FILE) {
-                    throw new NoSuchFileException(p.toString());
-                }
-                throw e;
-            }
-        }
-        return new SftpPosixFileAttributes(path, attributes);
+        return new SftpPosixFileAttributes(path, readRemoteAttributes());
     }
 
     @Override
     public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) throws IOException {
+        SftpClient.Attributes attrs = new SftpClient.Attributes();
         if (lastModifiedTime != null) {
-            provider.setAttribute(path, "lastModifiedTime", lastModifiedTime, options);
+            attrs.modifyTime(lastModifiedTime);
         }
         if (lastAccessTime != null) {
-            provider.setAttribute(path, "lastAccessTime", lastAccessTime, options);
+            attrs.accessTime(lastAccessTime);
         }
         if (createTime != null) {
-            provider.setAttribute(path, "createTime", createTime, options);
+            attrs.createTime(createTime);
+        }
+
+        if (GenericUtils.isEmpty(attrs.getFlags())) {
+            if (log.isDebugEnabled()) {
+                log.debug("setTimes({}) no changes", path);
+            }
+        } else {
+            writeRemoteAttributes(attrs);
         }
     }
 

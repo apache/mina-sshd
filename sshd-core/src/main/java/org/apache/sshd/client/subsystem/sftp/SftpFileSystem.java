@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -44,6 +45,7 @@ import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.file.util.BaseFileSystem;
 import org.apache.sshd.common.file.util.ImmutableList;
+import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -52,7 +54,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
     public static final String POOL_SIZE_PROP = "sftp-fs-pool-size";
     public static final int DEFAULT_POOL_SIZE = 8;
 
-    public static final Set<String> SUPPORTED_VIEWS =
+    public static final Set<String> UNIVERSAL_SUPPORTED_VIEWS =
             Collections.unmodifiableSet(
                     GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
                             Arrays.asList(
@@ -64,6 +66,8 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
     private final SftpVersionSelector selector;
     private final Queue<SftpClient> pool;
     private final ThreadLocal<Wrapper> wrappers = new ThreadLocal<>();
+    private final int version;
+    private final Set<String> supportedViews;
     private SftpPath defaultDir;
     private int readBufferSize = SftpClient.DEFAULT_READ_BUFFER_SIZE;
     private int writeBufferSize = SftpClient.DEFAULT_WRITE_BUFFER_SIZE;
@@ -77,7 +81,17 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
         this.stores = Collections.unmodifiableList(Collections.<FileStore>singletonList(new SftpFileStore(id, this)));
         this.pool = new LinkedBlockingQueue<>(PropertyResolverUtils.getIntProperty(session, POOL_SIZE_PROP, DEFAULT_POOL_SIZE));
         try (SftpClient client = getClient()) {
+            version = client.getVersion();
             defaultDir = getPath(client.canonicalPath("."));
+        }
+
+        if (version >= SftpConstants.SFTP_V4) {
+            Set<String> views = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+            views.addAll(UNIVERSAL_SUPPORTED_VIEWS);
+            views.add("acl");
+            supportedViews = Collections.unmodifiableSet(views);
+        } else {
+            supportedViews = UNIVERSAL_SUPPORTED_VIEWS;
         }
     }
 
@@ -87,6 +101,10 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
 
     public final String getId() {
         return id;
+    }
+
+    public final int getVersion() {
+        return version;
     }
 
     @Override
@@ -177,7 +195,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
 
     @Override
     public Set<String> supportedFileAttributeViews() {
-        return SUPPORTED_VIEWS;
+        return supportedViews;
     }
 
     @Override

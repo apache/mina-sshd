@@ -43,10 +43,13 @@ import java.nio.file.Path;
 import java.nio.file.ProviderMismatchException;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
+import java.nio.file.attribute.FileOwnerAttributeView;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFileAttributeView;
@@ -60,8 +63,10 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
@@ -89,13 +94,16 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     public static final String AUTH_TIME_PROP_NAME = "sftp-fs-auth-time";
     public static final long DEFAULT_AUTH_TIME = SftpClient.DEFAULT_WAIT_TIMEOUT;
 
-    public static final Set<Class<? extends FileAttributeView>> SUPPORTED_VIEWS =
-            Collections.unmodifiableSet(
-                    new HashSet<>(
-                            Arrays.<Class<? extends FileAttributeView>>asList(
-                                    BasicFileAttributeView.class, PosixFileAttributeView.class
-                            )));
+    public static final Set<Class<? extends FileAttributeView>> UNIVERSAL_SUPPORTED_VIEWS =
+            Collections.unmodifiableSet(new HashSet<Class<? extends FileAttributeView>>() {
+                private static final long serialVersionUID = 1L;    // we're not serializing it
 
+                {
+                    add(PosixFileAttributeView.class);
+                    add(FileOwnerAttributeView.class);
+                    add(BasicFileAttributeView.class);
+                }
+            });
     protected final Logger log;
 
     private final SshClient client;
@@ -611,16 +619,37 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     }
 
     @Override
-    public <V extends FileAttributeView> V getFileAttributeView(final Path path, Class<V> type, final LinkOption... options) {
-        if (isSupportedFileAttributeView(type)) {
-            return type.cast(new SftpPosixFileAttributeView(this, path, options));
-        } else {
-            throw new UnsupportedOperationException("getFileAttributeView(" + path + ") view not supported: " + type.getSimpleName());
+    public <V extends FileAttributeView> V getFileAttributeView(Path path, Class<V> type, final LinkOption... options) {
+        if (isSupportedFileAttributeView(path, type)) {
+            if (AclFileAttributeView.class.isAssignableFrom(type)) {
+                return type.cast(new SftpAclFileAttributeView(this, path, options));
+            } else if (BasicFileAttributeView.class.isAssignableFrom(type)) {
+                return type.cast(new SftpPosixFileAttributeView(this, path, options));
+            }
         }
+
+        throw new UnsupportedOperationException("getFileAttributeView(" + path + ") view not supported: " + type.getSimpleName());
     }
 
-    public boolean isSupportedFileAttributeView(Class<? extends FileAttributeView> type) {
-        return (type != null) && SUPPORTED_VIEWS.contains(type);
+    public boolean isSupportedFileAttributeView(Path path, Class<? extends FileAttributeView> type) {
+        return isSupportedFileAttributeView(toSftpPath(path).getFileSystem(), type);
+    }
+
+    public boolean isSupportedFileAttributeView(SftpFileSystem fs, Class<? extends FileAttributeView> type) {
+        Collection<String> views = fs.supportedFileAttributeViews();
+        if ((type == null) || GenericUtils.isEmpty(views)) {
+            return false;
+        } else if (PosixFileAttributeView.class.isAssignableFrom(type)) {
+            return views.contains("posix");
+        } else if (AclFileAttributeView.class.isAssignableFrom(type)) {
+            return views.contains("acl");   // must come before owner view
+        } else if (FileOwnerAttributeView.class.isAssignableFrom(type)) {
+            return views.contains("owner");
+        } else if (BasicFileAttributeView.class.isAssignableFrom(type)) {
+            return views.contains("basic"); // must be last
+        } else {
+            return false;
+        }
     }
 
     @Override
@@ -644,18 +673,97 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             view = attributes.substring(0, i++);
             attrs = attributes.substring(i);
         }
+
+        return readAttributes(path, view, attrs, options);
+    }
+
+    public Map<String, Object> readAttributes(Path path, String view, String attrs, LinkOption... options) throws IOException {
         SftpPath p = toSftpPath(path);
         SftpFileSystem fs = p.getFileSystem();
         Collection<String> views = fs.supportedFileAttributeViews();
         if (GenericUtils.isEmpty(views) || (!views.contains(view))) {
-            throw new UnsupportedOperationException("readAttributes(" + path + ")[" + attributes + "] view " + view + " not supported: " + views);
+            throw new UnsupportedOperationException("readAttributes(" + path + ")[" + view + ":" + attrs + "] view not supported: " + views);
         }
 
+        if ("basic".equalsIgnoreCase(view) || "posix".equalsIgnoreCase(view) || "owner".equalsIgnoreCase(view)) {
+            return readPosixViewAttributes(p, view, attrs, options);
+        } else if ("acl".equalsIgnoreCase(view)) {
+            return readAclViewAttributes(p, view, attrs, options);
+        } else  {
+            return readCustomViewAttributes(p, view, attrs, options);
+        }
+    }
+
+    protected Map<String, Object> readCustomViewAttributes(SftpPath path, String view, String attrs, LinkOption... options) throws IOException {
+        throw new UnsupportedOperationException("readCustomViewAttributes(" + path + ")[" + view + ":" + attrs + "] view not supported");
+    }
+
+    protected Map<String, Object> readAclViewAttributes(SftpPath path, String view, String attrs, LinkOption... options) throws IOException {
+        if ("*".equals(attrs)) {
+            attrs = "acl,owner";
+        }
+
+        SftpFileSystem fs = path.getFileSystem();
+        SftpClient.Attributes attributes;
+        try (SftpClient client = fs.getClient()) {
+            attributes = readRemoteAttributes(path, options);
+        }
+
+        Map<String, Object> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (String attr : attrs.split(",")) {
+            switch (attr) {
+                case "acl":
+                    List<AclEntry> acl = attributes.getAcl();
+                    if (acl != null) {
+                        map.put(attr, acl);
+                    }
+                    break;
+                case "owner":
+                    String owner = attributes.getOwner();
+                    if (GenericUtils.length(owner) > 0) {
+                        map.put(attr, new SftpFileSystem.DefaultUserPrincipal(owner));
+                    }
+                    break;
+                default:
+                    if (log.isTraceEnabled()) {
+                        log.trace("readAclViewAttributes({})[{}] unknown attribute: {}", fs, attrs, attr);
+                    }
+            }
+        }
+
+        return map;
+    }
+
+    protected SftpClient.Attributes readRemoteAttributes(SftpPath path, LinkOption... options) throws IOException {
+        SftpFileSystem fs = path.getFileSystem();
+        try (SftpClient client = fs.getClient()) {
+            try {
+                SftpClient.Attributes attrs;
+                if (IoUtils.followLinks(options)) {
+                    attrs = client.stat(path.toString());
+                } else {
+                    attrs = client.lstat(path.toString());
+                }
+                if (log.isTraceEnabled()) {
+                    log.trace("readRemoteAttributes({})[{}]: {}", fs, path, attrs);
+                }
+                return attrs;
+            } catch (SftpException e) {
+                if (e.getStatus() == SftpConstants.SSH_FX_NO_SUCH_FILE) {
+                    throw new NoSuchFileException(path.toString());
+                }
+                throw e;
+            }
+        }
+    }
+
+    protected Map<String, Object> readPosixViewAttributes(SftpPath path, String view, String attrs, LinkOption... options) throws IOException {
         PosixFileAttributes v = readAttributes(path, PosixFileAttributes.class, options);
         if ("*".equals(attrs)) {
             attrs = "lastModifiedTime,lastAccessTime,creationTime,size,isRegularFile,isDirectory,isSymbolicLink,isOther,fileKey,owner,permissions,group";
         }
-        Map<String, Object> map = new HashMap<>();
+
+        Map<String, Object> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (String attr : attrs.split(",")) {
             switch (attr) {
                 case "lastModifiedTime":
@@ -696,7 +804,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                     break;
                 default:
                     if (log.isTraceEnabled()) {
-                        log.trace("readAttributes({})[{}] ignored {}={} for {}", fs, path, attr, v, attributes);
+                        log.trace("readPosixViewAttributes({})[{}:{}] ignored for {}", path, view, attr, attrs);
                     }
             }
         }
@@ -715,11 +823,16 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             view = attribute.substring(0, i++);
             attr = attribute.substring(i);
         }
+
+        setAttribute(path, view, attr, value, options);
+    }
+
+    public void setAttribute(Path path, String view, String attr, Object value, LinkOption... options) throws IOException {
         SftpPath p = toSftpPath(path);
         SftpFileSystem fs = p.getFileSystem();
         Collection<String> views = fs.supportedFileAttributeViews();
-        if (GenericUtils.isEmpty(views) || (!view.contains(view))) {
-            throw new UnsupportedOperationException("setAttribute(" + path + ")[" + attribute + "=" + value + "] view " + view + " not supported: " + views);
+        if (GenericUtils.isEmpty(views) || (!views.contains(view))) {
+            throw new UnsupportedOperationException("setAttribute(" + path + ")[" + view + ":" + attr + "=" + value + "] view " + view + " not supported: " + views);
         }
 
         SftpClient.Attributes attributes = new SftpClient.Attributes();
@@ -747,16 +860,21 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             case "group":
                 attributes.group(((GroupPrincipal) value).getName());
                 break;
+            case "acl":
+                ValidateUtils.checkTrue("acl".equalsIgnoreCase(view), "ACL cannot be set via view=%s", view);
+                @SuppressWarnings("unchecked")
+                List<AclEntry> acl = (List<AclEntry>) value;
+                attributes.acl(acl);
+                break;
             case "isRegularFile":
             case "isDirectory":
             case "isSymbolicLink":
             case "isOther":
             case "fileKey":
-                throw new UnsupportedOperationException("setAttribute(" + path + ")[" + attribute + "=" + value + "]"
-                        + " unknown view=" + view + " attribute: " + attr);
+                throw new UnsupportedOperationException("setAttribute(" + path + ")[" + view + ":" + attr + "=" + value + "] modification N/A");
             default:
                 if (log.isTraceEnabled()) {
-                    log.trace("setAttribute({})[{}] ignore {}/{}={}", fs, path, attribute, attr, value);
+                    log.trace("setAttribute({})[{}] ignore {}:{}={}", fs, path, view, attr, value);
                 }
         }
 
@@ -769,7 +887,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         }
     }
 
-    protected SftpPath toSftpPath(Path path) {
+    public SftpPath toSftpPath(Path path) {
         ValidateUtils.checkNotNull(path, "No path provided");
         if (!(path instanceof SftpPath)) {
             throw new ProviderMismatchException("Path is not SFTP: " + path);

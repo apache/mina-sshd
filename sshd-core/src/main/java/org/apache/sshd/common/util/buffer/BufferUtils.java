@@ -25,6 +25,7 @@ import java.io.StreamCorruptedException;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 
 /**
@@ -336,6 +337,8 @@ public final class BufferUtils {
         int startPos = lenPos + (Integer.SIZE / Byte.SIZE);
         int endPos = buffer.wpos();
         int dataLength = endPos - startPos;
+        // NOTE: although data length is defined as UINT32, we do not expected sizes above Integer.MAX_VALUE
+        ValidateUtils.checkTrue(dataLength >= 0, "Illegal data length: %d", dataLength);
         buffer.wpos(lenPos);
         buffer.putInt(dataLength);
         buffer.wpos(endPos);

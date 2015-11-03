@@ -40,7 +40,9 @@ public class UnknownCommand implements Command {
 
     private final String command;
     private final String message;
+    @SuppressWarnings("unused")
     private InputStream in;
+    @SuppressWarnings("unused")
     private OutputStream out;
     private OutputStream err;
     private ExitCallback callback;

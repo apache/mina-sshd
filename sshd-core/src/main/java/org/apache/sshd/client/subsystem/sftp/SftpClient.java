@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.Channel;
+import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.FileTime;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -34,15 +35,11 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.client.subsystem.SubsystemClient;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.SftpUniversalOwnerAndGroup;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.bouncycastle.util.Arrays;
-
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFDIR;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFLNK;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFMT;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFREG;
 
 /**
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
@@ -70,7 +67,8 @@ public interface SftpClient extends SubsystemClient {
         OwnerGroup,
         AccessTime,
         ModifyTime,
-        CreateTime
+        CreateTime,
+        Acl
     }
 
     class Handle {
@@ -130,7 +128,7 @@ public interface SftpClient extends SubsystemClient {
     }
     // CHECKSTYLE:ON
 
-    class Attributes implements Cloneable {
+    class Attributes {
         private Set<Attribute> flags = EnumSet.noneOf(Attribute.class);
         private int type = SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN;
         private int perms;
@@ -142,6 +140,7 @@ public interface SftpClient extends SubsystemClient {
         private FileTime accessTime;
         private FileTime createTime;
         private FileTime modifyTime;
+        private List<AclEntry> acl;
 
         public Attributes() {
             super();
@@ -191,7 +190,7 @@ public interface SftpClient extends SubsystemClient {
             flags.add(Attribute.OwnerGroup);
             this.owner = owner;
             if (GenericUtils.isEmpty(group)) {
-                group = "GROUP@";
+                group = SftpUniversalOwnerAndGroup.Group.getName();
             }
         }
 
@@ -208,7 +207,7 @@ public interface SftpClient extends SubsystemClient {
             flags.add(Attribute.OwnerGroup);
             this.group = group;
             if (GenericUtils.isEmpty(owner)) {
-                owner = "OWNER@";
+                owner = SftpUniversalOwnerAndGroup.Owner.getName();
             }
         }
 
@@ -307,31 +306,34 @@ public interface SftpClient extends SubsystemClient {
             modifyTime = ValidateUtils.checkNotNull(mtime, "No modify time");
         }
 
+        public List<AclEntry> getAcl() {
+            return acl;
+        }
+
+        public Attributes acl(List<AclEntry> acl) {
+            setAcl(acl);
+            return this;
+        }
+
+        public void setAcl(List<AclEntry> acl) {
+            this.flags.add(Attribute.Acl);
+            this.acl = acl;
+        }
+
         public boolean isRegularFile() {
-            return (perms & S_IFMT) == S_IFREG;
+            return (getPermissions() & SftpConstants.S_IFMT) == SftpConstants.S_IFREG;
         }
 
         public boolean isDirectory() {
-            return (perms & S_IFMT) == S_IFDIR;
+            return (getPermissions() & SftpConstants.S_IFMT) == SftpConstants.S_IFDIR;
         }
 
         public boolean isSymbolicLink() {
-            return (perms & S_IFMT) == S_IFLNK;
+            return (getPermissions() & SftpConstants.S_IFMT) == SftpConstants.S_IFLNK;
         }
 
         public boolean isOther() {
             return !isRegularFile() && !isDirectory() && !isSymbolicLink();
-        }
-
-        @Override
-        public Attributes clone()  {
-            try {
-                Attributes cloned = getClass().cast(super.clone());
-                cloned.flags = EnumSet.copyOf(getFlags());
-                return cloned;
-            } catch (CloneNotSupportedException e) {
-                throw new RuntimeException("Failed to clone " + toString() + ": " + e.getMessage(), e);
-            }
         }
 
         @Override

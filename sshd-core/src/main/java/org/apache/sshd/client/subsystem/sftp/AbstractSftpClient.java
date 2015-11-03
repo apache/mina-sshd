@@ -36,6 +36,7 @@ import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtensionFacto
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpHelper;
+import org.apache.sshd.common.subsystem.sftp.SftpUniversalOwnerAndGroup;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -387,14 +388,20 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             }
 
             if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
-                attrs.setAccessTime(readTime(buffer, flags));
-                attrs.setModifyTime(readTime(buffer, flags));
+                attrs.setAccessTime(SftpHelper.readTime(buffer, version, flags));
+                attrs.setModifyTime(SftpHelper.readTime(buffer, version, flags));
             }
         } else if (version >= SftpConstants.SFTP_V4) {
             attrs.setType(buffer.getUByte());
             if ((flags & SftpConstants.SSH_FILEXFER_ATTR_SIZE) != 0) {
                 attrs.setSize(buffer.getLong());
             }
+
+            if ((version >= SftpConstants.SFTP_V6) && ((flags & SftpConstants.SSH_FILEXFER_ATTR_ALLOCATION_SIZE) != 0)) {
+                @SuppressWarnings("unused")
+                long allocSize = buffer.getLong();    // TODO handle allocation size
+            }
+
             if ((flags & SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
                 attrs.setOwner(buffer.getString());
                 attrs.setGroup(buffer.getString());
@@ -409,30 +416,64 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             attrs.setPermissions(perms);
 
             if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME) != 0) {
-                attrs.setAccessTime(readTime(buffer, flags));
+                attrs.setAccessTime(SftpHelper.readTime(buffer, version, flags));
             }
             if ((flags & SftpConstants.SSH_FILEXFER_ATTR_CREATETIME) != 0) {
-                attrs.setCreateTime(readTime(buffer, flags));
+                attrs.setCreateTime(SftpHelper.readTime(buffer, version, flags));
             }
             if ((flags & SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME) != 0) {
-                attrs.setModifyTime(readTime(buffer, flags));
+                attrs.setModifyTime(SftpHelper.readTime(buffer, version, flags));
             }
-            // TODO: acl
+            if ((version >= SftpConstants.SFTP_V6) && (flags & SftpConstants.SSH_FILEXFER_ATTR_CTIME) != 0) {
+                @SuppressWarnings("unused")
+                FileTime attrsChangedTime = SftpHelper.readTime(buffer, version, flags);    // TODO the last time the file attributes were changed
+            }
+
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACL) != 0) {
+                attrs.setAcl(SftpHelper.readACLs(buffer, version));
+            }
+
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_BITS) != 0) {
+                @SuppressWarnings("unused")
+                int bits = buffer.getInt();
+                @SuppressWarnings("unused")
+                int valid = 0xffffffff;
+                if (version >= SftpConstants.SFTP_V6) {
+                    valid = buffer.getInt();
+                }
+                // TODO: handle attrib bits
+            }
+
+            if (version >= SftpConstants.SFTP_V6) {
+                if ((flags & SftpConstants.SSH_FILEXFER_ATTR_TEXT_HINT) != 0) {
+                    @SuppressWarnings("unused")
+                    boolean text = buffer.getBoolean(); // TODO: handle text
+                }
+                if ((flags & SftpConstants.SSH_FILEXFER_ATTR_MIME_TYPE) != 0) {
+                    @SuppressWarnings("unused")
+                    String mimeType = buffer.getString(); // TODO: handle mime-type
+                }
+                if ((flags & SftpConstants.SSH_FILEXFER_ATTR_LINK_COUNT) != 0) {
+                    @SuppressWarnings("unused")
+                    int nlink = buffer.getInt(); // TODO: handle link-count
+                }
+                if ((flags & SftpConstants.SSH_FILEXFER_ATTR_UNTRANSLATED_NAME) != 0) {
+                    @SuppressWarnings("unused")
+                    String untranslated = buffer.getString(); // TODO: handle untranslated-name
+                }
+            }
         } else {
             throw new IllegalStateException("readAttributes - unsupported version: " + version);
         }
-        return attrs;
-    }
 
-    protected FileTime readTime(Buffer buffer, int flags) {
-        return SftpHelper.readTime(buffer, getVersion(), flags);
+        return attrs;
     }
 
     protected void writeAttributes(Buffer buffer, Attributes attributes) throws IOException {
         int version = getVersion();
+        int flagsMask = 0;
         Collection<Attribute> flags = ValidateUtils.checkNotNull(attributes, "No attributes").getFlags();
         if (version == SftpConstants.SFTP_V3) {
-            int flagsMask = 0;
             for (Attribute a : flags) {
                 switch (a) {
                     case Size:
@@ -474,7 +515,6 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
                 SftpHelper.writeTime(buffer, version, flagsMask, attributes.getModifyTime());
             }
         } else if (version >= SftpConstants.SFTP_V4) {
-            int flagsMask = 0;
             for (Attribute a : flags) {
                 switch (a) {
                     case Size:
@@ -495,6 +535,9 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
                     case CreateTime:
                         flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_CREATETIME;
                         break;
+                    case Acl:
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_ACL;
+                        break;
                     default:    // do nothing
                 }
             }
@@ -505,10 +548,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             }
             if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
                 String owner = attributes.getOwner();
-                buffer.putString(GenericUtils.isEmpty(owner) ? "OWNER@" : owner);
+                buffer.putString(GenericUtils.isEmpty(owner) ? SftpUniversalOwnerAndGroup.Owner.getName() : owner);
 
                 String group = attributes.getGroup();
-                buffer.putString(GenericUtils.isEmpty(group) ? "GROUP@" : group);
+                buffer.putString(GenericUtils.isEmpty(group) ? SftpUniversalOwnerAndGroup.Group.getName() : group);
             }
             if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
                 buffer.putInt(attributes.getPermissions());
@@ -522,8 +565,11 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME) != 0) {
                 SftpHelper.writeTime(buffer, version, flagsMask, attributes.getModifyTime());
             }
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_ACL) != 0) {
+                SftpHelper.writeACLs(buffer, version, attributes.getAcl());
+            }
+
             // TODO: for v6+ add CTIME (see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-21)
-            // TODO: acl
         } else {
             throw new UnsupportedOperationException("writeAttributes(" + attributes + ") unsupported version: " + version);
         }

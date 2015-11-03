@@ -40,8 +40,11 @@ import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
+import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
@@ -2762,7 +2765,7 @@ public class SftpSubsystem
         ServerSession session = getServerSession();
         listener.modifyingAttributes(session, file, attributes);
         try {
-            setFileAttributes(file, attributes);
+            setFileAttributes(file, attributes, IoUtils.getLinkOptions(false));
             listener.modifiedAttributes(session, file, attributes, null);
         } catch (IOException | RuntimeException e) {
             listener.modifiedAttributes(session, file, attributes, e);
@@ -2770,11 +2773,12 @@ public class SftpSubsystem
         }
     }
 
-    protected void setFileAttributes(Path file, Map<String, ?> attributes) throws IOException {
+    protected void setFileAttributes(Path file, Map<String, ?> attributes, LinkOption ... options) throws IOException {
         Set<String> unsupported = new HashSet<>();
-        for (String attribute : attributes.keySet()) {
+        for (Map.Entry<String, ?> ae : attributes.entrySet()) {
+            String attribute = ae.getKey();
+            Object value = ae.getValue();
             String view = null;
-            Object value = attributes.get(attribute);
             switch (attribute) {
                 case "size": {
                     long newSize = ((Number) value).longValue();
@@ -2798,15 +2802,11 @@ public class SftpSubsystem
                     value = toGroup(file, (GroupPrincipal) value);
                     break;
                 case "permissions":
-                    if (OsUtils.isWin32()) {
-                        @SuppressWarnings("unchecked")
-                        Collection<PosixFilePermission> perms = (Collection<PosixFilePermission>) value;
-                        IoUtils.setPermissionsToFile(file.toFile(), perms);
-                        continue;
-                    }
                     view = "posix";
                     break;
-
+                case "acl":
+                    view = "acl";
+                    break;
                 case "creationTime":
                     view = "basic";
                     break;
@@ -2818,15 +2818,58 @@ public class SftpSubsystem
                     break;
                 default:    // ignored
             }
-            if (view != null && value != null) {
+            if ((view != null) && (value != null)) {
                 try {
-                    Files.setAttribute(file, view + ":" + attribute, value, IoUtils.getLinkOptions(false));
+                    setFileAttribute(file, view, attribute, value, options);
                 } catch (UnsupportedOperationException e) {
                     unsupported.add(attribute);
                 }
             }
         }
         handleUnsupportedAttributes(unsupported);
+    }
+
+    protected void setFileAttribute(Path file, String view, String attribute, Object value, LinkOption ... options) throws IOException {
+        if ("acl".equalsIgnoreCase(attribute) && "acl".equalsIgnoreCase(view)) {
+            @SuppressWarnings("unchecked")
+            List<AclEntry> acl = (List<AclEntry>) value;
+            setFileAccessControl(file, acl, options);
+        } else if ("permissions".equalsIgnoreCase(attribute)) {
+            @SuppressWarnings("unchecked")
+            Set<PosixFilePermission> perms = (Set<PosixFilePermission>) value;
+            setFilePermissions(file, perms, options);
+        } else {
+            Files.setAttribute(file, view + ":" + attribute, value, options);
+        }
+    }
+
+    protected void setFilePermissions(Path file, Set<PosixFilePermission> perms, LinkOption ... options) throws IOException {
+        if (OsUtils.isWin32()) {
+            IoUtils.setPermissionsToFile(file.toFile(), perms);
+            return;
+        }
+
+        PosixFileAttributeView view = Files.getFileAttributeView(file, PosixFileAttributeView.class, options);
+        if (view == null) {
+            throw new UnsupportedOperationException("POSIX view not supported for " + file);
+        }
+
+        if (log.isTraceEnabled()) {
+            log.trace("setFilePermissions({})[{}] {}", getServerSession(), file, perms);
+        }
+        view.setPermissions(perms);
+    }
+
+    protected void setFileAccessControl(Path file, List<AclEntry> acl, LinkOption ... options) throws IOException {
+        AclFileAttributeView view = Files.getFileAttributeView(file, AclFileAttributeView.class, options);
+        if (view == null) {
+            throw new UnsupportedOperationException("ACL view not supported for " + file);
+        }
+
+        if (log.isTraceEnabled()) {
+            log.trace("setFileAccessControl({})[{}] {}", getServerSession(), file, acl);
+        }
+        view.setAcl(acl);
     }
 
     protected void handleUnsupportedAttributes(Collection<String> attributes) {

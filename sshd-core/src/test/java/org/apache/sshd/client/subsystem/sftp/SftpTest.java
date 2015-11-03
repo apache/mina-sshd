@@ -72,6 +72,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.subsystem.sftp.AbstractSftpEventListenerAdapter;
 import org.apache.sshd.server.subsystem.sftp.DirectoryHandle;
 import org.apache.sshd.server.subsystem.sftp.FileHandle;
 import org.apache.sshd.server.subsystem.sftp.Handle;
@@ -613,8 +614,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             public void unblocked(ServerSession session, String remoteHandle, FileHandle localHandle,
                                   long offset, long length, Boolean result, Throwable thrown) {
                 log.info("unblocked(" + session + ")[" + localHandle.getFile() + "]"
-                        + " offset=" + offset + ", length=" + length + ", result=" + result
-                        + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+                       + " offset=" + offset + ", length=" + length + ", result=" + result
+                       + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
             }
 
             @Override
@@ -1148,78 +1149,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
         SftpSubsystemFactory factory = (SftpSubsystemFactory) f;
         final AtomicReference<LinkData> linkDataHolder = new AtomicReference<>();
-        factory.addSftpEventListener(new SftpEventListener() {
-            @Override
-            public void write(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, byte[] data, int dataOffset, int dataLen) {
-                // ignored
-            }
-
-            @Override
-            public void removing(ServerSession session, Path path) {
-                // ignored
-            }
-
-            @Override
-            public void removed(ServerSession session, Path path, Throwable thrown) {
-                // ignored
-            }
-
-            @Override
-            public void read(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, byte[] data, int dataOffset, int dataLen, int readLen) {
-                // ignored
-            }
-
-            @Override
-            public void read(ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries) {
-                // ignored
-            }
-
-            @Override
-            public void open(ServerSession session, String remoteHandle, Handle localHandle) {
-                // ignored
-            }
-
-            @Override
-            public void modifyingAttributes(ServerSession session, Path path, Map<String, ?> attrs) {
-                // ignored
-            }
-
-            @Override
-            public void modifiedAttributes(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown) {
-                // ignored
-            }
-
-            @Override
-            public void blocking(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, int mask) {
-                // ignored
-            }
-
-            @Override
-            public void blocked(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, int mask, Throwable thrown) {
-                // ignored
-            }
-
-            @Override
-            public void unblocking(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length) {
-                // ignored
-            }
-
-            @Override
-            public void unblocked(ServerSession session, String remoteHandle, FileHandle localHandle,
-                                  long offset, long length, Boolean result, Throwable thrown) {
-                // ignored
-            }
-
-            @Override
-            public void moving(ServerSession session, Path srcPath, Path dstPath, Collection<CopyOption> opts) {
-                // ignored
-            }
-
-            @Override
-            public void moved(ServerSession session, Path srcPath, Path dstPath, Collection<CopyOption> opts, Throwable thrown) {
-                // ignored
-            }
-
+        factory.addSftpEventListener(new AbstractSftpEventListenerAdapter() {
             @Override
             public void linking(ServerSession session, Path src, Path target, boolean symLink) {
                 assertNull("Multiple linking calls", linkDataHolder.getAndSet(new LinkData(src, target, symLink)));
@@ -1233,31 +1163,6 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 assertSame("Mismatched target", data.getTarget(), target);
                 assertEquals("Mismatched link type", data.isSymLink(), symLink);
                 assertNull("Unexpected failure", thrown);
-            }
-
-            @Override
-            public void initialized(ServerSession session, int version) {
-                // ignored
-            }
-
-            @Override
-            public void destroying(ServerSession session) {
-                // ignored
-            }
-
-            @Override
-            public void creating(ServerSession session, Path path, Map<String, ?> attrs) {
-                // ignored
-            }
-
-            @Override
-            public void created(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown) {
-                // ignored
-            }
-
-            @Override
-            public void close(ServerSession session, String remoteHandle, Handle localHandle) {
-                // ignored
             }
         });
 

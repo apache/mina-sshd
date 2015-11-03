@@ -164,6 +164,12 @@ public final class SftpConstants {
     public static final int SSH_FXF_RENAME_ATOMIC = 0x00000002;
     public static final int SSH_FXF_RENAME_NATIVE = 0x00000004;
 
+    public static final int SFX_ACL_CONTROL_INCLUDED = 0x00000001;
+    public static final int SFX_ACL_CONTROL_PRESENT = 0x00000002;
+    public static final int SFX_ACL_CONTROL_INHERITED = 0x00000004;
+    public static final int SFX_ACL_AUDIT_ALARM_INCLUDED = 0x00000010;
+    public static final int SFX_ACL_AUDIT_ALARM_INHERITED = 0x00000020;
+
     public static final int ACE4_ACCESS_ALLOWED_ACE_TYPE = 0x00000000;
     public static final int ACE4_ACCESS_DENIED_ACE_TYPE = 0x00000001;
     public static final int ACE4_SYSTEM_AUDIT_ACE_TYPE = 0x00000002;

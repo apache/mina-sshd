@@ -50,7 +50,7 @@ public class SftpPosixFileAttributes implements PosixFileAttributes {
     @Override
     public UserPrincipal owner() {
         String owner = attributes.getOwner();
-        return GenericUtils.isEmpty(owner) ? null : new SftpFileSystem.DefaultGroupPrincipal(owner);
+        return GenericUtils.isEmpty(owner) ? null : new SftpFileSystem.DefaultUserPrincipal(owner);
     }
 
     @Override

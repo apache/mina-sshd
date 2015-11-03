@@ -34,8 +34,10 @@ import java.nio.file.attribute.AclEntryType;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -44,8 +46,11 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.subsystem.sftp.DefaultGroupPrincipal;
 import org.apache.sshd.server.subsystem.sftp.InvalidHandleException;
 
@@ -95,7 +100,6 @@ public final class SftpHelper {
         Number size = (Number) attributes.get("size");
         FileTime lastModifiedTime = (FileTime) attributes.get("lastModifiedTime");
         FileTime lastAccessTime = (FileTime) attributes.get("lastAccessTime");
-
         int flags = ((isReg || isLnk) && (size != null) ? SftpConstants.SSH_FILEXFER_ATTR_SIZE : 0)
                   | (attributes.containsKey("uid") && attributes.containsKey("gid") ? SftpConstants.SSH_FILEXFER_ATTR_UIDGID : 0)
                   | ((perms != null) ? SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS : 0)
@@ -118,7 +122,7 @@ public final class SftpHelper {
     }
 
     /**
-     * Writes the retrieved file / directory attributes in V3 format
+     * Writes the retrieved file / directory attributes in V4+ format
      *
      * @param buffer The target {@link Buffer}
      * @param version The actual version - must be at least {@link SftpConstants#SFTP_V4}
@@ -136,12 +140,15 @@ public final class SftpHelper {
         FileTime lastModifiedTime = (FileTime) attributes.get("lastModifiedTime");
         FileTime lastAccessTime = (FileTime) attributes.get("lastAccessTime");
         FileTime creationTime = (FileTime) attributes.get("creationTime");
+        @SuppressWarnings("unchecked")
+        Collection<AclEntry> acl = (Collection<AclEntry>) attributes.get("acl");
         int flags = (((isReg || isLnk) && (size != null)) ? SftpConstants.SSH_FILEXFER_ATTR_SIZE : 0)
                   | ((attributes.containsKey("owner") && attributes.containsKey("group")) ? SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP : 0)
                   | ((perms != null) ? SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS : 0)
                   | ((lastModifiedTime != null) ? SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME : 0)
                   | ((creationTime != null) ? SftpConstants.SSH_FILEXFER_ATTR_CREATETIME : 0)
-                  | ((lastAccessTime != null) ? SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME : 0);
+                  | ((lastAccessTime != null) ? SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME : 0)
+                  | ((acl != null) ? SftpConstants.SSH_FILEXFER_ATTR_ACL : 0);
         buffer.putInt(flags);
         buffer.putByte((byte) (isReg ? SftpConstants.SSH_FILEXFER_TYPE_REGULAR
                 : isDir ? SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY
@@ -151,8 +158,8 @@ public final class SftpHelper {
             buffer.putLong(size.longValue());
         }
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
-            buffer.putString(Objects.toString(attributes.get("owner"), null));
-            buffer.putString(Objects.toString(attributes.get("group"), null));
+            buffer.putString(Objects.toString(attributes.get("owner"), SftpUniversalOwnerAndGroup.Owner.getName()));
+            buffer.putString(Objects.toString(attributes.get("group"), SftpUniversalOwnerAndGroup.Group.getName()));
         }
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
             buffer.putInt(attributesToPermissions(isReg, isDir, isLnk, perms));
@@ -168,9 +175,12 @@ public final class SftpHelper {
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME) != 0) {
             writeTime(buffer, version, flags, lastModifiedTime);
         }
-        // TODO: acls
+        if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACL) != 0) {
+            writeACLs(buffer, version, acl);
+        }
+        // TODO: ctime
         // TODO: bits
-        // TODO: extended
+        // TODO: extensions
     }
 
     /**
@@ -353,29 +363,183 @@ public final class SftpHelper {
             return SftpConstants.SSH_FX_INVALID_FILENAME;
         } else if (t instanceof IllegalArgumentException) {
             return SftpConstants.SSH_FX_INVALID_PARAMETER;
+        } else if (t instanceof UnsupportedOperationException) {
+            return SftpConstants.SSH_FX_OP_UNSUPPORTED;
         } else {
             return SftpConstants.SSH_FX_FAILURE;
         }
     }
 
-    public static AclEntry buildAclEntry(int aclType, int aclFlag, int aclMask, final String aclWho) {
-        AclEntryType type;
+    public static Map<String, Object> readAttrs(Buffer buffer, int version) {
+        Map<String, Object> attrs = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
+        int flags = buffer.getInt();
+        if (version >= SftpConstants.SFTP_V4) {
+            int type = buffer.getUByte();
+            switch (type) {
+                case SftpConstants.SSH_FILEXFER_TYPE_REGULAR:
+                    attrs.put("isRegular", Boolean.TRUE);
+                    break;
+                case SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY:
+                    attrs.put("isDirectory", Boolean.TRUE);
+                    break;
+                case SftpConstants.SSH_FILEXFER_TYPE_SYMLINK:
+                    attrs.put("isSymbolicLink", Boolean.TRUE);
+                    break;
+                case SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN:
+                    attrs.put("isOther", Boolean.TRUE);
+                    break;
+                default:    // ignored
+            }
+        }
+        if ((flags & SftpConstants.SSH_FILEXFER_ATTR_SIZE) != 0) {
+            attrs.put("size", buffer.getLong());
+        }
+
+        if (version == SftpConstants.SFTP_V3) {
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_UIDGID) != 0) {
+                attrs.put("uid", buffer.getInt());
+                attrs.put("gid", buffer.getInt());
+            }
+        } else {
+            if ((version >= SftpConstants.SFTP_V6) && ((flags & SftpConstants.SSH_FILEXFER_ATTR_ALLOCATION_SIZE) != 0)) {
+                @SuppressWarnings("unused")
+                long allocSize = buffer.getLong();    // TODO handle allocation size
+            }
+
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
+                attrs.put("owner", new DefaultGroupPrincipal(buffer.getString()));
+                attrs.put("group", new DefaultGroupPrincipal(buffer.getString()));
+            }
+        }
+
+        if ((flags & SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
+            attrs.put("permissions", permissionsToAttributes(buffer.getInt()));
+        }
+
+        if (version == SftpConstants.SFTP_V3) {
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
+                attrs.put("lastAccessTime", readTime(buffer, version, flags));
+                attrs.put("lastModifiedTime", readTime(buffer, version, flags));
+            }
+        } else if (version >= SftpConstants.SFTP_V4) {
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME) != 0) {
+                attrs.put("lastAccessTime", readTime(buffer, version, flags));
+            }
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_CREATETIME) != 0) {
+                attrs.put("creationTime", readTime(buffer, version, flags));
+            }
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME) != 0) {
+                attrs.put("lastModifiedTime", readTime(buffer, version, flags));
+            }
+            if ((version >= SftpConstants.SFTP_V6) && (flags & SftpConstants.SSH_FILEXFER_ATTR_CTIME) != 0) {
+                attrs.put("ctime", readTime(buffer, version, flags));
+            }
+
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACL) != 0) {
+                attrs.put("acl", readACLs(buffer, version));
+            }
+
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_BITS) != 0) {
+                @SuppressWarnings("unused")
+                int bits = buffer.getInt();
+                @SuppressWarnings("unused")
+                int valid = 0xffffffff;
+                if (version >= SftpConstants.SFTP_V6) {
+                    valid = buffer.getInt();
+                }
+                // TODO: handle attrib bits
+            }
+
+            if (version >= SftpConstants.SFTP_V6) {
+                if ((flags & SftpConstants.SSH_FILEXFER_ATTR_TEXT_HINT) != 0) {
+                    @SuppressWarnings("unused")
+                    boolean text = buffer.getBoolean(); // TODO: handle text
+                }
+                if ((flags & SftpConstants.SSH_FILEXFER_ATTR_MIME_TYPE) != 0) {
+                    @SuppressWarnings("unused")
+                    String mimeType = buffer.getString(); // TODO: handle mime-type
+                }
+                if ((flags & SftpConstants.SSH_FILEXFER_ATTR_LINK_COUNT) != 0) {
+                    @SuppressWarnings("unused")
+                    int nlink = buffer.getInt(); // TODO: handle link-count
+                }
+                if ((flags & SftpConstants.SSH_FILEXFER_ATTR_UNTRANSLATED_NAME) != 0) {
+                    @SuppressWarnings("unused")
+                    String untranslated = buffer.getString(); // TODO: handle untranslated-name
+                }
+            }
+        }
+
+        return attrs;
+    }
+
+    // for v4,5 see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-05#page-15
+    // for v6 see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-21
+    public static List<AclEntry> readACLs(Buffer buffer, int version) {
+        int aclSize = buffer.getInt();
+        int startPos = buffer.rpos();
+        Buffer aclBuffer = new ByteArrayBuffer(buffer.array(), startPos, aclSize, true);
+        List<AclEntry> acl = decodeACLs(aclBuffer, version);
+        buffer.rpos(startPos + aclSize);
+        return acl;
+    }
+
+    public static List<AclEntry> decodeACLs(Buffer buffer, int version) {
+        @SuppressWarnings("unused")
+        int aclFlags = 0;   // TODO handle ACL flags
+        if (version >= SftpConstants.SFTP_V6) {
+            aclFlags = buffer.getInt();
+        }
+
+        int count = buffer.getInt();
+        // NOTE: although the value is defined as UINT32 we do not expected a count greater than Integer.MAX_VALUE
+        ValidateUtils.checkTrue(count >= 0, "Invalid ACL entries count: %d", count);
+        if (count == 0) {
+            return Collections.emptyList();
+        }
+
+        List<AclEntry> acls = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            int aclType = buffer.getInt();
+            int aclFlag = buffer.getInt();
+            int aclMask = buffer.getInt();
+            String aclWho = buffer.getString();
+            acls.add(buildAclEntry(aclType, aclFlag, aclMask, aclWho));
+        }
+
+        return acls;
+    }
+
+    public static AclEntry buildAclEntry(int aclType, int aclFlag, int aclMask, String aclWho) {
+        UserPrincipal who = new DefaultGroupPrincipal(aclWho);
+        return AclEntry.newBuilder()
+                .setType(ValidateUtils.checkNotNull(decodeAclEntryType(aclType), "Unknown ACL type: %d", aclType))
+                .setFlags(decodeAclFlags(aclFlag))
+                .setPermissions(decodeAclMask(aclMask))
+                .setPrincipal(who)
+                .build();
+    }
+
+    /**
+     * @param aclType The {@code ACE4_ACCESS_xxx_ACE_TYPE} value
+     * @return The matching {@link AclEntryType} or {@code null} if unknown value
+     */
+    public static AclEntryType decodeAclEntryType(int aclType) {
         switch (aclType) {
             case SftpConstants.ACE4_ACCESS_ALLOWED_ACE_TYPE:
-                type = AclEntryType.ALLOW;
-                break;
+                return AclEntryType.ALLOW;
             case SftpConstants.ACE4_ACCESS_DENIED_ACE_TYPE:
-                type = AclEntryType.DENY;
-                break;
+                return AclEntryType.DENY;
             case SftpConstants.ACE4_SYSTEM_AUDIT_ACE_TYPE:
-                type = AclEntryType.AUDIT;
-                break;
+                return AclEntryType.AUDIT;
             case SftpConstants.ACE4_SYSTEM_ALARM_ACE_TYPE:
-                type = AclEntryType.AUDIT;
-                break;
+                return AclEntryType.ALARM;
             default:
-                throw new IllegalStateException("Unknown acl type: " + aclType);
+                return null;
         }
+    }
+
+    public static Set<AclEntryFlag> decodeAclFlags(int aclFlag) {
         Set<AclEntryFlag> flags = EnumSet.noneOf(AclEntryFlag.class);
         if ((aclFlag & SftpConstants.ACE4_FILE_INHERIT_ACE) != 0) {
             flags.add(AclEntryFlag.FILE_INHERIT);
@@ -390,6 +554,10 @@ public final class SftpHelper {
             flags.add(AclEntryFlag.INHERIT_ONLY);
         }
 
+        return flags;
+    }
+
+    public static Set<AclEntryPermission> decodeAclMask(int aclMask) {
         Set<AclEntryPermission> mask = EnumSet.noneOf(AclEntryPermission.class);
         if ((aclMask & SftpConstants.ACE4_READ_DATA) != 0) {
             mask.add(AclEntryPermission.READ_DATA);
@@ -442,126 +610,154 @@ public final class SftpHelper {
         if ((aclMask & SftpConstants.ACE4_SYNCHRONIZE) != 0) {
             mask.add(AclEntryPermission.SYNCHRONIZE);
         }
-        UserPrincipal who = new DefaultGroupPrincipal(aclWho);
-        return AclEntry.newBuilder()
-                .setType(type)
-                .setFlags(flags)
-                .setPermissions(mask)
-                .setPrincipal(who)
-                .build();
+
+        return mask;
     }
 
-    public static Map<String, Object> readAttrs(Buffer buffer, int version) {
-        Map<String, Object> attrs = new TreeMap<>();
-        int flags = buffer.getInt();
-        if (version >= SftpConstants.SFTP_V4) {
-            int type = buffer.getUByte();
-            switch (type) {
-                case SftpConstants.SSH_FILEXFER_TYPE_REGULAR:
-                    attrs.put("isRegular", Boolean.TRUE);
-                    break;
-                case SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY:
-                    attrs.put("isDirectory", Boolean.TRUE);
-                    break;
-                case SftpConstants.SSH_FILEXFER_TYPE_SYMLINK:
-                    attrs.put("isSymbolicLink", Boolean.TRUE);
-                    break;
-                case SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN:
-                    attrs.put("isOther", Boolean.TRUE);
-                    break;
-                default:    // ignored
-            }
-        }
-        if ((flags & SftpConstants.SSH_FILEXFER_ATTR_SIZE) != 0) {
-            attrs.put("size", buffer.getLong());
-        }
-        if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ALLOCATION_SIZE) != 0) {
-            attrs.put("allocationSize", buffer.getLong());
-        }
-        if ((flags & SftpConstants.SSH_FILEXFER_ATTR_UIDGID) != 0) {
-            attrs.put("uid", buffer.getInt());
-            attrs.put("gid", buffer.getInt());
-        }
-        if ((flags & SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
-            attrs.put("owner", new DefaultGroupPrincipal(buffer.getString()));
-            attrs.put("group", new DefaultGroupPrincipal(buffer.getString()));
-        }
-        if ((flags & SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
-            attrs.put("permissions", permissionsToAttributes(buffer.getInt()));
-        }
-
-        if (version == SftpConstants.SFTP_V3) {
-            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
-                attrs.put("lastAccessTime", readTime(buffer, version, flags));
-                attrs.put("lastModifiedTime", readTime(buffer, version, flags));
-            }
-        } else if (version >= SftpConstants.SFTP_V4) {
-            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME) != 0) {
-                attrs.put("lastAccessTime", readTime(buffer, version, flags));
-            }
-            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_CREATETIME) != 0) {
-                attrs.put("creationTime", readTime(buffer, version, flags));
-            }
-            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME) != 0) {
-                attrs.put("lastModifiedTime", readTime(buffer, version, flags));
-            }
-            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_CTIME) != 0) {
-                attrs.put("ctime", readTime(buffer, version, flags));
-            }
-        }
-        if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACL) != 0) {
-            int count = buffer.getInt();
-            List<AclEntry> acls = new ArrayList<>();
-            for (int i = 0; i < count; i++) {
-                int aclType = buffer.getInt();
-                int aclFlag = buffer.getInt();
-                int aclMask = buffer.getInt();
-                String aclWho = buffer.getString();
-                acls.add(buildAclEntry(aclType, aclFlag, aclMask, aclWho));
-            }
-            attrs.put("acl", acls);
-        }
-        if ((flags & SftpConstants.SSH_FILEXFER_ATTR_BITS) != 0) {
-            int bits = buffer.getInt();
-            int valid = 0xffffffff;
-            if (version >= SftpConstants.SFTP_V6) {
-                valid = buffer.getInt();
-            }
-            // TODO: handle attrib bits
-        }
-        if ((flags & SftpConstants.SSH_FILEXFER_ATTR_TEXT_HINT) != 0) {
-            boolean text = buffer.getBoolean();
-            // TODO: handle text
-        }
-        if ((flags & SftpConstants.SSH_FILEXFER_ATTR_MIME_TYPE) != 0) {
-            String mimeType = buffer.getString();
-            // TODO: handle mime-type
-        }
-        if ((flags & SftpConstants.SSH_FILEXFER_ATTR_LINK_COUNT) != 0) {
-            int nlink = buffer.getInt();
-            // TODO: handle link-count
-        }
-        if ((flags & SftpConstants.SSH_FILEXFER_ATTR_UNTRANSLATED_NAME) != 0) {
-            String untranslated = buffer.getString();
-            // TODO: handle untranslated-name
-        }
-        if ((flags & SftpConstants.SSH_FILEXFER_ATTR_EXTENDED) != 0) {
-            int count = buffer.getInt();
-            Map<String, String> extended = new TreeMap<>();
-            for (int i = 0; i < count; i++) {
-                String key = buffer.getString();
-                String val = buffer.getString();
-                extended.put(key, val);
-            }
-            attrs.put("extended", extended);
-        }
-
-        return attrs;
+    public static void writeACLs(Buffer buffer, int version, Collection<? extends AclEntry> acl) {
+        int lenPos = buffer.wpos();
+        buffer.putInt(0);   // length placeholder
+        encodeACLs(buffer, version, acl);
+        BufferUtils.updateLengthPlaceholder(buffer, lenPos);
     }
 
-    // for v3 see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-02#page-8
-    // for v4 see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-04#page-10
-    // for v6 see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-16
+    public static void encodeACLs(Buffer buffer, int version, Collection<? extends AclEntry> acl) {
+        ValidateUtils.checkNotNull(acl, "No ACL");
+        if (version >= SftpConstants.SFTP_V6) {
+            buffer.putInt(0);   // TODO handle ACL flags
+        }
+
+        int numEntries = GenericUtils.size(acl);
+        buffer.putInt(numEntries);
+        if (numEntries > 0) {
+            for (AclEntry e : acl) {
+                writeAclEntry(buffer, e);
+            }
+        }
+    }
+
+    public static void writeAclEntry(Buffer buffer, AclEntry acl) {
+        ValidateUtils.checkNotNull(acl, "No ACL");
+
+        AclEntryType type = acl.type();
+        int aclType = encodeAclEntryType(type);
+        ValidateUtils.checkTrue(aclType >= 0, "Unknown ACL type: %s", type);
+        buffer.putInt(aclType);
+        buffer.putInt(encodeAclFlags(acl.flags()));
+        buffer.putInt(encodeAclMask(acl.permissions()));
+
+        Principal user = acl.principal();
+        buffer.putString(user.getName());
+    }
+
+    /**
+     * Returns the equivalent SFTP value for the ACL type
+     *
+     * @param type The {@link AclEntryType}
+     * @return The equivalent {@code ACE_SYSTEM_xxx_TYPE} or negative
+     * if {@code null} or unknown type
+     */
+    public static int encodeAclEntryType(AclEntryType type) {
+        if (type == null) {
+            return Integer.MIN_VALUE;
+        }
+
+        switch(type) {
+            case ALARM:
+                return SftpConstants.ACE4_SYSTEM_ALARM_ACE_TYPE;
+            case ALLOW:
+                return SftpConstants.ACE4_ACCESS_ALLOWED_ACE_TYPE;
+            case AUDIT:
+                return SftpConstants.ACE4_SYSTEM_AUDIT_ACE_TYPE;
+            case DENY:
+                return SftpConstants.ACE4_ACCESS_DENIED_ACE_TYPE;
+            default:
+                return -1;
+        }
+    }
+
+    public static long encodeAclFlags(Collection<AclEntryFlag> flags) {
+        if (GenericUtils.isEmpty(flags)) {
+            return 0L;
+        }
+
+        long aclFlag = 0L;
+        if (flags.contains(AclEntryFlag.FILE_INHERIT)) {
+            aclFlag |= SftpConstants.ACE4_FILE_INHERIT_ACE;
+        }
+        if (flags.contains(AclEntryFlag.DIRECTORY_INHERIT)) {
+            aclFlag |= SftpConstants.ACE4_DIRECTORY_INHERIT_ACE;
+        }
+        if (flags.contains(AclEntryFlag.NO_PROPAGATE_INHERIT)) {
+            aclFlag |= SftpConstants.ACE4_NO_PROPAGATE_INHERIT_ACE;
+        }
+        if (flags.contains(AclEntryFlag.INHERIT_ONLY)) {
+            aclFlag |= SftpConstants.ACE4_INHERIT_ONLY_ACE;
+        }
+
+        return aclFlag;
+    }
+
+    public static long encodeAclMask(Collection<AclEntryPermission> mask) {
+        if (GenericUtils.isEmpty(mask)) {
+            return 0L;
+        }
+
+        long aclMask = 0L;
+        if (mask.contains(AclEntryPermission.READ_DATA)) {
+            aclMask |= SftpConstants.ACE4_READ_DATA;
+        }
+        if (mask.contains(AclEntryPermission.LIST_DIRECTORY)) {
+            aclMask |= SftpConstants.ACE4_LIST_DIRECTORY;
+        }
+        if (mask.contains(AclEntryPermission.WRITE_DATA)) {
+            aclMask |= SftpConstants.ACE4_WRITE_DATA;
+        }
+        if (mask.contains(AclEntryPermission.ADD_FILE)) {
+            aclMask |= SftpConstants.ACE4_ADD_FILE;
+        }
+        if (mask.contains(AclEntryPermission.APPEND_DATA)) {
+            aclMask |= SftpConstants.ACE4_APPEND_DATA;
+        }
+        if (mask.contains(AclEntryPermission.ADD_SUBDIRECTORY)) {
+            aclMask |= SftpConstants.ACE4_ADD_SUBDIRECTORY;
+        }
+        if (mask.contains(AclEntryPermission.READ_NAMED_ATTRS)) {
+            aclMask |= SftpConstants.ACE4_READ_NAMED_ATTRS;
+        }
+        if (mask.contains(AclEntryPermission.WRITE_NAMED_ATTRS)) {
+            aclMask |= SftpConstants.ACE4_WRITE_NAMED_ATTRS;
+        }
+        if (mask.contains(AclEntryPermission.EXECUTE)) {
+            aclMask |= SftpConstants.ACE4_EXECUTE;
+        }
+        if (mask.contains(AclEntryPermission.DELETE_CHILD)) {
+            aclMask |= SftpConstants.ACE4_DELETE_CHILD;
+        }
+        if (mask.contains(AclEntryPermission.READ_ATTRIBUTES)) {
+            aclMask |= SftpConstants.ACE4_READ_ATTRIBUTES;
+        }
+        if (mask.contains(AclEntryPermission.WRITE_ATTRIBUTES)) {
+            aclMask |= SftpConstants.ACE4_WRITE_ATTRIBUTES;
+        }
+        if (mask.contains(AclEntryPermission.DELETE)) {
+            aclMask |= SftpConstants.ACE4_DELETE;
+        }
+        if (mask.contains(AclEntryPermission.READ_ACL)) {
+            aclMask |= SftpConstants.ACE4_READ_ACL;
+        }
+        if (mask.contains(AclEntryPermission.WRITE_ACL)) {
+            aclMask |= SftpConstants.ACE4_WRITE_ACL;
+        }
+        if (mask.contains(AclEntryPermission.WRITE_OWNER)) {
+            aclMask |= SftpConstants.ACE4_WRITE_OWNER;
+        }
+        if (mask.contains(AclEntryPermission.SYNCHRONIZE)) {
+            aclMask |= SftpConstants.ACE4_SYNCHRONIZE;
+        }
+
+        return aclMask;
+    }
 
     /**
      * Encodes a {@link FileTime} value into a buffer
@@ -572,6 +768,8 @@ public final class SftpHelper {
      * @param time The value to encode
      */
     public static void writeTime(Buffer buffer, int version, int flags, FileTime time) {
+        // for v3 see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-02#page-8
+        // for v6 see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-16
         if (version >= SftpConstants.SFTP_V4) {
             buffer.putLong(time.to(TimeUnit.SECONDS));
             if ((flags & SftpConstants.SSH_FILEXFER_ATTR_SUBSECOND_TIMES) != 0) {
@@ -593,6 +791,8 @@ public final class SftpHelper {
      * @return The decoded value
      */
     public static FileTime readTime(Buffer buffer, int version, int flags) {
+        // for v3 see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-02#page-8
+        // for v6 see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-16
         long secs = (version >= SftpConstants.SFTP_V4) ? buffer.getLong() : buffer.getUInt();
         long millis = TimeUnit.SECONDS.toMillis(secs);
         if ((version >= SftpConstants.SFTP_V4) && ((flags & SftpConstants.SSH_FILEXFER_ATTR_SUBSECOND_TIMES) != 0)) {

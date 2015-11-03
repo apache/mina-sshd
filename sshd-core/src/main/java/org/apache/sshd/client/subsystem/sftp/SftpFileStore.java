@@ -79,7 +79,7 @@ public class SftpFileStore extends FileStore {
     public boolean supportsFileAttributeView(Class<? extends FileAttributeView> type) {
         SftpFileSystem sftpFs = getFileSystem();
         SftpFileSystemProvider provider = sftpFs.provider();
-        return provider.isSupportedFileAttributeView(type);
+        return provider.isSupportedFileAttributeView(sftpFs, type);
     }
 
     @Override

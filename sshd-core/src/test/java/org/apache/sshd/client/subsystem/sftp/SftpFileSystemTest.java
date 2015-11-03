@@ -34,6 +34,8 @@ import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
@@ -120,7 +122,8 @@ public class SftpFileSystemTest extends BaseTestSupport {
                         put(SftpFileSystemProvider.WRITE_BUFFER_PROP_NAME, Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE));
                     }
                 })) {
-            testFileSystem(fs);
+            assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+            testFileSystem(fs, ((SftpFileSystem) fs).getVersion());
         }
     }
 
@@ -199,11 +202,11 @@ public class SftpFileSystemTest extends BaseTestSupport {
             assertEquals("Mismatched type", SftpConstants.SFTP_SUBSYSTEM_NAME, store.type());
             assertFalse("Read-only ?", store.isReadOnly());
 
-            for (String name : SftpFileSystem.SUPPORTED_VIEWS) {
+            for (String name : fs.supportedFileAttributeViews()) {
                 assertTrue("Unsupported view name: " + name, store.supportsFileAttributeView(name));
             }
 
-            for (Class<? extends FileAttributeView> type : SftpFileSystemProvider.SUPPORTED_VIEWS) {
+            for (Class<? extends FileAttributeView> type : SftpFileSystemProvider.UNIVERSAL_SUPPORTED_VIEWS) {
                 assertTrue("Unsupported view type: " + type.getSimpleName(), store.supportsFileAttributeView(type));
             }
         }
@@ -290,12 +293,12 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
                 try (FileSystem fs = session.createSftpFileSystem(selector)) {
                     assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
-
-                    try (SftpClient sftp = ((SftpFileSystem) fs).getClient()) {
-                        assertEquals("Mismatched negotiated version", selected.get(), sftp.getVersion());
-                    }
-
-                    testFileSystem(fs);
+                    Collection<String> views = fs.supportedFileAttributeViews();
+                    assertTrue("Universal views (" + SftpFileSystem.UNIVERSAL_SUPPORTED_VIEWS + ") not supported: " + views,
+                               views.containsAll(SftpFileSystem.UNIVERSAL_SUPPORTED_VIEWS));
+                    int expectedVersion = selected.get();
+                    assertEquals("Mismatched negotiated version", expectedVersion, ((SftpFileSystem) fs).getVersion());
+                    testFileSystem(fs, expectedVersion);
                 }
             } finally {
                 client.stop();
@@ -304,7 +307,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
     }
 
-    private void testFileSystem(FileSystem fs) throws Exception {
+    private void testFileSystem(FileSystem fs, int version) throws Exception {
         Iterable<Path> rootDirs = fs.getRootDirectories();
         for (Path root : rootDirs) {
             String rootName = root.toString();
@@ -345,6 +348,18 @@ public class SftpFileSystemTest extends BaseTestSupport {
             Files.write(file1, expected.getBytes(StandardCharsets.UTF_8));
             String buf = new String(Files.readAllBytes(file1), StandardCharsets.UTF_8);
             assertEquals("Mismatched read test data", expected, buf);
+        }
+
+        if (version >= SftpConstants.SFTP_V4) {
+            AclFileAttributeView aclView = Files.getFileAttributeView(file1, AclFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+            assertNotNull("No ACL view for " + file1, aclView);
+
+            Map<String, ?> attrs = Files.readAttributes(file1, "acl:*", LinkOption.NOFOLLOW_LINKS);
+            assertEquals("Mismatched owner for " + file1, aclView.getOwner(), attrs.get("owner"));
+
+            @SuppressWarnings("unchecked")
+            List<AclEntry> acl = (List<AclEntry>) attrs.get("acl");
+            assertListEquals("Mismatched ACLs for " + file1, aclView.getAcl(), acl);
         }
 
         String remFile2Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve("file-2.txt"));

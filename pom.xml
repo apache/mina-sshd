@@ -730,7 +730,7 @@
 								</module>
 								<!-- <module name="RegexpHeader" /> -->
 								<module name="FileLength">
-									<property name="max" value="3072" />
+									<property name="max" value="4096" />
 								</module>
 								<module name="FileTabCharacter">
 									<property name="eachLine" value="true" />

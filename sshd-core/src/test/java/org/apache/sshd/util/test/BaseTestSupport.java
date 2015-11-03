@@ -43,6 +43,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
@@ -328,6 +329,20 @@ public abstract class BaseTestSupport extends Assert {
         for (int index = 0; index < expSize; index++) {
             E expValue = expected.get(index), actValue = actual.get(index);
             assertEquals(message + "[" + index + "]", expValue, actValue);
+        }
+    }
+
+    public static <K, V> void assertMapEquals(String message, Map<? extends K, ? extends V> expected, Map<? super K, ? extends V> actual) {
+        int numItems = GenericUtils.size(expected);
+        assertEquals(message + "[size]", numItems, GenericUtils.size(actual));
+
+        if (numItems > 0) {
+            for (Map.Entry<? extends K, ? extends V> ee : expected.entrySet()) {
+                K key = ee.getKey();
+                V expValue = ee.getValue();
+                V actValue = actual.get(key);
+                assertEquals(message + "[" + key + "]", expValue, actValue);
+            }
         }
     }
 

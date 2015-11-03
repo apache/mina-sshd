@@ -89,6 +89,11 @@ public class JaasPasswordAuthenticatorTest extends BaseTestSupport {
         private CallbackHandler callbackHandler;
 
         public DummyLoginModule() {
+            super();
+        }
+
+        public Subject getSubject() {
+            return subject;
         }
 
         @Override

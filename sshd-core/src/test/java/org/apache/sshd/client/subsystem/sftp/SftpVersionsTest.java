@@ -22,21 +22,38 @@ package org.apache.sshd.client.subsystem.sftp;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryFlag;
+import java.nio.file.attribute.AclEntryPermission;
+import java.nio.file.attribute.AclEntryType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpHelper;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.server.Command;
+import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.subsystem.sftp.AbstractSftpEventListenerAdapter;
+import org.apache.sshd.server.subsystem.sftp.DefaultGroupPrincipal;
+import org.apache.sshd.server.subsystem.sftp.SftpEventListener;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
+import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.Utils;
 import org.junit.After;
 import org.junit.Before;
@@ -64,10 +81,10 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                 }
             });
 
-    private final int version;
+    private final int testVersion;
 
     public SftpVersionsTest(int version) throws IOException {
-        this.version = version;
+        testVersion = version;
     }
 
     @Parameters(name = "version={0}")
@@ -85,6 +102,10 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         tearDownServer();
     }
 
+    public final int getTestedVersion() {
+        return testVersion;
+    }
+
     @Test
     public void testSftpVersionSelector() throws Exception {
         try (SshClient client = setupTestClient()) {
@@ -94,8 +115,8 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
-                try (SftpClient sftp = session.createSftpClient(version)) {
-                    assertEquals("Mismatched negotiated version", version, sftp.getVersion());
+                try (SftpClient sftp = session.createSftpClient(getTestedVersion())) {
+                    assertEquals("Mismatched negotiated version", getTestedVersion(), sftp.getVersion());
                 }
             } finally {
                 client.stop();
@@ -107,7 +128,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
     public void testSftpFileTimesUpdate() throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
-        Path lclFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-" + version + ".txt");
+        Path lclFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-" + getTestedVersion() + ".txt");
         Files.write(lclFile, getClass().getName().getBytes(StandardCharsets.UTF_8));
         Path parentPath = targetPath.getParent();
         String remotePath = Utils.resolveRelativeRemotePath(parentPath, lclFile);
@@ -119,9 +140,10 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
-                try (SftpClient sftp = session.createSftpClient(version)) {
+                try (SftpClient sftp = session.createSftpClient(getTestedVersion())) {
                     Attributes attrs = sftp.lstat(remotePath);
                     long expectedSeconds = TimeUnit.SECONDS.convert(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1L), TimeUnit.MILLISECONDS);
+                    attrs.getFlags().clear();
                     attrs.modifyTime(expectedSeconds);
                     sftp.setStat(remotePath, attrs);
 
@@ -149,7 +171,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path subFolder = Files.createDirectories(lclSftp.resolve("sub-folder"));
         String subFolderName = subFolder.getFileName().toString();
-        Path lclFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-" + version + ".txt");
+        Path lclFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-" + getTestedVersion() + ".txt");
         String lclFileName = lclFile.getFileName().toString();
         Files.write(lclFile, getClass().getName().getBytes(StandardCharsets.UTF_8));
 
@@ -162,14 +184,14 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
-                try (SftpClient sftp = session.createSftpClient(version)) {
+                try (SftpClient sftp = session.createSftpClient(getTestedVersion())) {
                     for (DirEntry entry : sftp.readDir(remotePath)) {
                         String fileName = entry.getFilename();
                         if (".".equals(fileName) || "..".equals(fileName)) {
                             continue;
                         }
 
-                        Attributes attrs = validateSftpFileTypeAndPermissions(fileName, version, entry.getAttributes());
+                        Attributes attrs = validateSftpFileTypeAndPermissions(fileName, getTestedVersion(), entry.getAttributes());
                         if (subFolderName.equals(fileName)) {
                             assertEquals("Mismatched sub-folder type", SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY, attrs.getType());
                             assertTrue("Sub-folder not marked as directory", attrs.isDirectory());
@@ -183,6 +205,136 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                 client.stop();
             }
         }
+    }
+
+    @Test   // see SSHD-574
+    public void testSftpACLEncodeDecode() throws Exception {
+        AclEntryType[] types = AclEntryType.values();
+        final List<AclEntry> aclExpected = new ArrayList<>(types.length);
+        for (AclEntryType t : types) {
+            aclExpected.add(AclEntry.newBuilder()
+                                .setType(t)
+                                .setFlags(EnumSet.allOf(AclEntryFlag.class))
+                                .setPermissions(EnumSet.allOf(AclEntryPermission.class))
+                                .setPrincipal(new DefaultGroupPrincipal(getCurrentTestName() + "@" + getClass().getPackage().getName()))
+                                .build());
+        }
+
+        final AtomicInteger numInvocations = new AtomicInteger(0);
+        SftpSubsystemFactory factory = new SftpSubsystemFactory() {
+            @Override
+            public Command create() {
+                SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy()) {
+                    @Override
+                    protected Map<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options) throws IOException {
+                        Map<String, Object> attrs = super.resolveFileAttributes(file, flags, options);
+                        if (GenericUtils.isEmpty(attrs)) {
+                            attrs = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
+                        }
+
+                        @SuppressWarnings("unchecked")
+                        List<AclEntry> aclActual = (List<AclEntry>) attrs.put("acl", aclExpected);
+                        if (aclActual != null) {
+                            log.info("resolveFileAttributes(" + file + ") replaced ACL: " + aclActual);
+                        }
+                        return attrs;
+                    }
+
+                    @Override
+                    protected void setFileAccessControl(Path file, List<AclEntry> aclActual, LinkOption ... options) throws IOException {
+                        if (aclActual != null) {
+                            assertListEquals("Mismatched ACL set for file=" + file, aclExpected, aclActual);
+                            numInvocations.incrementAndGet();
+                        }
+                    }
+                };
+                Collection<? extends SftpEventListener> listeners = getRegisteredListeners();
+                if (GenericUtils.size(listeners) > 0) {
+                    for (SftpEventListener l : listeners) {
+                        subsystem.addSftpEventListener(l);
+                    }
+                }
+
+                return subsystem;
+            }
+        };
+
+        factory.addSftpEventListener(new AbstractSftpEventListenerAdapter() {
+            @Override
+            public void modifyingAttributes(ServerSession session, Path path, Map<String, ?> attrs) {
+                @SuppressWarnings("unchecked")
+                List<AclEntry> aclActual = GenericUtils.isEmpty(attrs) ? null : (List<AclEntry>) attrs.get("acl");
+                if (getTestedVersion() > SftpConstants.SFTP_V3) {
+                    assertListEquals("Mismatched modifying ACL for file=" + path, aclExpected, aclActual);
+                } else {
+                    assertNull("Unexpected modifying ACL for file=" + path, aclActual);
+                }
+            }
+
+            @Override
+            public void modifiedAttributes(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown) {
+                @SuppressWarnings("unchecked")
+                List<AclEntry> aclActual  = GenericUtils.isEmpty(attrs) ? null : (List<AclEntry>) attrs.get("acl");
+                if (getTestedVersion() > SftpConstants.SFTP_V3) {
+                    assertListEquals("Mismatched modified ACL for file=" + path, aclExpected, aclActual);
+                } else {
+                    assertNull("Unexpected modified ACL for file=" + path, aclActual);
+                }
+            }
+        });
+
+        sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(factory));
+
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Files.createDirectories(lclSftp.resolve("sub-folder"));
+        Path lclFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-" + getTestedVersion() + ".txt");
+        Files.write(lclFile, getClass().getName().getBytes(StandardCharsets.UTF_8));
+
+        Path parentPath = targetPath.getParent();
+        String remotePath = Utils.resolveRelativeRemotePath(parentPath, lclSftp);
+        int numInvoked = 0;
+        try (SshClient client = setupTestClient()) {
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                try (SftpClient sftp = session.createSftpClient(getTestedVersion())) {
+                    for (DirEntry entry : sftp.readDir(remotePath)) {
+                        String fileName = entry.getFilename();
+                        if (".".equals(fileName) || "..".equals(fileName)) {
+                            continue;
+                        }
+
+                        Attributes attrs = validateSftpFileTypeAndPermissions(fileName, getTestedVersion(), entry.getAttributes());
+                        List<AclEntry> aclActual = attrs.getAcl();
+                        if (getTestedVersion() == SftpConstants.SFTP_V3) {
+                            assertNull("Unexpected ACL for entry=" + fileName, aclActual);
+                        } else {
+                            assertListEquals("Mismatched ACL for entry=" + fileName, aclExpected, aclActual);
+                        }
+
+                        attrs.getFlags().clear();
+                        attrs.setAcl(aclExpected);
+                        sftp.setStat(remotePath + "/" + fileName, attrs);
+                        if (getTestedVersion() > SftpConstants.SFTP_V3) {
+                            numInvoked++;
+                        }
+                    }
+                }
+            } finally {
+                client.stop();
+            }
+        }
+
+        assertEquals("Mismatched invocations count", numInvoked, numInvocations.get());
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[" + getTestedVersion() + "]";
     }
 
     private static Attributes validateSftpFileTypeAndPermissions(String fileName, int version, Attributes attrs) {
