@@ -47,7 +47,7 @@ import org.apache.sshd.server.session.ServerSession;
 public class InvertedShellWrapper extends AbstractLoggingBean implements Command, SessionAware {
 
     /**
-     * Default buffer size for the IO pumps.
+     * Default buffer size for the I/O pumps.
      */
     public static final int DEFAULT_BUFFER_SIZE = IoUtils.DEFAULT_COPY_SIZE;
 
@@ -182,10 +182,16 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
                 if (pumpStream(shellErr, err, buffer)) {
                     continue;
                 }
-                if (!shell.isAlive()) {
+
+                /*
+                 * Make sure we exhausted all data - the shell might be dead
+                 * but some data may still be in transit via pumping
+                 */
+                if ((!shell.isAlive()) && (in.available() <= 0) && (shellOut.available() <= 0) && (shellErr.available() <= 0)) {
                     callback.onExit(shell.exitValue());
                     return;
                 }
+
                 // Sleep a bit.  This is not very good, as it consumes CPU, but the
                 // input streams are not selectable for nio, and any other blocking
                 // method would consume at least two threads

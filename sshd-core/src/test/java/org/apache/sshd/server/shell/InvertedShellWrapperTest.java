@@ -158,7 +158,102 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
         }
     }
 
-    private BogusInvertedShell newShell(String contentOut, String contentErr) {
+    @Test // see SSHD-576
+    public void testShellDiesBeforeAllDataExhausted() throws Exception {
+        final String IN_CONTENT = "shellInput";
+        final String OUT_CONTENT = "shellOutput";
+        final String ERR_CONTENT = "shellError";
+        try (final InputStream stdin = newDelayedInputStream(Long.SIZE, IN_CONTENT);
+             final ByteArrayOutputStream shellIn = new ByteArrayOutputStream(Byte.MAX_VALUE);
+             final InputStream shellOut = newDelayedInputStream(Byte.SIZE, OUT_CONTENT);
+             ByteArrayOutputStream stdout = new ByteArrayOutputStream(OUT_CONTENT.length() + Byte.SIZE);
+             final InputStream shellErr = newDelayedInputStream(Short.SIZE, ERR_CONTENT);
+             ByteArrayOutputStream stderr = new ByteArrayOutputStream(ERR_CONTENT.length() + Byte.SIZE)) {
+
+            InvertedShell shell = new InvertedShell() {
+                @Override
+                public void start(Map<String, String> env) throws IOException {
+                    // ignored
+                }
+
+                @Override
+                public boolean isAlive() {
+                    return false;
+                }
+
+                @Override
+                public InputStream getOutputStream() {
+                    return shellOut;
+                }
+
+                @Override
+                public OutputStream getInputStream() {
+                    return shellIn;
+                }
+
+                @Override
+                public InputStream getErrorStream() {
+                    return shellErr;
+                }
+
+                @Override
+                public int exitValue() {
+                    return -1;
+                }
+
+                @Override
+                public void destroy() {
+                    // ignored
+                }
+            };
+
+            BogusExitCallback exitCallback = new BogusExitCallback();
+            InvertedShellWrapper wrapper = new InvertedShellWrapper(shell);
+            try {
+                wrapper.setInputStream(stdin);
+                wrapper.setOutputStream(stdout);
+                wrapper.setErrorStream(stderr);
+
+                wrapper.setExitCallback(exitCallback);
+                wrapper.start(new BogusEnvironment());
+
+                wrapper.pumpStreams();
+            } finally {
+                wrapper.destroy();
+            }
+
+            assertEquals("Mismatched STDIN value", IN_CONTENT, shellIn.toString(StandardCharsets.UTF_8.name()));
+            assertEquals("Mismatched STDOUT value", OUT_CONTENT, stdout.toString(StandardCharsets.UTF_8.name()));
+            assertEquals("Mismatched STDERR value", ERR_CONTENT, stderr.toString(StandardCharsets.UTF_8.name()));
+        }
+    }
+
+    private static InputStream newDelayedInputStream(int callsCount, String data) {
+        return newDelayedInputStream(callsCount, data.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static InputStream newDelayedInputStream(final int callsCount, byte ... data) {
+        return new ByteArrayInputStream(data) {
+            private int delayCount = 0;
+
+            @Override
+            public synchronized int read() {
+                throw new UnsupportedOperationException("Unexpected single byte read call");
+            }
+
+            @Override
+            public synchronized int read(byte[] b, int off, int len) {
+                if (delayCount < callsCount) {
+                    delayCount++;
+                    return 0;
+                }
+
+                return super.read(b, off, len);
+            }
+        };
+    }
+
+    private static BogusInvertedShell newShell(String contentOut, String contentErr) {
         ByteArrayOutputStream in = new ByteArrayOutputStream(20);
         ByteArrayInputStream out = new ByteArrayInputStream(contentOut.getBytes(StandardCharsets.UTF_8));
         ByteArrayInputStream err = new ByteArrayInputStream(contentErr.getBytes(StandardCharsets.UTF_8));
