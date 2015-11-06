@@ -202,6 +202,7 @@ public class ChannelOutputStream extends OutputStream implements Channel {
 
             try {
                 flush();
+                channel.sendEof();
             } finally {
                 closedState.set(true);
             }
