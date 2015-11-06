@@ -79,6 +79,7 @@ public abstract class AbstractChannel
     protected int id;
     protected int recipient;
     protected final AtomicBoolean eof = new AtomicBoolean(false);
+    protected final AtomicBoolean eofSent = new AtomicBoolean(false);
     protected AtomicReference<GracefulState> gracefulState = new AtomicReference<GracefulState>(GracefulState.Opened);
     protected final DefaultCloseFuture gracefulFuture = new DefaultCloseFuture(lock);
     protected final List<RequestHandler<Channel>> handlers = new ArrayList<RequestHandler<Channel>>();
@@ -472,11 +473,13 @@ public abstract class AbstractChannel
     protected abstract void doWriteExtendedData(byte[] data, int off, int len) throws IOException;
 
     protected void sendEof() throws IOException {
-        log.debug("Send SSH_MSG_CHANNEL_EOF on channel {}", this);
-        Session s = getSession();
-        Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_EOF, Short.SIZE);
-        buffer.putInt(getRecipient());
-        writePacket(buffer);
+        if (eofSent.getAndSet(true) == false) {
+            log.debug("Send SSH_MSG_CHANNEL_EOF on channel {}", this);
+            Session s = getSession();
+            Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_EOF, Short.SIZE);
+            buffer.putInt(getRecipient());
+            writePacket(buffer);
+        }
     }
 
     @Override
