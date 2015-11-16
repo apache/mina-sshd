@@ -18,9 +18,11 @@
  */
 package org.apache.sshd.server.shell;
 
+import java.io.EOFException;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StreamCorruptedException;
 import java.util.Collection;
 import java.util.Set;
 
@@ -36,14 +38,17 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  */
 public class TtyFilterInputStream extends FilterInputStream {
     private final Set<TtyOptions> ttyOptions;
-    private Buffer buffer;
-    private int lastChar;
+    private Buffer buffer = new ByteArrayBuffer(32);
+    private int lastChar = -1;
 
     public TtyFilterInputStream(InputStream in, Collection<TtyOptions> ttyOptions) {
         super(in);
         // we create a copy of the options so as to avoid concurrent modifications
         this.ttyOptions = GenericUtils.of(ttyOptions);
-        this.buffer = new ByteArrayBuffer(32);
+
+        if (this.ttyOptions.contains(TtyOptions.LfOnlyInput) && this.ttyOptions.contains(TtyOptions.CrLfInput)) {
+            throw new IllegalArgumentException("Ambiguous TTY options: " + ttyOptions);
+        }
     }
 
     public synchronized void write(int c) {
@@ -61,37 +66,62 @@ public class TtyFilterInputStream extends FilterInputStream {
 
     @Override
     public synchronized int read() throws IOException {
-        int c;
-        if (buffer.available() > 0) {
-            c = buffer.getByte();
-            buffer.compact();
-        } else {
-            c = super.read();
+        int c = readRawInput();
+        if (c == -1) {
+            return c;
         }
 
-        if ((c == '\n') && ttyOptions.contains(TtyOptions.ONlCr) && (lastChar != '\r')) {
-            c = '\r';
-            Buffer buf = new ByteArrayBuffer();
-            buf.putByte((byte) '\n');
-            buf.putBuffer(buffer);
-            buffer = buf;
-        } else if ((c == '\r') && ttyOptions.contains(TtyOptions.OCrNl)) {
-            c = '\n';
+        if ((c == '\r') && ttyOptions.contains(TtyOptions.LfOnlyInput)) {
+            c = readRawInput();
+            if (c == -1) {
+                throw new EOFException("Premature EOF while waiting for LF after CR");
+            }
+
+            if (c != '\n') {
+                throw new StreamCorruptedException("CR not followed by LF");
+            }
         }
+
+        if ((c == '\n') && ttyOptions.contains(TtyOptions.CrLfInput)) {
+            if (lastChar != '\r') {
+                c = '\r';
+                Buffer buf = new ByteArrayBuffer();
+                buf.putByte((byte) '\n');
+                buf.putBuffer(buffer);
+                buffer = buf;
+            }
+        }
+
         lastChar = c;
         return c;
+    }
+
+    protected int readRawInput() throws IOException {
+        // see if have any pending data
+        if (buffer.available() > 0) {
+            int c = buffer.getUByte();
+            buffer.compact();
+            return c;
+        }
+
+        return super.read();
     }
 
     @Override
     public synchronized int read(byte[] b, int off, int len) throws IOException {
         if (buffer.available() == 0) {
             int nb = super.read(b, off, len);
+            if (nb == -1) {
+                return -1;
+            }
             buffer.putRawBytes(b, off, nb);
         }
+
         int nb = 0;
         while ((nb < len) && (buffer.available() > 0)) {
             b[off + nb++] = (byte) read();
         }
+
         return nb;
     }
 }

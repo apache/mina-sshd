@@ -25,21 +25,40 @@ import java.util.Set;
 import org.apache.sshd.common.util.OsUtils;
 
 /**
- * Options controlling the I/O streams behavior
+ * Options controlling the I/O streams behavior regarding CR/LF and echoing
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public enum TtyOptions {
+    /**
+     * Echo the output
+     */
     Echo,
-    INlCr,
-    ICrNl,
-    ONlCr,
-    OCrNl;
+    /**
+     * Convert CRLF to LF if not already such when writing to output stream
+     */
+    LfOnlyOutput,
+    /**
+     * Convert LF to CRLF if not already such when writing to output stream
+     */
+    CrLfOutput,
+    /**
+     * Convert LF to CRLF if not already such when reading from input stream
+     */
+    CrLfInput,
+    /**
+     * Convert CRLF to LF if not already such when reading from input stream
+     */
+    LfOnlyInput;
 
     public static final Set<TtyOptions> LINUX_OPTIONS =
-            Collections.unmodifiableSet(EnumSet.of(TtyOptions.ONlCr));
+            Collections.unmodifiableSet(EnumSet.of(TtyOptions.LfOnlyOutput, TtyOptions.LfOnlyInput));
 
+    /*
+     * NOTE !!! the assumption is that a Windows server is writing to a Linux
+     * client (the most likely) thus it expects CRLF on input, but outputs LF only
+     */
     public static final Set<TtyOptions> WINDOWS_OPTIONS =
-            Collections.unmodifiableSet(EnumSet.of(TtyOptions.Echo, TtyOptions.ICrNl, TtyOptions.ONlCr));
+            Collections.unmodifiableSet(EnumSet.of(TtyOptions.Echo, TtyOptions.LfOnlyOutput, TtyOptions.CrLfInput));
 
     public static Set<TtyOptions> resolveDefaultTtyOptions() {
         return resolveTtyOptions(OsUtils.isWin32());

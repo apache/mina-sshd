@@ -29,28 +29,42 @@ import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Handles the output stream while taking care of the {@link TtyOptions} for CR / LF
- * and ECHO settings
+ * and ECHO settings. <B>Note:</B> does not close the echo stream when filter stream is closed
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class TtyFilterOutputStream extends FilterOutputStream {
     private final Set<TtyOptions> ttyOptions;
     private TtyFilterInputStream echo;
+    private int lastChar = -1;
 
     public TtyFilterOutputStream(OutputStream out, TtyFilterInputStream echo, Collection<TtyOptions> ttyOptions) {
         super(out);
         // we create a copy of the options so as to avoid concurrent modifications
         this.ttyOptions = GenericUtils.of(ttyOptions);
+        if (this.ttyOptions.contains(TtyOptions.LfOnlyOutput) && this.ttyOptions.contains(TtyOptions.CrLfOutput)) {
+            throw new IllegalArgumentException("Ambiguous TTY options: " + this.ttyOptions);
+        }
+
         this.echo = this.ttyOptions.contains(TtyOptions.Echo) ? ValidateUtils.checkNotNull(echo, "No echo stream") : echo;
     }
 
     @Override
     public void write(int c) throws IOException {
-        if ((c == '\n') && ttyOptions.contains(TtyOptions.INlCr)) {
-            c = '\r';
-        } else if ((c == '\r') && ttyOptions.contains(TtyOptions.ICrNl)) {
-            c = '\n';
+        if ((c == '\r') && ttyOptions.contains(TtyOptions.LfOnlyOutput)) {
+            lastChar = c;
+            return;
         }
+
+        if ((c == '\n') && ttyOptions.contains(TtyOptions.CrLfOutput) && (lastChar != '\r')) {
+            writeRawOutput('\r');
+        }
+
+        writeRawOutput(c);
+    }
+
+    protected void writeRawOutput(int c) throws IOException {
+        lastChar = c;
         super.write(c);
         if (ttyOptions.contains(TtyOptions.Echo)) {
             echo.write(c);
@@ -59,8 +73,8 @@ public class TtyFilterOutputStream extends FilterOutputStream {
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
-        for (int i = off; i < len; i++) {
-            write(b[i]);
+        for (int curPos = off, l = 0; l < len; curPos++, l++) {
+            write(b[curPos]);
         }
     }
 }

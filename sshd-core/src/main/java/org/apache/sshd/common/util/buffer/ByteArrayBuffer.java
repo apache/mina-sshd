@@ -23,6 +23,7 @@ import java.nio.charset.Charset;
 
 import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.Readable;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Provides an implementation of {@link Buffer} using a backing byte array
@@ -80,7 +81,9 @@ public final class ByteArrayBuffer extends Buffer {
 
     @Override
     public void wpos(int wpos) {
-        ensureCapacity(wpos - this.wpos);
+        if (wpos > this.wpos) {
+            ensureCapacity(wpos - this.wpos);
+        }
         this.wpos = wpos;
     }
 
@@ -139,6 +142,7 @@ public final class ByteArrayBuffer extends Buffer {
 
     @Override
     public void putRawBytes(byte[] d, int off, int len) {
+        ValidateUtils.checkTrue(len >= 0, "Negative raw bytes length: %d", len);
         ensureCapacity(len);
         System.arraycopy(d, off, data, wpos, len);
         wpos += len;
@@ -165,6 +169,8 @@ public final class ByteArrayBuffer extends Buffer {
 
     @Override
     public void ensureCapacity(int capacity, Int2IntFunction growthFactor) {
+        ValidateUtils.checkTrue(capacity >= 0, "Negative capacity requested: %d", capacity);
+
         int maxSize = size();
         int curPos = wpos();
         int remaining = maxSize - curPos;
