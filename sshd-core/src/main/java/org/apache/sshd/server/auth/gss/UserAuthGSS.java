@@ -160,7 +160,9 @@ public class UserAuthGSS extends AbstractUserAuth {
 
                 if (established && (identity == null)) {
                     identity = context.getSrcName().toString();
-                    log.info("GSS identity is {}", identity);
+                    if (log.isDebugEnabled()) {
+                        log.info("GSS identity is {}", identity);
+                    }
 
                     if (!auth.validateIdentity(session, identity)) {
                         return Boolean.FALSE;

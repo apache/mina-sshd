@@ -73,7 +73,10 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
             }
         }
 
-        log.info("Starting shell with command: '{}' and env: {}", builder.command(), builder.environment());
+        if (log.isDebugEnabled()) {
+            log.debug("Starting shell with command: '{}' and env: {}", builder.command(), builder.environment());
+        }
+
         process = builder.start();
         out = new TtyFilterInputStream(process.getInputStream(), ttyOptions);
         err = new TtyFilterInputStream(process.getErrorStream(), ttyOptions);

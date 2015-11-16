@@ -329,7 +329,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
             } else if ((!c2sEncClientNone) || (!s2cEncClientNone)) {
                 kexFuture.setValue(new SshException("Client does not support none cipher"));
             } else {
-                log.info("Switching to none cipher");
+                log.info("Switching to none cipher " + this);
 
                 Map<KexProposalOption, String> proposal = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
                 synchronized (clientProposal) {

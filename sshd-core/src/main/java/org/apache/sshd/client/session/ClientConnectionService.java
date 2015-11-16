@@ -77,7 +77,9 @@ public class ClientConnectionService extends AbstractConnectionService {
             buf.putBoolean(false);
             session.writePacket(buf);
         } catch (IOException e) {
-            log.info("Error sending keepalive message=" + request, e);
+            if (log.isDebugEnabled()) {
+                log.debug("Error (" + e.getClass().getSimpleName() + ") sending keepalive message=" + request + ": " + e.getMessage());
+            }
         }
     }
 
