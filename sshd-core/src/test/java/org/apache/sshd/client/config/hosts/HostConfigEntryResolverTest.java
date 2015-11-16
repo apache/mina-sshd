@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
@@ -104,6 +105,26 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             assertEffectiveRemoteAddress(session, entry);
+        } finally {
+            client.stop();
+        }
+    }
+
+    @Test
+    public void testNegatedHostEntriesResolution() throws Exception {
+        HostConfigEntry positiveEntry = new HostConfigEntry(TEST_LOCALHOST, TEST_LOCALHOST, port, getCurrentTestName());
+        HostConfigEntry negativeEntry = new HostConfigEntry(
+                String.valueOf(HostConfigEntry.NEGATION_CHAR_PATTERN) + positiveEntry.getHost(),
+                positiveEntry.getHostName(),
+                getMovedPortNumber(positiveEntry.getPort()),
+                getClass().getPackage().getName());
+        client.setHostConfigEntryResolver(HostConfigEntry.toHostConfigEntryResolver(Arrays.asList(negativeEntry, positiveEntry)));
+        client.start();
+
+        try(ClientSession session = client.connect(negativeEntry.getUsername(), negativeEntry.getHostName(), negativeEntry.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(5L, TimeUnit.SECONDS);
+            assertEffectiveRemoteAddress(session, positiveEntry);
         } finally {
             client.stop();
         }

@@ -54,6 +54,7 @@ import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.config.keys.IdentityUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
@@ -66,7 +67,7 @@ import org.apache.sshd.common.util.io.NoCloseReader;
  * file format</A>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class HostConfigEntry implements Cloneable, UsernameHolder {
+public class HostConfigEntry implements UsernameHolder {
 
     /**
      * Used in a host pattern to denote zero or more consecutive characters
@@ -85,9 +86,14 @@ public class HostConfigEntry implements Cloneable, UsernameHolder {
     public static final char SINGLE_CHAR_PATTERN = '?';
 
     /**
+     * Used to negate a host pattern
+     */
+    public static final char NEGATION_CHAR_PATTERN = '!';
+
+    /**
      * The available pattern characters
      */
-    public static final String PATTERN_CHARS = new String(new char[]{WILDCARD_PATTERN, SINGLE_CHAR_PATTERN});
+    public static final String PATTERN_CHARS = new String(new char[]{WILDCARD_PATTERN, SINGLE_CHAR_PATTERN, NEGATION_CHAR_PATTERN});
 
     public static final String HOST_CONFIG_PROP = "Host";
     public static final String HOST_NAME_CONFIG_PROP = "HostName";
@@ -126,12 +132,12 @@ public class HostConfigEntry implements Cloneable, UsernameHolder {
         private static final Path KEYS_FILE = PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_CONFIG_FILENAME);
     }
 
-    private String hostValue;
-    private Pattern hostPattern;
+    private String host;
     private String hostName;
     private int port;
     private String username;
     private Boolean exclusiveIdentites;
+    private Collection<Pair<Pattern, Boolean>> patterns = new LinkedList<>();
     private Collection<String> identities = Collections.emptyList();
     private Map<String, String> properties = Collections.emptyMap();
 
@@ -147,35 +153,35 @@ public class HostConfigEntry implements Cloneable, UsernameHolder {
     }
 
     /**
-     * @return The host <U>pattern</U> represented by this entry
-     * @see <A HREF="http://www.gsp.com/cgi-bin/man.cgi?topic=ssh_config#3">Host Patterns</A>
+     * @return The <U>pattern(s)</U> represented by this entry
      */
     public String getHost() {
-        return hostValue;
+        return host;
     }
 
-    public Pattern getHostPattern() {
-        return hostPattern;
-    }
-
-    /**
-     * @param host The host name/address/pattern represented by the entry
-     */
     public void setHost(String host) {
-        hostValue = host;
-        hostPattern = toPattern(host);
+        this.host = host;
+        this.patterns = parsePatterns(parseConfigValue(host));
+    }
+
+    public void setHost(Collection<String> patterns) {
+        this.host = GenericUtils.join(ValidateUtils.checkNotNullAndNotEmpty(patterns, "No patterns"), ',');
+        this.patterns = parsePatterns(patterns);
+    }
+
+    public Collection<Pair<Pattern, Boolean>> getPatterns() {
+        return patterns;
     }
 
     /**
-     * Checks if a given host name / address matches the entry's host pattern
+     * Checks if a given host name / address matches the entry's host pattern(s)
      *
      * @param host The host name / address - ignored if {@code null}/empty
-     * @return {@code true} if the name / address matches the pattern
-     * @see #getHostPattern()
+     * @return {@code true} if the name / address matches the pattern(s)
      * @see #isHostMatch(String, Pattern)
      */
     public boolean isHostMatch(String host) {
-        return isHostMatch(host, getHostPattern());
+        return isHostMatch(host, getPatterns());
     }
 
     /**
@@ -601,35 +607,6 @@ public class HostConfigEntry implements Cloneable, UsernameHolder {
     }
 
     @Override
-    public HostConfigEntry clone() {
-        try {
-            HostConfigEntry other = getClass().cast(super.clone());
-
-            // avoid shared instances
-            other.setIdentities(null);
-            Collection<String> ids = this.getIdentities();
-            if (GenericUtils.size(ids) > 0) {
-                for (String kp : ids) {
-                    other.addIdentity(kp);
-                }
-            }
-
-            // avoid shared instances
-            other.setProperties(null);
-            Map<String, String> props = this.getProperties();
-            if (GenericUtils.size(props) > 0) {
-                for (Map.Entry<String, String> pe : props.entrySet()) {
-                    other.setProperty(pe.getKey(), pe.getValue());
-                }
-            }
-
-            return other;
-        } catch (CloneNotSupportedException e) {
-            throw new RuntimeException("Failed (" + e.getClass().getSimpleName() + ") to clone " + toString() + ": " + e.getMessage(), e);
-        }
-    }
-
-    @Override
     public String toString() {
         return getHost() + ": " + getUsername() + "@" + getHostName() + ":" + getPort();
     }
@@ -769,13 +746,19 @@ public class HostConfigEntry implements Cloneable, UsernameHolder {
      */
     public static HostConfigEntry normalizeEntry(HostConfigEntry entry, String host, int port, String username) throws IOException {
         if (entry == null) {
-            return entry;
+            return null;
         }
 
-        HostConfigEntry normal = entry.clone();
+        HostConfigEntry normal = new HostConfigEntry();
+        normal.setHost(host);
         normal.setHostName(entry.resolveHostName(host));
         normal.setPort(entry.resolvePort(port));
         normal.setUsername(entry.resolveUsername(username));
+
+        Map<String, String> props = entry.getProperties();
+        if (GenericUtils.size(props) > 0) {
+            normal.setProperties(new TreeMap<String, String>(props));
+        }
 
         Collection<String> ids = entry.getIdentities();
         if (GenericUtils.isEmpty(ids)) {
@@ -881,6 +864,7 @@ public class HostConfigEntry implements Cloneable, UsernameHolder {
      * @param pattern The pattern to check - ignored if {@code null}/empty
      * @return {@code true} if the pattern is not empty and contains no wildcard characters
      * @see #WILDCARD_PATTERN
+     * @see #SINGLE_CHAR_PATTERN
      * @see #SINGLE_CHAR_PATTERN
      */
     public static boolean isSpecificHostPattern(String pattern) {
@@ -997,17 +981,39 @@ public class HostConfigEntry implements Cloneable, UsernameHolder {
         }
     }
 
-    /**
-     * Checks if a given host name / address matches a host pattern
-     *
-     * @param host The host name / address - ignored if {@code null}/empty
-     * @param pattern The host pattern string - ignored if {@code null}/empty
-     * @return {@code true} if the name / address matches the pattern
-     * @see #toPattern(String)
-     * @see #isHostMatch(String, Pattern)
-     */
-    public static boolean isHostMatch(String host, CharSequence pattern) {
-        return isHostMatch(host, toPattern(pattern));
+    public static boolean isHostMatch(String host, Collection<Pair<Pattern, Boolean>> patterns) {
+        if (GenericUtils.isEmpty(patterns)) {
+            return false;
+        }
+
+        boolean matchFound = false;
+        for (Pair<Pattern, Boolean> pp : patterns) {
+            Boolean negated = pp.getSecond();
+            /*
+             * If already found a match we are interested only in negations
+             */
+            if (matchFound && (!negated.booleanValue())) {
+                continue;
+            }
+
+            if (!isHostMatch(host, pp.getFirst())) {
+                continue;
+            }
+
+            /*
+             * According to https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5:
+             *
+             *      If a negated entry is matched, then the Host entry is ignored,
+             *      regardless of whether any other patterns on the line match.
+             */
+            if (negated.booleanValue()) {
+                return false;
+            }
+
+            matchFound = true;
+        }
+
+        return matchFound;
     }
 
     /**
@@ -1026,22 +1032,37 @@ public class HostConfigEntry implements Cloneable, UsernameHolder {
         return m.matches();
     }
 
+    public static List<Pair<Pattern, Boolean>> parsePatterns(Collection<? extends CharSequence> patterns) {
+        if (GenericUtils.isEmpty(patterns)) {
+            return Collections.emptyList();
+        }
+
+        List<Pair<Pattern, Boolean>> result = new ArrayList<>(patterns.size());
+        for (CharSequence p : patterns) {
+            result.add(ValidateUtils.checkNotNull(toPattern(p), "No pattern for %s", p));
+        }
+
+        return result;
+    }
+
     /**
      * Converts a host pattern string to a regular expression matcher.
      * <B>Note:</B> pattern matching is <U>case insensitive</U>
      *
      * @param pattern The original pattern string - ignored if {@code null}/empty
-     * @return The regular expression matcher {@link Pattern} - {@code null}
-     * if empty original string
+     * @return The regular expression matcher {@link Pattern} and the indication
+     * whether it is a negating pattern or not - {@code null} if no original string
      * @see #WILDCARD_PATTERN
      * @see #SINGLE_CHAR_PATTERN
+     * @see #NEGATION_CHAR_PATTERN
      */
-    public static Pattern toPattern(CharSequence pattern) {
+    public static Pair<Pattern, Boolean> toPattern(CharSequence pattern) {
         if (GenericUtils.isEmpty(pattern)) {
             return null;
         }
 
         StringBuilder sb = new StringBuilder(pattern.length());
+        boolean negated = false;
         for (int curPos = 0; curPos < pattern.length(); curPos++) {
             char ch = pattern.charAt(curPos);
             ValidateUtils.checkTrue(isValidPatternChar(ch), "Invalid host pattern char in %s", pattern);
@@ -1056,12 +1077,17 @@ public class HostConfigEntry implements Cloneable, UsernameHolder {
                 case WILDCARD_PATTERN:
                     sb.append(".*");
                     break;
+                case NEGATION_CHAR_PATTERN:
+                    ValidateUtils.checkTrue(!negated, "Double negation in %s", pattern);
+                    ValidateUtils.checkTrue(curPos == 0, "Negation must be 1st char: %s", pattern);
+                    negated = true;
+                    break;
                 default:
                     sb.append(ch);
             }
         }
 
-        return Pattern.compile(sb.toString(), Pattern.CASE_INSENSITIVE);
+        return new Pair<Pattern, Boolean>(Pattern.compile(sb.toString(), Pattern.CASE_INSENSITIVE), Boolean.valueOf(negated));
     }
 
     /**
@@ -1097,7 +1123,7 @@ public class HostConfigEntry implements Cloneable, UsernameHolder {
         if ("-_.".indexOf(ch) >= 0) {
             return true;
         }
-        if ((ch == SINGLE_CHAR_PATTERN) || (ch == WILDCARD_PATTERN)) {
+        if (PATTERN_CHARS.indexOf(ch) >= 0) {
             return true;
         }
         return false;
@@ -1148,7 +1174,6 @@ public class HostConfigEntry implements Cloneable, UsernameHolder {
         HostConfigEntry curEntry = null;
         HostConfigEntry globalEntry = null;
         List<HostConfigEntry> entries = null;
-        List<String> multiHosts = Collections.emptyList();
 
         int lineNumber = 1;
         for (String line = rdr.readLine(); line != null; line = rdr.readLine(), lineNumber++) {
@@ -1200,21 +1225,14 @@ public class HostConfigEntry implements Cloneable, UsernameHolder {
                     curEntry.processGlobalValues(globalEntry);
                 }
 
-                entries = updateEntriesList(entries, curEntry, multiHosts);
+                entries = updateEntriesList(entries, curEntry);
 
                 curEntry = new HostConfigEntry();
-                curEntry.setHost(valsList.get(0));
-                // allow for multiple hosts patterns
-                if (valsList.size() > 1) {
-                    multiHosts = valsList.subList(1, valsList.size());
-                } else {
-                    multiHosts = Collections.emptyList();
-                }
+                curEntry.setHost(valsList);
             } else if (curEntry == null) {
                 // if 1st encountered property is NOT for a specific host, then configuration applies to ALL
                 curEntry = new HostConfigEntry();
-                curEntry.setHost(ALL_HOSTS_PATTERN);
-                multiHosts = Collections.emptyList();
+                curEntry.setHost(Collections.singletonList(ALL_HOSTS_PATTERN));
                 globalEntry = curEntry;
             }
 
@@ -1231,7 +1249,7 @@ public class HostConfigEntry implements Cloneable, UsernameHolder {
             curEntry.processGlobalValues(globalEntry);
         }
 
-        entries = updateEntriesList(entries, curEntry, multiHosts);
+        entries = updateEntriesList(entries, curEntry);
         if (entries == null) {
             return Collections.emptyList();
         } else {
@@ -1239,6 +1257,18 @@ public class HostConfigEntry implements Cloneable, UsernameHolder {
         }
     }
 
+    public static List<HostConfigEntry> updateEntriesList(List<HostConfigEntry> entries, HostConfigEntry curEntry) {
+        if (curEntry == null) {
+            return entries;
+        }
+
+        if (entries == null) {
+            entries = new ArrayList<>();
+        }
+
+        entries.add(curEntry);
+        return entries;
+    }
     public static void writeHostConfigEntries(File file, Collection<? extends HostConfigEntry> entries) throws IOException {
         writeHostConfigEntries(ValidateUtils.checkNotNull(file, "No file").toPath(), entries, IoUtils.EMPTY_OPEN_OPTIONS);
     }
@@ -1269,57 +1299,6 @@ public class HostConfigEntry implements Cloneable, UsernameHolder {
         }
 
         return sb;
-    }
-
-    /**
-     * @param entries The original list - if {@code null} one will be allocated if necessary
-     * @param curEntry The current entry - ignored if {@code null}
-     * @param hosts The extra host patterns to be attached to the entry - ignored
-     * if {@code null}/empty
-     * @return The updated list of entries - same as input if nothing added
-     * @see #duplicateConfiguration(HostConfigEntry, Collection)
-     */
-    public static List<HostConfigEntry> updateEntriesList(List<HostConfigEntry> entries, HostConfigEntry curEntry, Collection<String> hosts) {
-        if (curEntry == null) {
-            return entries;
-        }
-
-        // TODO consider allowing multiple patterns for same entry instead of duplicating the entries
-        Collection<HostConfigEntry> dups = duplicateConfiguration(curEntry, hosts);
-        int extraHosts = Math.max(0, GenericUtils.size(dups));
-        if (entries == null) {
-            entries = new ArrayList<>(Math.max(1 + extraHosts, Byte.SIZE));
-        }
-
-        entries.add(curEntry);
-
-        if (extraHosts > 0) {
-            entries.addAll(dups);
-        }
-
-        return entries;
-    }
-
-    /**
-     * @param entry The original entry to duplicate - ignored if {@code null}
-     * @param hosts The hosts patterns to attach to each duplicated entry -
-     * ignored if {@code null}/empty
-     * @return A {@link List} of duplicated entries where each new entry host
-     * pattern is updated from the given one
-     */
-    public static List<HostConfigEntry> duplicateConfiguration(HostConfigEntry entry, Collection<String> hosts) {
-        if ((entry == null) || GenericUtils.isEmpty(hosts)) {
-            return Collections.emptyList();
-        }
-
-        List<HostConfigEntry> dups = new ArrayList<>(hosts.size());
-        for (String pattern : hosts) {
-            HostConfigEntry cloned = entry.clone();
-            cloned.setHost(pattern);
-            dups.add(cloned);
-        }
-
-        return dups;
     }
 
     /**

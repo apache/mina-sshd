@@ -25,10 +25,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -44,6 +44,38 @@ public class HostConfigEntryTest extends BaseTestSupport {
     }
 
     @Test
+    public void testNegatingPatternOverridesAll() {
+        String testHost = "37.77.34.7";
+        String[] elements = GenericUtils.split(testHost, '.');
+        StringBuilder sb = new StringBuilder(testHost.length() + Byte.SIZE);
+        List<Pair<Pattern, Boolean>> patterns = new ArrayList<>(elements.length + 1);
+        // all wildcard patterns are not negated - only the actual host
+        patterns.add(HostConfigEntry.toPattern(String.valueOf(HostConfigEntry.NEGATION_CHAR_PATTERN) + testHost));
+
+        for (int i = 0; i < elements.length; i++) {
+            sb.setLength(0);
+
+            for (int j = 0; j < elements.length; j++) {
+                if (j > 0) {
+                    sb.append('.');
+                }
+                if (i == j) {
+                    sb.append(HostConfigEntry.WILDCARD_PATTERN);
+                } else {
+                    sb.append(elements[j]);
+                }
+            }
+
+            patterns.add(HostConfigEntry.toPattern(sb));
+        }
+
+        for (int index = 0; index < patterns.size(); index++) {
+            assertFalse("Unexpected match for " + patterns, HostConfigEntry.isHostMatch(testHost, patterns));
+            Collections.shuffle(patterns);
+        }
+    }
+
+    @Test
     public void testHostWildcardPatternMatching() {
         String pkgName = getClass().getPackage().getName();
         String[] elements = GenericUtils.split(pkgName, '.');
@@ -53,7 +85,8 @@ public class HostConfigEntryTest extends BaseTestSupport {
         }
 
         String value = sb.toString();
-        Pattern pattern = HostConfigEntry.toPattern(value);
+        Pair<Pattern, Boolean> pp = HostConfigEntry.toPattern(value);
+        Pattern pattern = pp.getFirst();
         String domain = value.substring(1); // chomp the wildcard prefix
         for (String host : new String[] {
                 getClass().getSimpleName(),
@@ -73,7 +106,7 @@ public class HostConfigEntryTest extends BaseTestSupport {
         StringBuilder sb = new StringBuilder().append("10.0.0.");
         int sbLen = sb.length();
 
-        Pattern pattern = HostConfigEntry.toPattern(sb.append(HostConfigEntry.WILDCARD_PATTERN));
+        Pattern pattern = HostConfigEntry.toPattern(sb.append(HostConfigEntry.WILDCARD_PATTERN)).getFirst();
         for (int v = 0; v <= 255; v++) {
             sb.setLength(sbLen);    // start from scratch
             sb.append(v);
@@ -90,7 +123,7 @@ public class HostConfigEntryTest extends BaseTestSupport {
         for (boolean restoreOriginal : new boolean[] { true, false }) {
             for (int index = 0; index < value.length(); index++) {
                 sb.setCharAt(index, HostConfigEntry.SINGLE_CHAR_PATTERN);
-                testCaseInsensitivePatternMatching(value, HostConfigEntry.toPattern(sb.toString()), true);
+                testCaseInsensitivePatternMatching(value, HostConfigEntry.toPattern(sb.toString()).getFirst(), true);
                 if (restoreOriginal) {
                     sb.setCharAt(index, value.charAt(index));
                 }
@@ -112,9 +145,10 @@ public class HostConfigEntryTest extends BaseTestSupport {
             for (int index = sbLen; index < sb.length(); index++) {
                 sb.setCharAt(index, HostConfigEntry.SINGLE_CHAR_PATTERN);
             }
-            String pattern = sb.toString();
 
-            assertTrue("No match for " + address + " on pattern=" + pattern, HostConfigEntry.isHostMatch(address, pattern));
+            String pattern = sb.toString();
+            Pair<Pattern, Boolean> pp = HostConfigEntry.toPattern(pattern);
+            assertTrue("No match for " + address + " on pattern=" + pattern, HostConfigEntry.isHostMatch(address, Collections.singletonList(pp)));
         }
     }
 
@@ -141,7 +175,7 @@ public class HostConfigEntryTest extends BaseTestSupport {
         }
 
         for (char ch : new char[] {
-                    '(', ')', '{', '}', '[', ']', '!', '@',
+                    '(', ')', '{', '}', '[', ']', '@',
                     '#', '$', '^', '&', '%', '~', '<', '>',
                     ',', '/', '\\', '\'', '"', ':', ';' }) {
             assertFalse("Unexpected valid character: " + String.valueOf(ch), HostConfigEntry.isValidPatternChar(ch));
@@ -201,28 +235,8 @@ public class HostConfigEntryTest extends BaseTestSupport {
     @Test
     public void testReadMultipleHostPatterns() throws IOException {
         List<HostConfigEntry> entries = validateHostConfigEntries(readHostConfigEntries());
-        assertEquals("Mismatched number of duplicates", 3, GenericUtils.size(entries));
-
-        HostConfigEntry prototype = entries.get(0);
-        String protoIds = GenericUtils.join(prototype.getIdentities(), ',');
-        Collection<Map.Entry<String,String>> protoProps = prototype.getProperties().entrySet();
-        for (int index = 1; index < entries.size(); index++) {
-            HostConfigEntry entry = entries.get(index);
-            assertEquals("Mismatched host name for " + entry, prototype.getHostName(), entry.getHostName());
-            assertEquals("Mismatched port for " + entry, prototype.getPort(), entry.getPort());
-            assertSame("Mismatched user for " + entry, prototype.getUsername(), entry.getUsername());
-            assertEquals("Mismatched identities for " + entry, protoIds, GenericUtils.join(entry.getIdentities(), ','));
-
-            Map<String,String> entryProps = entry.getProperties();
-            assertEquals("Mismatched properties count for " + entry, GenericUtils.size(protoProps), GenericUtils.size(entryProps));
-
-            for (Map.Entry<String,String> ppe : protoProps) {
-                String key = ppe.getKey();
-                String expected = ppe.getValue();
-                String actual = entryProps.get(key);
-                assertEquals("Mismatched value for " + key + " property of " + entry, expected, actual);
-            }
-        }
+        assertEquals("Mismatched number of entries", 1, GenericUtils.size(entries));
+        assertEquals("Mismatched number of patterns", 3, GenericUtils.size(entries.get(0).getPatterns()));
     }
 
     @Test
