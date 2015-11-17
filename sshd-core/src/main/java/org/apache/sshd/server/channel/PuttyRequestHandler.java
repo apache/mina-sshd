@@ -101,6 +101,7 @@ public class PuttyRequestHandler extends AbstractChannelRequestHandler {
      */
     public static boolean isPuttyClient(String clientVersion) {
         return (GenericUtils.length(clientVersion) > Session.DEFAULT_SSH_VERSION_PREFIX.length())
+            && clientVersion.startsWith(Session.DEFAULT_SSH_VERSION_PREFIX)
             && clientVersion.toLowerCase().contains("putty");
     }
 
