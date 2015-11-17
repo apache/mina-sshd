@@ -369,14 +369,14 @@ public abstract class AbstractChannel
         IOException err = IoUtils.closeQuietly(localWindow, remoteWindow);
         if (err != null) {
             if (log.isDebugEnabled()) {
-                log.debug("Failed (" + err.getClass().getSimpleName() + ") to close window(s) of " + this + ": " + err.getMessage());
+                log.debug("Failed (" + err.getClass().getSimpleName() + ") to pre-close window(s) of " + this + ": " + err.getMessage());
             }
 
             if (log.isTraceEnabled()) {
                 Throwable[] suppressed = err.getSuppressed();
                 if (GenericUtils.length(suppressed) > 0) {
                     for (Throwable t : suppressed) {
-                        log.trace("Suppressed " + t.getClass().getSimpleName() + ") while close window(s) of " + this + ": " + t.getMessage());
+                        log.trace("Suppressed " + t.getClass().getSimpleName() + ") while pre-close window(s) of " + this + ": " + t.getMessage());
                     }
                 }
             }
