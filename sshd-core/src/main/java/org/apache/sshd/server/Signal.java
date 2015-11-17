@@ -23,6 +23,9 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * System signals definition that the shell can receive.
@@ -63,11 +66,40 @@ public enum Signal {
     PWR(30);
 
     /**
-     * A {@link Set} of all the available {@link Signal}s
+     * An un-modifiable {@link Set} of all the available {@link Signal}s
      */
     public static final Set<Signal> SIGNALS = Collections.unmodifiableSet(EnumSet.allOf(Signal.class));
 
-    private static final Map<String, Signal> LOOKUP_TABLE = new HashMap<String, Signal>(40);
+    /**
+     * An un-modifiable <U>case-insensitive</U> {@link Map} of the names of all available {@link Signal}s
+     * @see #SIGNALS
+     */
+    public static final Map<String, Signal> NAME_LOOKUP_TABLE =
+            Collections.unmodifiableMap(new TreeMap<String, Signal>(String.CASE_INSENSITIVE_ORDER) {
+                private static final long serialVersionUID = 1L;    // we're not serializing it
+
+                {
+                    for (Signal s : SIGNALS) {
+                        put(s.name(), s);
+                    }
+                }
+            });
+
+    /**
+     * An un-modifiable {@link Map} of the numeric values of all available {@link Signal}s
+     * @see #SIGNALS
+     * @see #getNumeric()
+     */
+    public static final Map<Integer, Signal> NUMERIC_LOOKUP_TABLE =
+            Collections.unmodifiableMap(new HashMap<Integer, Signal>(SIGNALS.size()) {
+                private static final long serialVersionUID = 1L;    // we're not serializing it
+
+                {
+                    for (Signal s : SIGNALS) {
+                        put(Integer.valueOf(s.getNumeric()), s);
+                    }
+                }
+            });
 
     private final int numeric;
 
@@ -75,19 +107,31 @@ public enum Signal {
         this.numeric = numeric;
     }
 
-    static {
-        // registering the signals in the lookup table to allow faster
-        // string based signal lookups
-        for (Signal s : Signal.values()) {
-            LOOKUP_TABLE.put(s.name(), s);
-        }
-    }
-
-    public static Signal get(String name) {
-        return LOOKUP_TABLE.get(name);
-    }
-
+    /**
+     * @return The signal's numeric value
+     */
     public int getNumeric() {
         return numeric;
+    }
+
+    /**
+     * Retrieves a signal value given its name
+     *
+     * @param name The signal's name (case <U>insensitive</U>) - ignored if {@code null}/empty
+     * @return The matching {@link Signal} or {@code null} if no match found
+     */
+    public static Signal get(String name) {
+        return GenericUtils.isEmpty(name) ? null : NAME_LOOKUP_TABLE.get(name);
+    }
+
+    /**
+     * Retrieves a signal value given its numeric value
+     *
+     * @param num The signal's numeric value
+     * @return The matching {@link Signal} or {@code null} if no match found
+     * @see #getNumeric()
+     */
+    public static Signal get(int num) {
+        return NUMERIC_LOOKUP_TABLE.get(Integer.valueOf(num));
     }
 }
