@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import org.apache.sshd.server.CommandLifecycle;
+import org.apache.sshd.server.SessionAware;
 
 /**
  * This shell have inverted streams, such as the one obtained when launching a
@@ -31,7 +32,7 @@ import org.apache.sshd.server.CommandLifecycle;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface InvertedShell extends CommandLifecycle {
+public interface InvertedShell extends CommandLifecycle, SessionAware {
     /**
      * Returns the output stream used to feed the shell.
      * This method is called after the shell has been started.

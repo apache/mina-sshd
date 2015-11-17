@@ -590,7 +590,7 @@ public class ChannelSession extends AbstractServerChannel {
         getEnvironment().set(name, value);
     }
 
-    protected StandardEnvironment getEnvironment() {
+    public StandardEnvironment getEnvironment() {
         return env;
     }
 

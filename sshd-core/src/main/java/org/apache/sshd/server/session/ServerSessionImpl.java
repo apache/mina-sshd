@@ -185,7 +185,11 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
         if (GenericUtils.isEmpty(clientVersion)) {
             return false;
         }
-        log.debug("Client version string: {}", clientVersion);
+
+        if (log.isDebugEnabled()) {
+            log.debug("readIdentification({}) client version string: {}", this, clientVersion);
+        }
+
         if (!clientVersion.startsWith(DEFAULT_SSH_VERSION_PREFIX)) {
             String msg = "Unsupported protocol version: " + clientVersion;
             ioSession.write(new ByteArrayBuffer((msg + "\n").getBytes(StandardCharsets.UTF_8))).addListener(new SshFutureListener<IoWriteFuture>() {

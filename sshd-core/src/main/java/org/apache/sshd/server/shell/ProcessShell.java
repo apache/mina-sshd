@@ -34,15 +34,19 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.Environment;
+import org.apache.sshd.server.channel.PuttyRequestHandler;
+import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.session.ServerSessionHolder;
 
 /**
  * Bridges the I/O streams between the SSH command and the process that executes it
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
+public class ProcessShell extends AbstractLoggingBean implements InvertedShell, ServerSessionHolder {
     private final List<String> command;
     private String cmdValue;
+    private ServerSession session;
     private Process process;
     private TtyFilterOutputStream in;
     private TtyFilterInputStream out;
@@ -55,10 +59,22 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
     public ProcessShell(String ... command) {
         this(GenericUtils.isEmpty(command) ? Collections.<String>emptyList() : Arrays.asList(command));
     }
+
     public ProcessShell(Collection<String> command) {
         // we copy the original list so as not to change it
         this.command = new ArrayList<String>(ValidateUtils.checkNotNullAndNotEmpty(command, "No process shell command(s)"));
         this.cmdValue = GenericUtils.join(command, ' ');
+    }
+
+    @Override
+    public ServerSession getServerSession() {
+        return session;
+    }
+
+    @Override
+    public void setSession(ServerSession session) {
+        this.session = ValidateUtils.checkNotNull(session, "No server session");
+        ValidateUtils.checkTrue(process == null, "Session set after process started");
     }
 
     @Override
@@ -101,7 +117,11 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
 
     // for some reason these modes provide best results BOTH with Linux SSH client and PUTTY
     protected Map<PtyMode, Integer> resolveShellTtyOptions(Map<PtyMode, Integer> modes) {
-        return modes;
+        if (PuttyRequestHandler.isPuttyClient(getServerSession())) {
+            return PuttyRequestHandler.resolveShellTtyOptions(modes);
+        } else {
+            return modes;
+        }
     }
 
     @Override

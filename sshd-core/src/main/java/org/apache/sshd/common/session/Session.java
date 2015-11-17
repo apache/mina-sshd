@@ -48,6 +48,12 @@ public interface Session
                 UsernameHolder {
 
     /**
+     * Default prefix expected for the client / server identification string
+     */
+    String DEFAULT_SSH_VERSION_PREFIX = "SSH-2.0-";
+
+
+    /**
      * Timeout status.
      */
     enum TimeoutStatus {

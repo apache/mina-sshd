@@ -115,15 +115,15 @@ public class StandardEnvironment extends AbstractLoggingBean implements Environm
     }
 
     /**
-     * adds a variable to the environment. This method is called <code>set</code>
+     * Adds a variable to the environment. This method is called <code>set</code>
      * according to the name of the appropriate posix command <code>set</code>
      *
-     * @param key   environment variable name
+     * @param key   environment variable name - never {@code null}/empty
      * @param value environment variable value
      */
     public void set(String key, String value) {
         // TODO: listening for property changes would be nice too.
-        getEnv().put(key, value);
+        getEnv().put(ValidateUtils.checkNotNullAndNotEmpty(key, "Empty environment variable name"), value);
     }
 
     /**

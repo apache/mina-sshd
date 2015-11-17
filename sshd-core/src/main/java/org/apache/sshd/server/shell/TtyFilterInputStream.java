@@ -128,8 +128,8 @@ public class TtyFilterInputStream extends FilterInputStream {
             buf.putBuffer(org);
             return buf;
         }
-
     }
+
     protected int readRawInput() throws IOException {
         if (buffer.available() > 0) {
             return buffer.getUByte();

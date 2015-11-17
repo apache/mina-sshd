@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.Environment;
+import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.shell.InvertedShell;
 
 public class BogusInvertedShell implements InvertedShell {
@@ -35,6 +36,7 @@ public class BogusInvertedShell implements InvertedShell {
     private final InputStream err;
 
     // for test assertions
+    private ServerSession session;
     private boolean started = false;
     private boolean alive = true;
     private Map<String, String> env = null;
@@ -43,6 +45,11 @@ public class BogusInvertedShell implements InvertedShell {
         this.in = in;
         this.out = out;
         this.err = err;
+    }
+
+    @Override
+    public void setSession(ServerSession session) {
+        this.session = session;
     }
 
     @Override

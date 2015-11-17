@@ -139,10 +139,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
     public void setSession(ServerSession session) {
         pumpSleepTime = PropertyResolverUtils.getLongProperty(session, PUMP_SLEEP_TIME, DEFAULT_PUMP_SLEEP_TIME);
         ValidateUtils.checkTrue(pumpSleepTime > 0L, "Invalid " + PUMP_SLEEP_TIME + ": %d", pumpSleepTime);
-
-        if (shell instanceof SessionAware) {
-            ((SessionAware) shell).setSession(session);
-        }
+        shell.setSession(session);
     }
 
     @Override

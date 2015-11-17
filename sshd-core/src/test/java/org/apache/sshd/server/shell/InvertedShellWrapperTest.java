@@ -27,6 +27,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.sshd.server.Environment;
+import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.BogusEnvironment;
 import org.apache.sshd.util.test.BogusExitCallback;
@@ -82,6 +83,11 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
             @Override
             public void start(Environment env) throws IOException {
                 bogusShell.start(env);
+            }
+
+            @Override
+            public void setSession(ServerSession session) {
+                bogusShell.setSession(session);
             }
 
             @Override
@@ -173,6 +179,11 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
             InvertedShell shell = new InvertedShell() {
                 @Override
                 public void start(Environment env) throws IOException {
+                    // ignored
+                }
+
+                @Override
+                public void setSession(ServerSession session) {
                     // ignored
                 }
 

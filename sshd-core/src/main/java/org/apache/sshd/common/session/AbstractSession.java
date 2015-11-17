@@ -85,9 +85,6 @@ import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractSession extends AbstractInnerCloseable implements Session {
-
-    public static final String DEFAULT_SSH_VERSION_PREFIX = "SSH-2.0-";
-
     /**
      * Name of the property where this session is stored in the attributes of the
      * underlying MINA session. See {@link #getSession(IoSession, boolean)}
