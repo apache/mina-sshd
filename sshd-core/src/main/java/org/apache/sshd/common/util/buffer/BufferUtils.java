@@ -312,6 +312,11 @@ public final class BufferUtils {
     }
 
     public static int getNextPowerOf2(int i) {
+        // for 0-7 return 8
+        if (i < Byte.SIZE) {
+            return Byte.SIZE;
+        }
+
         int j = 1;
         while (j < i) {
             j <<= 1;
