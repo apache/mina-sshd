@@ -17,26 +17,32 @@
  * under the License.
  */
 
-package org.apache.sshd.server.shell;
+package org.apache.sshd.server;
 
-import java.util.List;
-
-import org.apache.sshd.common.util.OsUtils;
+import java.io.IOException;
 
 /**
- * A simplistic interactive shell factory
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class InteractiveProcessShellFactory extends ProcessShellFactory {
-    public static final InteractiveProcessShellFactory INSTANCE = new InteractiveProcessShellFactory();
+public interface CommandLifecycle {
+    /**
+     * Starts the command execution. All streams must have been set <U>before</U>
+     * calling this method. The command should implement {@link java.lang.Runnable},
+     * and this method should spawn a new thread like:
+     * <pre>
+     * {@code Thread(this).start(); }
+     * </pre>
+     *
+     * @param env The {@link Environment}
+     * @throws IOException If failed to start
+     */
+    void start(Environment env) throws IOException;
 
-    public InteractiveProcessShellFactory() {
-        super(OsUtils.resolveDefaultInteractiveCommand());
-    }
-
-    @Override
-    protected List<String> resolveEffectiveCommand(List<String> original) {
-        return original;
-    }
+    /**
+     * This method is called by the SSH server to destroy the command because
+     * the client has disconnected somehow.
+     *
+     * @throws Exception if failed to destroy
+     */
+    void destroy() throws Exception;
 }

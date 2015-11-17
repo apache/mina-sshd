@@ -104,8 +104,9 @@ public final class ByteArrayBuffer extends Buffer {
 
     @Override
     public void compact() {
-        if (available() > 0) {
-            System.arraycopy(data, rpos, data, 0, wpos - rpos);
+        int avail = available();
+        if (avail > 0) {
+            System.arraycopy(data, rpos, data, 0, avail);
         }
         wpos -= rpos;
         rpos = 0;

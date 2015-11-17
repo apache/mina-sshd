@@ -25,6 +25,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -147,7 +148,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
     @Override
     public synchronized void start(Environment env) throws IOException {
         // TODO propagate the Environment itself and support signal sending.
-        shell.start(env.getEnv());
+        shell.start(env);
         shellIn = shell.getInputStream();
         shellOut = shell.getOutputStream();
         shellErr = shell.getErrorStream();
@@ -160,10 +161,28 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
     }
 
     @Override
-    public synchronized void destroy() {
-        shell.destroy();
+    public synchronized void destroy() throws Exception {
+        Exception err = null;
+        try {
+            shell.destroy();
+        } catch (Exception e) {
+            log.warn("destroy({}) failed ({}) to destroy shell: {}",
+                     this, e.getClass().getSimpleName(), e.getMessage());
+            err = GenericUtils.accumulateException(err, e);
+        }
+
         if (shutdownExecutor && (executor instanceof ExecutorService)) {
-            ((ExecutorService) executor).shutdown();
+            try {
+                ((ExecutorService) executor).shutdown();
+            } catch (Exception e) {
+                log.warn("destroy({}) failed ({}) to shut down executor: {}",
+                         this, e.getClass().getSimpleName(), e.getMessage());
+                err = GenericUtils.accumulateException(err, e);
+            }
+        }
+
+        if (err != null) {
+            throw err;
         }
     }
 
@@ -198,7 +217,13 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
                 Thread.sleep(pumpSleepTime);
             }
         } catch (Exception e) {
-            shell.destroy();
+            try {
+                shell.destroy();
+            } catch (Exception err) {
+                log.warn("pumpStreams({}) failed ({}) to destroy shell: {}",
+                         this, e.getClass().getSimpleName(), e.getMessage());
+                err = GenericUtils.accumulateException(err, e);
+            }
 
             int exitValue = shell.exitValue();
             if (log.isDebugEnabled()) {

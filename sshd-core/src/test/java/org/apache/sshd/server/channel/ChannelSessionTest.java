@@ -19,7 +19,6 @@
 package org.apache.sshd.server.channel;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -27,8 +26,6 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.server.Signal;
-import org.apache.sshd.server.SignalListener;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.BogusChannel;
 import org.junit.FixMethodOrder;
@@ -64,25 +61,6 @@ public class ChannelSessionTest extends BaseTestSupport {
             };
             channelSession.handleWindowAdjust(buffer);
             assertTrue("Expanded ?", expanded.get());
-        }
-    }
-
-    @Test
-    public void testAddSignalListenerOnDuplicateSignals() {
-        ChannelSession.StandardEnvironment environ = new ChannelSession.StandardEnvironment();
-        SignalListener listener = new SignalListener() {
-            @Override
-            public void signal(Signal signal) {
-                // ignored
-            }
-        };
-
-        for (Signal s : Signal.SIGNALS) {
-            environ.addSignalListener(listener, s, s, s, s, s, s);
-
-            Collection<SignalListener> ls = environ.getSignalListeners(s, false);
-            int numListeners = (ls == null) ? 0 : ls.size();
-            assertEquals("Mismatched registered listeners count for signal=" + s, 1, numListeners);
         }
     }
 }

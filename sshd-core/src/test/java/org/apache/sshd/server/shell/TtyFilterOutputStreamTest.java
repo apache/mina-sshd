@@ -19,122 +19,99 @@
 
 package org.apache.sshd.server.shell;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.channel.PtyMode;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class TtyFilterOutputStreamTest extends BaseTestSupport {
-    public TtyFilterOutputStreamTest() {
-        super();
+    private final PtyMode mode;
+
+    public TtyFilterOutputStreamTest(PtyMode mode) {
+        this.mode = ValidateUtils.checkNotNull(mode, "No test modes");
+    }
+
+    @Parameters(name = "mode={0}")
+    public static Collection<Object[]> parameters() {
+        return parameterize(TtyFilterOutputStream.OUTPUT_OPTIONS);
     }
 
     @Test
-    public void testNoEchoIfNotInTtyOptions() throws IOException {
-        try (TtyFilterInputStream ttyIn = new TtyFilterInputStream(new ByteArrayInputStream(GenericUtils.EMPTY_BYTE_ARRAY), Collections.<TtyOptions>emptySet());
-             ByteArrayOutputStream baos = new ByteArrayOutputStream(Byte.MAX_VALUE);
-             TtyFilterOutputStream ttyOut = new TtyFilterOutputStream(baos, ttyIn, Collections.<TtyOptions>emptySet())) {
+    public void testCRLFHandling() throws IOException {
+        List<String> lines = Arrays.asList(getClass().getPackage().getName(),
+                getClass().getSimpleName(), getCurrentTestName(),
+                "(" + mode + ")", new Date(System.currentTimeMillis()).toString());
 
-            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(ttyOut, StandardCharsets.UTF_8))) {
-                writer.append(getClass().getName()).append('#').append(getCurrentTestName());
-                writer.newLine();
+        final AtomicInteger crCount = new AtomicInteger(0);
+        final AtomicInteger lfCount = new AtomicInteger(0);
+        try (OutputStream output = new OutputStream() {
+                    @Override
+                    public void write(int b) throws IOException {
+                        if (b == '\r') {
+                            crCount.incrementAndGet();
+                        } else if (b == '\n') {
+                            lfCount.incrementAndGet();
+                        }
+                    }
+                };
+              TtyFilterOutputStream ttyOut = new TtyFilterOutputStream(
+                      output, null, PtyMode.ECHO.equals(mode) ? Collections.<PtyMode>emptySet(): EnumSet.of(mode));
+              Writer writer = new OutputStreamWriter(ttyOut, StandardCharsets.UTF_8)) {
+            for (String l : lines) {
+                writer.append(l).append("\r\n");
             }
+        }
 
-            assertEquals("Unexpected data echoed", 0, ttyIn.available());
+        assertCRLFCounts(mode, lines.size() /* we add a NL after each line */, crCount.get(), lfCount.get());
+    }
+
+    private static void assertCRLFCounts(PtyMode mode, int numLines, int crCount, int lfCount) {
+        switch(mode) {
+            case ECHO:  // no modifications
+                assertEquals("Mismatched CR coumt", numLines, crCount);
+                assertEquals("Mismatched LF coumt", numLines, lfCount);
+                break;
+
+            case INLCR: // Map NL into CR
+                assertEquals("Mismatched CR count", numLines * 2, crCount);
+                assertEquals("Mismatched LF coumt", 0, lfCount);
+                break;
+
+            case ICRNL: // Map CR to NL on input
+                assertEquals("Mismatched CR count", 0, crCount);
+                assertEquals("Mismatched LF coumt", numLines * 2, lfCount);
+                break;
+
+            case IGNCR: // Ignore CR
+                assertEquals("Mismatched CR count", 0, crCount);
+                assertEquals("Mismatched LF coumt", numLines, lfCount);
+                break;
+
+            default:
+                fail("Unsupported mode: " + mode);
         }
     }
-
-    @Test
-    public void testLfOnlyOutput() throws IOException {
-        List<String> expected = createTestLines();
-        byte[] data = GenericUtils.join(expected, "\r\n").getBytes(StandardCharsets.UTF_8);
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length)) {
-            try (TtyFilterOutputStream ttyOut = new TtyFilterOutputStream(baos, null, EnumSet.of(TtyOptions.LfOnlyOutput)) {
-                     private long offset;
-
-                     @Override
-                     protected void writeRawOutput(int c) throws IOException {
-                         offset++;
-                         if (c == '\n') {
-                             offset++;  // compensate for CR filtering
-                         }
-                         assertNotEquals("Unexpected CR at offset=" + offset, '\r', c);
-                         super.writeRawOutput(c);
-                     }
-             }) {
-                ttyOut.write(data);
-            }
-
-            List<String> actual = new ArrayList<>(expected.size());
-            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(baos.toByteArray()), StandardCharsets.UTF_8))) {
-               for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
-                   actual.add(line);
-               }
-            }
-
-            assertListEquals("Mismatched read lines", expected, actual);
-        }
-    }
-
-    @Test
-    public void testCrLfOutput() throws IOException {
-        List<String> expected = createTestLines();
-        byte[] data = GenericUtils.join(expected, '\n').getBytes(StandardCharsets.UTF_8);
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length)) {
-            try (TtyFilterOutputStream ttyOut = new TtyFilterOutputStream(baos, null, EnumSet.of(TtyOptions.CrLfOutput)) {
-                     private long offset;
-                     private int lastChar = -1;
-
-                     @Override
-                     protected void writeRawOutput(int c) throws IOException {
-                         if (c != '\r') {
-                             offset++;  // compensate for CR insertion
-                         }
-
-                         if (c == '\n') {
-                             assertEquals("No CR at offset=" + offset, '\r', lastChar);
-                         }
-
-                         super.writeRawOutput(c);
-                         lastChar = c;
-                     }
-             }) {
-                ttyOut.write(data);
-            }
-
-            List<String> actual = new ArrayList<>(expected.size());
-            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(baos.toByteArray()), StandardCharsets.UTF_8))) {
-               for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
-                   actual.add(line);
-               }
-            }
-
-            assertListEquals("Mismatched read lines", expected, actual);
-        }
-    }
-
-    private List<String> createTestLines() {
-        return Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName(), new Date(System.currentTimeMillis()).toString());
-    }
-
 }

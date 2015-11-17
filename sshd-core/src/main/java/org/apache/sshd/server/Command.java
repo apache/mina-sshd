@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.server;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -34,7 +33,7 @@ import java.io.OutputStream;
  * </p>
  * see {@link org.apache.sshd.server.shell.InvertedShellWrapper}.
  */
-public interface Command {
+public interface Command extends CommandLifecycle {
 
     /**
      * Set the input stream that can be used by the shell to read input.
@@ -63,28 +62,4 @@ public interface Command {
      * @param callback The {@link ExitCallback} to call when shell is closed
      */
     void setExitCallback(ExitCallback callback);
-
-    /**
-     * Starts the shell.
-     * All streams must have been set before calling this method.
-     * The command should implement Runnable, and this method
-     * should spawn a new thread like:
-     * <pre>
-     * {@code
-     * Thread(this).start();
-     * }
-     * </pre>
-     *
-     * @param env The {@link Environment}
-     * @throws IOException If failed to start
-     */
-    void start(Environment env) throws IOException;
-
-    /**
-     * Destroy the shell.
-     * This method can be called by the SSH server to destroy the shell because
-     * the client has disconnected somehow.
-     */
-    void destroy();
-
 }

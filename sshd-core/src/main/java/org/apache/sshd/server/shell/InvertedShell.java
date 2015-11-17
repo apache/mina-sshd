@@ -18,10 +18,10 @@
  */
 package org.apache.sshd.server.shell;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Map;
+
+import org.apache.sshd.server.CommandLifecycle;
 
 /**
  * This shell have inverted streams, such as the one obtained when launching a
@@ -31,17 +31,7 @@ import java.util.Map;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface InvertedShell {
-
-    /**
-     * Starts the shell and will make the streams available for
-     * the ssh server to retrieve and use.
-     *
-     * @param env The environment
-     * @throws IOException if failed to start
-     */
-    void start(Map<String, String> env) throws IOException;
-
+public interface InvertedShell extends CommandLifecycle {
     /**
      * Returns the output stream used to feed the shell.
      * This method is called after the shell has been started.
@@ -74,11 +64,4 @@ public interface InvertedShell {
      * @return the exit value of the shell
      */
     int exitValue();
-
-    /**
-     * Destroy the shell.
-     * This method can be called by the SSH server to destroy the shell because
-     * the client has disconnected somehow.
-     */
-    void destroy();
 }

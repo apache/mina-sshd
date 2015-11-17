@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.shell.InvertedShell;
 
 public class BogusInvertedShell implements InvertedShell {
@@ -45,9 +46,9 @@ public class BogusInvertedShell implements InvertedShell {
     }
 
     @Override
-    public void start(Map<String, String> env) throws IOException {
+    public void start(Environment env) throws IOException {
         this.started = true;
-        this.env = Collections.unmodifiableMap(env);
+        this.env = Collections.unmodifiableMap(env.getEnv());
     }
 
     @Override
@@ -77,9 +78,7 @@ public class BogusInvertedShell implements InvertedShell {
 
     @Override
     public void destroy() {
-        IoUtils.closeQuietly(in);
-        IoUtils.closeQuietly(out);
-        IoUtils.closeQuietly(err);
+        IoUtils.closeQuietly(in, out, err);
     }
 
     public boolean isStarted() {

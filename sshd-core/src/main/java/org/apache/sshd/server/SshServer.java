@@ -475,11 +475,11 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(new File("key.ser")));
         }
 
-        sshd.setShellFactory(new InteractiveProcessShellFactory());
+        sshd.setShellFactory(InteractiveProcessShellFactory.INSTANCE);
         sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
             @Override
             public boolean authenticate(String username, String password, ServerSession session) {
-                return (username != null) && username.equals(password);
+                return (GenericUtils.length(username) > 0) && username.equals(password);
             }
         });
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);

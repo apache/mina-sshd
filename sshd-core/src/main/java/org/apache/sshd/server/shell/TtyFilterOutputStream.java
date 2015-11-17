@@ -22,59 +22,105 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 
+import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Handles the output stream while taking care of the {@link TtyOptions} for CR / LF
- * and ECHO settings. <B>Note:</B> does not close the echo stream when filter stream is closed
+ * and ECHO settings
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class TtyFilterOutputStream extends FilterOutputStream {
-    private final Set<TtyOptions> ttyOptions;
-    private TtyFilterInputStream echo;
-    private int lastChar = -1;
+    public static final Set<PtyMode> OUTPUT_OPTIONS =
+            Collections.unmodifiableSet(EnumSet.of(PtyMode.ECHO, PtyMode.INLCR, PtyMode.ICRNL, PtyMode.IGNCR));
 
-    public TtyFilterOutputStream(OutputStream out, TtyFilterInputStream echo, Collection<TtyOptions> ttyOptions) {
+    private final Set<PtyMode> ttyOptions;
+    private final TtyFilterInputStream echo;
+
+    public TtyFilterOutputStream(OutputStream out, TtyFilterInputStream echo, Map<PtyMode, ?> modes) {
+        this(out, echo, PtyMode.resolveEnabledOptions(modes, OUTPUT_OPTIONS));
+    }
+
+    public TtyFilterOutputStream(OutputStream out, TtyFilterInputStream echo, Collection<PtyMode> ttyOptions) {
         super(out);
         // we create a copy of the options so as to avoid concurrent modifications
-        this.ttyOptions = GenericUtils.of(ttyOptions);
-        if (this.ttyOptions.contains(TtyOptions.LfOnlyOutput) && this.ttyOptions.contains(TtyOptions.CrLfOutput)) {
-            throw new IllegalArgumentException("Ambiguous TTY options: " + this.ttyOptions);
-        }
-
-        this.echo = this.ttyOptions.contains(TtyOptions.Echo) ? ValidateUtils.checkNotNull(echo, "No echo stream") : echo;
+        this.ttyOptions = GenericUtils.of(ttyOptions);    // TODO validate non-conflicting options
+        this.echo = this.ttyOptions.contains(PtyMode.ECHO) ? ValidateUtils.checkNotNull(echo, "No echo stream") : echo;
     }
 
     @Override
     public void write(int c) throws IOException {
-        if ((c == '\r') && ttyOptions.contains(TtyOptions.LfOnlyOutput)) {
-            lastChar = c;
-            return;
+        if (c == '\r') {
+            handleCR();
+        } else if (c == '\n') {
+            handleLF();
+        } else {
+            writeRawOutput(c);
         }
+    }
 
-        if ((c == '\n') && ttyOptions.contains(TtyOptions.CrLfOutput) && (lastChar != '\r')) {
+    protected void handleCR() throws IOException {
+        if (ttyOptions.contains(PtyMode.ICRNL)) {
+            writeRawOutput('\n');   // Map CR to NL on input
+        } else if (ttyOptions.contains(PtyMode.IGNCR)) {
+            return;    // Ignore CR on input
+        } else {
             writeRawOutput('\r');
         }
+    }
 
-        writeRawOutput(c);
+    protected void handleLF() throws IOException {
+        if (ttyOptions.contains(PtyMode.INLCR)) {
+            writeRawOutput('\r');   // Map NL into CR on input
+        } else {
+            writeRawOutput('\n');
+        }
     }
 
     protected void writeRawOutput(int c) throws IOException {
-        lastChar = c;
-        super.write(c);
-        if (ttyOptions.contains(TtyOptions.Echo)) {
+        this.out.write(c);
+        if (ttyOptions.contains(PtyMode.ECHO)) {
             echo.write(c);
         }
     }
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
-        for (int curPos = off, l = 0; l < len; curPos++, l++) {
-            write(b[curPos]);
+        if (len == 1) {
+            write(b[off] & 0xFF);
+            return;
+        }
+
+        int lastPos = 0;
+        int maxPos = off + len;
+        for (int curPos = off; curPos < maxPos; curPos++) {
+            int c = b[curPos] & 0xFF;
+            if ((c == '\r') || (c == '\n')) {
+                if (lastPos < curPos) { // No CR or LF in this segment
+                    writeRawOutput(b, lastPos, curPos - lastPos);
+                }
+
+                lastPos = curPos + 1;   // prepare for next character
+                write(c);
+            }
+        }
+
+        if (lastPos < maxPos) { // No CR or LF in this segment
+            writeRawOutput(b, lastPos, maxPos - lastPos);
+        }
+    }
+
+    protected void writeRawOutput(byte[] b, int off, int len) throws IOException {
+        this.out.write(b, off, len);
+        if (ttyOptions.contains(PtyMode.ECHO)) {
+            echo.write(b, off, len);
         }
     }
 }

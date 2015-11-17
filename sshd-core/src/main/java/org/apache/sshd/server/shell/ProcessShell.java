@@ -21,14 +21,19 @@ package org.apache.sshd.server.shell;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
+import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.server.Environment;
 
 /**
  * Bridges the I/O streams between the SSH command and the process that executes it
@@ -36,38 +41,43 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
-    private final Set<TtyOptions> ttyOptions;
-    private final String[] command;
+    private final List<String> command;
     private String cmdValue;
     private Process process;
     private TtyFilterOutputStream in;
     private TtyFilterInputStream out;
     private TtyFilterInputStream err;
 
-    public ProcessShell(Collection<TtyOptions> ttyOptions, String ... command) {
-        // we create a copy of the options so as to avoid concurrent modifications
-        this.ttyOptions = GenericUtils.of(ttyOptions);
-        // we clone the original array so as not to change it
-        this.command = ValidateUtils.checkNotNullAndNotEmpty(command, "No process shell command(s)").clone();
+    /**
+     * @param command    The command components which when joined (with space separator)
+     *                   create the full command to be executed by the shell
+     */
+    public ProcessShell(String ... command) {
+        this(GenericUtils.isEmpty(command) ? Collections.<String>emptyList() : Arrays.asList(command));
+    }
+    public ProcessShell(Collection<String> command) {
+        // we copy the original list so as not to change it
+        this.command = new ArrayList<String>(ValidateUtils.checkNotNullAndNotEmpty(command, "No process shell command(s)"));
         this.cmdValue = GenericUtils.join(command, ' ');
     }
 
     @Override
-    public void start(Map<String, String> env) throws IOException {
-        for (int i = 0; i < command.length; i++) {
-            String cmd = command[i];
+    public void start(Environment env) throws IOException {
+        Map<String, String> varsMap = resolveShellEnvironment(env.getEnv());
+        for (int i = 0; i < command.size(); i++) {
+            String cmd = command.get(i);
             if ("$USER".equals(cmd)) {
-                cmd = env.get("USER");
-                command[i] = cmd;
+                cmd = varsMap.get("USER");
+                command.set(i, cmd);
                 cmdValue = GenericUtils.join(command, ' ');
             }
         }
 
         ProcessBuilder builder = new ProcessBuilder(command);
-        if (GenericUtils.size(env) > 0) {
+        if (GenericUtils.size(varsMap) > 0) {
             try {
                 Map<String, String> procEnv = builder.environment();
-                procEnv.putAll(env);
+                procEnv.putAll(varsMap);
             } catch (Exception e) {
                 log.warn("Could not set environment for command=" + cmdValue, e);
             }
@@ -78,9 +88,20 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
         }
 
         process = builder.start();
-        out = new TtyFilterInputStream(process.getInputStream(), ttyOptions);
-        err = new TtyFilterInputStream(process.getErrorStream(), ttyOptions);
-        in = new TtyFilterOutputStream(process.getOutputStream(), err, ttyOptions);
+
+        Map<PtyMode, ?> modes = resolveShellTtyOptions(env.getPtyModes());
+        out = new TtyFilterInputStream(process.getInputStream(), modes);
+        err = new TtyFilterInputStream(process.getErrorStream(), modes);
+        in = new TtyFilterOutputStream(process.getOutputStream(), err, modes);
+    }
+
+    protected Map<String, String> resolveShellEnvironment(Map<String, String> env) {
+        return env;
+    }
+
+    // for some reason these modes provide best results BOTH with Linux SSH client and PUTTY
+    protected Map<PtyMode, Integer> resolveShellTtyOptions(Map<PtyMode, Integer> modes) {
+        return modes;
     }
 
     @Override
@@ -134,7 +155,16 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
         IOException e = IoUtils.closeQuietly(getInputStream(), getOutputStream(), getErrorStream());
         if (e != null) {
             if (log.isDebugEnabled()) {
-                log.debug(e.getClass().getSimpleName() + " while destroy streams of '" + cmdValue + "': " + e.getMessage());
+                log.debug(e.getClass().getSimpleName() + " while destroy streams of '" + this + "': " + e.getMessage());
+            }
+
+            if (log.isTraceEnabled()) {
+                Throwable[] suppressed = e.getSuppressed();
+                if (GenericUtils.length(suppressed) > 0) {
+                    for (Throwable t : suppressed) {
+                        log.trace("Suppressed " + t.getClass().getSimpleName() + ") while destroy streams of '" + this + "': " + t.getMessage());
+                    }
+                }
             }
         }
     }

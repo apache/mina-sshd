@@ -20,14 +20,9 @@ package org.apache.sshd.server.channel;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -66,7 +61,7 @@ import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.Signal;
-import org.apache.sshd.server.SignalListener;
+import org.apache.sshd.server.StandardEnvironment;
 import org.apache.sshd.server.forward.ForwardingFilter;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.x11.X11ForwardSupport;
@@ -78,112 +73,6 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
  */
 public class ChannelSession extends AbstractServerChannel {
 
-    protected static class StandardEnvironment implements Environment {
-
-        private final Map<Signal, Set<SignalListener>> listeners;
-        private final Map<String, String> env;
-        private final Map<PtyMode, Integer> ptyModes;
-
-        public StandardEnvironment() {
-            listeners = new ConcurrentHashMap<>(3);
-            env = new ConcurrentHashMap<>();
-            ptyModes = new ConcurrentHashMap<>();
-        }
-
-        @Override
-        public void addSignalListener(SignalListener listener, Signal... signals) {
-            if (signals == null) {
-                throw new IllegalArgumentException("signals may not be null");
-            }
-
-            addSignalListener(listener, Arrays.asList(signals));
-        }
-
-        @Override
-        public void addSignalListener(SignalListener listener) {
-            addSignalListener(listener, Signal.SIGNALS);
-        }
-
-        /*
-         * NOTE: we don't care if the collection is a Set or not - after all,
-         * we hold the listeners inside a Set, so even if we add several times
-         * the same listener to the same signal set, it is harmless
-         */
-        @Override
-        public void addSignalListener(SignalListener listener, Collection<Signal> signals) {
-            if (listener == null) {
-                throw new IllegalArgumentException("listener may not be null");
-            }
-
-            if (signals == null) {
-                throw new IllegalArgumentException("signals may not be null");
-            }
-
-            for (Signal s : signals) {
-                getSignalListeners(s, true).add(listener);
-            }
-        }
-
-        @Override
-        public Map<String, String> getEnv() {
-            return env;
-        }
-
-        @Override
-        public Map<PtyMode, Integer> getPtyModes() {
-            return ptyModes;
-        }
-
-        @Override
-        public void removeSignalListener(SignalListener listener) {
-            if (listener == null) {
-                throw new IllegalArgumentException("listener may not be null");
-            }
-            for (Signal s : Signal.SIGNALS) {
-                final Set<SignalListener> ls = getSignalListeners(s, false);
-                if (ls != null) {
-                    ls.remove(listener);
-                }
-            }
-        }
-
-        public void signal(Signal signal) {
-            final Set<SignalListener> ls = getSignalListeners(signal, false);
-            if (ls != null) {
-                for (SignalListener l : ls) {
-                    l.signal(signal);
-                }
-            }
-        }
-
-        /**
-         * adds a variable to the environment. This method is called <code>set</code>
-         * according to the name of the appropriate posix command <code>set</code>
-         *
-         * @param key   environment variable name
-         * @param value environment variable value
-         */
-        public void set(String key, String value) {
-            // TODO: listening for property changes would be nice too.
-            getEnv().put(key, value);
-        }
-
-        protected Set<SignalListener> getSignalListeners(Signal signal, boolean create) {
-            Set<SignalListener> ls = listeners.get(signal);
-            if (ls == null && create) {
-                synchronized (listeners) {
-                    ls = listeners.get(signal);
-                    if (ls == null) {
-                        ls = new CopyOnWriteArraySet<>();
-                        listeners.put(signal, ls);
-                    }
-                }
-            }
-            // may be null in case create=false
-            return ls;
-        }
-    }
-
     protected String type;
     protected ChannelAsyncOutputStream asyncOut;
     protected ChannelAsyncOutputStream asyncErr;
@@ -191,8 +80,8 @@ public class ChannelSession extends AbstractServerChannel {
     protected OutputStream err;
     protected Command command;
     protected ChannelDataReceiver receiver;
-    protected StandardEnvironment env = new StandardEnvironment();
     protected Buffer tempBuffer;
+    protected final StandardEnvironment env = new StandardEnvironment();
     protected final CloseFuture commandExitFuture = new DefaultCloseFuture(lock);
 
     public ChannelSession() {
@@ -232,7 +121,14 @@ public class ChannelSession extends AbstractServerChannel {
             if (immediately || command == null) {
                 commandExitFuture.setClosed();
             } else if (!commandExitFuture.isClosed()) {
-                IoUtils.closeQuietly(receiver);
+                IOException e = IoUtils.closeQuietly(receiver);
+                if (e != null) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("close({})[immediately={}] failed ({}) to close receiver: {}",
+                                  this, immediately, e.getClass().getSimpleName(), e.getMessage());
+                    }
+                }
+
                 final TimerTask task = new TimerTask() {
                     @Override
                     public void run() {
@@ -265,17 +161,47 @@ public class ChannelSession extends AbstractServerChannel {
     @Override
     protected void doCloseImmediately() {
         if (command != null) {
-            command.destroy();
-            command = null;
+            try {
+                command.destroy();
+            } catch (Exception e) {
+                log.warn("doCloseImmediately({}) failed ({}) to destroy command: {}",
+                         this, e.getClass().getSimpleName(), e.getMessage());
+            } finally {
+                command = null;
+            }
         }
-        IoUtils.closeQuietly(remoteWindow, out, err, receiver);
+
+        IOException e = IoUtils.closeQuietly(remoteWindow, out, err, receiver);
+        if (e != null) {
+            if (log.isDebugEnabled()) {
+                log.debug("doCloseImmediately({}) failed ({}) to close resources: {}",
+                          this, e.getClass().getSimpleName(), e.getMessage());
+            }
+
+            if (log.isTraceEnabled()) {
+                Throwable[] suppressed = e.getSuppressed();
+                if (GenericUtils.length(suppressed) > 0) {
+                    for (Throwable t : suppressed) {
+                        log.trace("Suppressed " + t.getClass().getSimpleName() + ") while close immediately resource(s) of " + this + ": " + t.getMessage());
+                    }
+                }
+            }
+        }
+
         super.doCloseImmediately();
     }
 
     @Override
     public void handleEof() throws IOException {
         super.handleEof();
-        IoUtils.closeQuietly(receiver);
+
+        IOException e = IoUtils.closeQuietly(receiver);
+        if (e != null) {
+            if (log.isDebugEnabled()) {
+                log.debug("handleEof({}) failed ({}) to close receiver: {}",
+                          this, e.getClass().getSimpleName(), e.getMessage());
+            }
+        }
     }
 
     @Override
@@ -371,7 +297,8 @@ public class ChannelSession extends AbstractServerChannel {
         byte[] modes = buffer.getBytes();
         Environment environment = getEnvironment();
         Map<PtyMode, Integer> ptyModes = environment.getPtyModes();
-        for (int i = 0; i < modes.length && modes[i] != 0;) {
+
+        for (int i = 0; i < modes.length && (modes[i] != PtyMode.TTY_OP_END);) {
             int opcode = modes[i++] & 0x00FF;
             PtyMode mode = PtyMode.fromInt(opcode);
             /**
@@ -379,7 +306,7 @@ public class ChannelSession extends AbstractServerChannel {
              * "Opcodes 160 to 255 are not yet defined, and cause parsing to stop"
              */
             if (mode == null) {
-                log.warn("Unknown pty opcode value: " + opcode);
+                log.warn("handlePtyReq(" + this + ") unknown pty opcode value: " + opcode);
                 break;
             }
             int val = ((modes[i++] << 24) & 0xff000000)
@@ -388,10 +315,10 @@ public class ChannelSession extends AbstractServerChannel {
                     | ((modes[i++]) & 0x000000ff);
             ptyModes.put(mode, val);
         }
+
         if (log.isDebugEnabled()) {
-            log.debug("pty for channel {}: term={}, size=({} - {}), pixels=({}, {}), modes=[{}]",
-                    id, term, tColumns, tRows,
-                    tWidth, tHeight, ptyModes);
+            log.debug("handlePtyReq({}): term={}, size=({} - {}), pixels=({}, {}), modes=[{}]",
+                      this, term, tColumns, tRows, tWidth, tHeight, ptyModes);
         }
 
         addEnvVariable(Environment.ENV_TERM, term);
@@ -406,12 +333,11 @@ public class ChannelSession extends AbstractServerChannel {
         int tWidth = buffer.getInt();
         int tHeight = buffer.getInt();
         if (log.isDebugEnabled()) {
-            log.debug("window-change for channel {}: ({} - {}), ({}, {})",
-                    id, tColumns, tRows,
-                    tWidth, tHeight);
+            log.debug("handleWindowChange({}): ({} - {}), ({}, {})",
+                      this, tColumns, tRows, tWidth, tHeight);
         }
 
-        final StandardEnvironment e = getEnvironment();
+        StandardEnvironment e = getEnvironment();
         e.set(Environment.ENV_COLUMNS, Integer.toString(tColumns));
         e.set(Environment.ENV_LINES, Integer.toString(tRows));
         e.signal(Signal.WINCH);
@@ -421,14 +347,14 @@ public class ChannelSession extends AbstractServerChannel {
     protected boolean handleSignal(Buffer buffer) throws IOException {
         String name = buffer.getString();
         if (log.isDebugEnabled()) {
-            log.debug("Signal received on channel {}: {}", id, name);
+            log.debug("handleSignal({}): {}", this, name);
         }
 
-        final Signal signal = Signal.get(name);
+        Signal signal = Signal.get(name);
         if (signal != null) {
             getEnvironment().signal(signal);
         } else {
-            log.warn("Unknown signal received: " + name);
+            log.warn("handleSignal(" + this + ") unknown signal received: " + name);
         }
         return true;
     }

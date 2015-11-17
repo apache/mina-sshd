@@ -18,22 +18,28 @@
  */
 package org.apache.sshd.common.util;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Operating system dependent utility methods.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class OsUtils {
+    public static final String WINDOWS_SHELL_COMMAND_NAME = "cmd.exe";
+    public static final String LINUX_SHELL_COMMAND_NAME = "/bin/sh";
 
-    private static final boolean WIN32;
+    public static final List<String> LINUX_COMMAND =
+            Collections.unmodifiableList(Arrays.asList(LINUX_SHELL_COMMAND_NAME, "-i", "-l"));
+    public static final List<String> WINDOWS_COMMAND =
+            Collections.unmodifiableList(Collections.singletonList(WINDOWS_SHELL_COMMAND_NAME));
+
+    private static final boolean WIN32 = GenericUtils.trimToEmpty(System.getProperty("os.name")).toLowerCase().contains("windows");
 
     private OsUtils() {
         throw new UnsupportedOperationException("No instance allowed");
-    }
-
-    static {
-        String os = System.getProperty("os.name").toLowerCase();
-        WIN32 = os.contains("windows");
     }
 
     /**
@@ -48,6 +54,18 @@ public final class OsUtils {
      */
     public static boolean isWin32() {
         return WIN32;
+    }
+
+    public static List<String> resolveDefaultInteractiveCommand() {
+        return resolveInteractiveCommand(isWin32());
+    }
+
+    public static List<String> resolveInteractiveCommand(boolean isWin32) {
+        if (isWin32) {
+            return WINDOWS_COMMAND;
+        } else {
+            return LINUX_COMMAND;
+        }
     }
 
 }

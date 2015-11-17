@@ -18,10 +18,13 @@
  */
 package org.apache.sshd.server.shell;
 
-import java.util.Collection;
-import java.util.Set;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.Command;
 
@@ -32,28 +35,30 @@ import org.apache.sshd.server.Command;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ProcessShellFactory extends AbstractLoggingBean implements Factory<Command> {
-    private String[] command;
-    private final Set<TtyOptions> ttyOptions;
+    private List<String> command;
 
     public ProcessShellFactory() {
-        this(GenericUtils.EMPTY_STRING_ARRAY);
+        this(Collections.<String>emptyList());
     }
 
-    public ProcessShellFactory(String[] command) {
-        this(command, TtyOptions.resolveDefaultTtyOptions());
+    public ProcessShellFactory(String ... command) {
+        this(GenericUtils.isEmpty(command) ? Collections.<String>emptyList() : Arrays.asList(command));
     }
 
-    public ProcessShellFactory(String[] command, Collection<TtyOptions> ttyOptions) {
-        this.command = command;
-        this.ttyOptions = GenericUtils.of(ttyOptions);
+    public ProcessShellFactory(List<String> command) {
+        this.command = ValidateUtils.checkNotNullAndNotEmpty(command, "No command");
     }
 
-    public String[] getCommand() {
+    public List<String> getCommand() {
         return command;
     }
 
-    public void setCommand(String[] command) {
-        this.command = command;
+    public void setCommand(String ... command) {
+        setCommand(GenericUtils.isEmpty(command) ? Collections.<String>emptyList() : Arrays.asList(command));
+    }
+
+    public void setCommand(List<String> command) {
+        this.command = ValidateUtils.checkNotNullAndNotEmpty(command, "No command");
     }
 
     @Override
@@ -62,6 +67,25 @@ public class ProcessShellFactory extends AbstractLoggingBean implements Factory<
     }
 
     protected InvertedShell createInvertedShell() {
-        return new ProcessShell(ttyOptions, getCommand());
+        return new ProcessShell(resolveEffectiveCommand(getCommand()));
+    }
+
+    protected List<String> resolveEffectiveCommand(List<String> original) {
+        if (!OsUtils.isWin32()) {
+            return original;
+        }
+
+        // Turns out that running a command with no arguments works just fine
+        if (GenericUtils.size(original) <= 1) {
+            return original;
+        }
+
+        // For windows create a "cmd.exe /C "..."" string
+        String cmdName = original.get(0);
+        if (OsUtils.WINDOWS_SHELL_COMMAND_NAME.equalsIgnoreCase(cmdName)) {
+            return original;    // assume callers knows what they're doing
+        }
+
+        return Arrays.asList(OsUtils.WINDOWS_SHELL_COMMAND_NAME, "/C", GenericUtils.join(original, ' '));
     }
 }

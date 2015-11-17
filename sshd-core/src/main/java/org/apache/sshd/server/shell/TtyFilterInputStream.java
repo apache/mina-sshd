@@ -18,14 +18,16 @@
  */
 package org.apache.sshd.server.shell;
 
-import java.io.EOFException;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StreamCorruptedException;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 
+import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -37,18 +39,21 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class TtyFilterInputStream extends FilterInputStream {
-    private final Set<TtyOptions> ttyOptions;
+    public static final Set<PtyMode> INPUT_OPTIONS =
+            Collections.unmodifiableSet(EnumSet.of(PtyMode.ONLCR, PtyMode.OCRNL, PtyMode.ONLRET, PtyMode.ONOCR));
+
+    private final Set<PtyMode> ttyOptions;
     private Buffer buffer = new ByteArrayBuffer(32);
     private int lastChar = -1;
 
-    public TtyFilterInputStream(InputStream in, Collection<TtyOptions> ttyOptions) {
+    public TtyFilterInputStream(InputStream in, Map<PtyMode, ?> modes) {
+        this(in, PtyMode.resolveEnabledOptions(modes, INPUT_OPTIONS));
+    }
+
+    public TtyFilterInputStream(InputStream in, Collection<PtyMode> ttyOptions) {
         super(in);
         // we create a copy of the options so as to avoid concurrent modifications
-        this.ttyOptions = GenericUtils.of(ttyOptions);
-
-        if (this.ttyOptions.contains(TtyOptions.LfOnlyInput) && this.ttyOptions.contains(TtyOptions.CrLfInput)) {
-            throw new IllegalArgumentException("Ambiguous TTY options: " + ttyOptions);
-        }
+        this.ttyOptions = GenericUtils.of(ttyOptions);  // TODO validate non-conflicting options
     }
 
     public synchronized void write(int c) {
@@ -56,11 +61,15 @@ public class TtyFilterInputStream extends FilterInputStream {
     }
 
     public synchronized void write(byte[] buf, int off, int len) {
-        buffer.putBytes(buf, off, len);
+        if (len == 1) {
+            write(buf[off] & 0xFF);
+        } else {
+            buffer.putBytes(buf, off, len);
+        }
     }
 
     @Override
-    public int available() throws IOException {
+    public synchronized int available() throws IOException {
         return super.available() + buffer.available();
     }
 
@@ -71,55 +80,87 @@ public class TtyFilterInputStream extends FilterInputStream {
             return c;
         }
 
-        if ((c == '\r') && ttyOptions.contains(TtyOptions.LfOnlyInput)) {
-            c = readRawInput();
-            if (c == -1) {
-                throw new EOFException("Premature EOF while waiting for LF after CR");
-            }
-
-            if (c != '\n') {
-                throw new StreamCorruptedException("CR not followed by LF");
-            }
-        }
-
-        if ((c == '\n') && ttyOptions.contains(TtyOptions.CrLfInput)) {
-            if (lastChar != '\r') {
-                c = '\r';
-                Buffer buf = new ByteArrayBuffer();
-                buf.putByte((byte) '\n');
-                buf.putBuffer(buffer);
-                buffer = buf;
-            }
+        if (c == '\r') {
+            c = handleCR();
+        } else if (c == '\n') {
+            c = handleLF();
         }
 
         lastChar = c;
         return c;
     }
 
-    protected int readRawInput() throws IOException {
-        // see if have any pending data
-        if (buffer.available() > 0) {
-            int c = buffer.getUByte();
-            buffer.compact();
-            return c;
+    protected int handleCR() throws IOException {
+        if (ttyOptions.contains(PtyMode.OCRNL)) {
+            return '\n';    // Translate carriage return to newline
+        } else {
+            return '\r';
+        }
+    }
+
+    protected int handleLF() throws IOException {
+        // Map NL to CR-NL.
+        if ((ttyOptions.contains(PtyMode.ONLCR) || ttyOptions.contains(PtyMode.ONOCR)) && (lastChar != '\r')) {
+            buffer = insertCharacter(buffer, '\n');
+            return '\r';
+        } else if (ttyOptions.contains(PtyMode.ONLRET)) {   // Newline performs a carriage return
+            return '\r';
+        } else {
+            return '\n';
+        }
+    }
+
+    // TODO add 'insertXXX' methods to the Buffer class
+    protected Buffer insertCharacter(Buffer org, int c) {
+        int remaining = org.capacity();
+        int readPos = org.rpos();
+        // see if can accommodate the character in the original buffer
+        if ((remaining > 0) && (readPos > 0)) {
+            int writePos = org.wpos();
+            org.wpos(readPos - 1);
+            org.putByte((byte) c);
+            org.wpos(writePos);
+            org.rpos(readPos - 1);
+            return org;
+        } else {
+            Buffer buf = new ByteArrayBuffer(org.available() + 1);
+            buf.putByte((byte) c);
+            buf.putBuffer(org);
+            return buf;
         }
 
-        return super.read();
+    }
+    protected int readRawInput() throws IOException {
+        if (buffer.available() > 0) {
+            return buffer.getUByte();
+        } else {
+            return this.in.read();
+        }
     }
 
     @Override
     public synchronized int read(byte[] b, int off, int len) throws IOException {
-        if (buffer.available() == 0) {
-            int nb = super.read(b, off, len);
-            if (nb == -1) {
+        if (len == 1) {
+            int c = read();
+            if (c == -1) {
                 return -1;
+            }
+
+            b[off] = (byte) c;
+            return 1;
+        }
+
+        if (buffer.available() == 0) {
+            int nb = this.in.read(b, off, len);
+            if (nb == -1) {
+                return nb;
             }
             buffer.putRawBytes(b, off, nb);
         }
 
         int nb = 0;
-        while ((nb < len) && (buffer.available() > 0)) {
-            b[off + nb++] = (byte) read();
+        for (int curPos = off; (nb < len) && (buffer.available() > 0); nb++, curPos++) {
+            b[curPos] = (byte) read();
         }
 
         return nb;
