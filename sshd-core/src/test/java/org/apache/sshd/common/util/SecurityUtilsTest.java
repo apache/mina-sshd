@@ -175,6 +175,6 @@ public class SecurityUtilsTest extends BaseTestSupport {
     public void testBouncyCastleRegistrationSettings() {
         Assume.assumeTrue("Bouncycastle not registered", SecurityUtils.isBouncyCastleRegistered());
         assertTrue("DH Group Exchange not supported", SecurityUtils.isDHGroupExchangeSupported());
-        assertEquals("Mismatched max. DH group exchange key size", SecurityUtils.DEFAULT_MAX_DHGEX_KEY_SIZE, SecurityUtils.getMaxDHGroupExchangeKeySize());
+        assertEquals("Mismatched max. DH group exchange key size", 8192, SecurityUtils.getMaxDHGroupExchangeKeySize());
     }
 }

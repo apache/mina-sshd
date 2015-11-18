@@ -81,22 +81,14 @@ public final class SecurityUtils {
     public static final String MAX_DHGEX_KEY_SIZE_PROP = "org.apache.sshd.maxDHGexKeySize";
 
     /**
-     * The default max. key value used for testing whether Diffie-Hellman Group Exchange
-     * is supported or not. According to <A HREF="https://tools.ietf.org/html/rfc4419">RFC 4419</A>
-     * section 3: &quot;Servers and clients SHOULD support groups with a modulus length of k
-     * bits, where 1024 <= k <= 8192&quot;.
-     * </code>
-     * @see #MAX_DHGEX_KEY_SIZE_PROP
-     */
-    public static final int DEFAULT_MAX_DHGEX_KEY_SIZE = 8192;
-
-    /**
      * System property used to control whether to automatically register the
      * Bouncyastle JCE provider
      * @see #DEFAULT_REGISTER_BOUNCY_CASTLE
      */
     public static final String REGISTER_BOUNCY_CASTLE_PROP = "org.apache.sshd.registerBouncyCastle";
 
+    private static final int MIN_DHGEX_KEY_SIZE = 1024;
+    private static final int MAX_DHGEX_KEY_SIZE = 8192;
     private static final AtomicInteger MAX_DHG_KEY_SIZE_HOLDER = new AtomicInteger(0);
 
     private static String securityProvider;
@@ -140,10 +132,19 @@ public final class SecurityUtils {
                 return maxSupportedKeySize;
             }
 
-            maxSupportedKeySize = Integer.parseInt(
-                    System.getProperty(MAX_DHGEX_KEY_SIZE_PROP, Integer.toString(DEFAULT_MAX_DHGEX_KEY_SIZE)));
-            if (!isDHGroupExchangeSupported(maxSupportedKeySize)) {
-                maxSupportedKeySize = -1;   // signal the error and prevent further attempts
+            String propValue = System.getProperty(MAX_DHGEX_KEY_SIZE_PROP);
+            if (GenericUtils.isEmpty(propValue)) {
+                // Go down from max. to min. to ensure we stop at 1st maximum value success
+                for (int testKeySize = MAX_DHGEX_KEY_SIZE; testKeySize >= MIN_DHGEX_KEY_SIZE; testKeySize -= 1024) {
+                    if (isDHGroupExchangeSupported(testKeySize)) {
+                        maxSupportedKeySize = testKeySize;
+                        break;
+                    }
+                }
+            } else {
+                maxSupportedKeySize = Integer.parseInt(propValue);
+                ValidateUtils.checkTrue(maxSupportedKeySize != 0,   // -1 is OK - means user wants to disable DH group exchange
+                        "Configured " + MAX_DHGEX_KEY_SIZE_PROP + " value must be non-zero: %d", maxSupportedKeySize);
             }
 
             MAX_DHG_KEY_SIZE_HOLDER.set(maxSupportedKeySize);
