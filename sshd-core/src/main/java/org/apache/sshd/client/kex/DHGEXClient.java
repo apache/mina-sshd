@@ -34,6 +34,7 @@ import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -48,14 +49,16 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
     protected final DHFactory factory;
     protected byte expected;
     protected int min = 1024;
-    protected int prf = 4096;
-    protected int max = 8192;
+    protected int prf;
+    protected int max;
     protected AbstractDH dh;
     protected byte[] p;
     protected byte[] g;
 
     protected DHGEXClient(DHFactory factory) {
         this.factory = ValidateUtils.checkNotNull(factory, "No factory");
+        max = SecurityUtils.getMaxDHGroupExchangeKeySize();
+        prf = Math.min(4096, max);
     }
 
     public static KeyExchangeFactory newFactory(final DHFactory delegate) {
