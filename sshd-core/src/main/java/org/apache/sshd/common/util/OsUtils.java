@@ -31,6 +31,8 @@ public final class OsUtils {
     public static final String WINDOWS_SHELL_COMMAND_NAME = "cmd.exe";
     public static final String LINUX_SHELL_COMMAND_NAME = "/bin/sh";
 
+    public static final String ROOT_USER = "root";
+
     public static final List<String> LINUX_COMMAND =
             Collections.unmodifiableList(Arrays.asList(LINUX_SHELL_COMMAND_NAME, "-i", "-l"));
     public static final List<String> WINDOWS_COMMAND =

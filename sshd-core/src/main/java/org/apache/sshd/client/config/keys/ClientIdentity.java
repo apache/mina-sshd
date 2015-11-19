@@ -293,6 +293,7 @@ public final class ClientIdentity {
      * <U>insensitive</U>), value=the {@link Path} of the file holding the key
      * @throws IOException If failed to access the file system
      * @see KeyUtils#validateStrictKeyFilePermissions(Path, LinkOption...)
+     * @see KeyUtils#validateStrictKeyFileOwner(Path, LinkOption...)
      */
     public static Map<String, Path> scanIdentitiesFolder(
             Path dir, boolean strict, Collection<String> types, Transformer<String, String> idGenerator, LinkOption... options)
@@ -318,6 +319,10 @@ public final class ClientIdentity {
             if (strict) {
                 PosixFilePermission perm = KeyUtils.validateStrictKeyFilePermissions(p, options);
                 if (perm != null) {
+                    continue;
+                }
+                String owner = KeyUtils.validateStrictKeyFileOwner(p, options);
+                if (owner != null) {
                     continue;
                 }
             }

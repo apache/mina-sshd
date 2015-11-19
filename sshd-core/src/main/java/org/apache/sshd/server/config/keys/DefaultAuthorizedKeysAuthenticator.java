@@ -112,6 +112,11 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
             if (violation != null) {
                 throw new IOException("String permission violation (" + violation + ") for " + path);
             }
+
+            String ownerViolation = KeyUtils.validateStrictKeyFileOwner(path);
+            if (ownerViolation != null) {
+                throw new IOException("String owner violation (" + ownerViolation + ") for " + path);
+            }
         }
 
         return super.reloadAuthorizedKeys(path, username, session);

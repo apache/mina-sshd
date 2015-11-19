@@ -47,6 +47,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -158,6 +159,69 @@ public final class KeyUtils {
                 p = IoUtils.validateExcludedPermissions(IoUtils.getPermissions(parent, options), STRICTLY_PROHIBITED_FILE_PERMISSION);
                 if (p != null) {
                     return p;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * <P>Checks if a path has strict ownership</P>
+     * <UL>
+     *
+     * <LI><P>
+     * The path must be owned by current user.
+     * </P></LI>
+     *
+     * <LI><P>
+     * (For {@code Unix}) The path may be owned by root.
+     * </P></LI>
+     *
+     * <LI><P>
+     * (For {@code Unix}) If the path is a file, then its folder must also
+     * have valid owner.
+     * </P></LI>
+     *
+     * </UL>
+     *
+     * @param path    The {@link Path} to be checked - ignored if {@code null}
+     *                or does not exist
+     * @param options The {@link LinkOption}s to use to query the file's permissions
+     * @return The violated owner - {@code null} if
+     * no violations detected
+     * @throws IOException If failed to retrieve the ownership
+     */
+    public static String validateStrictKeyFileOwner(Path path, LinkOption... options) throws IOException {
+        if ((path == null) || (!Files.exists(path, options))) {
+            return null;
+        }
+
+        String current = IoUtils.getCurrentUser();
+        String owner = IoUtils.getFileOwner(path, options);
+
+        if (current == null &&  owner == null) {
+            // we cannot detect permissions
+            return null;
+        }
+
+        Set<String> expected = new HashSet<>();
+        if (current != null) {
+            expected.add(current);
+        }
+        if (OsUtils.isUNIX()) {
+            expected.add(OsUtils.ROOT_USER);
+        }
+
+        if (!expected.contains(owner)) {
+            return owner;
+        }
+
+        if (OsUtils.isUNIX()) {
+            if (Files.isRegularFile(path, options)) {
+                String parentOwner = IoUtils.getFileOwner(path.getParent(), options);
+                if (!expected.contains(parentOwner)) {
+                    return parentOwner;
                 }
             }
         }
