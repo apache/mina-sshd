@@ -19,7 +19,10 @@
 
 package org.apache.sshd.common.util.io;
 
+import java.io.IOException;
 import java.nio.file.LinkOption;
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -54,4 +57,5 @@ public class IoUtilsTest extends BaseTestSupport {
             assertArrayEquals("Mismatched bytes at iteration " + index, expected, actual);
         }
     }
+
 }

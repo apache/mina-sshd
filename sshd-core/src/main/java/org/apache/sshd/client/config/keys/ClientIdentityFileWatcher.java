@@ -21,13 +21,13 @@ package org.apache.sshd.client.config.keys;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.ModifiableFileWatcher;
@@ -91,10 +91,10 @@ public class ClientIdentityFileWatcher extends ModifiableFileWatcher implements 
 
     protected KeyPair reloadClientIdentity(Path path) throws IOException, GeneralSecurityException {
         if (isStrict()) {
-            PosixFilePermission violation = KeyUtils.validateStrictKeyFilePermissions(path, IoUtils.EMPTY_LINK_OPTIONS);
+            Pair<String, Object> violation = KeyUtils.validateStrictKeyFilePermissions(path, IoUtils.EMPTY_LINK_OPTIONS);
             if (violation != null) {
                 if (log.isDebugEnabled()) {
-                    log.debug("reloadClientIdentity({}) ignore due to permission violation: {}", path, violation);
+                    log.debug("reloadClientIdentity({}) ignore due to {}", path, violation.getFirst());
                 }
                 return null;
             }
