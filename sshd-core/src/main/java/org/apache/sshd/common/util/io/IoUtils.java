@@ -32,12 +32,14 @@ import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.UserPrincipal;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
@@ -67,6 +69,7 @@ public final class IoUtils {
     private static final byte[] EOL_BYTES = EOL.getBytes(StandardCharsets.UTF_8);
 
     private static final LinkOption[] NO_FOLLOW_OPTIONS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
+    private static final AtomicReference<String> CURRENT_USER_HOLDER = new AtomicReference<>();
 
     /**
      * Private Constructor
@@ -254,6 +257,56 @@ public final class IoUtils {
                         || perms.contains(PosixFilePermission.GROUP_EXECUTE)
                         || perms.contains(PosixFilePermission.OTHERS_EXECUTE));
         f.setExecutable(executable, false);
+    }
+
+    /**
+     * <P>Get file owner.</P>
+     *
+     * @param path  The {@link Path}
+     * @param options The {@link LinkOption}s to use when querying the owner
+     * @return Owner of the file or null if unsupported
+     * @throws IOException If failed to access the file system
+     */
+    public static String getFileOwner(Path path, LinkOption... options) throws IOException {
+        String owner = null;
+        try {
+            UserPrincipal principal = Files.getOwner(path, options);
+            if (principal != null) {
+                owner = principal.getName();
+            }
+        } catch (UnsupportedOperationException e) {
+            // ignore
+        }
+        return owner;
+    }
+
+    /**
+     * <P>Get current user by file ownership.</P>
+     *
+     * @return Owner by creating a file and check ownership
+     * @throws IOException If failed to access the file system
+     */
+    public static String getCurrentUser() throws IOException {
+        synchronized (CURRENT_USER_HOLDER) {
+            String owner = CURRENT_USER_HOLDER.get();
+            if (owner == null) {
+                File t = null;
+                try {
+                    t = File.createTempFile("ssh-", ".tmp");
+                    owner = getFileOwner(t.toPath());
+                    if (owner == null) {
+                        // mark as attempted
+                        owner = "";
+                    }
+                } finally {
+                    if (t != null) {
+                        t.delete();
+                    }
+                }
+                CURRENT_USER_HOLDER.set(owner);
+            }
+            return GenericUtils.isEmpty(owner) ? null : owner;
+        }
     }
 
     /**

@@ -19,7 +19,10 @@
 
 package org.apache.sshd.common.util.io;
 
+import java.io.IOException;
 import java.nio.file.LinkOption;
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -53,5 +56,13 @@ public class IoUtilsTest extends BaseTestSupport {
             assertNotSame("Same bytes received at iteration " + index, expected, actual);
             assertArrayEquals("Mismatched bytes at iteration " + index, expected, actual);
         }
+    }
+
+    @Test
+    public void testGetCurrentUser() throws IOException {
+        // system may be unsupportable, hence the null
+        Collection expected = Arrays.asList(null, System.getProperty("user.name"));
+        String user = IoUtils.getCurrentUser();
+        assertTrue(String.format("Incorrect user got from file owner, expected '%s' got %s", expected, user), expected.contains(user));
     }
 }

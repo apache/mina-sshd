@@ -98,6 +98,13 @@ public class ClientIdentityFileWatcher extends ModifiableFileWatcher implements 
                 }
                 return null;
             }
+            String ownerViolation = KeyUtils.validateStrictKeyFileOwner(path, IoUtils.EMPTY_LINK_OPTIONS);
+            if (ownerViolation != null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("reloadClientIdentity({}) ignore due to owner violation: {}", path, ownerViolation);
+                }
+                return null;
+            }
         }
 
         String location = path.toString();
