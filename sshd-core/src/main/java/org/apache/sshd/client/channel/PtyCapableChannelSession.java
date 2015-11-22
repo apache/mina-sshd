@@ -200,6 +200,11 @@ public class PtyCapableChannelSession extends ChannelSession {
     }
 
     public void sendWindowChange(int columns, int lines, int height, int width) throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("sendWindowChange({}) cols={}, lines={}, height={}, width={}",
+                      this, columns, lines, height, width);
+        }
+
         ptyColumns = columns;
         ptyLines = lines;
         ptyHeight = height;
@@ -207,7 +212,7 @@ public class PtyCapableChannelSession extends ChannelSession {
 
         Session session = getSession();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
-        buffer.putInt(recipient);
+        buffer.putInt(getRecipient());
         buffer.putString("window-change");
         buffer.putBoolean(false);
         buffer.putInt(ptyColumns);
@@ -221,11 +226,11 @@ public class PtyCapableChannelSession extends ChannelSession {
         Session session = getSession();
         if (agentForwarding) {
             if (log.isDebugEnabled()) {
-                log.debug("Send agent forwarding request on {} - recipient={}", this, Integer.valueOf(recipient));
+                log.debug("doOpenPty({}) Send agent forwarding request", this);
             }
 
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
-            buffer.putInt(recipient);
+            buffer.putInt(getRecipient());
             buffer.putString("auth-agent-req@openssh.com");
             buffer.putBoolean(false);
             writePacket(buffer);
@@ -233,12 +238,12 @@ public class PtyCapableChannelSession extends ChannelSession {
 
         if (usePty) {
             if (log.isDebugEnabled()) {
-                log.debug("Send SSH_MSG_CHANNEL_REQUEST pty-req on {}: type={}, cols={}, lines={}, height={}, width={}, modes={}",
+                log.debug("doOpenPty({}) Send SSH_MSG_CHANNEL_REQUEST pty-req: type={}, cols={}, lines={}, height={}, width={}, modes={}",
                           this, ptyType, ptyColumns, ptyLines, ptyHeight, ptyWidth, ptyModes);
             }
 
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
-            buffer.putInt(recipient);
+            buffer.putInt(getRecipient());
             buffer.putString("pty-req");
             buffer.putBoolean(false);
             buffer.putString(ptyType);
@@ -261,14 +266,14 @@ public class PtyCapableChannelSession extends ChannelSession {
 
         if (GenericUtils.size(env) > 0) {
             if (log.isDebugEnabled()) {
-                log.debug("Send SSH_MSG_CHANNEL_REQUEST env on {}: {}", this, env);
+                log.debug("doOpenPty({}) Send SSH_MSG_CHANNEL_REQUEST env: {}", this, env);
             }
 
             for (Map.Entry<String, String> entry : env.entrySet()) {
                 String key = entry.getKey();
                 String value = entry.getValue();
                 Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, key.length() + value.length() + Integer.SIZE);
-                buffer.putInt(recipient);
+                buffer.putInt(getRecipient());
                 buffer.putString("env");
                 buffer.putBoolean(false);
                 buffer.putString(key);

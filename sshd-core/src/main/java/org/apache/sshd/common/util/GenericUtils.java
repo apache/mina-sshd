@@ -47,6 +47,11 @@ public final class GenericUtils {
     public static final byte[] EMPTY_BYTE_ARRAY = {};
     public static final String[] EMPTY_STRING_ARRAY = {};
     public static final Object[] EMPTY_OBJECT_ARRAY = {};
+    public static final List<Class<?>> NUMERIC_PRIMITIVE_CLASSES =
+            Collections.unmodifiableList(Arrays.<Class<?>>asList(
+                        Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE,
+                        Float.TYPE, Double.TYPE
+                    ));
 
     /**
      * The complement of {@link String#CASE_INSENSITIVE_ORDER}
@@ -473,4 +478,16 @@ public final class GenericUtils {
         return (int) (value ^ (value >>> 32));
     }
 
+    public static boolean isNumericClass(Class<?> clazz) {
+        if (clazz == null) {
+            return false;
+        }
+
+        // turns out that the primitive types are not assignable to Number
+        if (Number.class.isAssignableFrom(clazz)) {
+            return true;
+        }
+
+        return NUMERIC_PRIMITIVE_CLASSES.indexOf(clazz) >= 0;
+    }
 }

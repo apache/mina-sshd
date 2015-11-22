@@ -39,11 +39,13 @@ public class ChannelShell extends PtyCapableChannelSession {
     protected void doOpen() throws IOException {
         doOpenPty();
 
-        log.debug("Send SSH_MSG_CHANNEL_REQUEST shell on {}", this);
+        if (log.isDebugEnabled()) {
+            log.debug("doOpen({}) send SSH_MSG_CHANNEL_REQUEST shell", this);
+        }
 
         Session session = getSession();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
-        buffer.putInt(recipient);
+        buffer.putInt(getRecipient());
         buffer.putString("shell");
         buffer.putBoolean(false);
         writePacket(buffer);

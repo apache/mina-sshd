@@ -50,7 +50,7 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
 
     @Override
     public OpenFuture open(int recipient, int rwSize, int packetSize, Buffer buffer) {
-        this.recipient = recipient;
+        setRecipient(recipient);
 
         Session s = getSession();
         FactoryManager manager = ValidateUtils.checkNotNull(s.getFactoryManager(), "No factory manager");
@@ -93,12 +93,12 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
         if (!exitStatusSent) {
             exitStatusSent = true;
             if (log.isDebugEnabled()) {
-                log.debug("Send SSH_MSG_CHANNEL_REQUEST exit-status on channel {}", Integer.valueOf(id));
+                log.debug("sendExitStatus({}) SSH_MSG_CHANNEL_REQUEST exit-status={}", this, v);
             }
 
             Session session = getSession();
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
-            buffer.putInt(recipient);
+            buffer.putInt(getRecipient());
             buffer.putString("exit-status");
             buffer.putBoolean(false);   // want-reply - must be FALSE - see https://tools.ietf.org/html/rfc4254 section 6.10
             buffer.putInt(v);

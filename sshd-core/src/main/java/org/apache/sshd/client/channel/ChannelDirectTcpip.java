@@ -70,13 +70,13 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
 
         openFuture = new DefaultOpenFuture(lock);
         if (log.isDebugEnabled()) {
-            log.debug("Send SSH_MSG_CHANNEL_OPEN on channel {}", Integer.valueOf(id));
+            log.debug("Send SSH_MSG_CHANNEL_OPEN on channel {}", getId());
         }
 
         Session session = getSession();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN);
         buffer.putString(type);
-        buffer.putInt(id);
+        buffer.putInt(getId());
         buffer.putInt(localWindow.getSize());
         buffer.putInt(localWindow.getPacketSize());
         buffer.putString(remote.getHostName());

@@ -140,7 +140,8 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
         for (String keyType : provided) {
             if (!supported.contains(keyType)) {
                 if (log.isDebugEnabled()) {
-                    log.debug("resolveAvailableSignaturesProposal(" + provided + ") " + keyType + " not in list of supported: " + supported);
+                    log.debug("resolveAvailableSignaturesProposal({})[{}] {} not in suppored list: {}",
+                              this, provided, keyType, supported);
                 }
                 continue;
             }
@@ -174,7 +175,8 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
      */
     protected String resolveEmptySignaturesProposal(Iterable<String> supported, Iterable<String> provided) {
         if (log.isDebugEnabled()) {
-            log.debug("resolveEmptySignaturesProposal({}) none of the keys appears in supported list: {}", provided, supported);
+            log.debug("resolveEmptySignaturesProposal({})[{}] none of the keys appears in supported list: {}",
+                      this, provided, supported);
         }
         return null;
     }

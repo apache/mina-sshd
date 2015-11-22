@@ -18,6 +18,13 @@
  */
 package org.apache.sshd.common.subsystem.sftp;
 
+import java.lang.reflect.Field;
+import java.util.Map;
+
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Predicate;
+import org.apache.sshd.common.util.logging.LoggingUtils;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -248,5 +255,58 @@ public final class SftpConstants {
 
     private SftpConstants() {
         throw new UnsupportedOperationException("No instance");
+    }
+
+    private static class LazyCommandNameHolder {
+        private static final Map<Integer, String> NAMES_MAP =
+                LoggingUtils.generateMnemonicMap(SftpConstants.class, new Predicate<Field>() {
+                    @Override
+                    public boolean evaluate(Field f) {
+                        String name = f.getName();
+                        return name.startsWith("SSH_FXP_")
+                            // exclude the rename modes which are not opcodes
+                            && (!name.startsWith("SSH_FXP_RENAME_"))
+                            // exclude the realpath modes wich are not opcodes
+                            && (!name.startsWith("SSH_FXP_REALPATH_"));
+                    }
+                });
+    }
+
+    /**
+     * Converts a command value to a user-friendly name
+     *
+     * @param cmd The command value
+     * @return The user-friendly name - if not one of the defined {@code SSH_FXP_XXX}
+     * values then returns the string representation of the command's value
+     */
+    public static String getCommandMessageName(int cmd) {
+        @SuppressWarnings("synthetic-access")
+        String name = LazyCommandNameHolder.NAMES_MAP.get(cmd);
+        if (GenericUtils.isEmpty(name)) {
+            return Integer.toString(cmd);
+        } else {
+            return name;
+        }
+    }
+
+    private static class LazyStatusNameHolder {
+        private static final Map<Integer, String> STATUS_MAP = LoggingUtils.generateMnemonicMap(SftpConstants.class, "SSH_FX_");
+    }
+
+    /**
+     * Converts a return status value to a user-friendly name
+     *
+     * @param status The status value
+     * @return The user-friendly name - if not one of the defined {@code SSH_FX_XXX}
+     * values then returns the string representation of the status value
+     */
+    public static String getStatusName(int status) {
+        @SuppressWarnings("synthetic-access")
+        String name = LazyStatusNameHolder.STATUS_MAP.get(status);
+        if (GenericUtils.isEmpty(name)) {
+            return Integer.toString(status);
+        } else {
+            return name;
+        }
     }
 }

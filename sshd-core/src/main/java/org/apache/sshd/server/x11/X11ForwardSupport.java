@@ -198,12 +198,12 @@ public class X11ForwardSupport extends AbstractInnerCloseable implements IoHandl
 
             Session session = getSession();
             if (log.isDebugEnabled()) {
-                log.debug("Send SSH_MSG_CHANNEL_OPEN on {} channel {}", session, Integer.valueOf(id));
+                log.debug("open({}) SSH_MSG_CHANNEL_OPEN", this);
             }
 
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN);
             buffer.putString(type);
-            buffer.putInt(id);
+            buffer.putInt(getId());
             buffer.putInt(localWindow.getSize());
             buffer.putInt(localWindow.getPacketSize());
             buffer.putString(remote.getAddress().getHostAddress());

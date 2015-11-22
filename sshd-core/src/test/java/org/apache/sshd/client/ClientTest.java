@@ -202,7 +202,7 @@ public class ClientTest extends BaseTestSupport {
 
                             @Override
                             public String toString() {
-                                return "ChannelSession" + "[id=" + id + ", recipient=" + recipient + "]";
+                                return "ChannelSession" + "[id=" + getId() + ", recipient=" + getRecipient() + "]";
                             }
                         };
                     }
@@ -1279,12 +1279,11 @@ public class ClientTest extends BaseTestSupport {
                 channel.setErr(err);
                 channel.open().verify(9L, TimeUnit.SECONDS);
 
-                //            ((AbstractSession) session).disconnect(SshConstants.SSH2_DISCONNECT_BY_APPLICATION, "Cancel");
                 AbstractSession cs = (AbstractSession) session;
                 Buffer buffer = cs.createBuffer(SshConstants.SSH_MSG_DISCONNECT);
                 buffer.putInt(SshConstants.SSH2_DISCONNECT_BY_APPLICATION);
                 buffer.putString("Cancel");
-                buffer.putString("");
+                buffer.putString("");   // TODO add language tag
 
                 IoWriteFuture f = cs.writePacket(buffer);
                 assertTrue("Packet writing not completed in time", f.await(11L, TimeUnit.SECONDS));

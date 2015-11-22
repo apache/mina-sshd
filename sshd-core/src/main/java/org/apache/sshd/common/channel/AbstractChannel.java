@@ -76,8 +76,6 @@ public abstract class AbstractChannel
     protected final Window localWindow;
     protected final Window remoteWindow;
     protected ConnectionService service;
-    protected int id;
-    protected int recipient;
     protected final AtomicBoolean eof = new AtomicBoolean(false);
     protected AtomicReference<GracefulState> gracefulState = new AtomicReference<GracefulState>(GracefulState.Opened);
     protected final DefaultCloseFuture gracefulFuture = new DefaultCloseFuture(lock);
@@ -88,6 +86,8 @@ public abstract class AbstractChannel
     protected final Collection<ChannelListener> channelListeners = new CopyOnWriteArraySet<>();
     protected final ChannelListener channelListenerProxy;
 
+    private int id = -1;
+    private int recipient = -1;
     private Session session;
     private final Map<String, Object> properties = new ConcurrentHashMap<>();
 
@@ -116,6 +116,12 @@ public abstract class AbstractChannel
         return recipient;
     }
 
+    protected void setRecipient(int recipient) {
+        if (log.isDebugEnabled()) {
+            log.debug("setRecipient({}) recipient={}", this, recipient);
+        }
+        this.recipient = recipient;
+    }
     @Override
     public Window getLocalWindow() {
         return localWindow;
@@ -161,8 +167,7 @@ public abstract class AbstractChannel
         String req = buffer.getString();
         boolean wantReply = buffer.getBoolean();
         if (log.isDebugEnabled()) {
-            log.debug("Received SSH_MSG_CHANNEL_REQUEST {} on channel {} (wantReply {})",
-                      req, this, Boolean.valueOf(wantReply));
+            log.debug("handleRequest({}) SSH_MSG_CHANNEL_REQUEST {} wantReply={}", this, req, wantReply);
         }
 
         for (RequestHandler<Channel> handler : handlers) {
@@ -170,14 +175,16 @@ public abstract class AbstractChannel
             try {
                 result = handler.process(this, req, wantReply, buffer);
             } catch (Exception e) {
-                log.warn("Error processing channel request " + req, e);
+                log.warn("handleRequest({}) {} while {}#process({}): {}",
+                         this, e.getClass().getSimpleName(), handler.getClass().getSimpleName(), req, e.getMessage());
                 result = RequestHandler.Result.ReplyFailure;
             }
 
             // if Unsupported then check the next handler in line
             if (RequestHandler.Result.Unsupported.equals(result)) {
                 if (log.isTraceEnabled()) {
-                    log.trace("{}#process({}): {}", handler.getClass().getSimpleName(), req, result);
+                    log.trace("handleRequest({})[{}#process({})]: {}",
+                              this, handler.getClass().getSimpleName(), req, result);
                 }
             } else {
                 sendResponse(buffer, req, result, wantReply);
@@ -186,13 +193,13 @@ public abstract class AbstractChannel
         }
 
         // none of the handlers processed the request
-        log.warn("Unknown channel request: {}", req);
+        log.warn("handleRequest({}) Unknown channel request: {}", this, req);
         sendResponse(buffer, req, RequestHandler.Result.Unsupported, wantReply);
     }
 
     protected void sendResponse(Buffer buffer, String req, RequestHandler.Result result, boolean wantReply) throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("sendResponse({}) result={}, want-reply={}", req, result, Boolean.valueOf(wantReply));
+            log.debug("sendResponse({}) request={} result={}, want-reply={}", this, req, result, wantReply);
         }
 
         if (RequestHandler.Result.Replied.equals(result) || (!wantReply)) {
@@ -214,6 +221,9 @@ public abstract class AbstractChannel
 
     @Override
     public void init(ConnectionService service, Session session, int id) throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("init() service={} session={} id={}", service, session, id);
+        }
         this.service = service;
         this.session = session;
         this.id = id;
@@ -268,7 +278,9 @@ public abstract class AbstractChannel
 
     @Override
     public void handleClose() throws IOException {
-        log.debug("Received SSH_MSG_CHANNEL_CLOSE on channel {}", this);
+        if (log.isDebugEnabled()) {
+            log.debug("handleClose({}) SSH_MSG_CHANNEL_CLOSE on channel", this);
+        }
         if (gracefulState.compareAndSet(GracefulState.Opened, GracefulState.CloseReceived)) {
             close(false);
         } else if (gracefulState.compareAndSet(GracefulState.CloseSent, GracefulState.Closed)) {
@@ -304,14 +316,16 @@ public abstract class AbstractChannel
         }
 
         @Override
-        public CloseFuture close(boolean immediately) {
+        public CloseFuture close(final boolean immediately) {
+            final Channel channel = AbstractChannel.this;
+            if (log.isDebugEnabled()) {
+                log.debug("close({})[immediately={}] SSH_MSG_CHANNEL_CLOSE on channel", channel, immediately);
+            }
+
             setClosing(true);
             if (immediately) {
                 gracefulFuture.setClosed();
             } else if (!gracefulFuture.isClosed()) {
-                final Channel channel = AbstractChannel.this;
-                log.debug("Send SSH_MSG_CHANNEL_CLOSE on channel {}", channel);
-
                 Session s = getSession();
                 Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_CLOSE, Short.SIZE);
                 buffer.putInt(getRecipient());
@@ -323,20 +337,27 @@ public abstract class AbstractChannel
                         @Override
                         public void operationComplete(IoWriteFuture future) {
                             if (future.isWritten()) {
-                                log.debug("Message SSH_MSG_CHANNEL_CLOSE written on channel {}", channel);
+                                if (log.isDebugEnabled()) {
+                                    log.debug("close({})[immediately={}] SSH_MSG_CHANNEL_CLOSE written on channel", channel, immediately);
+                                }
                                 if (gracefulState.compareAndSet(GracefulState.Opened, GracefulState.CloseSent)) {
                                     // Waiting for CLOSE message to come back from the remote side
                                 } else if (gracefulState.compareAndSet(GracefulState.CloseReceived, GracefulState.Closed)) {
                                     gracefulFuture.setClosed();
                                 }
                             } else {
-                                log.debug("Failed to write SSH_MSG_CHANNEL_CLOSE on channel {}", channel);
+                                if (log.isDebugEnabled()) {
+                                    log.debug("close({})[immediately={}] failed to write SSH_MSG_CHANNEL_CLOSE on channel", channel, immediately);
+                                }
                                 channel.close(true);
                             }
                         }
                     });
                 } catch (IOException e) {
-                    log.debug("Exception caught while writing SSH_MSG_CHANNEL_CLOSE packet on channel " + channel, e);
+                    if (log.isDebugEnabled()) {
+                        log.debug("close({})[immediately={}] {} while writing SSH_MSG_CHANNEL_CLOSE packet on channel: {}",
+                                  channel, immediately, e.getClass().getSimpleName(), e.getMessage());
+                    }
                     channel.close(true);
                 }
             }
@@ -345,7 +366,8 @@ public abstract class AbstractChannel
             if ((service != null) && isShutdownOnExit() && (!service.isShutdown())) {
                 Collection<?> running = service.shutdownNow();
                 if (log.isDebugEnabled()) {
-                    log.debug("Shutdown executor service on close - running count=" + GenericUtils.size(running));
+                    log.debug("close({})[immediately={}] shutdown executor service on close - running count={}",
+                              channel, immediately, GenericUtils.size(running));
                 }
             }
 
@@ -409,9 +431,11 @@ public abstract class AbstractChannel
         if (len < 0 || len > ByteArrayBuffer.MAX_LEN) {
             throw new IllegalStateException("Bad item length: " + len);
         }
-        log.debug("Received SSH_MSG_CHANNEL_DATA on channel {}", this);
+        if (log.isDebugEnabled()) {
+            log.debug("handleData({}) SSH_MSG_CHANNEL_DATA len={}", this, len);
+        }
         if (log.isTraceEnabled()) {
-            log.trace("Received channel data: {}", BufferUtils.printHex(buffer.array(), buffer.rpos(), len));
+            log.trace("handleData({}) data: {}", this, BufferUtils.printHex(buffer.array(), buffer.rpos(), len));
         }
         doWriteData(buffer.array(), buffer.rpos(), len);
     }
@@ -421,7 +445,9 @@ public abstract class AbstractChannel
         int ex = buffer.getInt();
         // Only accept extended data for stderr
         if (ex != 1) {
-            log.debug("Send SSH_MSG_CHANNEL_FAILURE on channel {}", this);
+            if (log.isDebugEnabled()) {
+                log.debug("handleExtendedData({}) send SSH_MSG_CHANNEL_FAILURE", this);
+            }
             Session s = getSession();
             buffer = s.prepareBuffer(SshConstants.SSH_MSG_CHANNEL_FAILURE, BufferUtils.clear(buffer));
             buffer.putInt(getRecipient());
@@ -432,9 +458,9 @@ public abstract class AbstractChannel
         if (len < 0 || len > ByteArrayBuffer.MAX_LEN) {
             throw new IllegalStateException("Bad item length: " + len);
         }
-        log.debug("Received SSH_MSG_CHANNEL_EXTENDED_DATA on channel {}", this);
+        log.debug("handleExtendedData({}) SSH_MSG_CHANNEL_EXTENDED_DATA len={}", this, len);
         if (log.isTraceEnabled()) {
-            log.trace("Received channel extended data: {}", BufferUtils.printHex(buffer.array(), buffer.rpos(), len));
+            log.trace("handleExtendedData({}) extended data: {}", this, BufferUtils.printHex(buffer.array(), buffer.rpos(), len));
         }
         doWriteExtendedData(buffer.array(), buffer.rpos(), len);
     }
@@ -449,21 +475,27 @@ public abstract class AbstractChannel
 
     @Override
     public void handleEof() throws IOException {
-        log.debug("Received SSH_MSG_CHANNEL_EOF on channel {}", this);
+        if (log.isDebugEnabled()) {
+            log.debug("handleEof({}) SH_MSG_CHANNEL_EOF", this);
+        }
         setEofSignalled(true);
         notifyStateChanged();
     }
 
     @Override
     public void handleWindowAdjust(Buffer buffer) throws IOException {
-        log.debug("Received SSH_MSG_CHANNEL_WINDOW_ADJUST on channel {}", this);
         int window = buffer.getInt();
+        if (log.isDebugEnabled()) {
+            log.debug("handleWindowAdjust({}) SSH_MSG_CHANNEL_WINDOW_ADJUST window={}", this, window);
+        }
         remoteWindow.expand(window);
     }
 
     @Override
     public void handleFailure() throws IOException {
-        log.debug("Received SSH_MSG_CHANNEL_FAILURE on channel {}", this);
+        if (log.isDebugEnabled()) {
+            log.debug("handleFailure({}) SSH_MSG_CHANNEL_FAILURE", this);
+        }
         // TODO: do something to report failed requests?
     }
 
@@ -472,7 +504,7 @@ public abstract class AbstractChannel
     protected abstract void doWriteExtendedData(byte[] data, int off, int len) throws IOException;
 
     protected void sendEof() throws IOException {
-        log.debug("Send SSH_MSG_CHANNEL_EOF on channel {}", this);
+        log.debug("sendEof({}) SSH_MSG_CHANNEL_EOF", this);
         Session s = getSession();
         Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_EOF, Short.SIZE);
         buffer.putInt(getRecipient());
@@ -490,7 +522,7 @@ public abstract class AbstractChannel
 
     protected void sendWindowAdjust(int len) throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("Send SSH_MSG_CHANNEL_WINDOW_ADJUST (len={}) on channel {}", len, this);
+            log.debug("sendWindowAdjust({}) SSH_MSG_CHANNEL_WINDOW_ADJUST len={}", this, len);
         }
         Session s = getSession();
         Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_WINDOW_ADJUST, Short.SIZE);

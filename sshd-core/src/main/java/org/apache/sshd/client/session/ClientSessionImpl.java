@@ -188,7 +188,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     public void addPasswordIdentity(String password) {
         identities.add(ValidateUtils.checkNotNullAndNotEmpty(password, "No password provided"));
         if (log.isDebugEnabled()) { // don't show the password in the log
-            log.debug("addPasswordIdentity(" + KeyUtils.getFingerPrint(password) + ")");
+            log.debug("addPasswordIdentity({}) {}", this, KeyUtils.getFingerPrint(password));
         }
     }
 
@@ -215,7 +215,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         identities.add(kp);
 
         if (log.isDebugEnabled()) {
-            log.debug("addPublicKeyIdentity(" + KeyUtils.getFingerPrint(kp.getPublic()) + ")");
+            log.debug("addPublicKeyIdentity({}) {}", this, KeyUtils.getFingerPrint(kp.getPublic()));
         }
     }
 
@@ -329,7 +329,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
             } else if ((!c2sEncClientNone) || (!s2cEncClientNone)) {
                 kexFuture.setValue(new SshException("Client does not support none cipher"));
             } else {
-                log.info("Switching to none cipher " + this);
+                log.info("switchToNoneCipher({}) switching", this);
 
                 Map<KexProposalOption, String> proposal = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
                 synchronized (clientProposal) {
@@ -376,7 +376,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         ConnectionService service = getConnectionService();
         int id = service.registerChannel(channel);
         if (log.isDebugEnabled()) {
-            log.debug("createShellChannel(id={}) created", Integer.valueOf(id));
+            log.debug("createShellChannel({}) created id={}", this, id);
         }
         return channel;
     }
@@ -387,7 +387,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         ConnectionService service = getConnectionService();
         int id = service.registerChannel(channel);
         if (log.isDebugEnabled()) {
-            log.debug("createExecChannel(id={})[{}] created", Integer.valueOf(id), command);
+            log.debug("createExecChannel({})[{}] created id={}", this, command, id);
         }
         return channel;
     }
@@ -398,7 +398,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         ConnectionService service = getConnectionService();
         int id = service.registerChannel(channel);
         if (log.isDebugEnabled()) {
-            log.debug("createSubsystemChannel(id={})[{}] created", Integer.valueOf(id), subsystem);
+            log.debug("createSubsystemChannel({})[{}] created id={}", this, subsystem, id);
         }
         return channel;
     }
@@ -409,7 +409,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         ConnectionService service = getConnectionService();
         int id = service.registerChannel(channel);
         if (log.isDebugEnabled()) {
-            log.debug("createDirectTcpipChannel(id={})[{} => {}] created", Integer.valueOf(id), local, remote);
+            log.debug("createDirectTcpipChannel({})[{} => {}] created id={}", this, local, remote, id);
         }
         return channel;
     }
@@ -554,8 +554,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 boolean nothingInCommon = Collections.disjoint(cond, mask);
                 if (!nothingInCommon) {
                     if (log.isTraceEnabled()) {
-                        log.trace("WaitFor call returning on session {}, mask={}, cond={}",
-                                  this, mask, cond);
+                        log.trace("waitFor(}{}) call return mask={}, cond={}", this, mask, cond);
                     }
                     return cond;
                 }
@@ -567,7 +566,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                         timeout = t - System.currentTimeMillis();
                         if (timeout <= 0L) {
                             if (log.isTraceEnabled()) {
-                                log.trace("WaitFor call timeout on session {}, mask={}", this, mask);
+                                log.trace("WaitFor({}) call timeout mask={}", this, mask);
                             }
                             cond.add(ClientSessionEvent.TIMEOUT);
                             return cond;
@@ -576,7 +575,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 }
 
                 if (log.isTraceEnabled()) {
-                    log.trace("Waiting {} millis for lock on session {}, mask={}, cond={}", timeout, this, mask, cond);
+                    log.trace("waitFor({}) Waiting {} millis for lock on mask={}, cond={}", this, timeout, mask, cond);
                 }
 
                 long nanoStart = System.nanoTime();
@@ -590,7 +589,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                     long nanoEnd = System.nanoTime();
                     long nanoDuration = nanoEnd - nanoStart;
                     if (log.isTraceEnabled()) {
-                        log.trace("Lock notified on session {} after {} nanos", this, nanoDuration);
+                        log.trace("waitFor({}) Lock notified after {} nanos", this, nanoDuration);
                     }
                 } catch (InterruptedException e) {
                     long nanoEnd = System.nanoTime();
@@ -609,11 +608,16 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         if (serverVersion == null) {
             return false;
         }
-        log.debug("Server version string: {}", serverVersion);
+
+        if (log.isDebugEnabled()) {
+            log.debug("readIdentification({}) Server version string: {}", this, serverVersion);
+        }
+
         if (!(serverVersion.startsWith(DEFAULT_SSH_VERSION_PREFIX) || serverVersion.startsWith("SSH-1.99-"))) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED,
                     "Unsupported protocol version: " + serverVersion);
         }
+
         return true;
     }
 
@@ -673,7 +677,10 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
             return;
         }
         initialServiceRequestSent = true;
-        log.debug("Send SSH_MSG_SERVICE_REQUEST for {}", currentServiceFactory.getName());
+        if (log.isDebugEnabled()) {
+            log.debug("sendInitialServiceRequest({}) Send SSH_MSG_SERVICE_REQUEST for {}",
+                      this, currentServiceFactory.getName());
+        }
         Buffer request = createBuffer(SshConstants.SSH_MSG_SERVICE_REQUEST);
         request.putString(currentServiceFactory.getName());
         writePacket(request);

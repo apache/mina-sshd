@@ -20,6 +20,8 @@ package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.IOException;
 
+import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+
 /**
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
@@ -38,7 +40,6 @@ public class SftpException extends IOException {
 
     @Override
     public String toString() {
-        String message = getMessage();
-        return "SFTP error (" + getStatus() + "): " + message;
+        return "SFTP error (" + SftpConstants.getStatusName(getStatus()) + "): " + getMessage();
     }
 }

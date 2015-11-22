@@ -85,12 +85,14 @@ public class TcpipClientChannel extends AbstractClientChannel {
             throw new SshException("Session has been closed");
         }
         openFuture = new DefaultOpenFuture(lock);
-        log.debug("Send SSH_MSG_CHANNEL_OPEN on channel {}", this);
+        if (log.isDebugEnabled()) {
+            log.debug("open({}) send SSH_MSG_CHANNEL_OPEN", this);
+        }
 
         Session session = getSession();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN);
         buffer.putString(type);
-        buffer.putInt(id);
+        buffer.putInt(getId());
         buffer.putInt(localWindow.getSize());
         buffer.putInt(localWindow.getPacketSize());
         buffer.putString(dst.getAddress().getHostAddress());

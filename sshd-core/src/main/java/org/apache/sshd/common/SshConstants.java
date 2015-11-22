@@ -18,6 +18,16 @@
  */
 package org.apache.sshd.common;
 
+import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Predicate;
+import org.apache.sshd.common.util.logging.LoggingUtils;
 
 /**
  * This interface defines constants for the SSH protocol.
@@ -81,6 +91,16 @@ public final class SshConstants {
     public static final byte SSH_MSG_CHANNEL_SUCCESS = 99;
     public static final byte SSH_MSG_CHANNEL_FAILURE = 100;
 
+    // Names of opcodes that have the same value
+    public static final Set<String> AMBIGUOUS_OPCODES =
+            Collections.unmodifiableSet(
+                    new HashSet<String>(
+                            Arrays.asList(
+                                "SSH_MSG_KEX_FIRST", "SSH_MSG_KEXDH_INIT", "SSH_MSG_KEX_DH_GEX_REQUEST_OLD",
+                                "SSH_MSG_KEXDH_REPLY", "SSH_MSG_KEX_DH_GEX_GROUP",
+                                "SSH_MSG_USERAUTH_INFO_REQUEST", "SSH_MSG_USERAUTH_PK_OK", "SSH_MSG_USERAUTH_PASSWD_CHANGEREQ"
+                                    )));
+
     //
     // Disconnect error codes
     //
@@ -114,4 +134,74 @@ public final class SshConstants {
         throw new UnsupportedOperationException("No instance allowed");
     }
 
+    private static class LazyMessagesMapHolder {
+
+        private static final Map<Integer, String> MESSAGES_MAP =
+                LoggingUtils.generateMnemonicMap(SshConstants.class, new Predicate<Field>() {
+                    @Override
+                    public boolean evaluate(Field f) {
+                        String name = f.getName();
+                        return name.startsWith("SSH_MSG_") && (!AMBIGUOUS_OPCODES.contains(name));
+                    }
+                });
+    }
+
+    /**
+     * Converts a command value to a user-friendly name
+     *
+     * @param cmd The command value
+     * @return The user-friendly name - if not one of the defined {@code SSH_MSG_XXX}
+     * values then returns the string representation of the command's value
+     */
+    public static String getCommandMessageName(int cmd) {
+        @SuppressWarnings("synthetic-access")
+        String name = LazyMessagesMapHolder.MESSAGES_MAP.get(cmd);
+        if (GenericUtils.isEmpty(name)) {
+            return Integer.toString(cmd);
+        } else {
+            return name;
+        }
+    }
+
+    private static class LazyReasonsMapHolder {
+        private static final Map<Integer, String> REASONS_MAP = LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH2_DISCONNECT_");
+    }
+
+    /**
+     * Converts a disconnect reason value to a user-friendly name
+     *
+     * @param reason The disconnect reason value
+     * @return The user-friendly name - if not one of the defined {@code SSH2_DISCONNECT_}
+     * values then returns the string representation of the reason's value
+     */
+    public static String getDisconnectReasonName(int reason) {
+        @SuppressWarnings("synthetic-access")
+        String name = LazyReasonsMapHolder.REASONS_MAP.get(reason);
+        if (GenericUtils.isEmpty(name)) {
+            return Integer.toString(reason);
+        } else {
+            return name;
+        }
+    }
+
+    private static class LazyOpenCodesMapHolder {
+        private static final Map<Integer, String> OPEN_CODES_MAP = LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_OPEN_");
+    }
+
+    /**
+     * Converts an open error value to a user-friendly name
+     *
+     * @param code The open error value
+     * @return The user-friendly name - if not one of the defined {@code SSH_OPEN_}
+     * values then returns the string representation of the reason's value
+     */
+    public static String getOpenErrorCodeName(int code) {
+        @SuppressWarnings("synthetic-access")
+        String name = LazyOpenCodesMapHolder.OPEN_CODES_MAP.get(code);
+        if (GenericUtils.isEmpty(name)) {
+            return Integer.toString(code);
+        } else {
+            return name;
+        }
+    }
 }

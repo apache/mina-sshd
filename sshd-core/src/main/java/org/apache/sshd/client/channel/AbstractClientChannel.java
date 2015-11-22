@@ -76,6 +76,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     protected final AtomicReference<String> exitSignalHolder = new AtomicReference<>(null);
     protected int openFailureReason;
     protected String openFailureMsg;
+    protected String openFailureLang;
     protected OpenFuture openFuture;
 
     protected AbstractClientChannel(String type) {
@@ -87,7 +88,9 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
             @SuppressWarnings("synthetic-access")
             @Override
             public void notifyEvent(String event) throws Exception {
-                log.debug("notifyEvent({})", event);
+                if (log.isDebugEnabled()) {
+                    log.debug("notifyEvent({}): {}", AbstractClientChannel.this, event);
+                }
                 notifyStateChanged();
             }
         };
@@ -222,8 +225,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                 boolean nothingInCommon = Collections.disjoint(mask, cond);
                 if (!nothingInCommon) {
                     if (log.isTraceEnabled()) {
-                        log.trace("WaitFor call returning on channel {}, mask={}, cond={}",
-                                  this, mask, cond);
+                        log.trace("WaitFor call returning on channel {}, mask={}, cond={}", this, mask, cond);
                     }
                     return cond;
                 }
@@ -282,7 +284,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         Session session = getSession();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN);
         buffer.putString(type);
-        buffer.putInt(id);
+        buffer.putInt(getId());
         buffer.putInt(localWindow.getSize());
         buffer.putInt(localWindow.getPacketSize());
         writePacket(buffer);
@@ -296,7 +298,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
     @Override
     public void handleOpenSuccess(int recipient, int rwSize, int packetSize, Buffer buffer) {
-        this.recipient = recipient;
+        setRecipient(recipient);
 
         Session session = getSession();
         FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
@@ -331,8 +333,15 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     public void handleOpenFailure(Buffer buffer) {
         int reason = buffer.getInt();
         String msg = buffer.getString();
+        String lang = buffer.getString();
+        if (log.isDebugEnabled()) {
+            log.debug("handleOpenFailure({}) reason={}, lang={}, msg={}",
+                      this, SshConstants.getOpenErrorCodeName(reason), lang, msg);
+        }
+
         this.openFailureReason = reason;
         this.openFailureMsg = msg;
+        this.openFailureLang = lang;
         this.openFuture.setException(new SshException(msg));
         this.closeFuture.setClosed();
         this.doCloseImmediately();

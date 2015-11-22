@@ -54,14 +54,16 @@ public class ChannelSubsystem extends ChannelSession {
 
     @Override
     protected void doOpen() throws IOException {
-        log.debug("Send SSH_MSG_CHANNEL_REQUEST exec on {}", this);
+        if (log.isDebugEnabled()) {
+            log.debug("doOpen({}) SSH_MSG_CHANNEL_REQUEST exec", this);
+        }
 
         Session session = getSession();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
-        buffer.putInt(recipient);
+        buffer.putInt(getRecipient());
         buffer.putString("subsystem");
         buffer.putBoolean(false);
-        buffer.putString(subsystem);
+        buffer.putString(getSubsystem());
         writePacket(buffer);
 
         super.doOpen();
@@ -74,5 +76,10 @@ public class ChannelSubsystem extends ChannelSession {
                 run.run();
             }
         });
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() + "[" + getSubsystem() + "]";
     }
 }

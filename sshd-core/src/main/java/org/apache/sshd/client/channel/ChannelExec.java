@@ -43,10 +43,13 @@ public class ChannelExec extends PtyCapableChannelSession {
     protected void doOpen() throws IOException {
         doOpenPty();
 
-        log.debug("Send SSH_MSG_CHANNEL_REQUEST exec on {}", this);
+        if (log.isDebugEnabled()) {
+            log.debug("doOpen({}) send SSH_MSG_CHANNEL_REQUEST exec command={}", this, command);
+        }
+
         Session session = getSession();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
-        buffer.putInt(recipient);
+        buffer.putInt(getRecipient());
         buffer.putString("exec");
         buffer.putBoolean(false);
         buffer.putString(command);

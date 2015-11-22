@@ -113,8 +113,8 @@ public class TcpipServerChannel extends AbstractServerChannel {
         String originatorIpAddress = buffer.getString();
         int originatorPort = buffer.getInt();
         if (log.isDebugEnabled()) {
-            log.debug("Receiving request for direct tcpip: hostToConnect={}, portToConnect={}, originatorIpAddress={}, originatorPort={}",
-                      hostToConnect, portToConnect, originatorIpAddress, originatorPort);
+            log.debug("doInit({}) Receiving request for direct tcpip: hostToConnect={}, portToConnect={}, originatorIpAddress={}, originatorPort={}",
+                      this, hostToConnect, portToConnect, originatorIpAddress, originatorPort);
         }
 
         final SshdSocketAddress address;
@@ -134,7 +134,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
         if ((address == null) || (filter == null) || (!filter.canConnect(type, address, session))) {
             if (log.isDebugEnabled()) {
-                log.debug("doInit(" + session + ")[" + type + "][haveFilter=" + (filter != null) + "] filtered out " + address);
+                log.debug("doInit(" + this + ")[" + type + "][haveFilter=" + (filter != null) + "] filtered out " + address);
             }
             super.close(true);
             f.setException(new OpenChannelException(SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "Connection denied"));
@@ -149,7 +149,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
             public void messageReceived(IoSession session, Readable message) throws Exception {
                 if (isClosing()) {
                     if (log.isDebugEnabled()) {
-                        log.debug("Ignoring write to channel {} in CLOSING state", Integer.valueOf(id));
+                        log.debug("doInit({}) Ignoring write to channel in CLOSING state", TcpipServerChannel.this);
                     }
                 } else {
                     Buffer buffer = new ByteArrayBuffer();
@@ -270,7 +270,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
                     if ((executors != null) && (!executors.isShutdown()) && shutdown) {
                         Collection<Runnable> runners = executors.shutdownNow();
                         if (log.isDebugEnabled()) {
-                            log.debug("destroy() - shutdown executor service - runners count=" + runners.size());
+                            log.debug("destroy({}) - shutdown executor service - runners count={}", TcpipServerChannel.this, runners.size());
                         }
                     }
                 }

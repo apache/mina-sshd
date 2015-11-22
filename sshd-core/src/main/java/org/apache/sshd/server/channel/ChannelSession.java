@@ -283,7 +283,7 @@ public class ChannelSession extends AbstractServerChannel {
         String value = buffer.getString();
         addEnvVariable(name, value);
         if (log.isDebugEnabled()) {
-            log.debug("env for channel {}: {} = {}", id, name, value);
+            log.debug("handleEnv({}): {} = {}", this, name, value);
         }
         return true;
     }
@@ -306,7 +306,7 @@ public class ChannelSession extends AbstractServerChannel {
              * "Opcodes 160 to 255 are not yet defined, and cause parsing to stop"
              */
             if (mode == null) {
-                log.warn("handlePtyReq(" + this + ") unknown pty opcode value: " + opcode);
+                log.warn("handlePtyReq({}) unknown pty opcode value: {}", this, opcode);
                 break;
             }
             int val = ((modes[i++] << 24) & 0xff000000)
@@ -354,7 +354,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (signal != null) {
             getEnvironment().signal(signal);
         } else {
-            log.warn("handleSignal(" + this + ") unknown signal received: " + name);
+            log.warn("handleSignal({}) unknown signal received: {}", this, name);
         }
         return true;
     }
@@ -362,7 +362,7 @@ public class ChannelSession extends AbstractServerChannel {
     protected boolean handleBreak(Buffer buffer) throws IOException {
         String name = buffer.getString();
         if (log.isDebugEnabled()) {
-            log.debug("Break received on channel {}: {}", id, name);
+            log.debug("handleBreak({}) {}", this, name);
         }
 
         getEnvironment().signal(Signal.INT);
@@ -372,20 +372,26 @@ public class ChannelSession extends AbstractServerChannel {
     protected boolean handleShell(Buffer buffer) throws IOException {
         // If we're already closing, ignore incoming data
         if (isClosing()) {
-            log.debug("handleShell - closing");
+            if (log.isDebugEnabled()) {
+                log.debug("handleShell({}) - closing", this);
+            }
             return false;
         }
 
         ServerFactoryManager manager = ((ServerSession) getSession()).getFactoryManager();
         Factory<Command> factory = manager.getShellFactory();
         if (factory == null) {
-            log.debug("handleShell - no shell factory");
+            if (log.isDebugEnabled()) {
+                log.debug("handleShell({}) - no shell factory", this);
+            }
             return false;
         }
 
         command = factory.create();
         if (command == null) {
-            log.debug("handleShell - no shell command");
+            if (log.isDebugEnabled()) {
+                log.debug("handleShell({}) - no shell command", this);
+            }
             return false;
         }
 
@@ -404,18 +410,19 @@ public class ChannelSession extends AbstractServerChannel {
         ServerFactoryManager manager = ((ServerSession) getSession()).getFactoryManager();
         CommandFactory factory = manager.getCommandFactory();
         if (factory == null) {
-            log.warn("No command factory for command: {}", commandLine);
+            log.warn("handleExec({}) No command factory for command: {}", this, commandLine);
             return false;
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("Executing command: {}", commandLine);
+            log.debug("handleExec({}) Executing command: {}", this, commandLine);
         }
 
         try {
             command = factory.createCommand(commandLine);
-        } catch (RuntimeException iae) {
-            log.warn("Failed (" + iae.getClass().getSimpleName() + ") to create command for " + commandLine + ": " + iae.getMessage());
+        } catch (RuntimeException e) {
+            log.warn("handleExec({}) Failed ({}) to create command for {}: {}",
+                     this, e.getClass().getSimpleName(), commandLine, e.getMessage());
             return false;
         }
 
@@ -430,13 +437,13 @@ public class ChannelSession extends AbstractServerChannel {
         ServerFactoryManager manager = ((ServerSession) getSession()).getFactoryManager();
         List<NamedFactory<Command>> factories = manager.getSubsystemFactories();
         if (GenericUtils.isEmpty(factories)) {
-            log.warn("No factories for subsystem: {}", subsystem);
+            log.warn("handleSubsystem({}) No factories for subsystem: {}", this, subsystem);
             return false;
         }
 
         command = NamedFactory.Utils.create(factories, subsystem);
         if (command == null) {
-            log.warn("Unsupported subsystem: {}", subsystem);
+            log.warn("handleSubsystem({}) Unsupported subsystem: {}", this, subsystem);
             return false;
         }
 
@@ -488,8 +495,9 @@ public class ChannelSession extends AbstractServerChannel {
             err = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA);
             if (log.isTraceEnabled()) {
                 // Wrap in logging filters
-                out = new LoggingFilterOutputStream(out, "OUT:", log);
-                err = new LoggingFilterOutputStream(err, "ERR:", log);
+                String channelId = toString();
+                out = new LoggingFilterOutputStream(out, "OUT(" + channelId + ")", log);
+                err = new LoggingFilterOutputStream(err, "ERR(" + channelId + ")", log);
             }
             command.setOutputStream(out);
             command.setErrorStream(err);
@@ -524,10 +532,11 @@ public class ChannelSession extends AbstractServerChannel {
                 try {
                     closeShell(exitValue);
                     if (log.isDebugEnabled()) {
-                        log.debug("onExit(" + exitValue + ")[" + exitMessage + ") shell closed");
+                        log.debug("onExit({}) code={} message='{}' shell closed", ChannelSession.this, exitValue, exitMessage);
                     }
                 } catch (IOException e) {
-                    log.warn("onExit(" + exitValue + ")[" + exitMessage + ") Error closing shell", e);
+                    log.warn("onExit({}) code={} message='{}' {} closing shell: {}",
+                             ChannelSession.this, exitValue, exitMessage, e.getClass().getSimpleName(), e.getMessage());
                 }
             }
         });
@@ -547,7 +556,7 @@ public class ChannelSession extends AbstractServerChannel {
         SshAgentFactory factory = manager.getAgentFactory();
         if ((factory == null) || (filter == null) || (!filter.canForwardAgent(session))) {
             if (log.isDebugEnabled()) {
-                log.debug("handleAgentForwarding(" + session + ")[haveFactory=" + (factory != null) + ",haveFilter=" + (filter != null) + "] filtered out");
+                log.debug("handleAgentForwarding(" + this + ")[haveFactory=" + (factory != null) + ",haveFilter=" + (filter != null) + "] filtered out");
             }
             return false;
         }
@@ -565,7 +574,7 @@ public class ChannelSession extends AbstractServerChannel {
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
         if ((filter == null) || (!filter.canForwardX11(session))) {
             if (log.isDebugEnabled()) {
-                log.debug("handleX11Forwarding(" + session + ")[haveFilter=" + (filter != null) + "] filtered out");
+                log.debug("handleX11Forwarding(" + this + ")[haveFilter=" + (filter != null) + "] filtered out");
             }
             return false;
         }
@@ -577,7 +586,7 @@ public class ChannelSession extends AbstractServerChannel {
         String display = service.createX11Display(singleConnection, authProtocol, authCookie, screenId);
         if (GenericUtils.isEmpty(display)) {
             if (log.isDebugEnabled()) {
-                log.debug("handleX11Forwarding(" + session + ") no X.11 display created");
+                log.debug("handleX11Forwarding(" + this + ") no X.11 display created");
             }
             return false;
         }

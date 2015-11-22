@@ -118,7 +118,8 @@ public class ChannelSession extends AbstractClientChannel {
             } catch (Exception e) {
                 // we log it as DEBUG since it is relatively harmless
                 if (log.isDebugEnabled()) {
-                    log.debug("Failed (" + e.getClass().getSimpleName() + ") to shutdown stream pumper: " + e.getMessage());
+                    log.debug("doCloseImmediately({}) failed {} to shutdown stream pumper: {}",
+                              this, e.getClass().getSimpleName(), e.getMessage());
                 }
             } finally {
                 pumper = null;
@@ -146,7 +147,9 @@ public class ChannelSession extends AbstractClientChannel {
             }
         } catch (Exception e) {
             if (!isClosing()) {
-                log.debug("Caught exception", e);
+                if (log.isDebugEnabled()) {
+                    log.debug("pumpInputStream({}) Caught {} : {}", this, e.getClass().getSimpleName(), e.getMessage());
+                }
                 close(false);
             }
         }

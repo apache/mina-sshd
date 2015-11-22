@@ -19,9 +19,15 @@
 
 package org.apache.sshd.common.util.logging;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Predicate;
 import org.slf4j.Logger;
 
 /**
@@ -31,6 +37,70 @@ public final class LoggingUtils {
 
     private LoggingUtils() {
         throw new UnsupportedOperationException("No instance");
+    }
+
+    /**
+     * Scans using reflection API for all fields that are {@code public static final}
+     * that start with the given common prefix (case <U>sensitive</U>) and are of type
+     * {@link Number}.
+     *
+     * @param clazz The {@link Class} to query
+     * @param commonPrefix The expected common prefix
+     * @return A {@link Map} of all the matching fields, where key=the field's {@link Integer}
+     * value and mapping=the field's name
+     * @see #generateMnemonicMap(Class, Predicate)
+     */
+    public static Map<Integer, String> generateMnemonicMap(Class<?> clazz, final String commonPrefix) {
+        return generateMnemonicMap(clazz, new Predicate<Field>() {
+            @Override
+            public boolean evaluate(Field f) {
+                String name = f.getName();
+                return name.startsWith(commonPrefix);
+            }
+        });
+    }
+
+    /**
+     * Scans using reflection API for all <U>numeric {@code public static final}</U> fields
+     * that are also accepted by the predicate. Any field that is not such or fail to retrieve
+     * its value, or has a duplicate value is <U>silently</U> skipped.
+     *
+     * @param clazz The {@link Class} to query
+     * @param acceptor The {@link Predicate} used to decide whether to process the {@link Field}
+     * (besides being a {@link Number} and {@code public static final}).
+     * @return A {@link Map} of all the matching fields, where key=the field's {@link Integer}
+     * value and mapping=the field's name
+     */
+    public static Map<Integer, String> generateMnemonicMap(Class<?> clazz, Predicate<? super Field> acceptor) {
+        Map<Integer, String> result = new HashMap<>();
+        for (Field f : clazz.getFields()) {
+            String name = f.getName();
+            int mods = f.getModifiers();
+            if ((!Modifier.isPublic(mods)) || (!Modifier.isStatic(mods)) || (!Modifier.isFinal(mods))) {
+                continue;
+            }
+
+            Class<?> type = f.getType();
+            if (!GenericUtils.isNumericClass(type)) {
+                continue;
+            }
+
+            if (!acceptor.evaluate(f)) {
+                continue;
+            }
+
+            try {
+                Number value = (Number) f.get(null);
+                String prev = result.put(value.intValue(), name);
+                if (prev != null) {
+                    continue;   // debug breakpoint
+                }
+            } catch (Exception e) {
+                continue;   // debug breakpoint
+            }
+        }
+
+        return result;
     }
 
     /**

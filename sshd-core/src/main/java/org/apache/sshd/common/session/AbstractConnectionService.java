@@ -332,7 +332,7 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
         if (channel == null) {
             buffer.rpos(buffer.rpos() - 5);
             int cmd = buffer.getUByte();
-            throw new SshException("Received " + cmd + " on unknown channel " + recipient);
+            throw new SshException("Received " + SshConstants.getCommandMessageName(cmd) + " on unknown channel " + recipient);
         }
         return channel;
     }
@@ -350,7 +350,7 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
             buf.putString("SSH server is shutting down: " + type);
-            buf.putString("");
+            buf.putString("");  // TODO add language tag
             session.writePacket(buf);
             return;
         }
@@ -359,7 +359,7 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
             buf.putString("additional sessions disabled");
-            buf.putString("");
+            buf.putString("");  // TODO add language tag
             session.writePacket(buf);
             return;
         }
@@ -370,7 +370,7 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_UNKNOWN_CHANNEL_TYPE);
             buf.putString("Unsupported channel type: " + type);
-            buf.putString("");
+            buf.putString("");  // TODO add language tag
             session.writePacket(buf);
             return;
         }

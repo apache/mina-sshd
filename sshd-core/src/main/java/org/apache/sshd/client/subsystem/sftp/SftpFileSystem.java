@@ -496,13 +496,13 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
         @Override
         public int send(int cmd, Buffer buffer) throws IOException {
             if (!isOpen()) {
-                throw new IOException("send(cmd=" + cmd + ") client is closed");
+                throw new IOException("send(cmd=" + SftpConstants.getCommandMessageName(cmd) + ") client is closed");
             }
 
             if (delegate instanceof RawSftpClient) {
                 return ((RawSftpClient) delegate).send(cmd, buffer);
             } else {
-                throw new StreamCorruptedException("send(cmd=" + cmd + ") delegate is not a " + RawSftpClient.class.getSimpleName());
+                throw new StreamCorruptedException("send(cmd=" + SftpConstants.getCommandMessageName(cmd) + ") delegate is not a " + RawSftpClient.class.getSimpleName());
             }
         }
 

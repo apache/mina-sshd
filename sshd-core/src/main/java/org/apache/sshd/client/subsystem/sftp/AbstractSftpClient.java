@@ -221,7 +221,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             String lang = buffer.getString();
             checkStatus(id, substatus, msg, lang);
         } else {
-            throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
+            handleUnexpectedPacket(SftpConstants.SSH_FXP_STATUS, id, type, length, buffer);
         }
     }
 
@@ -235,7 +235,8 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
      */
     protected void checkStatus(int id, int substatus, String msg, String lang) throws IOException {
         if (log.isTraceEnabled()) {
-            log.trace("checkStatus(id=" + id + ") status: " + substatus + " [" + lang + "]" + msg);
+            log.trace("checkStatus({})[id={}] status={} lang={} msg={}",
+                      getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
         }
 
         if (substatus != SftpConstants.SSH_FX_OK) {
@@ -275,12 +276,19 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkHandle(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+                log.trace("checkHandle({})[id={}] - status: {} [{}] {}",
+                          getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
             }
             throwStatusException(id, substatus, msg, lang);
         }
 
-        throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
+        return handleUnexpectedHandlePacket(id, type, length, buffer);
+    }
+
+    protected byte[] handleUnexpectedHandlePacket(int id, int type, int length, Buffer buffer) throws IOException {
+        handleUnexpectedPacket(SftpConstants.SSH_FXP_HANDLE, id, type, length, buffer);
+        throw new SshException("No handling for unexpected packet id=" + id
+                             + ", type=" + SftpConstants.getCommandMessageName(type) + ", length=" + length);
     }
 
     /**
@@ -311,12 +319,22 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkAttributes(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+                log.trace("checkAttributes()[id={}] - status: {} [{}] {}",
+                          getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
             }
             throwStatusException(id, substatus, msg, lang);
         }
 
-        throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
+        return handleUnexpectedAttributesPacket(id, type, length, buffer);
+    }
+
+    protected Attributes handleUnexpectedAttributesPacket(int id, int type, int length, Buffer buffer) throws IOException {
+        IOException err = handleUnexpectedPacket(SftpConstants.SSH_FXP_ATTRS, id, type, length, buffer);
+        if (err != null) {
+            throw err;
+        }
+
+        return null;
     }
 
     /**
@@ -351,7 +369,8 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             }
             Attributes attrs = readAttributes(buffer);
             if (log.isTraceEnabled()) {
-                log.trace("checkOneName(id={}) ({})[{}]: {}", Integer.valueOf(id), name, longName, attrs);
+                log.trace("checkOneName({})[id={}] ({})[{}]: {}",
+                          getClientChannel(), id, name, longName, attrs);
             }
             return name;
         }
@@ -361,13 +380,23 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkOneName(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+                log.trace("checkOneName({})[id={}] - status: {} [{}] {}",
+                          getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
             }
 
             throwStatusException(id, substatus, msg, lang);
         }
 
-        throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
+        return handleUnknownOneNamePacket(id, type, length, buffer);
+    }
+
+    protected String handleUnknownOneNamePacket(int id, int type, int length, Buffer buffer) throws IOException {
+        IOException err = handleUnexpectedPacket(SftpConstants.SSH_FXP_NAME, id, type, length, buffer);
+        if (err != null) {
+            throw err;
+        }
+
+        return null;
     }
 
     protected Attributes readAttributes(Buffer buffer) throws IOException {
@@ -772,7 +801,8 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkData(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+                log.trace("checkData({})[id={}] - status: {} [{}] {}",
+                          getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
             }
 
             if (substatus == SftpConstants.SSH_FX_EOF) {
@@ -782,7 +812,16 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throwStatusException(id, substatus, msg, lang);
         }
 
-        throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
+        return handleUnknownDataPacket(id, type, length, buffer);
+    }
+
+    protected int handleUnknownDataPacket(int id, int type, int length, Buffer buffer) throws IOException {
+        IOException err = handleUnexpectedPacket(SftpConstants.SSH_FXP_DATA, id, type, length, buffer);
+        if (err != null) {
+            throw err;
+        }
+
+        return 0;
     }
 
     @Override
@@ -889,7 +928,8 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
                 String longName = (version == SftpConstants.SFTP_V3) ? buffer.getString() : null;
                 Attributes attrs = readAttributes(buffer);
                 if (log.isTraceEnabled()) {
-                    log.trace("checkDir(id={})[{}] ({})[{}]: {}", Integer.valueOf(id), Integer.valueOf(i), name, longName, attrs);
+                    log.trace("checkDir({})[id={}][{}] ({})[{}]: {}",
+                              getClientChannel(), id, i, name, longName, attrs);
                 }
 
                 entries.add(new DirEntry(name, longName, attrs));
@@ -902,7 +942,8 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkDir(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+                log.trace("checkDir({})[id={}] - status: {} [{}] {}",
+                          getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
             }
 
             if (substatus == SftpConstants.SSH_FX_EOF) {
@@ -912,7 +953,20 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throwStatusException(id, substatus, msg, lang);
         }
 
-        throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
+        return handleUnknownDirListingPacket(id, type, length, buffer);
+    }
+
+    protected List<DirEntry> handleUnknownDirListingPacket(int id, int type, int length, Buffer buffer) throws IOException {
+        IOException err = handleUnexpectedPacket(SftpConstants.SSH_FXP_NAME, id, type, length, buffer);
+        if (err != null) {
+            throw err;
+        }
+        return Collections.emptyList();
+    }
+
+    protected IOException handleUnexpectedPacket(int expected, int id, int type, int length, Buffer buffer) throws IOException {
+        throw new SshException("Unexpected SFTP packet received while awaiting " + SftpConstants.getCommandMessageName(expected)
+                             + ": type=" + SftpConstants.getCommandMessageName(type) + ", id=" + id + ", length=" + length);
     }
 
     @Override

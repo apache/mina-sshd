@@ -375,35 +375,32 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
 
     protected void doHandleMessage(Buffer buffer) throws Exception {
         int cmd = buffer.getUByte();
+        if (log.isTraceEnabled()) {
+            log.trace("doHandleMessage({}) process {}", this, SshConstants.getCommandMessageName(cmd));
+        }
+
         switch (cmd) {
             case SshConstants.SSH_MSG_DISCONNECT: {
                 handleDisconnect(buffer);
                 break;
             }
             case SshConstants.SSH_MSG_IGNORE: {
-                log.debug("Received SSH_MSG_IGNORE");
+                handleIgnore(buffer);
                 break;
             }
             case SshConstants.SSH_MSG_UNIMPLEMENTED: {
-                int code = buffer.getInt();
-                if (log.isDebugEnabled()) {
-                    log.debug("Received SSH_MSG_UNIMPLEMENTED #{}", Integer.valueOf(code));
-                }
+                handleUnimplented(buffer);
                 break;
             }
             case SshConstants.SSH_MSG_DEBUG: {
-                boolean display = buffer.getBoolean();
-                String msg = buffer.getString();
-                if (log.isDebugEnabled()) {
-                    log.debug("Received SSH_MSG_DEBUG (display={}) '{}'", Boolean.valueOf(display), msg);
-                }
+                handleDebug(buffer);
                 break;
             }
             case SshConstants.SSH_MSG_SERVICE_REQUEST:
                 handleServiceRequest(buffer);
                 break;
             case SshConstants.SSH_MSG_SERVICE_ACCEPT:
-                handleServiceAccept();
+                handleServiceAccept(buffer);
                 break;
             case SshConstants.SSH_MSG_KEXINIT:
                 handleKexInit(buffer);
@@ -424,47 +421,83 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
                     currentService.process(cmd, buffer);
                     resetIdleTimeout();
                 } else {
-                    throw new IllegalStateException("Unsupported command " + cmd);
+                    throw new IllegalStateException("Unsupported command " + SshConstants.getCommandMessageName(cmd));
                 }
                 break;
         }
         checkRekey();
     }
 
-    protected void handleDisconnect(Buffer buffer) {
+    protected void handleIgnore(Buffer buffer) throws Exception {
+        if (log.isDebugEnabled()) {
+            log.debug("handleIgnore({}) SSH_MSG_IGNORE", this);
+        }
+    }
+
+    protected void handleUnimplented(Buffer buffer) throws Exception {
+        int seqNo = buffer.getInt();
+        if (log.isDebugEnabled()) {
+            log.debug("handleUnimplented({}) SSH_MSG_UNIMPLEMENTED #{}", this, seqNo);
+        }
+    }
+
+    protected void handleDebug(Buffer buffer) throws Exception {
+        boolean display = buffer.getBoolean();
+        String msg = buffer.getString();
+        String lang = buffer.getString();
+        if (log.isDebugEnabled()) {
+            log.debug("handleDebug({}) SSH_MSG_DEBUG (display={}) [lang={}] '{}'",
+                      this, display, lang, msg);
+        }
+    }
+
+    protected void handleDisconnect(Buffer buffer) throws Exception  {
         int code = buffer.getInt();
         String msg = buffer.getString();
+        String lang = buffer.getString();
         if (log.isDebugEnabled()) {
-            log.debug("Received SSH_MSG_DISCONNECT (reason={}, msg={})", Integer.valueOf(code), msg);
+            log.debug("handleDisconnect({}) SSH_MSG_DISCONNECT reason={}, [lang={}] msg={}",
+                      this, SshConstants.getDisconnectReasonName(code), lang, msg);
         }
         close(true);
     }
 
     protected void handleServiceRequest(Buffer buffer) throws IOException {
-        String service = buffer.getString();
-        log.debug("Received SSH_MSG_SERVICE_REQUEST '{}'", service);
+        String serviceName = buffer.getString();
+        if (log.isDebugEnabled()) {
+            log.debug("handleServiceRequest({}) SSH_MSG_SERVICE_REQUEST '{}'", this, serviceName);
+        }
         validateKexState(SshConstants.SSH_MSG_SERVICE_REQUEST, KexState.DONE);
         try {
-            startService(service);
+            startService(serviceName);
         } catch (Exception e) {
-            log.debug("Service " + service + " rejected", e);
-            disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Bad service request: " + service);
+            if (log.isDebugEnabled()) {
+                log.debug("handleServiceRequest({}) Service {} rejected: {} = {}",
+                          this, serviceName, e.getClass().getSimpleName(), e.getMessage());
+            }
+            disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Bad service request: " + serviceName);
             return;
         }
-        log.debug("Accepted service {}", service);
+        if (log.isDebugEnabled()) {
+            log.debug("handleServiceRequest({}) Accepted service {}", this, serviceName);
+        }
         Buffer response = prepareBuffer(SshConstants.SSH_MSG_SERVICE_ACCEPT, BufferUtils.clear(buffer));
-        response.putString(service);
+        response.putString(serviceName);
         writePacket(response);
     }
 
-    protected void handleServiceAccept() throws IOException {
-        log.debug("Received SSH_MSG_SERVICE_ACCEPT");
+    protected void handleServiceAccept(Buffer buffer) throws IOException {
+        String serviceName = buffer.getString();
+        if (log.isDebugEnabled()) {
+            log.debug("handleServiceAccept({}) SSH_MSG_SERVICE_ACCEPT service={}", this, serviceName);
+        }
         validateKexState(SshConstants.SSH_MSG_SERVICE_ACCEPT, KexState.DONE);
-        serviceAccept();
     }
 
     protected void handleKexInit(Buffer buffer) throws Exception {
-        log.debug("Received SSH_MSG_KEXINIT");
+        if (log.isDebugEnabled()) {
+            log.debug("handleKexInit({}) SSH_MSG_KEXINIT", this);
+        }
         receiveKexInit(buffer);
         if (kexState.compareAndSet(KexState.DONE, KexState.RUN)) {
             sendKexInit();
@@ -483,7 +516,9 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
     }
 
     protected void handleNewKeys(int cmd) throws Exception {
-        log.debug("Received SSH_MSG_NEWKEYS");
+        if (log.isDebugEnabled()) {
+            log.debug("handleNewKeys({}) SSH_MSG_NEWKEYS", this);
+        }
         validateKexState(cmd, KexState.KEYS);
         receiveNewKeys();
 
@@ -518,7 +553,8 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
     protected void validateKexState(int cmd, KexState expected) {
         KexState actual = kexState.get();
         if (!expected.equals(actual)) {
-            throw new IllegalStateException("Received KEX command=" + cmd + " while in state=" + actual + " instead of " + expected);
+            throw new IllegalStateException("Received KEX command=" + SshConstants.getCommandMessageName(cmd)
+                                          + " while in state=" + actual + " instead of " + expected);
         }
     }
 
@@ -1259,7 +1295,7 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
 
     @Override
     public void disconnect(int reason, String msg) throws IOException {
-        log.info("Disconnecting: {} - {}", reason, msg);
+        log.info("Disconnecting({}): {} - {}", this, SshConstants.getDisconnectReasonName(reason), msg);
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_DISCONNECT, msg.length() + Short.SIZE);
         buffer.putInt(reason);
         buffer.putString(msg);

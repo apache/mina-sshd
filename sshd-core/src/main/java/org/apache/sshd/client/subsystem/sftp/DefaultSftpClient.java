@@ -47,12 +47,6 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V3;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V6;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_INIT;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_STATUS;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_VERSION;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -153,7 +147,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         int rpos = incoming.rpos();
         for (int count = 0; receive(incoming); count++) {
             if (log.isTraceEnabled()) {
-                log.trace("Processed " + count + " data messages");
+                log.trace("data({}) Processed {} data messages", getClientChannel(), count);
             }
         }
 
@@ -219,7 +213,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
         int id = cmdId.incrementAndGet();
         int len = buffer.available();
         if (log.isTraceEnabled()) {
-            log.trace("send(cmd={}, len={}) id={}", cmd, len, id);
+            log.trace("send({}) cmd={}, len={}, id={}",
+                      getClientChannel(), SftpConstants.getCommandMessageName(cmd), len, id);
         }
 
         OutputStream dos = channel.getInvertedIn();
@@ -281,8 +276,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
         // Init packet
         OutputStream dos = channel.getInvertedIn();
         BufferUtils.writeInt(dos, 5 /* total length */, workBuf);
-        dos.write(SSH_FXP_INIT);
-        BufferUtils.writeInt(dos, SFTP_V6, workBuf);
+        dos.write(SftpConstants.SSH_FXP_INIT);
+        BufferUtils.writeInt(dos, SftpConstants.SFTP_V6, workBuf);
         dos.flush();
 
         Buffer buffer;
@@ -301,8 +296,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
-        if (type == SSH_FXP_VERSION) {
-            if (id < SFTP_V3) {
+        if (type == SftpConstants.SSH_FXP_VERSION) {
+            if (id < SftpConstants.SFTP_V3) {
                 throw new SshException("Unsupported sftp version " + id);
             }
             version = id;
@@ -312,17 +307,18 @@ public class DefaultSftpClient extends AbstractSftpClient {
                 byte[] data = buffer.getBytes();
                 extensions.put(name, data);
             }
-        } else if (type == SSH_FXP_STATUS) {
+        } else if (type == SftpConstants.SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("init(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+                log.trace("init({})[id={}] - status: {} [{}] {}",
+                          getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
             }
 
             throwStatusException(id, substatus, msg, lang);
         } else {
-            throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
+            handleUnexpectedPacket(SftpConstants.SSH_FXP_VERSION, id, type, length, buffer);
         }
     }
 
@@ -350,7 +346,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
         int selected = selector.selectVersion(current, new ArrayList<>(available));
         if (log.isDebugEnabled()) {
-            log.debug("negotiateVersion({}) {} -> {}", current, available, selected);
+            log.debug("negotiateVersion({}) current={} {} -> {}", getClientChannel(), current, available, selected);
         }
 
         if (selected == current) {
