@@ -67,7 +67,7 @@ public enum BuiltinSignatures implements SignatureFactory {
 
         @Override
         public boolean isSupported() {
-            return SecurityUtils.isBouncyCastleRegistered() || SecurityUtils.hasEcc();
+            return SecurityUtils.hasEcc();
         }
     },
     nistp384(KeyPairProvider.ECDSA_SHA2_NISTP384) {
@@ -78,7 +78,7 @@ public enum BuiltinSignatures implements SignatureFactory {
 
         @Override
         public boolean isSupported() {
-            return SecurityUtils.isBouncyCastleRegistered() || SecurityUtils.hasEcc();
+            return SecurityUtils.hasEcc();
         }
     },
     nistp521(KeyPairProvider.ECDSA_SHA2_NISTP521) {
@@ -89,7 +89,7 @@ public enum BuiltinSignatures implements SignatureFactory {
 
         @Override
         public boolean isSupported() {
-            return SecurityUtils.isBouncyCastleRegistered() || SecurityUtils.hasEcc();
+            return SecurityUtils.hasEcc();
         }
     };
 
