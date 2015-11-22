@@ -19,10 +19,14 @@
 package org.apache.sshd.common.kex;
 
 import java.security.PublicKey;
+import java.util.Map;
 
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.logging.LoggingUtils;
 
 /**
  * Key exchange algorithm.
@@ -79,4 +83,39 @@ public interface KeyExchange {
      * @return The server's {@link PublicKey}
      */
     PublicKey getServerKey();
+
+    /**
+     * A helper class for key exchange related operations
+     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+     */
+    // CHECKSTYLE:OFF
+    final class Utils {
+    // CHECKSTYLE:ON
+        public static final Map<Integer, String> GROUP_KEX_OPCODES_MAP =
+                LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_MSG_KEX_DH_GEX_");
+        public static final Map<Integer, String> SIMPLE_KEX_OPCODES_MAP =
+                LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_MSG_KEXDH_");
+
+        private Utils() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
+
+        public static String getGroupKexOpcodeName(int cmd) {
+            String name = GROUP_KEX_OPCODES_MAP.get(cmd);
+            if (GenericUtils.isEmpty(name)) {
+                return SshConstants.getCommandMessageName(cmd);
+            } else {
+                return name;
+            }
+        }
+
+        public static String getSimpleKexOpcodeName(int cmd) {
+            String name = SIMPLE_KEX_OPCODES_MAP.get(cmd);
+            if (GenericUtils.isEmpty(name)) {
+                return SshConstants.getCommandMessageName(cmd);
+            } else {
+                return name;
+            }
+        }
+    }
 }

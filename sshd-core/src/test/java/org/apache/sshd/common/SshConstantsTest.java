@@ -19,8 +19,9 @@
 
 package org.apache.sshd.common;
 
-import java.lang.reflect.Field;
+import java.util.Collection;
 
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -53,10 +54,19 @@ public class SshConstantsTest extends BaseTestSupport {
 
     @Test
     public void testAmbiguousOpcodes() throws Exception {
-        for (String name : SshConstants.AMBIGUOUS_OPCODES) {
-            Field f = SshConstants.class.getField(name);
-            int cmd = f.getByte(null) & 0xFF;
-            assertEquals("Mismatched mnemonic for " + name, Integer.toString(cmd), SshConstants.getCommandMessageName(cmd));
+        int[] knownAmbiguities = { 30, 31, 60 };
+        Collection<Integer> opcodes = SshConstants.getAmbiguousOpcodes();
+        assertTrue("Not enough ambiguities found", GenericUtils.size(opcodes) >= knownAmbiguities.length);
+
+        for (int cmd : knownAmbiguities) {
+            assertEquals("Mismatched mnemonic for known ambiguity=" + cmd, Integer.toString(cmd), SshConstants.getCommandMessageName(cmd));
+            assertTrue("Known ambiguity not reported as such: " + cmd, SshConstants.isAmbigouosOpcode(cmd));
+            assertTrue("Known ambiguity=" + cmd + " not listed: " + opcodes, opcodes.contains(cmd));
+        }
+
+        for (Integer cmd : opcodes) {
+            assertEquals("Mismatched mnemonic for " + cmd, cmd.toString(), SshConstants.getCommandMessageName(cmd));
+            assertTrue("Opcode not detected as ambiguous: " + cmd, SshConstants.isAmbigouosOpcode(cmd));
         }
     }
 }

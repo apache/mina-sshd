@@ -34,6 +34,7 @@ import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -47,15 +48,17 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
 
     protected final DHFactory factory;
     protected byte expected;
-    protected int min = 1024;
-    protected int prf = 4096;
-    protected int max = 8192;
+    protected int min = SecurityUtils.MIN_DHGEX_KEY_SIZE;
+    protected int prf;
+    protected int max;
     protected AbstractDH dh;
     protected byte[] p;
     protected byte[] g;
 
     protected DHGEXClient(DHFactory factory) {
         this.factory = ValidateUtils.checkNotNull(factory, "No factory");
+        this.max = SecurityUtils.getMaxDHGroupExchangeKeySize();
+        this.prf = Math.min(SecurityUtils.PREFERRED_DHGEX_KEY_SIZE, max);
     }
 
     public static KeyExchangeFactory newFactory(final DHFactory delegate) {
@@ -95,13 +98,18 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
     @Override
     public boolean next(Buffer buffer) throws Exception {
         int cmd = buffer.getUByte();
+        Session session = getSession();
+        if (log.isDebugEnabled()) {
+            log.debug("next({})[{}] process command={}", this, session, KeyExchange.Utils.getGroupKexOpcodeName(cmd));
+        }
+
         if (cmd != expected) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "Protocol error: expected packet " + expected + ", got " + cmd);
+                    "Protocol error: expected packet " + KeyExchange.Utils.getGroupKexOpcodeName(expected)
+                  + ", got " + KeyExchange.Utils.getGroupKexOpcodeName(cmd));
         }
 
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_GROUP) {
-            log.debug("Received SSH_MSG_KEX_DH_GEX_GROUP");
             p = buffer.getMPIntAsBytes();
             g = buffer.getMPIntAsBytes();
 
@@ -110,8 +118,9 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             hash.init();
             e = dh.getE();
 
-            log.debug("Send SSH_MSG_KEX_DH_GEX_INIT");
-            Session session = getSession();
+            if (log.isDebugEnabled()) {
+                log.debug("next({})[{}] Send SSH_MSG_KEX_DH_GEX_INIT", this, session);
+            }
             buffer = session.prepareBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_INIT, BufferUtils.clear(buffer));
             buffer.putMPInt(e);
             session.writePacket(buffer);
@@ -120,7 +129,6 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
         }
 
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REPLY) {
-            log.debug("Received SSH_MSG_KEX_DH_GEX_REPLY");
             byte[] k_s = buffer.getBytes();
             f = buffer.getMPIntAsBytes();
             byte[] sig = buffer.getBytes();
@@ -151,7 +159,6 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             hash.update(buffer.array(), 0, buffer.available());
             h = hash.digest();
 
-            Session session = getSession();
             FactoryManager manager = session.getFactoryManager();
             Signature verif = ValidateUtils.checkNotNull(
                     NamedFactory.Utils.create(manager.getSignatureFactories(), keyAlg),
@@ -166,11 +173,15 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             return true;
         }
 
-        throw new IllegalStateException("Unknown command value: " + cmd);
+        throw new IllegalStateException("Unknown command value: " + KeyExchange.Utils.getGroupKexOpcodeName(cmd));
     }
 
     protected AbstractDH getDH(BigInteger p, BigInteger g) throws Exception {
         return factory.create(p, g);
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[" + factory.getName() + "]";
+    }
 }

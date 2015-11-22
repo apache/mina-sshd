@@ -98,14 +98,16 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
     @Override
     public boolean next(Buffer buffer) throws Exception {
         int cmd = buffer.getUByte();
-
         ServerSession session = getServerSession();
+        if (log.isDebugEnabled()) {
+            log.debug("next({})[{}] process command={}", this, session, KeyExchange.Utils.getGroupKexOpcodeName(cmd));
+        }
+
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST_OLD && expected == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST) {
-            log.debug("Received SSH_MSG_KEX_DH_GEX_REQUEST_OLD on {}", session);
             oldRequest = true;
-            min = 1024;
+            min = SecurityUtils.MIN_DHGEX_KEY_SIZE;
             prf = buffer.getInt();
-            max = 8192;
+            max = SecurityUtils.getMaxDHGroupExchangeKeySize();
 
             if (max < min || prf < min || max < prf) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
@@ -116,7 +118,10 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             hash = dh.getHash();
             hash.init();
 
-            log.debug("Send SSH_MSG_KEX_DH_GEX_GROUP on {}", session);
+            if (log.isDebugEnabled()) {
+                log.debug("next({})[{}] send SSH_MSG_KEX_DH_GEX_GROUP", this, session);
+            }
+
             buffer = session.prepareBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP, BufferUtils.clear(buffer));
             buffer.putMPInt(dh.getP());
             buffer.putMPInt(dh.getG());
@@ -125,8 +130,8 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             expected = SshConstants.SSH_MSG_KEX_DH_GEX_INIT;
             return false;
         }
+
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST && expected == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST) {
-            log.debug("Received SSH_MSG_KEX_DH_GEX_REQUEST on {}", session);
             min = buffer.getInt();
             prf = buffer.getInt();
             max = buffer.getInt();
@@ -139,7 +144,9 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             hash = dh.getHash();
             hash.init();
 
-            log.debug("Send SSH_MSG_KEX_DH_GEX_GROUP on {}", session);
+            if (log.isDebugEnabled()) {
+                log.debug("next({})[{}] Send SSH_MSG_KEX_DH_GEX_GROUP", this, session);
+            }
             buffer = session.prepareBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP, BufferUtils.clear(buffer));
             buffer.putMPInt(dh.getP());
             buffer.putMPInt(dh.getG());
@@ -148,13 +155,14 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             expected = SshConstants.SSH_MSG_KEX_DH_GEX_INIT;
             return false;
         }
+
         if (cmd != expected) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "Protocol error: expected packet " + expected + ", got " + cmd);
+                    "Protocol error: expected packet " + KeyExchange.Utils.getGroupKexOpcodeName(expected)
+                  + ", got " + KeyExchange.Utils.getGroupKexOpcodeName(cmd));
         }
 
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_INIT) {
-            log.debug("Received SSH_MSG_KEX_DH_GEX_INIT on {}", session);
             e = buffer.getMPIntAsBytes();
             dh.setF(e);
             k = dh.getK();
@@ -163,7 +171,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             byte[] k_s;
             KeyPair kp = ValidateUtils.checkNotNull(session.getHostKey(), "No server key pair available");
             String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
-            FactoryManager manager = session.getFactoryManager();
+            FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
             Signature sig = ValidateUtils.checkNotNull(
                     NamedFactory.Utils.create(manager.getSignatureFactories(), algo),
                     "Unknown negotiated server keys: %s",
@@ -203,13 +211,15 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             sigH = buffer.getCompactData();
 
             if (log.isTraceEnabled()) {
-                log.trace("{}[K_S]:  {}", session, BufferUtils.printHex(k_s));
-                log.trace("{}[f]:    {}", session, BufferUtils.printHex(f));
-                log.trace("{}[sigH]: {}", session, BufferUtils.printHex(sigH));
+                log.trace("next({})[{}][K_S]:  {}", this, session, BufferUtils.printHex(k_s));
+                log.trace("next({})[{}][f]:    {}", this, session, BufferUtils.printHex(f));
+                log.trace("next({})[{}][sigH]: {}", this, session, BufferUtils.printHex(sigH));
             }
 
             // Send response
-            log.debug("Send SSH_MSG_KEX_DH_GEX_REPLY on {}", session);
+            if (log.isDebugEnabled()) {
+                log.debug("next({})[{}] Send SSH_MSG_KEX_DH_GEX_REPLY", this, session);
+            }
             buffer.clear();
             buffer.rpos(5);
             buffer.wpos(5);
@@ -227,12 +237,10 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
     private DHG chooseDH(int min, int prf, int max) throws Exception {
         List<Moduli.DhGroup> groups = loadModuliGroups();
 
-        min = Math.max(min, 1024);
-        prf = Math.max(prf, 1024);
-        // Keys of size > 1024 are not support by default with JCE, so only enable
-        // those if BouncyCastle is registered
-        prf = Math.min(prf, SecurityUtils.isBouncyCastleRegistered() ? 8192 : 1024);
-        max = Math.min(max, 8192);
+        min = Math.max(min, SecurityUtils.MIN_DHGEX_KEY_SIZE);
+        prf = Math.max(prf, SecurityUtils.MIN_DHGEX_KEY_SIZE);
+        prf = Math.min(prf, SecurityUtils.getMaxDHGroupExchangeKeySize());
+        max = Math.min(max, SecurityUtils.getMaxDHGroupExchangeKeySize());
         int bestSize = 0;
         List<Moduli.DhGroup> selected = new ArrayList<>();
         for (Moduli.DhGroup group : groups) {
@@ -247,15 +255,16 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
                 selected.add(group);
             }
         }
+
+        ServerSession session = getServerSession();
         if (selected.isEmpty()) {
-            log.warn("No suitable primes found, defaulting to DHG1");
+            log.warn("chooseDH({})[{}] No suitable primes found, defaulting to DHG1", this, session);
             return getDH(new BigInteger(DHGroupData.getP1()), new BigInteger(DHGroupData.getG()));
         }
 
-        ServerSession session = getServerSession();
         FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
         Factory<Random> factory = ValidateUtils.checkNotNull(manager.getRandomFactory(), "No random factory");
-        Random random = factory.create();
+        Random random = ValidateUtils.checkNotNull(factory.create(), "No random generator");
         int which = random.random(selected.size());
         Moduli.DhGroup group = selected.get(which);
         return getDH(group.p, group.g);
@@ -300,4 +309,8 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         return (DHG) factory.create(p, g);
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[" + factory.getName() + "]";
+    }
 }

@@ -19,7 +19,6 @@
 package org.apache.sshd.common;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -91,16 +90,6 @@ public final class SshConstants {
     public static final byte SSH_MSG_CHANNEL_SUCCESS = 99;
     public static final byte SSH_MSG_CHANNEL_FAILURE = 100;
 
-    // Names of opcodes that have the same value
-    public static final Set<String> AMBIGUOUS_OPCODES =
-            Collections.unmodifiableSet(
-                    new HashSet<String>(
-                            Arrays.asList(
-                                "SSH_MSG_KEX_FIRST", "SSH_MSG_KEXDH_INIT", "SSH_MSG_KEX_DH_GEX_REQUEST_OLD",
-                                "SSH_MSG_KEXDH_REPLY", "SSH_MSG_KEX_DH_GEX_GROUP",
-                                "SSH_MSG_USERAUTH_INFO_REQUEST", "SSH_MSG_USERAUTH_PK_OK", "SSH_MSG_USERAUTH_PASSWD_CHANGEREQ"
-                                    )));
-
     //
     // Disconnect error codes
     //
@@ -134,14 +123,45 @@ public final class SshConstants {
         throw new UnsupportedOperationException("No instance allowed");
     }
 
-    private static class LazyMessagesMapHolder {
+    private static class LazyAmbiguousOpcodesHolder {
+        private static final Set<Integer> AMBIGUOUS_OPCODES =
+            Collections.unmodifiableSet(
+                new HashSet<Integer>(
+                        LoggingUtils.getAmbiguousMenmonics(SshConstants.class, "SSH_MSG_").values()));
+    }
 
+    /**
+     * @param cmd The command value
+     * @return {@code true} if this value is used by several <U>different</U> messages
+     * @see #getAmbiguousOpcodes()
+     */
+    public static boolean isAmbigouosOpcode(int cmd) {
+        return getAmbiguousOpcodes().contains(cmd);
+    }
+
+    /**
+     * @return A {@link Set} of opcodes that are used by several <U>different</U> messages
+     */
+    @SuppressWarnings("synthetic-access")
+    public static Set<Integer> getAmbiguousOpcodes() {
+        return LazyAmbiguousOpcodesHolder.AMBIGUOUS_OPCODES;
+    }
+
+    private static class LazyMessagesMapHolder {
         private static final Map<Integer, String> MESSAGES_MAP =
                 LoggingUtils.generateMnemonicMap(SshConstants.class, new Predicate<Field>() {
                     @Override
                     public boolean evaluate(Field f) {
                         String name = f.getName();
-                        return name.startsWith("SSH_MSG_") && (!AMBIGUOUS_OPCODES.contains(name));
+                        if (!name.startsWith("SSH_MSG_")) {
+                            return false;
+                        }
+
+                        try {
+                            return !isAmbigouosOpcode(f.getByte(null));
+                        } catch (Exception e) {
+                            return false;
+                        }
                     }
                 });
     }

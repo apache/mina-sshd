@@ -82,19 +82,23 @@ public class DHGServer extends AbstractDHServerKeyExchange {
     @Override
     public boolean next(Buffer buffer) throws Exception {
         int cmd = buffer.getUByte();
+        ServerSession session = getServerSession();
+        if (log.isDebugEnabled()) {
+            log.debug("next({})[{}] process command={}", this, session, KeyExchange.Utils.getSimpleKexOpcodeName(cmd));
+        }
+
         if (cmd != SshConstants.SSH_MSG_KEXDH_INIT) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "Protocol error: expected packet " + SshConstants.SSH_MSG_KEXDH_INIT + ", got " + cmd);
+                    "Protocol error: expected packet SSH_MSG_KEXDH_INIT, got " + KeyExchange.Utils.getSimpleKexOpcodeName(cmd));
         }
-        ServerSession session = getServerSession();
-        log.debug("Received SSH_MSG_KEXDH_INIT on {}", session);
+
         e = buffer.getMPIntAsBytes();
         dh.setF(e);
         k = dh.getK();
 
         KeyPair kp = ValidateUtils.checkNotNull(session.getHostKey(), "No server key pair available");
         String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
-        FactoryManager manager = session.getFactoryManager();
+        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
         Signature sig = ValidateUtils.checkNotNull(
                 NamedFactory.Utils.create(manager.getSignatureFactories(), algo),
                 "Unknown negotiated server keys: %s",
@@ -125,13 +129,15 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         sigH = buffer.getCompactData();
 
         if (log.isTraceEnabled()) {
-            log.trace("{}[K_S]:  {}", session, BufferUtils.printHex(k_s));
-            log.trace("{}[f]:    {}", session, BufferUtils.printHex(f));
-            log.trace("{}[sigH]: {}", session, BufferUtils.printHex(sigH));
+            log.trace("next({})[{}][K_S]:  {}", this, session, BufferUtils.printHex(k_s));
+            log.trace("next({})[{}][f]:    {}", this, session, BufferUtils.printHex(f));
+            log.trace("next({})[{}][sigH]: {}", this, session, BufferUtils.printHex(sigH));
         }
 
         // Send response
-        log.debug("Send SSH_MSG_KEXDH_REPLY on {}", session);
+        if (log.isDebugEnabled()) {
+            log.debug("next({})[{}] Send SSH_MSG_KEXDH_REPLY", this, session);
+        }
         buffer.clear();
         buffer.rpos(5);
         buffer.wpos(5);
@@ -141,5 +147,10 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         buffer.putBytes(sigH);
         session.writePacket(buffer);
         return true;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[" + factory.getName() + "]";
     }
 }

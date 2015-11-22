@@ -33,11 +33,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
+
+import org.apache.sshd.common.Factory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -47,11 +51,6 @@ public final class GenericUtils {
     public static final byte[] EMPTY_BYTE_ARRAY = {};
     public static final String[] EMPTY_STRING_ARRAY = {};
     public static final Object[] EMPTY_OBJECT_ARRAY = {};
-    public static final List<Class<?>> NUMERIC_PRIMITIVE_CLASSES =
-            Collections.unmodifiableList(Arrays.<Class<?>>asList(
-                        Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE,
-                        Float.TYPE, Double.TYPE
-                    ));
 
     /**
      * The complement of {@link String#CASE_INSENSITIVE_ORDER}
@@ -77,6 +76,16 @@ public final class GenericUtils {
         public int compare(Comparable c1, Comparable c2) {
             return c1.compareTo(c2);
         }
+    };
+
+    @SuppressWarnings("rawtypes")
+    private static final Factory CASE_INSENSITIVE_MAP_FACTORY = new Factory() {
+        @Override
+        @SuppressWarnings("unchecked")
+        public Object create() {
+            return new TreeMap(String.CASE_INSENSITIVE_ORDER);
+        }
+
     };
 
     private GenericUtils() {
@@ -225,11 +234,19 @@ public final class GenericUtils {
         return length(a) <= 0;
     }
 
+    public static boolean isEmpty(long[] a) {
+        return length(a) <= 0;
+    }
+
     public static int length(byte... a) {
         return a == null ? 0 : a.length;
     }
 
     public static int length(int... a) {
+        return a == null ? 0 : a.length;
+    }
+
+    public static int length(long... a) {
         return a == null ? 0 : a.length;
     }
 
@@ -344,6 +361,82 @@ public final class GenericUtils {
             set.addAll(values);
         }
         return set;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <V> Factory<SortedMap<String, V>> caseInsensitiveMap() {
+        return CASE_INSENSITIVE_MAP_FACTORY;
+    }
+
+    @SafeVarargs
+    public static <K, V> Map<K, V> mapValues(
+            Transformer<? super V, ? extends K> keyMapper, Factory<? extends Map<K, V>> mapCreator, V ... values) {
+        return mapValues(keyMapper, mapCreator, isEmpty(values) ? Collections.<V>emptyList() : Arrays.asList(values));
+    }
+
+    /**
+     * Creates a map out of a group of values
+     *
+     * @param keyMapper The {@link Transformer} that generates a key for a given value.
+     * If the returned key is {@code null} then the value is not mapped
+     * @param mapCreator The {@link Factory} used to create the result map - provided
+     * non-empty group of values
+     * @param values The values to be mapped
+     * @return The resulting {@link Map} - <B>Note:</B> no validation is made to ensure
+     * that 2 (or more) values are not mapped to the same key
+     */
+    public static <K, V> Map<K, V> mapValues(
+            Transformer<? super V, ? extends K> keyMapper, Factory<? extends Map<K, V>> mapCreator, Collection<? extends V> values) {
+        if (isEmpty(values)) {
+            return Collections.emptyMap();
+        }
+
+        Map<K, V> map = mapCreator.create();
+        for (V v : values) {
+            K k = keyMapper.transform(v);
+            if (k == null) {
+                continue;   // debug breakpoint
+            }
+            map.put(k, v);
+        }
+
+        return map;
+    }
+
+    /**
+     * Returns a list of all the values that were accepted by a predicate
+     *
+     * @param <T> The type of value being evaluated
+     * @param acceptor The {@link Predicate} to consult whether a member is selected
+     * @param values The values to be scanned
+     * @return A {@link List} of all the values that were accepted by the predicate
+     */
+    @SafeVarargs
+    public static <T> List<T> selectMatchingMembers(Predicate<? super T> acceptor, T ... values) {
+        return selectMatchingMembers(acceptor, isEmpty(values) ? Collections.<T>emptyList() : Arrays.asList(values));
+    }
+
+    /**
+     * Returns a list of all the values that were accepted by a predicate
+     *
+     * @param <T> The type of value being evaluated
+     * @param acceptor The {@link Predicate} to consult whether a member is selected
+     * @param values The values to be scanned
+     * @return A {@link List} of all the values that were accepted by the predicate
+     */
+    public static <T> List<T> selectMatchingMembers(Predicate<? super T> acceptor, Collection<? extends T> values) {
+        if (isEmpty(values)) {
+            return Collections.emptyList();
+        }
+
+        List<T> matches = new ArrayList<T>(values.size());
+        for (T v : values) {
+            if (acceptor.evaluate(v)) {
+                matches.add(v);
+            }
+        }
+
+        return matches;
     }
 
     /**
@@ -471,23 +564,5 @@ public final class GenericUtils {
 
         current.addSuppressed(extra);
         return current;
-    }
-
-    // TODO in JDK-8 use Long.hashCode(long)
-    public static int hashCode(long value) {
-        return (int) (value ^ (value >>> 32));
-    }
-
-    public static boolean isNumericClass(Class<?> clazz) {
-        if (clazz == null) {
-            return false;
-        }
-
-        // turns out that the primitive types are not assignable to Number
-        if (Number.class.isAssignableFrom(clazz)) {
-            return true;
-        }
-
-        return NUMERIC_PRIMITIVE_CLASSES.indexOf(clazz) >= 0;
     }
 }

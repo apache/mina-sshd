@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
@@ -34,9 +35,12 @@ import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.security.Signature;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
+import javax.crypto.spec.DHParameterSpec;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.keyprovider.AbstractClassLoadableResourceKeyPairProvider;
@@ -64,9 +68,40 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class SecurityUtils {
+    /**
+     * Bouncycastle JCE provider name
+     */
     public static final String BOUNCY_CASTLE = "BC";
 
-    private static final Logger LOG = LoggerFactory.getLogger(SecurityUtils.class);
+    /**
+     * System property used to configure the value for the maximum supported Diffie-Hellman
+     * Group Exchange key size. If not set, then an internal auto-discovery mechanism is employed.
+     * If set to negative value then Diffie-Hellman Group Exchange is disabled. If set to a
+     * negative value then Diffie-Hellman Group Exchange is disabled
+     */
+    public static final String MAX_DHGEX_KEY_SIZE_PROP = "org.apache.sshd.maxDHGexKeySize";
+
+    /**
+     * The min. key size value used for testing whether Diffie-Hellman Group Exchange
+     * is supported or not. According to <A HREF="https://tools.ietf.org/html/rfc4419">RFC 4419</A>
+     * section 3: &quot;Servers and clients SHOULD support groups with a modulus length of k
+     * bits, where 1024 <= k <= 8192&quot;.
+     * </code>
+     */
+    public static final int MIN_DHGEX_KEY_SIZE = 1024;
+    // Keys of size > 1024 are not support by default with JCE
+    public static final int DEFAULT_DHGEX_KEY_SIZE = MIN_DHGEX_KEY_SIZE;
+    public static final int PREFERRED_DHGEX_KEY_SIZE = 4096;
+    public static final int MAX_DHGEX_KEY_SIZE = 8192;
+
+    /**
+     * System property used to control whether to automatically register the
+     * Bouncyastle JCE provider
+     * @see #DEFAULT_REGISTER_BOUNCY_CASTLE
+     */
+    public static final String REGISTER_BOUNCY_CASTLE_PROP = "org.apache.sshd.registerBouncyCastle";
+
+    private static final AtomicInteger MAX_DHG_KEY_SIZE_HOLDER = new AtomicInteger(0);
 
     private static String securityProvider;
     private static Boolean registerBouncyCastle;
@@ -87,6 +122,63 @@ public final class SecurityUtils {
             }
         }
         return hasEcc;
+    }
+
+    /**
+     * @return {@code true} if Diffie-Hellman Group Exchange is supported
+     * @see #getMaxDHGroupExchangeKeySize()
+     */
+    public static boolean isDHGroupExchangeSupported() {
+        return getMaxDHGroupExchangeKeySize() > 0;
+    }
+
+    /**
+     * @return The maximum supported Diffie-Hellman Group Exchange key size,
+     * or non-positive if not supported
+     */
+    public static int getMaxDHGroupExchangeKeySize() {
+        int maxSupportedKeySize;
+        synchronized (MAX_DHG_KEY_SIZE_HOLDER) {
+            maxSupportedKeySize = MAX_DHG_KEY_SIZE_HOLDER.get();
+            if (maxSupportedKeySize != 0) { // 1st time we are called ?
+                return maxSupportedKeySize;
+            }
+
+            String propValue = System.getProperty(MAX_DHGEX_KEY_SIZE_PROP);
+            if (GenericUtils.isEmpty(propValue)) {
+                maxSupportedKeySize = -1;
+                // Go down from max. to min. to ensure we stop at 1st maximum value success
+                for (int testKeySize = MAX_DHGEX_KEY_SIZE; testKeySize >= MIN_DHGEX_KEY_SIZE; testKeySize -= 1024) {
+                    if (isDHGroupExchangeSupported(testKeySize)) {
+                        maxSupportedKeySize = testKeySize;
+                        break;
+                    }
+                }
+            } else {
+                maxSupportedKeySize = Integer.parseInt(propValue);
+                // negative is OK - means user wants to disable DH group exchange
+                ValidateUtils.checkTrue(maxSupportedKeySize != 0,
+                        "Configured " + MAX_DHGEX_KEY_SIZE_PROP + " value must be non-zero: %d", maxSupportedKeySize);
+            }
+
+            MAX_DHG_KEY_SIZE_HOLDER.set(maxSupportedKeySize);
+        }
+
+        return maxSupportedKeySize;
+    }
+
+    public static boolean isDHGroupExchangeSupported(int maxKeySize) {
+        ValidateUtils.checkTrue(maxKeySize > Byte.SIZE, "Invalid max. key size: %d", maxKeySize);
+
+        try {
+            BigInteger r = new BigInteger("0").setBit(maxKeySize - 1);
+            DHParameterSpec dhSkipParamSpec = new DHParameterSpec(r, r);
+            KeyPairGenerator kpg = getKeyPairGenerator("DH");
+            kpg.initialize(dhSkipParamSpec);
+            return true;
+        } catch (GeneralSecurityException t) {
+            return false;
+        }
     }
 
     public static synchronized void setSecurityProvider(String securityProvider) {
@@ -113,20 +205,22 @@ public final class SecurityUtils {
     private static void register() {
         if (!registrationDone) {
             if (registerBouncyCastle == null) {
-                String prop = System.getProperty("org.apache.sshd.registerBouncyCastle");
+                String prop = System.getProperty(REGISTER_BOUNCY_CASTLE_PROP);
                 if (!GenericUtils.isEmpty(prop)) {
                     registerBouncyCastle = Boolean.valueOf(prop);
                 }
             }
+
             if ((securityProvider == null) && ((registerBouncyCastle == null) || registerBouncyCastle)) {
                 // Use an inner class to avoid a strong dependency from SshServer on BouncyCastle
                 try {
                     new BouncyCastleRegistration().call();
                 } catch (Throwable t) {
+                    Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
                     if (registerBouncyCastle == null) {
-                        LOG.info("BouncyCastle not registered, using the default JCE provider");
+                        logger.info("BouncyCastle not registered, using the default JCE provider");
                     } else {
-                        LOG.error("Failed to register BouncyCastle as the defaut JCE provider");
+                        logger.error("Failed {} to register BouncyCastle as the defaut JCE provider: {}", t.getClass().getSimpleName(), t.getMessage());
                         throw new RuntimeException("Failed to register BouncyCastle as the defaut JCE provider", t);
                     }
                 }
@@ -141,14 +235,16 @@ public final class SecurityUtils {
         @SuppressWarnings("synthetic-access")
         @Override
         public Void call() throws Exception {
+            // no need for a logger specific to this class since this is a one-time call
+            Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
             if (java.security.Security.getProvider(BOUNCY_CASTLE) == null) {
-                LOG.info("Trying to register BouncyCastle as a JCE provider");
+                logger.info("Trying to register BouncyCastle as a JCE provider");
                 java.security.Security.addProvider(new BouncyCastleProvider());
                 MessageDigest.getInstance("MD5", BOUNCY_CASTLE);
                 KeyAgreement.getInstance("DH", BOUNCY_CASTLE);
-                LOG.info("Registration succeeded");
+                logger.info("Registration succeeded");
             } else {
-                LOG.info("BouncyCastle already registered as a JCE provider");
+                logger.info("BouncyCastle already registered as a JCE provider");
             }
             securityProvider = BOUNCY_CASTLE;
             return null;

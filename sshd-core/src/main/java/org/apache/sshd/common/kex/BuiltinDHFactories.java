@@ -81,6 +81,11 @@ public enum BuiltinDHFactories implements DHFactory {
         public boolean isGroupExchange() {
             return true;
         }
+
+        @Override
+        public boolean isSupported() {  // avoid "Prime size must be multiple of 64, and can only range from 512 to 2048 (inclusive)"
+            return SecurityUtils.isDHGroupExchangeSupported();
+        }
     },
     dhgex256(Constants.DIFFIE_HELLMAN_GROUP_EXCHANGE_SHA256) {
         @Override
@@ -95,7 +100,7 @@ public enum BuiltinDHFactories implements DHFactory {
 
         @Override
         public boolean isSupported() {  // avoid "Prime size must be multiple of 64, and can only range from 512 to 2048 (inclusive)"
-            return SecurityUtils.isBouncyCastleRegistered();
+            return SecurityUtils.isDHGroupExchangeSupported();
         }
 
         @Override

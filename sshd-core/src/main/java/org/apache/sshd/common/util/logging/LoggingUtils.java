@@ -21,13 +21,20 @@ package org.apache.sshd.common.util.logging;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.logging.Level;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.Predicate;
+import org.apache.sshd.common.util.ReflectionUtils;
 import org.slf4j.Logger;
 
 /**
@@ -70,28 +77,20 @@ public final class LoggingUtils {
      * (besides being a {@link Number} and {@code public static final}).
      * @return A {@link Map} of all the matching fields, where key=the field's {@link Integer}
      * value and mapping=the field's name
+     * @see #getMnemonicFields(Class, Predicate)
      */
     public static Map<Integer, String> generateMnemonicMap(Class<?> clazz, Predicate<? super Field> acceptor) {
-        Map<Integer, String> result = new HashMap<>();
-        for (Field f : clazz.getFields()) {
+        Collection<Field> fields = getMnemonicFields(clazz, acceptor);
+        if (GenericUtils.isEmpty(fields)) {
+            return Collections.emptyMap();
+        }
+
+        Map<Integer, String> result = new HashMap<>(fields.size());
+        for (Field f : fields) {
             String name = f.getName();
-            int mods = f.getModifiers();
-            if ((!Modifier.isPublic(mods)) || (!Modifier.isStatic(mods)) || (!Modifier.isFinal(mods))) {
-                continue;
-            }
-
-            Class<?> type = f.getType();
-            if (!GenericUtils.isNumericClass(type)) {
-                continue;
-            }
-
-            if (!acceptor.evaluate(f)) {
-                continue;
-            }
-
             try {
                 Number value = (Number) f.get(null);
-                String prev = result.put(value.intValue(), name);
+                String prev = result.put(NumberUtils.toInteger(value), name);
                 if (prev != null) {
                     continue;   // debug breakpoint
                 }
@@ -101,6 +100,102 @@ public final class LoggingUtils {
         }
 
         return result;
+    }
+
+    /**
+     * Scans using reflection API for all <U>numeric {@code public static final}</U> fields
+     * that have a common prefix and whose value is used by several of the other
+     * matching fields
+     *
+     * @param clazz The {@link Class} to query
+     * @param commonPrefix The expected common prefix
+     * @return A {@link Map} of all the mnemonic fields names whose value is the same as other
+     * fields in this map. The key is the field's name and value is its associated opcode.
+     * @see #getAmbiguousMenmonics(Class, Predicate)
+     */
+    public static Map<String, Integer> getAmbiguousMenmonics(Class<?> clazz, final String commonPrefix) {
+        return getAmbiguousMenmonics(clazz, new Predicate<Field>() {
+            @Override
+            public boolean evaluate(Field f) {
+                String name = f.getName();
+                return name.startsWith(commonPrefix);
+            }
+        });
+    }
+
+    /**
+     * Scans using reflection API for all <U>numeric {@code public static final}</U> fields
+     * that are also accepted by the predicate and whose value is used by several of the other
+     * matching fields
+     *
+     * @param clazz The {@link Class} to query
+     * @param acceptor The {@link Predicate} used to decide whether to process the {@link Field}
+     * (besides being a {@link Number} and {@code public static final}).
+     * @return A {@link Map} of all the mnemonic fields names whose value is the same as other
+     * fields in this map. The key is the field's name and value is its associated opcode.
+     * @see #getMnemonicFields(Class, Predicate)
+     */
+    public static Map<String, Integer> getAmbiguousMenmonics(Class<?> clazz, Predicate<? super Field> acceptor) {
+        Collection<Field> fields = getMnemonicFields(clazz, acceptor);
+        if (GenericUtils.isEmpty(fields)) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, Integer> result = new TreeMap<String, Integer>(String.CASE_INSENSITIVE_ORDER);
+        Map<Integer, List<String>> opcodesMap = new HashMap<>(fields.size());
+        for (Field f : fields) {
+            String name = f.getName();
+            try {
+                Number value = (Number) f.get(null);
+                Integer key = NumberUtils.toInteger(value);
+                List<String> nameList = opcodesMap.get(key);
+                if (nameList == null) {
+                    nameList = new ArrayList<String>();
+                    opcodesMap.put(key, nameList);
+                }
+                nameList.add(name);
+
+                int numOpcodes = nameList.size();
+                if (numOpcodes > 1) {
+                    result.put(name, key);
+                    if (numOpcodes == 2) {  // add the 1st name as well
+                        result.put(nameList.get(0), key);
+                    }
+                }
+            } catch (Exception e) {
+                continue;   // debug breakpoint
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Scans using reflection API for all <U>numeric {@code public static final}</U> fields
+     * that are also accepted by the predicate.
+     *
+     * @param clazz The {@link Class} to query
+     * @param acceptor The {@link Predicate} used to decide whether to process the {@link Field}
+     * (besides being a {@link Number} and {@code public static final}).
+     * @return A {@link Collection} of all the fields that have satisfied all conditions
+     */
+    public static Collection<Field> getMnemonicFields(Class<?> clazz, final Predicate<? super Field> acceptor) {
+        return ReflectionUtils.getMatchingFields(clazz, new Predicate<Field>() {
+            @Override
+            public boolean evaluate(Field f) {
+                int mods = f.getModifiers();
+                if ((!Modifier.isPublic(mods)) || (!Modifier.isStatic(mods)) || (!Modifier.isFinal(mods))) {
+                    return false;
+                }
+
+                Class<?> type = f.getType();
+                if (!NumberUtils.isNumericClass(type)) {
+                    return false;
+                }
+
+                return acceptor.evaluate(f);
+            }
+        });
     }
 
     /**
