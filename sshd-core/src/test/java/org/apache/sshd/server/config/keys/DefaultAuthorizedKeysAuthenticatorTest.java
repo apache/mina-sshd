@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.security.PublicKey;
 import java.util.Collection;
 
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -57,7 +58,7 @@ public class DefaultAuthorizedKeysAuthenticatorTest extends BaseTestSupport {
         Collection<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(file);
         Collection<PublicKey> keySet = AuthorizedKeyEntry.resolveAuthorizedKeys(entries);
         PublickeyAuthenticator auth = new DefaultAuthorizedKeysAuthenticator(file, false);
-        String thisUser = System.getProperty("user.name");
+        String thisUser = OsUtils.getCurrentUser();
         for (String username : new String[]{null, "", thisUser, getClass().getName() + "#" + getCurrentTestName()}) {
             boolean expected = thisUser.equals(username);
             for (PublicKey key : keySet) {

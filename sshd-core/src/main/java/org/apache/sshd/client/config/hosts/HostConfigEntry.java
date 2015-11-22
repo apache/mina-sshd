@@ -54,6 +54,7 @@ import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.config.keys.IdentityUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -1364,7 +1365,7 @@ public class HostConfigEntry implements UsernameHolder {
                             appendUserHome(sb);
                             break;
                         case LOCAL_USER_MACRO:
-                            sb.append(ValidateUtils.checkNotNullAndNotEmpty(System.getProperty("user.name"), "No local user name value"));
+                            sb.append(ValidateUtils.checkNotNullAndNotEmpty(OsUtils.getCurrentUser(), "No local user name value"));
                             break;
                         case LOCAL_HOST_MACRO:
                         {

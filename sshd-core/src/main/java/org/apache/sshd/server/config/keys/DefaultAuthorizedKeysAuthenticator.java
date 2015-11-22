@@ -26,9 +26,12 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
+import java.util.Collections;
 
 import org.apache.sshd.common.auth.UsernameHolder;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.session.ServerSession;
@@ -57,7 +60,7 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
      *               does not check these permissions
      */
     public DefaultAuthorizedKeysAuthenticator(boolean strict) {
-        this(System.getProperty("user.name"), strict);
+        this(OsUtils.getCurrentUser(), strict);
     }
 
     public DefaultAuthorizedKeysAuthenticator(String user, boolean strict) {
@@ -73,7 +76,7 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
     }
 
     public DefaultAuthorizedKeysAuthenticator(Path path, boolean strict, LinkOption... options) {
-        this(System.getProperty("user.name"), path, strict, options);
+        this(OsUtils.getCurrentUser(), path, strict, options);
     }
 
     public DefaultAuthorizedKeysAuthenticator(String user, Path path, boolean strict, LinkOption... options) {
@@ -108,9 +111,12 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
                 log.debug("reloadAuthorizedKeys({})[{}] check permissions of {}", username, session, path);
             }
 
-            PosixFilePermission violation = KeyUtils.validateStrictKeyFilePermissions(path);
+            Pair<String, Object> violation = KeyUtils.validateStrictKeyFilePermissions(path);
             if (violation != null) {
-                throw new IOException("String permission violation (" + violation + ") for " + path);
+                log.warn("reloadAuthorizedKeys({})[{}] invalid file={} permissions: {}",
+                         username, session, path, violation.getFirst());
+                updateReloadAttributes();
+                return Collections.emptyList();
             }
         }
 
