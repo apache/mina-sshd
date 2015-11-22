@@ -25,6 +25,7 @@ import java.io.StreamCorruptedException;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 
@@ -310,18 +311,9 @@ public final class BufferUtils {
         }
         return true;
     }
-
-    public static int getNextPowerOf2(int i) {
+    public static int getNextPowerOf2(int value) {
         // for 0-7 return 8
-        if (i < Byte.SIZE) {
-            return Byte.SIZE;
-        }
-
-        int j = 1;
-        while (j < i) {
-            j <<= 1;
-        }
-        return j;
+        return (value < Byte.SIZE) ? Byte.SIZE : NumberUtils.getNextPowerOf2(value);
     }
 
     /**

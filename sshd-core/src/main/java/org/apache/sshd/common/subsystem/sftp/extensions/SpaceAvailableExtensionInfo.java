@@ -22,7 +22,7 @@ package org.apache.sshd.common.subsystem.sftp.extensions;
 import java.io.IOException;
 import java.nio.file.FileStore;
 
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -58,12 +58,9 @@ public class SpaceAvailableExtensionInfo implements Cloneable {
 
     @Override
     public int hashCode() {
-        int result = GenericUtils.hashCode(bytesOnDevice);
-        result = 31 * result + GenericUtils.hashCode(unusedBytesOnDevice);
-        result = 31 * result + GenericUtils.hashCode(bytesAvailableToUser);
-        result = 31 * result + GenericUtils.hashCode(unusedBytesAvailableToUser);
-        result = 31 * result + bytesPerAllocationUnit;
-        return result;
+        return NumberUtils.hashCode(bytesOnDevice, unusedBytesOnDevice,
+                    bytesAvailableToUser, unusedBytesAvailableToUser,
+                    bytesPerAllocationUnit);
     }
 
     @Override

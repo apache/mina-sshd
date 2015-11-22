@@ -19,7 +19,7 @@
 
 package org.apache.sshd.client.subsystem.sftp.extensions.openssh;
 
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -58,18 +58,9 @@ public class OpenSSHStatExtensionInfo implements Cloneable {
 
     @Override
     public int hashCode() {
-        int result =  GenericUtils.hashCode(this.f_bsize);
-        result = 31 * result + GenericUtils.hashCode(this.f_frsize);
-        result = 31 * result + GenericUtils.hashCode(this.f_blocks);
-        result = 31 * result + GenericUtils.hashCode(this.f_bfree);
-        result = 31 * result + GenericUtils.hashCode(this.f_bavail);
-        result = 31 * result + GenericUtils.hashCode(this.f_files);
-        result = 31 * result + GenericUtils.hashCode(this.f_ffree);
-        result = 31 * result + GenericUtils.hashCode(this.f_favail);
-        result = 31 * result + GenericUtils.hashCode(this.f_fsid);
-        result = 31 * result + GenericUtils.hashCode(this.f_flag);
-        result = 31 * result + GenericUtils.hashCode(this.f_namemax);
-        return result;
+        return NumberUtils.hashCode(this.f_bsize, this.f_frsize, this.f_blocks,
+                this.f_bfree, this.f_bavail, this.f_files, this.f_ffree,
+                this.f_favail, this.f_fsid, this.f_flag, this.f_namemax);
     }
 
     @Override
