@@ -32,6 +32,7 @@ import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.UserPrincipal;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -254,6 +255,23 @@ public final class IoUtils {
                         || perms.contains(PosixFilePermission.GROUP_EXECUTE)
                         || perms.contains(PosixFilePermission.OTHERS_EXECUTE));
         f.setExecutable(executable, false);
+    }
+
+    /**
+     * <P>Get file owner.</P>
+     *
+     * @param path  The {@link Path}
+     * @param options The {@link LinkOption}s to use when querying the owner
+     * @return Owner of the file or null if unsupported
+     * @throws IOException If failed to access the file system
+     */
+    public static String getFileOwner(Path path, LinkOption... options) throws IOException {
+        try {
+            UserPrincipal principal = Files.getOwner(path, options);
+            return (principal == null) ? null : principal.getName();
+        } catch (UnsupportedOperationException e) {
+            return null;
+        }
     }
 
     /**

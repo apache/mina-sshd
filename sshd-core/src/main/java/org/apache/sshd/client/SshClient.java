@@ -89,6 +89,7 @@ import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -661,7 +662,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         if (login == null) {
-            login = System.getProperty("user.name");
+            login = OsUtils.getCurrentUser();
         }
 
         if (port <= 0) {

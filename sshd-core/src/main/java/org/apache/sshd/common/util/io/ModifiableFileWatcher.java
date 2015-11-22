@@ -26,10 +26,19 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
@@ -40,6 +49,14 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ModifiableFileWatcher extends AbstractLoggingBean {
+
+    /**
+     * The {@link Set} of {@link PosixFilePermission} <U>not</U> allowed if strict
+     * permissions are enforced on key files
+     */
+    public static final Set<PosixFilePermission> STRICTLY_PROHIBITED_FILE_PERMISSION =
+            Collections.unmodifiableSet(
+                    EnumSet.of(PosixFilePermission.GROUP_WRITE, PosixFilePermission.OTHERS_WRITE));
 
     protected final LinkOption[] options;
 
@@ -174,4 +191,74 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
     public String toString() {
         return Objects.toString(getPath());
     }
+
+    /**
+     * <P>Checks if a path has strict permissions</P>
+     * <UL>
+     *
+     * <LI><P>
+     * (For {@code Unix}) The path may not have group or others write permissions
+     * </P></LI>
+     *
+     * <LI><P>
+     * The path must be owned by current user.
+     * </P></LI>
+     *
+     * <LI><P>
+     * (For {@code Unix}) The path may be owned by root.
+     * </P></LI>
+     *
+     * </UL>
+     *
+     * @param path    The {@link Path} to be checked - ignored if {@code null}
+     *                or does not exist
+     * @param options The {@link LinkOption}s to use to query the file's permissions
+     * @return The violated permission as {@link Pair} first is a message second is
+     * offending object {@link PosixFilePermission} or {@link String} for owner - {@code null} if
+     * no violations detected
+     * @throws IOException If failed to retrieve the permissions
+     * @see #STRICTLY_PROHIBITED_FILE_PERMISSION
+     */
+    public static Pair<String, Object> validateStrictConfigFilePermissions(Path path, LinkOption... options) throws IOException {
+        if ((path == null) || (!Files.exists(path, options))) {
+            return null;
+        }
+
+        Collection<PosixFilePermission> perms = IoUtils.getPermissions(path, options);
+        if (GenericUtils.isEmpty(perms)) {
+            return null;
+        }
+
+        if (OsUtils.isUNIX()) {
+            PosixFilePermission p = IoUtils.validateExcludedPermissions(perms, STRICTLY_PROHIBITED_FILE_PERMISSION);
+            if (p != null) {
+                return new Pair(String.format("Permissions violation (%s)", p), p);
+            }
+        }
+
+        String current = OsUtils.getCurrentUser();
+        String owner = IoUtils.getFileOwner(path, options);
+
+        if (GenericUtils.isEmpty(owner)) {
+            // we cannot get owner
+            // general issue: jvm does not support permissions
+            // security issue: specific filesystem does not support permissions
+            return null;
+        }
+
+        Set<String> expected = new HashSet<>();
+        expected.add(current);
+        if (OsUtils.isUNIX()) {
+            // Windows Administrator was considered however
+            // in Windows most liklely a group is in used.
+            expected.add(OsUtils.ROOT_USER);
+        }
+
+        if (!expected.contains(owner)) {
+            return new Pair(String.format("Owner violation (%s)", owner), owner);
+        }
+
+        return null;
+    }
+
 }

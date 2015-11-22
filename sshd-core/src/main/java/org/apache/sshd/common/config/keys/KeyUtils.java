@@ -47,6 +47,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -61,6 +62,7 @@ import org.apache.sshd.common.digest.DigestUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -123,17 +125,32 @@ public final class KeyUtils {
      * (For {@code Unix}) If the path is a file, then its folder may not have
      * group or others permissions
      * </P></LI>
+     *
+     * <LI><P>
+     * The path must be owned by current user.
+     * </P></LI>
+     *
+     * <LI><P>
+     * (For {@code Unix}) The path may be owned by root.
+     * </P></LI>
+     *
+     * <LI><P>
+     * (For {@code Unix}) If the path is a file, then its folder must also
+     * have valid owner.
+     * </P></LI>
+     *
      * </UL>
      *
      * @param path    The {@link Path} to be checked - ignored if {@code null}
      *                or does not exist
      * @param options The {@link LinkOption}s to use to query the file's permissions
-     * @return The violated {@link PosixFilePermission} - {@code null} if
+     * @return The violated permission as {@link Pair} first is a message second is
+     * offending object {@link PosixFilePermission} or {@link String} for owner - {@code null} if
      * no violations detected
      * @throws IOException If failed to retrieve the permissions
      * @see #STRICTLY_PROHIBITED_FILE_PERMISSION
      */
-    public static PosixFilePermission validateStrictKeyFilePermissions(Path path, LinkOption... options) throws IOException {
+    public static Pair<String, Object> validateStrictKeyFilePermissions(Path path, LinkOption... options) throws IOException {
         if ((path == null) || (!Files.exists(path, options))) {
             return null;
         }
@@ -144,20 +161,52 @@ public final class KeyUtils {
         }
 
         if (perms.contains(PosixFilePermission.OTHERS_EXECUTE)) {
-            return PosixFilePermission.OTHERS_EXECUTE;
+            PosixFilePermission p = PosixFilePermission.OTHERS_EXECUTE;
+            return new Pair(String.format("Permissions violation (%s)", p), p);
         }
 
         if (OsUtils.isUNIX()) {
             PosixFilePermission p = IoUtils.validateExcludedPermissions(perms, STRICTLY_PROHIBITED_FILE_PERMISSION);
             if (p != null) {
-                return p;
+                return new Pair(String.format("Permissions violation (%s)", p), p);
             }
 
             if (Files.isRegularFile(path, options)) {
                 Path parent = path.getParent();
                 p = IoUtils.validateExcludedPermissions(IoUtils.getPermissions(parent, options), STRICTLY_PROHIBITED_FILE_PERMISSION);
                 if (p != null) {
-                    return p;
+                    return new Pair(String.format("Parent permissions violation (%s)", p), p);
+                }
+            }
+        }
+
+        String current = OsUtils.getCurrentUser();
+        String owner = IoUtils.getFileOwner(path, options);
+
+        if (GenericUtils.isEmpty(owner)) {
+            // we cannot get owner
+            // general issue: jvm does not support permissions
+            // security issue: specific filesystem does not support permissions
+            return null;
+        }
+
+        Set<String> expected = new HashSet<>();
+        expected.add(current);
+        if (OsUtils.isUNIX()) {
+            // Windows Administrator was considered however
+            // in Windows most liklely a group is in used.
+            expected.add(OsUtils.ROOT_USER);
+        }
+
+        if (!expected.contains(owner)) {
+            return new Pair(String.format("Owner violation (%s)", owner), owner);
+        }
+
+        if (OsUtils.isUNIX()) {
+            if (Files.isRegularFile(path, options)) {
+                String parentOwner = IoUtils.getFileOwner(path.getParent(), options);
+                if (!expected.contains(parentOwner)) {
+                    return new Pair(String.format("Parent owner violation (%s)", parentOwner), parentOwner);
                 }
             }
         }

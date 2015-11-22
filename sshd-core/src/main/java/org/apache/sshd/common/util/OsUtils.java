@@ -21,6 +21,7 @@ package org.apache.sshd.common.util;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Operating system dependent utility methods.
@@ -28,14 +29,24 @@ import java.util.List;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class OsUtils {
+
+    /**
+     * Property that can be used to override the reported value from {@link #getCurrentUser()}
+     * if not set then &quot;user.name&quot; system property is used
+     */
+    public static final String CURRENT_USER_OVERRIDE_PROP = "org.apache.sshd.currentUser";
+
     public static final String WINDOWS_SHELL_COMMAND_NAME = "cmd.exe";
     public static final String LINUX_SHELL_COMMAND_NAME = "/bin/sh";
+
+    public static final String ROOT_USER = "root";
 
     public static final List<String> LINUX_COMMAND =
             Collections.unmodifiableList(Arrays.asList(LINUX_SHELL_COMMAND_NAME, "-i", "-l"));
     public static final List<String> WINDOWS_COMMAND =
             Collections.unmodifiableList(Collections.singletonList(WINDOWS_SHELL_COMMAND_NAME));
 
+    private static final AtomicReference<String> CURRENT_USER_HOLDER = new AtomicReference<>(null);
     private static final boolean WIN32 = GenericUtils.trimToEmpty(System.getProperty("os.name")).toLowerCase().contains("windows");
 
     private OsUtils() {
@@ -65,6 +76,35 @@ public final class OsUtils {
             return WINDOWS_COMMAND;
         } else {
             return LINUX_COMMAND;
+        }
+    }
+
+    /**
+     * Get current user name.
+     * @return current user.
+     */
+    public static String getCurrentUser() {
+        String username = null;
+        synchronized (CURRENT_USER_HOLDER) {
+            username = CURRENT_USER_HOLDER.get();
+            if (username != null) {  // have we already resolved it ?
+                return username;
+            }
+
+            username = System.getProperty(CURRENT_USER_OVERRIDE_PROP, System.getProperty("user.name"));
+            ValidateUtils.checkNotNullAndNotEmpty(username, "No username available");
+            CURRENT_USER_HOLDER.set(username);
+        }
+
+        return username;
+    }
+
+    /**
+     * Can be used to programmatically set the username reported by {@link #getCurrentUser()}
+     */
+    public static void setCurrentUser(String username) {
+        synchronized (CURRENT_USER_HOLDER) {    // not really necessary, but let's be consistent
+            CURRENT_USER_HOLDER.set(username);
         }
     }
 

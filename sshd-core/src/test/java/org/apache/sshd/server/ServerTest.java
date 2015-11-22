@@ -48,8 +48,8 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.client.session.SessionFactory;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.TestChannelListener;
 import org.apache.sshd.common.channel.WindowClosedException;
@@ -60,6 +60,7 @@ import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
 import org.apache.sshd.server.command.ScpCommandFactory;
@@ -529,7 +530,7 @@ public class ServerTest extends BaseTestSupport {
             {
                 put("test", getCurrentTestName());
                 put("port", Integer.toString(port));
-                put("user", System.getProperty("user.name"));
+                put("user", OsUtils.getCurrentUser());
             }
         };
 
