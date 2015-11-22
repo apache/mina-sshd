@@ -105,7 +105,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             oldRequest = true;
             min = 1024;
             prf = buffer.getInt();
-            max = 8192;
+            max = SecurityUtils.getMaxDHGroupExchangeKeySize();
 
             if (max < min || prf < min || max < prf) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
@@ -229,10 +229,9 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
 
         min = Math.max(min, 1024);
         prf = Math.max(prf, 1024);
-        // Keys of size > 1024 are not support by default with JCE, so only enable
-        // those if BouncyCastle is registered
-        prf = Math.min(prf, SecurityUtils.isBouncyCastleRegistered() ? 8192 : 1024);
-        max = Math.min(max, 8192);
+        // Keys of size > 1024 are not support by default with JCE
+        prf = Math.min(prf, SecurityUtils.isDHGroupExchangeSupported() ? SecurityUtils.getMaxDHGroupExchangeKeySize() : 1024);
+        max = Math.min(max, SecurityUtils.getMaxDHGroupExchangeKeySize());
         int bestSize = 0;
         List<Moduli.DhGroup> selected = new ArrayList<>();
         for (Moduli.DhGroup group : groups) {

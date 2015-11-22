@@ -36,6 +36,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.TeeOutputStream;
@@ -87,6 +88,11 @@ public class KexTest extends BaseTestSupport {
 
     @Test
     public void testClientKeyExchange() throws Exception {
+        if (factory.isGroupExchange()) {
+            assertEquals(factory.getName() + " not supported even though DH group exchange supported",
+                         SecurityUtils.isDHGroupExchangeSupported(), factory.isSupported());
+        }
+
         Assume.assumeTrue(factory.getName() + " not supported", factory.isSupported());
         testClient(ClientBuilder.DH2KEX.transform(factory));
     }

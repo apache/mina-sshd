@@ -48,6 +48,7 @@ import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -55,6 +56,7 @@ import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
 import org.apache.sshd.util.test.TeeOutputStream;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -192,6 +194,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
     @Test
     public void testReExchangeFromJschClient() throws Exception {
+        Assume.assumeTrue("DH Group Exchange not supported", SecurityUtils.isDHGroupExchangeSupported());
         setUp(0, 0);
 
         JSchLogger.init();
