@@ -803,6 +803,7 @@
                     <target>${javac.target}</target>
                     <compilerArgument>-g</compilerArgument>
                     <compilerArgument>-Xlint:-serial</compilerArgument>
+                    <compilerArgument>-Xlint:unchecked</compilerArgument>
                 </configuration>
             </plugin>
             <plugin>

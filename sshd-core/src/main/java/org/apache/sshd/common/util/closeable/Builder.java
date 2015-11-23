@@ -62,7 +62,8 @@ public final class Builder implements ObjectBuilder<Closeable> {
     }
 
     @SuppressWarnings("rawtypes")
-    public <T extends SshFuture> Builder when(@SuppressWarnings("unchecked") SshFuture<T>... futures) {
+    @SafeVarargs
+    public final <T extends SshFuture> Builder when(@SuppressWarnings("unchecked") SshFuture<T>... futures) {
         return when(Arrays.asList(futures));
     }
 
