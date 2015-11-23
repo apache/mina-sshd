@@ -37,7 +37,7 @@ import java.util.Collection;
  * @param <PRV> Type of {@link PrivateKey}
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends PrivateKey> {
+public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends PrivateKey> extends PublicKeyEntryResolver {
     /**
      * @return The {@link Class} of the {@link PublicKey} that is the result
      * of decoding

@@ -28,6 +28,7 @@ import java.security.PublicKey;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -106,7 +107,7 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
             if (exists()) {
                 Collection<AuthorizedKeyEntry> entries = reloadAuthorizedKeys(path, username, session);
                 if (GenericUtils.size(entries) > 0) {
-                    delegateHolder.set(AuthorizedKeyEntry.fromAuthorizedEntries(entries));
+                    delegateHolder.set(AuthorizedKeyEntry.fromAuthorizedEntries(getFallbackPublicKeyEntryResolver(), entries));
                 }
             } else {
                 log.info("resolvePublickeyAuthenticator(" + username + ")[" + session + "] no authorized keys file at " + path);
@@ -114,6 +115,10 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
         }
 
         return delegateHolder.get();
+    }
+
+    protected PublicKeyEntryResolver getFallbackPublicKeyEntryResolver() {
+        return PublicKeyEntryResolver.IGNORING;
     }
 
     protected Collection<AuthorizedKeyEntry> reloadAuthorizedKeys(Path path, String username, ServerSession session) throws IOException {

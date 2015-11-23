@@ -57,6 +57,8 @@ public abstract class AuthorizedKeysTestSupport extends BaseTestSupport {
             Files.delete(file);
         }
 
+        assertHierarchyTargetFolderExists(file.getParent());
+
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8, options)) {
             w.append(PublicKeyEntry.COMMENT_CHAR)
              .append(' ').append(getCurrentTestName())

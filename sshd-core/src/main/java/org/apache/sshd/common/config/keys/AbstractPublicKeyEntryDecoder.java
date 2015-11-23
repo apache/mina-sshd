@@ -105,6 +105,17 @@ public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey, PRV e
         return new KeyPair(pubCloned, prvCloned);
     }
 
+    @Override   // TODO make this a default method in Java-8
+    public PublicKey resolve(String keyType, byte[] keyData) throws IOException, GeneralSecurityException {
+        ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type provided");
+        Collection<String> supported = getSupportedTypeNames();
+        if ((GenericUtils.size(supported) > 0) && supported.contains(keyType)) {
+            return decodePublicKey(keyData);
+        }
+
+        throw new InvalidKeySpecException("resolve(" + keyType + ") not in listed supported types: " + supported);
+    }
+
     @Override
     public Collection<String> getSupportedTypeNames() {
         return names;

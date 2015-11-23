@@ -25,7 +25,6 @@ import java.io.Serializable;
 import java.io.StreamCorruptedException;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
@@ -33,7 +32,6 @@ import java.util.Objects;
 
 import org.apache.sshd.common.util.Base64;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
  * <P>Represents a {@link PublicKey} whose data is formatted according to
@@ -89,45 +87,49 @@ public class PublicKeyEntry implements Serializable {
     }
 
     /**
-     * @return The resolved {@link PublicKey} - never {@code null}.
-     * <B>Note:</B> may be called only after key type and data bytes have
-     * been set or exception(s) may be thrown
+     * @param fallbackResolver The {@link PublicKeyEntryResolver} to consult if
+     * none of the built-in ones can be used. If {@code null} and no built-in
+     * resolver can be used then an {@link InvalidKeySpecException} is thrown.
+     * @return The resolved {@link PublicKey} - or {@code null} if could not be
+     * resolved. <B>Note:</B> may be called only after key type and data bytes
+     * have been set or exception(s) may be thrown
      * @throws IOException              If failed to decode the key
      * @throws GeneralSecurityException If failed to generate the key
      */
-    public PublicKey resolvePublicKey() throws IOException, GeneralSecurityException {
+    public PublicKey resolvePublicKey(PublicKeyEntryResolver fallbackResolver) throws IOException, GeneralSecurityException {
         String kt = getKeyType();
-        PublicKeyEntryDecoder<?, ?> decoder = KeyUtils.getPublicKeyEntryDecoder(kt);
+        PublicKeyEntryResolver decoder = KeyUtils.getPublicKeyEntryDecoder(kt);
         if (decoder == null) {
-            throw new InvalidKeySpecException("No decoder registered for key type=" + kt);
+            decoder = fallbackResolver;
+        }
+        if (decoder == null) {
+            throw new InvalidKeySpecException("No decoder available for key type=" + kt);
         }
 
-        byte[] data = getKeyData();
-        PublicKey key = decoder.decodePublicKey(data);
-        if (key == null) {
-            throw new InvalidKeyException("No key of type=" + kt + " decoded for data=" + BufferUtils.printHex(':', data));
-        }
-
-        return key;
+        return decoder.resolve(kt, getKeyData());
     }
 
     /**
      * @param sb The {@link Appendable} instance to encode the data into
-     * @return The {@link PublicKey}
+     * @param fallbackResolver The {@link PublicKeyEntryResolver} to consult if
+     * none of the built-in ones can be used. If {@code null} and no built-in
+     * resolver can be used then an {@link InvalidKeySpecException} is thrown.
+     * @return The {@link PublicKey} or {@code null} if could not resolve it
      * @throws IOException              If failed to decode/encode the key
      * @throws GeneralSecurityException If failed to generate the key
-     * @see #resolvePublicKey()
+     * @see #resolvePublicKey(PublicKeyEntryResolver)
      */
-    public PublicKey appendPublicKey(Appendable sb) throws IOException, GeneralSecurityException {
-        PublicKey key = resolvePublicKey();
-        appendPublicKeyEntry(sb, key);
+    public PublicKey appendPublicKey(Appendable sb, PublicKeyEntryResolver fallbackResolver) throws IOException, GeneralSecurityException {
+        PublicKey key = resolvePublicKey(fallbackResolver);
+        if (key != null) {
+            appendPublicKeyEntry(sb, key);
+        }
         return key;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(getKeyType())
-                + Arrays.hashCode(getKeyData());
+        return Objects.hashCode(getKeyType()) + Arrays.hashCode(getKeyData());
     }
 
     /*
@@ -139,7 +141,7 @@ public class PublicKeyEntry implements Serializable {
             return true;
         }
         return Objects.equals(getKeyType(), e.getKeyType())
-                && Arrays.equals(getKeyData(), e.getKeyData());
+            && Arrays.equals(getKeyData(), e.getKeyData());
     }
 
     @Override
@@ -232,15 +234,20 @@ public class PublicKeyEntry implements Serializable {
      *
      * @param <A> The generic appendable class
      * @param sb  The {@link Appendable} instance to encode the data into
-     * @param key The {@link PublicKey}
+     * @param key The {@link PublicKey} - ignored if {@code null}
      * @return The updated appendable instance
      * @throws IOException If failed to append the data
      */
     public static <A extends Appendable> A appendPublicKeyEntry(A sb, PublicKey key) throws IOException {
+        if (key == null) {
+            return sb;
+        }
+
         @SuppressWarnings("unchecked")
-        PublicKeyEntryDecoder<PublicKey, ?> decoder = (PublicKeyEntryDecoder<PublicKey, ?>) KeyUtils.getPublicKeyEntryDecoder(key);
+        PublicKeyEntryDecoder<PublicKey, ?> decoder =
+            (PublicKeyEntryDecoder<PublicKey, ?>) KeyUtils.getPublicKeyEntryDecoder(key);
         if (decoder == null) {
-            throw new StreamCorruptedException("Cannot retrived decoder for key=" + key.getAlgorithm());
+            throw new StreamCorruptedException("Cannot retrieve decoder for key=" + key.getAlgorithm());
         }
 
         try (ByteArrayOutputStream s = new ByteArrayOutputStream(Byte.MAX_VALUE)) {

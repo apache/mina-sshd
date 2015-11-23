@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
+import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
@@ -83,7 +84,7 @@ public class AuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
             List<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(file);
             assertEquals("Mismatched number of loaded entries", keyLines.size(), entries.size());
 
-            List<PublicKey> keySet = AuthorizedKeyEntry.resolveAuthorizedKeys(entries);
+            List<PublicKey> keySet = AuthorizedKeyEntry.resolveAuthorizedKeys(PublicKeyEntryResolver.FAILING, entries);
             assertEquals("Mismatched number of loaded keys", entries.size(), keySet.size());
 
             reloadCount.set(0);

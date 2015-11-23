@@ -44,6 +44,7 @@ import java.util.TreeMap;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
+import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
@@ -102,7 +103,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     }
 
     @Override
-    public PublicKey appendPublicKey(Appendable sb) throws IOException, GeneralSecurityException {
+    public PublicKey appendPublicKey(Appendable sb, PublicKeyEntryResolver fallbackResolver) throws IOException, GeneralSecurityException {
         Map<String, String> options = getLoginOptions();
         if (!GenericUtils.isEmpty(options)) {
             int index = 0;
@@ -126,7 +127,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
             }
         }
 
-        PublicKey key = super.appendPublicKey(sb);
+        PublicKey key = super.appendPublicKey(sb, fallbackResolver);
         String kc = getComment();
         if (!GenericUtils.isEmpty(kc)) {
             sb.append(' ').append(kc);
@@ -145,8 +146,9 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
                 + (GenericUtils.isEmpty(kc) ? "" : " " + kc);
     }
 
-    public static PublickeyAuthenticator fromAuthorizedEntries(Collection<? extends AuthorizedKeyEntry> entries) throws IOException, GeneralSecurityException {
-        Collection<PublicKey> keys = resolveAuthorizedKeys(entries);
+    public static PublickeyAuthenticator fromAuthorizedEntries(PublicKeyEntryResolver fallbackResolver, Collection<? extends AuthorizedKeyEntry> entries)
+            throws IOException, GeneralSecurityException {
+        Collection<PublicKey> keys = resolveAuthorizedKeys(fallbackResolver, entries);
         if (GenericUtils.isEmpty(keys)) {
             return RejectAllPublickeyAuthenticator.INSTANCE;
         } else {
@@ -154,15 +156,18 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         }
     }
 
-    public static List<PublicKey> resolveAuthorizedKeys(Collection<? extends AuthorizedKeyEntry> entries) throws IOException, GeneralSecurityException {
+    public static List<PublicKey> resolveAuthorizedKeys(PublicKeyEntryResolver fallbackResolver, Collection<? extends AuthorizedKeyEntry> entries)
+            throws IOException, GeneralSecurityException {
         if (GenericUtils.isEmpty(entries)) {
             return Collections.emptyList();
         }
 
         List<PublicKey> keys = new ArrayList<PublicKey>(entries.size());
         for (AuthorizedKeyEntry e : entries) {
-            PublicKey k = e.resolvePublicKey();
-            keys.add(k);
+            PublicKey k = e.resolvePublicKey(fallbackResolver);
+            if (k != null) {
+                keys.add(k);
+            }
         }
 
         return keys;
