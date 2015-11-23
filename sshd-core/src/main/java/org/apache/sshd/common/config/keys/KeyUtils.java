@@ -63,6 +63,7 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.Pair;
+import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -102,7 +103,10 @@ public final class KeyUtils {
     static {
         registerPublicKeyEntryDecoder(RSAPublicKeyDecoder.INSTANCE);
         registerPublicKeyEntryDecoder(DSSPublicKeyEntryDecoder.INSTANCE);
-        registerPublicKeyEntryDecoder(ECDSAPublicKeyEntryDecoder.INSTANCE);
+
+        if (SecurityUtils.hasEcc()) {
+            registerPublicKeyEntryDecoder(ECDSAPublicKeyEntryDecoder.INSTANCE);
+        }
     }
 
     private KeyUtils() {

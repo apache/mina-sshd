@@ -101,6 +101,13 @@ public final class SecurityUtils {
      */
     public static final String REGISTER_BOUNCY_CASTLE_PROP = "org.apache.sshd.registerBouncyCastle";
 
+    /**
+     * System property used to control whether Elliptic Curves are supported or not.
+     * If not set then the support is auto-detected. <B>Note:</B> if set to {@code true}
+     * it is up to the user to make sure that indeed there is a provider for them
+     */
+    public static final String ECC_SUPPORTED_PROP = "org.apache.sshd.eccSupport";
+
     private static final AtomicInteger MAX_DHG_KEY_SIZE_HOLDER = new AtomicInteger(0);
 
     private static String securityProvider;
@@ -112,15 +119,27 @@ public final class SecurityUtils {
         throw new UnsupportedOperationException("No instance");
     }
 
+    /**
+     * @return {@code true} if Elliptic Curve Cryptography is supported
+     * @see #ECC_SUPPORTED_PROP
+     */
     public static boolean hasEcc() {
         if (hasEcc == null) {
-            try {
-                getKeyPairGenerator("EC");
-                hasEcc = Boolean.TRUE;
-            } catch (Throwable t) {
-                hasEcc = Boolean.FALSE;
+            String propValue = System.getProperty(ECC_SUPPORTED_PROP);
+            if (GenericUtils.isEmpty(propValue)) {
+                try {
+                    getKeyPairGenerator("EC");
+                    hasEcc = Boolean.TRUE;
+                } catch (Throwable t) {
+                    hasEcc = Boolean.FALSE;
+                }
+            } else {
+                Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
+                logger.info("Override ECC support value: " + propValue);
+                hasEcc = Boolean.valueOf(propValue);
             }
         }
+
         return hasEcc;
     }
 
@@ -155,6 +174,8 @@ public final class SecurityUtils {
                     }
                 }
             } else {
+                Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
+                logger.info("Override max. DH group exchange key size: " + propValue);
                 maxSupportedKeySize = Integer.parseInt(propValue);
                 // negative is OK - means user wants to disable DH group exchange
                 ValidateUtils.checkTrue(maxSupportedKeySize != 0,
@@ -205,9 +226,11 @@ public final class SecurityUtils {
     private static void register() {
         if (!registrationDone) {
             if (registerBouncyCastle == null) {
-                String prop = System.getProperty(REGISTER_BOUNCY_CASTLE_PROP);
-                if (!GenericUtils.isEmpty(prop)) {
-                    registerBouncyCastle = Boolean.valueOf(prop);
+                String propValue = System.getProperty(REGISTER_BOUNCY_CASTLE_PROP);
+                if (!GenericUtils.isEmpty(propValue)) {
+                    Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
+                    logger.info("Override BouncyCastle registration value: " + propValue);
+                    registerBouncyCastle = Boolean.valueOf(propValue);
                 }
             }
 

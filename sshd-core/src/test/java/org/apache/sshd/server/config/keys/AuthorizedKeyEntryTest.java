@@ -19,23 +19,18 @@
 
 package org.apache.sshd.server.config.keys;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.security.PublicKey;
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
-import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -45,50 +40,41 @@ import org.junit.runners.MethodSorters;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class AuthorizedKeyEntryTest extends BaseTestSupport {
+public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
     public AuthorizedKeyEntryTest() {
         super();
     }
 
     @Test
     public void testReadAuthorizedKeysFile() throws Exception {
-        URL url = getClass().getResource(AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME);
-        assertNotNull("Missing " + AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME + " resource", url);
-
-        runAuthorizedKeysTests(AuthorizedKeyEntry.readAuthorizedKeys(url));
+        Path file = getTempTargetRelativeFile(getCurrentTestName());
+        writeDefaultSupportedKeys(file);
+        runAuthorizedKeysTests(AuthorizedKeyEntry.readAuthorizedKeys(file));
     }
 
     @Test
     public void testEncodePublicKeyEntry() throws Exception {
-        URL url = getClass().getResource(AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME);
-        assertNotNull("Missing " + AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME + " resource", url);
-
+        List<String> keyLines = loadDefaultSupportedKeys();
         StringBuilder sb = new StringBuilder(Byte.MAX_VALUE);
-        try (BufferedReader rdr = new BufferedReader(new InputStreamReader(url.openStream(), StandardCharsets.UTF_8))) {
-            for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
-                line = GenericUtils.trimToEmpty(line);
-                if (GenericUtils.isEmpty(line) || (line.charAt(0) == PublicKeyEntry.COMMENT_CHAR)) {
-                    continue;
-                }
-
-                int pos = line.indexOf(' ');
-                String keyType = line.substring(0, pos), data = line;
-                // assume this happens if starts with login options
-                if (KeyUtils.getPublicKeyEntryDecoder(keyType) == null) {
-                    data = line.substring(pos + 1).trim();
-                }
-
-                AuthorizedKeyEntry entry = AuthorizedKeyEntry.parseAuthorizedKeyEntry(data);
-                if (sb.length() > 0) {
-                    sb.setLength(0);
-                }
-
-                PublicKey key = entry.appendPublicKey(sb);
-                assertNotNull("No key for line=" + line, key);
-
-                String encoded = sb.toString();
-                assertEquals("Mismatched encoded form for line=" + line, data, encoded);
+        for (String line : keyLines) {
+            int pos = line.indexOf(' ');
+            String data = line;
+            String keyType = line.substring(0, pos);
+            // assume this happens if starts with login options
+            if (KeyUtils.getPublicKeyEntryDecoder(keyType) == null) {
+                data = line.substring(pos + 1).trim();
             }
+
+            AuthorizedKeyEntry entry = AuthorizedKeyEntry.parseAuthorizedKeyEntry(data);
+            if (sb.length() > 0) {
+                sb.setLength(0);
+            }
+
+            PublicKey key = entry.appendPublicKey(sb);
+            assertNotNull("No key for line=" + line, key);
+
+            String encoded = sb.toString();
+            assertEquals("Mismatched encoded form for line=" + line, data, encoded);
         }
     }
 

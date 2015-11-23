@@ -202,7 +202,9 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
      * @see #readAuthorizedKeys(InputStream, boolean)
      */
     public static List<AuthorizedKeyEntry> readAuthorizedKeys(URL url) throws IOException {
-        return readAuthorizedKeys(url.openStream(), true);
+        try (InputStream in = url.openStream()) {
+            return readAuthorizedKeys(in, true);
+        }
     }
 
     /**
@@ -214,7 +216,9 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
      * @see #readAuthorizedKeys(InputStream, boolean)
      */
     public static List<AuthorizedKeyEntry> readAuthorizedKeys(File file) throws IOException {
-        return readAuthorizedKeys(new FileInputStream(file), true);
+        try (InputStream in = new FileInputStream(file)) {
+            return readAuthorizedKeys(in, true);
+        }
     }
 
     /**
@@ -229,7 +233,9 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
      * @see Files#newInputStream(Path, OpenOption...)
      */
     public static List<AuthorizedKeyEntry> readAuthorizedKeys(Path path, OpenOption... options) throws IOException {
-        return readAuthorizedKeys(Files.newInputStream(path, options), true);
+        try (InputStream in = Files.newInputStream(path, options)) {
+            return readAuthorizedKeys(in, true);
+        }
     }
 
     /**
@@ -241,7 +247,9 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
      * @see #readAuthorizedKeys(InputStream, boolean)
      */
     public static List<AuthorizedKeyEntry> readAuthorizedKeys(String filePath) throws IOException {
-        return readAuthorizedKeys(new FileInputStream(filePath), true);
+        try (InputStream in = new FileInputStream(filePath)) {
+            return readAuthorizedKeys(in, true);
+        }
     }
 
     /**
@@ -287,10 +295,10 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         List<AuthorizedKeyEntry> entries = null;
 
         for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
-            final AuthorizedKeyEntry entry;
+            AuthorizedKeyEntry entry;
             try {
                 entry = parseAuthorizedKeyEntry(line.trim());
-                if (entry == null) {
+                if (entry == null) {    // null, empty or comment line
                     continue;
                 }
             } catch (IllegalArgumentException e) {

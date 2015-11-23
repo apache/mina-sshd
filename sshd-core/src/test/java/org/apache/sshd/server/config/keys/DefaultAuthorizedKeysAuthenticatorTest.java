@@ -19,18 +19,12 @@
 
 package org.apache.sshd.server.config.keys;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.PublicKey;
 import java.util.Collection;
 
 import org.apache.sshd.common.util.OsUtils;
-import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
-import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -39,7 +33,7 @@ import org.junit.runners.MethodSorters;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class DefaultAuthorizedKeysAuthenticatorTest extends BaseTestSupport {
+public class DefaultAuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
     public DefaultAuthorizedKeysAuthenticatorTest() {
         super();
     }
@@ -47,13 +41,7 @@ public class DefaultAuthorizedKeysAuthenticatorTest extends BaseTestSupport {
     @Test
     public void testUsernameValidation() throws Exception {
         Path file = getTempTargetRelativeFile(getCurrentTestName());
-        URL url = getClass().getResource(AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME);
-        assertNotNull("Missing " + AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME + " resource", url);
-
-        try (InputStream input = url.openStream();
-             OutputStream output = Files.newOutputStream(file)) {
-            IoUtils.copy(input, output);
-        }
+        writeDefaultSupportedKeys(file);
 
         Collection<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(file);
         Collection<PublicKey> keySet = AuthorizedKeyEntry.resolveAuthorizedKeys(entries);

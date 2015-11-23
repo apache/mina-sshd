@@ -62,7 +62,7 @@ public class SignatureECDSAFactoryTest extends AbstractSignatureFactoryTestSuppo
 
     @Test
     public void testECDSAPublicKeyAuth() throws Exception {
-        Assume.assumeTrue("ECC not supported", SecurityUtils.hasEcc() || SecurityUtils.isBouncyCastleRegistered());
+        Assume.assumeTrue("ECC not supported", SecurityUtils.hasEcc());
         testKeyPairProvider(ECDSAPublicKeyEntryDecoder.INSTANCE, FACTORIES);
     }
 }

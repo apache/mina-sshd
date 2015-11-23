@@ -19,26 +19,20 @@
 
 package org.apache.sshd.server.config.keys;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.Writer;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.PublicKey;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
-import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -48,7 +42,7 @@ import org.mockito.Mockito;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class AuthorizedKeysAuthenticatorTest extends BaseTestSupport {
+public class AuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
     public AuthorizedKeysAuthenticatorTest() {
         super();
     }
@@ -71,22 +65,7 @@ public class AuthorizedKeysAuthenticatorTest extends BaseTestSupport {
         };
         assertFalse("Unexpected authentication success for missing file " + file, auth.authenticate(getCurrentTestName(), Mockito.mock(PublicKey.class), null));
 
-        URL url = getClass().getResource(AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME);
-        assertNotNull("Missing " + AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME + " resource", url);
-
-        List<String> keyLines = new ArrayList<String>();
-        try (BufferedReader rdr = new BufferedReader(new InputStreamReader(url.openStream(), StandardCharsets.UTF_8))) {
-            for (String l = rdr.readLine(); l != null; l = rdr.readLine()) {
-                l = GenericUtils.trimToEmpty(l);
-                // filter out empty and comment lines
-                if (GenericUtils.isEmpty(l) || (l.charAt(0) == PublicKeyEntry.COMMENT_CHAR)) {
-                    continue;
-                } else {
-                    keyLines.add(l);
-                }
-            }
-        }
-
+        List<String> keyLines = loadDefaultSupportedKeys();
         assertHierarchyTargetFolderExists(file.getParent());
 
         while(keyLines.size() > 0) {
