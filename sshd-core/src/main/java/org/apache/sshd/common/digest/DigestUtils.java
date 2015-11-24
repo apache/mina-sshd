@@ -21,9 +21,13 @@ package org.apache.sshd.common.digest;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.Comparator;
 
 import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.util.Base64;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
@@ -32,6 +36,50 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 public final class DigestUtils {
     private DigestUtils() {
         throw new UnsupportedOperationException("No instance");
+    }
+
+    /**
+     * @param <D> The generic type of digest factory
+     * @param algo The required algorithm name - ignored if {@code null}/empty
+     * @param comp The {@link Comparator} to use to compare algorithm names
+     * @param digests The factories to check - ignored if {@code null}/empty
+     * @return The first {@link DigestFactory} whose algorithm matches the required one
+     * according to the comparator - {@code null} if no match found
+     */
+    public static <D extends Digest> D findDigestByAlgorithm(String algo, Comparator<? super String> comp, Collection<? extends D> digests) {
+        if (GenericUtils.isEmpty(algo) || GenericUtils.isEmpty(digests)) {
+            return null;
+        }
+
+        for (D d : digests) {
+            if (comp.compare(algo, d.getAlgorithm()) == 0) {
+                return d;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param <F> The generic type of digest factory
+     * @param algo The required algorithm name - ignored if {@code null}/empty
+     * @param comp The {@link Comparator} to use to compare algorithm names
+     * @param factories The factories to check - ignored if {@code null}/empty
+     * @return The first {@link DigestFactory} whose algorithm matches the required one
+     * according to the comparator - {@code null} if no match found
+     */
+    public static <F extends DigestFactory> F findFactoryByAlgorithm(String algo, Comparator<? super String> comp, Collection<? extends F> factories) {
+        if (GenericUtils.isEmpty(algo) || GenericUtils.isEmpty(factories)) {
+            return null;
+        }
+
+        for (F f : factories) {
+            if (comp.compare(algo, f.getAlgorithm()) == 0) {
+                return f;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -55,7 +103,7 @@ public final class DigestUtils {
      * @throws Exception If failed to calculate the digest
      */
     public static String getFingerPrint(Factory<? extends Digest> f, String s, Charset charset) throws Exception {
-        return getFingerPrint(f.create(), s, charset);
+        return getFingerPrint(ValidateUtils.checkNotNull(f, "No factory").create(), s, charset);
     }
 
     /**
@@ -106,7 +154,7 @@ public final class DigestUtils {
      * @throws Exception If failed to calculate the fingerprint
      */
     public static String getFingerPrint(Factory<? extends Digest> f, byte[] buf, int offset, int len) throws Exception {
-        return getFingerPrint(f.create(), buf, offset, len);
+        return getFingerPrint(ValidateUtils.checkNotNull(f, "No factory").create(), buf, offset, len);
     }
 
     /**
@@ -133,12 +181,15 @@ public final class DigestUtils {
             return null;
         }
 
-        d.init();
+        ValidateUtils.checkNotNull(d, "No digest").init();
         d.update(buf, offset, len);
 
         byte[] data = d.digest();
-        return BufferUtils.printHex(data, 0, data.length, ':');
+        String algo = d.getAlgorithm();
+        if (BuiltinDigests.md5.getAlgorithm().equals(algo)) {
+            return algo + ":" + BufferUtils.printHex(':', data).toLowerCase();
+        } else {
+            return algo.replace("-", "").toUpperCase() + ":" + Base64.encodeToString(data).replaceAll("=", "");
+        }
     }
-
-
 }

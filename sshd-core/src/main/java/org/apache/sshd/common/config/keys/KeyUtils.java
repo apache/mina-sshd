@@ -58,6 +58,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
+import org.apache.sshd.common.digest.DigestFactory;
 import org.apache.sshd.common.digest.DigestUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
@@ -86,13 +87,20 @@ public final class KeyUtils {
                             PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_WRITE, PosixFilePermission.OTHERS_EXECUTE));
 
     /**
-     * The default {@link Factory} of {@link Digest}s initialized
-     * as the value of {@link #getDefaultFingerPrintFactory()}
+     * System property that can be used to control the default fingerprint factory used for keys.
+     * If not set the {@link #DEFAULT_FINGERPRINT_DIGEST_FACTORY} is used
      */
-    public static final Factory<Digest> DEFAULT_FINGERPRINT_DIGEST_FACTORY = BuiltinDigests.md5;
+    public static final String KEY_FINGERPRINT_FACTORY_PROP = "org.apache.sshd.keyFingerprintFactory";
 
-    private static final AtomicReference<Factory<? extends Digest>> DEFAULT_DIGEST_HOLDER =
-            new AtomicReference<Factory<? extends Digest>>(DEFAULT_FINGERPRINT_DIGEST_FACTORY);
+    /**
+     * The default {@link Factory} of {@link Digest}s initialized
+     * as the value of {@link #getDefaultFingerPrintFactory()} if not
+     * overridden by {@link #OPENSSH_KEY_FINGERPRINT_FACTORY_PROP} or
+     * {@link #setDefaultFingerPrintFactory(Factory)}
+     */
+    public static final Factory<Digest> DEFAULT_FINGERPRINT_DIGEST_FACTORY = BuiltinDigests.sha256;
+
+    private static final AtomicReference<Factory<? extends Digest>> DEFAULT_DIGEST_HOLDER = new AtomicReference<>();
 
     private static final Map<String, PublicKeyEntryDecoder<?, ?>> BY_KEY_TYPE_DECODERS_MAP =
             new TreeMap<String, PublicKeyEntryDecoder<?, ?>>(String.CASE_INSENSITIVE_ORDER);
@@ -361,10 +369,28 @@ public final class KeyUtils {
      * @return The default {@link Factory} of {@link Digest}s used
      * by the {@link #getFingerPrint(PublicKey)} and {@link #getFingerPrint(String)}
      * methods
+     * @see #KEY_FINGERPRINT_FACTORY_PROP
      * @see #setDefaultFingerPrintFactory(Factory)
      */
     public static Factory<? extends Digest> getDefaultFingerPrintFactory() {
-        return DEFAULT_DIGEST_HOLDER.get();
+        Factory<? extends Digest> factory = null;
+        synchronized (DEFAULT_DIGEST_HOLDER) {
+            factory = DEFAULT_DIGEST_HOLDER.get();
+            if (factory != null) {
+                return factory;
+            }
+
+            String propVal = System.getProperty(KEY_FINGERPRINT_FACTORY_PROP);
+            if (GenericUtils.isEmpty(propVal)) {
+                factory = DEFAULT_FINGERPRINT_DIGEST_FACTORY;
+            } else {
+                factory = ValidateUtils.checkNotNull(BuiltinDigests.fromFactoryName(propVal), "Unknown digest factory: %s", propVal);
+            }
+
+            DEFAULT_DIGEST_HOLDER.set(factory);
+        }
+
+        return factory;
     }
 
     /**
@@ -372,7 +398,9 @@ public final class KeyUtils {
      *          not be {@code null}
      */
     public static void setDefaultFingerPrintFactory(Factory<? extends Digest> f) {
-        DEFAULT_DIGEST_HOLDER.set(ValidateUtils.checkNotNull(f, "No digest factory"));
+        synchronized (DEFAULT_DIGEST_HOLDER) {
+            DEFAULT_DIGEST_HOLDER.set(ValidateUtils.checkNotNull(f, "No digest factory"));
+        }
     }
 
     /**
@@ -417,7 +445,7 @@ public final class KeyUtils {
      * @see #getFingerPrint(Digest, PublicKey)
      */
     public static String getFingerPrint(Factory<? extends Digest> f, PublicKey key) {
-        return getFingerPrint(f.create(), key);
+        return getFingerPrint(ValidateUtils.checkNotNull(f, "No digest factory").create(), key);
     }
 
     /**
@@ -431,6 +459,7 @@ public final class KeyUtils {
         if (key == null) {
             return null;
         }
+
         try {
             Buffer buffer = new ByteArrayBuffer();
             buffer.putRawPublicKey(key);
@@ -490,6 +519,7 @@ public final class KeyUtils {
         if (GenericUtils.isEmpty(s)) {
             return null;
         }
+
         try {
             return DigestUtils.getFingerPrint(d, s, charset);
         } catch (Exception e) {
@@ -497,6 +527,76 @@ public final class KeyUtils {
         }
     }
 
+    /**
+     * @param expected The expected fingerprint if {@code null} or empty then returns a failure
+     * with the default fingerprint.
+     * @param key the {@link PublicKey} - if {@code null} then returns null.
+     * @return Pair<Boolean, String> - first is success indicator, second is actual fingerprint,
+     * {@code null} if no key.
+     * @see #getDefaultFingerPrintFactory()
+     * @see #checkFingerPrint(String, Factory, PublicKey)
+     */
+    public static Pair<Boolean, String> checkFingerPrint(String expected, PublicKey key) {
+        return checkFingerPrint(expected, getDefaultFingerPrintFactory(), key);
+    }
+
+    /**
+     * @param expected The expected fingerprint if {@code null} or empty then returns a failure
+     * with the default fingerprint.
+     * @param f The {@link Factory} to be used to generate the default {@link Digest} for the key
+     * @param key the {@link PublicKey} - if {@code null} then returns null.
+     * @return Pair<Boolean, String> - first is success indicator, second is actual fingerprint,
+     * {@code null} if no key.
+     */
+    public static Pair<Boolean, String> checkFingerPrint(String expected, Factory<? extends Digest> f, PublicKey key) {
+        return checkFingerPrint(expected, ValidateUtils.checkNotNull(f, "No digest factory").create(), key);
+    }
+
+    /**
+     * @param expected The expected fingerprint if {@code null} or empty then returns a failure
+     * with the default fingerprint.
+     * @param d The {@link Digest} to be used to generate the default fingerprint for the key
+     * @param key the {@link PublicKey} - if {@code null} then returns null.
+     * @return Pair<Boolean, String> - first is success indicator, second is actual fingerprint,
+     * {@code null} if no key.
+     */
+    public static Pair<Boolean, String> checkFingerPrint(String expected, Digest d, PublicKey key) {
+        if (key == null) {
+            return null;
+        }
+
+        if (GenericUtils.isEmpty(expected)) {
+            return new Pair<>(false, getFingerPrint(d, key));
+        }
+
+        // de-construct fingerprint
+        int pos = expected.indexOf(':');
+        if ((pos < 0) || (pos >= (expected.length() - 1))) {
+            return new Pair<>(false, getFingerPrint(d, key));
+        }
+
+        String name = expected.substring(0, pos);
+        String value = expected.substring(pos + 1);
+        DigestFactory expectedFactory;
+        // We know that all digest names have a length > 2 - if 2 (or less) then assume a pure HEX value
+        if (name.length() > 2) {
+            expectedFactory = BuiltinDigests.fromFactoryName(name);
+            if (expectedFactory == null) {
+                return new Pair<>(false, getFingerPrint(d, key));
+            }
+
+            expected = name.toUpperCase() + ":" + value;
+        } else {
+            expectedFactory = BuiltinDigests.md5;
+            expected = expectedFactory.getName().toUpperCase() + ":" + expected;
+        }
+
+        String fingerprint = getFingerPrint(expectedFactory, key);
+        boolean matches = BuiltinDigests.md5.getName().equals(expectedFactory.getName())
+                        ? expected.equalsIgnoreCase(fingerprint)    // HEX is case insensitive
+                        : expected.equals(fingerprint);
+        return new Pair<>(matches, fingerprint);
+    }
 
     /**
      * @param kp a key pair - ignored if {@code null}. If the private

@@ -24,6 +24,7 @@ import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Collection;
+
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.BeforeClass;
@@ -31,15 +32,15 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-public class OpenSSHKeyUtilsCheckTest extends BaseTestSupport {
+public class KeyUtilsFingerprintCaseSensitivityTest extends BaseTestSupport {
 
     // CHECKSTYLE:OFF
     private static final String KEY_STRING = "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAxr3N5fkt966xJINl0hH7Q6lLDRR1D0yMjcXCE5roE9VFut2ctGFuo90TCOxkPOMnwzwConeyScVF4ConZeWsxbG9VtRh61IeZ6R5P5ZTvE9xPdZBgIEWvU1bRfrrOfSMihqF98pODspE6NoTtND2eglwSGwxcYFmpdTAmu+8qgxgGxlEaaCjqwdiNPZhygrH81Mv2ruolNeZkn4Bj+wFFmZTD/waN1pQaMf+SO1+kEYIYFNl5+8JRGuUcr8MhHHJB+gwqMTF2BSBVITJzZUiQR0TMtkK6Vbs7yt1F9hhzDzAFDwhV+rsfNQaOHpl3zP07qH+/99A0XG1CVcEdHqVMw== lgoldstein@LGOLDSTEIN-WIN7";
@@ -56,7 +57,7 @@ public class OpenSSHKeyUtilsCheckTest extends BaseTestSupport {
     private String expected;
     private String test;
 
-    public OpenSSHKeyUtilsCheckTest(String expected, String test) {
+    public KeyUtilsFingerprintCaseSensitivityTest(String expected, String test) {
         this.expected = expected;
         this.test = test;
     }
@@ -84,7 +85,6 @@ public class OpenSSHKeyUtilsCheckTest extends BaseTestSupport {
 
     @Test
     public void testCase() throws Exception {
-        assertEquals("Check failed", new Pair<Boolean, String>(true, expected), OpenSSHKeyUtils.checkFingerPrint(test, key));
+        assertEquals("Check failed", new Pair<Boolean, String>(true, expected), KeyUtils.checkFingerPrint(test, key));
     }
-
 }

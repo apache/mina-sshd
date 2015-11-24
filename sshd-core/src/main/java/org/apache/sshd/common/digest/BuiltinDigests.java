@@ -119,6 +119,24 @@ public enum BuiltinDigests implements DigestInformation, DigestFactory {
         return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 
+    /**
+     * @param d The {@link Digest} instance - ignored if {@code null}
+     * @return The matching {@link org.apache.sshd.common.digest.BuiltinDigests} whose algorithm matches
+     * (case <U>insensitive</U>) the digets's algorithm - {@code null} if no match
+     */
+    public static BuiltinDigests fromDigest(Digest d) {
+        return fromAlgorithm((d == null) ? null : d.getAlgorithm());
+    }
+
+    /**
+     * @param algo The algorithm to find - ignored if {@code null}/empty
+     * @return The matching {@link org.apache.sshd.common.digest.BuiltinDigests} whose algorithm matches
+     * (case <U>insensitive</U>) the provided name - {@code null} if no match
+     */
+    public static BuiltinDigests fromAlgorithm(String algo) {
+        return DigestUtils.findFactoryByAlgorithm(algo, String.CASE_INSENSITIVE_ORDER, VALUES);
+    }
+
     public static final class Constants {
         public static final String MD5 = "md5";
         public static final String SHA1 = "sha1";
