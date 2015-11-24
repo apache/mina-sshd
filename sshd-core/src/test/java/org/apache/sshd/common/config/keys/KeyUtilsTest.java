@@ -125,6 +125,11 @@ public class KeyUtilsTest extends BaseTestSupport {
                 }
 
                 @Override
+                public String getAlgorithm() {
+                    return digest.getAlgorithm();
+                }
+
+                @Override
                 public Digest create() {
                     return digest;
                 }

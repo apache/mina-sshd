@@ -36,12 +36,35 @@ public class Pair<F, S> {
         this.second = second;
     }
 
-    public F getFirst() {
+    public final F getFirst() {
         return first;
     }
 
-    public S getSecond() {
+    public final S getSecond() {
         return second;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(getFirst()) * 31 + Objects.hashCode(getSecond());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+
+        if (obj == this) {
+            return true;
+        }
+
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        Pair<?, ?> other = (Pair<?, ?>)obj;
+        return Objects.equals(getFirst(), other.getFirst()) && Objects.equals(getSecond(), other.getSecond());
     }
 
     @Override

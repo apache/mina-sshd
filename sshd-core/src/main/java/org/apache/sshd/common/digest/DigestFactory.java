@@ -24,8 +24,9 @@ import org.apache.sshd.common.NamedFactory;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-// CHECKSTYLE:OFF
 public interface DigestFactory extends NamedFactory<Digest> {
-
+    /**
+     * @return The underlying digest algorithm
+     */
+    String getAlgorithm();
 }
-//CHECKSTYLE:ON
