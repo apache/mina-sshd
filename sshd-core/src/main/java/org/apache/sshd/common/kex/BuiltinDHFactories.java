@@ -51,6 +51,11 @@ public enum BuiltinDHFactories implements DHFactory {
             }
             return new DHG(BuiltinDigests.sha1, new BigInteger(DHGroupData.getP1()), new BigInteger(DHGroupData.getG()));
         }
+
+        @Override   // see https://tools.ietf.org/html/rfc4253#page-23
+        public boolean isSupported() {
+            return SecurityUtils.isDHOakelyGroupSupported(1024);
+        }
     },
     dhg14(Constants.DIFFIE_HELLMAN_GROUP14_SHA1) {
         @Override
@@ -61,9 +66,9 @@ public enum BuiltinDHFactories implements DHFactory {
             return new DHG(BuiltinDigests.sha1, new BigInteger(DHGroupData.getP14()), new BigInteger(DHGroupData.getG()));
         }
 
-        @Override
+        @Override   // see https://tools.ietf.org/html/rfc4253#page-23
         public boolean isSupported() {
-            return SecurityUtils.isBouncyCastleRegistered();
+            return SecurityUtils.isDHOakelyGroupSupported(2048);
         }
     },
     dhgex(Constants.DIFFIE_HELLMAN_GROUP_EXCHANGE_SHA1) {
