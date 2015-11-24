@@ -802,7 +802,9 @@
                     <source>${javac.source}</source>
                     <target>${javac.target}</target>
                     <compilerArgument>-g</compilerArgument>
+						<!-- see http://www.javaworld.com/article/2073587/javac-s(dashdash)xlint-options.html -->
                     <compilerArgument>-Xlint:-serial</compilerArgument>
+                    <compilerArgument>-Xlint:unchecked</compilerArgument>
                 </configuration>
             </plugin>
             <plugin>
