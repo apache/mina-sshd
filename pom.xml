@@ -98,12 +98,12 @@
 
         <min.required.maven.version>3.0</min.required.maven.version>
 
-        <bouncycastle.version>1.52</bouncycastle.version>
-        <slf4j.version>1.7.12</slf4j.version>
+        <bouncycastle.version>1.53</bouncycastle.version>
+        <slf4j.version>1.7.13</slf4j.version>
         <spring.version>3.0.6.RELEASE</spring.version>
         <jgit.version>3.4.1.201406201815-r</jgit.version>
         <junit.version>4.12</junit.version>
-        <surefire.plugin.version>2.18.1</surefire.plugin.version>
+        <surefire.plugin.version>2.19</surefire.plugin.version>
         <httpcomps.version>4.4.1</httpcomps.version>
     </properties>
 
