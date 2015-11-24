@@ -152,6 +152,14 @@ public final class SecurityUtils {
     }
 
     /**
+     * @return {@code true} if Oakely Diffie-Hellman Group Exchange is supported
+     * @see #getMaxDHGroupExchangeKeySize()
+     */
+    public static boolean isDHOakelyGroupSupported(int keySize) {
+        return getMaxDHGroupExchangeKeySize() >= keySize;
+    }
+
+    /**
      * @return The maximum supported Diffie-Hellman Group Exchange key size,
      * or non-positive if not supported
      */
