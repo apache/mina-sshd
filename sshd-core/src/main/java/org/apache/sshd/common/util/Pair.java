@@ -45,6 +45,29 @@ public class Pair<F, S> {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hashCode(first) * 31 + Objects.hashCode(second);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+
+        if (obj == this) {
+            return true;
+        }
+
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        Pair<?, ?> other = (Pair<?, ?>)obj;
+        return Objects.equals(getFirst(), other.getFirst()) && Objects.equals(getSecond(), other.getSecond());
+    }
+
+    @Override
     public String toString() {
         return Objects.toString(getFirst()) + ", " + Objects.toString(getSecond());
     }
