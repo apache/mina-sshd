@@ -142,46 +142,73 @@
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <reportsDirectory>${project.build.directory}/surefire-reports-nio2</reportsDirectory>
                     <systemProperties>
-                        <org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.nio2.Nio2ServiceFactory
-                        </org.apache.sshd.common.io.IoServiceFactory>
+                        <org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.nio2.Nio2ServiceFactory</org.apache.sshd.common.io.IoServiceFactory>
                     </systemProperties>
                     <excludes>
                         <exclude>**/*LoadTest.java</exclude>
                     </excludes>
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>mina</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                        <configuration>
-                            <reportsDirectory>${project.build.directory}/surefire-reports-mina</reportsDirectory>
-                            <systemProperties>
-                                <org.apache.sshd.common.io.IoServiceFactory>
-                                    org.apache.sshd.common.io.mina.MinaServiceFactory
-                                </org.apache.sshd.common.io.IoServiceFactory>
-                            </systemProperties>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>jce</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                        <configuration>
-                            <reportsDirectory>${project.build.directory}/surefire-reports-jce</reportsDirectory>
-                            <systemProperties>
-                                <org.apache.sshd.registerBouncyCastle>false</org.apache.sshd.registerBouncyCastle>
-                            </systemProperties>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
 
     <profiles>
+		<profile>
+			<id>test-jce</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>jce</id>
+								<goals>
+									<goal>test</goal>
+								</goals>
+								<configuration>
+									<reportsDirectory>${project.build.directory}/surefire-reports-jce</reportsDirectory>
+									<systemProperties>
+										<org.apache.sshd.registerBouncyCastle>false</org.apache.sshd.registerBouncyCastle>
+									</systemProperties>
+								</configuration>
+							</execution>
+						</executions>
+                    </plugin>
+                </plugins>
+            </build>
+		</profile>
+		<profile>
+			<id>test-mina</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>mina</id>
+								<goals>
+									<goal>test</goal>
+								</goals>
+								<configuration>
+									<reportsDirectory>${project.build.directory}/surefire-reports-mina</reportsDirectory>
+									<systemProperties>
+										<org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.mina.MinaServiceFactory</org.apache.sshd.common.io.IoServiceFactory>
+									</systemProperties>
+								</configuration>
+							</execution>
+						</executions>
+                    </plugin>
+                </plugins>
+            </build>
+		</profile>
         <profile>
             <id>load-test</id>
             <build>
