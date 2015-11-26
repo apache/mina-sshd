@@ -856,7 +856,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             }
 
             for (Object f : res) {
-                System.out.append('\t').println(f);
+                outputDebugMessage("LsEntry: %s", f);
 
                 ChannelSftp.LsEntry entry = (ChannelSftp.LsEntry) f;
                 String name = entry.getFilename();
@@ -949,7 +949,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     for (Map.Entry<String, ?> de : data.entrySet()) {
                         String extName = de.getKey();
                         Object extValue = de.getValue();
-                        System.out.append('\t').append(extName).append(": ").println(extValue);
+                        outputDebugMessage("%s: %s", extName, extValue);
                         if (SftpConstants.EXT_SUPPORTED.equalsIgnoreCase(extName)) {
                             assertSupportedExtensions(extName, ((Supported) extValue).extensionNames);
                         } else if (SftpConstants.EXT_SUPPORTED2.equalsIgnoreCase(extName)) {
@@ -1204,7 +1204,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             }
             assertFalse("Target link exists before linking: " + linkPath, Files.exists(linkPath, options));
 
-            System.out.append('\t').append("Symlink ").append(remLinkPath).append(" => ").println(remSrcPath);
+            outputDebugMessage("Symlink %s => %s", remLinkPath, remSrcPath);
             c.symlink(remSrcPath, remLinkPath);
 
             assertTrue("Symlink not created: " + linkPath, Files.exists(linkPath, options));

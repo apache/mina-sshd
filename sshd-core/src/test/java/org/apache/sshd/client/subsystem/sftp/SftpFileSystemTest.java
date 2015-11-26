@@ -231,7 +231,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
                     SftpFileSystem actual = provider.getFileSystem(id);
                     assertSame("Mismatched cached instances for " + id, expected, actual);
-                    System.out.println("Created file system id: " + id);
+                    outputDebugMessage("Created file system id: %s", id);
                 }
 
                 for (SftpFileSystem fs : fsList) {
@@ -316,7 +316,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
                     String name = child.getFileName().toString();
                     assertNotEquals("Unexpected dot name", ".", name);
                     assertNotEquals("Unexpected dotdot name", "..", name);
-                    System.out.append('\t').append('[').append(rootName).append("] ").println(child);
+                    outputDebugMessage("[%s] %s", rootName, child);
                 }
             } catch (IOException | RuntimeException e) {
                 // TODO on Windows one might get share problems for *.sys files
@@ -335,7 +335,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
         Utils.deleteRecursive(lclSftp);
 
         Path current = fs.getPath(".").toRealPath().normalize();
-        System.out.append("CWD: ").println(current);
+        outputDebugMessage("CWD: %s", current);
 
         Path parentPath = targetPath.getParent();
         Path clientFolder = lclSftp.resolve("client");
@@ -345,20 +345,24 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
         String expected = "Hello world: " + getCurrentTestName();
         {
+            outputDebugMessage("Write initial data to %s", file1);
             Files.write(file1, expected.getBytes(StandardCharsets.UTF_8));
             String buf = new String(Files.readAllBytes(file1), StandardCharsets.UTF_8);
             assertEquals("Mismatched read test data", expected, buf);
         }
 
         if (version >= SftpConstants.SFTP_V4) {
+            outputDebugMessage("getFileAttributeView(%s)", file1);
             AclFileAttributeView aclView = Files.getFileAttributeView(file1, AclFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
             assertNotNull("No ACL view for " + file1, aclView);
 
             Map<String, ?> attrs = Files.readAttributes(file1, "acl:*", LinkOption.NOFOLLOW_LINKS);
+            outputDebugMessage("readAttributes(%s) %s", file1, attrs);
             assertEquals("Mismatched owner for " + file1, aclView.getOwner(), attrs.get("owner"));
 
             @SuppressWarnings("unchecked")
             List<AclEntry> acl = (List<AclEntry>) attrs.get("acl");
+            outputDebugMessage("acls(%s) %s", file1, acl);
             assertListEquals("Mismatched ACLs for " + file1, aclView.getAcl(), acl);
         }
 
@@ -367,6 +371,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
         String remFile3Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve("file-3.txt"));
         Path file3 = fs.getPath(remFile3Path);
         try {
+            outputDebugMessage("Move with failure expected %s => %s", file2, file3);
             Files.move(file2, file3, LinkOption.NOFOLLOW_LINKS);
             fail("Unexpected success in moving " + file2 + " => " + file3);
         } catch (NoSuchFileException e) {
@@ -375,48 +380,44 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
         Files.write(file2, "h".getBytes(StandardCharsets.UTF_8));
         try {
+            outputDebugMessage("Move with failure expected %s => %s", file1, file2);
             Files.move(file1, file2, LinkOption.NOFOLLOW_LINKS);
             fail("Unexpected success in moving " + file1 + " => " + file2);
         } catch (FileAlreadyExistsException e) {
             // expected
         }
-        System.out.append('\t').append("Move ").append(file1.toString()).append(" => ").println(file2);
+
+        outputDebugMessage("Move with success expected %s => %s", file1, file2);
         Files.move(file1, file2, LinkOption.NOFOLLOW_LINKS, StandardCopyOption.REPLACE_EXISTING);
-        System.out.append('\t').append("Move ").append(file2.toString()).append(" => ").println(file1);
+        outputDebugMessage("Move with success expected %s => %s", file2, file1);
         Files.move(file2, file1, LinkOption.NOFOLLOW_LINKS);
 
         Map<String, Object> attrs = Files.readAttributes(file1, "*");
-        System.out.append('\t').append(file1.toString()).append(" attributes: ").println(attrs);
-
-        // TODO: symbolic links only work for absolute files
-//        Path link = fs.getPath("target/sftp/client/test2.txt");
-//        Files.createSymbolicLink(link, link.relativize(file));
-//        assertTrue(Files.isSymbolicLink(link));
-//        assertEquals("test.txt", Files.readSymbolicLink(link).toString());
+        outputDebugMessage("%s attributes: %s", file1, attrs);
 
         // TODO there are many issues with symbolic links on Windows
         if (OsUtils.isUNIX()) {
             Path link = fs.getPath(remFile2Path);
             Path linkParent = link.getParent();
             Path relPath = linkParent.relativize(file1);
-            System.out.append('\t').append("Create symlink ").append(link.toString()).append(" => ").println(relPath);
+            outputDebugMessage("Create symlink %s => %s", link, relPath);
             Files.createSymbolicLink(link, relPath);
             assertTrue("Not a symbolic link: " + link, Files.isSymbolicLink(link));
 
             Path symLink = Files.readSymbolicLink(link);
             assertEquals("mismatched symbolic link name", relPath.toString(), symLink.toString());
-            System.out.append('\t').append("Delete symlink ").println(link);
+
+            outputDebugMessage("Delete symlink %s", link);
             Files.delete(link);
         }
 
         attrs = Files.readAttributes(file1, "*", LinkOption.NOFOLLOW_LINKS);
-        System.out.append('\t').append(file1.toString()).append(" no-follow attributes: ").println(attrs);
-
+        outputDebugMessage("%s no-follow attributes: %s", file1, attrs);
         assertEquals("Mismatched symlink data", expected, new String(Files.readAllBytes(file1)));
 
         try (FileChannel channel = FileChannel.open(file1)) {
             try (FileLock lock = channel.lock()) {
-                System.out.append('\t').append("Lock ").append(file1.toString()).append(": ").println(lock.toString());
+                outputDebugMessage("Lock %s: %s", file1, lock);
 
                 try (FileChannel channel2 = FileChannel.open(file1)) {
                     try (FileLock lock2 = channel2.lock()) {

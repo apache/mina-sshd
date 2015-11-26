@@ -329,8 +329,9 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
                         @Override
                         public void sessionEvent(Session session, Event event) {
-                            if (event == Event.KeyEstablished) {
-                                exchanges.incrementAndGet();
+                            if (Event.KeyEstablished.equals(event)) {
+                                int count = exchanges.incrementAndGet();
+                                outputDebugMessage("Key established for %s - count=%d", session, count);
                             }
                         }
 
@@ -409,8 +410,9 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
                         @Override
                         public void sessionEvent(Session session, Event event) {
-                            if (event == Event.KeyEstablished) {
-                                exchanges.incrementAndGet();
+                            if (Event.KeyEstablished.equals(event)) {
+                                int count = exchanges.incrementAndGet();
+                                outputDebugMessage("Key established for %s - count=%d", session, count);
                             }
                         }
 

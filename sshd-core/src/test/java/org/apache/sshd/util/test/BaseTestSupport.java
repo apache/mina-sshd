@@ -67,6 +67,7 @@ public abstract class BaseTestSupport extends Assert {
     public static final String TEMP_SUBFOLDER_NAME = "temp";
     // can be used to override the 'localhost' with an address other than 127.0.0.1 in case it is required
     public static final String TEST_LOCALHOST = System.getProperty("org.apache.sshd.test.localhost", SshdSocketAddress.LOCALHOST_IP);
+    public static final boolean OUTPUT_DEBUG_MESSAGES = Boolean.parseBoolean(System.getProperty("org.apache.sshd.test.outputDebugMessages", "false"));
 
     // useful test sizes for keys
     @SuppressWarnings("boxing")
@@ -518,5 +519,17 @@ public abstract class BaseTestSupport extends Assert {
         }
 
         return false;
+    }
+
+    public static void outputDebugMessage(String format, Object ... args) {
+        if (OUTPUT_DEBUG_MESSAGES) {
+            outputDebugMessage(String.format(format, args));
+        }
+    }
+
+    public static void outputDebugMessage(Object message) {
+        if (OUTPUT_DEBUG_MESSAGES) {
+            System.out.append("===[DEBUG]=== ").println(message);
+        }
     }
 }

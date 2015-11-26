@@ -372,6 +372,7 @@ public class ScpTest extends BaseTestSupport {
 
                 String localOutPath = localOutFile.toString();
                 String remoteOutPath = Utils.resolveRelativeRemotePath(parentPath, remoteOutFile);
+                outputDebugMessage("Expect upload failure %s => %s", localOutPath, remoteOutPath);
                 try {
                     scp.upload(localOutPath, remoteOutPath);
                     fail("Expected IOException for 1st time " + remoteOutPath);
@@ -380,15 +381,20 @@ public class ScpTest extends BaseTestSupport {
                 }
 
                 assertHierarchyTargetFolderExists(remoteDir);
+                outputDebugMessage("Expect upload success %s => %s", localOutPath, remoteOutPath);
                 scp.upload(localOutPath, remoteOutPath);
                 assertFileLength(remoteOutFile, data.length(), TimeUnit.SECONDS.toMillis(5L));
 
                 Path secondLocal = localDir.resolve(localOutFile.getFileName());
-                scp.download(remoteOutPath, Utils.resolveRelativeRemotePath(parentPath, secondLocal));
+                String downloadTarget = Utils.resolveRelativeRemotePath(parentPath, secondLocal);
+                outputDebugMessage("Expect download success %s => %s", remoteOutPath, downloadTarget);
+                scp.download(remoteOutPath, downloadTarget);
                 assertFileLength(secondLocal, data.length(), TimeUnit.SECONDS.toMillis(5L));
 
                 Path localPath = localDir.resolve("file-path.txt");
-                scp.download(remoteOutPath, Utils.resolveRelativeRemotePath(parentPath, localPath));
+                downloadTarget = Utils.resolveRelativeRemotePath(parentPath, localPath);
+                outputDebugMessage("Expect download success %s => %s", remoteOutPath, downloadTarget);
+                scp.download(remoteOutPath, downloadTarget);
                 assertFileLength(localPath, data.length(), TimeUnit.SECONDS.toMillis(5L));
             } finally {
                 client.stop();
@@ -795,9 +801,10 @@ public class ScpTest extends BaseTestSupport {
         final Connection conn = new Connection(TEST_LOCALHOST, port);
         try {
             ConnectionInfo info = conn.connect(null, (int) TimeUnit.SECONDS.toMillis(5L), (int) TimeUnit.SECONDS.toMillis(11L));
-            System.out.println("Connected: kex=" + info.keyExchangeAlgorithm + ", key-type=" + info.serverHostKeyAlgorithm
-                    + ", c2senc=" + info.clientToServerCryptoAlgorithm + ", s2cenc=" + info.serverToClientCryptoAlgorithm
-                    + ", c2mac=" + info.clientToServerMACAlgorithm + ", s2cmac=" + info.serverToClientMACAlgorithm);
+            outputDebugMessage("Connected: kex=%s, key-type=%s, c2senc=%s, s2cenc=%s, c2mac=%s, s2cmac=%s",
+                    info.keyExchangeAlgorithm, info.serverHostKeyAlgorithm,
+                    info.clientToServerCryptoAlgorithm, info.serverToClientCryptoAlgorithm,
+                    info.clientToServerMACAlgorithm, info.serverToClientMACAlgorithm);
             conn.authenticateWithPassword(getCurrentTestName(), getCurrentTestName());
 
             final SCPClient scp_client = new SCPClient(conn);
