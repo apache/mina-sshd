@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.client.auth;
 
-import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.session.ClientSession;
 
 /**
@@ -28,6 +27,44 @@ import org.apache.sshd.client.session.ClientSession;
  * @see <a href="https://www.ietf.org/rfc/rfc4256.txt">RFC 4256</A>
  */
 public interface UserInteraction {
+    /**
+     * A useful &quot;placeholder&quot; that indicates that no interaction is expected.
+     * <B>Note:</B> throws {@link IllegalStateException} is any of the interaction
+     * methods is called
+     */
+    UserInteraction NONE = new UserInteraction() {
+        @Override
+        public boolean isInteractionAllowed(ClientSession session) {
+            return false;
+        }
+
+        @Override
+        public void welcome(ClientSession session, String banner, String lang) {
+            // ignored
+        }
+
+        @Override
+        public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+            throw new IllegalStateException("interactive(" + session + ")[" + name + "] unexpected call");
+        }
+
+        @Override
+        public String getUpdatedPassword(ClientSession session, String prompt, String lang) {
+            throw new IllegalStateException("getUpdatedPassword(" + session + ")[" + prompt + "] unexpected call");
+        }
+
+        @Override
+        public String toString() {
+            return "NONE";
+        }
+    };
+
+    /**
+     *
+     * @param session The {@link ClientSession}
+     * @return {@code true} if user interaction allowed for this session
+     */
+    boolean isInteractionAllowed(ClientSession session);
 
     /**
      * Displays the welcome banner to the user.
@@ -70,38 +107,4 @@ public interface UserInteraction {
      * be it other passwords, public keys, etc...)
      */
     String getUpdatedPassword(ClientSession session, String prompt, String lang);
-
-    // CHECKSTYLE:OFF
-    final class Utils {
-    // CHECKSTYLE:ON
-
-        private Utils() {
-            throw new UnsupportedOperationException("No instance allowed");
-        }
-
-        /**
-         * Checks which {@link UserInteraction} instance to use - if the session
-         * has a specific one, then it is used. Otherwise, the {@link ClientFactoryManager}
-         * (if any is available) is consulted.
-         *
-         * @param session The {@link ClientSession}
-         * @return The resolved user interaction instance
-         * @see ClientSession#getUserInteraction()
-         * @see ClientSession#getFactoryManager()
-         * @see ClientFactoryManager#getUserInteraction()
-         */
-        public static UserInteraction resolveUserInteraction(ClientSession session) {
-            if (session == null) {
-                return null;
-            }
-
-            UserInteraction ui = session.getUserInteraction();
-            if (ui == null) {
-                ClientFactoryManager manager = session.getFactoryManager();
-                ui = (manager == null) ? null : manager.getUserInteraction();
-            }
-
-            return ui;
-        }
-    }
 }

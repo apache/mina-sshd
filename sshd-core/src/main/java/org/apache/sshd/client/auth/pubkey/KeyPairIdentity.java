@@ -21,9 +21,9 @@ package org.apache.sshd.client.auth.pubkey;
 import java.security.KeyPair;
 import java.security.PublicKey;
 
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -34,9 +34,9 @@ import org.apache.sshd.common.util.ValidateUtils;
  */
 public class KeyPairIdentity implements PublicKeyIdentity {
     private final KeyPair pair;
-    private final FactoryManager manager;
+    private final KexFactoryManager manager;
 
-    public KeyPairIdentity(FactoryManager manager, KeyPair pair) {
+    public KeyPairIdentity(KexFactoryManager manager, KeyPair pair) {
         this.manager = ValidateUtils.checkNotNull(manager, "No manager");
         this.pair = ValidateUtils.checkNotNull(pair, "No key pair");
     }

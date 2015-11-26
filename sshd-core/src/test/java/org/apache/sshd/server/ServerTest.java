@@ -25,7 +25,6 @@ import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.StreamCorruptedException;
-import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
@@ -74,7 +73,6 @@ import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -84,7 +82,6 @@ import org.slf4j.LoggerFactory;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ServerTest extends BaseTestSupport {
-
     private SshServer sshd;
     private SshClient client;
     private int port;
@@ -121,7 +118,7 @@ public class ServerTest extends BaseTestSupport {
     @Test
     public void testFailAuthenticationWithWaitFor() throws Exception {
         final int MAX_AUTH_REQUESTS = 10;
-        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.MAX_AUTH_REQUESTS, MAX_AUTH_REQUESTS);
+        PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.MAX_AUTH_REQUESTS, MAX_AUTH_REQUESTS);
 
         client.setServiceFactories(Arrays.asList(
                 new ClientUserAuthServiceOld.Factory(),
@@ -150,7 +147,7 @@ public class ServerTest extends BaseTestSupport {
     @Test
     public void testFailAuthenticationWithFuture() throws Exception {
         final int MAX_AUTH_REQUESTS = 10;
-        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.MAX_AUTH_REQUESTS, MAX_AUTH_REQUESTS);
+        PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.MAX_AUTH_REQUESTS, MAX_AUTH_REQUESTS);
 
         client.setServiceFactories(Arrays.asList(
                 new ClientUserAuthServiceOld.Factory(),
@@ -405,71 +402,6 @@ public class ServerTest extends BaseTestSupport {
         } finally {
             client.stop();
         }
-    }
-
-    @Test   // see https://issues.apache.org/jira/browse/SSHD-456
-    public void testServerStillListensIfSessionListenerThrowsException() throws Exception {
-        final Map<String, SocketAddress> eventsMap = new TreeMap<String, SocketAddress>(String.CASE_INSENSITIVE_ORDER);
-        final Logger log = LoggerFactory.getLogger(getClass());
-        sshd.addSessionListener(new SessionListener() {
-            @Override
-            public void sessionCreated(Session session) {
-                throwException("SessionCreated", session);
-            }
-
-            @Override
-            public void sessionEvent(Session session, Event event) {
-                throwException("SessionEvent", session);
-            }
-
-            @Override
-            public void sessionClosed(Session session) {
-                throwException("SessionClosed", session);
-            }
-
-            private void throwException(String phase, Session session) {
-                IoSession ioSession = session.getIoSession();
-                SocketAddress addr = ioSession.getRemoteAddress();
-                synchronized (eventsMap) {
-                    if (eventsMap.put(phase, addr) != null) {
-                        return; // already generated an event for this phase
-                    }
-                }
-
-                RuntimeException e = new RuntimeException("Synthetic exception at phase=" + phase + ": " + addr);
-                log.info(e.getMessage());
-                throw e;
-            }
-        });
-
-        client.start();
-
-        int curCount = 0;
-        for (int retryCount = 0; retryCount < Byte.SIZE; retryCount++) {
-            synchronized (eventsMap) {
-                if ((curCount = eventsMap.size()) >= 3) {
-                    return;
-                }
-            }
-
-            try {
-                try (ClientSession s = createTestClientSession()) {
-                    log.info("Retry #" + retryCount + " successful");
-                }
-
-                synchronized (eventsMap) {
-                    assertTrue("Unexpected premature success at retry # " + retryCount + ": " + eventsMap, eventsMap.size() >= 3);
-                }
-            } catch (IOException e) {
-                // expected - ignored
-                synchronized (eventsMap) {
-                    int nextCount = eventsMap.size();
-                    assertTrue("No session event generated at retry #" + retryCount, nextCount > curCount);
-                }
-            }
-        }
-
-        fail("No success to authenticate");
     }
 
     @Test

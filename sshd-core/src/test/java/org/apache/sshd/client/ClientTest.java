@@ -1136,6 +1136,11 @@ public class ClientTest extends BaseTestSupport {
             private final String[] BAD_RESPONSE = { "bad" };
 
             @Override
+            public boolean isInteractionAllowed(ClientSession session) {
+                return true;
+            }
+
+            @Override
             public void welcome(ClientSession session, String banner, String lang) {
                 validateSession("welcome", session);
             }
@@ -1161,7 +1166,7 @@ public class ClientTest extends BaseTestSupport {
         });
 
         final int MAX_PROMPTS = 3;
-        PropertyResolverUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
+        PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PASSWORD_PROMPTS, MAX_PROMPTS);
 
         client.start();
 
@@ -1183,7 +1188,7 @@ public class ClientTest extends BaseTestSupport {
     public void testDefaultKeyboardInteractiveInSessionUserInteractive() throws Exception {
         final AtomicInteger count = new AtomicInteger();
         final int MAX_PROMPTS = 3;
-        PropertyResolverUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
+        PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PASSWORD_PROMPTS, MAX_PROMPTS);
 
         client.setUserAuthFactories(Collections.<NamedFactory<UserAuth>>singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
@@ -1191,6 +1196,11 @@ public class ClientTest extends BaseTestSupport {
         try (final ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.setUserInteraction(new UserInteraction() {
+                @Override
+                public boolean isInteractionAllowed(ClientSession session) {
+                    return true;
+                }
+
                 @Override
                 public void welcome(ClientSession clientSession, String banner, String lang) {
                     assertSame("Mismatched welcome session", session, clientSession);
@@ -1225,13 +1235,18 @@ public class ClientTest extends BaseTestSupport {
     public void testKeyboardInteractiveInSessionUserInteractiveFailure() throws Exception {
         final AtomicInteger count = new AtomicInteger();
         final int MAX_PROMPTS = 3;
-        PropertyResolverUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
+        PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PASSWORD_PROMPTS, MAX_PROMPTS);
         client.setUserAuthFactories(Collections.<NamedFactory<UserAuth>>singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
         try (final ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.setUserInteraction(new UserInteraction() {
+                @Override
+                public boolean isInteractionAllowed(ClientSession session) {
+                    return true;
+                }
+
                 @Override
                 public void welcome(ClientSession clientSession, String banner, String lang) {
                     assertSame("Mismatched welcome session", session, clientSession);

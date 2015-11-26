@@ -21,7 +21,6 @@ package org.apache.sshd.server.auth;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordChangeRequiredException;
 import org.apache.sshd.server.session.ServerSession;
@@ -69,10 +68,7 @@ public class UserAuthPassword extends AbstractUserAuth {
      * @see #handleServerPasswordChangeRequest(Buffer, ServerSession, String, String, PasswordChangeRequiredException)
      */
     protected Boolean checkPassword(Buffer buffer, ServerSession session, String username, String password) throws Exception {
-        ServerFactoryManager manager = ValidateUtils.checkNotNull(
-                session.getFactoryManager(),
-                "No ServerFactoryManager configured");
-        PasswordAuthenticator auth = manager.getPasswordAuthenticator();
+        PasswordAuthenticator auth = session.getPasswordAuthenticator();
         if (auth == null) {
             if (log.isDebugEnabled()) {
                 log.debug("checkPassword({}) no password authenticator", session);

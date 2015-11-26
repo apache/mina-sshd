@@ -31,6 +31,26 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public interface KeyboardInteractiveAuthenticator {
     /**
+     * An authenticator that rejects any attempt to use it
+     */
+    KeyboardInteractiveAuthenticator NONE = new KeyboardInteractiveAuthenticator() {
+        @Override
+        public InteractiveChallenge generateChallenge(ServerSession session, String username, String lang, String subMethods) {
+            return null;
+        }
+
+        @Override
+        public boolean authenticate(ServerSession session, String username, List<String> responses) throws Exception {
+            return false;
+        }
+
+        @Override
+        public String toString() {
+            return "NONE";
+        }
+    };
+
+    /**
      * Generates the interactive &quot;challenge&quot; to send to the client
      *
      * @param session The {@link ServerSession} through which the request was received

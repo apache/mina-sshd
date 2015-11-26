@@ -185,6 +185,11 @@ public class AuthenticationTest extends BaseTestSupport {
             final AtomicInteger updatesCount = new AtomicInteger(0);
             client.setUserInteraction(new UserInteraction() {
                 @Override
+                public boolean isInteractionAllowed(ClientSession session) {
+                    return true;
+                }
+
+                @Override
                 public void welcome(ClientSession session, String banner, String lang) {
                     // ignored
                 }
@@ -399,6 +404,11 @@ public class AuthenticationTest extends BaseTestSupport {
             final AtomicInteger interactiveCount = new AtomicInteger(0);
             client.setUserInteraction(new UserInteraction() {
                 @Override
+                public boolean isInteractionAllowed(ClientSession session) {
+                    return true;
+                }
+
+                @Override
                 public void welcome(ClientSession session, String banner, String lang) {
                     // ignored
                 }
@@ -465,6 +475,11 @@ public class AuthenticationTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             final AtomicInteger updatesCount = new AtomicInteger(0);
             client.setUserInteraction(new UserInteraction() {
+                @Override
+                public boolean isInteractionAllowed(ClientSession session) {
+                    return true;
+                }
+
                 @Override
                 public void welcome(ClientSession session, String banner, String lang) {
                     // ignored

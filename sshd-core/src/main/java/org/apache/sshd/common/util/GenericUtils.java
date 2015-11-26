@@ -565,4 +565,24 @@ public final class GenericUtils {
         current.addSuppressed(extra);
         return current;
     }
+
+    /**
+     * Wraps a value into a {@link Supplier}
+     * @param <T>   Type of value being supplied
+     * @param value The value to be supplied
+     * @return The supplier wrapper
+     */
+    public static <T> Supplier<T> supplierOf(final T value) {
+        return new Supplier<T>() {
+            @Override
+            public T get() {
+                return value;
+            }
+
+            @Override
+            public String toString() {
+                return Supplier.class.getSimpleName() + "[" + value + "]";
+            }
+        };
+    }
 }

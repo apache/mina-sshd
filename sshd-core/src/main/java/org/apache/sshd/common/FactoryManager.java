@@ -26,17 +26,13 @@ import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListenerManager;
 import org.apache.sshd.common.channel.RequestHandler;
-import org.apache.sshd.common.cipher.Cipher;
-import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.forward.TcpipForwarderFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
-import org.apache.sshd.common.kex.KeyExchange;
-import org.apache.sshd.common.mac.Mac;
+import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.SessionListenerManager;
-import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.server.forward.ForwardingFilter;
 
 /**
@@ -45,7 +41,7 @@ import org.apache.sshd.server.forward.ForwardingFilter;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface FactoryManager extends SessionListenerManager, ChannelListenerManager, PropertyResolver {
+public interface FactoryManager extends KexFactoryManager, SessionListenerManager, ChannelListenerManager, PropertyResolver {
 
     /**
      * Key used to retrieve the value of the channel window size in the
@@ -211,41 +207,6 @@ public interface FactoryManager extends SessionListenerManager, ChannelListenerM
     String getVersion();
 
     IoServiceFactory getIoServiceFactory();
-
-    /**
-     * Retrieve the list of named factories for <code>KeyExchange</code>.
-     *
-     * @return a list of named <code>KeyExchange</code> factories, never {@code null}
-     */
-    List<NamedFactory<KeyExchange>> getKeyExchangeFactories();
-
-    /**
-     * Retrieve the list of named factories for <code>Cipher</code>.
-     *
-     * @return a list of named <code>Cipher</code> factories, never {@code null}
-     */
-    List<NamedFactory<Cipher>> getCipherFactories();
-
-    /**
-     * Retrieve the list of named factories for <code>Compression</code>.
-     *
-     * @return a list of named <code>Compression</code> factories, never {@code null}
-     */
-    List<NamedFactory<Compression>> getCompressionFactories();
-
-    /**
-     * Retrieve the list of named factories for <code>Mac</code>.
-     *
-     * @return a list of named <code>Mac</code> factories, never {@code null}
-     */
-    List<NamedFactory<Mac>> getMacFactories();
-
-    /**
-     * Retrieve the list of named factories for <code>Signature</code>.
-     *
-     * @return a list of named <code>Signature</code> factories, never {@code null}
-     */
-    List<NamedFactory<Signature>> getSignatureFactories();
 
     /**
      * Retrieve the <code>Random</code> factory to be used.

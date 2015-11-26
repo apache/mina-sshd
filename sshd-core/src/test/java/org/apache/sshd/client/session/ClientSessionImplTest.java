@@ -29,11 +29,15 @@ import java.util.List;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.ServiceFactory;
+import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.random.JceRandomFactory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.random.SingletonRandomFactory;
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
@@ -54,7 +58,43 @@ public class ClientSessionImplTest extends BaseTestSupport {
     public void testAddRemoveIdentities() throws Exception {
         ClientFactoryManager client = Mockito.mock(ClientFactoryManager.class);
         Mockito.when(client.getTcpipForwarderFactory()).thenReturn(DefaultTcpipForwarderFactory.INSTANCE);
+        Mockito.when(client.getSessionListenerProxy()).thenReturn(new SessionListener() {
+            @Override
+            public void sessionEvent(Session session, Event event) {
+                // ignored
+            }
 
+            @Override
+            public void sessionCreated(Session session) {
+                // ignored
+            }
+
+            @Override
+            public void sessionClosed(Session session) {
+                // ignored
+            }
+        });
+        Mockito.when(client.getChannelListenerProxy()).thenReturn(new ChannelListener() {
+            @Override
+            public void channelOpenSuccess(Channel channel) {
+                // ignored
+            }
+
+            @Override
+            public void channelOpenFailure(Channel channel, Throwable reason) {
+                // ignored
+            }
+
+            @Override
+            public void channelInitialized(Channel channel) {
+                // ignored
+            }
+
+            @Override
+            public void channelClosed(Channel channel) {
+                // ignored
+            }
+        });
         Factory<Random> randomFactory = new SingletonRandomFactory(JceRandomFactory.INSTANCE);
         Mockito.when(client.getRandomFactory()).thenReturn(randomFactory);
 

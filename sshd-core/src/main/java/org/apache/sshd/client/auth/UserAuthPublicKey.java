@@ -37,7 +37,9 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Pair;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -65,16 +67,24 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         List<PublicKeyIdentity> ids = new ArrayList<>();
         for (Object o : identities) {
             if (o instanceof KeyPair) {
-                ids.add(new KeyPairIdentity(session.getFactoryManager(), (KeyPair) o));
+                ids.add(new KeyPairIdentity(session, (KeyPair) o));
             }
         }
 
-        FactoryManager manager = session.getFactoryManager();
+        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No session factory manager");
         SshAgentFactory factory = manager.getAgentFactory();
         if (factory != null) {
-            this.agent = factory.createClient(manager);
-            for (Pair<PublicKey, String> pair : agent.getIdentities()) {
-                ids.add(new KeyAgentIdentity(agent, pair.getFirst()));
+            this.agent = ValidateUtils.checkNotNull(factory.createClient(manager), "No agent created");
+            Collection<Pair<PublicKey, String>> agentKeys = agent.getIdentities();
+            if (GenericUtils.size(agentKeys) > 0) {
+                for (Pair<PublicKey, String> pair : agentKeys) {
+                    PublicKey key = pair.getFirst();
+                    if (log.isDebugEnabled()) {
+                        log.debug("init({}) add agent public key type={}: comment={}, fingerprint={}",
+                                  session, pair.getSecond(), KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+                    }
+                    ids.add(new KeyAgentIdentity(agent, key));
+                }
             }
         } else {
             this.agent = null;
@@ -82,8 +92,12 @@ public class UserAuthPublicKey extends AbstractUserAuth {
 
         KeyPairProvider provider = session.getKeyPairProvider();
         if (provider != null) {
-            for (KeyPair pair : provider.loadKeys()) {
-                ids.add(new KeyPairIdentity(manager, pair));
+            for (KeyPair kp : provider.loadKeys()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("init({}) add provider public key type={}: {}",
+                              session, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
+                }
+                ids.add(new KeyPairIdentity(session, kp));
             }
         }
         this.keys = ids.iterator();
@@ -103,8 +117,8 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 String algo = KeyUtils.getKeyType(key);
                 String name = getName();
                 if (log.isDebugEnabled()) {
-                    log.debug("process({}@{})[{}] Send SSH_MSG_USERAUTH_REQUEST request {} algo={}",
-                              username, session, service, name, algo);
+                    log.debug("process({}@{})[{}] Send SSH_MSG_USERAUTH_REQUEST request {} type={} - fingerprint={}",
+                              username, session, service, name, algo, KeyUtils.getFingerPrint(key));
                 }
 
                 buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
@@ -130,8 +144,8 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             String algo = KeyUtils.getKeyType(key);
             String name = getName();
             if (log.isDebugEnabled()) {
-                log.debug("process({}@{})[{}] Send SSH_MSG_USERAUTH_REQUEST reply {} algo={}",
-                          username, session, service, name, algo);
+                log.debug("process({}@{})[{}] Send SSH_MSG_USERAUTH_REQUEST reply {} type={} - fingerprint={}",
+                          username, session, service, name, algo, KeyUtils.getFingerPrint(key));
             }
 
             buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, BufferUtils.clear(buffer));
@@ -154,7 +168,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             bs.putPublicKey(key);
 
             byte[] sig = current.sign(bs.getCompactData());
-            bs = new ByteArrayBuffer();
+            bs = new ByteArrayBuffer(algo.length() + sig.length + Long.SIZE);
             bs.putString(algo);
             bs.putBytes(sig);
             buffer.putBytes(bs.array(), bs.rpos(), bs.available());
@@ -163,7 +177,8 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             return true;
         }
 
-        throw new IllegalStateException("process(" + username + "@" + session + ")[" + service + "] received unknown packet: cmd=" + cmd);
+        throw new IllegalStateException("process(" + username + "@" + session + ")[" + service + "]"
+                + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
     }
 
     @Override
@@ -173,6 +188,8 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 agent.close();
             } catch (IOException e) {
                 throw new RuntimeException("Failed (" + e.getClass().getSimpleName() + ") to close agent: " + e.getMessage(), e);
+            } finally {
+                agent = null;
             }
         }
     }

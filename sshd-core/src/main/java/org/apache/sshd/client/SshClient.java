@@ -66,7 +66,6 @@ import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientConnectionServiceFactory;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionCreator;
-import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.client.session.ClientUserAuthServiceFactory;
 import org.apache.sshd.client.session.SessionFactory;
 import org.apache.sshd.client.simple.AbstractSimpleClientSessionCreator;
@@ -85,12 +84,14 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
+import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.Supplier;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
@@ -194,8 +195,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return serverKeyVerifier;
     }
 
+    @Override
     public void setServerKeyVerifier(ServerKeyVerifier serverKeyVerifier) {
-        this.serverKeyVerifier = serverKeyVerifier;
+        this.serverKeyVerifier = ValidateUtils.checkNotNull(serverKeyVerifier, "No server key verifier");
     }
 
     @Override
@@ -203,8 +205,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return hostConfigEntryResolver;
     }
 
+    @Override
     public void setHostConfigEntryResolver(HostConfigEntryResolver resolver) {
-        this.hostConfigEntryResolver = resolver;
+        this.hostConfigEntryResolver = ValidateUtils.checkNotNull(resolver, "No host configuration entry resolver");
     }
 
     @Override
@@ -212,8 +215,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return filePasswordProvider;
     }
 
+    @Override
     public void setFilePasswordProvider(FilePasswordProvider provider) {
-        this.filePasswordProvider = provider;
+        this.filePasswordProvider = ValidateUtils.checkNotNull(provider, "No file password provider");
     }
 
     @Override
@@ -221,8 +225,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return clientIdentityLoader;
     }
 
+    @Override
     public void setClientIdentityLoader(ClientIdentityLoader loader) {
-        this.clientIdentityLoader = loader;
+        this.clientIdentityLoader = ValidateUtils.checkNotNull(loader, "No client identity loader");
     }
 
     @Override
@@ -230,6 +235,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return userInteraction;
     }
 
+    @Override
     public void setUserInteraction(UserInteraction userInteraction) {
         this.userInteraction = userInteraction;
     }
@@ -239,8 +245,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return userAuthFactories;
     }
 
+    @Override
     public void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories) {
-        this.userAuthFactories = userAuthFactories;
+        this.userAuthFactories = ValidateUtils.checkNotNullAndNotEmpty(userAuthFactories, "No user auth factories");
     }
 
     @Override
@@ -256,7 +263,19 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         // if no client identities override use the default
         KeyPairProvider defaultIdentities = getKeyPairProvider();
         if (defaultIdentities == null) {
-            setKeyPairProvider(new DefaultClientIdentitiesWatcher(getClientIdentityLoader(), getFilePasswordProvider()));
+            setKeyPairProvider(new DefaultClientIdentitiesWatcher(
+                    new Supplier<ClientIdentityLoader>() {
+                        @Override
+                        public ClientIdentityLoader get() {
+                            return getClientIdentityLoader();
+                        }
+                    },
+                    new Supplier<FilePasswordProvider>() {
+                        @Override
+                        public FilePasswordProvider get() {
+                            return getFilePasswordProvider();
+                        }
+                    }));
         }
 
         // Register the additional agent forwarding channel if needed
@@ -453,38 +472,63 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             final ConnectFuture connectFuture, final String username, final SocketAddress address,
             final Collection<? extends KeyPair> identities, final boolean useDefaultIdentities) {
         return new SshFutureListener<IoConnectFuture>() {
-            @SuppressWarnings("synthetic-access")
             @Override
+            @SuppressWarnings("synthetic-access")
             public void operationComplete(IoConnectFuture future) {
                 if (future.isCanceled()) {
                     connectFuture.cancel();
-                } else if (future.getException() != null) {
-                    connectFuture.setException(future.getException());
+                    return;
+                }
+
+                Throwable t = future.getException();
+                if (t != null) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("operationComplete({}@{}) failed ({}): {}",
+                                  username, address, t.getClass().getSimpleName(), t.getMessage());
+                    }
+                    connectFuture.setException(t);
                 } else {
-                    ClientSessionImpl session = (ClientSessionImpl) AbstractSession.getSession(future.getSession());
-                    session.setUsername(username);
-
-                    if (useDefaultIdentities) {
-                        session.setKeyPairProvider(getKeyPairProvider());
-                    }
-
-                    int numIds = GenericUtils.size(identities);
-                    if (numIds > 0) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("doConnect({}@{}) adding {} identities", username, address, numIds);
-                        }
-                        for (KeyPair kp : identities) {
-                            if (log.isTraceEnabled()) {
-                                log.trace("doConnect({}@{}) add identity type={}, fingerprint={}",
-                                          username, address, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
-                            }
-                            session.addPublicKeyIdentity(kp);
-                        }
-                    }
-                    connectFuture.setSession(session);
+                    onConnectOperationComplete(future.getSession(), connectFuture, username, address, identities, useDefaultIdentities);
                 }
             }
         };
+    }
+
+    protected void onConnectOperationComplete(IoSession ioSession, ConnectFuture connectFuture,
+            String username, SocketAddress address, Collection<? extends KeyPair> identities, boolean useDefaultIdentities) {
+        ClientSession session = (ClientSession) AbstractSession.getSession(ioSession);
+        session.setUsername(username);
+
+        if (useDefaultIdentities) {
+            // check if session listener intervened
+            KeyPairProvider kpSession = session.getKeyPairProvider();
+            KeyPairProvider kpClient = ValidateUtils.checkNotNull(getKeyPairProvider(), "No default key-pair provider");
+            if (kpSession == null) {
+                session.setKeyPairProvider(kpClient);
+            } else {
+                if (kpSession != kpClient) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("onConnectOperationComplete({}) key-pair provider override", session);
+                    }
+                }
+            }
+        }
+
+        int numIds = GenericUtils.size(identities);
+        if (numIds > 0) {
+            if (log.isDebugEnabled()) {
+                log.debug("onConnectOperationComplete({}@{}) adding {} identities", username, address, numIds);
+            }
+            for (KeyPair kp : identities) {
+                if (log.isTraceEnabled()) {
+                    log.trace("onConnectOperationComplete({}@{}) add identity type={}, fingerprint={}",
+                              username, address, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
+                }
+                session.addPublicKeyIdentity(kp);
+            }
+        }
+
+        connectFuture.setSession(session);
     }
 
     protected IoConnector createConnector() {
@@ -698,6 +742,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
             client.start();
             client.setUserInteraction(new UserInteraction() {
+                @Override
+                public boolean isInteractionAllowed(ClientSession session) {
+                    return true;
+                }
+
                 @Override
                 public void welcome(ClientSession clientSession, String banner, String lang) {
                     stdout.println(banner);

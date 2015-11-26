@@ -24,7 +24,6 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.auth.AbstractUserAuth;
 import org.apache.sshd.server.session.ServerSession;
 import org.ietf.jgss.GSSContext;
@@ -63,7 +62,7 @@ public class UserAuthGSS extends AbstractUserAuth {
     @Override
     protected Boolean doAuth(Buffer buffer, boolean initial) throws Exception {
         ServerSession session = getServerSession();
-        GSSAuthenticator auth = getAuthenticator(session);
+        GSSAuthenticator auth = ValidateUtils.checkNotNull(session.getGSSAuthenticator(), "No GSSAuthenticator configured");
 
         if (initial) {
             // Get mechanism count from buffer and look for Kerberos 5.
@@ -74,7 +73,9 @@ public class UserAuthGSS extends AbstractUserAuth {
                 Oid oid = new Oid(buffer.getBytes());
 
                 if (oid.equals(KRB5_MECH)) {
-                    log.debug("UserAuthGSS: found Kerberos 5");
+                    if (log.isDebugEnabled()) {
+                        log.debug("doAuth({}@{}) found Kerberos 5", getUsername(), session);
+                    }
 
                     // Validate initial user before proceeding
 
@@ -110,11 +111,11 @@ public class UserAuthGSS extends AbstractUserAuth {
             if (!((msg == SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE)
                     || (msg == SshConstants.SSH_MSG_USERAUTH_GSSAPI_MIC) && context.isEstablished())) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
-                        "Packet not supported by user authentication method: " + msg);
+                        "Packet not supported by user authentication method: " + SshConstants.getCommandMessageName(msg));
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("doAuth({}@{}) In krb5.next: msg = {}", getUsername(), session, msg);
+                log.debug("doAuth({}@{}) In krb5.next: msg = {}", getUsername(), session, SshConstants.getCommandMessageName(msg));
             }
 
             // If the context is established, this must be a MIC message
@@ -145,7 +146,10 @@ public class UserAuthGSS extends AbstractUserAuth {
                     }
                     return Boolean.TRUE;
                 } catch (GSSException e) {
-                    log.info("doAuth({}@{}) GSS verification error: {}", getUsername(), session, e.toString());
+                    if (log.isDebugEnabled()) {
+                        log.debug("doAuth({}@{}) GSS verification {} error: {}",
+                                  getUsername(), session, e.getClass().getSimpleName(), e.getMessage());
+                    }
                     return Boolean.FALSE;
                 }
             } else {
@@ -161,7 +165,7 @@ public class UserAuthGSS extends AbstractUserAuth {
                 if (established && (identity == null)) {
                     identity = context.getSrcName().toString();
                     if (log.isDebugEnabled()) {
-                        log.info("GSS identity is {}", identity);
+                        log.debug("doAuth({}@{}) GSS identity is {}", getUsername(), session, identity);
                     }
 
                     if (!auth.validateIdentity(session, identity)) {
@@ -208,24 +212,12 @@ public class UserAuthGSS extends AbstractUserAuth {
     }
 
     /**
-     * Utility to get the configured GSS authenticator for the server, throwing an exception if none is available.
-     *
-     * @param session The current {@link ServerSession}
-     * @return The {@link GSSAuthenticator} - never {@code null}
-     * @throws Exception If no GSS authenticator is defined
-     */
-    protected GSSAuthenticator getAuthenticator(ServerSession session) throws Exception {
-        ServerFactoryManager manager = session.getFactoryManager();
-        return ValidateUtils.checkNotNull(manager.getGSSAuthenticator(), "No GSSAuthenticator configured");
-    }
-
-    /**
      * Utility to construct an Oid from a string, ignoring the annoying exception.
      *
      * @param rep The string form
      * @return The Oid
      */
-    private static Oid createOID(String rep) {
+    public static Oid createOID(String rep) {
         try {
             return new Oid(rep);
         } catch (GSSException e) {

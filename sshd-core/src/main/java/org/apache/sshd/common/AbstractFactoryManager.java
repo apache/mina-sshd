@@ -31,27 +31,20 @@ import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.RequestHandler;
-import org.apache.sshd.common.cipher.Cipher;
-import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.config.VersionProperties;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.forward.TcpipForwarderFactory;
 import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoServiceFactoryFactory;
-import org.apache.sshd.common.kex.KeyExchange;
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.keyprovider.KeyPairProviderHolder;
-import org.apache.sshd.common.mac.Mac;
+import org.apache.sshd.common.kex.AbstractKexFactoryManager;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.AbstractSessionFactory;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.SessionTimeoutListener;
-import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.forward.ForwardingFilter;
 
@@ -60,17 +53,10 @@ import org.apache.sshd.server.forward.ForwardingFilter;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractFactoryManager
-        extends AbstractInnerCloseable
-        implements FactoryManager, KeyPairProviderHolder {
+public abstract class AbstractFactoryManager extends AbstractKexFactoryManager implements FactoryManager {
 
     protected IoServiceFactoryFactory ioServiceFactoryFactory;
     protected IoServiceFactory ioServiceFactory;
-    protected List<NamedFactory<KeyExchange>> keyExchangeFactories;
-    protected List<NamedFactory<Cipher>> cipherFactories;
-    protected List<NamedFactory<Compression>> compressionFactories;
-    protected List<NamedFactory<Mac>> macFactories;
-    protected List<NamedFactory<Signature>> signatureFactories;
     protected Factory<Random> randomFactory;
     protected List<NamedFactory<Channel>> channelFactories;
     protected SshAgentFactory agentFactory;
@@ -89,7 +75,6 @@ public abstract class AbstractFactoryManager
     protected final ChannelListener channelListenerProxy;
 
     private final Map<String, Object> properties = new ConcurrentHashMap<>();
-    private KeyPairProvider keyPairProvider;
 
     protected AbstractFactoryManager() {
         ClassLoader loader = getClass().getClassLoader();
@@ -116,66 +101,12 @@ public abstract class AbstractFactoryManager
     }
 
     @Override
-    public List<NamedFactory<KeyExchange>> getKeyExchangeFactories() {
-        return keyExchangeFactories;
-    }
-
-    public void setKeyExchangeFactories(List<NamedFactory<KeyExchange>> keyExchangeFactories) {
-        this.keyExchangeFactories = keyExchangeFactories;
-    }
-
-    @Override
-    public List<NamedFactory<Cipher>> getCipherFactories() {
-        return cipherFactories;
-    }
-
-    public void setCipherFactories(List<NamedFactory<Cipher>> cipherFactories) {
-        this.cipherFactories = cipherFactories;
-    }
-
-    @Override
-    public List<NamedFactory<Compression>> getCompressionFactories() {
-        return compressionFactories;
-    }
-
-    public void setCompressionFactories(List<NamedFactory<Compression>> compressionFactories) {
-        this.compressionFactories = compressionFactories;
-    }
-
-    @Override
-    public List<NamedFactory<Mac>> getMacFactories() {
-        return macFactories;
-    }
-
-    public void setMacFactories(List<NamedFactory<Mac>> macFactories) {
-        this.macFactories = macFactories;
-    }
-
-    @Override
-    public List<NamedFactory<Signature>> getSignatureFactories() {
-        return signatureFactories;
-    }
-
-    public void setSignatureFactories(List<NamedFactory<Signature>> signatureFactories) {
-        this.signatureFactories = signatureFactories;
-    }
-
-    @Override
     public Factory<Random> getRandomFactory() {
         return randomFactory;
     }
 
     public void setRandomFactory(Factory<Random> randomFactory) {
         this.randomFactory = randomFactory;
-    }
-
-    @Override
-    public KeyPairProvider getKeyPairProvider() {
-        return keyPairProvider;
-    }
-
-    public void setKeyPairProvider(KeyPairProvider keyPairProvider) {
-        this.keyPairProvider = keyPairProvider;
     }
 
     @Override

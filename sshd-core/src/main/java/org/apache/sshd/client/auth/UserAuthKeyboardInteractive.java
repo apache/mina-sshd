@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.sshd.client.ClientFactoryManager;
+import org.apache.sshd.client.ClientAuthenticationManager;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
@@ -94,7 +94,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             }
         }
         passwords = pwds.iterator();
-        maxTrials = PropertyResolverUtils.getIntProperty(session, ClientFactoryManager.PASSWORD_PROMPTS, ClientFactoryManager.DEFAULT_PASSWORD_PROMPTS);
+        maxTrials = PropertyResolverUtils.getIntProperty(session, ClientAuthenticationManager.PASSWORD_PROMPTS, ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS);
         ValidateUtils.checkTrue(maxTrials > 0, "Non-positive max. trials: %d", maxTrials);
     }
 
@@ -184,7 +184,9 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             session.writePacket(buffer);
             return true;
         }
-        throw new IllegalStateException("process(" + session + ")[" + service + ") received unknown packet: cmd=" + cmd);
+
+        throw new IllegalStateException("process(" + session + ")[" + service + ")"
+                + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
     }
 
     protected String getExchangeLanguageTag(ClientSession session) {
@@ -229,8 +231,8 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             return new String[]{candidate};
         } else {
             ClientSession session = getClientSession();
-            UserInteraction ui = UserInteraction.Utils.resolveUserInteraction(session);
-            if (ui != null) {
+            UserInteraction ui = session.getUserInteraction();
+            if ((ui != null) && ui.isInteractionAllowed(session)) {
                 return ui.interactive(session, name, instruction, lang, prompt, echo);
             }
         }

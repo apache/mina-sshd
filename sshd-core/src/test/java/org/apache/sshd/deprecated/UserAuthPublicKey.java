@@ -23,7 +23,6 @@ import java.security.KeyPair;
 
 import org.apache.sshd.client.auth.UserAuthPublicKeyFactory;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -61,9 +60,8 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 buffer.putString(alg);
                 buffer.putPublicKey(key.getPublic());
 
-                FactoryManager manager = session.getFactoryManager();
                 Signature verif =
-                        ValidateUtils.checkNotNull(NamedFactory.Utils.create(manager.getSignatureFactories(), alg),
+                        ValidateUtils.checkNotNull(NamedFactory.Utils.create(session.getSignatureFactories(), alg),
                                 "No signature factory located for algorithm=%s",
                                 alg);
                 verif.initSigner(key.getPrivate());
@@ -79,9 +77,10 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 bs.putPublicKey(key.getPublic());
                 verif.update(bs.array(), bs.rpos(), bs.available());
 
-                bs = new ByteArrayBuffer();
+                byte[] signature = verif.sign();
+                bs = new ByteArrayBuffer(alg.length() + signature.length + Long.SIZE);
                 bs.putString(alg);
-                bs.putBytes(verif.sign());
+                bs.putBytes(signature);
                 buffer.putBytes(bs.array(), bs.rpos(), bs.available());
 
                 session.writePacket(buffer);

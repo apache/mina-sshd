@@ -48,13 +48,6 @@ public abstract class AbstractSessionFactory<M extends FactoryManager, S extends
     protected abstract S doCreateSession(IoSession ioSession) throws Exception;
 
     protected S setupSession(S session) throws Exception {
-        FactoryManager listenersManager = getFactoryManager();
-        SessionListener sessionListener = listenersManager.getSessionListenerProxy();
-        // Inform the listener of the newly created session
-        sessionListener.sessionCreated(session);
-        // Delegate the task of further notifications to the session
-        session.addSessionListener(sessionListener);
-        session.addChannelListener(listenersManager.getChannelListenerProxy());
         return session;
     }
 }

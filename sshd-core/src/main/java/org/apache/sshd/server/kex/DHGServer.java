@@ -20,7 +20,6 @@ package org.apache.sshd.server.kex;
 
 import java.security.KeyPair;
 
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -98,9 +97,8 @@ public class DHGServer extends AbstractDHServerKeyExchange {
 
         KeyPair kp = ValidateUtils.checkNotNull(session.getHostKey(), "No server key pair available");
         String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
-        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
         Signature sig = ValidateUtils.checkNotNull(
-                NamedFactory.Utils.create(manager.getSignatureFactories(), algo),
+                NamedFactory.Utils.create(session.getSignatureFactories(), algo),
                 "Unknown negotiated server keys: %s",
                 algo);
         sig.initSigner(kp.getPrivate());

@@ -81,9 +81,8 @@ public class UserAuthPassword extends AbstractUserAuth {
         if (cmd == SshConstants.SSH_MSG_USERAUTH_PASSWD_CHANGEREQ) {
             String prompt = buffer.getString();
             String lang = buffer.getString();
-            UserInteraction ui = UserInteraction.Utils.resolveUserInteraction(session);
-
-            if (ui != null) {
+            UserInteraction ui = session.getUserInteraction();
+            if ((ui != null) && ui.isInteractionAllowed(session)) {
                 String password = ui.getUpdatedPassword(session, prompt, lang);
                 if (GenericUtils.isEmpty(password)) {
                     if (log.isDebugEnabled()) {
@@ -104,7 +103,8 @@ public class UserAuthPassword extends AbstractUserAuth {
             return false;
         }
 
-        throw new IllegalStateException("process(" + username + "@" + session + ")[" + service + "] received unknown packet: cmd=" + cmd);
+        throw new IllegalStateException("process(" + username + "@" + session + ")[" + service + "]"
+                + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
     }
 
     /**

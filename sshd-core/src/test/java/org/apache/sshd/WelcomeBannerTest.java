@@ -68,6 +68,11 @@ public class WelcomeBannerTest extends BaseTestSupport {
             final AtomicReference<ClientSession> sessionHolder = new AtomicReference<>(null);
             client.setUserInteraction(new UserInteraction() {
                 @Override
+                public boolean isInteractionAllowed(ClientSession session) {
+                    return true;
+                }
+
+                @Override
                 public void welcome(ClientSession session, String banner, String lang) {
                     validateSession("welcome", session);
                     assertNull("Multiple banner invocations", welcomeHolder.getAndSet(banner));

@@ -38,7 +38,7 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -50,28 +50,25 @@ import org.apache.sshd.server.ServerFactoryManager;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ServerSessionImpl extends AbstractSession implements ServerSession {
+public class ServerSessionImpl extends AbstractServerSession {
     protected static final long MAX_PACKETS = 1L << 31;
 
     private long maxBytes = 1024 * 1024 * 1024;   // 1 GB
     private long maxKeyInterval = 60 * 60 * 1000; // 1 hour
 
     public ServerSessionImpl(ServerFactoryManager server, IoSession ioSession) throws Exception {
-        super(true, server, ioSession);
+        super(server, ioSession);
         maxBytes = Math.max(32, PropertyResolverUtils.getLongProperty(this, ServerFactoryManager.REKEY_BYTES_LIMIT, maxBytes));
         maxKeyInterval = PropertyResolverUtils.getLongProperty(this, ServerFactoryManager.REKEY_TIME_LIMIT, maxKeyInterval);
-        log.info("Server session created from {}", ioSession.getRemoteAddress());
+        if (log.isDebugEnabled()) {
+            log.debug("Server session created {}", ioSession);
+        }
+
+        // Inform the listener of the newly created session
+        SessionListener listener = getSessionListenerProxy();
+        listener.sessionCreated(this);
+
         sendServerIdentification();
-    }
-
-    @Override
-    public ServerFactoryManager getFactoryManager() {
-        return (ServerFactoryManager) super.getFactoryManager();
-    }
-
-    @Override
-    protected void checkKeys() {
-        // nothing
     }
 
     @Override
@@ -126,11 +123,10 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
         /*
          * Make sure we can provide key(s) for the available signatures
          */
-        ServerFactoryManager manager = getFactoryManager();
-        ValidateUtils.checkTrue(proposedManager == manager, "Mismatched signatures proposed factory manager");
+        ValidateUtils.checkTrue(proposedManager == getFactoryManager(), "Mismatched signatures proposed factory manager");
 
-        KeyPairProvider kpp = manager.getKeyPairProvider();
-        Collection<String> supported = NamedResource.Utils.getNameList(manager.getSignatureFactories());
+        KeyPairProvider kpp = getKeyPairProvider();
+        Collection<String> supported = NamedResource.Utils.getNameList(getSignatureFactories());
         Iterable<String> provided = (kpp == null) ? null : kpp.getKeyTypes();
         if ((provided == null) || GenericUtils.isEmpty(supported)) {
             return resolveEmptySignaturesProposal(supported, provided);
@@ -217,8 +213,7 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
     @Override
     public KeyPair getHostKey() {
         String value = getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
-        ServerFactoryManager manager = getFactoryManager();
-        KeyPairProvider provider = ValidateUtils.checkNotNull(manager.getKeyPairProvider(), "No host keys provider");
+        KeyPairProvider provider = ValidateUtils.checkNotNull(getKeyPairProvider(), "No host keys provider");
         return provider.loadKey(value);
     }
 

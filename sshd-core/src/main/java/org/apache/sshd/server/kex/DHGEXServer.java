@@ -171,9 +171,8 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             byte[] k_s;
             KeyPair kp = ValidateUtils.checkNotNull(session.getHostKey(), "No server key pair available");
             String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
-            FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
             Signature sig = ValidateUtils.checkNotNull(
-                    NamedFactory.Utils.create(manager.getSignatureFactories(), algo),
+                    NamedFactory.Utils.create(session.getSignatureFactories(), algo),
                     "Unknown negotiated server keys: %s",
                     algo);
             sig.initSigner(kp.getPrivate());

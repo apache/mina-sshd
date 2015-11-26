@@ -236,16 +236,17 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         PropertyResolverUtils.updateProperty(client, ClientFactoryManager.IGNORE_INVALID_IDENTITIES, false);
 
         final Collection<KeyPair> clientIdentities = Collections.singletonList(defaultIdentity);
-        client.setKeyPairProvider(new AbstractKeyPairProvider() {
+        KeyPairProvider provider = new AbstractKeyPairProvider() {
             @Override
             public Iterable<KeyPair> loadKeys() {
                 return clientIdentities;
             }
-        });
+        };
+        client.setKeyPairProvider(provider);
 
         client.start();
         try(ClientSession session = client.connect(entry).verify(7L, TimeUnit.SECONDS).getSession()) {
-            assertNull("Unexpected session key pairs provider", session.getKeyPairProvider());
+            assertSame("Unexpected session key pairs provider", provider, session.getKeyPairProvider());
             session.auth().verify(5L, TimeUnit.SECONDS);
             assertFalse("Unexpected default client identity attempted", defaultClientIdentityAttempted.get());
             assertNull("Default client identity auto-added", session.removePublicKeyIdentity(defaultIdentity));

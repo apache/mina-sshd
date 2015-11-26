@@ -32,6 +32,7 @@ import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Supplier;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -47,6 +48,19 @@ public class BuiltinClientIdentitiesWatcher extends ClientIdentitiesWatcher {
 
     public BuiltinClientIdentitiesWatcher(Path keysFolder, Collection<String> ids, boolean supportedOnly,
             ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
+        this(keysFolder, ids, supportedOnly,
+             GenericUtils.supplierOf(ValidateUtils.checkNotNull(loader, "No client identity loader")),
+             GenericUtils.supplierOf(ValidateUtils.checkNotNull(provider, "No password provider")),
+             strict);
+    }
+
+    public BuiltinClientIdentitiesWatcher(Path keysFolder, boolean supportedOnly,
+            Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider, boolean strict) {
+        this(keysFolder, NamedResource.Utils.getNameList(BuiltinIdentities.VALUES), supportedOnly, loader, provider, strict);
+    }
+
+    public BuiltinClientIdentitiesWatcher(Path keysFolder, Collection<String> ids, boolean supportedOnly,
+            Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider, boolean strict) {
         super(getBuiltinIdentitiesPaths(keysFolder, ids), loader, provider, strict);
         this.supportedOnly = supportedOnly;
     }

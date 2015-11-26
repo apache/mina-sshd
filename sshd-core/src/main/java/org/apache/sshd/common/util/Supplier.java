@@ -17,29 +17,13 @@
  * under the License.
  */
 
-package org.apache.sshd.common.auth;
-
-import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+package org.apache.sshd.common.util;
 
 /**
- * @param <M> Type of user authentication method
+ * Same as in Java 8
+ * @param <T> Type of object being supplied
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractUserAuthMethodFactory<M> extends AbstractLoggingBean implements UserAuthMethodFactory<M> {
-    private final String name;
-
-    protected AbstractUserAuthMethodFactory(String name) {
-        this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No factory name provided");
-    }
-
-    @Override
-    public final String getName() {
-        return name;
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + getName() + "]";
-    }
+public interface Supplier<T> {
+    T get();
 }

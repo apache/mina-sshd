@@ -22,12 +22,13 @@ package org.apache.sshd.server.session;
 import java.security.KeyPair;
 
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.server.ServerAuthenticationManager;
 import org.apache.sshd.server.ServerFactoryManager;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ServerSession extends Session {
+public interface ServerSession extends Session, ServerAuthenticationManager {
     /**
      * @return The {@link ServerFactoryManager} for this session
      */

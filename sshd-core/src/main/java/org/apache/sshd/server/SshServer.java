@@ -45,11 +45,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.auth.UserAuth;
-import org.apache.sshd.server.auth.UserAuthKeyboardInteractiveFactory;
-import org.apache.sshd.server.auth.UserAuthPasswordFactory;
-import org.apache.sshd.server.auth.UserAuthPublicKeyFactory;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
-import org.apache.sshd.server.auth.gss.UserAuthGSSFactory;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
@@ -107,31 +103,20 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                     ServerUserAuthServiceFactory.INSTANCE,
                     ServerConnectionServiceFactory.INSTANCE
             ));
-    public static final UserAuthPublicKeyFactory DEFAULT_USER_AUTH_PUBLIC_KEY_FACTORY =
-            UserAuthPublicKeyFactory.INSTANCE;
-
-    public static final UserAuthGSSFactory DEFAULT_USER_AUTH_GSS_FACTORY =
-            UserAuthGSSFactory.INSTANCE;
-
-    public static final UserAuthPasswordFactory DEFAULT_USER_AUTH_PASSWORD_FACTORY =
-            UserAuthPasswordFactory.INSTANCE;
-
-    public static final UserAuthKeyboardInteractiveFactory DEFAULT_USER_AUTH_KB_INTERACTIVE_FACTORY =
-            UserAuthKeyboardInteractiveFactory.INSTANCE;
 
 
     protected IoAcceptor acceptor;
     protected String host;
     protected int port;
-    protected List<NamedFactory<UserAuth>> userAuthFactories;
-    protected Factory<Command> shellFactory;
-    protected SessionFactory sessionFactory;
-    protected CommandFactory commandFactory;
-    protected List<NamedFactory<Command>> subsystemFactories;
-    protected PasswordAuthenticator passwordAuthenticator;
-    protected PublickeyAuthenticator publickeyAuthenticator;
-    protected KeyboardInteractiveAuthenticator interactiveAuthenticator;
-    protected GSSAuthenticator gssAuthenticator;
+    private Factory<Command> shellFactory;
+    private SessionFactory sessionFactory;
+    private CommandFactory commandFactory;
+    private List<NamedFactory<Command>> subsystemFactories;
+    private List<NamedFactory<UserAuth>> userAuthFactories;
+    private PasswordAuthenticator passwordAuthenticator;
+    private PublickeyAuthenticator publickeyAuthenticator;
+    private KeyboardInteractiveAuthenticator interactiveAuthenticator;
+    private GSSAuthenticator gssAuthenticator;
 
     public SshServer() {
         super();
@@ -163,6 +148,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         return userAuthFactories;
     }
 
+    @Override
     public void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories) {
         this.userAuthFactories = userAuthFactories;
     }
@@ -207,6 +193,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         return passwordAuthenticator;
     }
 
+    @Override
     public void setPasswordAuthenticator(PasswordAuthenticator passwordAuthenticator) {
         this.passwordAuthenticator = passwordAuthenticator;
     }
@@ -216,6 +203,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         return publickeyAuthenticator;
     }
 
+    @Override
     public void setPublickeyAuthenticator(PublickeyAuthenticator publickeyAuthenticator) {
         this.publickeyAuthenticator = publickeyAuthenticator;
     }
@@ -225,6 +213,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         return interactiveAuthenticator;
     }
 
+    @Override
     public void setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator interactiveAuthenticator) {
         this.interactiveAuthenticator = interactiveAuthenticator;
     }
@@ -234,6 +223,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         return gssAuthenticator;
     }
 
+    @Override
     public void setGSSAuthenticator(GSSAuthenticator gssAuthenticator) {
         this.gssAuthenticator = gssAuthenticator;
     }
@@ -249,24 +239,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
         ValidateUtils.checkTrue(getPort() >= 0 /* zero means not set yet */, "Bad port number: %d", Integer.valueOf(getPort()));
 
-        if (GenericUtils.isEmpty(getUserAuthFactories())) {
-            List<NamedFactory<UserAuth>> factories = new ArrayList<>();
-            if (getPasswordAuthenticator() != null) {
-                factories.add(DEFAULT_USER_AUTH_PASSWORD_FACTORY);
-                factories.add(DEFAULT_USER_AUTH_KB_INTERACTIVE_FACTORY);
-            }
-
-            if (getPublickeyAuthenticator() != null) {
-                factories.add(DEFAULT_USER_AUTH_PUBLIC_KEY_FACTORY);
-            }
-
-            if (getGSSAuthenticator() != null) {
-                factories.add(DEFAULT_USER_AUTH_GSS_FACTORY);
-            }
-
-            ValidateUtils.checkTrue(factories.size() > 0, "UserAuthFactories not set");
-            setUserAuthFactories(factories);
-        }
+        List<NamedFactory<UserAuth>> authFactories = ServerAuthenticationManager.Utils.resolveUserAuthFactories(this);
+        setUserAuthFactories(ValidateUtils.checkNotNullAndNotEmpty(authFactories, "UserAuthFactories not set"));
 
         ValidateUtils.checkNotNullAndNotEmpty(getChannelFactories(), "ChannelFactories not set");
         ValidateUtils.checkNotNull(getKeyPairProvider(), "HostKeyProvider not set");

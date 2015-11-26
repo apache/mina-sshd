@@ -30,6 +30,8 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Supplier;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Watches over a group of files that contains client identities
@@ -39,11 +41,26 @@ import org.apache.sshd.common.util.GenericUtils;
 public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements KeyPairProvider {
     private final Collection<ClientIdentityProvider> providers;
 
-    public ClientIdentitiesWatcher(Collection<? extends Path> paths, ClientIdentityLoader loader, FilePasswordProvider provider) {
+    public ClientIdentitiesWatcher(Collection<? extends Path> paths,
+            ClientIdentityLoader loader, FilePasswordProvider provider) {
         this(paths, loader, provider, true);
     }
 
-    public ClientIdentitiesWatcher(Collection<? extends Path> paths, ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
+    public ClientIdentitiesWatcher(Collection<? extends Path> paths,
+            ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
+        this(paths,
+             GenericUtils.supplierOf(ValidateUtils.checkNotNull(loader, "No client identity loader")),
+             GenericUtils.supplierOf(ValidateUtils.checkNotNull(provider, "No password provider")),
+             strict);
+    }
+
+    public ClientIdentitiesWatcher(Collection<? extends Path> paths,
+            Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider) {
+        this(paths, loader, provider, true);
+    }
+
+    public ClientIdentitiesWatcher(Collection<? extends Path> paths,
+            Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider, boolean strict) {
         this(buildProviders(paths, loader, provider, strict));
     }
 
@@ -77,7 +94,16 @@ public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements 
         return keys;
     }
 
-    public static List<ClientIdentityProvider> buildProviders(Collection<? extends Path> paths, ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
+    public static List<ClientIdentityProvider> buildProviders(
+            Collection<? extends Path> paths, ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
+        return buildProviders(paths,
+                GenericUtils.supplierOf(ValidateUtils.checkNotNull(loader, "No client identity loader")),
+                GenericUtils.supplierOf(ValidateUtils.checkNotNull(provider, "No password provider")),
+                strict);
+    }
+
+    public static List<ClientIdentityProvider> buildProviders(
+            Collection<? extends Path> paths, Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider, boolean strict) {
         if (GenericUtils.isEmpty(paths)) {
             return Collections.emptyList();
         }

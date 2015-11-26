@@ -24,6 +24,9 @@ import java.util.List;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Supplier;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -38,6 +41,22 @@ public class DefaultClientIdentitiesWatcher extends BuiltinClientIdentitiesWatch
     }
 
     public DefaultClientIdentitiesWatcher(boolean supportedOnly, ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
+        this(supportedOnly,
+             GenericUtils.supplierOf(ValidateUtils.checkNotNull(loader, "No client identity loader")),
+             GenericUtils.supplierOf(ValidateUtils.checkNotNull(provider, "No password provider")),
+             strict);
+    }
+
+    public DefaultClientIdentitiesWatcher(Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider) {
+        this(loader, provider, true);
+    }
+
+    public DefaultClientIdentitiesWatcher(Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider, boolean strict) {
+        this(true, loader, provider, strict);
+    }
+
+    public DefaultClientIdentitiesWatcher(boolean supportedOnly,
+            Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider, boolean strict) {
         super(PublicKeyEntry.getDefaultKeysFolderPath(), supportedOnly, loader, provider, strict);
     }
 

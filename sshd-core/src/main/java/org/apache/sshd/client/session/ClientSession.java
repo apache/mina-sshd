@@ -25,8 +25,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.sshd.client.ClientAuthenticationManager;
 import org.apache.sshd.client.ClientFactoryManager;
-import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
@@ -70,7 +70,7 @@ import org.apache.sshd.common.session.Session;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ClientSession extends Session, KeyPairProviderHolder {
+public interface ClientSession extends Session, KeyPairProviderHolder, ClientAuthenticationManager {
     enum ClientSessionEvent {
         TIMEOUT,
         CLOSED,
@@ -103,21 +103,6 @@ public interface ClientSession extends Session, KeyPairProviderHolder {
      * match found
      */
     KeyPair removePublicKeyIdentity(KeyPair kp);
-
-    /**
-     * @return The <U>specific</U> {@link UserInteraction} for this
-     * session. May be {@code null} indicating that the
-     * {@link ClientFactoryManager#getUserInteraction()} (if any) should
-     * be used
-     */
-    UserInteraction getUserInteraction();
-
-    /**
-     * @param userInteraction The <U>specific</U> {@link UserInteraction} for this
-     * session. May be {@code null} indicating that the
-     * {@link ClientFactoryManager#getUserInteraction()} (if any) should be used
-     */
-    void setUserInteraction(UserInteraction userInteraction);
 
     /**
      * Starts the authentication process.

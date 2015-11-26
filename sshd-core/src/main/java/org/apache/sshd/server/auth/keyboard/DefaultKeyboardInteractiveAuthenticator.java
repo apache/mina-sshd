@@ -24,9 +24,7 @@ import java.util.List;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
-import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -59,8 +57,7 @@ public class DefaultKeyboardInteractiveAuthenticator
 
     @Override
     public InteractiveChallenge generateChallenge(ServerSession session, String username, String lang, String subMethods) {
-        ServerFactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
-        PasswordAuthenticator auth = manager.getPasswordAuthenticator();
+        PasswordAuthenticator auth = session.getPasswordAuthenticator();
         if (auth == null) {
             if (log.isDebugEnabled()) {
                 log.debug("generateChallenge({}) no password authenticator", session);
@@ -78,8 +75,7 @@ public class DefaultKeyboardInteractiveAuthenticator
 
     @Override
     public boolean authenticate(ServerSession session, String username, List<String> responses) throws Exception {
-        ServerFactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
-        PasswordAuthenticator auth = manager.getPasswordAuthenticator();
+        PasswordAuthenticator auth = session.getPasswordAuthenticator();
         if (auth == null) {
             if (log.isDebugEnabled()) {
                 log.debug("authenticate({}) no password authenticator", session);

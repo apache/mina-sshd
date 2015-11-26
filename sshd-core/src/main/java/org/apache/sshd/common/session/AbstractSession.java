@@ -54,6 +54,7 @@ import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.kex.AbstractKexFactoryManager;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.kex.KeyExchange;
@@ -67,7 +68,6 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 
 /**
  * <P>
@@ -84,7 +84,7 @@ import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractSession extends AbstractInnerCloseable implements Session {
+public abstract class AbstractSession extends AbstractKexFactoryManager implements Session {
     /**
      * Name of the property where this session is stored in the attributes of the
      * underlying MINA session. See {@link #getSession(IoSession, boolean)}
@@ -196,15 +196,19 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
      * @param ioSession      the underlying MINA session
      */
     protected AbstractSession(boolean isServer, FactoryManager factoryManager, IoSession ioSession) {
+        super(ValidateUtils.checkNotNull(factoryManager, "No factory manager provided"));
         this.isServer = isServer;
-        this.factoryManager = ValidateUtils.checkNotNull(factoryManager, "No factory manager provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.factoryManager = factoryManager;
         this.ioSession = ioSession;
 
         ClassLoader loader = getClass().getClassLoader();
         sessionListenerProxy = EventListenerUtils.proxyWrapper(SessionListener.class, loader, sessionListeners);
         channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, loader, channelListeners);
-
         random = ValidateUtils.checkNotNull(factoryManager.getRandomFactory(), "No random factory").create();
+
+        // Delegate the task of further notifications to the session
+        addSessionListener(factoryManager.getSessionListenerProxy());
+        addChannelListener(factoryManager.getChannelListenerProxy());
     }
 
     /**
@@ -507,7 +511,7 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
 
         Map<KexProposalOption, String> result = negotiate();
         String kexAlgorithm = result.get(KexProposalOption.ALGORITHMS);
-        kex = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), kexAlgorithm),
+        kex = ValidateUtils.checkNotNull(NamedFactory.Utils.create(getKeyExchangeFactories(), kexAlgorithm),
                 "Unknown negotiated KEX algorithm: %s",
                 kexAlgorithm);
         kex.init(this, serverVersion.getBytes(StandardCharsets.UTF_8), clientVersion.getBytes(StandardCharsets.UTF_8), i_s, i_c);
@@ -689,7 +693,9 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
                 @Override
                 public void run() {
                     Throwable t = new TimeoutException("Timeout writing packet: " + timeout + " " + unit);
-                    log.info(t.getMessage());
+                    if (log.isDebugEnabled()) {
+                        log.debug(t.getMessage());
+                    }
                     future.setValue(t);
                 }
             }, timeout, unit);
@@ -787,7 +793,7 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
             if (buffer.rpos() < 5) {
                 log.warn("Performance cost: when sending a packet, ensure that "
                         + "5 bytes are available in front of the buffer");
-                Buffer nb = new ByteArrayBuffer();
+                Buffer nb = new ByteArrayBuffer(buffer.available() + Long.SIZE);
                 nb.wpos(5);
                 nb.putBuffer(buffer);
                 buffer = nb;
@@ -800,7 +806,7 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
                 log.trace("Sending packet #{}: {}", Long.valueOf(seqo), buffer.printHex());
             }
             // Compress the packet if needed
-            if (outCompression != null && (authed || !outCompression.isDelayed())) {
+            if ((outCompression != null) && (authed || !outCompression.isDelayed())) {
                 outCompression.compress(buffer);
                 len = buffer.available();
             }
@@ -1026,18 +1032,23 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
      */
     protected Map<KexProposalOption, String> createProposal(String hostKeyTypes) {
         Map<KexProposalOption, String> proposal = new EnumMap<>(KexProposalOption.class);
-        proposal.put(KexProposalOption.ALGORITHMS, NamedResource.Utils.getNames(factoryManager.getKeyExchangeFactories()));
+        proposal.put(KexProposalOption.ALGORITHMS,
+                NamedResource.Utils.getNames(
+                        ValidateUtils.checkNotNullAndNotEmpty(getKeyExchangeFactories(), "No KEX factories")));
         proposal.put(KexProposalOption.SERVERKEYS, hostKeyTypes);
 
-        String ciphers = NamedResource.Utils.getNames(factoryManager.getCipherFactories());
+        String ciphers = NamedResource.Utils.getNames(
+                ValidateUtils.checkNotNullAndNotEmpty(getCipherFactories(), "No cipher factories"));
         proposal.put(KexProposalOption.S2CENC, ciphers);
         proposal.put(KexProposalOption.C2SENC, ciphers);
 
-        String macs = NamedResource.Utils.getNames(factoryManager.getMacFactories());
+        String macs = NamedResource.Utils.getNames(
+                ValidateUtils.checkNotNullAndNotEmpty(getMacFactories(), "No MAC factories"));
         proposal.put(KexProposalOption.S2CMAC, macs);
         proposal.put(KexProposalOption.C2SMAC, macs);
 
-        String compressions = NamedResource.Utils.getNames(factoryManager.getCompressionFactories());
+        String compressions = NamedResource.Utils.getNames(
+                ValidateUtils.checkNotNullAndNotEmpty(getCompressionFactories(), "No compression factories"));
         proposal.put(KexProposalOption.S2CCOMP, compressions);
         proposal.put(KexProposalOption.C2SCOMP, compressions);
 
@@ -1209,30 +1220,30 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
         String value;
 
         value = getNegotiatedKexParameter(KexProposalOption.S2CENC);
-        s2ccipher = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getCipherFactories(), value), "Unknown s2c cipher: %s", value);
+        s2ccipher = ValidateUtils.checkNotNull(NamedFactory.Utils.create(getCipherFactories(), value), "Unknown s2c cipher: %s", value);
         e_s2c = resizeKey(e_s2c, s2ccipher.getBlockSize(), hash, k, h);
         s2ccipher.init(isServer ? Cipher.Mode.Encrypt : Cipher.Mode.Decrypt, e_s2c, iv_s2c);
 
         value = getNegotiatedKexParameter(KexProposalOption.S2CMAC);
-        s2cmac = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getMacFactories(), value), "Unknown s2c mac: %s", value);
+        s2cmac = ValidateUtils.checkNotNull(NamedFactory.Utils.create(getMacFactories(), value), "Unknown s2c mac: %s", value);
         mac_s2c = resizeKey(mac_s2c, s2cmac.getBlockSize(), hash, k, h);
         s2cmac.init(mac_s2c);
 
         value = getNegotiatedKexParameter(KexProposalOption.S2CCOMP);
-        s2ccomp = NamedFactory.Utils.create(factoryManager.getCompressionFactories(), value);
+        s2ccomp = NamedFactory.Utils.create(getCompressionFactories(), value);
 
         value = getNegotiatedKexParameter(KexProposalOption.C2SENC);
-        c2scipher = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getCipherFactories(), value), "Unknown c2s cipher: %s", value);
+        c2scipher = ValidateUtils.checkNotNull(NamedFactory.Utils.create(getCipherFactories(), value), "Unknown c2s cipher: %s", value);
         e_c2s = resizeKey(e_c2s, c2scipher.getBlockSize(), hash, k, h);
         c2scipher.init(isServer ? Cipher.Mode.Decrypt : Cipher.Mode.Encrypt, e_c2s, iv_c2s);
 
         value = getNegotiatedKexParameter(KexProposalOption.C2SMAC);
-        c2smac = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getMacFactories(), value), "Unknown c2s mac: %s", value);
+        c2smac = ValidateUtils.checkNotNull(NamedFactory.Utils.create(getMacFactories(), value), "Unknown c2s mac: %s", value);
         mac_c2s = resizeKey(mac_c2s, c2smac.getBlockSize(), hash, k, h);
         c2smac.init(mac_c2s);
 
         value = getNegotiatedKexParameter(KexProposalOption.C2SCOMP);
-        c2scomp = NamedFactory.Utils.create(factoryManager.getCompressionFactories(), value);
+        c2scomp = NamedFactory.Utils.create(getCompressionFactories(), value);
 
         if (isServer) {
             outCipher = s2ccipher;
@@ -1521,7 +1532,7 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
     @Override
     public KeyExchangeFuture reExchangeKeys() throws IOException {
         if (kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
-            log.info("Initiating key re-exchange");
+            log.info("reExchangeKeys({}) Initiating key re-exchange", this);
             sendKexInit();
 
             DefaultKeyExchangeFuture kexFuture = kexFutureHolder.getAndSet(new DefaultKeyExchangeFuture(null));

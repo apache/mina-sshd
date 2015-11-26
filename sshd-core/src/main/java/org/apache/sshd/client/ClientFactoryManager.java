@@ -18,15 +18,9 @@
  */
 package org.apache.sshd.client;
 
-import java.util.List;
-
-import org.apache.sshd.client.auth.UserAuth;
-import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.config.keys.ClientIdentityLoader;
-import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 
 /**
@@ -35,12 +29,12 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ClientFactoryManager extends FactoryManager {
-
+public interface ClientFactoryManager extends FactoryManager, ClientAuthenticationManager {
     /**
      * Key used to set the heartbeat interval in milliseconds (0 to disable = default)
      */
     String HEARTBEAT_INTERVAL = "hearbeat-interval";
+
     /**
      * Default value for {@link #HEARTBEAT_INTERVAL} if none configured
      */
@@ -50,28 +44,11 @@ public interface ClientFactoryManager extends FactoryManager {
      * Key used to check the heartbeat request that should be sent to the server
      */
     String HEARTBEAT_REQUEST = "heartbeat-request";
+
     /**
      * Default value for {@link ClientFactoryManager#HEARTBEAT_REQUEST} is none configured
      */
     String DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING = "keepalive@sshd.apache.org";
-
-    /**
-     * Ordered comma separated list of authentications methods.
-     * Authentications methods accepted by the server will be tried in the given order.
-     * If not configured or {@code null}/empty, then the session's {@link #getUserAuthFactories()}
-     * is used as-is
-     */
-    String PREFERRED_AUTHS = "preferred-auths";
-
-    /**
-     * Specifies the number of interactive prompts before giving up.
-     * The argument to this keyword must be an integer.
-     */
-    String PASSWORD_PROMPTS = "password-prompts";
-    /**
-     * Default value for {@link #PASSWORD_PROMPTS} if none configured
-     */
-    int DEFAULT_PASSWORD_PROMPTS = 3;
 
     /**
      * Whether to ignore invalid identities files when pre-initializing
@@ -86,40 +63,24 @@ public interface ClientFactoryManager extends FactoryManager {
     boolean DEFAULT_IGNORE_INVALID_IDENTITIES = true;
 
     /**
-     * Retrieve the server key verifier to be used to check the key when connecting
-     * to an ssh server.
-     *
-     * @return the server key verifier to use
-     */
-    ServerKeyVerifier getServerKeyVerifier();
-
-    /**
-     * @return A {@link UserInteraction} object to communicate with the user
-     * (may be {@code null} to indicate that no such communication is allowed)
-     */
-    UserInteraction getUserInteraction();
-
-    /**
-     * @return a {@link List} of {@link UserAuth} {@link NamedFactory}-ies - never
-     * {@code null}/empty
-     */
-    List<NamedFactory<UserAuth>> getUserAuthFactories();
-
-    /**
      * @return The {@link HostConfigEntryResolver} to use in order to resolve the
-     * effective session parameters
+     * effective session parameters - never {@code null}
      */
     HostConfigEntryResolver getHostConfigEntryResolver();
+    void setHostConfigEntryResolver(HostConfigEntryResolver resolver);
 
     /**
      * @return The {@link ClientIdentityLoader} to use in order to load client
-     * key pair identities
+     * key pair identities - never {@code null}
      */
     ClientIdentityLoader getClientIdentityLoader();
+    void setClientIdentityLoader(ClientIdentityLoader loader);
 
     /**
      * @return The {@link FilePasswordProvider} to use if need to load encrypted
-     * identities keys
+     * identities keys - never {@code null}
+     * @see FilePasswordProvider#EMPTY
      */
     FilePasswordProvider getFilePasswordProvider();
+    void setFilePasswordProvider(FilePasswordProvider provider);
 }

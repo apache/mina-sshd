@@ -22,12 +22,12 @@ import java.security.PublicKey;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -55,17 +55,21 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         buffer.wpos(buffer.rpos() + len);
 
         ServerSession session = getServerSession();
-        ServerFactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
         PublicKey key = buffer.getRawPublicKey();
+        if (log.isDebugEnabled()) {
+            log.debug("doAuth({}) verify key type={}, fingerprint={}",
+                      session, alg, KeyUtils.getFingerPrint(key));
+        }
+
         Signature verifier = ValidateUtils.checkNotNull(
-                NamedFactory.Utils.create(manager.getSignatureFactories(), alg),
+                NamedFactory.Utils.create(session.getSignatureFactories(), alg),
                 "No verifier located for algorithm=%s",
                 alg);
         verifier.initVerifier(key);
         buffer.wpos(oldLim);
 
         byte[] sig = hasSig ? buffer.getBytes() : null;
-        PublickeyAuthenticator authenticator = manager.getPublickeyAuthenticator();
+        PublickeyAuthenticator authenticator = session.getPublickeyAuthenticator();
         if (authenticator == null) {
             if (log.isDebugEnabled()) {
                 log.debug("doAuth({}) no authenticator", session);

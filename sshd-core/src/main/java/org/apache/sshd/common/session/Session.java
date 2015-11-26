@@ -30,6 +30,7 @@ import org.apache.sshd.common.channel.ChannelListenerManager;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -41,7 +42,8 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface Session
-        extends SessionListenerManager,
+        extends KexFactoryManager,
+                SessionListenerManager,
                 ChannelListenerManager,
                 PropertyResolver,
                 Closeable,

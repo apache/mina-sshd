@@ -27,7 +27,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Pair;
+import org.apache.sshd.common.util.Supplier;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.ModifiableFileWatcher;
@@ -40,8 +42,8 @@ import org.apache.sshd.common.util.io.ModifiableFileWatcher;
  */
 public class ClientIdentityFileWatcher extends ModifiableFileWatcher implements ClientIdentityProvider {
     private final AtomicReference<KeyPair> identityHolder = new AtomicReference<>(null);
-    private final ClientIdentityLoader loader;
-    private final FilePasswordProvider provider;
+    private final Supplier<ClientIdentityLoader> loaderHolder;
+    private final Supplier<FilePasswordProvider> providerHolder;
     private final boolean strict;
 
     public ClientIdentityFileWatcher(Path path, ClientIdentityLoader loader, FilePasswordProvider provider) {
@@ -49,9 +51,20 @@ public class ClientIdentityFileWatcher extends ModifiableFileWatcher implements 
     }
 
     public ClientIdentityFileWatcher(Path path, ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
+        this(path,
+             GenericUtils.supplierOf(ValidateUtils.checkNotNull(loader, "No client identity loader")),
+             GenericUtils.supplierOf(ValidateUtils.checkNotNull(provider, "No password provider")),
+             strict);
+    }
+
+    public ClientIdentityFileWatcher(Path path, Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider) {
+        this(path, loader, provider, true);
+    }
+
+    public ClientIdentityFileWatcher(Path path, Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider, boolean strict) {
         super(path);
-        this.loader = ValidateUtils.checkNotNull(loader, "No client identity loader");
-        this.provider = ValidateUtils.checkNotNull(provider, "No password provided");
+        this.loaderHolder = ValidateUtils.checkNotNull(loader, "No client identity loader");
+        this.providerHolder = ValidateUtils.checkNotNull(provider, "No password provider");
         this.strict = strict;
     }
 
@@ -60,11 +73,11 @@ public class ClientIdentityFileWatcher extends ModifiableFileWatcher implements 
     }
 
     public final ClientIdentityLoader getClientIdentityLoader() {
-        return loader;
+        return loaderHolder.get();
     }
 
     public final FilePasswordProvider getFilePasswordProvider() {
-        return provider;
+        return providerHolder.get();
     }
 
     @Override
@@ -101,14 +114,15 @@ public class ClientIdentityFileWatcher extends ModifiableFileWatcher implements 
         }
 
         String location = path.toString();
-        ClientIdentityLoader idLoader = getClientIdentityLoader();
+        ClientIdentityLoader idLoader = ValidateUtils.checkNotNull(getClientIdentityLoader(), "No client identity loader");
         if (idLoader.isValidLocation(location)) {
-            return idLoader.loadClientIdentity(location, getFilePasswordProvider());
+            return idLoader.loadClientIdentity(location, ValidateUtils.checkNotNull(getFilePasswordProvider(), "No file password provider"));
         }
 
         if (log.isDebugEnabled()) {
             log.debug("reloadClientIdentity({}) invalid location", location);
         }
+
         return null;
     }
 }

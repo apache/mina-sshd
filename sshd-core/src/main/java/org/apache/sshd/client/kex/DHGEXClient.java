@@ -21,7 +21,6 @@ package org.apache.sshd.client.kex;
 
 import java.math.BigInteger;
 
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -159,9 +158,8 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             hash.update(buffer.array(), 0, buffer.available());
             h = hash.digest();
 
-            FactoryManager manager = session.getFactoryManager();
             Signature verif = ValidateUtils.checkNotNull(
-                    NamedFactory.Utils.create(manager.getSignatureFactories(), keyAlg),
+                    NamedFactory.Utils.create(session.getSignatureFactories(), keyAlg),
                     "No verifier located for algorithm=%s",
                     keyAlg);
             verif.initVerifier(serverKey);

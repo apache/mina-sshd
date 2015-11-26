@@ -24,12 +24,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.keyprovider.KeyPairProviderHolder;
-import org.apache.sshd.server.auth.UserAuth;
-import org.apache.sshd.server.auth.gss.GSSAuthenticator;
-import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
-import org.apache.sshd.server.auth.password.PasswordAuthenticator;
-import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 
 /**
  * The <code>ServerFactoryManager</code> enable the retrieval of additional
@@ -37,7 +31,7 @@ import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ServerFactoryManager extends FactoryManager, KeyPairProviderHolder {
+public interface ServerFactoryManager extends FactoryManager, ServerAuthenticationManager {
     /**
      * Key used to retrieve the value of the maximum concurrent open session count per username.
      * If not set, then unlimited
@@ -48,19 +42,6 @@ public interface ServerFactoryManager extends FactoryManager, KeyPairProviderHol
      * Key used to retrieve the value of the server identification string if not default.
      */
     String SERVER_IDENTIFICATION = "server-identification";
-
-    /**
-     * Key used to retrieve the value in the configuration properties map
-     * of the maximum number of failed authentication requests before the
-     * server closes the connection.
-     * @see #DEFAULT_MAX_AUTH_REQUESTS
-     */
-    String MAX_AUTH_REQUESTS = "max-auth-requests";
-
-    /**
-     * Default value for {@link #MAX_AUTH_REQUESTS} if none configured
-     */
-    int DEFAULT_MAX_AUTH_REQUESTS = 20;
 
     /**
      * Key used to retrieve the value of welcome banner that will be displayed
@@ -128,53 +109,6 @@ public interface ServerFactoryManager extends FactoryManager, KeyPairProviderHol
      * If not specified, the default internal file will be used.
      */
     String MODULI_URL = "moduli-url";
-
-    /**
-     * Retrieve the list of named factories for <code>UserAuth</code> objects.
-     *
-     * @return a list of named <code>UserAuth</code> factories, never {@code null}
-     */
-    List<NamedFactory<UserAuth>> getUserAuthFactories();
-
-    /**
-     * Retrieve the <code>PublickeyAuthenticator</code> to be used by SSH server.
-     * If no authenticator has been configured (i.e. this method returns
-     * {@code null}), then client authentication requests based on keys will be
-     * rejected.
-     *
-     * @return the <code>PublickeyAuthenticato</code> or {@code null}
-     */
-    PublickeyAuthenticator getPublickeyAuthenticator();
-
-    /**
-     * Retrieve the <code>PasswordAuthenticator</code> to be used by the SSH server.
-     * If no authenticator has been configured (i.e. this method returns
-     * {@code null}), then client authentication requests based on passwords
-     * will be rejected.
-     *
-     * @return the <code>PasswordAuthenticator</code> or {@code null}
-     */
-    PasswordAuthenticator getPasswordAuthenticator();
-
-    /**
-     * Retrieve the <code>KeyboardInteractiveAuthenticator</code> to be used by
-     * the SSH server. If no authenticator has been configured (i.e. this method returns
-     * {@code null}), then client authentication requests based on this method
-     * will be rejected.
-     *
-     * @return The {@link KeyboardInteractiveAuthenticator} or {@code null}
-     */
-    KeyboardInteractiveAuthenticator getKeyboardInteractiveAuthenticator();
-
-    /**
-     * Retrieve the <code>GSSAuthenticator</code> to be used by the SSH server.
-     * If no authenticator has been configured (i.e. this method returns
-     * {@code null}), then client authentication requests based on gssapi
-     * will be rejected.
-     *
-     * @return the <code>GSSAuthenticator</code> or {@code null}
-     */
-    GSSAuthenticator getGSSAuthenticator();
 
     /**
      * Retrieve the <code>ShellFactory</code> object to be used to create shells.

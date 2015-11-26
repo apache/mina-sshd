@@ -24,10 +24,8 @@ import java.util.List;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
-import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.auth.keyboard.InteractiveChallenge;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
@@ -47,8 +45,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     @Override
     protected Boolean doAuth(Buffer buffer, boolean init) throws Exception {
         ServerSession session = getServerSession();
-        ServerFactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
-        KeyboardInteractiveAuthenticator auth = manager.getKeyboardInteractiveAuthenticator();
+        KeyboardInteractiveAuthenticator auth = session.getKeyboardInteractiveAuthenticator();
         if (init) {
             String lang = buffer.getString();
             String subMethods = buffer.getString();
@@ -75,7 +72,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         } else {
             int cmd = buffer.getUByte();
             if (cmd != SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE) {
-                throw new SshException("Received unexpected message: " + cmd);
+                throw new SshException("Received unexpected message: " + SshConstants.getCommandMessageName(cmd));
             }
 
             int num = buffer.getInt();
