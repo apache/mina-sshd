@@ -175,16 +175,22 @@ public abstract class AbstractChannel
             try {
                 result = handler.process(this, req, wantReply, buffer);
             } catch (Exception e) {
-                log.warn("handleRequest({}) {} while {}#process({}): {}",
-                         this, e.getClass().getSimpleName(), handler.getClass().getSimpleName(), req, e.getMessage());
+                log.warn("handleRequest({}) {} while {}#process({})[want-reply={}]: {}",
+                         this, e.getClass().getSimpleName(), handler.getClass().getSimpleName(),
+                         req, wantReply, e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("handleRequest(" + this + ") request=" + req
+                            + "[want-reply=" + wantReply + "] processing failure details",
+                              e);
+                }
                 result = RequestHandler.Result.ReplyFailure;
             }
 
             // if Unsupported then check the next handler in line
             if (RequestHandler.Result.Unsupported.equals(result)) {
                 if (log.isTraceEnabled()) {
-                    log.trace("handleRequest({})[{}#process({})]: {}",
-                              this, handler.getClass().getSimpleName(), req, result);
+                    log.trace("handleRequest({})[{}#process({})[want-reply={}]]: {}",
+                              this, handler.getClass().getSimpleName(), req, wantReply, result);
                 }
             } else {
                 sendResponse(buffer, req, result, wantReply);
@@ -193,7 +199,7 @@ public abstract class AbstractChannel
         }
 
         // none of the handlers processed the request
-        log.warn("handleRequest({}) Unknown channel request: {}", this, req);
+        log.warn("handleRequest({}) Unknown channel request: {}[want-reply={}]", this, req, wantReply);
         sendResponse(buffer, req, RequestHandler.Result.Unsupported, wantReply);
     }
 

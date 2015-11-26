@@ -205,6 +205,9 @@ public class TcpipServerChannel extends AbstractServerChannel {
             } catch (Throwable ignored) {
                 log.warn("handleChannelConnectResult({})[exception] failed ({}) to inform listener of open failure={}: {}",
                          this, ignored.getClass().getSimpleName(), e.getClass().getSimpleName(), ignored.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("handleChannelConnectResult(" + this + ")[exception] listener exception details", ignored);
+                }
             }
             f.setException(e);
         }

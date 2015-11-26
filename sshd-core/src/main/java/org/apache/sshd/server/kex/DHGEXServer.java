@@ -300,7 +300,9 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             }
         }
 
-        log.debug("Loaded moduli groups from {}", moduliStr);
+        if (log.isDebugEnabled()) {
+            log.debug("Loaded moduli groups from {}", moduliStr);
+        }
         return groups;
     }
 

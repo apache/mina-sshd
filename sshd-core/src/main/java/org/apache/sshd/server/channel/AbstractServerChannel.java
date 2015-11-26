@@ -82,6 +82,9 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
             } catch (Throwable ignored) {
                 log.warn("doInit({}) failed ({}) to inform listener of open failure={}: {}",
                          this, ignored.getClass().getSimpleName(), e.getClass().getSimpleName(), ignored.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("doInit(" + this + ") listener inform failure details", ignored);
+                }
             }
             f.setException(e);
         }

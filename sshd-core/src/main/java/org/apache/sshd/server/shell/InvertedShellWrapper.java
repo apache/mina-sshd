@@ -165,6 +165,9 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
         } catch (Exception e) {
             log.warn("destroy({}) failed ({}) to destroy shell: {}",
                      this, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("destroy(" + this + ") shell destruction failure details", e);
+            }
             err = GenericUtils.accumulateException(err, e);
         }
 
@@ -174,6 +177,9 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
             } catch (Exception e) {
                 log.warn("destroy({}) failed ({}) to shut down executor: {}",
                          this, e.getClass().getSimpleName(), e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("destroy(" + this + ") executor shutdown failure details", e);
+                }
                 err = GenericUtils.accumulateException(err, e);
             }
         }
@@ -219,7 +225,9 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
             } catch (Exception err) {
                 log.warn("pumpStreams({}) failed ({}) to destroy shell: {}",
                          this, e.getClass().getSimpleName(), e.getMessage());
-                err = GenericUtils.accumulateException(err, e);
+                if (log.isDebugEnabled()) {
+                    log.debug("pumpStreams(" + this + ") shell destruction failure details", err);
+                }
             }
 
             int exitValue = shell.exitValue();

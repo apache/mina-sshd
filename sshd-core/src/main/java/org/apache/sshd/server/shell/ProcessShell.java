@@ -95,7 +95,11 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell, 
                 Map<String, String> procEnv = builder.environment();
                 procEnv.putAll(varsMap);
             } catch (Exception e) {
-                log.warn("Could not set environment for command=" + cmdValue, e);
+                log.warn("start() - Failed ({}) to set environment for command={}: {}",
+                         e.getClass().getSimpleName(), cmdValue, e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("start(" + cmdValue + ") failure details", e);
+                }
             }
         }
 

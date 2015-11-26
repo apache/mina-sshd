@@ -578,7 +578,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 return;
             }
         }
-        log.warn("Exception caught", t);
+        log.warn("exceptionCaught({}) {}: {}", this, t.getClass().getSimpleName(), t.getMessage());
+        if (log.isDebugEnabled()) {
+            log.debug("execeptionCaught(" + this + ") details", t);
+        }
+
         if (t instanceof SshException) {
             int code = ((SshException) t).getDisconnectCode();
             if (code > 0) {
@@ -623,7 +627,10 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             listener.sessionClosed(this);
         } catch (RuntimeException t) {
             Throwable e = GenericUtils.peelException(t);
-            log.warn(e.getClass().getSimpleName() + " while signal session " + toString() + " closed: " + e.getMessage(), e);
+            log.warn(e.getClass().getSimpleName() + " while signal session " + toString() + " closed: " + e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("preClose exception details", e);
+            }
         } finally {
             // clear the listeners since we are closing the session (quicker GC)
             this.sessionListeners.clear();

@@ -166,6 +166,9 @@ public class ChannelSession extends AbstractServerChannel {
             } catch (Exception e) {
                 log.warn("doCloseImmediately({}) failed ({}) to destroy command: {}",
                          this, e.getClass().getSimpleName(), e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("doCloseImmediately(" + this + ") command destruction failure details", e);
+                }
             } finally {
                 command = null;
             }

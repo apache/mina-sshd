@@ -691,12 +691,14 @@ public class ScpTest extends BaseTestSupport {
                 Path remoteFile = remoteDir.resolve("file.txt");
                 String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteFile);
                 byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
+                outputDebugMessage("Upload data to %s", remotePath);
                 scp.upload(data, remotePath, EnumSet.allOf(PosixFilePermission.class), null);
                 assertFileLength(remoteFile, data.length, TimeUnit.SECONDS.toMillis(5L));
 
                 byte[] uploaded = Files.readAllBytes(remoteFile);
                 assertArrayEquals("Mismatched uploaded data", data, uploaded);
 
+                outputDebugMessage("Download data from %s", remotePath);
                 byte[] downloaded = scp.downloadBytes(remotePath);
                 assertArrayEquals("Mismatched downloaded data", uploaded, downloaded);
             } finally {

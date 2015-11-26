@@ -32,6 +32,7 @@ import java.security.KeyPairGenerator;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Collections;
 
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -114,10 +115,11 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
                     try {
                         keyPair = readKeyPair(keyPath, IoUtils.EMPTY_OPEN_OPTIONS);
                     } catch (Exception e) {
-                        log.warn("Failed (" + e.getClass().getSimpleName() + ")"
-                                        + " to load from " + keyPath
-                                        + ": " + e.getMessage(),
-                                e);
+                        log.warn("Failed ({}) to load from {}: {}",
+                                 e.getClass().getSimpleName(), keyPath, e.getMessage());
+                        if (log.isDebugEnabled()) {
+                            log.debug("loadKeys(" + keyPath + ") failure details", e);
+                        }
                     }
                 }
             }
@@ -128,19 +130,22 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
             try {
                 keyPair = generateKeyPair(alg);
             } catch (Exception e) {
-                log.warn("Failed (" + e.getClass().getSimpleName() + ")"
-                                + " to generate " + alg + " keys: " + e.getMessage(),
-                        e);
+                log.warn("loadKeys({})[{}] Failed ({}) to generate {} key-pair: {}",
+                         keyPath, alg, e.getClass().getSimpleName(), alg, e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("loadKeys(" + keyPath + ")[" + alg + "] key-pair generation failure details", e);
+                }
             }
 
             if ((keyPair != null) && (keyPath != null)) {
                 try {
                     writeKeyPair(keyPair, keyPath);
                 } catch (Exception e) {
-                    log.warn("Failed (" + e.getClass().getSimpleName() + ")"
-                                    + " to write to " + keyPath
-                                    + ": " + e.getMessage(),
-                            e);
+                    log.warn("loadKeys({})[{}] Failed ({}) to write {} key: {}",
+                             alg, keyPath, e.getClass().getSimpleName(), alg, e.getMessage());
+                    if (log.isDebugEnabled()) {
+                        log.debug("loadKeys(" + keyPath + ")[" + alg + "] writefailure details", e);
+                    }
                 }
             }
         }
@@ -165,10 +170,15 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
             try (OutputStream os = Files.newOutputStream(keyPath, options)) {
                 doWriteKeyPair(keyPath.toString(), kp, os);
             } catch (Exception e) {
-                log.warn("Unable to write key {}: {}", path, e);
+                log.warn("writeKeyPair({}) failed ({}) to write key {}: {}",
+                         keyPath, e.getClass().getSimpleName(), e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("writeKeyPair(" + keyPath + ") write failure details", e);
+                }
             }
         } else {
-            log.error("Overwriting key ({}) is disabled: using throwaway {}", keyPath, kp);
+            log.error("Overwriting key ({}) is disabled: using throwaway {}: {}",
+                      keyPath, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint((kp == null) ? null : kp.getPublic()));
         }
     }
 

@@ -189,6 +189,9 @@ public class SshFsMounter {
                     log.info("destroy(" + username + ")[" + command + "] stdin closed");
                 } catch (IOException e) {
                     log.warn("destroy(" + username + ")[" + command + "] failed (" + e.getClass().getSimpleName() + ") to close stdin: " + e.getMessage());
+                    if (log.isDebugEnabled()) {
+                        log.debug("destroy(" + username + ")[" + command + "] failure details", e);
+                    }
                 } finally {
                     stdin = null;
                 }

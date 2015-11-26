@@ -2785,6 +2785,10 @@ public class SftpSubsystem
     }
 
     protected Map<String, Object> handleReadFileAttributesException(Path file, String view, LinkOption[] options, IOException e) throws IOException {
+        if (log.isTraceEnabled()) {
+            log.trace("handleReadFileAttributesException(" + file + ")[" + view + "] details", e);
+        }
+
         switch (unsupportedAttributePolicy) {
             case Ignore:
                 break;
@@ -2990,6 +2994,10 @@ public class SftpSubsystem
     }
 
     protected void handleUserPrincipalLookupServiceException(Class<? extends Principal> principalType, String name, IOException e) throws IOException {
+        if (log.isTraceEnabled()) {
+            log.trace("handleUserPrincipalLookupServiceException(" + principalType.getSimpleName() + "[" + name + "]) details", e);
+        }
+
         /* According to Javadoc:
          *
          *      "Where an implementation does not support any notion of group
@@ -3080,7 +3088,11 @@ public class SftpSubsystem
                 SftpEventListener listener = getSftpEventListenerProxy();
                 listener.destroying(getServerSession());
             } catch (Exception e) {
-                log.warn("Failed (" + e.getClass().getSimpleName() + ") to announce destruction event: " + e.getMessage(), e);
+                log.warn("destroy({}) Failed ({}) to announce destruction event: {}",
+                         getServerSession(), e.getClass().getSimpleName(), e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("destroy(" + getServerSession() + ") destruction announcement failure details", e);
+                }
             }
 
             // if thread has not completed, cancel it

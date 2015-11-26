@@ -433,14 +433,19 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
                 try {
                     result = handler.process(this, req, wantReply, buffer);
                 } catch (Exception e) {
-                    log.warn("Error processing global request " + req, e);
+                    log.warn("globalRequest({})[want-reply={}] failed ({}) to process: {}",
+                             req, wantReply, e.getClass().getSimpleName(), e.getMessage());
+                    if (log.isDebugEnabled()) {
+                        log.debug("globalRequest(" + req + ")[want-reply=" + wantReply + "] failure details", e);
+                    }
                     result = RequestHandler.Result.ReplyFailure;
                 }
 
                 // if Unsupported then check the next handler in line
                 if (RequestHandler.Result.Unsupported.equals(result)) {
                     if (log.isTraceEnabled()) {
-                        log.trace("{}#process({}): {}", handler.getClass().getSimpleName(), req, result);
+                        log.trace("{}#process({})[want-reply={}] : {}",
+                                  handler.getClass().getSimpleName(), req, wantReply, result);
                     }
                 } else {
                     sendResponse(buffer, req, result, wantReply);
