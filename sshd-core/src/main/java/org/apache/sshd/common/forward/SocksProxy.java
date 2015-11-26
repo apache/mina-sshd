@@ -66,7 +66,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
 
     @Override
     public void messageReceived(final IoSession session, org.apache.sshd.common.util.Readable message) throws Exception {
-        Buffer buffer = new ByteArrayBuffer(message.available());
+        Buffer buffer = new ByteArrayBuffer(message.available() + Long.SIZE, false);
         buffer.putBuffer(message);
         Proxy proxy = proxies.get(session);
         if (proxy == null) {
@@ -167,7 +167,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
 
         @SuppressWarnings("synthetic-access")
         protected void onChannelOpened(OpenFuture future) {
-            Buffer buffer = new ByteArrayBuffer(8);
+            Buffer buffer = new ByteArrayBuffer(Long.SIZE, false);
             buffer.putByte((byte) 0x00);
             Throwable t = future.getException();
             if (t != null) {
@@ -219,7 +219,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 for (int i = 0; i < nbAuthMethods; i++) {
                     foundNoAuth |= authMethods[i] == 0;
                 }
-                buffer = new ByteArrayBuffer(8);
+                buffer = new ByteArrayBuffer(Byte.SIZE, false);
                 buffer.putByte((byte) 0x05);
                 buffer.putByte((byte) (foundNoAuth ? 0x00 : 0xFF));
                 session.write(buffer);

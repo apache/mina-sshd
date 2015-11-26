@@ -43,7 +43,7 @@ public class TtyFilterInputStream extends FilterInputStream {
             Collections.unmodifiableSet(EnumSet.of(PtyMode.ONLCR, PtyMode.OCRNL, PtyMode.ONLRET, PtyMode.ONOCR));
 
     private final Set<PtyMode> ttyOptions;
-    private Buffer buffer = new ByteArrayBuffer(32);
+    private Buffer buffer = new ByteArrayBuffer(Integer.SIZE, false);
     private int lastChar = -1;
 
     public TtyFilterInputStream(InputStream in, Map<PtyMode, ?> modes) {
@@ -123,7 +123,7 @@ public class TtyFilterInputStream extends FilterInputStream {
             org.rpos(readPos - 1);
             return org;
         } else {
-            Buffer buf = new ByteArrayBuffer(org.available() + 1);
+            Buffer buf = new ByteArrayBuffer(org.available() + Byte.SIZE, false);
             buf.putByte((byte) c);
             buf.putBuffer(org);
             return buf;

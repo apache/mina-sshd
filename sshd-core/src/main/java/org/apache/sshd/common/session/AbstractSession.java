@@ -793,7 +793,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             if (buffer.rpos() < 5) {
                 log.warn("Performance cost: when sending a packet, ensure that "
                         + "5 bytes are available in front of the buffer");
-                Buffer nb = new ByteArrayBuffer(buffer.available() + Long.SIZE);
+                Buffer nb = new ByteArrayBuffer(buffer.available() + Long.SIZE, false);
                 nb.wpos(5);
                 nb.putBuffer(buffer);
                 buffer = nb;

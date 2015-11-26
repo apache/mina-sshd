@@ -394,7 +394,7 @@ public class SftpSubsystem
                 int length = BufferUtils.readInt(in, workBuf, 0, workBuf.length);
                 ValidateUtils.checkTrue(length >= ((Integer.SIZE / Byte.SIZE) + 1 /* command */), "Bad length to read: %d", length);
 
-                Buffer buffer = new ByteArrayBuffer(length + (Integer.SIZE / Byte.SIZE) /* the length */);
+                Buffer buffer = new ByteArrayBuffer(length + (Integer.SIZE / Byte.SIZE) + Long.SIZE /* a bit extra */, false);
                 buffer.putInt(length);
                 for (int remainLen = length; remainLen > 0;) {
                     int l = in.read(buffer.array(), buffer.wpos(), remainLen);

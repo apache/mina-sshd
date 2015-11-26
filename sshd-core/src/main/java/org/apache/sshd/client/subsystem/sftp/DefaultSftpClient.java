@@ -197,7 +197,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
      * @throws IOException if failed to process the buffer
      */
     protected void process(Buffer incoming) throws IOException {
-        Buffer buffer = new ByteArrayBuffer(incoming.available());
+        Buffer buffer = new ByteArrayBuffer(incoming.available() + Long.SIZE, false);
         buffer.putBuffer(incoming);
         buffer.rpos(5);
         int id = buffer.getInt();
@@ -257,7 +257,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         }
 
         // TODO in jdk-8 use Integer.BYTES
-        Buffer buffer = new ByteArrayBuffer(length + (Integer.SIZE / Byte.SIZE));
+        Buffer buffer = new ByteArrayBuffer(length + (Integer.SIZE / Byte.SIZE), false);
         buffer.putInt(length);
         int nb = length;
         while (nb > 0) {
@@ -359,7 +359,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
         String verVal = String.valueOf(selected);
         Buffer buffer = new ByteArrayBuffer((Integer.SIZE / Byte.SIZE) + SftpConstants.EXT_VERSION_SELECT.length()     // extension name
-                + (Integer.SIZE / Byte.SIZE) + verVal.length());
+                + (Integer.SIZE / Byte.SIZE) + verVal.length(), false);
         buffer.putString(SftpConstants.EXT_VERSION_SELECT);
         buffer.putString(verVal);
         checkStatus(SftpConstants.SSH_FXP_EXTENDED, buffer);

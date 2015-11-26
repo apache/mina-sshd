@@ -161,7 +161,7 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
      */
     protected Buffer getCommandBuffer(int extraSize) {
         String opcode = getName();
-        Buffer buffer = new ByteArrayBuffer((Integer.SIZE / Byte.SIZE) + GenericUtils.length(opcode) + extraSize + Byte.SIZE);
+        Buffer buffer = new ByteArrayBuffer((Integer.SIZE / Byte.SIZE) + GenericUtils.length(opcode) + extraSize + Byte.SIZE, false);
         buffer.putString(opcode);
         return buffer;
     }

@@ -631,7 +631,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             options = EnumSet.of(OpenMode.Read);
         }
 
-        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
+        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
         buffer.putString(path);
         int version = getVersion();
         int mode = 0;
@@ -707,7 +707,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         }
 
         byte[] id = ValidateUtils.checkNotNull(handle, "No handle").getIdentifier();
-        Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* some extra fields */);
+        Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* some extra fields */, false);
         buffer.putBytes(id);
         checkStatus(SftpConstants.SSH_FXP_CLOSE, buffer);
     }
@@ -722,7 +722,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             log.debug("remove({}) {}", getClientSession(), path);
         }
 
-        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
+        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
         buffer.putString(path);
         checkStatus(SftpConstants.SSH_FXP_REMOVE, buffer);
     }
@@ -737,7 +737,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             log.debug("rename({}) {} => {}", getClientSession(), oldPath, newPath);
         }
 
-        Buffer buffer = new ByteArrayBuffer(oldPath.length() + newPath.length() + Long.SIZE /* some extra fields */);
+        Buffer buffer = new ByteArrayBuffer(oldPath.length() + newPath.length() + Long.SIZE /* some extra fields */, false);
         buffer.putString(oldPath);
         buffer.putString(newPath);
 
@@ -773,7 +773,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         }
 
         byte[] id = handle.getIdentifier();
-        Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* some extra fields */);
+        Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* some extra fields */, false);
         buffer.putBytes(id);
         buffer.putLong(fileOffset);
         buffer.putInt(len);
@@ -842,7 +842,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         }
 
         byte[] id = handle.getIdentifier();
-        Buffer buffer = new ByteArrayBuffer(id.length + len + Long.SIZE /* some extra fields */);
+        Buffer buffer = new ByteArrayBuffer(id.length + len + Long.SIZE /* some extra fields */, false);
         buffer.putBytes(id);
         buffer.putLong(fileOffset);
         buffer.putBytes(src, srcOffset, len);
@@ -859,7 +859,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             log.debug("mkdir({}) {}", getClientSession(), path);
         }
 
-        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
+        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
         buffer.putString(path);
         buffer.putInt(0);
 
@@ -881,7 +881,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             log.debug("rmdir({}) {}", getClientSession(), path);
         }
 
-        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
+        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
         buffer.putString(path);
         checkStatus(SftpConstants.SSH_FXP_RMDIR, buffer);
     }
@@ -892,7 +892,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throw new IOException("openDir(" + path + ") client is closed");
         }
 
-        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
+        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
         buffer.putString(path);
 
         CloseableHandle handle = new DefaultCloseableHandle(this, checkHandle(SftpConstants.SSH_FXP_OPENDIR, buffer));
@@ -910,7 +910,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         }
 
         byte[] id = handle.getIdentifier();
-        Buffer buffer = new ByteArrayBuffer(id.length + Byte.SIZE /* some extra fields */);
+        Buffer buffer = new ByteArrayBuffer(id.length + Byte.SIZE /* some extra fields */, false);
         buffer.putBytes(id);
         return checkDir(receive(send(SftpConstants.SSH_FXP_READDIR, buffer)));
     }
@@ -975,7 +975,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throw new IOException("canonicalPath(" + path + ") client is closed");
         }
 
-        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE);
+        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE, false);
         buffer.putString(path);
         return checkOneName(SftpConstants.SSH_FXP_REALPATH, buffer);
     }
@@ -986,7 +986,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throw new IOException("stat(" + path + ") client is closed");
         }
 
-        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE);
+        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE, false);
         buffer.putString(path);
 
         int version = getVersion();
@@ -1003,7 +1003,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throw new IOException("lstat(" + path + ") client is closed");
         }
 
-        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE);
+        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE, false);
         buffer.putString(path);
 
         int version = getVersion();
@@ -1021,7 +1021,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         }
 
         byte[] id = handle.getIdentifier();
-        Buffer buffer = new ByteArrayBuffer(id.length + Byte.SIZE /* a bit extra */);
+        Buffer buffer = new ByteArrayBuffer(id.length + Byte.SIZE /* a bit extra */, false);
         buffer.putBytes(id);
 
         int version = getVersion();
@@ -1058,7 +1058,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             log.debug("setStat({})[{}]: {}", getClientSession(), handle, attributes);
         }
         byte[] id = handle.getIdentifier();
-        Buffer buffer = new ByteArrayBuffer(id.length + (2 * Long.SIZE) /* some extras */);
+        Buffer buffer = new ByteArrayBuffer(id.length + (2 * Long.SIZE) /* some extras */, false);
         buffer.putBytes(id);
         writeAttributes(buffer, attributes);
         checkStatus(SftpConstants.SSH_FXP_FSETSTAT, buffer);
@@ -1070,7 +1070,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throw new IOException("readLink(" + path + ") client is closed");
         }
 
-        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
+        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
         buffer.putString(path);
         return checkOneName(SftpConstants.SSH_FXP_READLINK, buffer);
     }
@@ -1085,7 +1085,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             log.debug("link({})[symbolic={}] {} => {}", getClientSession(), symbolic, linkPath, targetPath);
         }
 
-        Buffer buffer = new ByteArrayBuffer(linkPath.length() + targetPath.length() + Long.SIZE /* some extra fields */);
+        Buffer buffer = new ByteArrayBuffer(linkPath.length() + targetPath.length() + Long.SIZE /* some extra fields */, false);
         int version = getVersion();
         if (version < SftpConstants.SFTP_V6) {
             if (!symbolic) {
@@ -1114,7 +1114,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         }
 
         byte[] id = handle.getIdentifier();
-        Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* a bit extra */);
+        Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* a bit extra */, false);
         buffer.putBytes(id);
         buffer.putLong(offset);
         buffer.putLong(length);
@@ -1133,7 +1133,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         }
 
         byte[] id = handle.getIdentifier();
-        Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* a bit extra */);
+        Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* a bit extra */, false);
         buffer.putBytes(id);
         buffer.putLong(offset);
         buffer.putLong(length);

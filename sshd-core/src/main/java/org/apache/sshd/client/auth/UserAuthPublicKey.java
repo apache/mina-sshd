@@ -168,7 +168,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             bs.putPublicKey(key);
 
             byte[] sig = current.sign(bs.getCompactData());
-            bs = new ByteArrayBuffer(algo.length() + sig.length + Long.SIZE);
+            bs = new ByteArrayBuffer(algo.length() + sig.length + Long.SIZE, false);
             bs.putString(algo);
             bs.putBytes(sig);
             buffer.putBytes(bs.array(), bs.rpos(), bs.available());

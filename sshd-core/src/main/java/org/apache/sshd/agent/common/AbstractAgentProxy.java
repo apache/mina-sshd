@@ -27,7 +27,9 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.agent.SshAgentConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -36,15 +38,9 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
 
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_ADD_IDENTITY;
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REMOVE_ALL_IDENTITIES;
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REMOVE_IDENTITY;
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REQUEST_IDENTITIES;
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_SIGN_REQUEST;
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSWER;
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENT_SIGN_RESPONSE;
-import static org.apache.sshd.agent.SshAgentConstants.SSH_AGENT_SUCCESS;
-
+/**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
 public abstract class AbstractAgentProxy extends AbstractLoggingBean implements SshAgent, ExecutorServiceConfigurer {
     private ExecutorService executor;
     private boolean shutdownExecutor;
@@ -75,11 +71,11 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
 
     @Override
     public List<Pair<PublicKey, String>> getIdentities() throws IOException {
-        Buffer buffer = createBuffer(SSH2_AGENTC_REQUEST_IDENTITIES);
+        Buffer buffer = createBuffer(SshAgentConstants.SSH2_AGENTC_REQUEST_IDENTITIES, 1);
         buffer = request(prepare(buffer));
         int type = buffer.getUByte();
-        if (type != SSH2_AGENT_IDENTITIES_ANSWER) {
-            throw new SshException("Bad agent identities answer: " + type);
+        if (type != SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSWER) {
+            throw new SshException("Bad agent identities answer: " + SshAgentConstants.getCommandMessageName(type));
         }
 
         int nbIdentities = buffer.getInt();
@@ -90,70 +86,79 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
         List<Pair<PublicKey, String>> keys = new ArrayList<>(nbIdentities);
         for (int i = 0; i < nbIdentities; i++) {
             PublicKey key = buffer.getPublicKey();
-            keys.add(new Pair<>(key, buffer.getString()));
+            String comment = buffer.getString();
+            if (log.isDebugEnabled()) {
+                log.debug("getIdentities() key type={}, comment={}, fingerprint={}",
+                          KeyUtils.getKeyType(key), comment, KeyUtils.getFingerPrint(key));
+            }
+            keys.add(new Pair<>(key, comment));
         }
+
         return keys;
     }
 
     @Override
     public byte[] sign(PublicKey key, byte[] data) throws IOException {
-        Buffer buffer = createBuffer(SSH2_AGENTC_SIGN_REQUEST);
+        Buffer buffer = createBuffer(SshAgentConstants.SSH2_AGENTC_SIGN_REQUEST);
         buffer.putPublicKey(key);
         buffer.putBytes(data);
         buffer.putInt(0);
         buffer = request(prepare(buffer));
 
         int responseType = buffer.getUByte();
-        if (responseType != SSH2_AGENT_SIGN_RESPONSE) {
-            throw new SshException("Bad signing response type: " + (responseType & 0xFF));
+        if (responseType != SshAgentConstants.SSH2_AGENT_SIGN_RESPONSE) {
+            throw new SshException("Bad signing response type: " + SshAgentConstants.getCommandMessageName(responseType));
         }
+
         Buffer buf = new ByteArrayBuffer(buffer.getBytes());
         String algorithm = buf.getString();
         byte[] signature = buf.getBytes();
         if (log.isDebugEnabled()) {
-            log.debug("sign(" + algorithm + "): " + BufferUtils.printHex(':', signature));
+            log.debug("sign({})[{}] {}: {}",
+                      KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key),
+                      algorithm, BufferUtils.printHex(':', signature));
         }
 
         return signature;
     }
 
     @Override
-    public void addIdentity(KeyPair key, String comment) throws IOException {
-        Buffer buffer = createBuffer(SSH2_AGENTC_ADD_IDENTITY);
-        buffer.putKeyPair(key);
+    public void addIdentity(KeyPair kp, String comment) throws IOException {
+        Buffer buffer = createBuffer(SshAgentConstants.SSH2_AGENTC_ADD_IDENTITY);
+        buffer.putKeyPair(kp);
         buffer.putString(comment);
         if (log.isDebugEnabled()) {
-            log.debug("addIdentity(" + comment + "): " + key.getPublic().getAlgorithm());
+            log.debug("addIdentity({})[{}]: {}", KeyUtils.getKeyType(kp), comment, KeyUtils.getFingerPrint(kp.getPublic()));
         }
         buffer = request(prepare(buffer));
 
         int available = buffer.available();
         int response = (available >= 1) ? buffer.getUByte() : -1;
-        if ((available != 1) || (response != SSH_AGENT_SUCCESS)) {
-            throw new SshException("Bad addIdentity response (" + (response & 0xFF) + ") - available=" + available);
+        if ((available != 1) || (response != SshAgentConstants.SSH_AGENT_SUCCESS)) {
+            throw new SshException("Bad addIdentity response (" + SshAgentConstants.getCommandMessageName(response) + ") - available=" + available);
         }
     }
 
     @Override
     public void removeIdentity(PublicKey key) throws IOException {
-        Buffer buffer = createBuffer(SSH2_AGENTC_REMOVE_IDENTITY);
+        Buffer buffer = createBuffer(SshAgentConstants.SSH2_AGENTC_REMOVE_IDENTITY);
         buffer.putPublicKey(key);
         if (log.isDebugEnabled()) {
-            log.debug("removeIdentity: " + key.getAlgorithm());
+            log.debug("removeIdentity({}) {}", KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
         }
 
         buffer = request(prepare(buffer));
 
         int available = buffer.available();
         int response = (available >= 1) ? buffer.getUByte() : -1;
-        if ((available != 1) || (response != SSH_AGENT_SUCCESS)) {
-            throw new SshException("Bad removeIdentity response (" + (response & 0xFF) + ") - available=" + available);
+        if ((available != 1) || (response != SshAgentConstants.SSH_AGENT_SUCCESS)) {
+            throw new SshException("Bad removeIdentity response (" + SshAgentConstants.getCommandMessageName(response) + ") - available=" + available);
         }
     }
 
     @Override
     public void removeAllIdentities() throws IOException {
-        Buffer buffer = createBuffer(SSH2_AGENTC_REMOVE_ALL_IDENTITIES);
+        Buffer buffer = createBuffer(SshAgentConstants.SSH2_AGENTC_REMOVE_ALL_IDENTITIES, 1);
         if (log.isDebugEnabled()) {
             log.debug("removeAllIdentities");
         }
@@ -161,8 +166,8 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
 
         int available = buffer.available();
         int response = (available >= 1) ? buffer.getUByte() : -1;
-        if ((available != 1) || (response != SSH_AGENT_SUCCESS)) {
-            throw new SshException("Bad removeAllIdentities response (" + (response & 0xFF) + ") - available=" + available);
+        if ((available != 1) || (response != SshAgentConstants.SSH_AGENT_SUCCESS)) {
+            throw new SshException("Bad removeAllIdentities response (" + SshAgentConstants.getCommandMessageName(response) + ") - available=" + available);
         }
     }
 
@@ -178,7 +183,11 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
     }
 
     protected Buffer createBuffer(byte cmd) {
-        Buffer buffer = new ByteArrayBuffer();
+        return createBuffer(cmd, 0);
+    }
+
+    protected Buffer createBuffer(byte cmd, int extraLen) {
+        Buffer buffer = new ByteArrayBuffer((extraLen <= 0) ? ByteArrayBuffer.DEFAULT_SIZE : extraLen + Byte.SIZE, false);
         buffer.putInt(0);
         buffer.putByte(cmd);
         return buffer;

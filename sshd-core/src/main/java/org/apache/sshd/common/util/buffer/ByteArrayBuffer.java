@@ -43,7 +43,11 @@ public final class ByteArrayBuffer extends Buffer {
     }
 
     public ByteArrayBuffer(int size) {
-        this(new byte[BufferUtils.getNextPowerOf2(size)], false);
+        this(size, true);
+    }
+
+    public ByteArrayBuffer(int size, boolean roundOff) {
+        this(new byte[roundOff ? BufferUtils.getNextPowerOf2(size) : size], false);
     }
 
     public ByteArrayBuffer(byte[] data) {

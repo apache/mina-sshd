@@ -217,7 +217,7 @@ public class ChannelSession extends AbstractServerChannel {
             }
         } else {
             if (tempBuffer == null) {
-                tempBuffer = new ByteArrayBuffer(len);
+                tempBuffer = new ByteArrayBuffer(len + Long.SIZE, false);
             }
             tempBuffer.putRawBytes(data, off, len);
         }

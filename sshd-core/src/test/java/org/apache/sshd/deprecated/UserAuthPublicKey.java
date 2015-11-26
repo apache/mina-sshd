@@ -78,7 +78,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 verif.update(bs.array(), bs.rpos(), bs.available());
 
                 byte[] signature = verif.sign();
-                bs = new ByteArrayBuffer(alg.length() + signature.length + Long.SIZE);
+                bs = new ByteArrayBuffer(alg.length() + signature.length + Long.SIZE, false);
                 bs.putString(alg);
                 bs.putBytes(signature);
                 buffer.putBytes(bs.array(), bs.rpos(), bs.available());

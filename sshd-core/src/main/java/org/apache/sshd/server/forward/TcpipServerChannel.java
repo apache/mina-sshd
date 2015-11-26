@@ -152,7 +152,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
                         log.debug("doInit({}) Ignoring write to channel in CLOSING state", TcpipServerChannel.this);
                     }
                 } else {
-                    Buffer buffer = new ByteArrayBuffer(message.available() + Long.SIZE);
+                    Buffer buffer = new ByteArrayBuffer(message.available() + Long.SIZE, false);
                     buffer.putBuffer(message);
                     out.write(buffer.array(), buffer.rpos(), buffer.available());
                     out.flush();
