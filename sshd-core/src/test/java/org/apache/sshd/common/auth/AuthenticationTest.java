@@ -40,6 +40,8 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -507,6 +509,45 @@ public class AuthenticationTest extends BaseTestSupport {
                 s.auth().verify(11L, TimeUnit.SECONDS);
                 assertEquals("No password change request generated", 2, attemptsCount.get());
                 assertEquals("No user interaction invoked", 1, updatesCount.get());
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    @Test   // see SSHD-600
+    public void testAuthExceptionPropagation() throws Exception {
+        try (SshClient client = setupTestClient()) {
+            final RuntimeException expected = new RuntimeException("Synthetic exception");
+            final AtomicInteger invocations = new AtomicInteger(0);
+            client.addSessionListener(new SessionListener() {
+                @Override
+                public void sessionCreated(Session session) {
+                    // ignored
+                }
+
+                @Override
+                public void sessionEvent(Session session, Event event) {
+                    assertEquals("Mismatched invocations count", 1, invocations.incrementAndGet());
+                    throw expected;
+                }
+
+                @Override
+                public void sessionClosed(Session session) {
+                    // ignored
+                }
+            });
+
+            client.start();
+            try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                s.addPasswordIdentity(getCurrentTestName());
+
+                AuthFuture future = s.auth();
+                assertTrue("Failed to complete auth in allocated time", future.await(11L, TimeUnit.SECONDS));
+                assertFalse("Unexpected authentication success", future.isSuccess());
+
+                Throwable actual = future.getException();
+                assertSame("Mismatched authentication failure reason", expected, actual);
             } finally {
                 client.stop();
             }
