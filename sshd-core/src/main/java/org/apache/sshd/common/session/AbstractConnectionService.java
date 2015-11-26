@@ -271,7 +271,9 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
             Channel channel = getChannel(buffer);
             channel.handleWindowAdjust(buffer);
         } catch (SshException e) {
-            log.info("channelWindowAdjust error: {}", e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("channelWindowAdjust {} error: {}", e.getClass().getSimpleName(), e.getMessage());
+            }
         }
     }
 

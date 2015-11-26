@@ -24,6 +24,7 @@ import java.security.PublicKey;
 import java.util.List;
 
 import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.agent.SshAgentConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -31,16 +32,6 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
-
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_ADD_IDENTITY;
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REMOVE_ALL_IDENTITIES;
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REMOVE_IDENTITY;
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REQUEST_IDENTITIES;
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_SIGN_REQUEST;
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENT_FAILURE;
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSWER;
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENT_SIGN_RESPONSE;
-import static org.apache.sshd.agent.SshAgentConstants.SSH_AGENT_SUCCESS;
 
 public abstract class AbstractAgentClient extends AbstractLoggingBean {
 
@@ -57,7 +48,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
         if (avail < 4) {
             if (log.isTraceEnabled()) {
                 log.trace("Received message total length ({}) below minuimum ({})",
-                          Integer.valueOf(avail), Integer.valueOf(4)); 
+                          Integer.valueOf(avail), Integer.valueOf(4));
             }
             return;
         }
@@ -65,12 +56,12 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
         int rpos = buffer.rpos();
         int len = buffer.getInt();
         buffer.rpos(rpos);
-        
+
         avail = buffer.available();
         if (avail < (len + 4)) {
             if (log.isTraceEnabled()) {
                 log.trace("Received request length ({}) below minuimum ({})",
-                          Integer.valueOf(avail), Integer.valueOf(len + 4)); 
+                          Integer.valueOf(avail), Integer.valueOf(len + 4));
             }
             return;
         }
@@ -79,7 +70,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
         Buffer rep = BufferUtils.clear(message);
         rep.putInt(0);
         rep.rpos(rep.wpos());
-        
+
         Buffer req = new ByteArrayBuffer(buffer.getBytes());
         int cmd = -1;
         try {
@@ -94,26 +85,29 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
             rep.putInt(0);
             rep.rpos(rep.wpos());
             rep.putInt(1);
-            rep.putByte(SSH2_AGENT_FAILURE);
+            rep.putByte(SshAgentConstants.SSH2_AGENT_FAILURE);
         }
         reply(prepare(rep));
     }
 
     protected void process(int cmd, Buffer req, Buffer rep) throws Exception {
         if (log.isDebugEnabled()) {
-            log.debug("process(cmd={})", Integer.valueOf(cmd));
+            log.debug("process(cmd={})", SshAgentConstants.getCommandMessageName(cmd));
         }
         switch (cmd) {
-            case SSH2_AGENTC_REQUEST_IDENTITIES:
+            case SshAgentConstants.SSH2_AGENTC_REQUEST_IDENTITIES:
+            {
                 List<Pair<PublicKey, String>> keys = agent.getIdentities();
-                rep.putByte(SSH2_AGENT_IDENTITIES_ANSWER);
+                rep.putByte(SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSWER);
                 rep.putInt(keys.size());
                 for (Pair<PublicKey, String> key : keys) {
                     rep.putPublicKey(key.getFirst());
                     rep.putString(key.getSecond());
                 }
                 break;
-            case SSH2_AGENTC_SIGN_REQUEST:
+            }
+            case SshAgentConstants.SSH2_AGENTC_SIGN_REQUEST:
+            {
                 PublicKey signingKey = req.getPublicKey();
                 byte[] data = req.getBytes();
                 int flags = req.getInt();
@@ -125,34 +119,40 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
                         KeyUtils.getKeyType(signingKey),
                         "Cannot resolve key type of %s",
                         signingKey.getClass().getSimpleName());
-                Buffer sig = new ByteArrayBuffer();
+                byte[] signature = agent.sign(signingKey, data);
+                Buffer sig = new ByteArrayBuffer(keyType.length() + signature.length + Long.SIZE);
                 sig.putString(keyType);
-                sig.putBytes(agent.sign(signingKey, data));
-                rep.putByte(SSH2_AGENT_SIGN_RESPONSE);
+                sig.putBytes(signature);
+                rep.putByte(SshAgentConstants.SSH2_AGENT_SIGN_RESPONSE);
                 rep.putBytes(sig.array(), sig.rpos(), sig.available());
                 break;
-            case SSH2_AGENTC_ADD_IDENTITY:
+            }
+            case SshAgentConstants.SSH2_AGENTC_ADD_IDENTITY:
+            {
                 KeyPair keyToAdd = req.getKeyPair();
                 String comment = req.getString();
                 log.debug("SSH2_AGENTC_ADD_IDENTITY comment={}", comment);
                 agent.addIdentity(keyToAdd, comment);
-                rep.putByte(SSH_AGENT_SUCCESS);
+                rep.putByte(SshAgentConstants.SSH_AGENT_SUCCESS);
                 break;
-            case SSH2_AGENTC_REMOVE_IDENTITY:
+            }
+            case SshAgentConstants.SSH2_AGENTC_REMOVE_IDENTITY:
+            {
                 PublicKey keyToRemove = req.getPublicKey();
                 log.debug("SSH2_AGENTC_REMOVE_IDENTITY {}", keyToRemove.getClass().getSimpleName());
                 agent.removeIdentity(keyToRemove);
-                rep.putByte(SSH_AGENT_SUCCESS);
+                rep.putByte(SshAgentConstants.SSH_AGENT_SUCCESS);
                 break;
-            case SSH2_AGENTC_REMOVE_ALL_IDENTITIES:
+            }
+            case SshAgentConstants.SSH2_AGENTC_REMOVE_ALL_IDENTITIES:
                 agent.removeAllIdentities();
-                rep.putByte(SSH_AGENT_SUCCESS);
+                rep.putByte(SshAgentConstants.SSH_AGENT_SUCCESS);
                 break;
             default:
                 if (log.isDebugEnabled()) {
-                    log.debug("Unknown command: {}", Integer.valueOf(cmd));
+                    log.debug("Unknown command: {}", SshAgentConstants.getCommandMessageName(cmd));
                 }
-                rep.putByte(SSH2_AGENT_FAILURE);
+                rep.putByte(SshAgentConstants.SSH2_AGENT_FAILURE);
                 break;
         }
     }

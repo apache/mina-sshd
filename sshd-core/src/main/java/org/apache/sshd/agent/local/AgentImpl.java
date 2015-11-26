@@ -25,6 +25,7 @@ import java.security.interfaces.DSAPublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -33,6 +34,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -103,7 +105,7 @@ public class AgentImpl implements SshAgent {
         if (!isOpen()) {
             throw new SshException("Agent closed");
         }
-        keys.add(new Pair<>(key, comment));
+        keys.add(new Pair<>(ValidateUtils.checkNotNull(key, "No key"), comment));
     }
 
     @Override
@@ -111,6 +113,7 @@ public class AgentImpl implements SshAgent {
         if (!isOpen()) {
             throw new SshException("Agent closed");
         }
+
         Pair<KeyPair, String> kp = getKeyPair(keys, key);
         if (kp == null) {
             throw new SshException("Key not found");
@@ -133,7 +136,11 @@ public class AgentImpl implements SshAgent {
         }
     }
 
-    protected static Pair<KeyPair, String> getKeyPair(List<Pair<KeyPair, String>> keys, PublicKey key) {
+    protected static Pair<KeyPair, String> getKeyPair(Collection<Pair<KeyPair, String>> keys, PublicKey key) {
+        if (GenericUtils.isEmpty(keys) || (key == null)) {
+            return null;
+        }
+
         for (Pair<KeyPair, String> k : keys) {
             KeyPair kp = k.getFirst();
             if (KeyUtils.compareKeys(key, kp.getPublic())) {

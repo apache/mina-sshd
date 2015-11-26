@@ -18,6 +18,11 @@
  */
 package org.apache.sshd.agent;
 
+import java.util.Map;
+
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.logging.LoggingUtils;
+
 public final class SshAgentConstants {
 
     public static final byte SSH_AGENT_SUCCESS = 6;
@@ -33,4 +38,25 @@ public final class SshAgentConstants {
     private SshAgentConstants() {
     }
 
+    private static class LazyMessagesMapHolder {
+        private static final Map<Integer, String> MESSAGES_MAP =
+                LoggingUtils.generateMnemonicMap(SshAgentConstants.class, "SSH2_AGENT");
+    }
+
+    /**
+     * Converts a command value to a user-friendly name
+     *
+     * @param cmd The command value
+     * @return The user-friendly name - if not one of the defined {@code SSH2_AGENT}
+     * values then returns the string representation of the command's value
+     */
+    public static String getCommandMessageName(int cmd) {
+        @SuppressWarnings("synthetic-access")
+        String name = LazyMessagesMapHolder.MESSAGES_MAP.get(cmd);
+        if (GenericUtils.isEmpty(name)) {
+            return Integer.toString(cmd);
+        } else {
+            return name;
+        }
+    }
 }

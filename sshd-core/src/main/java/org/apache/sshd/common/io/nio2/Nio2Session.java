@@ -133,10 +133,15 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
                 close(true);
             } else {
                 try {
-                    log.debug("Caught exception, now calling handler");
+                    if (log.isDebugEnabled()) {
+                        log.debug("Caught {}[{}] - calling handler", exc.getClass().getSimpleName(), exc.getMessage());
+                    }
                     handler.exceptionCaught(this, exc);
                 } catch (Throwable t) {
-                    log.info("Exception handler threw exception, closing the session", t);
+                    if (log.isDebugEnabled()) {
+                        log.debug("Exception handler threw {}, closing the session: {}",
+                                  t.getClass().getSimpleName(), t.getMessage());
+                    }
                     close(true);
                 }
             }

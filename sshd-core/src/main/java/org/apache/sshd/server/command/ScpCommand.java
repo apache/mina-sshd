@@ -245,7 +245,10 @@ public class ScpCommand extends AbstractLoggingBean implements Command, Runnable
             } catch (IOException e2) {
                 // Ignore
             }
-            log.info("Error in scp command=" + name, e);
+
+            if (log.isDebugEnabled()) {
+                log.debug("Error ({}) in scp command={}: {}", e.getClass().getSimpleName(), name, e.getMessage());
+            }
         } finally {
             if (callback != null) {
                 callback.onExit(exitValue, GenericUtils.trimToEmpty(exitMessage));
