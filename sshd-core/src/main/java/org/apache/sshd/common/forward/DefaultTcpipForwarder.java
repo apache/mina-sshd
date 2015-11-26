@@ -413,7 +413,7 @@ public class DefaultTcpipForwarder extends AbstractInnerCloseable implements Tcp
         @Override
         public void messageReceived(IoSession session, Readable message) throws Exception {
             TcpipClientChannel channel = (TcpipClientChannel) session.getAttribute(TcpipClientChannel.class);
-            Buffer buffer = new ByteArrayBuffer();
+            Buffer buffer = new ByteArrayBuffer(message.available() + Long.SIZE);
             buffer.putBuffer(message);
             channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.OPENED, ClientChannel.ClientChannelEvent.CLOSED), Long.MAX_VALUE);
 

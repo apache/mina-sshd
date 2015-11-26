@@ -975,7 +975,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throw new IOException("canonicalPath(" + path + ") client is closed");
         }
 
-        Buffer buffer = new ByteArrayBuffer();
+        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE);
         buffer.putString(path);
         return checkOneName(SftpConstants.SSH_FXP_REALPATH, buffer);
     }
@@ -986,7 +986,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throw new IOException("stat(" + path + ") client is closed");
         }
 
-        Buffer buffer = new ByteArrayBuffer();
+        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE);
         buffer.putString(path);
 
         int version = getVersion();
@@ -1003,7 +1003,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throw new IOException("lstat(" + path + ") client is closed");
         }
 
-        Buffer buffer = new ByteArrayBuffer();
+        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE);
         buffer.putString(path);
 
         int version = getVersion();

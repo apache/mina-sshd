@@ -166,7 +166,7 @@ public class X11ForwardSupport extends AbstractInnerCloseable implements IoHandl
     @Override
     public void messageReceived(IoSession session, Readable message) throws Exception {
         ChannelForwardedX11 channel = (ChannelForwardedX11) session.getAttribute(ChannelForwardedX11.class);
-        Buffer buffer = new ByteArrayBuffer();
+        Buffer buffer = new ByteArrayBuffer(message.available() + Long.SIZE);
         buffer.putBuffer(message);
 
         OutputStream outputStream = channel.getInvertedIn();
