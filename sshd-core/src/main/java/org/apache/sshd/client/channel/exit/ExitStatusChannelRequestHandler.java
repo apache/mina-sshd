@@ -26,6 +26,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @see <A HREF="https://tools.ietf.org/html/rfc4254#page-15">RFC4254 section 6.10</A>
  */
 public class ExitStatusChannelRequestHandler extends AbstractChannelExitRequestHandler<Integer> {
     public static final String NAME = "exit-status";
@@ -41,6 +42,14 @@ public class ExitStatusChannelRequestHandler extends AbstractChannelExitRequestH
 
     @Override
     protected Integer processRequestValue(Channel channel, String request, Buffer buffer) throws Exception {
-        return Integer.valueOf(buffer.getInt());
+        return processRequestValue(channel, buffer.getInt());
+    }
+
+    protected Integer processRequestValue(Channel channel, int exitStatus) throws Exception {
+        if (log.isDebugEnabled()) {
+            log.debug("processRequestValue({}) status={}", channel, exitStatus);
+        }
+
+        return Integer.valueOf(exitStatus);
     }
 }

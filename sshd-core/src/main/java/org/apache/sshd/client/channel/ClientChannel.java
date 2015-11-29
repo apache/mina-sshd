@@ -112,5 +112,15 @@ public interface ClientChannel extends Channel {
     @Override
     CloseFuture close(boolean immediate);
 
+    /**
+     * @return The signaled exit status via &quot;exit-status&quot; request
+     * - {@code null} if not signaled
+     */
     Integer getExitStatus();
+
+    /**
+     * @return The signaled exit signal via &quot;exit-signal&quot;
+     * - {@code null} if not signaled
+     */
+    String getExitSignal();
 }

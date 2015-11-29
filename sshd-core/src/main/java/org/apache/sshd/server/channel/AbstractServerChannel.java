@@ -109,5 +109,4 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
             notifyStateChanged();
         }
     }
-
 }

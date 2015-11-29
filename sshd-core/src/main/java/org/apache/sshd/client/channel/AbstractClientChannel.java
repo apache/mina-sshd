@@ -84,7 +84,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         this.type = type;
         this.streaming = Streaming.Sync;
 
-        final EventNotifier<String> notifier = new EventNotifier<String>() {
+        addChannelSignalRequestHandlers(new EventNotifier<String>() {
             @SuppressWarnings("synthetic-access")
             @Override
             public void notifyEvent(String event) throws Exception {
@@ -93,7 +93,10 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                 }
                 notifyStateChanged();
             }
-        };
+        });
+    }
+
+    protected void addChannelSignalRequestHandlers(EventNotifier<String> notifier) {
         addRequestHandler(new ExitStatusChannelRequestHandler(exitStatusHolder, notifier));
         addRequestHandler(new ExitSignalChannelRequestHandler(exitSignalHolder, notifier));
     }
@@ -397,5 +400,10 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     @Override
     public Integer getExitStatus() {
         return exitStatusHolder.get();
+    }
+
+    @Override
+    public String getExitSignal() {
+        return exitSignalHolder.get();
     }
 }
