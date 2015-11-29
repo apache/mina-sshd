@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -68,6 +69,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.server.ServerFactoryManager;
 
 /**
  * <P>
@@ -177,10 +179,17 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected final AtomicLong outPacketsCount = new AtomicLong(0L);
     protected final AtomicLong inBytesCount = new AtomicLong(0L);
     protected final AtomicLong outBytesCount = new AtomicLong(0L);
+    protected final AtomicLong inBlocksCount = new AtomicLong(0L);
+    protected final AtomicLong outBlocksCount = new AtomicLong(0L);
     protected final AtomicLong lastKeyTimeValue = new AtomicLong(0L);
     protected final Queue<PendingWriteFuture> pendingPackets = new LinkedList<>();
 
     protected Service currentService;
+    // we initialize them here in case super constructor calls some methods that use these values
+    protected long maxRekyPackets = ServerFactoryManager.DEFAULT_REKEY_PACKETS_LIMIT;
+    protected long maxRekeyBytes = ServerFactoryManager.DEFAULT_REKEY_BYTES_LIMIT;
+    protected long maxRekeyInterval = ServerFactoryManager.DEFAULT_REKEY_TIME_LIMIT;
+    protected final AtomicLong maxRekeyBlocks = new AtomicLong(ServerFactoryManager.DEFAULT_REKEY_BYTES_LIMIT / 16);
 
     /**
      * The factory manager used to retrieve factories of Ciphers, Macs and other objects
@@ -200,6 +209,10 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         this.isServer = isServer;
         this.factoryManager = factoryManager;
         this.ioSession = ioSession;
+
+        maxRekeyBytes = PropertyResolverUtils.getLongProperty(this, ServerFactoryManager.REKEY_BYTES_LIMIT, maxRekeyBytes);
+        maxRekeyInterval = PropertyResolverUtils.getLongProperty(this, ServerFactoryManager.REKEY_TIME_LIMIT, maxRekeyInterval);
+        maxRekyPackets = PropertyResolverUtils.getLongProperty(this, ServerFactoryManager.REKEY_PACKETS_LIMIT, maxRekyPackets);
 
         ClassLoader loader = getClass().getClassLoader();
         sessionListenerProxy = EventListenerUtils.proxyWrapper(SessionListener.class, loader, sessionListeners);
@@ -479,6 +492,10 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 log.debug("handleServiceRequest({}) Service {} rejected: {} = {}",
                           this, serviceName, e.getClass().getSimpleName(), e.getMessage());
             }
+
+            if (log.isTraceEnabled()) {
+                log.trace("handleServiceRequest(" + this + ") service=" + serviceName + " rejection details", e);
+            }
             disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Bad service request: " + serviceName);
             return;
         }
@@ -521,7 +538,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     protected void handleNewKeys(int cmd) throws Exception {
         if (log.isDebugEnabled()) {
-            log.debug("handleNewKeys({}) SSH_MSG_NEWKEYS", this);
+            log.debug("handleNewKeys({}) SSH_MSG_NEWKEYS command={}", this, SshConstants.getCommandMessageName(cmd));
         }
         validateKexState(cmd, KexState.KEYS);
         receiveNewKeys();
@@ -539,7 +556,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         sendSessionEvent(SessionListener.Event.KeyEstablished);
         synchronized (pendingPackets) {
             if (!pendingPackets.isEmpty()) {
-                log.debug("Dequeing pending packets");
+                if (log.isDebugEnabled()) {
+                    log.debug("handleNewKeys({}) Dequeing pending packets", this);
+                }
                 synchronized (encodeLock) {
                     PendingWriteFuture future;
                     while ((future = pendingPackets.poll()) != null) {
@@ -672,7 +691,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 synchronized (pendingPackets) {
                     if (!KexState.DONE.equals(kexState.get())) {
                         if (pendingPackets.isEmpty()) {
-                            log.debug("Start flagging packets as pending until key exchange is done");
+                            log.debug("writePacket({})[{}] Start flagging packets as pending until key exchange is done",
+                                      this, SshConstants.getCommandMessageName(cmd & 0xFF));
                         }
                         PendingWriteFuture future = new PendingWriteFuture(buffer);
                         pendingPackets.add(future);
@@ -701,7 +721,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 public void run() {
                     Throwable t = new TimeoutException("Timeout writing packet: " + timeout + " " + unit);
                     if (log.isDebugEnabled()) {
-                        log.debug(t.getMessage());
+                        log.debug("writePacket({}): {}", AbstractSession.this, t.getMessage());
                     }
                     future.setValue(t);
                 }
@@ -810,7 +830,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             int off = buffer.rpos() - 5;
             // Debug log the packet
             if (log.isTraceEnabled()) {
-                log.trace("Sending packet #{}: {}", Long.valueOf(seqo), buffer.printHex());
+                log.trace("encode({}) Sending packet #{}: {}", this, Long.valueOf(seqo), buffer.printHex());
             }
             // Compress the packet if needed
             if ((outCompression != null) && (authed || !outCompression.isDelayed())) {
@@ -845,6 +865,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             // Encrypt packet, excluding mac
             if (outCipher != null) {
                 outCipher.update(buffer.array(), off, len + 4);
+
+                int blocksCount = (len + 4) / outCipher.getBlockSize();
+                outBlocksCount.addAndGet(Math.max(1, blocksCount));
             }
             // Increment packet id
             seqo = (seqo + 1) & 0xffffffffL;
@@ -877,12 +900,15 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                     // Decrypt the first bytes
                     if (inCipher != null) {
                         inCipher.update(decoderBuffer.array(), 0, inCipherSize);
+
+                        int blocksCount = inCipherSize / inCipher.getBlockSize();
+                        inBlocksCount.addAndGet(Math.max(1, blocksCount));
                     }
                     // Read packet length
                     decoderLength = decoderBuffer.getInt();
                     // Check packet length validity
-                    if (decoderLength < 5 || decoderLength > (256 * 1024)) {
-                        log.warn("Error decoding packet (invalid length) {}", decoderBuffer.printHex());
+                    if ((decoderLength < 5) || (decoderLength > (256 * 1024))) {
+                        log.warn("decode({}) Error decoding packet(invalid length) {}", this, decoderBuffer.printHex());
                         throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                                 "Invalid packet length: " + decoderLength);
                     }
@@ -902,7 +928,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                     byte[] data = decoderBuffer.array();
                     // Decrypt the remaining of the packet
                     if (inCipher != null) {
-                        inCipher.update(data, inCipherSize, decoderLength + 4 - inCipherSize);
+                        int updateLen = decoderLength + 4 - inCipherSize;
+                        inCipher.update(data, inCipherSize, updateLen);
+
+                        int blocksCount = updateLen / inCipher.getBlockSize();
+                        inBlocksCount.addAndGet(Math.max(1, blocksCount));
                     }
                     // Check the mac of the packet
                     if (inMac != null) {
@@ -938,7 +968,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                         buf = decoderBuffer;
                     }
                     if (log.isTraceEnabled()) {
-                        log.trace("Received packet #{}: {}", Long.valueOf(seqi), buf.printHex());
+                        log.trace("decode({}) Received packet #{}: {}", this, Long.valueOf(seqi), buf.printHex());
                     }
                     // Update stats
                     inPacketsCount.incrementAndGet();
@@ -964,7 +994,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @param ident our identification to send
      */
     protected void sendIdentification(String ident) {
-        log.debug("Send identification: {}", ident);
+        if (log.isDebugEnabled()) {
+            log.debug("sendIdentification({}): {}", this, ident);
+        }
         byte[] data = (ident + "\r\n").getBytes(StandardCharsets.UTF_8);
         ioSession.write(new ByteArrayBuffer(data));
     }
@@ -1073,7 +1105,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @throws IOException if an error occurred sending the packet
      */
     protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws IOException {
-        log.debug("Send SSH_MSG_KEXINIT");
+        if (log.isDebugEnabled()) {
+            log.debug("sendKexInit({}) Send SSH_MSG_KEXINIT", this);
+        }
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_KEXINIT);
         int p = buffer.wpos();
         buffer.wpos(p + SshConstants.MSG_KEX_COOKIE_SIZE);
@@ -1158,7 +1192,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @throws IOException if an error occurs sending the message
      */
     protected void sendNewKeys() throws IOException {
-        log.debug("Send SSH_MSG_NEWKEYS");
+        if (log.isDebugEnabled()) {
+            log.debug("sendNewKeys({}) Send SSH_MSG_NEWKEYS", this);
+        }
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_NEWKEYS, Byte.SIZE);
         writePacket(buffer);
     }
@@ -1171,25 +1207,15 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @throws Exception if an error occurs
      */
     protected void receiveNewKeys() throws Exception {
-        byte[] iv_c2s;
-        byte[] iv_s2c;
-        byte[] e_c2s;
-        byte[] e_s2c;
-        byte[] mac_c2s;
-        byte[] mac_s2c;
         byte[] k = kex.getK();
         byte[] h = kex.getH();
         Digest hash = kex.getHash();
-        Cipher s2ccipher;
-        Cipher c2scipher;
-        Mac s2cmac;
-        Mac c2smac;
-        Compression s2ccomp;
-        Compression c2scomp;
 
         if (sessionId == null) {
-            sessionId = new byte[h.length];
-            System.arraycopy(h, 0, sessionId, 0, h.length);
+            sessionId = h.clone();
+            if (log.isDebugEnabled()) {
+                log.debug("receiveNewKeys({}) session ID={}", this, BufferUtils.printHex(':', sessionId));
+            }
         }
 
         Buffer buffer = new ByteArrayBuffer();
@@ -1200,57 +1226,55 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         int pos = buffer.available();
         byte[] buf = buffer.array();
         hash.update(buf, 0, pos);
-        iv_c2s = hash.digest();
+        byte[] iv_c2s = hash.digest();
 
         int j = pos - sessionId.length - 1;
 
         buf[j]++;
         hash.update(buf, 0, pos);
-        iv_s2c = hash.digest();
+        byte[] iv_s2c = hash.digest();
 
         buf[j]++;
         hash.update(buf, 0, pos);
-        e_c2s = hash.digest();
+        byte[] e_c2s = hash.digest();
 
         buf[j]++;
         hash.update(buf, 0, pos);
-        e_s2c = hash.digest();
+        byte[] e_s2c = hash.digest();
 
         buf[j]++;
         hash.update(buf, 0, pos);
-        mac_c2s = hash.digest();
+        byte[] mac_c2s = hash.digest();
 
         buf[j]++;
         hash.update(buf, 0, pos);
-        mac_s2c = hash.digest();
+        byte[] mac_s2c = hash.digest();
 
-        String value;
-
-        value = getNegotiatedKexParameter(KexProposalOption.S2CENC);
-        s2ccipher = ValidateUtils.checkNotNull(NamedFactory.Utils.create(getCipherFactories(), value), "Unknown s2c cipher: %s", value);
+        String value = getNegotiatedKexParameter(KexProposalOption.S2CENC);
+        Cipher s2ccipher = ValidateUtils.checkNotNull(NamedFactory.Utils.create(getCipherFactories(), value), "Unknown s2c cipher: %s", value);
         e_s2c = resizeKey(e_s2c, s2ccipher.getBlockSize(), hash, k, h);
         s2ccipher.init(isServer ? Cipher.Mode.Encrypt : Cipher.Mode.Decrypt, e_s2c, iv_s2c);
 
         value = getNegotiatedKexParameter(KexProposalOption.S2CMAC);
-        s2cmac = ValidateUtils.checkNotNull(NamedFactory.Utils.create(getMacFactories(), value), "Unknown s2c mac: %s", value);
+        Mac s2cmac = ValidateUtils.checkNotNull(NamedFactory.Utils.create(getMacFactories(), value), "Unknown s2c mac: %s", value);
         mac_s2c = resizeKey(mac_s2c, s2cmac.getBlockSize(), hash, k, h);
         s2cmac.init(mac_s2c);
 
         value = getNegotiatedKexParameter(KexProposalOption.S2CCOMP);
-        s2ccomp = NamedFactory.Utils.create(getCompressionFactories(), value);
+        Compression s2ccomp = NamedFactory.Utils.create(getCompressionFactories(), value);
 
         value = getNegotiatedKexParameter(KexProposalOption.C2SENC);
-        c2scipher = ValidateUtils.checkNotNull(NamedFactory.Utils.create(getCipherFactories(), value), "Unknown c2s cipher: %s", value);
+        Cipher c2scipher = ValidateUtils.checkNotNull(NamedFactory.Utils.create(getCipherFactories(), value), "Unknown c2s cipher: %s", value);
         e_c2s = resizeKey(e_c2s, c2scipher.getBlockSize(), hash, k, h);
         c2scipher.init(isServer ? Cipher.Mode.Decrypt : Cipher.Mode.Encrypt, e_c2s, iv_c2s);
 
         value = getNegotiatedKexParameter(KexProposalOption.C2SMAC);
-        c2smac = ValidateUtils.checkNotNull(NamedFactory.Utils.create(getMacFactories(), value), "Unknown c2s mac: %s", value);
+        Mac c2smac = ValidateUtils.checkNotNull(NamedFactory.Utils.create(getMacFactories(), value), "Unknown c2s mac: %s", value);
         mac_c2s = resizeKey(mac_c2s, c2smac.getBlockSize(), hash, k, h);
         c2smac.init(mac_c2s);
 
         value = getNegotiatedKexParameter(KexProposalOption.C2SCOMP);
-        c2scomp = NamedFactory.Utils.create(getCompressionFactories(), value);
+        Compression c2scomp = NamedFactory.Utils.create(getCompressionFactories(), value);
 
         if (isServer) {
             outCipher = s2ccipher;
@@ -1276,10 +1300,25 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         if (inCompression != null) {
             inCompression.init(Compression.Type.Inflater, -1);
         }
+
+        // see https://tools.ietf.org/html/rfc4344#section-3.2
+        int inBlockSize = inCipher.getBlockSize();
+        int outBlockSize = outCipher.getBlockSize();
+        // select the lowest cipher size
+        int avgCipherBlockSize = Math.min(inBlockSize, outBlockSize);
+        long recommendedByteRekeyBlocks = 1L << Math.min((avgCipherBlockSize * Byte.SIZE) / 4, 63);    // in case (block-size / 4) > 63
+        maxRekeyBlocks.set(PropertyResolverUtils.getLongProperty(this, ServerFactoryManager.REKEY_BLOCKS_LIMIT, recommendedByteRekeyBlocks));
+        if (log.isDebugEnabled()) {
+            log.debug("receiveNewKeys({}) inCipher={}, outCipher={}, recommended blocks limit={}, actual={}",
+                      this, inCipher, outCipher, recommendedByteRekeyBlocks, maxRekeyBlocks);
+        }
+
         inBytesCount.set(0L);
         outBytesCount.set(0L);
         inPacketsCount.set(0L);
         outPacketsCount.set(0L);
+        inBlocksCount.set(0L);
+        outBlocksCount.set(0L);
         lastKeyTimeValue.set(System.currentTimeMillis());
     }
 
@@ -1403,14 +1442,14 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("Kex: server->client {} {} {}",
-                    guess.get(KexProposalOption.S2CENC),
-                    guess.get(KexProposalOption.S2CMAC),
-                    guess.get(KexProposalOption.S2CCOMP));
-            log.debug("Kex: client->server {} {} {}",
-                    guess.get(KexProposalOption.C2SENC),
-                    guess.get(KexProposalOption.C2SMAC),
-                    guess.get(KexProposalOption.C2SCOMP));
+            log.debug("setNegotiationResult({}) Kex: server->client {} {} {}", this,
+                      guess.get(KexProposalOption.S2CENC),
+                      guess.get(KexProposalOption.S2CMAC),
+                      guess.get(KexProposalOption.S2CCOMP));
+            log.debug("setNegotiationResult({}) Kex: client->server {} {} {}", this,
+                      guess.get(KexProposalOption.C2SENC),
+                      guess.get(KexProposalOption.C2SMAC),
+                      guess.get(KexProposalOption.C2SCOMP));
         }
 
         return guess;
@@ -1557,7 +1596,89 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     protected void checkRekey() throws IOException {
-        // nothing
+        if (isRekeyRequired()) {
+            reExchangeKeys();
+        }
+    }
+
+    protected boolean isRekeyRequired() {
+        KexState curState = kexState.get();
+        if (!KexState.DONE.equals(curState)) {
+            return false;
+        }
+
+        return isRekeyTimeIntervalExceeded()
+            || isRekeyPacketCountsExceeded()
+            || isRekeyBlocksCountExceeded()
+            || isRekeyDataSizeExceeded();
+    }
+
+    protected boolean isRekeyTimeIntervalExceeded() {
+        if (maxRekeyInterval <= 0L) {
+            return false;   // disabled
+        }
+
+        long now = System.currentTimeMillis();
+        long rekeyDiff = now - lastKeyTimeValue.get();
+        boolean rekey = rekeyDiff > maxRekeyInterval;
+        if (rekey) {
+            if (log.isDebugEnabled()) {
+                log.debug("isRekeyTimeIntervalExceeded({}) re-keying: last={}, now={}, diff={}, max={}",
+                          this, new Date(lastKeyTimeValue.get()), new Date(now),
+                          rekeyDiff, maxRekeyInterval);
+            }
+        }
+
+        return rekey;
+    }
+
+    protected boolean isRekeyPacketCountsExceeded() {
+        if (maxRekyPackets <= 0L) {
+            return false;   // disabled
+        }
+
+        boolean rekey = (inPacketsCount.get() > maxRekyPackets) || (outPacketsCount.get() > maxRekyPackets);
+        if (rekey) {
+            if (log.isDebugEnabled()) {
+                log.debug("isRekeyPacketCountsExceeded({}) re-keying: in={}, out={}, max={}",
+                          this, inPacketsCount, outPacketsCount, maxRekyPackets);
+            }
+        }
+
+        return rekey;
+    }
+
+    protected boolean isRekeyDataSizeExceeded() {
+        if (maxRekeyBytes <= 0L) {
+            return false;
+        }
+
+        boolean rekey = (inBytesCount.get() > maxRekeyBytes) || (outBytesCount.get() > maxRekeyBytes);
+        if (rekey) {
+            if (log.isDebugEnabled()) {
+                log.debug("isRekeyDataSizeExceeded({}) re-keying: in={}, out={}, max={}",
+                          this, inBytesCount, outBytesCount, maxRekeyBytes);
+            }
+        }
+
+        return rekey;
+    }
+
+    protected boolean isRekeyBlocksCountExceeded() {
+        long maxBlocks = maxRekeyBlocks.get();
+        if (maxBlocks <= 0L) {
+            return false;
+        }
+
+        boolean rekey = (inBlocksCount.get() > maxBlocks) || (outBlocksCount.get() > maxBlocks);
+        if (rekey) {
+            if (log.isDebugEnabled()) {
+                log.debug("isRekeyBlocksCountExceeded({}) re-keying: in={}, out={}, max={}",
+                          this, inBlocksCount, outBlocksCount, maxBlocks);
+            }
+        }
+
+        return rekey;
     }
 
     protected byte[] sendKexInit() throws IOException {
@@ -1569,8 +1690,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
         Map<KexProposalOption, String> proposal = createProposal(resolvedAlgorithms);
         byte[] seed = sendKexInit(proposal);
-        if (log.isDebugEnabled()) {
-            log.debug("sendKexInit(" + proposal + ") seed: " + BufferUtils.printHex(':', seed));
+        if (log.isTraceEnabled()) {
+            log.trace("sendKexInit({}) proposal={} seed: {}", this, proposal, BufferUtils.printHex(':', seed));
         }
         setKexSeed(seed);
         return seed;

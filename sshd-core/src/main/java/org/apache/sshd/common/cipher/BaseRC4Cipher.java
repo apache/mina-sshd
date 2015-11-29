@@ -35,11 +35,11 @@ public class BaseRC4Cipher extends BaseCipher {
 
     @Override
     public void init(Mode mode, byte[] key, byte[] iv) throws Exception {
-        key = resize(key, bsize);
+        key = resize(key, getBlockSize());
         try {
-            cipher = SecurityUtils.getCipher(transformation);
-            cipher.init(mode == Mode.Encrypt ? javax.crypto.Cipher.ENCRYPT_MODE : javax.crypto.Cipher.DECRYPT_MODE,
-                    new SecretKeySpec(key, algorithm));
+            cipher = SecurityUtils.getCipher(getTransformation());
+            cipher.init(Mode.Encrypt.equals(mode)  ? javax.crypto.Cipher.ENCRYPT_MODE : javax.crypto.Cipher.DECRYPT_MODE,
+                    new SecretKeySpec(key, getAlgorithm()));
 
             byte[] foo = new byte[1];
             for (int i = 0; i < SKIP_SIZE; i++) {

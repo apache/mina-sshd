@@ -92,17 +92,50 @@ public interface ServerFactoryManager extends FactoryManager, ServerAuthenticati
 
     /**
      * Key re-exchange will be automatically performed after the session
-     * has sent or received the given amount of bytes.
-     * The default value is 1 gigabyte.
+     * has sent or received the given amount of bytes. If non-positive,
+     * then disabled. The default value is {@link #DEFAULT_REKEY_BYTES_LIMIT}
      */
     String REKEY_BYTES_LIMIT = "rekey-bytes-limit";
 
     /**
+     * Default value for {@link #REKEY_BYTES_LIMIT} if no override
+     * @see <A HREF="https://tools.ietf.org/html/rfc4253#page-23">RFC4253 section 9</A>
+     */
+    long DEFAULT_REKEY_BYTES_LIMIT = 1024L * 1024L * 1024L; // 1GB
+
+    /**
      * Key re-exchange will be automatically performed after the specified
-     * amount of time has elapsed since the last key exchange. In milliseconds.
-     * The default value is 1 hour.
+     * amount of time has elapsed since the last key exchange - in milliseconds.
+     * If non-positive then disabled. The default value is {@link #DEFAULT_REKEY_TIME_LIMIT}
      */
     String REKEY_TIME_LIMIT = "rekey-time-limit";
+
+    /**
+     * Default value for {@link #REKEY_TIME_LIMIT} if none specified
+     * @see <A HREF="https://tools.ietf.org/html/rfc4253#page-23">RFC4253 section 9</A>
+     */
+    long DEFAULT_REKEY_TIME_LIMIT = 60L * 60L * 1000L; // 1 hour
+
+    /**
+     * Key re-exchange will be automatically performed after the specified
+     * number of packets has been exchanged - positive 64-bit value. If
+     * non-positive then disabled. The default is {@link #DEFAULT_REKEY_PACKETS_LIMIT}
+     */
+    String REKEY_PACKETS_LIMIT = "rekey-packets-limit";
+
+    /**
+     * Default value for {@link #REKEY_PACKETS_LIMIT} if none specified
+     * @see <A HREF="https://tools.ietf.org/html/rfc4344#page-3">RFC4344 section 3.1</A>
+     */
+    long DEFAULT_REKEY_PACKETS_LIMIT = 1L << 31;
+
+    /**
+     * Key re-exchange will be automatically performed after the specified
+     * number of cipher blocks has been processed - positive 64-bit value. If
+     * non-positive then disabled. The default is calculated according to
+     * <A HREF="https://tools.ietf.org/html/rfc4344#page-3">RFC4344 section 3.2</A>
+     */
+    String REKEY_BLOCKS_LIMIT = "rekey-blocks-limit";
 
     /**
      * A URL pointing to the moduli file.

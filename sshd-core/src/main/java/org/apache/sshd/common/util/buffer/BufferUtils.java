@@ -311,6 +311,7 @@ public final class BufferUtils {
         }
         return true;
     }
+
     public static int getNextPowerOf2(int value) {
         // for 0-7 return 8
         return (value < Byte.SIZE) ? Byte.SIZE : NumberUtils.getNextPowerOf2(value);

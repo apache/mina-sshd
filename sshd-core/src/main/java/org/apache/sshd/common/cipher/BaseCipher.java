@@ -24,6 +24,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Base class for all Cipher implementations delegating to the JCE provider.
@@ -32,17 +33,27 @@ import org.apache.sshd.common.util.SecurityUtils;
  */
 public class BaseCipher implements Cipher {
 
-    protected final int ivsize;
-    protected final int bsize;
-    protected final String algorithm;
-    protected final String transformation;
     protected javax.crypto.Cipher cipher;
+    private final int ivsize;
+    private final int bsize;
+    private final String algorithm;
+    private final String transformation;
 
     public BaseCipher(int ivsize, int bsize, String algorithm, String transformation) {
         this.ivsize = ivsize;
         this.bsize = bsize;
-        this.algorithm = algorithm;
-        this.transformation = transformation;
+        this.algorithm = ValidateUtils.checkNotNullAndNotEmpty(algorithm, "No algorithm");
+        this.transformation = ValidateUtils.checkNotNullAndNotEmpty(transformation, "No transformation");
+    }
+
+    @Override
+    public String getAlgorithm() {
+        return algorithm;
+    }
+
+    @Override
+    public String getTransformation() {
+        return transformation;
     }
 
     @Override
@@ -57,12 +68,12 @@ public class BaseCipher implements Cipher {
 
     @Override
     public void init(Mode mode, byte[] key, byte[] iv) throws Exception {
-        key = resize(key, bsize);
-        iv = resize(iv, ivsize);
+        key = resize(key, getBlockSize());
+        iv = resize(iv, getIVSize());
         try {
-            cipher = SecurityUtils.getCipher(transformation);
-            cipher.init(mode == Mode.Encrypt ? javax.crypto.Cipher.ENCRYPT_MODE : javax.crypto.Cipher.DECRYPT_MODE,
-                    new SecretKeySpec(key, algorithm),
+            cipher = SecurityUtils.getCipher(getTransformation());
+            cipher.init(Mode.Encrypt.equals(mode) ? javax.crypto.Cipher.ENCRYPT_MODE : javax.crypto.Cipher.DECRYPT_MODE,
+                    new SecretKeySpec(key, getAlgorithm()),
                     new IvParameterSpec(iv));
         } catch (Exception e) {
             cipher = null;
@@ -91,6 +102,11 @@ public class BaseCipher implements Cipher {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[" + algorithm + "," + ivsize + "," + bsize + "," + transformation + "]";
+        return getClass().getSimpleName()
+             + "[" + getAlgorithm()
+             + "," + getIVSize()
+             + "," + getBlockSize()
+             + "," + getTransformation()
+             + "]";
     }
 }

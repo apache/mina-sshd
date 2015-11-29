@@ -34,13 +34,12 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
@@ -49,6 +48,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.io.NullOutputStream;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -83,13 +83,16 @@ public class KeyReExchangeTest extends BaseTestSupport {
         sshd.stop(true);
     }
 
-    protected void setUp(long bytesLimit, long timeLimit) throws Exception {
+    protected void setUp(long bytesLimit, long timeLimit, long packetsLimit) throws Exception {
         sshd = setupTestServer();
         if (bytesLimit > 0L) {
             PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.REKEY_BYTES_LIMIT, bytesLimit);
         }
         if (timeLimit > 0L) {
             PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.REKEY_TIME_LIMIT, timeLimit);
+        }
+        if (packetsLimit > 0L) {
+            PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.REKEY_PACKETS_LIMIT, packetsLimit);
         }
 
         sshd.start();
@@ -98,7 +101,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
     @Test
     public void testSwitchToNoneCipher() throws Exception {
-        setUp(0, 0);
+        setUp(0L, 0L, 0L);
 
         sshd.getCipherFactories().add(BuiltinCiphers.none);
         try (SshClient client = setupTestClient()) {
@@ -122,7 +125,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
     @Test   // see SSHD-558
     public void testKexFutureExceptionPropagation() throws Exception {
-        setUp(0, 0);
+        setUp(0L, 0L, 0L);
         sshd.getCipherFactories().add(BuiltinCiphers.none);
 
         try (SshClient client = setupTestClient()) {
@@ -195,7 +198,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
     @Test
     public void testReExchangeFromJschClient() throws Exception {
         Assume.assumeTrue("DH Group Exchange not supported", SecurityUtils.isDHGroupExchangeSupported());
-        setUp(0, 0);
+        setUp(0L, 0L, 0L);
 
         JSchLogger.init();
         JSch.setConfig("kex", BuiltinDHFactories.Constants.DIFFIE_HELLMAN_GROUP_EXCHANGE_SHA1);
@@ -232,7 +235,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
     @Test
     public void testReExchangeFromSshdClient() throws Exception {
-        setUp(0, 0);
+        setUp(0L, 0L, 0L);
 
         try (SshClient client = setupTestClient()) {
             client.start();
@@ -288,22 +291,22 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
     @Test
     public void testReExchangeFromServerBySize() throws Exception {
-        final long LIMIT = 8192;
-        setUp(LIMIT, 0);
+        final long LIMIT = 8192L;
+        setUp(LIMIT, 0L, 0L);
 
         try (SshClient client = setupTestClient()) {
             client.start();
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession();
+                 ByteArrayOutputStream sent = new ByteArrayOutputStream();
+                 ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 try (ChannelShell channel = session.createShellChannel();
-                     ByteArrayOutputStream sent = new ByteArrayOutputStream();
                      PipedOutputStream pipedIn = new PipedOutputStream();
                      OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
-                     ByteArrayOutputStream out = new ByteArrayOutputStream();
-                     ByteArrayOutputStream err = new ByteArrayOutputStream();
+                     OutputStream err = new NullOutputStream();
                      InputStream inPipe = new PipedInputStream(pipedIn)) {
 
                     channel.setIn(inPipe);
@@ -347,6 +350,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                         teeOut.flush();
                         // no need to wait until the limit is reached if a re-key occurred
                         if (exchanges.get() > 0) {
+                            outputDebugMessage("Stop sending after %d bytes - exchanges=%s", sentSize + data.length, exchanges);
                             break;
                         }
                     }
@@ -359,32 +363,36 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
 
                     assertTrue("Expected rekeying", exchanges.get() > 0);
-                    assertEquals("Mismatched sent data length", sent.toByteArray().length, out.toByteArray().length);
-                    assertArrayEquals("Mismatched sent data content", sent.toByteArray(), out.toByteArray());
                 }
+
+                byte[] sentData = sent.toByteArray();
+                byte[] outData = out.toByteArray();
+                assertEquals("Mismatched sent data length", sentData.length, outData.length);
+                assertArrayEquals("Mismatched sent data content", sentData, outData);
             } finally {
                 client.stop();
             }
         }
     }
+
     @Test
     public void testReExchangeFromServerByTime() throws Exception {
         final long TIME = TimeUnit.SECONDS.toMillis(2L);
-        setUp(0, TIME);
+        setUp(0L, TIME, 0L);
 
         try (SshClient client = setupTestClient()) {
             client.start();
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession();
+                 ByteArrayOutputStream sent = new ByteArrayOutputStream();
+                 ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 try (ChannelShell channel = session.createShellChannel();
-                     ByteArrayOutputStream sent = new ByteArrayOutputStream();
                      PipedOutputStream pipedIn = new PipedOutputStream();
                      OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
-                     ByteArrayOutputStream out = new ByteArrayOutputStream();
-                     ByteArrayOutputStream err = new ByteArrayOutputStream();
+                     OutputStream err = new NullOutputStream();
                      InputStream inPipe = new PipedInputStream(pipedIn)) {
 
                     channel.setIn(inPipe);
@@ -426,21 +434,25 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     final long MAX_WAIT_NANOS = TimeUnit.MILLISECONDS.toNanos(3L * TIME);
                     final long MIN_WAIT = 10L;
                     final long MIN_WAIT_NANOS = TimeUnit.MILLISECONDS.toNanos(MIN_WAIT);
-                    for (long timePassed = 0L; timePassed < MAX_WAIT_NANOS; timePassed++) {
+                    for (long timePassed = 0L, sentSize = 0L; timePassed < MAX_WAIT_NANOS; timePassed++) {
                         long nanoStart = System.nanoTime();
                         teeOut.write(data);
                         teeOut.write('\n');
                         teeOut.flush();
 
-                        // no need to wait until the timeout expires if a re-key occurred
-                        if (exchanges.get() > 0) {
-                            break;
-                        }
-
                         long nanoEnd = System.nanoTime();
                         long nanoDuration = nanoEnd - nanoStart;
 
                         timePassed += nanoDuration;
+                        sentSize += data.length + 1;
+
+                        // no need to wait until the timeout expires if a re-key occurred
+                        if (exchanges.get() > 0) {
+                            outputDebugMessage("Stop sending after %d nanos and size=%d - exchanges=%s",
+                                               timePassed, sentSize, exchanges);
+                            break;
+                        }
+
                         if ((timePassed < MAX_WAIT_NANOS) && (nanoDuration < MIN_WAIT_NANOS)) {
                             Thread.sleep(MIN_WAIT);
                         }
@@ -454,9 +466,94 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
 
                     assertTrue("Expected rekeying", exchanges.get() > 0);
-                    assertEquals("Mismatched sent data length", sent.toByteArray().length, out.toByteArray().length);
-                    assertArrayEquals("Mismatched sent data content", sent.toByteArray(), out.toByteArray());
                 }
+
+                byte[] sentData = sent.toByteArray();
+                byte[] outData = out.toByteArray();
+                assertEquals("Mismatched sent data length", sentData.length, outData.length);
+                assertArrayEquals("Mismatched sent data content", sentData, outData);
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    @Test   // see SSHD-601
+    public void testReExchangeFromServerByPackets() throws Exception {
+        final int PACKETS = 128;
+        setUp(0L, 0L, PACKETS);
+
+        try (SshClient client = setupTestClient()) {
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession();
+                 ByteArrayOutputStream sent = new ByteArrayOutputStream();
+                 ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                try (ChannelShell channel = session.createShellChannel();
+                     PipedOutputStream pipedIn = new PipedOutputStream();
+                     OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
+                     OutputStream err = new NullOutputStream();
+                     InputStream inPipe = new PipedInputStream(pipedIn)) {
+
+                    channel.setIn(inPipe);
+                    channel.setOut(out);
+                    channel.setErr(err);
+                    channel.open();
+
+                    teeOut.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
+                    teeOut.flush();
+
+                    final AtomicInteger exchanges = new AtomicInteger();
+                    session.addSessionListener(new SessionListener() {
+                        @Override
+                        public void sessionCreated(Session session) {
+                            // ignored
+                        }
+
+                        @Override
+                        public void sessionEvent(Session session, Event event) {
+                            if (Event.KeyEstablished.equals(event)) {
+                                int count = exchanges.incrementAndGet();
+                                outputDebugMessage("Key established for %s - count=%d", session, count);
+                            }
+                        }
+
+                        @Override
+                        public void sessionClosed(Session session) {
+                            // ignored
+                        }
+                    });
+
+                    byte[] data = (getClass().getName() + "#" + getCurrentTestName() + "\n").getBytes(StandardCharsets.UTF_8);
+                    for (int index = 0; index < (PACKETS * 2); index++) {
+                        teeOut.write(data);
+                        teeOut.flush();
+
+                        // no need to wait until the packets limit is reached if a re-key occurred
+                        if (exchanges.get() > 0) {
+                            outputDebugMessage("Stop sending after % packets and %d bytes - exchanges=%s",
+                                               (index + 1), (index + 1L) * data.length, exchanges);
+                            break;
+                        }
+                    }
+
+                    teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
+                    teeOut.flush();
+
+                    Collection<ClientChannel.ClientChannelEvent> result =
+                            channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
+
+                    assertTrue("Expected rekeying", exchanges.get() > 0);
+                }
+
+                byte[] sentData = sent.toByteArray();
+                byte[] outData = out.toByteArray();
+                assertEquals("Mismatched sent data length", sentData.length, outData.length);
+                assertArrayEquals("Mismatched sent data content", sentData, outData);
             } finally {
                 client.stop();
             }

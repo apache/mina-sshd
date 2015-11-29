@@ -31,6 +31,16 @@ public interface Cipher {
     }
 
     /**
+     * @return The cipher's algorithm
+     */
+    String getAlgorithm();
+
+    /**
+     * @return The actual transformation used - e.g., AES/CBC/NoPadding
+     */
+    String getTransformation();
+
+    /**
      * @return Size of the initialization vector (in bytes)
      */
     int getIVSize();

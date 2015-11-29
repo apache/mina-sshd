@@ -24,7 +24,6 @@ import java.security.KeyPair;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolverUtils;
@@ -51,15 +50,9 @@ import org.apache.sshd.server.ServerFactoryManager;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ServerSessionImpl extends AbstractServerSession {
-    protected static final long MAX_PACKETS = 1L << 31;
-
-    private long maxBytes = 1024 * 1024 * 1024;   // 1 GB
-    private long maxKeyInterval = 60 * 60 * 1000; // 1 hour
-
     public ServerSessionImpl(ServerFactoryManager server, IoSession ioSession) throws Exception {
         super(server, ioSession);
-        maxBytes = Math.max(32, PropertyResolverUtils.getLongProperty(this, ServerFactoryManager.REKEY_BYTES_LIMIT, maxBytes));
-        maxKeyInterval = PropertyResolverUtils.getLongProperty(this, ServerFactoryManager.REKEY_TIME_LIMIT, maxKeyInterval);
+
         if (log.isDebugEnabled()) {
             log.debug("Server session created {}", ioSession);
         }
@@ -80,20 +73,6 @@ public class ServerSessionImpl extends AbstractServerSession {
     protected void serviceAccept() throws IOException {
         // TODO: can services be initiated by the server-side ?
         disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Unsupported packet: SSH_MSG_SERVICE_ACCEPT");
-    }
-
-    @Override
-    protected void checkRekey() throws IOException {
-        if (KexState.DONE.equals(kexState.get())) {
-            long now = System.currentTimeMillis();
-            if ((inPacketsCount.get() > MAX_PACKETS)
-                    || (outPacketsCount.get() > MAX_PACKETS)
-                    || (inBytesCount.get() > maxBytes)
-                    || (outBytesCount.get() > maxBytes)
-                    || ((maxKeyInterval > 0L) && ((now - lastKeyTimeValue.get()) > maxKeyInterval))) {
-                reExchangeKeys();
-            }
-        }
     }
 
     protected void sendServerIdentification() {

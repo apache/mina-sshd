@@ -35,6 +35,16 @@ public class CipherNone implements Cipher {
     }
 
     @Override
+    public String getAlgorithm() {
+        return "none";
+    }
+
+    @Override
+    public String getTransformation() {
+        return "none";
+    }
+
+    @Override
     public int getIVSize() {
         return 8;   // dummy
     }
