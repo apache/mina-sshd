@@ -778,9 +778,9 @@ public class SftpSubsystem
 
                 byte[] hashValue = digest.digest();
                 if (log.isTraceEnabled()) {
-                    log.trace("doCheckFileHash({})[{}] offset={}, length={} - hash={}",
+                    log.trace("doCheckFileHash({})[{}] offset={}, length={} - algo={}, hash={}",
                               getServerSession(), file, startOffset, length,
-                              BufferUtils.printHex(':', hashValue));
+                              digest.getAlgorithm(), BufferUtils.printHex(':', hashValue));
                 }
                 buffer.putBytes(hashValue);
             } else {
@@ -802,9 +802,9 @@ public class SftpSubsystem
 
                     byte[] hashValue = digest.digest(); // NOTE: this also resets the hash for the next read
                     if (log.isTraceEnabled()) {
-                        log.trace("doCheckFileHash({})({})[{}] offset={}, length={} - hash={}",
+                        log.trace("doCheckFileHash({})({})[{}] offset={}, length={} - algo={}, hash={}",
                                   getServerSession(), file, count, startOffset, length,
-                                  BufferUtils.printHex(':', hashValue));
+                                  digest.getAlgorithm(), BufferUtils.printHex(':', hashValue));
                     }
                     buffer.putBytes(hashValue);
                 }
