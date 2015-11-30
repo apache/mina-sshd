@@ -24,6 +24,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StreamCorruptedException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.AccessDeniedException;
@@ -42,6 +43,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclFileAttributeView;
+import java.nio.file.attribute.FileOwnerAttributeView;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFileAttributeView;
@@ -49,6 +51,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
 import java.nio.file.attribute.UserPrincipalLookupService;
+import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,7 +59,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -64,6 +66,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -2516,7 +2519,7 @@ public class SftpSubsystem
         return getLongName(f, true, options);
     }
 
-    private String getLongName(Path f, boolean sendAttrs, LinkOption... options) throws IOException {
+    protected String getLongName(Path f, boolean sendAttrs, LinkOption... options) throws IOException {
         Map<String, Object> attributes;
         if (sendAttrs) {
             attributes = getAttributes(f, options);
@@ -2526,7 +2529,7 @@ public class SftpSubsystem
         return getLongName(f, attributes);
     }
 
-    private String getLongName(Path f, Map<String, ?> attributes) throws IOException {
+    protected String getLongName(Path f, Map<String, ?> attributes) throws IOException {
         String username;
         if (attributes.containsKey("owner")) {
             username = Objects.toString(attributes.get("owner"), null);
@@ -2820,7 +2823,7 @@ public class SftpSubsystem
     }
 
     protected void setFileAttributes(Path file, Map<String, ?> attributes, LinkOption ... options) throws IOException {
-        Set<String> unsupported = new HashSet<>();
+        Set<String> unsupported = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
         for (Map.Entry<String, ?> ae : attributes.entrySet()) {
             String attribute = ae.getKey();
             Object value = ae.getValue();
@@ -2867,18 +2870,41 @@ public class SftpSubsystem
                     break;
                 default:    // ignored
             }
-            if ((view != null) && (value != null)) {
+            if ((GenericUtils.length(view) > 0) && (value != null)) {
                 try {
                     setFileAttribute(file, view, attribute, value, options);
-                } catch (UnsupportedOperationException e) {
-                    unsupported.add(attribute);
+                } catch (Exception e) {
+                    handleSetFileAttributeFailure(file, view, attribute, value, unsupported, e);
                 }
             }
         }
+
         handleUnsupportedAttributes(unsupported);
     }
 
+    protected void handleSetFileAttributeFailure(Path file, String view, String attribute, Object value, Collection<String> unsupported, Exception e) throws IOException {
+        if (e instanceof UnsupportedOperationException) {
+            if (log.isDebugEnabled()) {
+                log.debug("handleSetFileAttributeFailure({})[{}] {}:{}={} unsupported: {}",
+                          getServerSession(), file, view, attribute, value, e.getMessage());
+            }
+            unsupported.add(attribute);
+        } else {
+            log.warn("handleSetFileAttributeFailure({})[{}] {}:{}={} - failed ({}) to set: {}",
+                     getServerSession(), file, view, attribute, value, e.getClass().getSimpleName(), e.getMessage());
+            if (e instanceof IOException) {
+                throw (IOException) e;
+            } else {
+                throw new IOException(e);
+            }
+        }
+    }
+
     protected void setFileAttribute(Path file, String view, String attribute, Object value, LinkOption ... options) throws IOException {
+        if (log.isTraceEnabled()) {
+            log.trace("setFileAttribute({})[{}] {}:{}={}", getServerSession(), file, view, attribute, value);
+        }
+
         if ("acl".equalsIgnoreCase(attribute) && "acl".equalsIgnoreCase(view)) {
             @SuppressWarnings("unchecked")
             List<AclEntry> acl = (List<AclEntry>) value;
@@ -2887,12 +2913,71 @@ public class SftpSubsystem
             @SuppressWarnings("unchecked")
             Set<PosixFilePermission> perms = (Set<PosixFilePermission>) value;
             setFilePermissions(file, perms, options);
+        } else if ("owner".equalsIgnoreCase(attribute) || "group".equalsIgnoreCase(attribute)) {
+            setFileOwnership(file, attribute, (Principal) value, options);
+        } else if ("creationTime".equalsIgnoreCase(attribute) || "lastModifiedTime".equalsIgnoreCase(attribute) || "lastAccessTime".equalsIgnoreCase(attribute)) {
+            setFileTime(file, view, attribute, (FileTime) value, options);
         } else if ("extended".equalsIgnoreCase(view) && "extended".equalsIgnoreCase(attribute)) {
             @SuppressWarnings("unchecked")
             Map<String, byte[]> extensions = (Map<String, byte[]>) value;
             setFileExtensions(file, extensions, options);
         } else {
             Files.setAttribute(file, view + ":" + attribute, value, options);
+        }
+    }
+
+    protected void setFileTime(Path file, String view, String attribute, FileTime value, LinkOption ... options) throws IOException {
+        if (value == null) {
+            return;
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("setFileTime({})[{}] {}:{}={}", getServerSession(), file, view, attribute, value);
+        }
+
+        Files.setAttribute(file, view + ":" + attribute, value, options);
+    }
+
+    protected void setFileOwnership(Path file, String attribute, Principal value, LinkOption ... options) throws IOException {
+        if (value == null) {
+            return;
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("setFileOwnership({})[{}] {}={}", getServerSession(), file, attribute, value);
+        }
+
+        /*
+         * Quoting from Javadoc of FileOwnerAttributeView#setOwner:
+         *
+         *      To ensure consistent and correct behavior across platforms
+         *      it is recommended that this method should only be used
+         *      to set the file owner to a user principal that is not a group.
+         */
+        if ("owner".equalsIgnoreCase(attribute)) {
+            FileOwnerAttributeView view = Files.getFileAttributeView(file, FileOwnerAttributeView.class, options);
+            if (view == null) {
+                throw new UnsupportedOperationException("Owner view not supported for " + file);
+            }
+
+            if (!(value instanceof UserPrincipal)) {
+                throw new StreamCorruptedException("Owner is not " + UserPrincipal.class.getSimpleName() + ": " + value.getClass().getSimpleName());
+            }
+
+            view.setOwner((UserPrincipal) value);
+        } else if ("group".equalsIgnoreCase(attribute)) {
+            PosixFileAttributeView view = Files.getFileAttributeView(file, PosixFileAttributeView.class, options);
+            if (view == null) {
+                throw new UnsupportedOperationException("POSIX view not supported");
+            }
+
+            if (!(value instanceof GroupPrincipal)) {
+                throw new StreamCorruptedException("Group is not " + GroupPrincipal.class.getSimpleName() + ": " + value.getClass().getSimpleName());
+            }
+
+            view.setGroup((GroupPrincipal) value);
+        } else {
+            throw new UnsupportedOperationException("Unknown ownership attribute: " + attribute);
         }
     }
 
@@ -2913,7 +2998,7 @@ public class SftpSubsystem
                 log.debug("setFileExtensions({})[{}]: {}", getServerSession(), file, extensions);
             }
         } else {
-            throw new UnsupportedOperationException("File extensions not supported for " + file);
+            throw new UnsupportedOperationException("File extensions not supported");
         }
     }
 
@@ -2947,33 +3032,32 @@ public class SftpSubsystem
     }
 
     protected void handleUnsupportedAttributes(Collection<String> attributes) {
-        if (!attributes.isEmpty()) {
-            StringBuilder sb = new StringBuilder();
-            for (String attr : attributes) {
-                if (sb.length() > 0) {
-                    sb.append(", ");
-                }
-                sb.append(attr);
-            }
-            switch (unsupportedAttributePolicy) {
-                case Ignore:
-                    break;
-                case Warn:
-                    log.warn("Unsupported attributes: " + sb.toString());
-                    break;
-                case ThrowException:
-                    throw new UnsupportedOperationException("Unsupported attributes: " + sb.toString());
-                default:
-                    log.warn("Unknown policy for attributes=" + sb.toString() + ": " + unsupportedAttributePolicy);
-            }
+        if (attributes.isEmpty()) {
+            return;
+        }
+
+        String attrsList = GenericUtils.join(attributes, ',');
+        switch (unsupportedAttributePolicy) {
+            case Ignore:
+                break;
+            case Warn:
+                log.warn("Unsupported attributes: " + attrsList);
+                break;
+            case ThrowException:
+                throw new UnsupportedOperationException("Unsupported attributes: " + attrsList);
+            default:
+                log.warn("Unknown policy for attributes=" + attrsList + ": " + unsupportedAttributePolicy);
         }
     }
 
-    private GroupPrincipal toGroup(Path file, GroupPrincipal name) throws IOException {
+    protected GroupPrincipal toGroup(Path file, GroupPrincipal name) throws IOException {
         String groupName = name.toString();
         FileSystem fileSystem = file.getFileSystem();
         UserPrincipalLookupService lookupService = fileSystem.getUserPrincipalLookupService();
         try {
+            if (lookupService == null) {
+                throw new UserPrincipalNotFoundException("No lookup service");
+            }
             return lookupService.lookupPrincipalByGroupName(groupName);
         } catch (IOException e) {
             handleUserPrincipalLookupServiceException(GroupPrincipal.class, groupName, e);
@@ -2981,11 +3065,14 @@ public class SftpSubsystem
         }
     }
 
-    private UserPrincipal toUser(Path file, UserPrincipal name) throws IOException {
+    protected UserPrincipal toUser(Path file, UserPrincipal name) throws IOException {
         String username = name.toString();
         FileSystem fileSystem = file.getFileSystem();
         UserPrincipalLookupService lookupService = fileSystem.getUserPrincipalLookupService();
         try {
+            if (lookupService == null) {
+                throw new UserPrincipalNotFoundException("No lookup service");
+            }
             return lookupService.lookupPrincipalByName(username);
         } catch (IOException e) {
             handleUserPrincipalLookupServiceException(UserPrincipal.class, username, e);

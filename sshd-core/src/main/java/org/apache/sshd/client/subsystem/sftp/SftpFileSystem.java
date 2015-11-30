@@ -200,7 +200,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
 
     @Override
     public UserPrincipalLookupService getUserPrincipalLookupService() {
-        return new DefaultUserPrincipalLookupService();
+        return DefaultUserPrincipalLookupService.INSTANCE;
     }
 
     @Override
@@ -521,6 +521,8 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
     }
 
     public static class DefaultUserPrincipalLookupService extends UserPrincipalLookupService {
+        public static final DefaultUserPrincipalLookupService INSTANCE = new DefaultUserPrincipalLookupService();
+
         public DefaultUserPrincipalLookupService() {
             super();
         }
