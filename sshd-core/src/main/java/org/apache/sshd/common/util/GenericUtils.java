@@ -330,6 +330,24 @@ public final class GenericUtils {
         return CASE_INSENSITIVE_MAP_FACTORY;
     }
 
+    public static <K, V> Map<V, K> flipMap(Map<? extends K, ? extends V> map, Factory<? extends Map<V, K>> mapCreator, boolean allowDuplicates) {
+        if (isEmpty(map)) {
+            return Collections.emptyMap();
+        }
+
+        Map<V, K> result = ValidateUtils.checkNotNull(mapCreator.create(), "No map created");
+        for (Map.Entry<? extends K, ? extends V> ee : map.entrySet()) {
+            K key = ee.getKey();
+            V value = ee.getValue();
+            K prev = result.put(value, key);
+            if ((prev != null) && (!allowDuplicates)) {
+                ValidateUtils.throwIllegalArgumentException("Multiple values for key=%s: current=%s, previous=%s", value, key, prev);
+            }
+        }
+
+        return result;
+    }
+
     @SafeVarargs
     public static <K, V> Map<K, V> mapValues(
             Transformer<? super V, ? extends K> keyMapper, Factory<? extends Map<K, V>> mapCreator, V ... values) {

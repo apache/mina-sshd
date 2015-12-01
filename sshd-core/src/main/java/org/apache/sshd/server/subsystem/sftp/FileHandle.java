@@ -33,19 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_APPEND_DATA;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_READ_ATTRIBUTES;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_READ_DATA;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_WRITE_ATTRIBUTES;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_WRITE_DATA;
+import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_ACCESS_DISPOSITION;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_APPEND_DATA;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_CREATE_NEW;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_CREATE_TRUNCATE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_OPEN_EXISTING;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_OPEN_OR_CREATE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_TRUNCATE_EXISTING;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -62,31 +51,31 @@ public class FileHandle extends Handle {
         this.access = access;
 
         Set<OpenOption> options = new HashSet<>();
-        if (((access & ACE4_READ_DATA) != 0) || ((access & ACE4_READ_ATTRIBUTES) != 0)) {
+        if (((access & SftpConstants.ACE4_READ_DATA) != 0) || ((access & SftpConstants.ACE4_READ_ATTRIBUTES) != 0)) {
             options.add(StandardOpenOption.READ);
         }
-        if (((access & ACE4_WRITE_DATA) != 0) || ((access & ACE4_WRITE_ATTRIBUTES) != 0)) {
+        if (((access & SftpConstants.ACE4_WRITE_DATA) != 0) || ((access & SftpConstants.ACE4_WRITE_ATTRIBUTES) != 0)) {
             options.add(StandardOpenOption.WRITE);
         }
-        switch (flags & SSH_FXF_ACCESS_DISPOSITION) {
-            case SSH_FXF_CREATE_NEW:
+        switch (flags & SftpConstants.SSH_FXF_ACCESS_DISPOSITION) {
+            case SftpConstants.SSH_FXF_CREATE_NEW:
                 options.add(StandardOpenOption.CREATE_NEW);
                 break;
-            case SSH_FXF_CREATE_TRUNCATE:
+            case SftpConstants.SSH_FXF_CREATE_TRUNCATE:
                 options.add(StandardOpenOption.CREATE);
                 options.add(StandardOpenOption.TRUNCATE_EXISTING);
                 break;
-            case SSH_FXF_OPEN_EXISTING:
+            case SftpConstants.SSH_FXF_OPEN_EXISTING:
                 break;
-            case SSH_FXF_OPEN_OR_CREATE:
+            case SftpConstants.SSH_FXF_OPEN_OR_CREATE:
                 options.add(StandardOpenOption.CREATE);
                 break;
-            case SSH_FXF_TRUNCATE_EXISTING:
+            case SftpConstants.SSH_FXF_TRUNCATE_EXISTING:
                 options.add(StandardOpenOption.TRUNCATE_EXISTING);
                 break;
             default:    // ignored
         }
-        if ((flags & SSH_FXF_APPEND_DATA) != 0) {
+        if ((flags & SftpConstants.SSH_FXF_APPEND_DATA) != 0) {
             options.add(StandardOpenOption.APPEND);
         }
         FileAttribute<?>[] attributes = new FileAttribute<?>[attrs.size()];
@@ -126,7 +115,7 @@ public class FileHandle extends Handle {
     }
 
     public boolean isOpenAppend() {
-        return ACE4_APPEND_DATA == (getAccessMask() & ACE4_APPEND_DATA);
+        return SftpConstants.ACE4_APPEND_DATA == (getAccessMask() & SftpConstants.ACE4_APPEND_DATA);
     }
 
     public int read(byte[] data, long offset) throws IOException {

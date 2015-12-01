@@ -18,8 +18,6 @@
  */
 package org.apache.sshd;
 
-import static org.apache.sshd.util.test.Utils.getFreePort;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -37,9 +35,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
 import org.apache.commons.httpclient.HostConfiguration;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpVersion;
@@ -55,6 +50,7 @@ import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
+import org.apache.sshd.util.test.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -62,6 +58,10 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 
 /**
  * Port forwarding tests
@@ -223,7 +223,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             ss.setReuseAddress(true);
             ss.bind(new InetSocketAddress((InetAddress) null, 0));
             int forwardedPort = ss.getLocalPort();
-            int sinkPort = getFreePort();
+            int sinkPort = Utils.getFreePort();
             session.setPortForwardingR(sinkPort, TEST_LOCALHOST, forwardedPort);
             final boolean started[] = new boolean[1];
             started[0] = false;
@@ -344,7 +344,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
         Session session = createSession();
         try {
             final int forwardedPort1 = session.setPortForwardingL(0, host, port);
-            final int forwardedPort2 = getFreePort();
+            final int forwardedPort2 = Utils.getFreePort();
             session.setPortForwardingR(forwardedPort2, TEST_LOCALHOST, forwardedPort1);
             System.err.println("URL: http://localhost:" + forwardedPort2);
 

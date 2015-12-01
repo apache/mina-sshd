@@ -20,7 +20,6 @@ package org.apache.sshd.common.subsystem.sftp;
 
 import java.lang.reflect.Field;
 import java.util.Map;
-
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Predicate;
 import org.apache.sshd.common.util.logging.LoggingUtils;
@@ -243,15 +242,27 @@ public final class SftpConstants {
     public static final String EXT_TEXT_SEEK = "text-seek";
     public static final String EXT_VERSION_SELECT = "version-select";
     public static final String EXT_COPY_FILE = "copy-file";
+
     public static final String EXT_MD5_HASH = "md5-hash";
     public static final String EXT_MD5_HASH_HANDLE = "md5-hash-handle";
     public static final int MD5_QUICK_HASH_SIZE = 2048;
+
     public static final String EXT_CHECK_FILE_HANDLE = "check-file-handle";
     public static final String EXT_CHECK_FILE_NAME = "check-file-name";
     public static final int MIN_CHKFILE_BLOCKSIZE = 256;
+
     public static final String EXT_CHECK_FILE = "check-file";
     public static final String EXT_COPY_DATA = "copy-data";
     public static final String EXT_SPACE_AVAILABLE = "space-available";
+
+    // see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-11 section 5.4
+    public static final String EXT_ACL_SUPPORTED = "acl-supported";
+    public static final int SSH_ACL_CAP_ALLOW = 0x00000001;
+    public static final int SSH_ACL_CAP_DENY = 0x00000002;
+    public static final int SSH_ACL_CAP_AUDIT = 0x00000004;
+    public static final int SSH_ACL_CAP_ALARM = 0x00000008;
+    public static final int SSH_ACL_CAP_INHERIT_ACCESS = 0x00000010;
+    public static final int SSH_ACL_CAP_INHERIT_AUDIT_ALARM = 0x00000020;
 
     private SftpConstants() {
         throw new UnsupportedOperationException("No instance");

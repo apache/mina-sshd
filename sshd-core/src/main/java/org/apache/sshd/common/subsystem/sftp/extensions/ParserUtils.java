@@ -52,6 +52,7 @@ public final class ParserUtils {
                             VersionsParser.INSTANCE,
                             SupportedParser.INSTANCE,
                             Supported2Parser.INSTANCE,
+                            AclSupportedParser.INSTANCE,
                             // OpenSSH extensions
                             PosixRenameExtensionParser.INSTANCE,
                             StatVfsExtensionParser.INSTANCE,

@@ -50,6 +50,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.Command;
+import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.Utils;
@@ -58,8 +59,6 @@ import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_EXTENDED_REPLY;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -141,8 +140,8 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
             public Command create() {
                 return new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy()) {
                     @Override
-                    protected List<OpenSSHExtension> resolveOpenSSHExtensions() {
-                        List<OpenSSHExtension> original = super.resolveOpenSSHExtensions();
+                    protected List<OpenSSHExtension> resolveOpenSSHExtensions(ServerSession session) {
+                        List<OpenSSHExtension> original = super.resolveOpenSSHExtensions(session);
                         int numOriginal = GenericUtils.size(original);
                         List<OpenSSHExtension> result = new ArrayList<OpenSSHExtension>(numOriginal + 2);
                         if (numOriginal > 0) {
@@ -166,7 +165,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
                             }
 
                             buffer.clear();
-                            buffer.putByte((byte) SSH_FXP_EXTENDED_REPLY);
+                            buffer.putByte((byte) SftpConstants.SSH_FXP_EXTENDED_REPLY);
                             buffer.putInt(id);
                             OpenSSHStatExtensionInfo.encode(buffer, expected);
                             send(buffer);

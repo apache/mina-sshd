@@ -108,7 +108,7 @@ public class BaseMac implements Mac {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "[" + getAlgorithm() + "] - "
-             + getBlockSize() + "/" + getDefaultBlockSize() + " bits";
+             + " block=" + getBlockSize() + "/" + getDefaultBlockSize() + " bytes";
     }
 
 }

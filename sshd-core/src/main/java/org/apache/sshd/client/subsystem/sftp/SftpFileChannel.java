@@ -40,11 +40,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
-
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FX_LOCK_CONFLICT;
 
 public class SftpFileChannel extends FileChannel {
     public static final String COPY_BUFSIZE_PROP = "sftp-channel-copy-buf-size";
@@ -322,7 +321,7 @@ public class SftpFileChannel extends FileChannel {
         try {
             sftp.lock(handle, position, size, 0);
         } catch (SftpException e) {
-            if (e.getStatus() == SSH_FX_LOCK_CONFLICT) {
+            if (e.getStatus() == SftpConstants.SSH_FX_LOCK_CONFLICT) {
                 throw new OverlappingFileLockException();
             }
             throw e;

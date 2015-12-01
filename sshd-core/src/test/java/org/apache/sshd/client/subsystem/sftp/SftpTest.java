@@ -39,6 +39,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
@@ -61,6 +62,7 @@ import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.extensions.AclSupportedParser.AclCapabilities;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
 import org.apache.sshd.common.subsystem.sftp.extensions.Supported2Parser.Supported2;
 import org.apache.sshd.common.subsystem.sftp.extensions.SupportedParser.Supported;
@@ -931,7 +933,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     Map<String, byte[]> extensions = sftp.getServerExtensions();
                     for (String name : new String[]{
                             SftpConstants.EXT_NEWLINE, SftpConstants.EXT_VERSIONS,
-                            SftpConstants.EXT_VENDOR_ID,
+                            SftpConstants.EXT_VENDOR_ID, SftpConstants.EXT_ACL_SUPPORTED,
                             SftpConstants.EXT_SUPPORTED, SftpConstants.EXT_SUPPORTED2
                     }) {
                         assertTrue("Missing extension=" + name, extensions.containsKey(name));
@@ -946,6 +948,14 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                             assertSupportedExtensions(extName, ((Supported) extValue).extensionNames);
                         } else if (SftpConstants.EXT_SUPPORTED2.equalsIgnoreCase(extName)) {
                             assertSupportedExtensions(extName, ((Supported2) extValue).extensionNames);
+                        } else if (SftpConstants.EXT_ACL_SUPPORTED.equalsIgnoreCase(extName)) {
+                            assertSupportedAclCapabilities((AclCapabilities) extValue);
+                        }
+                    }
+
+                    for (String extName : extensions.keySet()) {
+                        if (!data.containsKey(extName)) {
+                            outputDebugMessage("No parser for extension=%s", extName);
                         }
                     }
 
@@ -996,6 +1006,13 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 assertTrue(extName + " - missing " + name, extensionNames.contains(name));
             }
         }
+    }
+
+    private static void assertSupportedAclCapabilities(AclCapabilities caps) {
+        Set<Integer> actual = AclCapabilities.deconstructAclCapabilities(caps.getCapabilities());
+        assertEquals("Mismatched ACL capabilities count", SftpSubsystem.DEFAULT_ACL_SUPPORTED_MASK.size(), actual.size());
+        assertTrue("Missing capabilities - expected=" + SftpSubsystem.DEFAULT_ACL_SUPPORTED_MASK + ", actual=" + actual,
+                   actual.containsAll(SftpSubsystem.DEFAULT_ACL_SUPPORTED_MASK));
     }
 
     @Test

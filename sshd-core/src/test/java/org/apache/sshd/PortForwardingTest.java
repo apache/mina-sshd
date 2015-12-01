@@ -18,8 +18,6 @@
  */
 package org.apache.sshd;
 
-import static org.apache.sshd.util.test.Utils.getFreePort;
-
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
@@ -38,9 +36,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandlerAdapter;
@@ -64,12 +59,17 @@ import org.apache.sshd.server.global.TcpipForwardHandler;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
+import org.apache.sshd.util.test.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.slf4j.LoggerFactory;
+
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 
 /**
  * Port forwarding tests
@@ -196,7 +196,7 @@ public class PortForwardingTest extends BaseTestSupport {
     public void testRemoteForwarding() throws Exception {
         Session session = createSession();
         try {
-            int forwardedPort = getFreePort();
+            int forwardedPort = Utils.getFreePort();
             session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
             waitForForwardingRequest(TcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
 
@@ -227,7 +227,7 @@ public class PortForwardingTest extends BaseTestSupport {
     public void testRemoteForwardingSecondTimeInSameSession() throws Exception {
         Session session = createSession();
         try {
-            int forwardedPort = getFreePort();
+            int forwardedPort = Utils.getFreePort();
             session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
             waitForForwardingRequest(TcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
 
@@ -323,7 +323,7 @@ public class PortForwardingTest extends BaseTestSupport {
     public void testLocalForwarding() throws Exception {
         Session session = createSession();
         try {
-            int forwardedPort = getFreePort();
+            int forwardedPort = Utils.getFreePort();
             session.setPortForwardingL(forwardedPort, TEST_LOCALHOST, echoPort);
 
             try (Socket s = new Socket(TEST_LOCALHOST, forwardedPort);
@@ -455,7 +455,7 @@ public class PortForwardingTest extends BaseTestSupport {
         Session session = createSession();
         try {
             // 1. Create a Port Forward
-            int forwardedPort = getFreePort();
+            int forwardedPort = Utils.getFreePort();
             session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
             waitForForwardingRequest(TcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
 

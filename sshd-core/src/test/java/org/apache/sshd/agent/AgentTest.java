@@ -18,8 +18,6 @@
  */
 package org.apache.sshd.agent;
 
-import static org.apache.sshd.util.test.Utils.createTestKeyPairProvider;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -46,6 +44,7 @@ import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.EchoShell;
 import org.apache.sshd.util.test.EchoShellFactory;
+import org.apache.sshd.util.test.Utils;
 import org.junit.Assume;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -102,7 +101,7 @@ public class AgentTest extends BaseTestSupport {
         ProxyAgentFactory agentFactory = new ProxyAgentFactory();
         LocalAgentFactory localAgentFactory = new LocalAgentFactory();
         String username = getCurrentTestName();
-        KeyPair pair = createTestKeyPairProvider("dsaprivkey.pem").loadKey(KeyPairProvider.SSH_DSS);
+        KeyPair pair = Utils.createTestKeyPairProvider("dsaprivkey.pem").loadKey(KeyPairProvider.SSH_DSS);
         localAgentFactory.getAgent().addIdentity(pair, username);
 
         try (SshServer sshd1 = setupTestServer()) {

@@ -59,6 +59,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -86,6 +87,7 @@ import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpHelper;
+import org.apache.sshd.common.subsystem.sftp.extensions.AclSupportedParser;
 import org.apache.sshd.common.subsystem.sftp.extensions.SpaceAvailableExtensionInfo;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.AbstractOpenSSHExtensionParser.OpenSSHExtension;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionParser;
@@ -226,6 +228,19 @@ public class SftpSubsystem
             });
 
     public static final List<String> DEFAULT_UNIX_VIEW = Collections.singletonList("unix:*");
+
+    /**
+     * Comma separate list of {@code SSH_ACL_CAP_xxx} names - where name can be without
+     * the prefix. If not defined then {@link #DEFAULT_ACL_SUPPORTED_MASK} is used
+     */
+    public static final String ACL_SUPPORTED_MASK_PROP = "sftp-acl-supported-mask";
+    public static final Set<Integer> DEFAULT_ACL_SUPPORTED_MASK =
+            Collections.unmodifiableSet(
+                    new HashSet<Integer>(Arrays.asList(
+                            SftpConstants.SSH_ACL_CAP_ALLOW,
+                            SftpConstants.SSH_ACL_CAP_DENY,
+                            SftpConstants.SSH_ACL_CAP_AUDIT,
+                            SftpConstants.SSH_ACL_CAP_ALARM)));
 
     /**
      * A {@link Map} of {@link FileInfoExtractor}s to be used to complete
@@ -2198,13 +2213,7 @@ public class SftpSubsystem
         appendNewlineExtension(buffer, IoUtils.EOL);
         appendVendorIdExtension(buffer, VersionProperties.getVersionProperties());
         appendOpenSSHExtensions(buffer);
-
-        /* TODO updateAvailableExtensions(extensions, appendAclSupportedExtension(...)
-            buffer.putString("acl-supported");
-            buffer.putInt(4);
-            // capabilities
-            buffer.putInt(0);
-        */
+        appendAclSupportedExtension(buffer);
 
         Map<String, OptionalFeature> extensions = getSupportedClientExtensions();
         int numExtensions = GenericUtils.size(extensions);
@@ -2227,8 +2236,56 @@ public class SftpSubsystem
         appendSupported2Extension(buffer, extras);
     }
 
+    protected int appendAclSupportedExtension(Buffer buffer) {
+        ServerSession session = getServerSession();
+        Collection<Integer> maskValues = resolveAclSupportedCapabilities(session);
+        int mask = AclSupportedParser.AclCapabilities.constructAclCapabilities(maskValues);
+        if (mask != 0) {
+            if (log.isTraceEnabled()) {
+                log.trace("appendAclSupportedExtension({}) capabilities={}",
+                          session, AclSupportedParser.AclCapabilities.decodeAclCapabilities(mask));
+            }
+
+            buffer.putString(SftpConstants.EXT_ACL_SUPPORTED);
+
+            // placeholder for length
+            int lenPos = buffer.wpos();
+            buffer.putInt(0);
+            buffer.putInt(mask);
+            BufferUtils.updateLengthPlaceholder(buffer, lenPos);
+        }
+
+        return mask;
+    }
+
+    protected Collection<Integer> resolveAclSupportedCapabilities(ServerSession session) {
+        String override = PropertyResolverUtils.getString(session, ACL_SUPPORTED_MASK_PROP);
+        if (override == null) {
+            return DEFAULT_ACL_SUPPORTED_MASK;
+        }
+
+        // empty means not supported
+        if (log.isDebugEnabled()) {
+            log.debug("resolveAclSupportedCapabilities({}) override='{}'", session, override);
+        }
+
+        if (override.length() == 0) {
+            return Collections.emptySet();
+        }
+
+        String[] names = GenericUtils.split(override, ',');
+        Set<Integer> maskValues = new HashSet<Integer>(names.length);
+        for (String n : names) {
+            Integer v = ValidateUtils.checkNotNull(
+                    AclSupportedParser.AclCapabilities.getAclCapabilityValue(n), "Unknown ACL capability: %s", n);
+            maskValues.add(v);
+        }
+
+        return maskValues;
+    }
+
     protected List<OpenSSHExtension> appendOpenSSHExtensions(Buffer buffer) {
-        List<OpenSSHExtension> extList = resolveOpenSSHExtensions();
+        List<OpenSSHExtension> extList = resolveOpenSSHExtensions(getServerSession());
         if (GenericUtils.isEmpty(extList)) {
             return extList;
         }
@@ -2241,10 +2298,14 @@ public class SftpSubsystem
         return extList;
     }
 
-    protected List<OpenSSHExtension> resolveOpenSSHExtensions() {
-        String value = PropertyResolverUtils.getString(getServerSession(), OPENSSH_EXTENSIONS_PROP);
+    protected List<OpenSSHExtension> resolveOpenSSHExtensions(ServerSession session) {
+        String value = PropertyResolverUtils.getString(session, OPENSSH_EXTENSIONS_PROP);
         if (value == null) {    // No override
             return DEFAULT_OPEN_SSH_EXTENSIONS;
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("resolveOpenSSHExtensions({}) override='{}'", session, value);
         }
 
         String[] pairs = GenericUtils.split(value, ',');
@@ -2271,9 +2332,14 @@ public class SftpSubsystem
     }
 
     protected Map<String, OptionalFeature> getSupportedClientExtensions() {
-        String value = PropertyResolverUtils.getString(getServerSession(), CLIENT_EXTENSIONS_PROP);
+        ServerSession session = getServerSession();
+        String value = PropertyResolverUtils.getString(session, CLIENT_EXTENSIONS_PROP);
         if (value == null) {
             return DEFAULT_SUPPORTED_CLIENT_EXTENSIONS;
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("getSupportedClientExtensions({}) override='{}'", session, value);
         }
 
         if (value.length() <= 0) {  // means don't report any extensions

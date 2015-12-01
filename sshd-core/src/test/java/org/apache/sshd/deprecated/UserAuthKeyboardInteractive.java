@@ -25,10 +25,6 @@ import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.buffer.Buffer;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_FAILURE;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_SUCCESS;
 
 /**
  * Userauth with keyboard-interactive method.
@@ -62,12 +58,14 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         } else {
             int cmd = buffer.getUByte();
             switch (cmd) {
-                case SSH_MSG_USERAUTH_INFO_REQUEST:
-                    log.debug("Received SSH_MSG_USERAUTH_INFO_REQUEST");
+                case SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST: {
                     String name = buffer.getString();
                     String instruction = buffer.getString();
                     String language_tag = buffer.getString();
-                    log.info("Received {} {} {}", new Object[]{name, instruction, language_tag});
+                    if (log.isDebugEnabled()) {
+                        log.debug("next({}) Received SSH_MSG_USERAUTH_INFO_REQUEST - name={}, instruction={}, lang={}",
+                                 session, name, instruction, language_tag);
+                    }
                     int num = buffer.getInt();
                     String[] prompt = new String[num];
                     boolean[] echo = new boolean[num];
@@ -93,17 +91,18 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                         return Result.Failure;
                     }
 
-                    buffer = session.createBuffer(SSH_MSG_USERAUTH_INFO_RESPONSE);
+                    buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE);
                     buffer.putInt(rep.length);
                     for (String r : rep) {
                         buffer.putString(r);
                     }
                     session.writePacket(buffer);
                     return Result.Continued;
-                case SSH_MSG_USERAUTH_SUCCESS:
+                }
+                case SshConstants.SSH_MSG_USERAUTH_SUCCESS:
                     log.debug("Received SSH_MSG_USERAUTH_SUCCESS");
                     return Result.Success;
-                case SSH_MSG_USERAUTH_FAILURE:
+                case SshConstants.SSH_MSG_USERAUTH_FAILURE:
                     {
                         String methods = buffer.getString();
                         boolean partial = buffer.getBoolean();
