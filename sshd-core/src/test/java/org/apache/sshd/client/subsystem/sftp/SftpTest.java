@@ -63,13 +63,16 @@ import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.AclSupportedParser.AclCapabilities;
+import org.apache.sshd.common.subsystem.sftp.extensions.NewlineParser.Newline;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
 import org.apache.sshd.common.subsystem.sftp.extensions.Supported2Parser.Supported2;
 import org.apache.sshd.common.subsystem.sftp.extensions.SupportedParser.Supported;
+import org.apache.sshd.common.subsystem.sftp.extensions.VersionsParser.Versions;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.AbstractOpenSSHExtensionParser.OpenSSHExtension;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.Command;
@@ -950,6 +953,10 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                             assertSupportedExtensions(extName, ((Supported2) extValue).extensionNames);
                         } else if (SftpConstants.EXT_ACL_SUPPORTED.equalsIgnoreCase(extName)) {
                             assertSupportedAclCapabilities((AclCapabilities) extValue);
+                        } else if (SftpConstants.EXT_VERSIONS.equalsIgnoreCase(extName)) {
+                            assertSupportedVersions((Versions) extValue);
+                        } else if (SftpConstants.EXT_NEWLINE.equalsIgnoreCase(extName)) {
+                            assertNewlineValue((Newline) extValue);
                         }
                     }
 
@@ -993,7 +1000,6 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     }
 
     private static Map<String, OptionalFeature> EXPECTED_EXTENSIONS = SftpSubsystem.DEFAULT_SUPPORTED_CLIENT_EXTENSIONS;
-
     private static void assertSupportedExtensions(String extName, Collection<String> extensionNames) {
         assertEquals(extName + "[count]", EXPECTED_EXTENSIONS.size(), GenericUtils.size(extensionNames));
 
@@ -1006,6 +1012,24 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 assertTrue(extName + " - missing " + name, extensionNames.contains(name));
             }
         }
+    }
+
+    private static void assertSupportedVersions(Versions vers) {
+        List<String> values = vers.getVersions();
+        assertEquals("Mismatched reported versions size: " + values,
+                     1 + SftpSubsystem.HIGHER_SFTP_IMPL - SftpSubsystem.LOWER_SFTP_IMPL,
+                     GenericUtils.size(values));
+        for (int expected = SftpSubsystem.LOWER_SFTP_IMPL, index = 0; expected <= SftpSubsystem.HIGHER_SFTP_IMPL; expected++, index++) {
+            String e = Integer.toString(expected);
+            String a = values.get(index);
+            assertEquals("Missing value at index=" + index + ": " + values, e, a);
+        }
+    }
+
+    private static void assertNewlineValue(Newline nl) {
+        assertEquals("Mismatched NL value",
+                     BufferUtils.printHex(':', IoUtils.EOL.getBytes(StandardCharsets.UTF_8)),
+                     BufferUtils.printHex(':', nl.getNewline().getBytes(StandardCharsets.UTF_8)));
     }
 
     private static void assertSupportedAclCapabilities(AclCapabilities caps) {

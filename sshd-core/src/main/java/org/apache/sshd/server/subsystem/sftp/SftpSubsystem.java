@@ -27,6 +27,7 @@ import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.CopyOption;
 import java.nio.file.FileAlreadyExistsException;
@@ -241,6 +242,12 @@ public class SftpSubsystem
                             SftpConstants.SSH_ACL_CAP_DENY,
                             SftpConstants.SSH_ACL_CAP_AUDIT,
                             SftpConstants.SSH_ACL_CAP_ALARM)));
+
+    /**
+     * Property that can be used to set the reported NL value.
+     * If not set, then {@link IoUtils#EOL} is used
+     */
+    public static final String NEWLINE_VALUE = "sftp-newline";
 
     /**
      * A {@link Map} of {@link FileInfoExtractor}s to be used to complete
@@ -2210,7 +2217,7 @@ public class SftpSubsystem
 
     protected void appendExtensions(Buffer buffer, String supportedVersions) {
         appendVersionsExtension(buffer, supportedVersions);
-        appendNewlineExtension(buffer, IoUtils.EOL);
+        appendNewlineExtension(buffer, resolveNewlineValue(getServerSession()));
         appendVendorIdExtension(buffer, VersionProperties.getVersionProperties());
         appendOpenSSHExtensions(buffer);
         appendAclSupportedExtension(buffer);
@@ -2365,10 +2372,18 @@ public class SftpSubsystem
      * or use the correct extension name
      *
      * @param buffer The {@link Buffer} to append to
-     * @param value  The recommended value
+     * @param value  The recommended value - ignored if {@code null}/empty
      * @see SftpConstants#EXT_VERSIONS
      */
     protected void appendVersionsExtension(Buffer buffer, String value) {
+        if (GenericUtils.isEmpty(value)) {
+            return;
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("appendVersionsExtension({}) value={}", getServerSession(), value);
+        }
+
         buffer.putString(SftpConstants.EXT_VERSIONS);
         buffer.putString(value);
     }
@@ -2379,12 +2394,30 @@ public class SftpSubsystem
      * or use the correct extension name
      *
      * @param buffer The {@link Buffer} to append to
-     * @param value  The recommended value
+     * @param value  The recommended value - ignored if {@code null}/empty
      * @see SftpConstants#EXT_NEWLINE
      */
     protected void appendNewlineExtension(Buffer buffer, String value) {
+        if (GenericUtils.isEmpty(value)) {
+            return;
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("appendNewlineExtension({}) value={}",
+                      getServerSession(), BufferUtils.printHex(':', value.getBytes(StandardCharsets.UTF_8)));
+        }
+
         buffer.putString(SftpConstants.EXT_NEWLINE);
         buffer.putString(value);
+    }
+
+    protected String resolveNewlineValue(ServerSession session) {
+        String value = PropertyResolverUtils.getString(session, NEWLINE_VALUE);
+        if (value == null) {
+            return IoUtils.EOL;
+        } else {
+            return value;   // empty means disabled
+        }
     }
 
     /**
@@ -2393,11 +2426,24 @@ public class SftpSubsystem
      * or use the correct extension name
      *
      * @param buffer            The {@link Buffer} to append to
-     * @param versionProperties The currently available version properties
+     * @param versionProperties The currently available version properties - ignored
+     *                          if {@code null}/empty. The code expects the following values:
+     *                          <UL>
+     *                              <LI>{@code groupId} - as the vendor name</LI>
+     *                              <LI>{@code artifactId} - as the product name</LI>
+     *                              <LI>{@code version} - as the product version</LI>
+     *                          </UL>
      * @see SftpConstants#EXT_VENDOR_ID
      * @see <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09 - section 4.4</A>
      */
     protected void appendVendorIdExtension(Buffer buffer, Map<String, ?> versionProperties) {
+        if (GenericUtils.isEmpty(versionProperties)) {
+            return;
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("appendVendorIdExtension({}): {}", getServerSession(), versionProperties);
+        }
         buffer.putString(SftpConstants.EXT_VENDOR_ID);
 
         PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(Collections.unmodifiableMap(versionProperties));

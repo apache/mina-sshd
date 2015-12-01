@@ -21,8 +21,8 @@ package org.apache.sshd.common.subsystem.sftp.extensions;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.VersionsParser.Versions;
@@ -41,13 +41,27 @@ public class VersionsParser extends AbstractParser<Versions> {
     public static class Versions {
         public static final char SEP = ',';
 
-        // CHECKSTYLE:OFF
-        public Collection<String> versions;
-        // CHECKSTYLE:ON
+        private List<String> versions;
+
+        public Versions() {
+            this(null);
+        }
+
+        public Versions(List<String> versions) {
+            this.versions = versions;
+        }
+
+        public List<String> getVersions() {
+            return versions;
+        }
+
+        public void setVersions(List<String> versions) {
+            this.versions = versions;
+        }
 
         @Override
         public String toString() {
-            return GenericUtils.join(versions, ',');
+            return GenericUtils.join(getVersions(), ',');
         }
     }
 
@@ -64,10 +78,6 @@ public class VersionsParser extends AbstractParser<Versions> {
 
     public Versions parse(String value) {
         String[] comps = GenericUtils.split(value, Versions.SEP);
-        Versions v = new Versions();
-        v.versions = GenericUtils.isEmpty(comps)
-                ? Collections.<String>emptyList()
-                : Arrays.asList(comps);
-        return v;
+        return new Versions(GenericUtils.isEmpty(comps) ? Collections.<String>emptyList() : Arrays.asList(comps));
     }
 }

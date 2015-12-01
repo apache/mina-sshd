@@ -334,11 +334,11 @@ public class DefaultSftpClient extends AbstractSftpClient {
         Collection<String> extensions = ParserUtils.supportedExtensions(parsed);
         if ((GenericUtils.size(extensions) > 0) && extensions.contains(SftpConstants.EXT_VERSION_SELECT)) {
             Versions vers = GenericUtils.isEmpty(parsed) ? null : (Versions) parsed.get(SftpConstants.EXT_VERSIONS);
-            Collection<String> reported = (vers == null) ? null : vers.versions;
+            Collection<String> reported = (vers == null) ? null : vers.getVersions();
             if (GenericUtils.size(reported) > 0) {
                 for (String v : reported) {
                     if (!available.add(Integer.valueOf(v))) {
-                        continue;
+                        continue;   // debug breakpoint
                     }
                 }
             }

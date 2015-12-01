@@ -19,7 +19,9 @@
 
 package org.apache.sshd.common.subsystem.sftp.extensions;
 
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.NewlineParser.Newline;
@@ -36,17 +38,62 @@ public class NewlineParser extends AbstractParser<Newline> {
      *
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
-    public static class Newline {
-        // CHECKSTYLE:OFF
-        public String newline;
-        // CHECKSTYLE:ON
+    public static class Newline implements Cloneable, Serializable {
+        private static final long serialVersionUID = 2010656704254497899L;
+        private String newline;
+
+        public Newline() {
+            this(null);
+        }
+
+        public Newline(String newline) {
+            this.newline = newline;
+        }
+
+        public String getNewline() {
+            return newline;
+        }
+
+        public void setNewline(String newline) {
+            this.newline = newline;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(getNewline());
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == null) {
+                return false;
+            }
+            if (obj == this) {
+                return true;
+            }
+            if (obj.getClass() != getClass()) {
+                return false;
+            }
+
+            return Objects.equals(((Newline) obj).getNewline(), getNewline());
+        }
+
+        @Override
+        public Newline clone() {
+            try {
+                return getClass().cast(super.clone());
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException("Failed to clone " + toString() + ": " + e.getMessage(), e);
+            }
+        }
 
         @Override
         public String toString() {
-            if (GenericUtils.isEmpty(newline)) {
-                return newline;
+            String nl = getNewline();
+            if (GenericUtils.isEmpty(nl)) {
+                return nl;
             } else {
-                return BufferUtils.printHex(':', newline.getBytes(StandardCharsets.UTF_8));
+                return BufferUtils.printHex(':', nl.getBytes(StandardCharsets.UTF_8));
             }
         }
     }
@@ -63,8 +110,6 @@ public class NewlineParser extends AbstractParser<Newline> {
     }
 
     public Newline parse(String value) {
-        Newline nl = new Newline();
-        nl.newline = value;
-        return nl;
+        return new Newline(value);
     }
 }
