@@ -16,24 +16,41 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.mac;
+
+package org.apache.sshd.util.test;
+
+import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
- * Message Authentication Code for use in SSH.
- * It usually wraps a javax.crypto.Mac class.
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Mac extends MacInformation {
-    void init(byte[] key) throws Exception;
+public class OutputCountTrackingOutputStream extends FilterOutputStream {
+    protected long writeCount;
 
-    void update(byte[] buf);
+    public OutputCountTrackingOutputStream(OutputStream out) {
+        super(out);
+    }
 
-    void update(byte[] buf, int start, int len);
+    @Override
+    public void write(int b) throws IOException {
+        super.write(b);
+        updateWriteCount(1L);
+    }
 
-    void updateUInt(long foo);
+    @Override
+    public void write(byte[] b, int off, int len) throws IOException {
+        super.write(b, off, len);
+        updateWriteCount(len);
+    }
 
-    void doFinal(byte[] buf) throws Exception;
+    public long getWriteCount() {
+        return writeCount;
+    }
 
-    void doFinal(byte[] buf, int offset) throws Exception;
+    protected long updateWriteCount(long delta) {
+        writeCount += delta;
+        return writeCount;
+    }
 }

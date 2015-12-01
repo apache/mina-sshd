@@ -807,7 +807,7 @@ public class ScpTest extends BaseTestSupport {
                     info.keyExchangeAlgorithm, info.serverHostKeyAlgorithm,
                     info.clientToServerCryptoAlgorithm, info.serverToClientCryptoAlgorithm,
                     info.clientToServerMACAlgorithm, info.serverToClientMACAlgorithm);
-            conn.authenticateWithPassword(getCurrentTestName(), getCurrentTestName());
+            assertTrue("Failed to authenticate", conn.authenticateWithPassword(getCurrentTestName(), getCurrentTestName()));
 
             final SCPClient scp_client = new SCPClient(conn);
             try (OutputStream output = scp_client.put(fileName, expected.length, remotePath, mode)) {

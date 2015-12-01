@@ -254,6 +254,19 @@ public abstract class BaseTestSupport extends Assert {
         return sb.toString();
     }
 
+    public static String repeat(CharSequence csq, int nTimes) {
+        if (GenericUtils.isEmpty(csq) || (nTimes <= 0)) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder(nTimes * csq.length());
+        for (int index = 0; index < nTimes; index++) {
+            sb.append(csq);
+        }
+
+        return sb.toString();
+    }
+
     public static List<Object[]> parameterize(Collection<?> params) {
         if (GenericUtils.isEmpty(params)) {
             return Collections.emptyList();

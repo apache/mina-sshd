@@ -16,27 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.util;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
+package org.apache.sshd.common.mac;
 
-import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+/**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
+public interface MacInformation {
+    /**
+     * @return MAC algorithm name
+     */
+    String getAlgorithm();
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class BufferTest extends BaseTestSupport {
+    /**
+     * @return MAC output block size in bytes - may be less than the default
+     * - e.g., MD5-96
+     */
+    int getBlockSize();
 
-    @Test
-    public void testGetLong() throws Exception {
-        long v = 1234567890123456789L;
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        new DataOutputStream(stream).writeLong(v);
-        Buffer buffer = new ByteArrayBuffer(stream.toByteArray());
-        assertEquals(v, buffer.getLong());
-    }
+    /**
+     * @return The &quot;natural&quot; MAC block size in bytes
+     */
+    int getDefaultBlockSize();
 }

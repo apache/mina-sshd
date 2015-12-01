@@ -25,7 +25,7 @@ import org.apache.sshd.common.BuiltinFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 // CHECKSTYLE:OFF
-public interface MacFactory extends BuiltinFactory<Mac> {
-
+public interface MacFactory extends MacInformation, BuiltinFactory<Mac> {
+    // nothing extra
 }
 //CHECKSTYLE:ON

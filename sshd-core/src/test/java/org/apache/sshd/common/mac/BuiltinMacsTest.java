@@ -160,5 +160,4 @@ public class BuiltinMacsTest extends BaseTestSupport {
             assertNull("Extension not un-registered", BuiltinMacs.resolveFactory(name));
         }
     }
-
 }

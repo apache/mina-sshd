@@ -26,6 +26,6 @@ import org.apache.sshd.common.NamedFactory;
  */
 // CHECKSTYLE:OFF
 public interface ChannelFactory extends NamedFactory<Channel> {
-
+    // nothing extra
 }
 //CHECKSTYLE:ON

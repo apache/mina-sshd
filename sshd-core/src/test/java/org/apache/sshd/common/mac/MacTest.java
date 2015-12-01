@@ -18,107 +18,116 @@
  */
 package org.apache.sshd.common.mac;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.cipher.BuiltinCiphers;
-import org.apache.sshd.common.cipher.Cipher;
-import org.apache.sshd.common.random.Random;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
-import org.apache.sshd.util.test.Utils;
 import org.junit.After;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import com.jcraft.jsch.JSch;
 
+import ch.ethz.ssh2.Connection;
+import ch.ethz.ssh2.ConnectionInfo;
+
 /**
- * Test Cipher algorithms.
+ * Test MAC algorithms.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class MacTest extends BaseTestSupport {
+    private static final Collection<String> ganymedMacs =
+            Collections.unmodifiableSet(new TreeSet<String>(String.CASE_INSENSITIVE_ORDER) {
+                private static final long serialVersionUID = 1L;    // we're not serializing it
 
+                {
+                    String[] macs = Connection.getAvailableMACs();
+                    if (GenericUtils.length(macs) > 0) {
+                        for (String m : macs) {
+                            add(m);
+                        }
+                    }
+                }
+            });
+
+    @Parameters(name = "factory={0}")
+    public static Collection<Object[]> parameters() {
+        List<Object[]> ret = new ArrayList<>();
+        for (MacFactory f : BuiltinMacs.VALUES) {
+            if (!f.isSupported()) {
+                System.out.println("Skip unsupported MAC " + f);
+                continue;
+            }
+
+            String name = f.getName();
+            // derive the JSCH implementation of the specific MAC
+            int pos = name.indexOf('-');
+            String remainder = name.substring(pos + 1);
+            pos = remainder.indexOf('-');
+
+            String className;
+            if (pos < 0) {
+                className = "HMAC" + remainder.toUpperCase();
+            } else {
+                String algorithm = remainder.substring(0, pos);
+                remainder = remainder.substring(pos + 1);
+                if ("sha2".equals(algorithm)) {
+                    className = "HMACSHA" + remainder.toUpperCase();
+                } else {
+                    className = "HMAC" + algorithm.toUpperCase()  + remainder.toUpperCase();
+                }
+            }
+
+            ret.add(new Object[]{f, "com.jcraft.jsch.jce." + className});
+        }
+
+        return ret;
+    }
+
+    @BeforeClass
+    public static void jschnit() {
+        JSchLogger.init();
+    }
+
+    private final MacFactory factory;
+    private final String jschMacClass;
     private SshServer sshd;
     private int port;
 
-    @Test
-    public void testHMACMD5() throws Exception {
-        setUp(BuiltinMacs.hmacmd5);
-        runTest();
+    public MacTest(MacFactory factory, String jschMacClass) {
+        this.factory = factory;
+        this.jschMacClass = jschMacClass;
     }
 
-    @Test
-    public void testHMACMD596() throws Exception {
-        setUp(BuiltinMacs.hmacmd596);
-        runTest();
-    }
-
-    @Test
-    public void testHMACSHA1() throws Exception {
-        setUp(BuiltinMacs.hmacsha1);
-        runTest();
-    }
-
-    @Test
-    public void testHMACSHA196() throws Exception {
-        setUp(BuiltinMacs.hmacsha196);
-        runTest();
-    }
-
-    @Test
-    public void testHMACSHA256() throws Exception {
-        setUp(BuiltinMacs.hmacsha256);
-        runTest();
-    }
-
-    @Test
-    @Ignore("Lead to ArrayIndexOutOfBoundsException in JSch")
-    public void testHMACSHA512() throws Exception {
-        setUp(BuiltinMacs.hmacsha512);
-        runTest();
-    }
-
-    @Test
-    public void loadTest() throws Exception {
-        Random random = Utils.getRandomizerInstance();
-        loadTest(BuiltinCiphers.aes128cbc, random);
-        loadTest(BuiltinCiphers.blowfishcbc, random);
-        loadTest(BuiltinCiphers.tripledescbc, random);
-    }
-
-    protected void loadTest(NamedFactory<Cipher> factory, Random random) throws Exception {
-        Cipher cipher = factory.create();
-        byte[] key = new byte[cipher.getBlockSize()];
-        byte[] iv = new byte[cipher.getIVSize()];
-        random.fill(key, 0, key.length);
-        random.fill(iv, 0, iv.length);
-        cipher.init(Cipher.Mode.Encrypt, key, iv);
-
-        byte[] input = new byte[cipher.getBlockSize()];
-        random.fill(input, 0, input.length);
-        long t0 = System.currentTimeMillis();
-        for (int i = 0; i < 100000; i++) {
-            cipher.update(input, 0, input.length);
-        }
-        long t1 = System.currentTimeMillis();
-        System.err.println(factory.getName() + ": " + (t1 - t0) + " ms");
-    }
-
-
-    protected void setUp(NamedFactory<Mac> mac) throws Exception {
+    @Before
+    public void setUp() throws Exception {
         sshd = setupTestServer();
         sshd.setKeyPairProvider(createTestHostKeyProvider());
-        sshd.setMacFactories(Arrays.<NamedFactory<Mac>>asList(mac));
+        sshd.setMacFactories(Arrays.<NamedFactory<Mac>>asList(factory));
         sshd.start();
         port = sshd.getPort();
     }
@@ -130,52 +139,81 @@ public class MacTest extends BaseTestSupport {
         }
     }
 
-    protected void runTest() throws Exception {
-        JSchLogger.init();
+    @Test
+    public void testWithJSCH() throws Exception {
+        String macName = factory.getName();
+        Assume.assumeTrue("Known JSCH bug with " + macName, !BuiltinMacs.hmacsha512.equals(factory));
+
         JSch sch = new JSch();
         JSch.setConfig("cipher.s2c", "aes128-cbc,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc,none");
         JSch.setConfig("cipher.c2s", "aes128-cbc,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc,none");
-        JSch.setConfig("mac.s2c", "hmac-md5,hmac-sha1,hmac-sha2-256,hmac-sha1-96,hmac-md5-96,hmac-sha2-512");
-        JSch.setConfig("mac.c2s", "hmac-md5,hmac-sha1,hmac-sha2-256,hmac-sha1-96,hmac-md5-96,hmac-sha2-512");
-        JSch.setConfig("hmac-sha2-512", "com.jcraft.jsch.jce.HMACSHA512");
-        com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), TEST_LOCALHOST, port);
+        JSch.setConfig("mac.s2c", macName);
+        JSch.setConfig("mac.c2s", macName);
+        JSch.setConfig(macName, jschMacClass);
+
+        com.jcraft.jsch.Session session = sch.getSession(getCurrentTestName(), TEST_LOCALHOST, port);
         try {
-            s.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
-            s.connect();
-            com.jcraft.jsch.Channel c = s.openChannel("shell");
-            c.connect();
+            session.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
+            session.connect();
 
-            try (OutputStream os = c.getOutputStream();
-                 InputStream is = c.getInputStream()) {
+            com.jcraft.jsch.Channel channel = session.openChannel("shell");
+            channel.connect();
 
-                String expected = "this is my command\n";
-                byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
-                byte[] data = new byte[bytes.length + Long.SIZE];
-                for (int i = 0; i < 10; i++) {
-                    os.write(bytes);
-                    os.flush();
-                    int len = is.read(data);
-                    String str = new String(data, 0, len);
-                    assertEquals("Mismatched data at iteration " + i, expected, str);
-                }
+            try (OutputStream stdin = channel.getOutputStream();
+                 InputStream stdout = channel.getInputStream();
+                 InputStream stderr = channel.getExtInputStream()) {
+                runShellTest(stdin, stdout);
             } finally {
-                c.disconnect();
+                channel.disconnect();
             }
         } finally {
-            s.disconnect();
+            session.disconnect();
         }
     }
 
-    static boolean checkCipher(String cipher) {
+    @Test
+    public void testWithGanymede() throws Exception {
+        String macName = factory.getName();
+        Assume.assumeTrue("Factory not supported: " + macName, ganymedMacs.contains(macName));
+
+        Connection conn = new Connection(TEST_LOCALHOST, port);
         try {
-            Class<?> c = Class.forName(cipher);
-            com.jcraft.jsch.Cipher _c = (com.jcraft.jsch.Cipher) (c.newInstance());
-            _c.init(com.jcraft.jsch.Cipher.ENCRYPT_MODE,
-                    new byte[_c.getBlockSize()],
-                    new byte[_c.getIVSize()]);
-            return true;
-        } catch (Exception e) {
-            return false;
+            conn.setClient2ServerMACs(new String[]{macName});
+
+            ConnectionInfo info = conn.connect(null, (int) TimeUnit.SECONDS.toMillis(5L), (int) TimeUnit.SECONDS.toMillis(11L));
+            outputDebugMessage("Connected: kex=%s, key-type=%s, c2senc=%s, s2cenc=%s, c2mac=%s, s2cmac=%s",
+                    info.keyExchangeAlgorithm, info.serverHostKeyAlgorithm,
+                    info.clientToServerCryptoAlgorithm, info.serverToClientCryptoAlgorithm,
+                    info.clientToServerMACAlgorithm, info.serverToClientMACAlgorithm);
+            assertTrue("Failed to authenticate", conn.authenticateWithPassword(getCurrentTestName(), getCurrentTestName()));
+
+            ch.ethz.ssh2.Session session = conn.openSession();
+            try {
+                session.startShell();
+                try (OutputStream stdin = session.getStdin();
+                     InputStream stdout = session.getStdout();
+                     InputStream stderr = session.getStderr()) {
+                    runShellTest(stdin, stdout);
+                }
+            } finally {
+                session.close();
+            }
+        } finally {
+            conn.close();
+        }
+    }
+
+    private void runShellTest(OutputStream stdin, InputStream stdout) throws IOException {
+        String expected = "this is my command\n";
+        byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
+        byte[] data = new byte[bytes.length + Long.SIZE];
+        for (int index = 1; index <= 10; index++) {
+            stdin.write(bytes);
+            stdin.flush();
+
+            int len = stdout.read(data);
+            String str = new String(data, 0, len, StandardCharsets.UTF_8);
+            assertEquals("Mismatched data at iteration " + index, expected, str);
         }
     }
 }

@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
@@ -53,6 +54,7 @@ import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JSchLogger;
+import org.apache.sshd.util.test.OutputCountTrackingOutputStream;
 import org.apache.sshd.util.test.SimpleUserInfo;
 import org.apache.sshd.util.test.TeeOutputStream;
 import org.junit.After;
@@ -494,13 +496,29 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
                 try (ChannelShell channel = session.createShellChannel();
                      PipedOutputStream pipedIn = new PipedOutputStream();
-                     OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
-                     OutputStream err = new NullOutputStream();
+                     OutputStream sentTracker = new OutputCountTrackingOutputStream(sent) {
+                         @Override
+                         protected long updateWriteCount(long delta) {
+                             long result = super.updateWriteCount(delta);
+                             outputDebugMessage("SENT write count=%d", result);
+                             return result;
+                         }
+                     };
+                     OutputStream teeOut = new TeeOutputStream(sentTracker, pipedIn);
+                     OutputStream stderr = new NullOutputStream();
+                     OutputStream stdout = new OutputCountTrackingOutputStream(out) {
+                        @Override
+                        protected long updateWriteCount(long delta) {
+                            long result = super.updateWriteCount(delta);
+                            outputDebugMessage("OUT write count=%d", result);
+                            return result;
+                        }
+                     };
                      InputStream inPipe = new PipedInputStream(pipedIn)) {
 
                     channel.setIn(inPipe);
-                    channel.setOut(out);
-                    channel.setErr(err);
+                    channel.setOut(stdout);
+                    channel.setErr(stderr);
                     channel.open();
 
                     teeOut.write("this is my command\n".getBytes(StandardCharsets.UTF_8));

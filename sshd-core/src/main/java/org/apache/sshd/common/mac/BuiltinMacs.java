@@ -42,42 +42,12 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public enum BuiltinMacs implements MacFactory {
-    hmacmd5(Constants.HMAC_MD5) {
-        @Override
-        public Mac create() {
-            return new BaseMac("HmacMD5", 16, 16);
-        }
-    },
-    hmacmd596(Constants.HMAC_MD5_96) {
-        @Override
-        public Mac create() {
-            return new BaseMac("HmacMD5", 12, 16);
-        }
-    },
-    hmacsha1(Constants.HMAC_SHA1) {
-        @Override
-        public Mac create() {
-            return new BaseMac("HmacSHA1", 20, 20);
-        }
-    },
-    hmacsha196(Constants.HMAC_SHA1_96) {
-        @Override
-        public Mac create() {
-            return new BaseMac("HmacSHA1", 12, 20);
-        }
-    },
-    hmacsha256(Constants.HMAC_SHA2_256) {
-        @Override
-        public Mac create() {
-            return new BaseMac("HmacSHA256", 32, 32);
-        }
-    },
-    hmacsha512(Constants.HMAC_SHA2_512) {
-        @Override
-        public Mac create() {
-            return new BaseMac("HmacSHA1", 64, 64);
-        }
-    };
+    hmacmd5(Constants.HMAC_MD5, "HmacMD5", 16, 16),
+    hmacmd596(Constants.HMAC_MD5_96, "HmacMD5", 12, 16),
+    hmacsha1(Constants.HMAC_SHA1, "HmacSHA1", 20, 20),
+    hmacsha196(Constants.HMAC_SHA1_96, "HmacSHA1", 12, 20),
+    hmacsha256(Constants.HMAC_SHA2_256, "HmacSHA256", 32, 32),
+    hmacsha512(Constants.HMAC_SHA2_512, "HmacSHA512", 64, 65);
 
     public static final Set<BuiltinMacs> VALUES =
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinMacs.class));
@@ -86,14 +56,40 @@ public enum BuiltinMacs implements MacFactory {
             new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private final String factoryName;
+    private final String algorithm;
+    private final int defbsize;
+    private final int bsize;
 
-    BuiltinMacs(String facName) {
-        factoryName = facName;
+    BuiltinMacs(String factoryName, String algorithm, int bsize, int defbsize) {
+        this.factoryName = factoryName;
+        this.algorithm = algorithm;
+        this.bsize = bsize;
+        this.defbsize = defbsize;
+    }
+
+    @Override
+    public Mac create() {
+        return new BaseMac(getAlgorithm(), getBlockSize(), getDefaultBlockSize());
     }
 
     @Override
     public final String getName() {
         return factoryName;
+    }
+
+    @Override
+    public final String getAlgorithm() {
+        return algorithm;
+    }
+
+    @Override
+    public final int getBlockSize() {
+        return bsize;
+    }
+
+    @Override
+    public final int getDefaultBlockSize() {
+        return defbsize;
     }
 
     @Override

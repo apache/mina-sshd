@@ -87,6 +87,113 @@ public final class BufferUtils {
     }
 
     /**
+     * @param separator The separator between the HEX values - may be {@link #EMPTY_HEX_SEPARATOR}
+     * @param csq The {@link CharSequence} containing the HEX encoded bytes
+     * @return The decoded bytes
+     * @throws IllegalArgumentException If invalid HEX sequence length
+     * @throws NumberFormatException If invalid HEX characters found
+     * @see #decodeHex(char, CharSequence, int, int)
+     */
+    public static byte[] decodeHex(char separator, CharSequence csq) {
+        return decodeHex(separator, csq, 0, GenericUtils.length(csq));
+    }
+
+    /**
+     * @param separator The separator between the HEX values - may be {@link #EMPTY_HEX_SEPARATOR}
+     * @param csq The {@link CharSequence} containing the HEX encoded bytes
+     * @param start Start offset of the HEX sequence (inclusive)
+     * @param end End offset of the HEX sequence (exclusive)
+     * @return The decoded bytes
+     * @throws IllegalArgumentException If invalid HEX sequence length
+     * @throws NumberFormatException If invalid HEX characters found
+     */
+    public static byte[] decodeHex(char separator, CharSequence csq, int start, int end) {
+        int len = end - start;
+        ValidateUtils.checkTrue(len >= 0, "Bad HEX sequence length: %d", len);
+        if (len == 0) {
+            return GenericUtils.EMPTY_BYTE_ARRAY;
+        }
+
+        int delta = 2;
+        byte[] bytes;
+        if (separator != EMPTY_HEX_SEPARATOR) {
+            // last character cannot be the separator
+            ValidateUtils.checkTrue((len % 3) == 2, "Invalid separated HEX sequence length: %d", len);
+            bytes = new byte[(len + 1) / 3];
+            delta++;
+        } else {
+            ValidateUtils.checkTrue((len & 0x01) == 0, "Invalid contiguous HEX sequence length: %d", len);
+            bytes = new byte[len >>> 1];
+        }
+
+        int writeLen = 0;
+        for (int curPos = start; curPos < end; curPos += delta, writeLen++) {
+            bytes[writeLen] = fromHex(csq.charAt(curPos), csq.charAt(curPos + 1));
+        }
+        assert writeLen == bytes.length;
+
+        return bytes;
+    }
+
+    /**
+     * @param <S> The {@link OutputStream} generic type
+     * @param stream The target {@link OutputStream}
+     * @param separator The separator between the HEX values - may be {@link #EMPTY_HEX_SEPARATOR}
+     * @param csq The {@link CharSequence} containing the HEX encoded bytes
+     * @return The number of bytes written to the stream
+     * @throws IOException If failed to write
+     * @throws IllegalArgumentException If invalid HEX sequence length
+     * @throws NumberFormatException If invalid HEX characters found
+     * @see #decodeHex(OutputStream, char, CharSequence, int, int)
+     */
+    public static <S extends OutputStream> int decodeHex(S stream, char separator, CharSequence csq) throws IOException {
+        return decodeHex(stream, separator, csq, 0, GenericUtils.length(csq));
+    }
+
+    /**
+     * @param <S> The {@link OutputStream} generic type
+     * @param stream The target {@link OutputStream}
+     * @param separator The separator between the HEX values - may be {@link #EMPTY_HEX_SEPARATOR}
+     * @param csq The {@link CharSequence} containing the HEX encoded bytes
+     * @param start Start offset of the HEX sequence (inclusive)
+     * @param end End offset of the HEX sequence (exclusive)
+     * @return The number of bytes written to the stream
+     * @throws IOException If failed to write
+     * @throws IllegalArgumentException If invalid HEX sequence length
+     * @throws NumberFormatException If invalid HEX characters found
+     */
+    public static <S extends OutputStream> int decodeHex(S stream, char separator, CharSequence csq, int start, int end) throws IOException {
+        int len = end - start;
+        ValidateUtils.checkTrue(len >= 0, "Bad HEX sequence length: %d", len);
+
+        int delta = 2;
+        if (separator != EMPTY_HEX_SEPARATOR) {
+            // last character cannot be the separator
+            ValidateUtils.checkTrue((len % 3) == 2, "Invalid separated HEX sequence length: %d", len);
+            delta++;
+        } else {
+            ValidateUtils.checkTrue((len & 0x01) == 0, "Invalid contiguous HEX sequence length: %d", len);
+        }
+
+        int writeLen = 0;
+        for (int curPos = start; curPos < end; curPos += delta, writeLen++) {
+            stream.write(fromHex(csq.charAt(curPos), csq.charAt(curPos + 1)) & 0xFF);
+        }
+
+        return writeLen;
+    }
+
+    public static byte fromHex(char hi, char lo) throws NumberFormatException {
+        int hiValue = HEX_DIGITS.indexOf(((hi >= 'A') && (hi <= 'F')) ? ('a' + (hi - 'A')) : hi);
+        int loValue = HEX_DIGITS.indexOf(((lo >= 'A') && (lo <= 'F')) ? ('a' + (lo - 'A')) : lo);
+        if ((hiValue < 0) || (loValue < 0)) {
+            throw new NumberFormatException("fromHex(" + new String(new char[]{hi, lo}) + ") non-HEX characters");
+        }
+
+        return (byte) ((hiValue << 4) + loValue);
+    }
+
+    /**
      * Read a 32-bit value in network order
      *
      * @param input The {@link InputStream}
