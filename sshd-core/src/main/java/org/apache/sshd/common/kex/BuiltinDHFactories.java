@@ -54,7 +54,7 @@ public enum BuiltinDHFactories implements DHFactory {
 
         @Override   // see https://tools.ietf.org/html/rfc4253#page-23
         public boolean isSupported() {
-            return SecurityUtils.isDHOakelyGroupSupported(1024);
+            return SecurityUtils.isDHOakelyGroupSupported(1024) && BuiltinDigests.sha1.isSupported();
         }
     },
     dhg14(Constants.DIFFIE_HELLMAN_GROUP14_SHA1) {
@@ -68,7 +68,7 @@ public enum BuiltinDHFactories implements DHFactory {
 
         @Override   // see https://tools.ietf.org/html/rfc4253#page-23
         public boolean isSupported() {
-            return SecurityUtils.isDHOakelyGroupSupported(2048);
+            return SecurityUtils.isDHOakelyGroupSupported(2048) && BuiltinDigests.sha1.isSupported();
         }
     },
     dhgex(Constants.DIFFIE_HELLMAN_GROUP_EXCHANGE_SHA1) {
@@ -89,7 +89,7 @@ public enum BuiltinDHFactories implements DHFactory {
 
         @Override
         public boolean isSupported() {  // avoid "Prime size must be multiple of 64, and can only range from 512 to 2048 (inclusive)"
-            return SecurityUtils.isDHGroupExchangeSupported();
+            return SecurityUtils.isDHGroupExchangeSupported() && BuiltinDigests.sha1.isSupported();
         }
     },
     dhgex256(Constants.DIFFIE_HELLMAN_GROUP_EXCHANGE_SHA256) {
@@ -105,7 +105,7 @@ public enum BuiltinDHFactories implements DHFactory {
 
         @Override
         public boolean isSupported() {  // avoid "Prime size must be multiple of 64, and can only range from 512 to 2048 (inclusive)"
-            return SecurityUtils.isDHGroupExchangeSupported();
+            return SecurityUtils.isDHGroupExchangeSupported() && BuiltinDigests.sha256.isSupported();
         }
 
         @Override
@@ -124,7 +124,7 @@ public enum BuiltinDHFactories implements DHFactory {
 
         @Override
         public boolean isSupported() {
-            return SecurityUtils.hasEcc();
+            return ECCurves.nistp256.isSupported();
         }
     },
     ecdhp384(Constants.ECDH_SHA2_NISTP384) {
@@ -138,7 +138,7 @@ public enum BuiltinDHFactories implements DHFactory {
 
         @Override
         public boolean isSupported() {
-            return SecurityUtils.hasEcc();
+            return ECCurves.nistp384.isSupported();
         }
     },
     ecdhp521(Constants.ECDH_SHA2_NISTP521) {
@@ -152,7 +152,7 @@ public enum BuiltinDHFactories implements DHFactory {
 
         @Override
         public boolean isSupported() {
-            return SecurityUtils.hasEcc();
+            return ECCurves.nistp521.isSupported();
         }
     };
 

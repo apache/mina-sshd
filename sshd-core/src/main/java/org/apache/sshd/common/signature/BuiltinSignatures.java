@@ -35,7 +35,6 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.NamedFactoriesListParseResult;
-import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -197,12 +196,12 @@ public enum BuiltinSignatures implements SignatureFactory {
     }
 
     /**
-     * @param factory The {@link org.apache.sshd.common.NamedFactory} for the cipher - ignored if {@code null}
+     * @param factory The {@link org.apache.sshd.common.NamedFactory} for the signature - ignored if {@code null}
      * @return The matching {@link org.apache.sshd.common.signature.BuiltinSignatures} whose factory name matches
      * (case <U>insensitive</U>) the digest factory name
      * @see #fromFactoryName(String)
      */
-    public static BuiltinSignatures fromFactory(NamedFactory<Digest> factory) {
+    public static BuiltinSignatures fromFactory(NamedFactory<Signature> factory) {
         if (factory == null) {
             return null;
         } else {

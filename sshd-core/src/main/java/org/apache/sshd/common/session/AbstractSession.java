@@ -63,6 +63,7 @@ import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -283,7 +284,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     @Override
     public byte[] getSessionId() {
         // return a clone to avoid anyone changing the internal value
-        return GenericUtils.isEmpty(sessionId) ? sessionId : sessionId.clone();
+        return NumberUtils.isEmpty(sessionId) ? sessionId : sessionId.clone();
     }
 
     @Override

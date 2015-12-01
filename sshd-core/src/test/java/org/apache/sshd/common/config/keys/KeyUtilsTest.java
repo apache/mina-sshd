@@ -25,14 +25,11 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
-import org.apache.sshd.common.Factory;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.digest.BaseDigest;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.digest.DigestFactory;
-import org.apache.sshd.common.digest.DigestInformation;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -93,6 +90,11 @@ public class KeyUtilsTest extends BaseTestSupport {
 
         GeneralSecurityException err = null;
         for (ECCurves curve : ECCurves.VALUES) {
+            if (!curve.isSupported()) {
+                System.out.println("Skip unsupported curve=" + curve.getName());
+                continue;
+            }
+
             String keyType = curve.getKeyType();
             int keySize = curve.getKeySize();
             try {
@@ -110,7 +112,12 @@ public class KeyUtilsTest extends BaseTestSupport {
 
     @Test
     public void testGenerateFingerPrintOnException() {
-        for (DigestInformation info : BuiltinDigests.VALUES) {
+        for (final DigestFactory info : BuiltinDigests.VALUES) {
+            if (!info.isSupported()) {
+                System.out.println("Skip unsupported digest: " + info.getAlgorithm());
+                continue;
+            }
+
             final Exception thrown = new DigestException(info.getAlgorithm() + ":" + info.getBlockSize());
             final Digest digest = new BaseDigest(info.getAlgorithm(), info.getBlockSize()) {
                 @Override
@@ -130,6 +137,16 @@ public class KeyUtilsTest extends BaseTestSupport {
                 }
 
                 @Override
+                public boolean isSupported() {
+                    return info.isSupported();
+                }
+
+                @Override
+                public int getBlockSize() {
+                    return info.getBlockSize();
+                }
+
+                @Override
                 public Digest create() {
                     return digest;
                 }
@@ -141,10 +158,15 @@ public class KeyUtilsTest extends BaseTestSupport {
 
     @Test
     public void testGenerateDefaultFingerprintDigest() {
-        final Factory<? extends Digest> defaultValue = KeyUtils.getDefaultFingerPrintFactory();
+        final DigestFactory defaultValue = KeyUtils.getDefaultFingerPrintFactory();
         assertNotNull("No current default fingerprint digest factory", defaultValue);
         try {
-            for (NamedFactory<? extends Digest> f : BuiltinDigests.VALUES) {
+            for (DigestFactory f : BuiltinDigests.VALUES) {
+                if (!f.isSupported()) {
+                    System.out.println("Skip unsupported digest=" + f.getAlgorithm());
+                    continue;
+                }
+
                 KeyUtils.setDefaultFingerPrintFactory(f);
 
                 String data = getClass().getName() + "#" + getCurrentTestName() + "(" + f.getName() + ")";

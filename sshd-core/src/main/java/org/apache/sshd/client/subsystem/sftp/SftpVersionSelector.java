@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -124,7 +125,7 @@ public interface SftpVersionSelector {
          * the most preferred version that is also listed as available.
          */
         public static SftpVersionSelector preferredVersionSelector(final int ... preferred) {
-            return preferredVersionSelector(GenericUtils.asList(preferred));
+            return preferredVersionSelector(NumberUtils.asList(preferred));
 
         }
 

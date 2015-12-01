@@ -28,7 +28,7 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient.Handle;
 import org.apache.sshd.client.subsystem.sftp.extensions.impl.AbstractSftpClientExtension;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHFsyncExtension;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionParser;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -42,7 +42,7 @@ public class OpenSSHFsyncExtensionImpl extends AbstractSftpClientExtension imple
     @Override
     public void fsync(Handle fileHandle) throws IOException {
         byte[] handle = fileHandle.getIdentifier();
-        Buffer buffer = getCommandBuffer((Integer.SIZE / Byte.SIZE) + GenericUtils.length(handle));
+        Buffer buffer = getCommandBuffer((Integer.SIZE / Byte.SIZE) + NumberUtils.length(handle));
         buffer.putBytes(handle);
         sendAndCheckExtendedCommandStatus(buffer);
     }

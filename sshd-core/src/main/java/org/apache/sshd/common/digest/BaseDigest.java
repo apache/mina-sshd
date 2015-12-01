@@ -22,6 +22,7 @@ import java.security.MessageDigest;
 import java.util.Objects;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -71,17 +72,24 @@ public class BaseDigest implements Digest {
 
     @Override
     public void update(byte[] data) throws Exception {
-        update(data, 0, GenericUtils.length(data));
+        update(data, 0, NumberUtils.length(data));
     }
 
     @Override
     public void update(byte[] data, int start, int len) throws Exception {
-        md.update(data, start, len);
+        ValidateUtils.checkNotNull(md, "Digest not initialized").update(data, start, len);
+    }
+
+    /**
+     * @return The current {@link MessageDigest} - may be {@code null} if {@link #init()} not called
+     */
+    protected MessageDigest getMessageDigest() {
+        return md;
     }
 
     @Override
     public byte[] digest() throws Exception {
-        return md.digest();
+        return ValidateUtils.checkNotNull(md, "Digest not initialized").digest();
     }
 
     @Override

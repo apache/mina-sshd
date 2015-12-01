@@ -17,11 +17,12 @@
  * under the License.
  */
 
-package org.apache.sshd.common.util.io;
+package org.apache.sshd.common.digest;
 
-import java.nio.file.LinkOption;
+import java.lang.reflect.Field;
+import java.util.EnumSet;
+import java.util.Set;
 
-import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -31,28 +32,31 @@ import org.junit.runners.MethodSorters;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class IoUtilsTest extends BaseTestSupport {
-    public IoUtilsTest() {
+public class BuiltinDigestsTest extends BaseTestSupport {
+    public BuiltinDigestsTest() {
         super();
     }
 
     @Test
-    public void testFollowLinks() {
-        assertTrue("Null ?", IoUtils.followLinks((LinkOption[]) null));
-        assertTrue("Empty ?", IoUtils.followLinks(IoUtils.EMPTY_LINK_OPTIONS));
-        assertFalse("No-follow ?", IoUtils.followLinks(IoUtils.getLinkOptions(false)));
-    }
-
-    @Test
-    public void testGetEOLBytes() {
-        byte[] expected = IoUtils.getEOLBytes();
-        assertTrue("Empty bytes", NumberUtils.length(expected) > 0);
-
-        for (int index = 1; index < Byte.SIZE; index++) {
-            byte[] actual = IoUtils.getEOLBytes();
-            assertNotSame("Same bytes received at iteration " + index, expected, actual);
-            assertArrayEquals("Mismatched bytes at iteration " + index, expected, actual);
+    public void testFromName() {
+        for (BuiltinDigests expected : BuiltinDigests.VALUES) {
+            String name = expected.getName();
+            BuiltinDigests actual = BuiltinDigests.fromFactoryName(name);
+            assertSame(name, expected, actual);
         }
     }
 
+    @Test
+    public void testAllConstantsCovered() throws Exception {
+        Set<BuiltinDigests> avail = EnumSet.noneOf(BuiltinDigests.class);
+        Field[] fields = BuiltinDigests.Constants.class.getFields();
+        for (Field f : fields) {
+            String name = (String) f.get(null);
+            BuiltinDigests value = BuiltinDigests.fromFactoryName(name);
+            assertNotNull("No match found for " + name, value);
+            assertTrue(name + " re-specified", avail.add(value));
+        }
+
+        assertEquals("Incomplete coverage", BuiltinDigests.VALUES, avail);
+    }
 }

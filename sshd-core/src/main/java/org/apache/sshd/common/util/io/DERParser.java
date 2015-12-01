@@ -27,7 +27,7 @@ import java.io.StreamCorruptedException;
 import java.math.BigInteger;
 import java.util.Arrays;
 
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
@@ -49,7 +49,7 @@ public class DERParser extends FilterInputStream {
     private final byte[] lenBytes = new byte[Integer.SIZE / Byte.SIZE];
 
     public DERParser(byte... bytes) {
-        this(bytes, 0, GenericUtils.length(bytes));
+        this(bytes, 0, NumberUtils.length(bytes));
     }
 
     public DERParser(byte[] bytes, int offset, int len) {

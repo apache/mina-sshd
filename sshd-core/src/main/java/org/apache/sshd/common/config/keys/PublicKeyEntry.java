@@ -32,6 +32,7 @@ import java.util.Objects;
 
 import org.apache.sshd.common.util.Base64;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 
 /**
  * <P>Represents a {@link PublicKey} whose data is formatted according to
@@ -161,7 +162,7 @@ public class PublicKeyEntry implements Serializable {
     @Override
     public String toString() {
         byte[] data = getKeyData();
-        return getKeyType() + " " + (GenericUtils.isEmpty(data) ? "<no-key>" : Base64.encodeToString(data));
+        return getKeyType() + " " + (NumberUtils.isEmpty(data) ? "<no-key>" : Base64.encodeToString(data));
     }
 
     /**
@@ -206,7 +207,7 @@ public class PublicKeyEntry implements Serializable {
         String keyType = data.substring(0, startPos);
         String b64Data = data.substring(startPos + 1, endPos).trim();
         byte[] keyData = Base64.decodeString(b64Data);
-        if (GenericUtils.isEmpty(keyData)) {
+        if (NumberUtils.isEmpty(keyData)) {
             throw new IllegalArgumentException("Bad format (no BASE64 key data): " + data);
         }
 

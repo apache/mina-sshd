@@ -26,6 +26,7 @@ import java.util.Collection;
 import org.apache.sshd.client.subsystem.sftp.RawSftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 
@@ -38,7 +39,7 @@ public abstract class AbstractMD5HashExtension extends AbstractSftpClientExtensi
     }
 
     protected byte[] doGetHash(Object target, long offset, long length, byte[] quickHash) throws IOException {
-        Buffer buffer = getCommandBuffer(target, Long.SIZE + 2 * (Long.SIZE / Byte.SIZE) + (Integer.SIZE / Byte.SIZE) + GenericUtils.length(quickHash));
+        Buffer buffer = getCommandBuffer(target, Long.SIZE + 2 * (Long.SIZE / Byte.SIZE) + (Integer.SIZE / Byte.SIZE) + NumberUtils.length(quickHash));
         String opcode = getName();
         putTarget(buffer, target);
         buffer.putLong(offset);

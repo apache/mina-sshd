@@ -26,15 +26,30 @@ import java.util.Set;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.VersionInfo;
 
 /**
  * Provides easy access to the currently implemented digests
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public enum BuiltinDigests implements DigestInformation, DigestFactory {
+public enum BuiltinDigests implements DigestFactory {
     md5(Constants.MD5, "MD5", 16),
     sha1(Constants.SHA1, "SHA-1", 20),
+    sha224(Constants.SHA224, "SHA-224", 28) {
+        @Override
+        public boolean isSupported() {
+            if (SecurityUtils.isBouncyCastleRegistered()) {
+                return true;
+            }
+
+            // SHA-224 was introduced in Java-8
+            VersionInfo version = OsUtils.getJavaVersion();
+            return version.getMinorVersion() >= 8;
+        }
+    },
     sha256(Constants.SHA256, "SHA-256", 32),
     sha384(Constants.SHA384, "SHA-384", 48),
     sha512(Constants.SHA512, "SHA-512", 64);
@@ -77,6 +92,11 @@ public enum BuiltinDigests implements DigestInformation, DigestFactory {
         return new BaseDigest(getAlgorithm(), getBlockSize());
     }
 
+    @Override
+    public boolean isSupported() {
+        return true;
+    }
+
     /**
      * @param s The {@link Enum}'s name - ignored if {@code null}/empty
      * @return The matching {@link org.apache.sshd.common.digest.BuiltinDigests} whose {@link Enum#name()} matches
@@ -102,7 +122,7 @@ public enum BuiltinDigests implements DigestInformation, DigestFactory {
      * (case <U>insensitive</U>) the digest factory name
      * @see #fromFactoryName(String)
      */
-    public static BuiltinDigests fromFactory(NamedFactory<Digest> factory) {
+    public static BuiltinDigests fromFactory(NamedFactory<? extends Digest> factory) {
         if (factory == null) {
             return null;
         } else {
@@ -140,6 +160,7 @@ public enum BuiltinDigests implements DigestInformation, DigestFactory {
     public static final class Constants {
         public static final String MD5 = "md5";
         public static final String SHA1 = "sha1";
+        public static final String SHA224 = "sha224";
         public static final String SHA256 = "sha256";
         public static final String SHA384 = "sha384";
         public static final String SHA512 = "sha512";

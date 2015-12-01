@@ -84,7 +84,9 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
     @Override
     public void init(AbstractSession s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
         super.init(s, v_s, v_c, i_s, i_c);
-        log.debug("Send SSH_MSG_KEX_DH_GEX_REQUEST");
+        if (log.isDebugEnabled()) {
+            log.debug("init({}) Send SSH_MSG_KEX_DH_GEX_REQUEST", s);
+        }
         Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST);
         buffer.putInt(min);
         buffer.putInt(prf);

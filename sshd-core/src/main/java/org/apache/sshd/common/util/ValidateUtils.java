@@ -82,25 +82,25 @@ public final class ValidateUtils {
 
     public static byte[] checkNotNullAndNotEmpty(byte[] a, String message) {
         a = checkNotNull(a, message);
-        checkTrue(GenericUtils.length(a) > 0, message);
+        checkTrue(NumberUtils.length(a) > 0, message);
         return a;
     }
 
     public static byte[] checkNotNullAndNotEmpty(byte[] a, String message, Object... args) {
         a = checkNotNull(a, message, args);
-        checkTrue(GenericUtils.length(a) > 0, message, args);
+        checkTrue(NumberUtils.length(a) > 0, message, args);
         return a;
     }
 
     public static int[] checkNotNullAndNotEmpty(int[] a, String message) {
         a = checkNotNull(a, message);
-        checkTrue(GenericUtils.length(a) > 0, message);
+        checkTrue(NumberUtils.length(a) > 0, message);
         return a;
     }
 
     public static int[] checkNotNullAndNotEmpty(int[] a, String message, Object... args) {
         a = checkNotNull(a, message, args);
-        checkTrue(GenericUtils.length(a) > 0, message, args);
+        checkTrue(NumberUtils.length(a) > 0, message, args);
         return a;
     }
 

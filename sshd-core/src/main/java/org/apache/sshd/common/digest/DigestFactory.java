@@ -20,13 +20,13 @@
 package org.apache.sshd.common.digest;
 
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.OptionalFeature;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface DigestFactory extends NamedFactory<Digest> {
-    /**
-     * @return The underlying digest algorithm
-     */
-    String getAlgorithm();
+// CHECKSTYLE:OFF
+public interface DigestFactory extends DigestInformation, NamedFactory<Digest>, OptionalFeature {
+    // nothing extra
 }
+// CHECKSTYLE:ON

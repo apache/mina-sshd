@@ -21,7 +21,7 @@ package org.apache.sshd.common.kex;
 import java.math.BigInteger;
 
 import org.apache.sshd.common.digest.Digest;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 
 /**
  * Base class for the Diffie-Hellman key agreement.
@@ -63,7 +63,7 @@ public abstract class AbstractDH {
      * @see <A HREF="https://issues.apache.org/jira/browse/SSHD-330">SSHD-330</A>
      */
     public static byte[] stripLeadingZeroes(byte[] x) {
-        int length = GenericUtils.length(x);
+        int length = NumberUtils.length(x);
         for (int i = 0; i < x.length; i++) {
             if (x[i] == 0) {
                 continue;

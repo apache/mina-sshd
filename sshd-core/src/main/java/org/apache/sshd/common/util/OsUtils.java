@@ -36,6 +36,18 @@ public final class OsUtils {
      */
     public static final String CURRENT_USER_OVERRIDE_PROP = "org.apache.sshd.currentUser";
 
+    /**
+     * Property that can be used to override the reported value from {@link #getJavaVersion()}.
+     * If not set then &quot;java.version&quot; system property is used
+     */
+    public static final String JAVA_VERSION_OVERRIDE_PROP = "org.apache.sshd.javaVersion";
+
+    /**
+     * Property that can be used to override the reported value from {@link #isWin32()}.
+     * If not set then &quot;os.name&quot; system property is used
+     */
+    public static final String OS_TYPE_OVERRIDE_PROP = "org.apache.sshd.osType";
+
     public static final String WINDOWS_SHELL_COMMAND_NAME = "cmd.exe";
     public static final String LINUX_SHELL_COMMAND_NAME = "/bin/sh";
 
@@ -47,7 +59,8 @@ public final class OsUtils {
             Collections.unmodifiableList(Collections.singletonList(WINDOWS_SHELL_COMMAND_NAME));
 
     private static final AtomicReference<String> CURRENT_USER_HOLDER = new AtomicReference<>(null);
-    private static final boolean WIN32 = GenericUtils.trimToEmpty(System.getProperty("os.name")).toLowerCase().contains("windows");
+    private static final AtomicReference<VersionInfo> JAVA_VERSION_HOLDER = new AtomicReference<>(null);
+    private static final AtomicReference<Boolean> OS_TYPE_HOLDER = new AtomicReference<>(null);
 
     private OsUtils() {
         throw new UnsupportedOperationException("No instance allowed");
@@ -57,14 +70,39 @@ public final class OsUtils {
      * @return true if the host is a UNIX system (and not Windows).
      */
     public static boolean isUNIX() {
-        return !WIN32;
+        return !isWin32();
     }
 
     /**
      * @return true if the host is Windows (and not UNIX).
+     * @see #OS_TYPE_OVERRIDE_PROP
+     * @see #setWin32(Boolean)
      */
     public static boolean isWin32() {
-        return WIN32;
+        Boolean typeValue;
+        synchronized (OS_TYPE_HOLDER) {
+            typeValue = OS_TYPE_HOLDER.get();
+            if (typeValue != null) {    // is it the 1st time
+                return typeValue.booleanValue();
+            }
+
+            String value = System.getProperty(OS_TYPE_OVERRIDE_PROP, System.getProperty("os.name"));
+            typeValue = GenericUtils.trimToEmpty(value).toLowerCase().contains("windows");
+            OS_TYPE_HOLDER.set(typeValue);
+        }
+
+        return typeValue.booleanValue();
+    }
+
+    /**
+     * Can be used to enforce Win32 or Linux report from {@link #isWin32()} or {@link #isUNIX()}
+     * @param win32 The value to set - if {@code null} then O/S type is auto-detected
+     * @see #isWin32()
+     */
+    public static void setWin32(Boolean win32) {
+        synchronized (OS_TYPE_HOLDER) {
+            OS_TYPE_HOLDER.set(win32);
+        }
     }
 
     public static List<String> resolveDefaultInteractiveCommand() {
@@ -111,4 +149,50 @@ public final class OsUtils {
             CURRENT_USER_HOLDER.set(username);
         }
     }
+
+    /**
+     * Resolves the reported Java version by consulting {@link #JAVA_VERSION_OVERRIDE_PROP}.
+     * If not set, then &quot;java.version&quot; property is used
+     * @return The resolved {@link VersionInfo} - never {@code null}
+     * @see #setJavaVersion(VersionInfo)
+     */
+    public static VersionInfo getJavaVersion() {
+        VersionInfo version;
+        synchronized (JAVA_VERSION_HOLDER) {
+            version = JAVA_VERSION_HOLDER.get();
+            if (version != null) {  // first time ?
+                return version;
+            }
+
+            String value = System.getProperty(JAVA_VERSION_OVERRIDE_PROP, System.getProperty("java.version"));
+            // e.g.: 1.7.5_30
+            value = ValidateUtils.checkNotNullAndNotEmpty(value, "No configured Java version value").replace('_', '.');
+            // clean up any non-digits - in case something like 1.6.8_25-b323
+            for (int index = 0; index < value.length(); index++) {
+                char ch = value.charAt(index);
+                if ((ch == '.') || ((ch >= '0') && (ch <= '9'))) {
+                    continue;
+                }
+
+                value = value.substring(0, index);
+                break;
+            }
+
+            version = ValidateUtils.checkNotNull(VersionInfo.parse(value), "No version parsed for %s", value);
+            JAVA_VERSION_HOLDER.set(version);
+        }
+
+        return version;
+    }
+
+    /**
+     * Set programmatically the reported Java version
+     * @param version The version - if {@code null} then it will be automatically resolved
+     */
+    public static void setJavaVersion(VersionInfo version) {
+        synchronized (JAVA_VERSION_HOLDER) {
+            JAVA_VERSION_HOLDER.set(version);
+        }
+    }
+
 }

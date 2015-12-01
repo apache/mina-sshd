@@ -198,6 +198,17 @@ public final class SecurityUtils {
         return maxSupportedKeySize;
     }
 
+    /**
+     * Set programmatically the reported value for {@link #getMaxDHGroupExchangeKeySize()}
+     * @param keySize The reported key size - if zero, then it will be auto-detected, if
+     * negative then DH group exchange will be disabled
+     */
+    public static void setMaxDHGroupExchangeKeySize(int keySize) {
+        synchronized (MAX_DHG_KEY_SIZE_HOLDER) {
+            MAX_DHG_KEY_SIZE_HOLDER.set(keySize);
+        }
+    }
+
     public static boolean isDHGroupExchangeSupported(int maxKeySize) {
         ValidateUtils.checkTrue(maxKeySize > Byte.SIZE, "Invalid max. key size: %d", maxKeySize);
 

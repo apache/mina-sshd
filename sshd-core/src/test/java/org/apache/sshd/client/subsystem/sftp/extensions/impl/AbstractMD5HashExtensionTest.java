@@ -46,7 +46,9 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.Utils;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -72,6 +74,11 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
     @Parameters(name = "dataSize={0}")
     public static Collection<Object[]> parameters() {
         return parameterize(DATA_SIZES);
+    }
+
+    @BeforeClass
+    public static void checkMD5Supported() {
+        Assume.assumeTrue("MD5 not supported", BuiltinDigests.md5.isSupported());
     }
 
     private final int size;

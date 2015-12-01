@@ -226,30 +226,6 @@ public final class GenericUtils {
         return size(m) <= 0;
     }
 
-    public static boolean isEmpty(byte[] a) {
-        return length(a) <= 0;
-    }
-
-    public static boolean isEmpty(int[] a) {
-        return length(a) <= 0;
-    }
-
-    public static boolean isEmpty(long[] a) {
-        return length(a) <= 0;
-    }
-
-    public static int length(byte... a) {
-        return a == null ? 0 : a.length;
-    }
-
-    public static int length(int... a) {
-        return a == null ? 0 : a.length;
-    }
-
-    public static int length(long... a) {
-        return a == null ? 0 : a.length;
-    }
-
     @SafeVarargs
     public static <T> int length(T... a) {
         return a == null ? 0 : a.length;
@@ -308,20 +284,6 @@ public final class GenericUtils {
         } else {
             return Arrays.asList(values);
         }
-    }
-
-    public static List<Integer> asList(int ... values) {
-        int len = length(values);
-        if (len <= 0) {
-            return Collections.emptyList();
-        }
-
-        List<Integer> l = new ArrayList<>(len);
-        for (int v : values) {
-            l.add(Integer.valueOf(v));
-        }
-
-        return l;
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

@@ -39,7 +39,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeSet;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +55,7 @@ import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.random.Random;
@@ -86,7 +86,6 @@ import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
@@ -124,13 +123,6 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         }
 
         tearDownServer();
-    }
-
-    @Test
-    @Ignore
-    public void testExternal() throws Exception {
-        System.out.println("SFTP subsystem available on port " + port);
-        Thread.sleep(5 * 60000);
     }
 
     @Test   // see SSHD-547
@@ -990,13 +982,19 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         }
     }
 
-    private static Set<String> EXPECTED_EXTENSIONS = SftpSubsystem.DEFAULT_SUPPORTED_CLIENT_EXTENSIONS;
+    private static Map<String, OptionalFeature> EXPECTED_EXTENSIONS = SftpSubsystem.DEFAULT_SUPPORTED_CLIENT_EXTENSIONS;
 
     private static void assertSupportedExtensions(String extName, Collection<String> extensionNames) {
         assertEquals(extName + "[count]", EXPECTED_EXTENSIONS.size(), GenericUtils.size(extensionNames));
 
-        for (String name : EXPECTED_EXTENSIONS) {
-            assertTrue(extName + " - missing " + name, extensionNames.contains(name));
+        for (Map.Entry<String, OptionalFeature> ee : EXPECTED_EXTENSIONS.entrySet()) {
+            String name = ee.getKey();
+            OptionalFeature f = ee.getValue();
+            if (!f.isSupported()) {
+                assertFalse(extName + " - unsupported feature reported: " + name, extensionNames.contains(name));
+            } else {
+                assertTrue(extName + " - missing " + name, extensionNames.contains(name));
+            }
         }
     }
 

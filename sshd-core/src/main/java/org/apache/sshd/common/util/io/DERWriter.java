@@ -26,7 +26,7 @@ import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.math.BigInteger;
 
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -58,7 +58,7 @@ public class DERWriter extends FilterOutputStream {
     }
 
     public void writeBigInteger(byte... bytes) throws IOException {
-        writeBigInteger(bytes, 0, GenericUtils.length(bytes));
+        writeBigInteger(bytes, 0, NumberUtils.length(bytes));
     }
 
     public void writeBigInteger(byte[] bytes, int off, int len) throws IOException {

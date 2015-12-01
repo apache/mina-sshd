@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -58,11 +57,11 @@ public final class BufferUtils {
     }
 
     public static String printHex(byte... array) {
-        return printHex(array, 0, GenericUtils.length(array));
+        return printHex(array, 0, NumberUtils.length(array));
     }
 
     public static String printHex(char sep, byte... array) {
-        return printHex(array, 0, GenericUtils.length(array), sep);
+        return printHex(array, 0, NumberUtils.length(array), sep);
     }
 
     public static String printHex(byte[] array, int offset, int len) {
@@ -97,7 +96,7 @@ public final class BufferUtils {
      * @see #readInt(InputStream, byte[], int, int)
      */
     public static int readInt(InputStream input, byte[] buf) throws IOException {
-        return readInt(input, buf, 0, GenericUtils.length(buf));
+        return readInt(input, buf, 0, NumberUtils.length(buf));
     }
 
     /**
@@ -126,7 +125,7 @@ public final class BufferUtils {
      * @see #readUInt(InputStream, byte[], int, int)
      */
     public static long readUInt(InputStream input, byte[] buf) throws IOException {
-        return readUInt(input, buf, 0, GenericUtils.length(buf));
+        return readUInt(input, buf, 0, NumberUtils.length(buf));
     }
 
     /**
@@ -164,7 +163,7 @@ public final class BufferUtils {
      * @see #getUInt(byte[], int, int)
      */
     public static long getUInt(byte... buf) {
-        return getUInt(buf, 0, GenericUtils.length(buf));
+        return getUInt(buf, 0, NumberUtils.length(buf));
     }
 
     /**
@@ -199,7 +198,7 @@ public final class BufferUtils {
      * @see #writeInt(OutputStream, int, byte[], int, int)
      */
     public static void writeInt(OutputStream output, int value, byte[] buf) throws IOException {
-        writeUInt(output, value, buf, 0, GenericUtils.length(buf));
+        writeUInt(output, value, buf, 0, NumberUtils.length(buf));
     }
 
     /**
@@ -227,7 +226,7 @@ public final class BufferUtils {
      * @see #writeUInt(OutputStream, long, byte[], int, int)
      */
     public static void writeUInt(OutputStream output, long value, byte[] buf) throws IOException {
-        writeUInt(output, value, buf, 0, GenericUtils.length(buf));
+        writeUInt(output, value, buf, 0, NumberUtils.length(buf));
     }
 
     /**
@@ -260,7 +259,7 @@ public final class BufferUtils {
      * @see #putUInt(long, byte[], int, int)
      */
     public static int putUInt(long value, byte[] buf) {
-        return putUInt(value, buf, 0, GenericUtils.length(buf));
+        return putUInt(value, buf, 0, NumberUtils.length(buf));
     }
 
     /**
@@ -288,8 +287,8 @@ public final class BufferUtils {
     }
 
     public static boolean equals(byte[] a1, byte[] a2) {
-        int len1 = GenericUtils.length(a1);
-        int len2 = GenericUtils.length(a2);
+        int len1 = NumberUtils.length(a1);
+        int len2 = NumberUtils.length(a2);
         if (len1 != len2) {
             return false;
         } else {
@@ -298,8 +297,8 @@ public final class BufferUtils {
     }
 
     public static boolean equals(byte[] a1, int a1Offset, byte[] a2, int a2Offset, int length) {
-        int len1 = GenericUtils.length(a1);
-        int len2 = GenericUtils.length(a2);
+        int len1 = NumberUtils.length(a1);
+        int len2 = NumberUtils.length(a2);
         if ((len1 < (a1Offset + length)) || (len2 < (a2Offset + length))) {
             return false;
         }

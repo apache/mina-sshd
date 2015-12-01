@@ -354,7 +354,7 @@ public class Base64 {
         base64Data = discardNonBase64(base64Data);
 
         // handle the edge case, so we don't have to worry about it later
-        if (GenericUtils.isEmpty(base64Data)) {
+        if (NumberUtils.isEmpty(base64Data)) {
             return GenericUtils.EMPTY_BYTE_ARRAY;
         }
 
@@ -454,7 +454,7 @@ public class Base64 {
      * may be same as input if all data was base-64
      */
     public static byte[] discardNonBase64(byte[] data) {
-        if (GenericUtils.isEmpty(data)) {
+        if (NumberUtils.isEmpty(data)) {
             return data;
         }
 

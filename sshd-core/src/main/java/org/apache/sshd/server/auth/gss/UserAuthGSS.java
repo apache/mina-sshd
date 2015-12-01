@@ -20,7 +20,7 @@ package org.apache.sshd.server.auth.gss;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -175,7 +175,7 @@ public class UserAuthGSS extends AbstractUserAuth {
 
                 // Send return token if necessary
 
-                if (GenericUtils.length(out) > 0) {
+                if (NumberUtils.length(out) > 0) {
                     Buffer b = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE, out.length + Integer.SIZE);
 
                     b.putBytes(out);

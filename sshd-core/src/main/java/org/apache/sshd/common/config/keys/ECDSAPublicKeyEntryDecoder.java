@@ -44,7 +44,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import org.apache.sshd.common.cipher.ECCurves;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -184,7 +184,7 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
     }
 
     public static ECPoint octetStringToEcPoint(byte... octets) {
-        if (GenericUtils.isEmpty(octets)) {
+        if (NumberUtils.isEmpty(octets)) {
             return null;
         }
 
@@ -204,7 +204,7 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
     }
 
     private static int findFirstNonZeroIndex(byte... octets) {
-        if (GenericUtils.isEmpty(octets)) {
+        if (NumberUtils.isEmpty(octets)) {
             return -1;
         }
 

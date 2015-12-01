@@ -33,7 +33,6 @@ import java.util.TreeMap;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.NamedFactoriesListParseResult;
-import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -173,12 +172,12 @@ public enum BuiltinMacs implements MacFactory {
     }
 
     /**
-     * @param factory The {@link org.apache.sshd.common.NamedFactory} for the Mac - ignored if {@code null}
+     * @param factory The {@link org.apache.sshd.common.NamedFactory} for the MAC - ignored if {@code null}
      * @return The matching {@link org.apache.sshd.common.mac.BuiltinMacs} whose factory name matches
      * (case <U>insensitive</U>) the digest factory name
      * @see #fromFactoryName(String)
      */
-    public static BuiltinMacs fromFactory(NamedFactory<Digest> factory) {
+    public static BuiltinMacs fromFactory(NamedFactory<Mac> factory) {
         if (factory == null) {
             return null;
         } else {

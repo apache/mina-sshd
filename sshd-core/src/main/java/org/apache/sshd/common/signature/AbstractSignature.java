@@ -22,7 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -62,7 +62,7 @@ public abstract class AbstractSignature implements Signature {
 
     @Override
     public void update(byte[] hash) throws Exception {
-        update(hash, 0, GenericUtils.length(hash));
+        update(hash, 0, NumberUtils.length(hash));
     }
 
     @Override
@@ -78,7 +78,7 @@ public abstract class AbstractSignature implements Signature {
      * value is the data - {@code null} if not encoded
      */
     protected Pair<String, byte[]> extractEncodedSignature(byte[] sig) {
-        final int dataLen = GenericUtils.length(sig);
+        final int dataLen = NumberUtils.length(sig);
         // if it is encoded then we must have at least 2 UINT32 values
         if (dataLen < (2 * (Integer.SIZE / Byte.SIZE))) {
             return null;

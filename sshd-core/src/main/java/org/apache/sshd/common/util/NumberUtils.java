@@ -85,13 +85,26 @@ public final class NumberUtils {
     }
 
     public static int hashCode(long ... values) {
-        if (GenericUtils.length(values) <= 0) {
+        if (NumberUtils.length(values) <= 0) {
             return 0;
         }
 
         int hash = hashCode(values[0]);
         for (int index = 1; index < values.length; index++) {
             hash += 31 * hash + hashCode(values[index]);
+        }
+
+        return hash;
+    }
+
+    public static int hashCode(int ... values) {
+        if (NumberUtils.length(values) <= 0) {
+            return 0;
+        }
+
+        int hash = values[0];
+        for (int index = 1; index < values.length; index++) {
+            hash += 31 * hash + values[index];
         }
 
         return hash;
@@ -134,5 +147,139 @@ public final class NumberUtils {
         } else {
             return Integer.valueOf(n.intValue());
         }
+    }
+
+    public static String join(CharSequence separator, long ... values) {
+        if (NumberUtils.isEmpty(values)) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder(values.length * Byte.SIZE);
+        for (long v : values) {
+            if (sb.length() > 0) {
+                sb.append(separator);
+            }
+            sb.append(v);
+        }
+
+        return sb.toString();
+    }
+
+    public static String join(char separator, long ... values) {
+        if (NumberUtils.isEmpty(values)) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder(values.length * Byte.SIZE);
+        for (long v : values) {
+            if (sb.length() > 0) {
+                sb.append(separator);
+            }
+            sb.append(v);
+        }
+
+        return sb.toString();
+    }
+
+    public static String join(CharSequence separator, boolean unsigned, byte ... values) {
+        if (NumberUtils.isEmpty(values)) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder(values.length * Byte.SIZE);
+        for (byte v : values) {
+            if (sb.length() > 0) {
+                sb.append(separator);
+            }
+            sb.append(unsigned ? (v & 0xFF) : v);
+        }
+
+        return sb.toString();
+    }
+
+    public static String join(char separator, boolean unsigned, byte ... values) {
+        if (NumberUtils.isEmpty(values)) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder(values.length * Byte.SIZE);
+        for (byte v : values) {
+            if (sb.length() > 0) {
+                sb.append(separator);
+            }
+            sb.append(unsigned ? (v & 0xFF) : v);
+        }
+
+        return sb.toString();
+    }
+
+    public static String join(CharSequence separator, int ... values) {
+        if (NumberUtils.isEmpty(values)) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder(values.length * Byte.SIZE);
+        for (int v : values) {
+            if (sb.length() > 0) {
+                sb.append(separator);
+            }
+            sb.append(v);
+        }
+
+        return sb.toString();
+    }
+
+    public static String join(char separator, int ... values) {
+        if (NumberUtils.isEmpty(values)) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder(values.length * Byte.SIZE);
+        for (int v : values) {
+            if (sb.length() > 0) {
+                sb.append(separator);
+            }
+            sb.append(v);
+        }
+
+        return sb.toString();
+    }
+
+    public static boolean isEmpty(byte[] a) {
+        return NumberUtils.length(a) <= 0;
+    }
+
+    public static boolean isEmpty(int[] a) {
+        return NumberUtils.length(a) <= 0;
+    }
+
+    public static boolean isEmpty(long[] a) {
+        return NumberUtils.length(a) <= 0;
+    }
+
+    public static int length(byte... a) {
+        return a == null ? 0 : a.length;
+    }
+
+    public static int length(int... a) {
+        return a == null ? 0 : a.length;
+    }
+
+    public static int length(long... a) {
+        return a == null ? 0 : a.length;
+    }
+
+    public static List<Integer> asList(int ... values) {
+        int len = length(values);
+        if (len <= 0) {
+            return Collections.emptyList();
+        }
+    
+        List<Integer> l = new ArrayList<>(len);
+        for (int v : values) {
+            l.add(Integer.valueOf(v));
+        }
+    
+        return l;
     }
 }

@@ -23,7 +23,7 @@ import java.math.BigInteger;
 import java.security.SignatureException;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -90,7 +90,7 @@ public class SignatureDSA extends AbstractSignature {
 
     @Override
     public boolean verify(byte[] sig) throws Exception {
-        int sigLen = GenericUtils.length(sig);
+        int sigLen = NumberUtils.length(sig);
         byte[] data = sig;
 
         if (sigLen != DSA_SIGNATURE_LENGTH) {
@@ -100,7 +100,7 @@ public class SignatureDSA extends AbstractSignature {
                 String keyType = encoding.getFirst();
                 ValidateUtils.checkTrue(KeyPairProvider.SSH_DSS.equals(keyType), "Mismatched key type: %s", keyType);
                 data = encoding.getSecond();
-                sigLen = GenericUtils.length(data);
+                sigLen = NumberUtils.length(data);
             }
         }
 

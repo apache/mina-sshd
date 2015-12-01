@@ -27,6 +27,7 @@ import java.util.Comparator;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.util.Base64;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 
@@ -142,7 +143,7 @@ public final class DigestUtils {
      * @see #getFingerPrint(Factory, byte[], int, int)
      */
     public static String getFingerPrint(Factory<? extends Digest> f, byte... buf) throws Exception {
-        return getFingerPrint(f, buf, 0, GenericUtils.length(buf));
+        return getFingerPrint(f, buf, 0, NumberUtils.length(buf));
     }
 
     /**
@@ -165,7 +166,7 @@ public final class DigestUtils {
      * @see #getFingerPrint(Digest, byte[], int, int)
      */
     public static String getFingerPrint(Digest d, byte... buf) throws Exception {
-        return getFingerPrint(d, buf, 0, GenericUtils.length(buf));
+        return getFingerPrint(d, buf, 0, NumberUtils.length(buf));
     }
 
     /**

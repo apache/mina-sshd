@@ -44,8 +44,10 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
+import org.apache.sshd.common.digest.DigestFactory;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -87,7 +89,12 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
                 private static final long serialVersionUID = 1L;    // we're not serializing it
 
                 {
-                    for (NamedFactory<?> factory : BuiltinDigests.VALUES) {
+                    for (DigestFactory factory : BuiltinDigests.VALUES) {
+                        if (!factory.isSupported()) {
+                            System.out.println("Skip unsupported digest=" + factory.getAlgorithm());
+                            continue;
+                        }
+
                         String algorithm = factory.getName();
                         for (Number dataSize : DATA_SIZES) {
                             for (Number blockSize : BLOCK_SIZES) {
@@ -217,15 +224,15 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
         assertNotNull("No result for hash=" + name, result);
         assertEquals("Mismatched hash algorithms for " + name, expectedAlgorithm, result.getFirst());
 
-        if (GenericUtils.length(expectedHash) > 0) {
+        if (NumberUtils.length(expectedHash) > 0) {
             Collection<byte[]> values = result.getSecond();
             assertEquals("Mismatched hash values count for " + name, 1, GenericUtils.size(values));
 
             byte[] actualHash = values.iterator().next();
             if (!Arrays.equals(expectedHash, actualHash)) {
                 fail("Mismatched hashes for " + name
-                        + ": expected=" + BufferUtils.printHex(':', expectedHash)
-                        + ", actual=" + BufferUtils.printHex(':', expectedHash));
+                   + ": expected=" + BufferUtils.printHex(':', expectedHash)
+                   + ", actual=" + BufferUtils.printHex(':', expectedHash));
             }
         }
     }

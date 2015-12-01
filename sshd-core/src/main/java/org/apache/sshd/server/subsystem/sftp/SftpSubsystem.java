@@ -60,6 +60,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -74,11 +75,13 @@ import java.util.concurrent.Future;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.VersionProperties;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
+import org.apache.sshd.common.digest.DigestFactory;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
@@ -89,6 +92,7 @@ import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionPa
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.SelectorUtils;
@@ -176,21 +180,25 @@ public class SftpSubsystem
     /**
      * The default reported supported client extensions
      */
-    public static final Set<String> DEFAULT_SUPPORTED_CLIENT_EXTENSIONS =
+    public static final Map<String, OptionalFeature> DEFAULT_SUPPORTED_CLIENT_EXTENSIONS =
             // TODO text-seek - see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-13.txt
             // TODO home-directory - see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt
-            Collections.unmodifiableSet(
-                    GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
-                            Arrays.asList(
-                                    SftpConstants.EXT_VERSION_SELECT,
-                                    SftpConstants.EXT_COPY_FILE,
-                                    SftpConstants.EXT_MD5_HASH,
-                                    SftpConstants.EXT_MD5_HASH_HANDLE,
-                                    SftpConstants.EXT_CHECK_FILE_HANDLE,
-                                    SftpConstants.EXT_CHECK_FILE_NAME,
-                                    SftpConstants.EXT_COPY_DATA,
-                                    SftpConstants.EXT_SPACE_AVAILABLE
-                            )));
+            Collections.unmodifiableMap(
+                    new LinkedHashMap<String, OptionalFeature>() {
+                        private static final long serialVersionUID = 1L;    // we're not serializing it
+
+                        private final OptionalFeature anyDigests = OptionalFeature.Utils.any(BuiltinDigests.VALUES);
+                        {
+                            put(SftpConstants.EXT_VERSION_SELECT, OptionalFeature.TRUE);
+                            put(SftpConstants.EXT_COPY_FILE, OptionalFeature.TRUE);
+                            put(SftpConstants.EXT_MD5_HASH, BuiltinDigests.md5);
+                            put(SftpConstants.EXT_MD5_HASH_HANDLE, BuiltinDigests.md5);
+                            put(SftpConstants.EXT_CHECK_FILE_HANDLE, anyDigests);
+                            put(SftpConstants.EXT_CHECK_FILE_NAME, anyDigests);
+                            put(SftpConstants.EXT_COPY_DATA, OptionalFeature.TRUE);
+                            put(SftpConstants.EXT_SPACE_AVAILABLE, OptionalFeature.TRUE);
+                        }
+                    });
 
     /**
      * Comma-separated list of which {@code OpenSSH} extensions are reported and
@@ -718,10 +726,10 @@ public class SftpSubsystem
 
         ValidateUtils.checkNotNullAndNotEmpty(algos, "No hash algorithms specified");
 
-        NamedFactory<? extends Digest> factory = null;
+        DigestFactory factory = null;
         for (String a : algos) {
             factory = BuiltinDigests.fromFactoryName(a);
-            if (factory != null) {
+            if ((factory != null) && factory.isSupported()) {
                 break;
             }
         }
@@ -897,6 +905,9 @@ public class SftpSubsystem
     protected byte[] doMD5Hash(int id, Path path, long startOffset, long length, byte[] quickCheckHash) throws Exception {
         ValidateUtils.checkTrue(startOffset >= 0L, "Invalid start offset: %d", startOffset);
         ValidateUtils.checkTrue(length > 0L, "Invalid length: %d", length);
+        if (!BuiltinDigests.md5.isSupported()) {
+            throw new UnsupportedOperationException(BuiltinDigests.md5.getAlgorithm() + " hash not supported");
+        }
 
         Digest digest = BuiltinDigests.md5.create();
         digest.init();
@@ -918,7 +929,7 @@ public class SftpSubsystem
              *      with a local file.  The server MAY return SSH_FX_OP_UNSUPPORTED in
              *      this case.
              */
-            if (GenericUtils.length(quickCheckHash) <= 0) {
+            if (NumberUtils.length(quickCheckHash) <= 0) {
                 // TODO consider limiting it - e.g., if the requested effective length is <= than some (configurable) threshold
                 hashMatches = true;
             } else {
@@ -2195,7 +2206,23 @@ public class SftpSubsystem
             buffer.putInt(0);
         */
 
-        Collection<String> extras = getSupportedClientExtensions();
+        Map<String, OptionalFeature> extensions = getSupportedClientExtensions();
+        int numExtensions = GenericUtils.size(extensions);
+        List<String> extras = (numExtensions <= 0) ? Collections.<String>emptyList() : new ArrayList<String>(numExtensions);
+        if (numExtensions > 0) {
+            for (Map.Entry<String, OptionalFeature> ee : extensions.entrySet()) {
+                String name = ee.getKey();
+                OptionalFeature f = ee.getValue();
+                if (!f.isSupported()) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("appendExtensions({}) skip unsupported extension={}", getServerSession(), name);
+                    }
+                    continue;
+                }
+
+                extras.add(name);
+            }
+        }
         appendSupportedExtension(buffer, extras);
         appendSupported2Extension(buffer, extras);
     }
@@ -2243,18 +2270,27 @@ public class SftpSubsystem
         return extList;
     }
 
-    protected Collection<String> getSupportedClientExtensions() {
+    protected Map<String, OptionalFeature> getSupportedClientExtensions() {
         String value = PropertyResolverUtils.getString(getServerSession(), CLIENT_EXTENSIONS_PROP);
         if (value == null) {
             return DEFAULT_SUPPORTED_CLIENT_EXTENSIONS;
         }
 
         if (value.length() <= 0) {  // means don't report any extensions
-            return Collections.emptyList();
+            return Collections.emptyMap();
+        }
+
+        if (value.indexOf(',') <= 0) {
+            return Collections.singletonMap(value, OptionalFeature.TRUE);
         }
 
         String[] comps = GenericUtils.split(value, ',');
-        return Arrays.asList(comps);
+        Map<String, OptionalFeature> result = new LinkedHashMap<>(comps.length);
+        for (String c : comps) {
+            result.put(c, OptionalFeature.TRUE);
+        }
+
+        return result;
     }
 
     /**

@@ -33,6 +33,7 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
+import org.apache.sshd.common.digest.DigestFactory;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -54,12 +55,8 @@ public enum ECCurves implements NamedResource, OptionalFeature {
                             new BigInteger("4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5", 16)),
                     new BigInteger("FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551", 16),
                     1),
-            32) {
-        @Override
-        public Digest getDigestForParams() {
-            return BuiltinDigests.sha256.create();
-        }
-    },
+            32,
+            BuiltinDigests.sha256),
     nistp384(Constants.NISTP384,
             new ECParameterSpec(
                     new EllipticCurve(
@@ -71,12 +68,8 @@ public enum ECCurves implements NamedResource, OptionalFeature {
                             new BigInteger("3617DE4A96262C6F5D9E98BF9292DC29F8F41DBD289A147CE9DA3113B5F0B8C00A60B1CE1D7E819D7A431D7C90EA0E5F", 16)),
                     new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC7634D81F4372DDF581A0DB248B0A77AECEC196ACCC52973", 16),
                     1),
-            48) {
-        @Override
-        public Digest getDigestForParams() {
-            return BuiltinDigests.sha384.create();
-        }
-    },
+            48,
+            BuiltinDigests.sha384),
     nistp521(Constants.NISTP521,
             new ECParameterSpec(
                     new EllipticCurve(
@@ -94,12 +87,8 @@ public enum ECCurves implements NamedResource, OptionalFeature {
                     new BigInteger("01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA51868783BF2F966B"
                                     + "7FCC0148F709A5D03BB5C9B8899C47AEBB6FB71E91386409", 16),
                     1),
-            66) {
-        @Override
-        public Digest getDigestForParams() {
-            return BuiltinDigests.sha512.create();
-        }
-    };
+            66,
+            BuiltinDigests.sha512);
 
     /**
      * A {@link Set} of all the known curves
@@ -140,13 +129,15 @@ public enum ECCurves implements NamedResource, OptionalFeature {
     private final ECParameterSpec params;
     private final int keySize;
     private final int numOctets;
+    private final DigestFactory digestFactory;
 
-    ECCurves(String name, ECParameterSpec params, int numOctets) {
+    ECCurves(String name, ECParameterSpec params, int numOctets, DigestFactory digestFactory) {
         this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No curve name");
         this.keyType = Constants.ECDSA_SHA2_PREFIX + name;
         this.params = ValidateUtils.checkNotNull(params, "No EC params for %s", name);
         this.keySize = getCurveSize(params);
         this.numOctets = numOctets;
+        this.digestFactory = ValidateUtils.checkNotNull(digestFactory, "No digestFactory");
     }
 
     @Override   // The curve name
@@ -163,7 +154,7 @@ public enum ECCurves implements NamedResource, OptionalFeature {
 
     @Override
     public final boolean isSupported() {
-        return SecurityUtils.hasEcc();
+        return SecurityUtils.hasEcc() && digestFactory.isSupported();
     }
 
     public final ECParameterSpec getParameters() {
@@ -187,7 +178,9 @@ public enum ECCurves implements NamedResource, OptionalFeature {
     /**
      * @return The {@link Digest} to use when hashing the curve's parameters
      */
-    public abstract Digest getDigestForParams();
+    public final Digest getDigestForParams() {
+        return digestFactory.create();
+    }
 
     /**
      * @param type The key type value - ignored if {@code null}/empty

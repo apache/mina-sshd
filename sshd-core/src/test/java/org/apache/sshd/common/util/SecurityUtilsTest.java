@@ -178,4 +178,35 @@ public class SecurityUtilsTest extends BaseTestSupport {
         assertEquals("Mismatched max. DH group exchange key size", SecurityUtils.MAX_DHGEX_KEY_SIZE, SecurityUtils.getMaxDHGroupExchangeKeySize());
         assertTrue("ECC not supported", SecurityUtils.hasEcc());
     }
+
+    @Test
+    public void testSetMaxDHGroupExchangeKeySizeByProperty() {
+        try {
+            for (int expected = SecurityUtils.MIN_DHGEX_KEY_SIZE; expected <= SecurityUtils.MAX_DHGEX_KEY_SIZE; expected += 1024) {
+                SecurityUtils.setMaxDHGroupExchangeKeySize(0);  // force detection
+                try {
+                    System.setProperty(SecurityUtils.MAX_DHGEX_KEY_SIZE_PROP, Integer.toString(expected));
+                    assertTrue("DH group not supported for key size=" + expected, SecurityUtils.isDHGroupExchangeSupported());
+                    assertEquals("Mismatched values", expected, SecurityUtils.getMaxDHGroupExchangeKeySize());
+                } finally {
+                    System.clearProperty(SecurityUtils.MAX_DHGEX_KEY_SIZE_PROP);
+                }
+            }
+        } finally {
+            SecurityUtils.setMaxDHGroupExchangeKeySize(0);  // force detection
+        }
+    }
+
+    @Test
+    public void testSetMaxDHGroupExchangeKeySizeProgrammatically() {
+        try {
+            for (int expected = SecurityUtils.MIN_DHGEX_KEY_SIZE; expected <= SecurityUtils.MAX_DHGEX_KEY_SIZE; expected += 1024) {
+                SecurityUtils.setMaxDHGroupExchangeKeySize(expected);
+                assertTrue("DH group not supported for key size=" + expected, SecurityUtils.isDHGroupExchangeSupported());
+                assertEquals("Mismatched values", expected, SecurityUtils.getMaxDHGroupExchangeKeySize());
+            }
+        } finally {
+            SecurityUtils.setMaxDHGroupExchangeKeySize(0);  // force detection
+        }
+    }
 }

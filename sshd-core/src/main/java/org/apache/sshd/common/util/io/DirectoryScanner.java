@@ -16,11 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.util;
+package org.apache.sshd.common.util.io;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.sshd.common.util.SelectorUtils;
 
 /**
  * <p>Class for scanning a directory for files/directories which match certain

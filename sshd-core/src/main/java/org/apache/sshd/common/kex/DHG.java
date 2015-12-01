@@ -45,13 +45,13 @@ public class DHG extends AbstractDH {
     private BigInteger f;  // your public key
     private KeyPairGenerator myKpairGen;
     private KeyAgreement myKeyAgree;
-    private Factory<Digest> factory;
+    private Factory<? extends Digest> factory;
 
-    public DHG(Factory<Digest> digestFactory) throws Exception {
+    public DHG(Factory<? extends Digest> digestFactory) throws Exception {
         this(digestFactory, null, null);
     }
 
-    public DHG(Factory<Digest> digestFactory, BigInteger pValue, BigInteger gValue) throws Exception {
+    public DHG(Factory<? extends Digest> digestFactory, BigInteger pValue, BigInteger gValue) throws Exception {
         myKpairGen = SecurityUtils.getKeyPairGenerator("DH");
         myKeyAgree = SecurityUtils.getKeyAgreement("DH");
         factory = digestFactory;

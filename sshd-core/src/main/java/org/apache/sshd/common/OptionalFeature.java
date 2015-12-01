@@ -19,9 +19,91 @@
 
 package org.apache.sshd.common;
 
+import java.util.Collection;
+
+import org.apache.sshd.common.util.GenericUtils;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface OptionalFeature {
+public interface OptionalFeature {  // TODO define this as a @FunctionalInterface in Java 8
+    OptionalFeature TRUE = new OptionalFeature() {
+        @Override
+        public boolean isSupported() {
+            return true;
+        }
+
+        @Override
+        public String toString() {
+            return "TRUE";
+        }
+    };
+
+    OptionalFeature FALSE = new OptionalFeature() {
+        @Override
+        public boolean isSupported() {
+            return false;
+        }
+
+        @Override
+        public String toString() {
+            return "FALSE";
+        }
+    };
+
     boolean isSupported();
+
+    /**
+     * Utility class to help using {@link OptionalFeature}s
+     */
+    // CHECKSTYLE:OFF
+    final class Utils {
+    // CHECKSTYLE:ON
+
+        private Utils() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
+
+        public static OptionalFeature of(boolean supported) {
+            return supported ? TRUE : FALSE;
+        }
+
+        public static OptionalFeature all(final Collection<? extends OptionalFeature> features) {
+            return new OptionalFeature() {
+                @Override
+                public boolean isSupported() {
+                    if (GenericUtils.isEmpty(features)) {
+                        return false;
+                    }
+
+                    for (OptionalFeature f : features) {
+                        if (!f.isSupported()) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+            };
+        }
+
+        public static OptionalFeature any(final Collection<? extends OptionalFeature> features) {
+            return new OptionalFeature() {
+                @Override
+                public boolean isSupported() {
+                    if (GenericUtils.isEmpty(features)) {
+                        return false;
+                    }
+
+                    for (OptionalFeature f : features) {
+                        if (f.isSupported()) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+            };
+        }
+    }
 }

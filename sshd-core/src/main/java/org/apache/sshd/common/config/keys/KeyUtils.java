@@ -98,9 +98,9 @@ public final class KeyUtils {
      * overridden by {@link #OPENSSH_KEY_FINGERPRINT_FACTORY_PROP} or
      * {@link #setDefaultFingerPrintFactory(Factory)}
      */
-    public static final Factory<Digest> DEFAULT_FINGERPRINT_DIGEST_FACTORY = BuiltinDigests.sha256;
+    public static final DigestFactory DEFAULT_FINGERPRINT_DIGEST_FACTORY = BuiltinDigests.sha256;
 
-    private static final AtomicReference<Factory<? extends Digest>> DEFAULT_DIGEST_HOLDER = new AtomicReference<>();
+    private static final AtomicReference<DigestFactory> DEFAULT_DIGEST_HOLDER = new AtomicReference<>();
 
     private static final Map<String, PublicKeyEntryDecoder<?, ?>> BY_KEY_TYPE_DECODERS_MAP =
             new TreeMap<String, PublicKeyEntryDecoder<?, ?>>(String.CASE_INSENSITIVE_ORDER);
@@ -366,14 +366,14 @@ public final class KeyUtils {
     }
 
     /**
-     * @return The default {@link Factory} of {@link Digest}s used
+     * @return The default {@link DigestFactory}
      * by the {@link #getFingerPrint(PublicKey)} and {@link #getFingerPrint(String)}
      * methods
      * @see #KEY_FINGERPRINT_FACTORY_PROP
      * @see #setDefaultFingerPrintFactory(Factory)
      */
-    public static Factory<? extends Digest> getDefaultFingerPrintFactory() {
-        Factory<? extends Digest> factory = null;
+    public static DigestFactory getDefaultFingerPrintFactory() {
+        DigestFactory factory = null;
         synchronized (DEFAULT_DIGEST_HOLDER) {
             factory = DEFAULT_DIGEST_HOLDER.get();
             if (factory != null) {
@@ -387,6 +387,7 @@ public final class KeyUtils {
                 factory = ValidateUtils.checkNotNull(BuiltinDigests.fromFactoryName(propVal), "Unknown digest factory: %s", propVal);
             }
 
+            ValidateUtils.checkTrue(factory.isSupported(), "Selected fingerprint digest not supported: %s", factory.getName());
             DEFAULT_DIGEST_HOLDER.set(factory);
         }
 
@@ -394,10 +395,10 @@ public final class KeyUtils {
     }
 
     /**
-     * @param f The {@link Factory} of {@link Digest}s to be used - may
+     * @param f The {@link DigestFactory} of {@link Digest}s to be used - may
      *          not be {@code null}
      */
-    public static void setDefaultFingerPrintFactory(Factory<? extends Digest> f) {
+    public static void setDefaultFingerPrintFactory(DigestFactory f) {
         synchronized (DEFAULT_DIGEST_HOLDER) {
             DEFAULT_DIGEST_HOLDER.set(ValidateUtils.checkNotNull(f, "No digest factory"));
         }

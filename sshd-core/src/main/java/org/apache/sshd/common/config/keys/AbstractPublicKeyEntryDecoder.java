@@ -39,6 +39,7 @@ import java.security.spec.KeySpec;
 import java.util.Collection;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 
@@ -123,7 +124,7 @@ public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey, PRV e
 
     @Override
     public PUB decodePublicKey(byte... keyData) throws IOException, GeneralSecurityException {
-        return decodePublicKey(keyData, 0, GenericUtils.length(keyData));
+        return decodePublicKey(keyData, 0, NumberUtils.length(keyData));
     }
 
     @Override

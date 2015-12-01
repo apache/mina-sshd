@@ -109,13 +109,21 @@ public class KeyUtilsFingerprintGenerationTest extends BaseTestSupport {
 
         List<Object[]> ret = new ArrayList<>();
         for (Pair<String, List<Pair<DigestFactory, String>>> kentry : KEY_ENTRIES) {
+            String keyValue = kentry.getFirst();
             try {
-                PublicKey key = PublicKeyEntry.parsePublicKeyEntry(kentry.getFirst()).resolvePublicKey(PublicKeyEntryResolver.FAILING);
+                PublicKey key = PublicKeyEntry.parsePublicKeyEntry(keyValue).resolvePublicKey(PublicKeyEntryResolver.FAILING);
                 for (Pair<DigestFactory, String> dentry : kentry.getSecond()) {
-                    ret.add(new Object[]{key, dentry.getFirst(), dentry.getSecond()});
+                    DigestFactory factory = dentry.getFirst();
+                    String fingerprint = dentry.getSecond();
+                    if (!factory.isSupported()) {
+                        System.out.println("Skip unsupported digest: " + fingerprint);
+                        continue;
+                    }
+
+                    ret.add(new Object[]{key, factory, fingerprint});
                 }
             } catch (InvalidKeySpecException e) {
-                System.out.println("Skip unsupported key: " + kentry.getFirst());
+                System.out.println("Skip unsupported key: " + keyValue);
             }
         }
 

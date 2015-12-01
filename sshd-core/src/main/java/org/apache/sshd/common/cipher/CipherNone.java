@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.common.cipher;
 
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 
 
 /**
@@ -61,7 +61,7 @@ public class CipherNone implements Cipher {
 
     @Override
     public void update(byte[] input) throws Exception {
-        update(input, 0, GenericUtils.length(input));
+        update(input, 0, NumberUtils.length(input));
     }
 
     @Override
