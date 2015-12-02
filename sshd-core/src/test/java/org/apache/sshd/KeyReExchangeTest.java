@@ -552,7 +552,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
                         // no need to wait until the packets limit is reached if a re-key occurred
                         if (exchanges.get() > 0) {
-                            outputDebugMessage("Stop sending after % packets and %d bytes - exchanges=%s",
+                            outputDebugMessage("Stop sending after %d packets and %d bytes - exchanges=%s",
                                                (index + 1), (index + 1L) * data.length, exchanges);
                             break;
                         }
