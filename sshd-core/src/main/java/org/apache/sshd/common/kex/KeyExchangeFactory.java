@@ -26,6 +26,6 @@ import org.apache.sshd.common.NamedFactory;
  */
 // CHECKSTYLE:OFF
 public interface KeyExchangeFactory extends NamedFactory<KeyExchange> {
-
+    // nothing extra
 }
 //CHECKSTYLE:ON

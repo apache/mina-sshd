@@ -26,6 +26,6 @@ import org.apache.sshd.common.BuiltinFactory;
  */
 // CHECKSTYLE:OFF
 public interface SignatureFactory extends BuiltinFactory<Signature> {
-
+    // nothing extra
 }
 //CHECKSTYLE:ON

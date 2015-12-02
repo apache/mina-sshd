@@ -27,6 +27,6 @@ import org.apache.sshd.server.Command;
  */
 // CHECKSTYLE:OFF
 public interface SubsystemFactory extends NamedFactory<Command> {
-
+    // nothing extra
 }
 //CHECKSTYLE:ON

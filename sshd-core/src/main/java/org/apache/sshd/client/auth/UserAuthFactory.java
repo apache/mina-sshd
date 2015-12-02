@@ -25,6 +25,6 @@ import org.apache.sshd.common.auth.UserAuthMethodFactory;
  */
 // CHECKSTYLE:OFF
 public interface UserAuthFactory extends UserAuthMethodFactory<UserAuth> {
-
+    // nothing extra
 }
 //CHECKSTYLE:ON

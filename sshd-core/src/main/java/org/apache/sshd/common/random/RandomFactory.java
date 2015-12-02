@@ -26,6 +26,6 @@ import org.apache.sshd.common.BuiltinFactory;
  */
 // CHECKSTYLE:OFF
 public interface RandomFactory extends BuiltinFactory<Random> {
-
+    // nothing extra
 }
 //CHECKSTYLE:ON

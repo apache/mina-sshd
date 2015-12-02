@@ -26,6 +26,6 @@ import org.apache.sshd.common.Factory;
  */
 // CHECKSTYLE:OFF
 public interface IoHandlerFactory extends Factory<IoHandler> {
-
+    // nothing extra
 }
 //CHECKSTYLE:ON
