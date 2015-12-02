@@ -35,6 +35,7 @@ public class BaseMac implements Mac {
     private final int bsize;
     private final byte[] tmp;
     private javax.crypto.Mac mac;
+    private String s;
 
     public BaseMac(String algorithm, int bsize, int defbsize) {
         this.algorithm = algorithm;
@@ -107,8 +108,13 @@ public class BaseMac implements Mac {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[" + getAlgorithm() + "] - "
-             + " block=" + getBlockSize() + "/" + getDefaultBlockSize() + " bytes";
-    }
+        synchronized (this) {
+            if (s == null) {
+                s = getClass().getSimpleName() + "[" + getAlgorithm() + "] - "
+                    + " block=" + getBlockSize() + "/" + getDefaultBlockSize() + " bytes";
+            }
+        }
 
+        return s;
+    }
 }
