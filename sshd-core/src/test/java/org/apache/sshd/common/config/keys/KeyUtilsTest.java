@@ -19,11 +19,19 @@
 
 package org.apache.sshd.common.config.keys;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.security.DigestException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Collection;
+import java.util.Date;
 
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.digest.BaseDigest;
@@ -32,7 +40,10 @@ import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.digest.DigestFactory;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.Assume;
 import org.junit.FixMethodOrder;
@@ -176,6 +187,38 @@ public class KeyUtilsTest extends BaseTestSupport {
             }
         } finally {
             KeyUtils.setDefaultFingerPrintFactory(defaultValue); // restore the original
+        }
+    }
+
+    @Test   // see SSHD-606
+    public void testValidateStrictKeyFilePermissions() throws IOException {
+        Path file = getTempTargetRelativeFile(getClass().getSimpleName(), getCurrentTestName());
+        outputDebugMessage("%s deletion result=%s", file, Files.deleteIfExists(file));
+        assertNull("Unexpected violation for non-existent file: " + file, KeyUtils.validateStrictKeyFilePermissions(file));
+
+        assertHierarchyTargetFolderExists(file.getParent());
+        try (OutputStream output = Files.newOutputStream(file)) {
+            output.write((getClass().getName() + "#" + getCurrentTestName() + "@" + new Date(System.currentTimeMillis())).getBytes(StandardCharsets.UTF_8));
+        }
+
+        Collection<PosixFilePermission> perms = IoUtils.getPermissions(file);
+        if (GenericUtils.isEmpty(perms)) {
+            assertNull("Unexpected violation for no permissions file: " + file, KeyUtils.validateStrictKeyFilePermissions(file));
+        } else if (OsUtils.isUNIX()) {
+            Pair<String, Object> violation = null;
+            for (PosixFilePermission p : KeyUtils.STRICTLY_PROHIBITED_FILE_PERMISSION) {
+                if (perms.contains(p)) {
+                    violation = KeyUtils.validateStrictKeyFilePermissions(file);
+                    assertNotNull("Unexpected success for permission=" + p + " of file " + file + " permissions=" + perms, violation);
+                    break;
+                }
+            }
+
+            if (violation == null) {    // we expect a failure since the parent does not have the necessary permissions
+                assertNotNull("Unexpected UNIX success for file " + file + " permissions=" + perms, KeyUtils.validateStrictKeyFilePermissions(file));
+            }
+        } else {
+            assertNull("Unexpected Windows violation for file " + file + " permissions=" + perms, KeyUtils.validateStrictKeyFilePermissions(file));
         }
     }
 

@@ -262,13 +262,28 @@ public final class IoUtils {
      *
      * @param path  The {@link Path}
      * @param options The {@link LinkOption}s to use when querying the owner
-     * @return Owner of the file or null if unsupported
+     * @return Owner of the file or null if unsupported. <B>Note:</B> for
+     * <I>Windows</I> it strips any prepended domain or group name
      * @throws IOException If failed to access the file system
+     * @see Files#getOwner(Path, LinkOption...)
      */
     public static String getFileOwner(Path path, LinkOption... options) throws IOException {
         try {
             UserPrincipal principal = Files.getOwner(path, options);
-            return (principal == null) ? null : principal.getName();
+            String owner = (principal == null) ? null : principal.getName();
+            if (GenericUtils.isEmpty(owner)) {
+                return owner;
+            }
+
+            // Windows owner sometime has the domain and/or group prepended to it
+            if (OsUtils.isWin32()) {
+                int pos = owner.lastIndexOf('\\');
+                if (pos > 0) {
+                    return owner.substring(pos + 1);
+                }
+            }
+
+            return owner;
         } catch (UnsupportedOperationException e) {
             return null;
         }
