@@ -26,9 +26,6 @@ import java.util.Set;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.OsUtils;
-import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.common.util.VersionInfo;
 
 /**
  * Provides easy access to the currently implemented digests
@@ -38,18 +35,7 @@ import org.apache.sshd.common.util.VersionInfo;
 public enum BuiltinDigests implements DigestFactory {
     md5(Constants.MD5, "MD5", 16),
     sha1(Constants.SHA1, "SHA-1", 20),
-    sha224(Constants.SHA224, "SHA-224", 28) {
-        @Override
-        public boolean isSupported() {
-            if (SecurityUtils.isBouncyCastleRegistered()) {
-                return true;
-            }
-
-            // SHA-224 was introduced in Java-8
-            VersionInfo version = OsUtils.getJavaVersion();
-            return version.getMinorVersion() >= 8;
-        }
-    },
+    sha224(Constants.SHA224, "SHA-224", 28),
     sha256(Constants.SHA256, "SHA-256", 32),
     sha384(Constants.SHA384, "SHA-384", 48),
     sha512(Constants.SHA512, "SHA-512", 64);
@@ -60,11 +46,19 @@ public enum BuiltinDigests implements DigestFactory {
     private final String algorithm;
     private final int blockSize;
     private final String factoryName;
+    private final boolean supported;
 
     BuiltinDigests(String factoryName, String algorithm, int blockSize) {
         this.factoryName = factoryName;
         this.algorithm = algorithm;
         this.blockSize = blockSize;
+        /*
+         * This can be done once since in order to change the support the JVM
+         * needs to be stopped, some unlimited-strength files need be installed
+         * and then the JVM re-started. Therefore, the answer is not going to
+         * change while the JVM is running
+         */
+        this.supported = DigestUtils.checkSupported(algorithm);
     }
 
     @Override
@@ -93,8 +87,8 @@ public enum BuiltinDigests implements DigestFactory {
     }
 
     @Override
-    public boolean isSupported() {
-        return true;
+    public final boolean isSupported() {
+        return supported;
     }
 
     /**

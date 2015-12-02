@@ -21,6 +21,7 @@ package org.apache.sshd.common.digest;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Collection;
 import java.util.Comparator;
 
@@ -28,6 +29,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.util.Base64;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
+import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 
@@ -37,6 +39,21 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 public final class DigestUtils {
     private DigestUtils() {
         throw new UnsupportedOperationException("No instance");
+    }
+
+    /**
+     * @param algorithm The digest algorithm - never {@code null}/empty
+     * @return {@code true} if this digest algorithm is supported
+     * @see SecurityUtils#getMessageDigest(String)
+     */
+    public static boolean checkSupported(String algorithm) {
+        ValidateUtils.checkNotNullAndNotEmpty(algorithm, "No algorithm");
+        try {
+            MessageDigest digest = SecurityUtils.getMessageDigest(algorithm);
+            return digest != null;  // just in case
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**

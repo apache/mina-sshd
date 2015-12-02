@@ -35,8 +35,8 @@ public class BaseDigest implements Digest {
 
     private final String algorithm;
     private final int bsize;
-    private final int h;
-    private final String s;
+    private int h;
+    private String s;
     private MessageDigest md;
 
     /**
@@ -51,8 +51,6 @@ public class BaseDigest implements Digest {
         this.algorithm = ValidateUtils.checkNotNullAndNotEmpty(algorithm, "No algorithm");
         ValidateUtils.checkTrue(bsize > 0, "Invalid block size: %d", bsize);
         this.bsize = bsize;
-        this.s = getClass().getSimpleName() + "[" + algorithm + ":" + bsize + "]";
-        this.h = Objects.hashCode(algorithm) + bsize;
     }
 
     @Override
@@ -94,8 +92,18 @@ public class BaseDigest implements Digest {
 
     @Override
     public int hashCode() {
+        synchronized (this) {
+            if (h == 0) {
+                h = Objects.hashCode(getAlgorithm()) + getBlockSize();
+                if (h == 0) {
+                    h = 1;
+                }
+            }
+        }
+
         return h;
     }
+
 
     @Override
     public int compareTo(Digest that) {
@@ -138,6 +146,12 @@ public class BaseDigest implements Digest {
 
     @Override
     public String toString() {
+        synchronized (this) {
+            if (s == null) {
+                s = getClass().getSimpleName() + "[" + getAlgorithm() + ":" + getBlockSize() + "]";
+            }
+        }
+
         return s;
     }
 }
