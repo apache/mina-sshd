@@ -21,6 +21,7 @@ package org.apache.sshd.common.kex;
 import java.security.PublicKey;
 import java.util.Map;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.session.AbstractSession;
@@ -33,7 +34,7 @@ import org.apache.sshd.common.util.logging.LoggingUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface KeyExchange {
+public interface KeyExchange extends NamedResource {
 
     /**
      * Initialize the key exchange algorithm.

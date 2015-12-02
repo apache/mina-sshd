@@ -73,4 +73,9 @@ public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implemen
     public byte[] getK() {
         return k;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[" + getName() + "]";
+    }
 }

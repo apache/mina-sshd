@@ -60,6 +60,11 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
         this.prf = Math.min(SecurityUtils.PREFERRED_DHGEX_KEY_SIZE, max);
     }
 
+    @Override
+    public final String getName() {
+        return factory.getName();
+    }
+
     public static KeyExchangeFactory newFactory(final DHFactory delegate) {
         return new KeyExchangeFactory() {
             @Override
@@ -178,10 +183,5 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
 
     protected AbstractDH getDH(BigInteger p, BigInteger g) throws Exception {
         return factory.create(p, g);
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + factory.getName() + "]";
     }
 }

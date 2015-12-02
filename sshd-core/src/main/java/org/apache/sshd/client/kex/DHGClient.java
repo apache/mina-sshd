@@ -50,6 +50,11 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         this.factory = ValidateUtils.checkNotNull(factory, "No factory");
     }
 
+    @Override
+    public final String getName() {
+        return factory.getName();
+    }
+
     public static final KeyExchangeFactory newFactory(final DHFactory delegate) {
         return new KeyExchangeFactory() {
             @Override
@@ -138,10 +143,5 @@ public class DHGClient extends AbstractDHClientKeyExchange {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED, "KeyExchange signature verification failed for key type=" + keyAlg);
         }
         return true;
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + factory.getName() + "]";
     }
 }

@@ -48,6 +48,11 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         this.factory = ValidateUtils.checkNotNull(factory, "No factory");
     }
 
+    @Override
+    public final String getName() {
+        return factory.getName();
+    }
+
     public static KeyExchangeFactory newFactory(final DHFactory factory) {
         return new KeyExchangeFactory() {
             @Override
@@ -145,10 +150,5 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         buffer.putBytes(sigH);
         session.writePacket(buffer);
         return true;
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + factory.getName() + "]";
     }
 }
