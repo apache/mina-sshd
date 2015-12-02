@@ -18,37 +18,19 @@
  */
 package org.apache.sshd.common.cipher;
 
+import org.apache.sshd.common.util.ValidateUtils;
+
 /**
  * Wrapper for a cryptographic cipher, used either for encryption
  * or decryption.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Cipher {
+public interface Cipher extends CipherInformation {
 
     enum Mode {
         Encrypt, Decrypt
     }
-
-    /**
-     * @return The cipher's algorithm
-     */
-    String getAlgorithm();
-
-    /**
-     * @return The actual transformation used - e.g., AES/CBC/NoPadding
-     */
-    String getTransformation();
-
-    /**
-     * @return Size of the initialization vector (in bytes)
-     */
-    int getIVSize();
-
-    /**
-     * @return The block size (in bytes) for this cipher
-     */
-    int getBlockSize();
 
     /**
      * Initialize the cipher for encryption or decryption with
@@ -80,4 +62,37 @@ public interface Cipher {
      */
     void update(byte[] input, int inputOffset, int inputLen) throws Exception;
 
+    /**
+     * Utility class to help using {@link Cipher}s
+     */
+    // CHECKSTYLE:OFF
+    final class Utils {
+    // CHECKSTYLE:ON
+
+        private Utils() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
+
+        /**
+         * @param xform The full cipher transformation - e.g., AES/CBC/NoPadding -
+         * never {@code null}/empty
+         * @param keyLength The required key length in bits - always positive
+         * @return {@code true} if the cipher transformation <U>and</U> required
+         * key length are supported
+         * @see {@link javax.crypto.Cipher#getMaxAllowedKeyLength(String)}
+         */
+        public static boolean checkSupported(String xform, int keyLength) {
+            ValidateUtils.checkNotNullAndNotEmpty(xform, "No transformation");
+            if (keyLength <= 0) {
+                throw new IllegalArgumentException("Bad key length (" + keyLength + ") for cipher=" + xform);
+            }
+
+            try {
+                int maxKeyLength = javax.crypto.Cipher.getMaxAllowedKeyLength(xform);
+                return maxKeyLength >= keyLength;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+    }
 }

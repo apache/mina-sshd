@@ -19,13 +19,27 @@
 
 package org.apache.sshd.common.cipher;
 
-import org.apache.sshd.common.BuiltinFactory;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-// CHECKSTYLE:OFF
-public interface CipherFactory extends BuiltinFactory<Cipher>, CipherInformation {
-    // nothing extra
+public interface CipherInformation {
+    /**
+     * @return The cipher's algorithm
+     */
+    String getAlgorithm();
+
+    /**
+     * @return The actual transformation used - e.g., AES/CBC/NoPadding
+     */
+    String getTransformation();
+
+    /**
+     * @return Size of the initialization vector (in bytes)
+     */
+    int getIVSize();
+
+    /**
+     * @return The block size (in bytes) for this cipher
+     */
+    int getBlockSize();
 }
-//CHECKSTYLE:ON

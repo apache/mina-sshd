@@ -96,9 +96,9 @@ public enum BuiltinCiphers implements CipherFactory {
          * This can be done once since in order to change the support the JVM
          * needs to be stopped, some unlimited-strength files need be installed
          * and then the JVM re-started. Therefore, the answer is not going to
-         * change while the JVM is running 
+         * change while the JVM is running
          */
-        this.supported = checkSupported(this.transformation, this.keysize);
+        this.supported = Constants.NONE.equals(factoryName) || Cipher.Utils.checkSupported(this.transformation, this.keysize);
     }
 
     @Override
@@ -121,15 +121,6 @@ public enum BuiltinCiphers implements CipherFactory {
         return supported;
     }
 
-    private static boolean checkSupported(String xform, int keyLength) {
-        try {
-            int maxKeyLength = javax.crypto.Cipher.getMaxAllowedKeyLength(xform);
-            return maxKeyLength >= keyLength;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
     /**
      * @return The key size (in bits) for the cipher
      */
@@ -137,30 +128,22 @@ public enum BuiltinCiphers implements CipherFactory {
         return keysize;
     }
 
-    /**
-     * @return The size of the initialization vector
-     */
+    @Override
     public int getIVSize() {
         return ivsize;
     }
 
-    /**
-     * @return The block size for this cipher
-     */
+    @Override
     public int getBlockSize() {
         return blocksize;
     }
 
-    /**
-     * @return The algorithm for this cipher
-     */
+    @Override
     public String getAlgorithm() {
         return algorithm;
     }
 
-    /**
-     * @return The transformation for this cipher
-     */
+    @Override
     public String getTransformation() {
         return transformation;
     }

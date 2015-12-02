@@ -38,6 +38,7 @@ public class BaseCipher implements Cipher {
     private final int bsize;
     private final String algorithm;
     private final String transformation;
+    private String s;
 
     public BaseCipher(int ivsize, int bsize, String algorithm, String transformation) {
         this.ivsize = ivsize;
@@ -102,11 +103,17 @@ public class BaseCipher implements Cipher {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName()
-             + "[" + getAlgorithm()
-             + "," + getIVSize()
-             + "," + getBlockSize()
-             + "," + getTransformation()
-             + "]";
+        synchronized (this) {
+            if (s == null) {
+                s = getClass().getSimpleName()
+                    + "[" + getAlgorithm()
+                    + "," + getIVSize()
+                    + "," + getBlockSize()
+                    + "," + getTransformation()
+                    + "]";
+            }
+        }
+
+        return s;
     }
 }
