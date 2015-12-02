@@ -20,6 +20,7 @@ package org.apache.sshd.common.compression;
 
 import java.io.IOException;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -28,7 +29,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Compression {
+public interface Compression extends NamedResource {
 
     /**
      * Enum identifying if this object will be used to compress

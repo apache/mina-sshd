@@ -19,13 +19,25 @@
 
 package org.apache.sshd.common.compression;
 
-import org.apache.sshd.common.BuiltinFactory;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-// CHECKSTYLE:OFF
-public interface CompressionFactory extends BuiltinFactory<Compression> {
-    // nothing extra
+public abstract class BaseCompression implements Compression {
+    private final String name;
+
+    protected BaseCompression(String name) {
+        this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No compression name");
+    }
+
+    @Override
+    public final String getName() {
+        return name;
+    }
+
+    @Override
+    public String toString() {
+        return getName();
+    }
 }
-//CHECKSTYLE:ON

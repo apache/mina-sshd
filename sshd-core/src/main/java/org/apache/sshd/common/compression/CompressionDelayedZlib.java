@@ -30,7 +30,7 @@ public class CompressionDelayedZlib extends CompressionZlib {
      * Create a new instance of a delayed ZLib compression
      */
     public CompressionDelayedZlib() {
-        super();
+        super(BuiltinCompressions.Constants.DELAYED_ZLIB);
     }
 
     @Override

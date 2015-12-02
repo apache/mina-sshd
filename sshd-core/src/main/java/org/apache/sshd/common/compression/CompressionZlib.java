@@ -30,7 +30,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class CompressionZlib implements Compression {
+public class CompressionZlib extends BaseCompression {
 
     private static final int BUF_SIZE = 4096;
 
@@ -42,6 +42,11 @@ public class CompressionZlib implements Compression {
      * Create a new instance of a ZLib base compression
      */
     public CompressionZlib() {
+        this(BuiltinCompressions.Constants.ZLIB);
+    }
+
+    protected CompressionZlib(String name) {
+        super(name);
     }
 
     @Override
