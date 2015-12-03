@@ -34,6 +34,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -50,6 +51,8 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * File system provider which provides a rooted file system.
@@ -58,10 +61,11 @@ import org.apache.sshd.common.util.io.IoUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class RootedFileSystemProvider extends FileSystemProvider {
+    protected final Logger log;
     private final Map<Path, RootedFileSystem> fileSystems = new HashMap<>();
 
     public RootedFileSystemProvider() {
-        super();
+        log = LoggerFactory.getLogger(getClass());
     }
 
     @Override
@@ -97,6 +101,10 @@ public class RootedFileSystemProvider extends FileSystemProvider {
         // do all the throwing outside the synchronized block to minimize its lock time
         if (rootedFs == null) {
             throw new FileSystemAlreadyExistsException("newFileSystem(" + src + ") already mapped " + root);
+        }
+
+        if (log.isTraceEnabled()) {
+            log.trace("newFileSystem({}): {}", src, rootedFs);
         }
 
         return rootedFs;
@@ -136,7 +144,11 @@ public class RootedFileSystemProvider extends FileSystemProvider {
 
         FileSystem fs = getFileSystem(uri);
         String subPath = str.substring(i + 1);
-        return fs.getPath(subPath);
+        Path p = fs.getPath(subPath);
+        if (log.isTraceEnabled()) {
+            log.trace("getPath({}): {}", uri, p);
+        }
+        return p;
     }
 
     @Override
@@ -217,11 +229,18 @@ public class RootedFileSystemProvider extends FileSystemProvider {
         } else {
             p.createLink(l, t);
         }
+
+        if (log.isDebugEnabled()) {
+            log.debug("createLink(symbolic={}) {} => {}", symLink, l, t);
+        }
     }
 
     @Override
     public void delete(Path path) throws IOException {
         Path r = unroot(path);
+        if (log.isTraceEnabled()) {
+            log.trace("delete({}): {}", path, r);
+        }
         FileSystemProvider p = provider(r);
         p.delete(r);
     }
@@ -229,6 +248,9 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     @Override
     public boolean deleteIfExists(Path path) throws IOException {
         Path r = unroot(path);
+        if (log.isTraceEnabled()) {
+            log.trace("deleteIfExists({}): {}", path, r);
+        }
         FileSystemProvider p = provider(r);
         return p.deleteIfExists(r);
     }
@@ -237,13 +259,21 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     public Path readSymbolicLink(Path link) throws IOException {
         Path r = unroot(link);
         FileSystemProvider p = provider(r);
-        return root((RootedFileSystem) link.getFileSystem(), p.readSymbolicLink(r));
+        Path t = p.readSymbolicLink(r);
+        Path target = root((RootedFileSystem) link.getFileSystem(), t);
+        if (log.isTraceEnabled()) {
+            log.trace("readSymbolicLink({})[{}]: {}[{}]", link, r, target, t);
+        }
+        return target;
     }
 
     @Override
     public void copy(Path source, Path target, CopyOption... options) throws IOException {
         Path s = unroot(source);
         Path t = unroot(target);
+        if (log.isTraceEnabled()) {
+            log.trace("copy({})[{}]: {}[{}]", source, s, target, t);
+        }
         FileSystemProvider p = provider(s);
         p.copy(s, t, options);
     }
@@ -252,6 +282,9 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     public void move(Path source, Path target, CopyOption... options) throws IOException {
         Path s = unroot(source);
         Path t = unroot(target);
+        if (log.isTraceEnabled()) {
+            log.trace("move({})[{}]: {}[{}]", source, s, target, t);
+        }
         FileSystemProvider p = provider(s);
         p.move(s, t, options);
     }
@@ -306,6 +339,10 @@ public class RootedFileSystemProvider extends FileSystemProvider {
             throw new FileSystemNotFoundException(path.toString());
         }
 
+        if (log.isTraceEnabled()) {
+            log.trace("getFileSystem({}): {}", path, fsInstance);
+        }
+
         return fsInstance;
     }
 
@@ -326,6 +363,10 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     @Override
     public <A extends BasicFileAttributes> A readAttributes(Path path, Class<A> type, LinkOption... options) throws IOException {
         Path r = unroot(path);
+        if (log.isTraceEnabled()) {
+            log.trace("readAttributes({})[{}] type={}", path, r, type.getSimpleName());
+        }
+
         FileSystemProvider p = provider(r);
         return p.readAttributes(r, type, options);
     }
@@ -334,12 +375,19 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     public Map<String, Object> readAttributes(Path path, String attributes, LinkOption... options) throws IOException {
         Path r = unroot(path);
         FileSystemProvider p = provider(r);
-        return p.readAttributes(r, attributes, options);
+        Map<String, Object> attrs = p.readAttributes(r, attributes, options);
+        if (log.isTraceEnabled()) {
+            log.trace("readAttributes({})[{}] {}: {}", path, r, attributes, attrs);
+        }
+        return attrs;
     }
 
     @Override
     public void setAttribute(Path path, String attribute, Object value, LinkOption... options) throws IOException {
         Path r = unroot(path);
+        if (log.isTraceEnabled()) {
+            log.trace("setAttribute({})[{}] {}={}", path, r, attribute, value);
+        }
         FileSystemProvider p = provider(r);
         p.setAttribute(r, attribute, value, options);
     }
@@ -376,17 +424,47 @@ public class RootedFileSystemProvider extends FileSystemProvider {
 
         return resolveLocalPath((RootedPath) path);
     }
-    
+
     /**
      * @param path The original {@link RootedPath} - never {@code null}
      * @return The actual <U>absolute <B>local</B></U> {@link Path} represented
      * by the rooted one
+     * @throws InvalidPathException If the resolved path is not a proper sub-path
+     * of the rooted file system
      */
     protected Path resolveLocalPath(RootedPath path) {
-        Path absPath = path.toAbsolutePath();
-        String r = absPath.toString();
-        RootedFileSystem rfs = path.getFileSystem();
+        RootedPath absPath = ValidateUtils.checkNotNull(path, "No rooted path to resolve").toAbsolutePath();
+        RootedFileSystem rfs = absPath.getFileSystem();
         Path root = rfs.getRoot();
-        return root.resolve(r.substring(1));
+        FileSystem lfs = root.getFileSystem();
+
+        String rSep = ValidateUtils.checkNotNullAndNotEmpty(rfs.getSeparator(), "No rooted file system separator");
+        ValidateUtils.checkTrue(rSep.length() == 1, "Bad rooted file system separator: %s", rSep);
+        char rootedSeparator = rSep.charAt(0);
+
+        String lSep = ValidateUtils.checkNotNullAndNotEmpty(lfs.getSeparator(), "No local file system separator");
+        ValidateUtils.checkTrue(lSep.length() == 1, "Bad local file system separator: %s", lSep);
+        char localSeparator = lSep.charAt(0);
+
+        String r = absPath.toString();
+        String subPath = r.substring(1);
+        if (rootedSeparator != localSeparator) {
+            subPath = subPath.replace(rootedSeparator, localSeparator);
+        }
+
+        Path resolved = root.resolve(subPath);
+        if (log.isTraceEnabled()) {
+            log.trace("resolveLocalPath({}): {}", absPath, resolved);
+        }
+
+        /*
+         * This can happen for Windows since we represent its paths as /C:/some/path,
+         * so substring(1) yields C:/some/path - which is resolved as an absolute path
+         * (which we don't want).
+         */
+        if (!resolved.startsWith(root)) {
+            throw new InvalidPathException(r, "Not under root");
+        }
+        return resolved;
     }
 }

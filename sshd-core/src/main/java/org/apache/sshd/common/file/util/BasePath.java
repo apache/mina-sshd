@@ -45,6 +45,8 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
     protected final String root;
     protected final ImmutableList<String> names;
     private final FS fileSystem;
+    private String strValue;
+    private int hashValue;
 
     public BasePath(FS fileSystem, String root, ImmutableList<String> names) {
         this.fileSystem = ValidateUtils.checkNotNull(fileSystem, "No file system provided");
@@ -371,28 +373,44 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
 
     @Override
     public int hashCode() {
-        int hash = Objects.hashCode(getFileSystem());
-        // use hash codes from toString() form of names
-        hash = 31 * hash + Objects.hashCode(root);
-        for (String name : names) {
-            hash = 31 * hash + Objects.hashCode(name);
+        synchronized (this) {
+            if (hashValue == 0) {
+                hashValue = calculatedHashCode();
+                if (hashValue == 0) {
+                    hashValue = 1;
+                }
+            }
         }
-        return hash;
+
+        return hashValue;
+    }
+
+    protected int calculatedHashCode() {
+        return Objects.hash(getFileSystem(), root, names);
     }
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof Path
-                && compareTo((Path) obj) == 0;
+        return (obj instanceof Path) && (compareTo((Path) obj) == 0);
     }
 
     @Override
     public String toString() {
+        synchronized (this) {
+            if (strValue == null) {
+                strValue = asString();
+            }
+        }
+
+        return strValue;
+    }
+
+    protected String asString() {
         StringBuilder sb = new StringBuilder();
         if (root != null) {
             sb.append(root);
         }
-        
+
         String separator = getFileSystem().getSeparator();
         for (String name : names) {
             if ((sb.length() > 0) && (sb.charAt(sb.length() - 1) != '/')) {
@@ -400,7 +418,7 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
             }
             sb.append(name);
         }
+
         return sb.toString();
     }
-
 }

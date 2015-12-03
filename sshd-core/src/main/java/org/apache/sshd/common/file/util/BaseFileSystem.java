@@ -25,19 +25,24 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.WatchService;
 import java.nio.file.spi.FileSystemProvider;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class BaseFileSystem<T extends Path> extends FileSystem {
-
+    protected final Logger log;
     private final FileSystemProvider fileSystemProvider;
 
     public BaseFileSystem(FileSystemProvider fileSystemProvider) {
-        this.fileSystemProvider = fileSystemProvider;
+        this.log = LoggerFactory.getLogger(getClass());
+        this.fileSystemProvider = ValidateUtils.checkNotNull(fileSystemProvider, "No file system provider");
     }
 
     public T getDefaultDir() {
@@ -98,7 +103,12 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
         }
 
         String[] names = GenericUtils.split(path, '/');
-        return create(root, names);
+        T p = create(root, names);
+        if (log.isTraceEnabled()) {
+            log.trace("getPath({}, {}): {}", first, Arrays.toString(more), p);
+        }
+
+        return p;
     }
 
     protected void appendDedupSep(StringBuilder sb, CharSequence s) {
@@ -112,7 +122,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
 
     @Override
     public PathMatcher getPathMatcher(String syntaxAndPattern) {
-        int colonIndex = syntaxAndPattern.indexOf(':');
+        int colonIndex = ValidateUtils.checkNotNull(syntaxAndPattern, "No argument").indexOf(':');
         if ((colonIndex <= 0) || (colonIndex == syntaxAndPattern.length() - 1)) {
             throw new IllegalArgumentException("syntaxAndPattern must have form \"syntax:pattern\" but was \"" + syntaxAndPattern + "\"");
         }
@@ -130,6 +140,10 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
             default:
                 throw new UnsupportedOperationException("Unsupported path matcher syntax: \'" + syntax + "\'");
         }
+        if (log.isTraceEnabled()) {
+            log.trace("getPathMatcher({}): {}", syntaxAndPattern, expr);
+        }
+
         final Pattern regex = Pattern.compile(expr);
         return new PathMatcher() {
             @Override
@@ -141,7 +155,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
     }
 
     protected String globToRegex(String pattern) {
-        StringBuilder sb = new StringBuilder(pattern.length());
+        StringBuilder sb = new StringBuilder(ValidateUtils.checkNotNull(pattern, "No patern").length());
         int inGroup = 0;
         int inClass = 0;
         int firstIndexInClass = -1;
@@ -217,7 +231,13 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
                     sb.append(ch);
             }
         }
-        return sb.toString();
+
+        String regex = sb.toString();
+        if (log.isTraceEnabled()) {
+            log.trace("globToRegex({}): {}", pattern, regex);
+        }
+
+        return regex;
     }
 
     @Override

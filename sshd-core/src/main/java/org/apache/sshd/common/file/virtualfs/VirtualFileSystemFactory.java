@@ -20,7 +20,8 @@ package org.apache.sshd.common.file.virtualfs;
 
 import java.io.IOException;
 import java.nio.file.FileSystem;
-import java.nio.file.Paths;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,53 +29,58 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.root.RootedFileSystemProvider;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * SSHd file system factory to reduce the visibility to a physical folder.
  */
 public class VirtualFileSystemFactory implements FileSystemFactory {
 
-    private String defaultHomeDir;
-    private final Map<String, String> homeDirs = new ConcurrentHashMap<String, String>();
+    private Path defaultHomeDir;
+    private final Map<String, Path> homeDirs = new ConcurrentHashMap<String, Path>();
 
     public VirtualFileSystemFactory() {
+        super();
     }
 
-    public VirtualFileSystemFactory(String defaultHomeDir) {
+    public VirtualFileSystemFactory(Path defaultHomeDir) {
         this.defaultHomeDir = defaultHomeDir;
     }
 
-    public void setDefaultHomeDir(String defaultHomeDir) {
+    public void setDefaultHomeDir(Path defaultHomeDir) {
         this.defaultHomeDir = defaultHomeDir;
     }
 
-    public String getDefaultHomeDir() {
+    public Path getDefaultHomeDir() {
         return defaultHomeDir;
     }
 
-    public void setUserHomeDir(String userName, String userHomeDir) {
-        homeDirs.put(userName, userHomeDir);
+    public void setUserHomeDir(String userName, Path userHomeDir) {
+        homeDirs.put(ValidateUtils.checkNotNullAndNotEmpty(userName, "No username"),
+                     ValidateUtils.checkNotNull(userHomeDir, "No home dir"));
     }
 
-    public String getUserHomeDir(String userName) {
-        return homeDirs.get(userName);
-    }
-
-    protected String computeRootDir(String userName) {
-        String homeDir = homeDirs.get(userName);
-        if (homeDir == null) {
-            homeDir = defaultHomeDir;
-        }
-        if (homeDir == null) {
-            throw new IllegalStateException("No home directory for user " + userName);
-        }
-        return homeDir;
+    public Path getUserHomeDir(String userName) {
+        return homeDirs.get(ValidateUtils.checkNotNullAndNotEmpty(userName, "No username"));
     }
 
     @Override
     public FileSystem createFileSystem(Session session) throws IOException {
-        String dir = computeRootDir(session.getUsername());
-        return new RootedFileSystemProvider().newFileSystem(Paths.get(dir), Collections.<String, Object>emptyMap());
+        String username = session.getUsername();
+        Path dir = computeRootDir(username);
+        if (dir == null) {
+            throw new InvalidPathException(username, "Cannot resolve home directory");
+        }
+
+        return new RootedFileSystemProvider().newFileSystem(dir, Collections.<String, Object>emptyMap());
     }
 
+    protected Path computeRootDir(String userName) throws IOException  {
+        Path homeDir = getUserHomeDir(userName);
+        if (homeDir == null) {
+            homeDir = getDefaultHomeDir();
+        }
+
+        return homeDir;
+    }
 }

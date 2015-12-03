@@ -36,19 +36,24 @@ import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import org.mockito.Mockito;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class BasePathTest extends BaseTestSupport {
 
     private TestFileSystem fileSystem;
 
+    public BasePathTest() {
+        super();
+    }
+
     @Before
     public void setUp() {
-        fileSystem = new TestFileSystem(null);
+        fileSystem = new TestFileSystem(Mockito.mock(FileSystemProvider.class));
     }
 
     @Test
-    public void testPathParsing() {
+    public void testbasicPathParsing() {
         assertPathEquals("/", "/");
         assertPathEquals("/foo", "/foo");
         assertPathEquals("/foo", "/", "foo");
@@ -63,7 +68,7 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     @Test
-    public void testPathParsing_withExtraSeparators() {
+    public void testPathParsingWithExtraSeparators() {
         assertPathEquals("/foo/bar", "///foo/bar");
         assertPathEquals("/foo/bar", "/foo///bar//");
         assertPathEquals("/foo/bar/baz", "/foo", "/bar", "baz/");
@@ -78,7 +83,7 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     @Test
-    public void testRelativePath_singleName() {
+    public void testRelativePathSingleName() {
         new PathTester(fileSystem, "test")
                 .names("test")
                 .test("test");
@@ -88,7 +93,7 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     @Test
-    public void testRelativePath_twoNames() {
+    public void testRelativePathTwoNames() {
         PathTester tester = new PathTester(fileSystem, "foo/bar")
                 .names("foo", "bar");
 
@@ -96,7 +101,7 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     @Test
-    public void testRelativePath_fourNames() {
+    public void testRelativePathFourNames() {
         new PathTester(fileSystem, "foo/bar/baz/test")
                 .names("foo", "bar", "baz", "test")
                 .test("foo/bar/baz/test");
@@ -111,7 +116,7 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     @Test
-    public void testAbsolutePath_twoNames() {
+    public void testAbsolutePathTwoNames() {
         new PathTester(fileSystem, "/foo/bar")
                 .root("/")
                 .names("foo", "bar")
@@ -119,7 +124,7 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     @Test
-    public void testAbsoluteMultiNamePath_fourNames() {
+    public void testAbsoluteMultiNamePathFourNames() {
         new PathTester(fileSystem, "/foo/bar/baz/test")
                 .root("/")
                 .names("foo", "bar", "baz", "test")
@@ -127,7 +132,7 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     @Test
-    public void testResolve_fromRoot() {
+    public void testResolveFromRoot() {
         Path root = parsePath("/");
 
         assertResolvedPathEquals("/foo", root, "foo");
@@ -138,7 +143,7 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     @Test
-    public void testResolve_fromAbsolute() {
+    public void testResolveFromAbsolute() {
         Path path = parsePath("/foo");
 
         assertResolvedPathEquals("/foo/bar", path, "bar");
@@ -148,7 +153,7 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     @Test
-    public void testResolve_fromRelative() {
+    public void testResolveFromRelative() {
         Path path = parsePath("foo");
 
         assertResolvedPathEquals("foo/bar", path, "bar");
@@ -158,7 +163,7 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     @Test
-    public void testResolve_withThisAndParentDirNames() {
+    public void testResolveWithThisAndParentDirNames() {
         Path path = parsePath("/foo");
 
         assertResolvedPathEquals("/foo/bar/../baz", path, "bar/../baz");
@@ -168,7 +173,7 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     @Test
-    public void testResolve_givenAbsolutePath() {
+    public void testResolveGivenAbsolutePath() {
         assertResolvedPathEquals("/test", parsePath("/foo"), "/test");
         assertResolvedPathEquals("/test", parsePath("foo"), "/test");
     }
@@ -180,12 +185,12 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     @Test
-    public void testResolve_againstEmptyPath() {
+    public void testResolveAgainstEmptyPath() {
         assertResolvedPathEquals("foo/bar", parsePath(""), "foo/bar");
     }
 
     @Test
-    public void testResolveSibling_givenEmptyPath() {
+    public void testResolveSiblingGivenEmptyPath() {
         Path path = parsePath("foo/bar");
         Path resolved = path.resolveSibling("");
         assertPathEquals("foo", resolved);
@@ -196,7 +201,7 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     @Test
-    public void testResolveSibling_againstEmptyPath() {
+    public void testResolveSiblingAgainstEmptyPath() {
         Path path = parsePath("");
         Path resolved = path.resolveSibling("foo");
         assertPathEquals("foo", resolved);
@@ -207,24 +212,24 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     @Test
-    public void testRelativize_bothAbsolute() {
+    public void testRelativizeBothAbsolute() {
         assertRelativizedPathEquals("b/c", parsePath("/a"), "/a/b/c");
         assertRelativizedPathEquals("c/d", parsePath("/a/b"), "/a/b/c/d");
     }
 
     @Test
-    public void testRelativize_bothRelative() {
+    public void testRelativizeBothRelative() {
         assertRelativizedPathEquals("b/c", parsePath("a"), "a/b/c");
         assertRelativizedPathEquals("d", parsePath("a/b/c"), "a/b/c/d");
     }
 
     @Test
-    public void testRelativize_againstEmptyPath() {
+    public void testRelativizeAgainstEmptyPath() {
         assertRelativizedPathEquals("foo/bar", parsePath(""), "foo/bar");
     }
 
     @Test
-    public void testRelativize_oneAbsoluteOneRelative() {
+    public void testRelativizeOneAbsoluteOneRelative() {
         try {
             parsePath("/foo/bar").relativize(parsePath("foo"));
             fail();
@@ -241,34 +246,34 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     @Test
-    public void testNormalize_withParentDirName() {
+    public void testNormalizeWithParentDirName() {
         assertNormalizedPathEquals("/foo/baz", "/foo/bar/../baz");
         assertNormalizedPathEquals("/foo/baz", "/foo", "bar", "..", "baz");
     }
 
     @Test
-    public void testNormalize_withThisDirName() {
+    public void testNormalizeWithThisDirName() {
         assertNormalizedPathEquals("/foo/bar/baz", "/foo/bar/./baz");
         assertNormalizedPathEquals("/foo/bar/baz", "/foo", "bar", ".", "baz");
     }
 
     @Test
-    public void testNormalize_withThisAndParentDirNames() {
+    public void testNormalizeWithThisAndParentDirNames() {
         assertNormalizedPathEquals("foo/test", "foo/./bar/../././baz/../test");
     }
 
     @Test
-    public void testNormalize_withLeadingParentDirNames() {
+    public void testNormalizeWithLeadingParentDirNames() {
         assertNormalizedPathEquals("../../foo/baz", "../../foo/bar/../baz");
     }
 
     @Test
-    public void testNormalize_withLeadingThisAndParentDirNames() {
+    public void testNormalizeWithLeadingThisAndParentDirNames() {
         assertNormalizedPathEquals("../../foo/baz", "./.././.././foo/bar/../baz");
     }
 
     @Test
-    public void testNormalize_withExtraParentDirNamesAtRoot() {
+    public void testNormalizeWithExtraParentDirNamesAtRoot() {
         assertNormalizedPathEquals("/", "/..");
         assertNormalizedPathEquals("/", "/../../..");
         assertNormalizedPathEquals("/", "/foo/../../..");
