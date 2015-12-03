@@ -53,6 +53,7 @@ import org.apache.sshd.util.test.SimpleUserInfo;
 import org.apache.sshd.util.test.Utils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -76,6 +77,11 @@ public class PortForwardingLoadTest extends BaseTestSupport {
 
     public PortForwardingLoadTest() {
         super();
+    }
+
+    @BeforeClass
+    public static void jschInit() {
+        JSchLogger.init();
     }
 
     @Before
@@ -389,7 +395,6 @@ public class PortForwardingLoadTest extends BaseTestSupport {
     }
 
     protected Session createSession() throws JSchException {
-        JSchLogger.init();
         JSch sch = new JSch();
         Session session = sch.getSession("sshd", TEST_LOCALHOST, sshPort);
         session.setUserInfo(new SimpleUserInfo("sshd"));

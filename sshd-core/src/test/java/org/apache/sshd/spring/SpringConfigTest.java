@@ -31,6 +31,7 @@ import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -48,6 +49,11 @@ public class SpringConfigTest extends BaseTestSupport {
 
     public SpringConfigTest() {
         super();
+    }
+
+    @BeforeClass
+    public static void jschInit() {
+        JSchLogger.init();
     }
 
     @Before
@@ -69,7 +75,6 @@ public class SpringConfigTest extends BaseTestSupport {
         SshServer server = context.getBean(SshServer.class);
         int port = server.getPort();
 
-        JSchLogger.init();
         JSch sch = new JSch();
         com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), TEST_LOCALHOST, port);
         s.setUserInfo(new SimpleUserInfo(getCurrentTestName()));

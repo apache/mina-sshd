@@ -34,6 +34,7 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -46,6 +47,11 @@ import com.jcraft.jsch.JSch;
 public class GitPackCommandTest extends BaseTestSupport {
     public GitPackCommandTest() {
         super();
+    }
+
+    @BeforeClass
+    public static void jschInit() {
+        JSchLogger.init();
     }
 
     @Test
@@ -65,7 +71,6 @@ public class GitPackCommandTest extends BaseTestSupport {
                 Utils.deleteRecursive(serverDir);
                 Git.init().setBare(true).setDirectory(serverDir.toFile()).call();
 
-                JSchLogger.init();
                 JSch.setConfig("StrictHostKeyChecking", "no");
                 CredentialsProvider.setDefault(new UsernamePasswordCredentialsProvider(getCurrentTestName(), getCurrentTestName()));
                 SshSessionFactory.setInstance(new GitSshdSessionFactory());

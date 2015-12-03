@@ -37,6 +37,7 @@ import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
 import org.apache.sshd.util.test.Utils;
 import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -89,6 +90,11 @@ public class CipherTest extends BaseTestSupport {
         return PARAMETERS;
     }
 
+    @BeforeClass
+    public static void jschInit() {
+        JSchLogger.init();
+    }
+
     private final Random random = Utils.getRandomizerInstance();
     private final BuiltinCiphers builtInCipher;
     private final Class<? extends com.jcraft.jsch.Cipher> jschCipher;
@@ -117,7 +123,6 @@ public class CipherTest extends BaseTestSupport {
     }
 
     private void runJschTest(int port) throws Exception {
-        JSchLogger.init();
         JSch sch = new JSch();
         JSch.setConfig("cipher.s2c", CRYPT_NAMES);
         JSch.setConfig("cipher.c2s", CRYPT_NAMES);

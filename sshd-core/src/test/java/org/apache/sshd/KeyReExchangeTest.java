@@ -59,6 +59,7 @@ import org.apache.sshd.util.test.SimpleUserInfo;
 import org.apache.sshd.util.test.TeeOutputStream;
 import org.junit.After;
 import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -78,6 +79,11 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
     public KeyReExchangeTest() {
         super();
+    }
+
+    @BeforeClass
+    public static void jschInit() {
+        JSchLogger.init();
     }
 
     @After
@@ -202,7 +208,6 @@ public class KeyReExchangeTest extends BaseTestSupport {
         Assume.assumeTrue("DH Group Exchange not supported", SecurityUtils.isDHGroupExchangeSupported());
         setUp(0L, 0L, 0L);
 
-        JSchLogger.init();
         JSch.setConfig("kex", BuiltinDHFactories.Constants.DIFFIE_HELLMAN_GROUP_EXCHANGE_SHA1);
         JSch sch = new JSch();
         com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), TEST_LOCALHOST, port);
