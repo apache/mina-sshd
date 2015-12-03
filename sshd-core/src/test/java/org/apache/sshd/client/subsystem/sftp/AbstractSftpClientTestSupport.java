@@ -20,15 +20,13 @@
 package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.IOException;
-import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.Collections;
 
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.file.FileSystemFactory;
-import org.apache.sshd.common.file.root.RootedFileSystemProvider;
-import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.command.ScpCommandFactory;
@@ -41,19 +39,12 @@ import org.apache.sshd.util.test.BaseTestSupport;
 public abstract class AbstractSftpClientTestSupport extends BaseTestSupport {
     protected SshServer sshd;
     protected int port;
-    protected final FileSystem rootFileSystem;
     protected final FileSystemFactory fileSystemFactory;
 
     protected AbstractSftpClientTestSupport() throws IOException {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
-        rootFileSystem = new RootedFileSystemProvider().newFileSystem(parentPath, Collections.<String, Object>emptyMap());
-        fileSystemFactory = new FileSystemFactory() {
-            @Override
-            public FileSystem createFileSystem(Session session) throws IOException {
-                return rootFileSystem;
-            }
-        };
+        fileSystemFactory = new VirtualFileSystemFactory(parentPath);
     }
 
     protected void setupServer() throws Exception {

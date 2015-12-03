@@ -57,8 +57,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.file.FileSystemFactory;
-import org.apache.sshd.common.file.root.RootedFileSystemProvider;
-import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
@@ -85,13 +84,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
     public SftpFileSystemTest() throws IOException {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
-        final FileSystem fileSystem = new RootedFileSystemProvider().newFileSystem(parentPath, Collections.<String, Object>emptyMap());
-        fileSystemFactory = new FileSystemFactory() {
-            @Override
-            public FileSystem createFileSystem(Session session) throws IOException {
-                return fileSystem;
-            }
-        };
+        fileSystemFactory = new VirtualFileSystemFactory(parentPath);
     }
 
     @Before

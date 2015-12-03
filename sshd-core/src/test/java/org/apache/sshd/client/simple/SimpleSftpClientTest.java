@@ -21,11 +21,9 @@ package org.apache.sshd.client.simple;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
@@ -33,7 +31,7 @@ import java.util.List;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.file.FileSystemFactory;
-import org.apache.sshd.common.file.root.RootedFileSystemProvider;
+import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -57,13 +55,7 @@ public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
     public SimpleSftpClientTest() throws Exception {
         targetPath = detectTargetFolder();
         parentPath = targetPath.getParent();
-        final FileSystem fileSystem = new RootedFileSystemProvider().newFileSystem(parentPath, Collections.<String, Object>emptyMap());
-        fileSystemFactory = new FileSystemFactory() {
-            @Override
-            public FileSystem createFileSystem(Session session) throws IOException {
-                return fileSystem;
-            }
-        };
+        fileSystemFactory = new VirtualFileSystemFactory(parentPath);
     }
 
     @Override

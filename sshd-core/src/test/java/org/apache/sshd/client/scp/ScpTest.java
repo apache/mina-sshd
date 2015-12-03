@@ -25,34 +25,25 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import ch.ethz.ssh2.Connection;
-import ch.ethz.ssh2.ConnectionInfo;
-import ch.ethz.ssh2.SCPClient;
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.file.FileSystemFactory;
-import org.apache.sshd.common.file.root.RootedFileSystemProvider;
+import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
-import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -64,12 +55,20 @@ import org.apache.sshd.util.test.SimpleUserInfo;
 import org.apache.sshd.util.test.Utils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+
+import ch.ethz.ssh2.Connection;
+import ch.ethz.ssh2.ConnectionInfo;
+import ch.ethz.ssh2.SCPClient;
 
 /**
  * Test for SCP support.
@@ -81,19 +80,17 @@ public class ScpTest extends BaseTestSupport {
 
     private SshServer sshd;
     private int port;
-    private com.jcraft.jsch.Session session;
     private final FileSystemFactory fileSystemFactory;
 
     public ScpTest() throws IOException {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
-        final FileSystem fileSystem = new RootedFileSystemProvider().newFileSystem(parentPath, Collections.<String, Object>emptyMap());
-        fileSystemFactory = new FileSystemFactory() {
-            @Override
-            public FileSystem createFileSystem(Session session) throws IOException {
-                return fileSystem;
-            }
-        };
+        fileSystemFactory = new VirtualFileSystemFactory(parentPath);
+    }
+
+    @BeforeClass
+    public static void jschInit() {
+        JSchLogger.init();
     }
 
     @Before
@@ -105,31 +102,11 @@ public class ScpTest extends BaseTestSupport {
         port = sshd.getPort();
     }
 
-    protected com.jcraft.jsch.Session getJschSession() throws JSchException {
-        JSchLogger.init();
-        JSch sch = new JSch();
-        session = sch.getSession("sshd", TEST_LOCALHOST, port);
-        session.setUserInfo(new SimpleUserInfo("sshd"));
-        session.connect();
-        return session;
-    }
-
     @After
     public void tearDown() throws Exception {
-        if (session != null) {
-            session.disconnect();
-        }
-
         if (sshd != null) {
             sshd.stop(true);
         }
-    }
-
-    @Test
-    @Ignore
-    public void testExternal() throws Exception {
-        System.out.println("Scp available on port " + port);
-        Thread.sleep(5 * 60000);
     }
 
     @Test
@@ -742,7 +719,7 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testJschScp() throws Exception {
-        session = getJschSession();
+        com.jcraft.jsch.Session session = getJschSession();
         try {
             String data = getCurrentTestName() + "\n";
 
@@ -757,29 +734,37 @@ public class ScpTest extends BaseTestSupport {
 
             target.delete();
             assertFalse(target.exists());
-            sendFile(unixPath, fileName, data);
+            sendFile(session, unixPath, fileName, data);
             assertFileLength(target, data.length(), TimeUnit.SECONDS.toMillis(5L));
 
             target.delete();
             assertFalse(target.exists());
-            sendFile(unixDir, fileName, data);
+            sendFile(session, unixDir, fileName, data);
             assertFileLength(target, data.length(), TimeUnit.SECONDS.toMillis(5L));
 
-            sendFileError("target", ScpHelper.SCP_COMMAND_PREFIX, data);
+            sendFileError(session, "target", ScpHelper.SCP_COMMAND_PREFIX, data);
 
-            readFileError(unixDir);
+            readFileError(session, unixDir);
 
-            assertEquals("Mismatched file data", data, readFile(unixPath, target.length()));
-            assertEquals("Mismatched dir data", data, readDir(unixDir, fileName, target.length()));
+            assertEquals("Mismatched file data", data, readFile(session, unixPath, target.length()));
+            assertEquals("Mismatched dir data", data, readDir(session, unixDir, fileName, target.length()));
 
             target.delete();
             root.delete();
 
-            sendDir("target", ScpHelper.SCP_COMMAND_PREFIX, fileName, data);
+            sendDir(session, "target", ScpHelper.SCP_COMMAND_PREFIX, fileName, data);
             assertFileLength(target, data.length(), TimeUnit.SECONDS.toMillis(5L));
         } finally {
             session.disconnect();
         }
+    }
+
+    protected com.jcraft.jsch.Session getJschSession() throws JSchException {
+        JSch sch = new JSch();
+        com.jcraft.jsch.Session session = sch.getSession(getCurrentTestName(), TEST_LOCALHOST, port);
+        session.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
+        session.connect();
+        return session;
     }
 
     @Test
@@ -800,6 +785,7 @@ public class ScpTest extends BaseTestSupport {
                 PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE
         ));
 
+        ch.ethz.ssh2.log.Logger.enabled = true;
         final Connection conn = new Connection(TEST_LOCALHOST, port);
         try {
             ConnectionInfo info = conn.connect(null, (int) TimeUnit.SECONDS.toMillis(5L), (int) TimeUnit.SECONDS.toMillis(11L));
@@ -832,7 +818,7 @@ public class ScpTest extends BaseTestSupport {
         }
     }
 
-    protected String readFile(String path, long expectedSize) throws Exception {
+    protected String readFile(com.jcraft.jsch.Session session, String path, long expectedSize) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel("exec");
         c.setCommand("scp -f " + path);
         c.connect();
@@ -865,7 +851,7 @@ public class ScpTest extends BaseTestSupport {
         }
     }
 
-    protected String readDir(String path, String fileName, long expectedSize) throws Exception {
+    protected String readDir(com.jcraft.jsch.Session session, String path, String fileName, long expectedSize) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel("exec");
         c.setCommand("scp -r -f " + path);
         c.connect();
@@ -905,7 +891,7 @@ public class ScpTest extends BaseTestSupport {
         }
     }
 
-    protected String readFileError(String path) throws Exception {
+    protected void readFileError(com.jcraft.jsch.Session session, String path) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel("exec");
         String command = "scp -f " + path;
         c.setCommand(command);
@@ -917,13 +903,12 @@ public class ScpTest extends BaseTestSupport {
             os.write(0);
             os.flush();
             assertEquals("Mismatched response for command: " + command, 2, is.read());
-            return null;
         } finally {
             c.disconnect();
         }
     }
 
-    protected void sendFile(String path, String name, String data) throws Exception {
+    protected void sendFile(com.jcraft.jsch.Session session, String path, String name, String data) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel("exec");
         String command = "scp -t " + path;
         c.setCommand(command);
@@ -958,7 +943,7 @@ public class ScpTest extends BaseTestSupport {
         assertEquals("No ACK for command=" + command, 0, is.read());
     }
 
-    protected void sendFileError(String path, String name, String data) throws Exception {
+    protected void sendFileError(com.jcraft.jsch.Session session, String path, String name, String data) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel("exec");
         String command = "scp -t " + path;
         c.setCommand(command);
@@ -978,7 +963,7 @@ public class ScpTest extends BaseTestSupport {
         }
     }
 
-    protected void sendDir(String path, String dirName, String fileName, String data) throws Exception {
+    protected void sendDir(com.jcraft.jsch.Session session, String path, String dirName, String fileName, String data) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel("exec");
         String command = "scp -t -r " + path;
         c.setCommand(command);

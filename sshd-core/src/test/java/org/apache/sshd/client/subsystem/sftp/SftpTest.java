@@ -59,6 +59,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.file.FileSystemFactory;
+import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
@@ -90,6 +91,7 @@ import org.apache.sshd.util.test.Utils;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -111,10 +113,14 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         super();
     }
 
+    @BeforeClass
+    public static void jschInit() {
+        JSchLogger.init();
+    }
+
     @Before
     public void setUp() throws Exception {
         setupServer();
-        JSchLogger.init();
         JSch sch = new JSch();
         session = sch.getSession("sshd", TEST_LOCALHOST, port);
         session.setUserInfo(new SimpleUserInfo("sshd"));
@@ -251,6 +257,45 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     String rootDir = sftp.canonicalPath("/");
                     String upDir = sftp.canonicalPath(rootDir + "/..");
                     assertEquals("Mismatched root dir parent", rootDir, upDir);
+                }
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    @Test   // see SSHD-605
+    public void testCannotEscapeUserRoot() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        assertHierarchyTargetFolderExists(lclSftp);
+        sshd.setFileSystemFactory(new VirtualFileSystemFactory(lclSftp));
+
+        try (SshClient client = setupTestClient()) {
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                String escapePath = targetPath.toString();
+                if (OsUtils.isWin32()) {
+                    escapePath = "/" + escapePath.replace(File.separatorChar, '/');
+                }
+
+                try (SftpClient sftp = session.createSftpClient()) {
+                    SftpClient.Attributes attrs = sftp.stat(escapePath);
+                    fail("Unexpected escape success for path=" + escapePath + ": " + attrs);
+                } catch(SftpException e) {
+                    if (OsUtils.isWin32()) {
+                        assertEquals("Mismatched status for " + escapePath,
+                                     SftpConstants.getStatusName(SftpConstants.SSH_FX_INVALID_FILENAME),
+                                     SftpConstants.getStatusName(e.getStatus()));
+                    } else {
+                        assertEquals("Mismatched status for " + escapePath,
+                                     SftpConstants.getStatusName(SftpConstants.SSH_FX_NO_SUCH_FILE),
+                                     SftpConstants.getStatusName(e.getStatus()));
+                    }
                 }
             } finally {
                 client.stop();

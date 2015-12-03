@@ -20,14 +20,12 @@
 package org.apache.sshd.client.simple;
 
 import java.io.IOException;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 
 import org.apache.sshd.client.scp.CloseableScpClient;
 import org.apache.sshd.common.file.FileSystemFactory;
-import org.apache.sshd.common.file.root.RootedFileSystemProvider;
+import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -49,13 +47,7 @@ public class SimpleScpClientTest extends BaseSimpleClientTestSupport {
     public SimpleScpClientTest() throws Exception {
         targetPath = detectTargetFolder();
         parentPath = targetPath.getParent();
-        final FileSystem fileSystem = new RootedFileSystemProvider().newFileSystem(parentPath, Collections.<String, Object>emptyMap());
-        fileSystemFactory = new FileSystemFactory() {
-            @Override
-            public FileSystem createFileSystem(Session session) throws IOException {
-                return fileSystem;
-            }
-        };
+        fileSystemFactory = new VirtualFileSystemFactory(parentPath);
     }
 
     @Override
