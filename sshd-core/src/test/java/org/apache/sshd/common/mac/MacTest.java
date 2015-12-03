@@ -176,6 +176,7 @@ public class MacTest extends BaseTestSupport {
         String macName = factory.getName();
         Assume.assumeTrue("Factory not supported: " + macName, ganymedMacs.contains(macName));
 
+        ch.ethz.ssh2.log.Logger.enabled = true;
         Connection conn = new Connection(TEST_LOCALHOST, port);
         try {
             conn.setClient2ServerMACs(new String[]{macName});
