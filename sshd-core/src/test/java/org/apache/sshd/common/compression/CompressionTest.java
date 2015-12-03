@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.List;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.server.SshServer;
@@ -29,9 +30,15 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
 import org.junit.After;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import com.jcraft.jsch.JSch;
 
@@ -41,34 +48,34 @@ import com.jcraft.jsch.JSch;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class CompressionTest extends BaseTestSupport {
+    @Parameters(name = "factory={0}")
+    public static List<Object[]> parameters() {
+        return parameterize(BuiltinCompressions.VALUES);
+    }
 
+    private final CompressionFactory factory;
     private SshServer sshd;
 
-    @Test
-    public void testCompNone() throws Exception {
-        setUp(BuiltinCompressions.none);
-        runTest();
+    public CompressionTest(CompressionFactory factory) {
+        this.factory = factory;
     }
 
-    @Test
-    public void testCompZlib() throws Exception {
-        setUp(BuiltinCompressions.zlib);
-        runTest();
+    @BeforeClass
+    public static void jschInit() {
+        JSchLogger.init();
     }
 
-    @Test
-    public void testCompDelayedZlib() throws Exception {
-        setUp(BuiltinCompressions.delayedZlib);
-        runTest();
-    }
-
-    protected void setUp(NamedFactory<org.apache.sshd.common.compression.Compression> compression) throws Exception {
+    @Before
+    public void setUp() throws Exception {
         sshd = setupTestServer();
-        sshd.setCompressionFactories(Arrays.<NamedFactory<org.apache.sshd.common.compression.Compression>>asList(compression));
+        sshd.setCompressionFactories(Arrays.<NamedFactory<org.apache.sshd.common.compression.Compression>>asList(factory));
         sshd.start();
-        JSch.setConfig("compression.s2c", "zlib@openssh.com,zlib,none");
-        JSch.setConfig("compression.c2s", "zlib@openssh.com,zlib,none");
+
+        String name = factory.getName();
+        JSch.setConfig("compression.s2c", name);
+        JSch.setConfig("compression.c2s", name);
         JSch.setConfig("zlib", com.jcraft.jsch.jcraft.Compression.class.getName());
         JSch.setConfig("zlib@openssh.com", com.jcraft.jsch.jcraft.Compression.class.getName());
     }
@@ -82,8 +89,10 @@ public class CompressionTest extends BaseTestSupport {
         JSch.setConfig("compression.c2s", "none");
     }
 
-    protected void runTest() throws Exception {
-        JSchLogger.init();
+    @Test
+    public void testCompression() throws Exception {
+        Assume.assumeTrue("Skip unsupported compression " + factory, factory.isSupported());
+
         JSch sch = new JSch();
         com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort());
         s.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
@@ -94,10 +103,11 @@ public class CompressionTest extends BaseTestSupport {
             c.connect();
             try (OutputStream os = c.getOutputStream();
                  InputStream is = c.getInputStream()) {
-                final String STR = "this is my command\n";
-                final byte[] bytes = STR.getBytes(StandardCharsets.UTF_8);
+
+                String STR = "this is my command\n";
+                byte[] bytes = STR.getBytes(StandardCharsets.UTF_8);
                 byte[] data = new byte[bytes.length + Long.SIZE];
-                for (int i = 0; i < 10; i++) {
+                for (int i = 1; i <= 10; i++) {
                     os.write(bytes);
                     os.flush();
 
