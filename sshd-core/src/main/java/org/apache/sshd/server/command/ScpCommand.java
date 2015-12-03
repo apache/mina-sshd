@@ -109,7 +109,9 @@ public class ScpCommand extends AbstractLoggingBean implements Command, Runnable
 
         listener = (eventListener == null) ? ScpTransferEventListener.EMPTY : eventListener;
 
-        log.debug("Executing command {}", command);
+        if (log.isDebugEnabled()) {
+            log.debug("Executing command {}", command);
+        }
         String[] args = command.split(" ");
         for (int i = 1; i < args.length; i++) {
             String argVal = args[i];

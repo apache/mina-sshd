@@ -73,6 +73,7 @@ import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
@@ -287,7 +288,6 @@ public class SftpSubsystem
     protected Random randomizer;
     protected int fileHandleSize = DEFAULT_FILE_HANDLE_SIZE;
     protected int maxFileHandleRounds = DEFAULT_FILE_HANDLE_ROUNDS;
-    protected boolean closed;
     protected ExecutorService executors;
     protected boolean shutdownExecutor;
     protected Future<?> pendingFuture;
@@ -301,6 +301,7 @@ public class SftpSubsystem
     protected final UnsupportedAttributePolicy unsupportedAttributePolicy;
 
     private ServerSession serverSession;
+    private final AtomicBoolean closed = new AtomicBoolean(false);
     private final Collection<SftpEventListener> sftpEventListeners = new CopyOnWriteArraySet<>();
     private final SftpEventListener sftpEventListenerProxy;
 
@@ -441,8 +442,12 @@ public class SftpSubsystem
                 process(buffer);
             }
         } catch (Throwable t) {
-            if ((!closed) && (!(t instanceof EOFException))) { // Ignore
-                log.error("Exception caught in SFTP subsystem", t);
+            if ((!closed.get()) && (!(t instanceof EOFException))) { // Ignore
+                log.error("run({}) {} caught in SFTP subsystem: {}",
+                          getServerSession(), t.getClass().getSimpleName(), t.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("run(" + getServerSession() + ") caught exception details", t);
+                }
             }
         } finally {
             for (Map.Entry<String, Handle> entry : handles.entrySet()) {
@@ -451,11 +456,12 @@ public class SftpSubsystem
                 try {
                     handle.close();
                     if (log.isDebugEnabled()) {
-                        log.debug("Closed pending handle {} [{}]", id, handle);
+                        log.debug("run({}) closed pending handle {} [{}]",
+                                  getServerSession(), id, handle);
                     }
                 } catch (IOException ioe) {
-                    log.error("Failed ({}) to close handle={}[{}]: {}",
-                              ioe.getClass().getSimpleName(), id, handle, ioe.getMessage());
+                    log.error("run({}) failed ({}) to close handle={}[{}]: {}",
+                              getServerSession(), ioe.getClass().getSimpleName(), id, handle, ioe.getMessage());
                 }
             }
 
@@ -1555,13 +1561,14 @@ public class SftpSubsystem
                             attrs = getAttributes(p, IoUtils.getLinkOptions(false));
                         } catch (IOException e) {
                             if (log.isDebugEnabled()) {
-                                log.debug("Failed ({}) to retrieve attributes of {}: {}",
-                                        e.getClass().getSimpleName(), p, e.getMessage());
+                                log.debug("doRealPath({}) - failed ({}) to retrieve attributes of {}: {}",
+                                          getServerSession(), e.getClass().getSimpleName(), p, e.getMessage());
                             }
                         }
                     } else {
                         if (log.isDebugEnabled()) {
-                            log.debug("Dummy attributes for non-existing file: " + p);
+                            log.debug("doRealPath({}) - dummy attributes for non-existing file: {}",
+                                      getServerSession(), p);
                         }
                     }
                 } else if (control == SftpConstants.SSH_FXP_REALPATH_STAT_ALWAYS) {
@@ -2880,14 +2887,13 @@ public class SftpSubsystem
                 attrs.put(name, resolved);
 
                 if (log.isDebugEnabled()) {
-                    log.debug("resolveMissingFileAttributes(" + file + ")[" + name + "]"
-                            + " replace " + value + " with " + resolved);
+                    log.debug("resolveMissingFileAttributes({})[{}[{}]] replace {} with {}",
+                              getServerSession(), file, name, value, resolved);
                 }
             } catch (IOException e) {
                 if (log.isDebugEnabled()) {
-                    log.debug("resolveMissingFileAttributes(" + file + ")[" + name + "]"
-                            + " failed (" + e.getClass().getSimpleName() + ")"
-                            + " to resolve missing value: " + e.getMessage());
+                    log.debug("resolveMissingFileAttributes({})[{}[{}]] failed ({}) to resolve missing value: {}",
+                              getServerSession(), file, name, e.getClass().getSimpleName(), e.getMessage());
                 }
             }
         }
@@ -3312,56 +3318,57 @@ public class SftpSubsystem
 
     @Override
     public void destroy() {
-        if (!closed) {
+        if (closed.getAndSet(true)) {
+            return; // ignore if already closed
+        }
+
+        ServerSession session = getServerSession();
+        if (log.isDebugEnabled()) {
+            log.debug("destroy({}) - mark as closed", session);
+        }
+
+        try {
+            SftpEventListener listener = getSftpEventListenerProxy();
+            listener.destroying(session);
+        } catch (Exception e) {
+            log.warn("destroy({}) Failed ({}) to announce destruction event: {}",
+                    session, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
-                log.debug("destroy({}) - mark as closed", getServerSession());
+                log.debug("destroy(" + session + ") destruction announcement failure details", e);
             }
+        }
 
-            closed = true;
-
-            try {
-                SftpEventListener listener = getSftpEventListenerProxy();
-                listener.destroying(getServerSession());
-            } catch (Exception e) {
-                log.warn("destroy({}) Failed ({}) to announce destruction event: {}",
-                         getServerSession(), e.getClass().getSimpleName(), e.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.debug("destroy(" + getServerSession() + ") destruction announcement failure details", e);
-                }
+        // if thread has not completed, cancel it
+        if ((pendingFuture != null) && (!pendingFuture.isDone())) {
+            boolean result = pendingFuture.cancel(true);
+            // TODO consider waiting some reasonable (?) amount of time for cancellation
+            if (log.isDebugEnabled()) {
+                log.debug("destroy(" + session + ") - cancel pending future=" + result);
             }
+        }
 
-            // if thread has not completed, cancel it
-            if ((pendingFuture != null) && (!pendingFuture.isDone())) {
-                boolean result = pendingFuture.cancel(true);
-                // TODO consider waiting some reasonable (?) amount of time for cancellation
-                if (log.isDebugEnabled()) {
-                    log.debug("destroy(" + getServerSession() + ") - cancel pending future=" + result);
-                }
+        pendingFuture = null;
+
+        if ((executors != null) && (!executors.isShutdown()) && shutdownExecutor) {
+            Collection<Runnable> runners = executors.shutdownNow();
+            if (log.isDebugEnabled()) {
+                log.debug("destroy(" + session + ") - shutdown executor service - runners count=" + runners.size());
             }
+        }
 
-            pendingFuture = null;
+        executors = null;
 
-            if ((executors != null) && (!executors.isShutdown()) && shutdownExecutor) {
-                Collection<Runnable> runners = executors.shutdownNow();
-                if (log.isDebugEnabled()) {
-                    log.debug("destroy(" + getServerSession() + ") - shutdown executor service - runners count=" + runners.size());
-                }
+        try {
+            fileSystem.close();
+        } catch (UnsupportedOperationException e) {
+            if (log.isDebugEnabled()) {
+                log.debug("destroy(" + session + ") closing the file system is not supported");
             }
-
-            executors = null;
-
-            try {
-                fileSystem.close();
-            } catch (UnsupportedOperationException e) {
-                if (log.isDebugEnabled()) {
-                    log.debug("destroy(" + getServerSession() + ") closing the file system is not supported");
-                }
-            } catch (IOException e) {
-                if (log.isDebugEnabled()) {
-                    log.debug("destroy(" + getServerSession() + ")"
-                            + " failed (" + e.getClass().getSimpleName() + ")"
-                            + " to close file system: " + e.getMessage(), e);
-                }
+        } catch (IOException e) {
+            if (log.isDebugEnabled()) {
+                log.debug("destroy(" + session + ")"
+                        + " failed (" + e.getClass().getSimpleName() + ")"
+                        + " to close file system: " + e.getMessage(), e);
             }
         }
     }
