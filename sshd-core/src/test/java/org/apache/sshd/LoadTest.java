@@ -122,8 +122,8 @@ public class LoadTest extends BaseTestSupport {
                     ClientBuilder.DH2KEX.transform(BuiltinDHFactories.dhg1)));
             client.setCipherFactories(Arrays.<NamedFactory<Cipher>>asList(BuiltinCiphers.blowfishcbc));
             client.start();
-            try (ClientSession session = client.connect("sshd", TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                session.addPasswordIdentity("sshd");
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 try (ByteArrayOutputStream out = new ByteArrayOutputStream();
