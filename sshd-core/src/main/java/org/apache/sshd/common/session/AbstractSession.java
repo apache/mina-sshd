@@ -1338,16 +1338,19 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * initialize the cipher to the needed length.
      *
      * @param e         the key to resize
-     * @param blockSize the cipher block size
+     * @param blockSize the cipher block size (in bytes)
      * @param hash      the hash algorithm
      * @param k         the key exchange k parameter
      * @param h         the key exchange h parameter
-     * @return the resize key
+     * @return the resized key
      * @throws Exception if a problem occur while resizing the key
      */
     protected byte[] resizeKey(byte[] e, int blockSize, Digest hash, byte[] k, byte[] h) throws Exception {
-        while (blockSize > e.length) {
-            Buffer buffer = new ByteArrayBuffer();
+        for (Buffer buffer = null; blockSize > e.length; buffer = BufferUtils.clear(buffer)) {
+            if (buffer == null) {
+                buffer = new ByteArrayBuffer();
+            }
+
             buffer.putMPInt(k);
             buffer.putRawBytes(h);
             buffer.putRawBytes(e);
