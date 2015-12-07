@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.agent.common.AgentForwardSupport;
@@ -84,7 +85,7 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
     protected final TcpipForwarder tcpipForwarder;
     protected final AgentForwardSupport agentForward;
     protected final X11ForwardSupport x11Forward;
-    protected boolean allowMoreSessions = true;
+    private final AtomicBoolean allowMoreSessions = new AtomicBoolean(true);
 
     protected AbstractConnectionService(Session session) {
         ValidateUtils.checkTrue(session instanceof AbstractSession, "Not an AbstractSession");
@@ -162,7 +163,10 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
      */
     @Override
     public void unregisterChannel(Channel channel) {
-        channels.remove(channel.getId());
+        Channel result = channels.remove(channel.getId());
+        if (log.isDebugEnabled()) {
+            log.debug("unregisterChannel({}) result={}", channel, result);
+        }
     }
 
     @Override
@@ -208,21 +212,29 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
                 requestFailure(buffer);
                 break;
             default:
-                throw new IllegalStateException("Unsupported command: " + cmd);
+                throw new IllegalStateException("Unsupported command: " + SshConstants.getCommandMessageName(cmd));
         }
     }
 
     @Override
+    public boolean isAllowMoreSessions() {
+        return allowMoreSessions.get();
+    }
+
+    @Override
     public void setAllowMoreSessions(boolean allow) {
-        allowMoreSessions = allow;
+        if (log.isDebugEnabled()) {
+            log.debug("setAllowMoreSessions({}): {}", this, allow);
+        }
+        allowMoreSessions.set(allow);
     }
 
     public void channelOpenConfirmation(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
-        if (log.isDebugEnabled()) {
-            log.debug("Received SSH_MSG_CHANNEL_OPEN_CONFIRMATION on channel {}", Integer.valueOf(channel.getId()));
-        }
         int recipient = buffer.getInt();
+        if (log.isDebugEnabled()) {
+            log.debug("channelOpenConfirmation({}) Received SSH_MSG_CHANNEL_OPEN_CONFIRMATION recipient=", channel, recipient);
+        }
         int rwsize = buffer.getInt();
         int rmpsize = buffer.getInt();
         channel.handleOpenSuccess(recipient, rwsize, rmpsize, buffer);
@@ -232,7 +244,7 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
         AbstractClientChannel channel = (AbstractClientChannel) getChannel(buffer);
         int id = channel.getId();
         if (log.isDebugEnabled()) {
-            log.debug("Received SSH_MSG_CHANNEL_OPEN_FAILURE on channel {}", id);
+            log.debug("channelOpenFailure({}) Received SSH_MSG_CHANNEL_OPEN_FAILURE", channel);
         }
         channels.remove(id);
         channel.handleOpenFailure(buffer);
@@ -263,7 +275,7 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
     /**
      * Process a window adjust packet on a channel
      *
-     * @param buffer the buffer containing the window adjustement parameters
+     * @param buffer the buffer containing the window adjustment parameters
      * @throws IOException if an error occurs
      */
     public void channelWindowAdjust(Buffer buffer) throws IOException {
@@ -344,8 +356,9 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
         final int id = buffer.getInt();
         final int rwsize = buffer.getInt();
         final int rmpsize = buffer.getInt();
-
-        log.debug("Received SSH_MSG_CHANNEL_OPEN {}", type);
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_MSG_CHANNEL_OPEN id={}, type={}", id, type);
+        }
 
         if (isClosing()) {
             Buffer buf = session.prepareBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, BufferUtils.clear(buffer));
@@ -356,7 +369,7 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
             session.writePacket(buf);
             return;
         }
-        if (!allowMoreSessions) {
+        if (!isAllowMoreSessions()) {
             Buffer buf = session.prepareBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, BufferUtils.clear(buffer));
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
