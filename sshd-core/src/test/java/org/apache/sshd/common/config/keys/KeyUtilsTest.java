@@ -224,7 +224,7 @@ public class KeyUtilsTest extends BaseTestSupport {
 
     private static KeyPair generateKeyPair(String keyType, int keySize) throws GeneralSecurityException {
         try {
-            System.out.println("generateKeyPair(" + keyType + ")[" + keySize + "]");
+            outputDebugMessage("generateKeyPair(%s)[%d]", keyType, keySize);
             return KeyUtils.generateKeyPair(keyType, keySize);
         } catch (GeneralSecurityException e) {
             System.err.println("Failed (" + e.getClass().getSimpleName() + ") to generate key-pair for " + keyType + "/" + keySize + ": " + e.getMessage());
@@ -234,7 +234,7 @@ public class KeyUtilsTest extends BaseTestSupport {
 
     private static void testKeyPairCloning(String keyType, int keySize, KeyPair kp) throws GeneralSecurityException {
         String prefix = keyType + "[" + keySize + "]";
-        System.out.println("testKeyPairCloning(" + prefix + ")");
+        outputDebugMessage("testKeyPairCloning(%s)", prefix);
 
         KeyPair cloned = KeyUtils.cloneKeyPair(keyType, kp);
         assertNotSame(prefix + ": Key pair not cloned", kp, cloned);

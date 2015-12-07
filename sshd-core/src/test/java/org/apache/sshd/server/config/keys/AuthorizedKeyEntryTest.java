@@ -87,7 +87,7 @@ public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
 
         LinkOption[] options = IoUtils.getLinkOptions(false);
         if (!Files.exists(path, options)) {
-            System.out.append(getCurrentTestName()).append(": verify non-existing ").println(path);
+            outputDebugMessage("Verify non-existing %s", path);
             Collection<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readDefaultAuthorizedKeys();
             assertTrue("Non-empty keys even though file not found: " + entries, GenericUtils.isEmpty(entries));
         } else {

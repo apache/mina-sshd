@@ -88,7 +88,9 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
     @After
     public void tearDown() throws Exception {
-        sshd.stop(true);
+        if (sshd != null) {
+            sshd.stop(true);
+        }
     }
 
     protected void setUp(long bytesLimit, long timeLimit, long packetsLimit) throws Exception {
@@ -223,7 +225,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                 String expected = "this is my command\n";
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
                 byte[] data = new byte[bytes.length + Long.SIZE];
-                for (int i = 0; i < 10; i++) {
+                for (int i = 1; i <= 10; i++) {
                     os.write(bytes);
                     os.flush();
 
@@ -267,14 +269,14 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     teeOut.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
 
-                    StringBuilder sb = new StringBuilder();
+                    StringBuilder sb = new StringBuilder(Byte.MAX_VALUE);
                     for (int i = 0; i < 10; i++) {
                         sb.append("0123456789");
                     }
                     sb.append('\n');
 
                     byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
-                    for (int i = 0; i < 10; i++) {
+                    for (int i = 1; i <= 10; i++) {
                         teeOut.write(data);
                         teeOut.flush();
 
@@ -298,7 +300,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
     @Test
     public void testReExchangeFromServerBySize() throws Exception {
-        final long LIMIT = 8192L;
+        final long LIMIT = 10 * 1024L;
         setUp(LIMIT, 0L, 0L);
 
         try (SshClient client = setupTestClient()) {
@@ -324,7 +326,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     teeOut.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
 
-                    StringBuilder sb = new StringBuilder();
+                    StringBuilder sb = new StringBuilder(101 * 10);
                     for (int i = 0; i < 100; i++) {
                         sb.append("0123456789");
                     }
@@ -410,7 +412,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     teeOut.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
 
-                    StringBuilder sb = new StringBuilder();
+                    StringBuilder sb = new StringBuilder(101 * 10);
                     for (int i = 0; i < 100; i++) {
                         sb.append("0123456789");
                     }
@@ -487,7 +489,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
     @Test   // see SSHD-601
     public void testReExchangeFromServerByPackets() throws Exception {
-        final int PACKETS = 128;
+        final int PACKETS = 135;
         setUp(0L, 0L, PACKETS);
 
         try (SshClient client = setupTestClient()) {

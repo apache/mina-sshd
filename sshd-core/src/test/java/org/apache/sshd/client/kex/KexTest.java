@@ -98,8 +98,6 @@ public class KexTest extends BaseTestSupport {
     }
 
     private void testClient(NamedFactory<KeyExchange> kex) throws Exception {
-        System.out.println("testClient - KEX=" + kex.getName());
-
         try (ByteArrayOutputStream sent = new ByteArrayOutputStream();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 

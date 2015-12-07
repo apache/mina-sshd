@@ -90,7 +90,7 @@ public abstract class AbstractSignatureFactoryTestSupport extends BaseTestSuppor
             public Iterable<KeyPair> create() {
                 try {
                     KeyPair kp = decoder.generateKeyPair(keySize);
-                    System.out.println("Generated key pair for " + keyName + "[" + keySize + "]");
+                    outputDebugMessage("Generated key pair for %s - key size=%d", keyName, keySize);
                     return Collections.singletonList(kp);
                 } catch (Exception e) {
                     throw new RuntimeSshException(e);

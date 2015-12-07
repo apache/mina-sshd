@@ -1389,7 +1389,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
                 if (t != null) {
                     if (log.isTraceEnabled()) {
-                        log.trace("disconnect(" + AbstractSession.this + ") reason=" + SshConstants.getDisconnectReasonName(reason)+ " failure details", t);
+                        log.trace("disconnect(" + AbstractSession.this + ") reason=" + SshConstants.getDisconnectReasonName(reason) + " failure details", t);
                     }
                 }
 

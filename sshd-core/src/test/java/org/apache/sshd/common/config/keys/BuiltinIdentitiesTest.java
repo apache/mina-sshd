@@ -73,7 +73,7 @@ public class BuiltinIdentitiesTest extends BaseTestSupport {
 
             KeyPairGenerator gen = SecurityUtils.getKeyPairGenerator(expected.getAlgorithm());
             KeyPair kp = gen.generateKeyPair();
-            System.out.println("Checking built-in identity: " + name);
+            outputDebugMessage("Checking built-in identity: %s", name);
             assertSame(name + "[pair]", expected, BuiltinIdentities.fromKeyPair(kp));
             assertSame(name + "[public]", expected, BuiltinIdentities.fromKey(kp.getPublic()));
             assertSame(name + "[private]", expected, BuiltinIdentities.fromKey(kp.getPrivate()));

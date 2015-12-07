@@ -178,7 +178,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
         try (FileSystem fs = FileSystems.newFileSystem(URI.create("root:" + rootNative.toUri().toString() + "!/"), null)) {
             Path dir = assertHierarchyTargetFolderExists(fs.getPath("test/foo"));
-            System.out.println("Created " + dir);
+            outputDebugMessage("Created %s", dir);
         }
     }
 

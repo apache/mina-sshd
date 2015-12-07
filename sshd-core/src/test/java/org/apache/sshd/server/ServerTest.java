@@ -199,17 +199,17 @@ public class ServerTest extends BaseTestSupport {
         sshd.addSessionListener(new SessionListener() {
             @Override
             public void sessionCreated(Session session) {
-                System.out.println("Session created");
+                outputDebugMessage("Session created: %s", session);
             }
 
             @Override
             public void sessionEvent(Session session, Event event) {
-                System.out.println("Session event: " + event);
+                outputDebugMessage("Session %s event: ", session, event);
             }
 
             @Override
             public void sessionClosed(Session session) {
-                System.out.println("Session closed");
+                outputDebugMessage("Session closed: %s", session);
                 latch.countDown();
             }
         });
@@ -265,17 +265,17 @@ public class ServerTest extends BaseTestSupport {
         sshd.addSessionListener(new SessionListener() {
             @Override
             public void sessionCreated(Session session) {
-                System.out.println("Session created");
+                outputDebugMessage("Session created: %s", session);
             }
 
             @Override
             public void sessionEvent(Session session, Event event) {
-                System.out.println("Session event: " + event);
+                outputDebugMessage("Session %s event: %s", session, event);
             }
 
             @Override
             public void sessionClosed(Session session) {
-                System.out.println("Session closed");
+                outputDebugMessage("Session closed: %s", session);
                 latch.countDown();
             }
         });

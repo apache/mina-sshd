@@ -786,7 +786,7 @@ public class ClientTest extends BaseTestSupport {
                     teeOut.flush();
                     bytes += data.length;
                     if ((bytes & 0xFFF00000) != ((bytes - data.length) & 0xFFF00000)) {
-                        System.out.println("Bytes written: " + bytes);
+                        outputDebugMessage("Bytes written: %d", bytes);
                     }
                 }
                 teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
@@ -794,9 +794,9 @@ public class ClientTest extends BaseTestSupport {
             }
 
             long t1 = System.currentTimeMillis();
-            System.out.println("Sent " + (bytes / 1024) + " Kb in " + (t1 - t0) + " ms");
+            outputDebugMessage("Sent %d Kb in %d ms", bytes / 1024, t1 - t0);
 
-            System.out.println("Waiting for channel to be closed");
+            outputDebugMessage("Waiting for channel to be closed");
             Collection<ClientChannel.ClientChannelEvent> result =
                     channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
             assertFalse("Timeout while waiting on channel close", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
@@ -1321,12 +1321,8 @@ public class ClientTest extends BaseTestSupport {
         client.setServerKeyVerifier(
                 new ServerKeyVerifier() {
                     @Override
-                    public boolean verifyServerKey(
-                            ClientSession sshClientSession,
-                            SocketAddress remoteAddress,
-                            PublicKey serverKey
-                    ) {
-                        System.out.println(serverKey);
+                    public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
+                        outputDebugMessage("verifyServerKey(%s): %s", remoteAddress, serverKey);
                         ok.set(true);
                         return true;
                     }
