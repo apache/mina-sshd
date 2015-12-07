@@ -62,16 +62,24 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
         if (immediately) {
             if (state.compareAndSet(State.Opened, State.Immediate)
                     || state.compareAndSet(State.Graceful, State.Immediate)) {
-                log.debug("Closing {} immediately", this);
+                if (log.isDebugEnabled()) {
+                    log.debug("close({}) Closing immediately", this);
+                }
                 preClose();
                 doCloseImmediately();
-                log.debug("{} closed", this);
+                if (log.isDebugEnabled()) {
+                    log.debug("close({})[Immediately] closed", this);
+                }
             } else {
-                log.debug("{} is already {}", this, state.get() == State.Closed ? "closed" : "closing");
+                if (log.isDebugEnabled()) {
+                    log.debug("close({})[Immediately] state already {}", this, state.get());
+                }
             }
         } else {
             if (state.compareAndSet(State.Opened, State.Graceful)) {
-                log.debug("Closing {} gracefully", this);
+                if (log.isDebugEnabled()) {
+                    log.debug("close({}) Closing gracefully", this);
+                }
                 preClose();
                 SshFuture<CloseFuture> grace = doCloseGracefully();
                 if (grace != null) {
@@ -81,18 +89,24 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
                         public void operationComplete(CloseFuture future) {
                             if (state.compareAndSet(State.Graceful, State.Immediate)) {
                                 doCloseImmediately();
-                                log.debug("{} closed", AbstractCloseable.this);
+                                if (log.isDebugEnabled()) {
+                                    log.debug("close({}][Graceful] - operationComplete() closed", AbstractCloseable.this);
+                                }
                             }
                         }
                     });
                 } else {
                     if (state.compareAndSet(State.Graceful, State.Immediate)) {
                         doCloseImmediately();
-                        log.debug("{} closed", this);
+                        if (log.isDebugEnabled()) {
+                            log.debug("close({})[Graceful] closed", this);
+                        }
                     }
                 }
             } else {
-                log.debug("{} is already {}", this, state.get() == State.Closed ? "closed" : "closing");
+                if (log.isDebugEnabled()) {
+                    log.debug("close({})[Graceful] state already {}", this, state.get());
+                }
             }
         }
         return closeFuture;

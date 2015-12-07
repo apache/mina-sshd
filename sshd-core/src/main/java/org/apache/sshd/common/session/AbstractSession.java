@@ -585,32 +585,42 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     /**
      * Handle any exceptions that occurred on this session.
      * The session will be closed and a disconnect packet will be
-     * sent before if the given exception is an
-     * {@link SshException}.
+     * sent before if the given exception is an {@link SshException}.
      *
      * @param t the exception to process
      */
     @Override
     public void exceptionCaught(Throwable t) {
-        // Ignore exceptions that happen while closing
-        synchronized (lock) {
-            if (isClosing()) {
-                return;
+        State curState = state.get();
+        // Ignore exceptions that happen while closing immediately
+        if ((!State.Opened.equals(curState)) && (!State.Graceful.equals(curState))) {
+            if (log.isDebugEnabled()) {
+                log.debug("exceptionCaught({}) ignore {} due to state={}, message={}",
+                          this, t.getClass().getSimpleName(), curState, t.getMessage());
             }
-        }
-        log.warn("exceptionCaught({}) {}: {}", this, t.getClass().getSimpleName(), t.getMessage());
-        if (log.isDebugEnabled()) {
-            log.debug("execeptionCaught(" + this + ") details", t);
+            if (log.isTraceEnabled()) {
+                log.trace("exceptionCaught(" + this + ")[state=" + curState + "] ignored exception details", t);
+            }
+            return;
         }
 
-        if (t instanceof SshException) {
+        log.warn("exceptionCaught({})[state={}] {}: {}", this, curState, t.getClass().getSimpleName(), t.getMessage());
+        if (log.isDebugEnabled()) {
+            log.debug("exceptionCaught(" + this + ")[state=" + curState + "] details", t);
+        }
+
+        if (State.Opened.equals(curState) && (t instanceof SshException)) {
             int code = ((SshException) t).getDisconnectCode();
             if (code > 0) {
                 try {
                     disconnect(code, t.getMessage());
                 } catch (Throwable t2) {
                     if (log.isDebugEnabled()) {
-                        log.debug("Exception while disconnect with code=" + code, t2);
+                        log.debug("exceptionCaught({}) {} while disconnect with code={}: {}",
+                                  this, t2.getClass().getSimpleName(), SshConstants.getDisconnectReasonName(code), t2.getMessage());
+                    }
+                    if (log.isTraceEnabled()) {
+                        log.trace("exceptionCaught(" + this + ")[code=" + SshConstants.getDisconnectReasonName(code) + "] disconnect exception details", t2);
                     }
                 }
                 return;
@@ -647,9 +657,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             listener.sessionClosed(this);
         } catch (RuntimeException t) {
             Throwable e = GenericUtils.peelException(t);
-            log.warn(e.getClass().getSimpleName() + " while signal session " + toString() + " closed: " + e.getMessage());
+            log.warn("preClose({}) {} while signal session closed: {}", this, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
-                log.debug("preClose exception details", e);
+                log.debug("preClose(" + this + ") signal session closed exception details", e);
             }
         } finally {
             // clear the listeners since we are closing the session (quicker GC)
@@ -1352,7 +1362,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     @Override
-    public void disconnect(int reason, String msg) throws IOException {
+    public void disconnect(final int reason, final String msg) throws IOException {
         log.info("Disconnecting({}): {} - {}", this, SshConstants.getDisconnectReasonName(reason), msg);
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_DISCONNECT, msg.length() + Short.SIZE);
         buffer.putInt(reason);
@@ -1363,7 +1373,26 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         long disconnectTimeoutMs = PropertyResolverUtils.getLongProperty(this, FactoryManager.DISCONNECT_TIMEOUT, FactoryManager.DEFAULT_DISCONNECT_TIMEOUT);
         writePacket(buffer, disconnectTimeoutMs, TimeUnit.MILLISECONDS).addListener(new SshFutureListener<IoWriteFuture>() {
             @Override
+            @SuppressWarnings("synthetic-access")
             public void operationComplete(IoWriteFuture future) {
+                Throwable t = future.getException();
+                if (log.isDebugEnabled()) {
+                    if (t == null) {
+                        log.debug("disconnect({}) operation successfully completed for reason={} [{}]",
+                                  AbstractSession.this, SshConstants.getDisconnectReasonName(reason), msg);
+                    } else {
+                        log.debug("disconnect({}) operation failed ({}) for reason={} [{}]: {}",
+                                   AbstractSession.this, t.getClass().getSimpleName(),
+                                   SshConstants.getDisconnectReasonName(reason), msg, t.getMessage());
+                    }
+                }
+
+                if (t != null) {
+                    if (log.isTraceEnabled()) {
+                        log.trace("disconnect(" + AbstractSession.this + ") reason=" + SshConstants.getDisconnectReasonName(reason)+ " failure details", t);
+                    }
+                }
+
                 close(true);
             }
         });
@@ -1593,7 +1622,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             }
         }
 
-        return ValidateUtils.checkNotNull(kexFutureHolder.get(), "No current KEX future");
+        return ValidateUtils.checkNotNull(kexFutureHolder.get(), "No current KEX future on state=%s", kexState.get());
     }
 
     protected void checkRekey() throws IOException {
