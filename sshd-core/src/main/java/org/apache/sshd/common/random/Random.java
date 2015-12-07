@@ -18,12 +18,14 @@
  */
 package org.apache.sshd.common.random;
 
+import org.apache.sshd.common.NamedResource;
+
 /**
  * A pseudo random number generator.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Random {
+public interface Random extends NamedResource {
     /**
      * Fill the buffer with random values
      *

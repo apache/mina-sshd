@@ -26,6 +26,7 @@ import java.security.SecureRandom;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class JceRandom extends AbstractRandom {
+    public static final String NAME = "JCE";
 
     private byte[] tmp = new byte[16];
     private final SecureRandom random = new SecureRandom();
@@ -35,17 +36,20 @@ public class JceRandom extends AbstractRandom {
     }
 
     @Override
+    public String getName() {
+        return NAME;
+    }
+
+    @Override
     public synchronized void fill(byte[] foo, int start, int len) {
         if ((start == 0) && (len == foo.length)) {
             random.nextBytes(foo);
         } else {
-            synchronized (this) {
-                if (len > tmp.length) {
-                    tmp = new byte[len];
-                }
-                random.nextBytes(tmp);
-                System.arraycopy(tmp, 0, foo, start, len);
+            if (len > tmp.length) {
+                tmp = new byte[len];
             }
+            random.nextBytes(tmp);
+            System.arraycopy(tmp, 0, foo, start, len);
         }
     }
 

@@ -18,13 +18,19 @@
  */
 package org.apache.sshd.common.random;
 
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.Utils;
 import org.junit.Assume;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * TODO Add javadoc
@@ -32,24 +38,35 @@ import org.junit.runners.MethodSorters;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class RandomTest extends BaseTestSupport {
-    public RandomTest() {
-        super();
+@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+public class RandomFactoryTest extends BaseTestSupport {
+    @Parameters(name = "type={0}")
+    public static Collection<Object[]> parameters() {
+        Collection<RandomFactory> testCases = new LinkedList<>();
+        testCases.add(JceRandomFactory.INSTANCE);
+        if (SecurityUtils.isBouncyCastleRegistered()) {
+            testCases.add(SecurityUtils.getRandomFactory());
+        } else {
+            System.out.println("Skip BouncyCastleRandomFactory - unsupported");
+        }
+
+        return parameterize(testCases);
+    }
+
+    private final RandomFactory factory;
+
+    public RandomFactoryTest(RandomFactory factory) {
+        this.factory = factory;
     }
 
     @Test
-    public void testJce() {
-        long t = testRandom(new JceRandom());
-        System.out.println("JCE: " + t + " micro");
+    public void testRandomFactory() {
+        Assume.assumeTrue("Skip unsupported factory: " + factory.getName(), factory.isSupported());
+        long t = testRandom(factory.create());
+        System.out.println(factory.getName() + " duration: " + t + " " + TimeUnit.MICROSECONDS);
     }
 
-    @Test
-    public void testBc() {
-        Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
-        long t = testRandom(Utils.getRandomizerInstance());
-        System.out.println("BC:  " + t + " micro");
-    }
-
+    // returns duration in microseconds
     private static long testRandom(Random random) {
         byte[] bytes = new byte[32];
         long l0 = System.nanoTime();
@@ -57,6 +74,6 @@ public class RandomTest extends BaseTestSupport {
             random.fill(bytes, 8, 16);
         }
         long l1 = System.nanoTime();
-        return (l1 - l0) / 1000;
+        return TimeUnit.NANOSECONDS.toMicros(l1 - l0);
     }
 }

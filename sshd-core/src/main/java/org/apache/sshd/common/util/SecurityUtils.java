@@ -46,6 +46,7 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.keyprovider.AbstractClassLoadableResourceKeyPairProvider;
 import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
 import org.apache.sshd.common.random.AbstractRandom;
+import org.apache.sshd.common.random.AbstractRandomFactory;
 import org.apache.sshd.common.random.JceRandomFactory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.random.RandomFactory;
@@ -421,21 +422,17 @@ public final class SecurityUtils {
     /**
      * Named factory for the BouncyCastle <code>Random</code>
      */
-    public static final class BouncyCastleRandomFactory implements RandomFactory {
+    public static final class BouncyCastleRandomFactory extends AbstractRandomFactory {
+        public static final String NAME = "bouncycastle";
         private static final BouncyCastleRandomFactory INSTANCE = new BouncyCastleRandomFactory();
 
         public BouncyCastleRandomFactory() {
-            super();
+            super(NAME);
         }
 
         @Override
         public boolean isSupported() {
             return isBouncyCastleRegistered();
-        }
-
-        @Override
-        public String getName() {
-            return "bouncycastle";
         }
 
         @Override
@@ -453,7 +450,7 @@ public final class SecurityUtils {
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     public static final class BouncyCastleRandom extends AbstractRandom {
-
+        public static final String NAME = BOUNCY_CASTLE;
         private final RandomGenerator random;
 
         BouncyCastleRandom() {
@@ -461,6 +458,11 @@ public final class SecurityUtils {
             this.random = new VMPCRandomGenerator();
             byte[] seed = new SecureRandom().generateSeed(8);
             this.random.addSeedMaterial(seed);
+        }
+
+        @Override
+        public String getName() {
+            return NAME;
         }
 
         @Override
@@ -474,19 +476,18 @@ public final class SecurityUtils {
          */
         @Override
         public int random(int n) {
-            if (n > 0) {
-                if ((n & -n) == n) {
-                    return (int) ((n * (long) next(31)) >> 31);
-                }
-                int bits;
-                int val;
-                do {
-                    bits = next(31);
-                    val = bits % n;
-                } while (bits - val + (n - 1) < 0);
-                return val;
+            ValidateUtils.checkTrue(n > 0, "Limit must be positive: %d", n);
+            if ((n & -n) == n) {
+                return (int) ((n * (long) next(31)) >> 31);
             }
-            throw new IllegalArgumentException("Limit must be positive: " + n);
+
+            int bits;
+            int val;
+            do {
+                bits = next(31);
+                val = bits % n;
+            } while (bits - val + (n - 1) < 0);
+            return val;
         }
 
         private int next(int numBits) {

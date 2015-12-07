@@ -19,24 +19,25 @@
 
 package org.apache.sshd.common.random;
 
+import org.apache.sshd.common.util.ValidateUtils;
+
 /**
- * Named factory for the JCE <code>Random</code>
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class JceRandomFactory extends AbstractRandomFactory {
-    public static final String NAME = "default";
-    public static final JceRandomFactory INSTANCE = new JceRandomFactory();
+public abstract class AbstractRandomFactory implements RandomFactory {
+    private final String name;
 
-    public JceRandomFactory() {
-        super(NAME);
+    protected AbstractRandomFactory(String name) {
+        this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No name");
     }
 
     @Override
-    public boolean isSupported() {
-        return true;
+    public final String getName() {
+        return name;
     }
 
     @Override
-    public Random create() {
-        return new JceRandom();
+    public String toString() {
+        return getName();
     }
 }

@@ -31,4 +31,9 @@ public abstract class AbstractRandom implements Random {
     public void fill(byte[] bytes) {
         fill(bytes, 0, bytes.length);
     }
+
+    @Override
+    public String toString() {
+        return getName();
+    }
 }
