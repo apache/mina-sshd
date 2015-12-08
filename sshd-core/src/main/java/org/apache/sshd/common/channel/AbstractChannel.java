@@ -450,9 +450,9 @@ public abstract class AbstractChannel
     public void handleExtendedData(Buffer buffer) throws IOException {
         int ex = buffer.getInt();
         // Only accept extended data for stderr
-        if (ex != 1) {
+        if (ex != SshConstants.SSH_EXTENDED_DATA_STDERR) {
             if (log.isDebugEnabled()) {
-                log.debug("handleExtendedData({}) send SSH_MSG_CHANNEL_FAILURE", this);
+                log.debug("handleExtendedData({}) send SSH_MSG_CHANNEL_FAILURE - non STDERR type: {}", this, ex);
             }
             Session s = getSession();
             buffer = s.prepareBuffer(SshConstants.SSH_MSG_CHANNEL_FAILURE, BufferUtils.clear(buffer));
@@ -464,7 +464,9 @@ public abstract class AbstractChannel
         if (len < 0 || len > ByteArrayBuffer.MAX_LEN) {
             throw new IllegalStateException("Bad item length: " + len);
         }
-        log.debug("handleExtendedData({}) SSH_MSG_CHANNEL_EXTENDED_DATA len={}", this, len);
+        if (log.isDebugEnabled()) {
+            log.debug("handleExtendedData({}) SSH_MSG_CHANNEL_EXTENDED_DATA len={}", this, len);
+        }
         if (log.isTraceEnabled()) {
             log.trace("handleExtendedData({}) extended data: {}", this, BufferUtils.printHex(buffer.array(), buffer.rpos(), len));
         }
@@ -510,7 +512,9 @@ public abstract class AbstractChannel
     protected abstract void doWriteExtendedData(byte[] data, int off, int len) throws IOException;
 
     protected void sendEof() throws IOException {
-        log.debug("sendEof({}) SSH_MSG_CHANNEL_EOF", this);
+        if (log.isDebugEnabled()) {
+            log.debug("sendEof({}) SSH_MSG_CHANNEL_EOF", this);
+        }
         Session s = getSession();
         Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_EOF, Short.SIZE);
         buffer.putInt(getRecipient());

@@ -171,9 +171,7 @@ public class ChannelOutputStream extends OutputStream implements Channel {
                 session.resetIdleTimeout();
                 remoteWindow.waitAndConsume(length, maxWaitTimeout);
                 if (log.isTraceEnabled()) {
-                    log.trace("Send {} on channel {}",
-                              (cmd == SshConstants.SSH_MSG_CHANNEL_DATA) ? "SSH_MSG_CHANNEL_DATA" : "SSH_MSG_CHANNEL_EXTENDED_DATA",
-                              channel);
+                    log.trace("flush({}) send {}", channel, SshConstants.getCommandMessageName(cmd));
                 }
                 channel.writePacket(buf);
             }
@@ -218,7 +216,7 @@ public class ChannelOutputStream extends OutputStream implements Channel {
         buffer = session.createBuffer(cmd, size <= 0 ? 12 : 12 + size);
         buffer.putInt(channel.getRecipient());
         if (cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) {
-            buffer.putInt(1);
+            buffer.putInt(SshConstants.SSH_EXTENDED_DATA_STDERR);
         }
         buffer.putInt(0);
         bufferLength = 0;

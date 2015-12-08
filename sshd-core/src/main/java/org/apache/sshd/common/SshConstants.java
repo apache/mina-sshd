@@ -119,6 +119,9 @@ public final class SshConstants {
     public static final int SSH_OPEN_UNKNOWN_CHANNEL_TYPE = 3;
     public static final int SSH_OPEN_RESOURCE_SHORTAGE = 4;
 
+    // Some more constants
+    public static final int SSH_EXTENDED_DATA_STDERR = 1;   // see RFC4254 section 5.2
+
     private SshConstants() {
         throw new UnsupportedOperationException("No instance allowed");
     }

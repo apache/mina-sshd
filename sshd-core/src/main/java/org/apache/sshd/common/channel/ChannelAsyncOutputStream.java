@@ -94,7 +94,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                 Buffer buf = s.createBuffer(cmd, length + 12);
                 buf.putInt(channel.getRecipient());
                 if (cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) {
-                    buf.putInt(1);
+                    buf.putInt(SshConstants.SSH_EXTENDED_DATA_STDERR);
                 }
                 buf.putInt(length);
                 buf.putRawBytes(buffer.array(), buffer.rpos(), length);
