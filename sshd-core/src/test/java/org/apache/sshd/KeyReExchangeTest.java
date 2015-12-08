@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -122,6 +123,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
+                outputDebugMessage("Request switch to none cipher for %s", session);
                 KeyExchangeFuture switchFuture = session.switchToNoneCipher();
                 switchFuture.verify(5L, TimeUnit.SECONDS);
                 try (ClientChannel channel = session.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME)) {
@@ -232,6 +234,8 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     int len = is.read(data);
                     String str = new String(data, 0, len);
                     assertEquals("Mismatched data at iteration " + i, expected, str);
+
+                    outputDebugMessage("Request re-key #%d", i);
                     s.rekey();
                 }
             } finally {
@@ -253,12 +257,25 @@ public class KeyReExchangeTest extends BaseTestSupport {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
+                final Semaphore pipedCount = new Semaphore(0, true);
                 try (ChannelShell channel = session.createShellChannel();
                      ByteArrayOutputStream sent = new ByteArrayOutputStream();
                      PipedOutputStream pipedIn = new PipedOutputStream();
                      InputStream inPipe = new PipedInputStream(pipedIn);
                      OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
-                     ByteArrayOutputStream out = new ByteArrayOutputStream();
+                     ByteArrayOutputStream out = new ByteArrayOutputStream() {
+                         @Override
+                         public void write(int b) {
+                             super.write(b);
+                             pipedCount.release(1);
+                         }
+
+                         @Override
+                         public void write(byte[] b, int off, int len) {
+                             super.write(b, off, len);
+                             pipedCount.release(len);
+                         }
+                     };
                      ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
                     channel.setIn(inPipe);
@@ -290,7 +307,13 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     Collection<ClientChannel.ClientChannelEvent> result =
                             channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
                     assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
-                    assertArrayEquals("Mismatched sent data content", sent.toByteArray(), out.toByteArray());
+
+                    byte[] expected = sent.toByteArray();
+                    if (!pipedCount.tryAcquire(expected.length, 13L, TimeUnit.SECONDS)) {
+                        fail("Failed to await sent data signal for len=" + expected.length + " (available=" + pipedCount.availablePermits() + ")");
+                    }
+
+                    assertArrayEquals("Mismatched sent data content", expected, out.toByteArray());
                 }
             } finally {
                 client.stop();
@@ -306,12 +329,26 @@ public class KeyReExchangeTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             client.start();
 
+            final Semaphore pipedCount = new Semaphore(0, true);
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession();
                  ByteArrayOutputStream sent = new ByteArrayOutputStream();
-                 ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                 ByteArrayOutputStream out = new ByteArrayOutputStream() {
+                     @Override
+                     public void write(int b) {
+                         super.write(b);
+                         pipedCount.release(1);
+                     }
+
+                     @Override
+                     public void write(byte[] b, int off, int len) {
+                         super.write(b, off, len);
+                         pipedCount.release(len);
+                     }
+                 }) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
+                byte[] sentData;
                 try (ChannelShell channel = session.createShellChannel();
                      PipedOutputStream pipedIn = new PipedOutputStream();
                      OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
@@ -371,10 +408,13 @@ public class KeyReExchangeTest extends BaseTestSupport {
                             channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
                     assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
 
+                    sentData = sent.toByteArray();
+                    if (!pipedCount.tryAcquire(sentData.length, 13L, TimeUnit.SECONDS)) {
+                        fail("Failed to await sent data signal for len=" + sentData.length + " (available=" + pipedCount.availablePermits() + ")");
+                    }
                     assertTrue("Expected rekeying", exchanges.get() > 0);
                 }
 
-                byte[] sentData = sent.toByteArray();
                 byte[] outData = out.toByteArray();
                 assertEquals("Mismatched sent data length", sentData.length, outData.length);
                 assertArrayEquals("Mismatched sent data content", sentData, outData);
@@ -392,12 +432,26 @@ public class KeyReExchangeTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             client.start();
 
+            final Semaphore pipedCount = new Semaphore(0, true);
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession();
                  ByteArrayOutputStream sent = new ByteArrayOutputStream();
-                 ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                 ByteArrayOutputStream out = new ByteArrayOutputStream() {
+                     @Override
+                     public void write(int b) {
+                         super.write(b);
+                         pipedCount.release(1);
+                     }
+
+                     @Override
+                     public void write(byte[] b, int off, int len) {
+                         super.write(b, off, len);
+                         pipedCount.release(len);
+                     }
+                 }) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
+                byte[] sentData;
                 try (ChannelShell channel = session.createShellChannel();
                      PipedOutputStream pipedIn = new PipedOutputStream();
                      OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
@@ -474,10 +528,14 @@ public class KeyReExchangeTest extends BaseTestSupport {
                             channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
                     assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
 
+                    sentData = sent.toByteArray();
+                    if (!pipedCount.tryAcquire(sentData.length, 13L, TimeUnit.SECONDS)) {
+                        fail("Failed to await sent data signal for len=" + sentData.length + " (available=" + pipedCount.availablePermits() + ")");
+                    }
+
                     assertTrue("Expected rekeying", exchanges.get() > 0);
                 }
 
-                byte[] sentData = sent.toByteArray();
                 byte[] outData = out.toByteArray();
                 assertEquals("Mismatched sent data length", sentData.length, outData.length);
                 assertArrayEquals("Mismatched sent data content", sentData, outData);
@@ -495,12 +553,26 @@ public class KeyReExchangeTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             client.start();
 
+            final Semaphore pipedCount = new Semaphore(0, true);
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession();
                  ByteArrayOutputStream sent = new ByteArrayOutputStream();
-                 ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                 ByteArrayOutputStream out = new ByteArrayOutputStream() {
+                     @Override
+                     public void write(int b) {
+                         super.write(b);
+                         pipedCount.release(1);
+                     }
+
+                     @Override
+                     public void write(byte[] b, int off, int len) {
+                         super.write(b, off, len);
+                         pipedCount.release(len);
+                     }
+                 }) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
+                byte[] sentData;
                 try (ChannelShell channel = session.createShellChannel();
                      PipedOutputStream pipedIn = new PipedOutputStream();
                      OutputStream sentTracker = new OutputCountTrackingOutputStream(sent) {
@@ -572,10 +644,14 @@ public class KeyReExchangeTest extends BaseTestSupport {
                             channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
                     assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
 
+                    sentData = sent.toByteArray();
+                    if (!pipedCount.tryAcquire(sentData.length, 13L, TimeUnit.SECONDS)) {
+                        fail("Failed to await sent data signal for len=" + sentData.length + " (available=" + pipedCount.availablePermits() + ")");
+                    }
+
                     assertTrue("Expected rekeying", exchanges.get() > 0);
                 }
 
-                byte[] sentData = sent.toByteArray();
                 byte[] outData = out.toByteArray();
                 assertEquals("Mismatched sent data length", sentData.length, outData.length);
                 assertArrayEquals("Mismatched sent data content", sentData, outData);
