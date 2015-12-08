@@ -220,7 +220,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             if (maxSessionCount != null) {
                 int currentSessionCount = session.getActiveSessionCountForUser(username);
                 if (currentSessionCount >= maxSessionCount) {
-                    session.disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE,
+                    session.disconnect(SshConstants.SSH2_DISCONNECT_TOO_MANY_CONNECTIONS,
                             "Too many concurrent connections (" + currentSessionCount + ") - max. allowed: " + maxSessionCount);
                     return;
                 }
