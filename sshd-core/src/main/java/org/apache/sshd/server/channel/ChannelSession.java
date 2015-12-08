@@ -277,6 +277,9 @@ public class ChannelSession extends AbstractServerChannel {
             case "x11-req":
                 return handleX11Forwarding(buffer);
             default:
+                if (log.isDebugEnabled()) {
+                    log.debug("handleRequest({}) unknown type: {}", this, type);
+                }
                 return null;
         }
     }
@@ -304,9 +307,10 @@ public class ChannelSession extends AbstractServerChannel {
         for (int i = 0; i < modes.length && (modes[i] != PtyMode.TTY_OP_END);) {
             int opcode = modes[i++] & 0x00FF;
             PtyMode mode = PtyMode.fromInt(opcode);
-            /**
+            /*
              * According to section 8 of RFC 4254:
-             * "Opcodes 160 to 255 are not yet defined, and cause parsing to stop"
+             *
+             *      "Opcodes 160 to 255 are not yet defined, and cause parsing to stop"
              */
             if (mode == null) {
                 log.warn("handlePtyReq({}) unknown pty opcode value: {}", this, opcode);
@@ -362,10 +366,11 @@ public class ChannelSession extends AbstractServerChannel {
         return true;
     }
 
+    // see rfc4335
     protected boolean handleBreak(Buffer buffer) throws IOException {
-        String name = buffer.getString();
+        long breakLength = buffer.getUInt();
         if (log.isDebugEnabled()) {
-            log.debug("handleBreak({}) {}", this, name);
+            log.debug("handleBreak({}) length={}", this, breakLength);
         }
 
         getEnvironment().signal(Signal.INT);
@@ -607,6 +612,10 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected void closeShell(int exitValue) throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("closeShell({}) exit code={}", this, exitValue);
+        }
+
         if (!isClosing()) {
             sendEof();
             sendExitStatus(exitValue);
