@@ -165,5 +165,4 @@ public class BuiltinCompressionsTest extends BaseTestSupport {
             assertNull("Extension not un-registered", BuiltinCompressions.resolveFactory(name));
         }
     }
-
 }

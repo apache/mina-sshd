@@ -68,6 +68,16 @@ public enum CompressionConfigValue implements CompressionFactory {
         return getName();
     }
 
+    @Override
+    public boolean isDelayed() {
+        return factory.isDelayed();
+    }
+
+    @Override
+    public boolean isCompressionExecuted() {
+        return factory.isCompressionExecuted();
+    }
+
     public static CompressionConfigValue fromName(String n) {
         if (GenericUtils.isEmpty(n)) {
             return null;

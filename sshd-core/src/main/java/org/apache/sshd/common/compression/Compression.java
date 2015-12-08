@@ -20,7 +20,6 @@ package org.apache.sshd.common.compression;
 
 import java.io.IOException;
 
-import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -29,7 +28,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Compression extends NamedResource {
+public interface Compression extends CompressionInformation {
 
     /**
      * Enum identifying if this object will be used to compress
@@ -39,15 +38,6 @@ public interface Compression extends NamedResource {
         Inflater,
         Deflater
     }
-
-    /**
-     * Delayed compression is an Open-SSH specific feature which
-     * informs both the client and server to not compress data before
-     * the session has been authenticated.
-     *
-     * @return if the compression is delayed after authentication or not
-     */
-    boolean isDelayed();
 
     /**
      * Initialize this object to either compress or uncompress data.

@@ -42,7 +42,12 @@ public enum BuiltinCompressions implements CompressionFactory {
     none(Constants.NONE) {
         @Override
         public Compression create() {
-            return null;
+            return new CompressionNone();
+        }
+
+        @Override
+        public boolean isCompressionExecuted() {
+            return false;
         }
     },
     zlib(Constants.ZLIB) {
@@ -55,6 +60,11 @@ public enum BuiltinCompressions implements CompressionFactory {
         @Override
         public Compression create() {
             return new CompressionDelayedZlib();
+        }
+
+        @Override
+        public boolean isDelayed() {
+            return true;
         }
     };
 
@@ -73,6 +83,16 @@ public enum BuiltinCompressions implements CompressionFactory {
     @Override
     public final String getName() {
         return name;
+    }
+
+    @Override
+    public boolean isDelayed() {
+        return false;
+    }
+
+    @Override
+    public boolean isCompressionExecuted() {
+        return true;
     }
 
     @Override

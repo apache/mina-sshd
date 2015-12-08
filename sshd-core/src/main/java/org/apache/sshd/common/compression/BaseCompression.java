@@ -37,6 +37,11 @@ public abstract class BaseCompression implements Compression {
     }
 
     @Override
+    public boolean isCompressionExecuted() {
+        return true;
+    }
+
+    @Override
     public String toString() {
         return getName();
     }

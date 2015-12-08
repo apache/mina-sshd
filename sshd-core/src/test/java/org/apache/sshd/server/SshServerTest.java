@@ -32,6 +32,9 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SshServerTest extends BaseTestSupport {
+    public SshServerTest() {
+        super();
+    }
 
     @Test
     public void stopMethodShouldBeIdempotent() throws Exception {

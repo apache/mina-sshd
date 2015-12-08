@@ -47,7 +47,9 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.cipher.Cipher;
+import org.apache.sshd.common.cipher.CipherInformation;
 import org.apache.sshd.common.compression.Compression;
+import org.apache.sshd.common.compression.CompressionInformation;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
@@ -60,6 +62,7 @@ import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.mac.Mac;
+import org.apache.sshd.common.mac.MacInformation;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
@@ -316,6 +319,21 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         synchronized (negotiationResult) {
             return negotiationResult.get(paramType);
         }
+    }
+
+    @Override
+    public CipherInformation getCipherInformation(boolean incoming) {
+        return incoming ? inCipher : outCipher;
+    }
+
+    @Override
+    public CompressionInformation getCompressionInformation(boolean incoming) {
+        return incoming ? inCompression : outCompression;
+    }
+
+    @Override
+    public MacInformation getMacInformation(boolean incoming) {
+        return incoming ? inMac : outMac;
     }
 
     @Override
@@ -844,10 +862,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 log.trace("encode({}) Sending packet #{}: {}", this, Long.valueOf(seqo), buffer.printHex());
             }
             // Compress the packet if needed
-            if ((outCompression != null) && (authed || !outCompression.isDelayed())) {
+            if ((outCompression != null) && outCompression.isCompressionExecuted() && (authed || (!outCompression.isDelayed()))) {
                 outCompression.compress(buffer);
                 len = buffer.available();
             }
+
             // Compute padding length
             int bsize = outCipherSize;
             int oldLen = len;
@@ -965,12 +984,13 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                     Buffer buf;
                     int wpos = decoderBuffer.wpos();
                     // Decompress if needed
-                    if (inCompression != null && (authed || !inCompression.isDelayed())) {
+                    if ((inCompression != null) && inCompression.isCompressionExecuted() && (authed || (!inCompression.isDelayed()))) {
                         if (uncompressBuffer == null) {
                             uncompressBuffer = new ByteArrayBuffer();
                         } else {
                             uncompressBuffer.clear();
                         }
+
                         decoderBuffer.wpos(decoderBuffer.rpos() + decoderLength - 1 - pad);
                         inCompression.uncompress(decoderBuffer, uncompressBuffer);
                         buf = uncompressBuffer;
@@ -978,9 +998,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                         decoderBuffer.wpos(decoderLength + 4 - pad);
                         buf = decoderBuffer;
                     }
+
                     if (log.isTraceEnabled()) {
                         log.trace("decode({}) Received packet #{}: {}", this, Long.valueOf(seqi), buf.printHex());
                     }
+
                     // Update stats
                     inPacketsCount.incrementAndGet();
                     inBytesCount.addAndGet(buf.available());
@@ -1267,12 +1289,18 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         s2ccipher.init(isServer ? Cipher.Mode.Encrypt : Cipher.Mode.Decrypt, e_s2c, iv_s2c);
 
         value = getNegotiatedKexParameter(KexProposalOption.S2CMAC);
-        Mac s2cmac = ValidateUtils.checkNotNull(NamedFactory.Utils.create(getMacFactories(), value), "Unknown s2c mac: %s", value);
+        Mac s2cmac = NamedFactory.Utils.create(getMacFactories(), value);
+        if (s2cmac == null) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_MAC_ERROR, "Unknown s2c MAC: " + value);
+        }
         mac_s2c = resizeKey(mac_s2c, s2cmac.getBlockSize(), hash, k, h);
         s2cmac.init(mac_s2c);
 
         value = getNegotiatedKexParameter(KexProposalOption.S2CCOMP);
         Compression s2ccomp = NamedFactory.Utils.create(getCompressionFactories(), value);
+        if (s2ccomp == null) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_COMPRESSION_ERROR, "Unknown s2c compression: " + value);
+        }
 
         value = getNegotiatedKexParameter(KexProposalOption.C2SENC);
         Cipher c2scipher = ValidateUtils.checkNotNull(NamedFactory.Utils.create(getCipherFactories(), value), "Unknown c2s cipher: %s", value);
@@ -1280,12 +1308,18 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         c2scipher.init(isServer ? Cipher.Mode.Decrypt : Cipher.Mode.Encrypt, e_c2s, iv_c2s);
 
         value = getNegotiatedKexParameter(KexProposalOption.C2SMAC);
-        Mac c2smac = ValidateUtils.checkNotNull(NamedFactory.Utils.create(getMacFactories(), value), "Unknown c2s mac: %s", value);
+        Mac c2smac = NamedFactory.Utils.create(getMacFactories(), value);
+        if (c2smac == null) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_MAC_ERROR, "Unknown c2s MAC: " + value);
+        }
         mac_c2s = resizeKey(mac_c2s, c2smac.getBlockSize(), hash, k, h);
         c2smac.init(mac_c2s);
 
         value = getNegotiatedKexParameter(KexProposalOption.C2SCOMP);
         Compression c2scomp = NamedFactory.Utils.create(getCompressionFactories(), value);
+        if (c2scomp == null) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_COMPRESSION_ERROR, "Unknown c2s compression: " + value);
+        }
 
         if (isServer) {
             outCipher = s2ccipher;
@@ -1303,14 +1337,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             inCompression = s2ccomp;
         }
         outCipherSize = outCipher.getIVSize();
-        if (outCompression != null) {
-            outCompression.init(Compression.Type.Deflater, -1);
-        }
+        outCompression.init(Compression.Type.Deflater, -1);
+
         inCipherSize = inCipher.getIVSize();
         inMacResult = new byte[inMac.getBlockSize()];
-        if (inCompression != null) {
-            inCompression.init(Compression.Type.Inflater, -1);
-        }
+        inCompression.init(Compression.Type.Inflater, -1);
 
         // see https://tools.ietf.org/html/rfc4344#section-3.2
         int inBlockSize = inCipher.getBlockSize();

@@ -33,6 +33,7 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -45,7 +46,6 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientConnectionServiceFactory;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
-import org.apache.sshd.client.session.SessionFactory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
@@ -63,6 +63,7 @@ import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
 import org.apache.sshd.server.command.ScpCommandFactory;
+import org.apache.sshd.server.session.ServerSessionImpl;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.EchoShell;
@@ -84,7 +85,6 @@ import org.slf4j.LoggerFactory;
 public class ServerTest extends BaseTestSupport {
     private SshServer sshd;
     private SshClient client;
-    private int port;
 
     public ServerTest() {
         super();
@@ -94,9 +94,6 @@ public class ServerTest extends BaseTestSupport {
     public void setUp() throws Exception {
         sshd = setupTestServer();
         sshd.setShellFactory(new TestEchoShellFactory());
-        sshd.start();
-        port = sshd.getPort();
-
         client = setupTestClient();
     }
 
@@ -120,13 +117,14 @@ public class ServerTest extends BaseTestSupport {
         final int MAX_AUTH_REQUESTS = 10;
         PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.MAX_AUTH_REQUESTS, MAX_AUTH_REQUESTS);
 
+        sshd.start();
         client.setServiceFactories(Arrays.asList(
                 new ClientUserAuthServiceOld.Factory(),
                 ClientConnectionServiceFactory.INSTANCE
         ));
         client.start();
 
-        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
             int nbTrials = 0;
             Collection<ClientSession.ClientSessionEvent> res = Collections.emptySet();
             Collection<ClientSession.ClientSessionEvent> mask =
@@ -149,12 +147,14 @@ public class ServerTest extends BaseTestSupport {
         final int MAX_AUTH_REQUESTS = 10;
         PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.MAX_AUTH_REQUESTS, MAX_AUTH_REQUESTS);
 
+        sshd.start();
+
         client.setServiceFactories(Arrays.asList(
                 new ClientUserAuthServiceOld.Factory(),
                 ClientConnectionServiceFactory.INSTANCE
         ));
         client.start();
-        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
             int nbTrials = 0;
             AuthFuture authFuture;
             do {
@@ -179,8 +179,9 @@ public class ServerTest extends BaseTestSupport {
         final long AUTH_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
         PropertyResolverUtils.updateProperty(sshd, FactoryManager.AUTH_TIMEOUT, AUTH_TIMEOUT);
 
+        sshd.start();
         client.start();
-        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
             Collection<ClientSession.ClientSessionEvent> res = s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 2L * AUTH_TIMEOUT);
             assertTrue("Session should be closed: " + res,
                        res.containsAll(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH)));
@@ -216,9 +217,10 @@ public class ServerTest extends BaseTestSupport {
 
         TestChannelListener channelListener = new TestChannelListener();
         sshd.addChannelListener(channelListener);
+        sshd.start();
 
         client.start();
-        try (ClientSession s = createTestClientSession();
+        try (ClientSession s = createTestClientSession(sshd);
              ChannelShell shell = s.createShellChannel();
              ByteArrayOutputStream out = new ByteArrayOutputStream();
              ByteArrayOutputStream err = new ByteArrayOutputStream()) {
@@ -282,10 +284,10 @@ public class ServerTest extends BaseTestSupport {
 
         TestChannelListener channelListener = new TestChannelListener();
         sshd.addChannelListener(channelListener);
+        sshd.start();
 
         client.start();
-
-        try (ClientSession s = createTestClientSession();
+        try (ClientSession s = createTestClientSession(sshd);
              ChannelExec shell = s.createExecChannel("normal");
              // Create a pipe that will block reading when the buffer is full
              PipedInputStream pis = new PipedInputStream();
@@ -328,11 +330,12 @@ public class ServerTest extends BaseTestSupport {
 
     @Test
     public void testLanguageNegotiation() throws Exception {
-        client.setSessionFactory(new SessionFactory(client) {
+        sshd.start();
+
+        client.setSessionFactory(new org.apache.sshd.client.session.SessionFactory(client) {
             @Override
-            @SuppressWarnings("synthetic-access")
-            protected ClientSessionImpl createSession(IoSession ioSession) throws Exception {
-                return new ClientSessionImpl(client, ioSession) {
+            protected ClientSessionImpl doCreateSession(IoSession ioSession) throws Exception {
+                return new ClientSessionImpl(getClient(), ioSession) {
                     @Override
                     protected Map<KexProposalOption, String> createProposal(String hostKeyTypes) {
                         Map<KexProposalOption, String> proposal = super.createProposal(hostKeyTypes);
@@ -344,9 +347,98 @@ public class ServerTest extends BaseTestSupport {
             }
         });
 
+        final Semaphore sigSem = new Semaphore(0, true);
+        client.addSessionListener(new SessionListener() {
+            @Override
+            public void sessionCreated(Session session) {
+                outputDebugMessage("Session created: %s", session);
+            }
+
+            @Override
+            public void sessionEvent(Session session, Event event) {
+                if (Event.KeyEstablished.equals(event)) {
+                    for (KexProposalOption option : new KexProposalOption[]{ KexProposalOption.S2CLANG, KexProposalOption.C2SLANG}) {
+                        assertNull("Unexpected negotiated language for " + option, session.getNegotiatedKexParameter(option));
+                    }
+
+                    sigSem.release();
+                }
+            }
+
+            @Override
+            public void sessionClosed(Session session) {
+                outputDebugMessage("Session closed: %s", session);
+            }
+        });
+
         client.start();
-        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
-            // do nothing
+        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
+            assertTrue("Failed to receive signal on time", sigSem.tryAcquire(11L, TimeUnit.SECONDS));
+        } finally {
+            client.stop();
+        }
+    }
+
+    @Test   // see SSHD-609
+    public void testCompressionNegotiation() throws Exception {
+        sshd.setSessionFactory(new org.apache.sshd.server.session.SessionFactory(sshd) {
+            @Override
+            protected ServerSessionImpl doCreateSession(IoSession ioSession) throws Exception {
+                return new ServerSessionImpl(getServer(), ioSession) {
+                    @Override
+                    protected Map<KexProposalOption, String> createProposal(String hostKeyTypes) {
+                        Map<KexProposalOption, String> proposal = super.createProposal(hostKeyTypes);
+                        proposal.put(KexProposalOption.C2SCOMP, getCurrentTestName());
+                        proposal.put(KexProposalOption.S2CCOMP, getCurrentTestName());
+                        return proposal;
+                    }
+                };
+            }
+        });
+        sshd.start();
+
+        client.setSessionFactory(new org.apache.sshd.client.session.SessionFactory(client) {
+            @Override
+            protected ClientSessionImpl doCreateSession(IoSession ioSession) throws Exception {
+                return new ClientSessionImpl(getClient(), ioSession) {
+                    @Override
+                    protected Map<KexProposalOption, String> createProposal(String hostKeyTypes) {
+                        Map<KexProposalOption, String> proposal = super.createProposal(hostKeyTypes);
+                        proposal.put(KexProposalOption.C2SCOMP, getCurrentTestName());
+                        proposal.put(KexProposalOption.S2CCOMP, getCurrentTestName());
+                        return proposal;
+                    }
+                };
+            }
+        });
+
+        final Semaphore sigSem = new Semaphore(0, true);
+        client.addSessionListener(new SessionListener() {
+            @Override
+            public void sessionCreated(Session session) {
+                outputDebugMessage("Session created: %s", session);
+            }
+
+            @Override
+            public void sessionEvent(Session session, Event event) {
+                assertNotEquals("Unexpected key establishment success", Event.KeyEstablished, event);
+            }
+
+            @Override
+            public void sessionClosed(Session session) {
+                sigSem.release();
+            }
+        });
+
+        client.start();
+        try {
+            try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
+                assertTrue("Session closing not signalled on time", sigSem.tryAcquire(5L, TimeUnit.SECONDS));
+                for (boolean incoming : new boolean[]{true, false}) {
+                    assertNull("Unexpected compression information for incoming=" + incoming, s.getCompressionInformation(incoming));
+                }
+                assertFalse("Session unexpectedly still open", s.isOpen());
+            }
         } finally {
             client.stop();
         }
@@ -373,8 +465,8 @@ public class ServerTest extends BaseTestSupport {
                 // ignored
             }
         });
+        sshd.start();
 
-        client.start();
         final AtomicInteger clientEventCount = new AtomicInteger(0);
         client.addSessionListener(new SessionListener() {
             @Override
@@ -394,8 +486,9 @@ public class ServerTest extends BaseTestSupport {
                 // ignored
             }
         });
+        client.start();
 
-        try (ClientSession s = createTestClientSession()) {
+        try (ClientSession s = createTestClientSession(sshd)) {
             assertEquals("Mismatched client events count", 1, clientEventCount.get());
             assertEquals("Mismatched server events count", 1, serverEventCount.get());
             s.close(false);
@@ -454,6 +547,7 @@ public class ServerTest extends BaseTestSupport {
 
         TestChannelListener channelListener = new TestChannelListener();
         sshd.addChannelListener(channelListener);
+        sshd.start();
 
         @SuppressWarnings("synthetic-access")
         Map<String, String> expected = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER) {
@@ -461,13 +555,13 @@ public class ServerTest extends BaseTestSupport {
 
             {
                 put("test", getCurrentTestName());
-                put("port", Integer.toString(port));
+                put("port", Integer.toString(sshd.getPort()));
                 put("user", OsUtils.getCurrentUser());
             }
         };
 
         client.start();
-        try (ClientSession s = createTestClientSession();
+        try (ClientSession s = createTestClientSession(sshd);
              ChannelExec shell = s.createExecChannel(getCurrentTestName())) {
             for (Map.Entry<String, String> ee : expected.entrySet()) {
                 shell.setEnv(ee.getKey(), ee.getValue());
@@ -505,8 +599,8 @@ public class ServerTest extends BaseTestSupport {
         }
     }
 
-    private ClientSession createTestClientSession() throws Exception {
-        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession();
+    private ClientSession createTestClientSession(SshServer server) throws Exception {
+        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, server.getPort()).verify(7L, TimeUnit.SECONDS).getSession();
         try {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);

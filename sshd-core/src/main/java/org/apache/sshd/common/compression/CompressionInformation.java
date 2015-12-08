@@ -19,13 +19,24 @@
 
 package org.apache.sshd.common.compression;
 
-import org.apache.sshd.common.BuiltinFactory;
+import org.apache.sshd.common.NamedResource;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-// CHECKSTYLE:OFF
-public interface CompressionFactory extends BuiltinFactory<Compression>, CompressionInformation {
-    // nothing extra
+public interface CompressionInformation extends NamedResource {
+    /**
+     * Delayed compression is an Open-SSH specific feature which
+     * informs both the client and server to not compress data before
+     * the session has been authenticated.
+     *
+     * @return if the compression is delayed after authentication or not
+     */
+    boolean isDelayed();
+
+    /**
+     * @return {@code true} if there is any compression executed by
+     * this &quot;compressor&quot; - special case for 'none'
+     */
+    boolean isCompressionExecuted();
 }
-//CHECKSTYLE:ON
