@@ -77,7 +77,11 @@ public class UserAuthPassword extends AbstractUserAuth {
         }
 
         try {
-            return auth.authenticate(username, password, session);
+            boolean authed = auth.authenticate(username, password, session);
+            if (log.isDebugEnabled()) {
+                log.debug("checkPassword({}) authentication result: {}", session, authed);
+            }
+            return authed;
         } catch (PasswordChangeRequiredException e) {
             if (log.isDebugEnabled()) {
                 log.debug("checkPassword({}) password change required: {}", session, e.getMessage());

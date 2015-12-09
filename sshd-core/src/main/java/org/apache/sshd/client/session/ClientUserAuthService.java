@@ -52,7 +52,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
      */
     private final AuthFuture authFuture;
 
-    private final ClientSessionImpl session;
+    private final ClientSessionImpl clientSession;
 
     private List<Object> identities;
     private String service;
@@ -68,27 +68,35 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
         if (!(s instanceof ClientSessionImpl)) {
             throw new IllegalStateException("Client side service used on server side");
         }
-        session = (ClientSessionImpl) s;
-        authFuture = new DefaultAuthFuture(session.getLock());
-        authFactories = session.getUserAuthFactories();
+        clientSession = (ClientSessionImpl) s;
+        authFuture = new DefaultAuthFuture(clientSession.getLock());
+        authFactories = clientSession.getUserAuthFactories();
         clientMethods = new ArrayList<>();
 
-        String prefs = PropertyResolverUtils.getString(session, ClientAuthenticationManager.PREFERRED_AUTHS);
-        if (!GenericUtils.isEmpty(prefs)) {
-            for (String pref : prefs.split(",")) {
+        String prefs = PropertyResolverUtils.getString(s, ClientAuthenticationManager.PREFERRED_AUTHS);
+        if (GenericUtils.isEmpty(prefs)) {
+            for (NamedFactory<UserAuth> factory : authFactories) {
+                clientMethods.add(factory.getName());
+            }
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("ClientUserAuthService({}) use configured preferrences: {}", s, prefs);
+            }
+
+            for (String pref : GenericUtils.split(prefs, ',')) {
                 NamedFactory<UserAuth> factory = NamedResource.Utils.findByName(pref, String.CASE_INSENSITIVE_ORDER, authFactories);
                 if (factory != null) {
                     clientMethods.add(pref);
                 } else {
                     if (log.isDebugEnabled()) {
-                        log.debug("ClientUserAuthService({}) skip unknown prefered authentication method: {}", s, pref);
+                        log.debug("ClientUserAuthService({}) skip unknown preferred authentication method: {}", s, pref);
                     }
                 }
             }
-        } else {
-            for (NamedFactory<UserAuth> factory : authFactories) {
-                clientMethods.add(factory.getName());
-            }
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("ClientUserAuthService({}) client methods: {}", s, clientMethods);
         }
     }
 
@@ -99,7 +107,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
 
     @Override
     public ClientSession getClientSession() {
-        return session;
+        return clientSession;
     }
 
     @Override
@@ -111,12 +119,14 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
         this.identities = new ArrayList<>(identities);
         this.service = service;
 
-        if (log.isDebugEnabled()) {
-            log.debug("auth({})[{}] Send SSH_MSG_USERAUTH_REQUEST for 'none'", getClientSession(), service);
-        }
+        ClientSession session = getClientSession();
         String username = session.getUsername();
+        if (log.isDebugEnabled()) {
+            log.debug("auth({})[{}] Send SSH_MSG_USERAUTH_REQUEST for 'none'", session, service);
+        }
+
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, username.length() + service.length() + Integer.SIZE);
-        buffer.putString(session.getUsername());
+        buffer.putString(username);
         buffer.putString(service);
         buffer.putString("none");
         session.writePacket(buffer);
@@ -126,6 +136,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
 
     @Override
     public void process(int cmd, Buffer buffer) throws Exception {
+        ClientSession session = getClientSession();
         if (this.authFuture.isSuccess()) {
             throw new IllegalStateException("UserAuth message delivered to authenticated client");
         } else if (this.authFuture.isDone()) {
@@ -159,41 +170,51 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
      */
     protected void processUserAuth(Buffer buffer) throws Exception {
         int cmd = buffer.getUByte();
+        ClientSession session = getClientSession();
         if (cmd == SshConstants.SSH_MSG_USERAUTH_SUCCESS) {
             if (log.isDebugEnabled()) {
                 log.debug("processUserAuth({}) SSH_MSG_USERAUTH_SUCCESS Succeeded with {}",
-                          getClientSession(), userAuth);
+                          session, userAuth);
             }
             if (userAuth != null) {
-                userAuth.destroy();
-                userAuth = null;
+                try {
+                    userAuth.destroy();
+                } finally {
+                    userAuth = null;
+                }
             }
             session.setAuthenticated();
-            session.switchToNextService();
+            ((ClientSessionImpl) session).switchToNextService();
             // Will wake up anyone sitting in waitFor
             authFuture.setAuthed(true);
             return;
         }
+
         if (cmd == SshConstants.SSH_MSG_USERAUTH_FAILURE) {
             String mths = buffer.getString();
             boolean partial = buffer.getBoolean();
             if (log.isDebugEnabled()) {
                 log.debug("processUserAuth({}) Received SSH_MSG_USERAUTH_FAILURE - partial={}, methods={}",
-                          getClientSession(), partial, mths);
+                          session, partial, mths);
             }
             if (partial || (serverMethods == null)) {
                 serverMethods = Arrays.asList(GenericUtils.split(mths, ','));
                 if (userAuth != null) {
-                    userAuth.destroy();
-                    userAuth = null;
+                    try {
+                        userAuth.destroy();
+                    } finally {
+                        userAuth = null;
+                    }
                 }
             }
             tryNext();
             return;
         }
+
         if (userAuth == null) {
-            throw new IllegalStateException("Received unknown packet");
+            throw new IllegalStateException("Received unknown packet: " + SshConstants.getCommandMessageName(cmd));
         }
+
         buffer.rpos(buffer.rpos() - 1);
         if (!userAuth.process(buffer)) {
             tryNext();
@@ -201,6 +222,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
     }
 
     protected void tryNext() throws Exception {
+        ClientSession session = getClientSession();
         // Loop until we find something to try
         while (true) {
             if (userAuth == null) {
@@ -218,10 +240,12 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
 
             if (currentMethod >= clientMethods.size()) {
                 if (log.isDebugEnabled()) {
-                    log.debug("tryNext({}) exhausted all methods", getClientSession());
+                    log.debug("tryNext({}) exhausted all methods - client={}, server={}",
+                              session, clientMethods, serverMethods);
                 }
 
-                authFuture.setAuthed(false);
+                // also wake up anyone sitting in waitFor
+                authFuture.setException(new SshException(SshConstants.SSH2_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE, "No more authentication methods available"));
                 return;
             }
 
@@ -231,7 +255,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
                 throw new UnsupportedOperationException("Failed to find a user-auth factory for method=" + method);
             }
             if (log.isDebugEnabled()) {
-                log.debug("tryNext({}) attempting method={}", getClientSession(), method);
+                log.debug("tryNext({}) attempting method={}", session, method);
             }
 
             userAuth.init(session, service, identities);

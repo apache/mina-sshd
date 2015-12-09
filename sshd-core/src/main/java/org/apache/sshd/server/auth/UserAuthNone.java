@@ -34,6 +34,9 @@ public class UserAuthNone extends AbstractUserAuth {
 
     @Override
     public Boolean doAuth(Buffer buffer, boolean init) {
+        if (log.isDebugEnabled()) {
+            log.debug("doAuth({}@{}) init={}", getUsername(), getServerSession(), init);
+        }
         return Boolean.TRUE;
     }
 }

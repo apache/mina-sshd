@@ -160,6 +160,9 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
             String[] rep = getUserResponses(name, instruction, language_tag, prompt, echo);
             if (rep == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("process({})[{}] no responses for {}", session, service, name);
+                }
                 return false;
             }
 
@@ -173,19 +176,24 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
              * However it is the server's (!) responsibility to fail, so we only warn...
              */
             if (num != rep.length) {
-                log.warn("process({}) Mismatched prompts ({}) vs. responses count ({})", session, num, rep.length);
+                log.warn("process({})[{}] Mismatched prompts ({}) vs. responses count ({})",
+                         session, service, num, rep.length);
             }
 
             buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE, BufferUtils.clear(buffer));
             buffer.putInt(rep.length);
-            for (String r : rep) {
+            for (int index = 0; index < rep.length; index++) {
+                String r = rep[index];
+                if (log.isTraceEnabled()) {
+                    log.trace("process({})[{}] response #{}: {}", session, service, index + 1, r);
+                }
                 buffer.putString(r);
             }
             session.writePacket(buffer);
             return true;
         }
 
-        throw new IllegalStateException("process(" + session + ")[" + service + ")"
+        throw new IllegalStateException("process(" + session + ")[" + service + "]"
                 + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
     }
 
@@ -221,20 +229,30 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
      * a warning...)
      */
     protected String[] getUserResponses(String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+        ClientSession session = getClientSession();
         int num = GenericUtils.length(prompt);
         if (num == 0) {
+            if (log.isDebugEnabled()) {
+                log.debug("getUserResponses({}) no prompts for interaction={}", session, name);
+            }
             return GenericUtils.EMPTY_STRING_ARRAY;
         }
 
         String candidate = getCurrentPasswordCandidate();
         if (useCurrentPassword(candidate, name, instruction, lang, prompt, echo)) {
-            return new String[]{candidate};
-        } else {
-            ClientSession session = getClientSession();
-            UserInteraction ui = session.getUserInteraction();
-            if ((ui != null) && ui.isInteractionAllowed(session)) {
-                return ui.interactive(session, name, instruction, lang, prompt, echo);
+            if (log.isDebugEnabled()) {
+                log.debug("getUserResponses({}) use password candidate for interaction={}", session, name);
             }
+            return new String[]{candidate};
+        }
+
+        UserInteraction ui = session.getUserInteraction();
+        if ((ui != null) && ui.isInteractionAllowed(session)) {
+            return ui.interactive(session, name, instruction, lang, prompt, echo);
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("getUserResponses({}) no user interaction for name={}", session, name);
         }
 
         return null;

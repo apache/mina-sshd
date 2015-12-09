@@ -55,10 +55,11 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         buffer.wpos(buffer.rpos() + len);
 
         ServerSession session = getServerSession();
+        String username = getUsername();
         PublicKey key = buffer.getRawPublicKey();
         if (log.isDebugEnabled()) {
-            log.debug("doAuth({}) verify key type={}, fingerprint={}",
-                      session, alg, KeyUtils.getFingerPrint(key));
+            log.debug("doAuth({}@{}) verify key type={}, fingerprint={}",
+                      username, session, alg, KeyUtils.getFingerPrint(key));
         }
 
         Signature verifier = ValidateUtils.checkNotNull(
@@ -72,38 +73,63 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         PublickeyAuthenticator authenticator = session.getPublickeyAuthenticator();
         if (authenticator == null) {
             if (log.isDebugEnabled()) {
-                log.debug("doAuth({}) no authenticator", session);
+                log.debug("doAuth({}@{}) key type={}, fingerprint={} - no authenticator",
+                          username, session, alg, KeyUtils.getFingerPrint(key));
             }
             return false;
         }
 
-        if (!authenticator.authenticate(getUsername(), key, session)) {
+        boolean authed = authenticator.authenticate(username, key, session);
+        if (log.isDebugEnabled()) {
+            log.debug("doAuth({}@{}) key type={}, fingerprint={} - authentication result: {}",
+                      username, session, alg, KeyUtils.getFingerPrint(key), authed);
+        }
+        if (!authed) {
             return Boolean.FALSE;
         }
 
         if (!hasSig) {
+            if (log.isDebugEnabled()) {
+                log.debug("doAuth({}@{}) send SSH_MSG_USERAUTH_PK_OK for key type={}, fingerprint={}",
+                           username, session, alg, KeyUtils.getFingerPrint(key));
+            }
+
             Buffer buf = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_PK_OK, BufferUtils.clear(buffer));
             buf.putString(alg);
             buf.putRawBytes(buffer.array(), oldPos, 4 + len);
             session.writePacket(buf);
             return null;
-        } else {
-            Buffer buf = new ByteArrayBuffer();
-            buf.putBytes(session.getKex().getH());
-            buf.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
-            buf.putString(getUsername());
-            buf.putString(getService());
-            buf.putString(getName());
-            buf.putBoolean(true);
-            buf.putString(alg);
-            buffer.rpos(oldPos);
-            buffer.wpos(oldPos + 4 + len);
-            buf.putBuffer(buffer);
-            verifier.update(buf.array(), buf.rpos(), buf.available());
-            if (!verifier.verify(sig)) {
-                throw new Exception("Key verification failed");
-            }
-            return Boolean.TRUE;
         }
+
+        // verify signature
+        Buffer buf = new ByteArrayBuffer();
+        buf.putBytes(session.getKex().getH());
+        buf.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
+        buf.putString(username);
+        buf.putString(getService());
+        buf.putString(getName());
+        buf.putBoolean(true);
+        buf.putString(alg);
+        buffer.rpos(oldPos);
+        buffer.wpos(oldPos + 4 + len);
+        buf.putBuffer(buffer);
+        verifier.update(buf.array(), buf.rpos(), buf.available());
+        if (log.isTraceEnabled()) {
+            log.trace("doAuth({}@{}) key type={}, fingerprint={} - verification data={}",
+                      username, session, alg, KeyUtils.getFingerPrint(key), buf.printHex());
+            log.trace("doAuth({}@{}) key type={}, fingerprint={} - expected signature={}",
+                    username, session, alg, KeyUtils.getFingerPrint(key), BufferUtils.printHex(sig));
+        }
+
+        if (!verifier.verify(sig)) {
+            throw new Exception("Key verification failed");
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("doAuth({}@{}) key type={}, fingerprint={} - verified",
+                      username, session, alg, KeyUtils.getFingerPrint(key));
+        }
+
+        return Boolean.TRUE;
     }
 }

@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.server.auth.keyboard.InteractiveChallenge;
@@ -45,13 +46,15 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     @Override
     protected Boolean doAuth(Buffer buffer, boolean init) throws Exception {
         ServerSession session = getServerSession();
+        String username = getUsername();
         KeyboardInteractiveAuthenticator auth = session.getKeyboardInteractiveAuthenticator();
         if (init) {
             String lang = buffer.getString();
             String subMethods = buffer.getString();
             if (auth == null) {
                 if (log.isDebugEnabled()) {
-                    log.debug("doAuth({}) no interactive authenticator to generate challenge", session);
+                    log.debug("doAuth({}@{})[methods={}, lang={}] - no interactive authenticator to generate challenge",
+                              username, session, subMethods, lang);
                 }
                 return false;
             }
@@ -59,9 +62,17 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             InteractiveChallenge challenge = auth.generateChallenge(session, getUsername(), lang, subMethods);
             if (challenge == null) {
                 if (log.isDebugEnabled()) {
-                    log.debug("doAuth({}) no interactive challenge generated", session);
+                    log.debug("doAuth({}@{})[methods={}, lang={}] - no interactive challenge generated",
+                              username, session, subMethods, lang);
                 }
                 return false;
+            }
+
+            if (log.isDebugEnabled()) {
+                log.debug("doAuth({}@{})[methods={}, lang={}] challenge name={}, instruction={}, lang={}, num. prompts={}",
+                          username, session, subMethods, lang,
+                          challenge.getInteractionName(), challenge.getInteractionInstruction(),
+                          challenge.getLanguageTag(), GenericUtils.size(challenge.getPrompts()));
             }
 
             // Prompt for password
@@ -78,17 +89,28 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             int num = buffer.getInt();
             List<String> responses = (num <= 0) ? Collections.<String>emptyList() : new ArrayList<String>(num);
             for (int index = 0; index < num; index++) {
-                responses.add(buffer.getString());
+                String value = buffer.getString();
+                if (log.isTraceEnabled()) {
+                    log.trace("doAuth({}@{}) response #{}: {}", username, session, index + 1, value);
+                }
+                responses.add(value);
             }
 
             if (auth == null) {
                 if (log.isDebugEnabled()) {
-                    log.debug("doAuth({}) no interactive authenticator to validate responses", session);
+                    log.debug("doAuth({}@{}) no interactive authenticator to validate {} responses",
+                              username, session, num);
                 }
                 return false;
             }
 
-            return auth.authenticate(session, getUsername(), responses);
+            boolean authed = auth.authenticate(session, username, responses);
+            if (log.isDebugEnabled()) {
+                log.debug("doAuth({}@{}) authenticate {} responses result: {}",
+                          username, session, num, authed);
+            }
+
+            return authed;
         }
     }
 }
