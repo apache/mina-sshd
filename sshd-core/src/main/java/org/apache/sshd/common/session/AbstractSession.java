@@ -144,6 +144,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected byte[] i_c; // the payload of the client's SSH_MSG_KEXINIT
     protected byte[] i_s; // the payload of the factoryManager's SSH_MSG_KEXINIT
     protected KeyExchange kex;
+    protected Boolean firstKexPacketFollows;
     protected final AtomicReference<KexState> kexState = new AtomicReference<>(KexState.UNKNOWN);
     protected final AtomicReference<DefaultKeyExchangeFuture> kexFutureHolder = new AtomicReference<>(null);
 
@@ -416,22 +417,18 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
 
         switch (cmd) {
-            case SshConstants.SSH_MSG_DISCONNECT: {
+            case SshConstants.SSH_MSG_DISCONNECT:
                 handleDisconnect(buffer);
                 break;
-            }
-            case SshConstants.SSH_MSG_IGNORE: {
+            case SshConstants.SSH_MSG_IGNORE:
                 handleIgnore(buffer);
                 break;
-            }
-            case SshConstants.SSH_MSG_UNIMPLEMENTED: {
+            case SshConstants.SSH_MSG_UNIMPLEMENTED:
                 handleUnimplented(buffer);
                 break;
-            }
-            case SshConstants.SSH_MSG_DEBUG: {
+            case SshConstants.SSH_MSG_DEBUG:
                 handleDebug(buffer);
                 break;
-            }
             case SshConstants.SSH_MSG_SERVICE_REQUEST:
                 handleServiceRequest(buffer);
                 break;
@@ -446,13 +443,17 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 break;
             default:
                 if ((cmd >= SshConstants.SSH_MSG_KEX_FIRST) && (cmd <= SshConstants.SSH_MSG_KEX_LAST)) {
-                    validateKexState(cmd, KexState.RUN);
-                    buffer.rpos(buffer.rpos() - 1);
-                    if (kex.next(buffer)) {
-                        checkKeys();
-                        sendNewKeys();
-                        kexState.set(KexState.KEYS);
+                    if (firstKexPacketFollows != null) {
+                        try {
+                            if (!handleFirstKexPacketFollows(cmd, buffer, firstKexPacketFollows.booleanValue())) {
+                                break;
+                            }
+                        } finally {
+                            firstKexPacketFollows = null;   // avoid re-checking
+                        }
                     }
+
+                    handleKexMessage(cmd, buffer);
                 } else if (currentService != null) {
                     currentService.process(cmd, buffer);
                     resetIdleTimeout();
@@ -462,6 +463,56 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 break;
         }
         checkRekey();
+    }
+
+    protected boolean handleFirstKexPacketFollows(int cmd, Buffer buffer, boolean followFlag) {
+        if (!followFlag) {
+            return true; // if 1st KEX packet does not follow then process the command
+        }
+
+        /*
+         * According to RFC4253 section 7.1:
+         *
+         *      If the other party's guess was wrong, and this field was TRUE,
+         *      the next packet MUST be silently ignored
+         */
+        for (KexProposalOption option : new KexProposalOption[]{KexProposalOption.ALGORITHMS, KexProposalOption.SERVERKEYS}) {
+            Pair<String, String> result = comparePreferredKexProposalOption(option);
+            if (result != null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("handleKexMessage({})[{}] 1st follow KEX packet {} option mismatch: client={}, server={}",
+                              this, SshConstants.getCommandMessageName(cmd), option, result.getFirst(), result.getSecond());
+                }
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    protected Pair<String, String> comparePreferredKexProposalOption(KexProposalOption option) {
+        String[] clientPreferences = GenericUtils.split(clientProposal.get(option), ',');
+        String clientValue = clientPreferences[0];
+        String[] serverPreferences = GenericUtils.split(serverProposal.get(option), ',');
+        String serverValue = serverPreferences[0];
+        return clientValue.equals(serverValue) ? null : new Pair<>(clientValue, serverValue);
+    }
+
+    protected void handleKexMessage(int cmd, Buffer buffer) throws Exception {
+        validateKexState(cmd, KexState.RUN);
+
+        if (kex.next(cmd, buffer)) {
+            if (log.isDebugEnabled()) {
+                log.debug("handleKexMessage({})[{}] KEX processing complete after cmd={}", this, kex.getName(), cmd);
+            }
+            checkKeys();
+            sendNewKeys();
+            kexState.set(KexState.KEYS);
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("handleKexMessage({})[{}] more KEX packets expected after cmd={}", this, kex.getName(), cmd);
+            }
+        }
     }
 
     protected void handleIgnore(Buffer buffer) throws Exception {
@@ -551,7 +602,6 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 "Unknown negotiated KEX algorithm: %s",
                 kexAlgorithm);
         kex.init(this, serverVersion.getBytes(StandardCharsets.UTF_8), clientVersion.getBytes(StandardCharsets.UTF_8), i_s, i_c);
-
         sendSessionEvent(SessionListener.Event.KexCompleted);
     }
 
@@ -954,7 +1004,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 assert decoderBuffer.rpos() == 4;
                 int macSize = inMac != null ? inMac.getBlockSize() : 0;
                 // Check if the packet has been fully received
-                if (decoderBuffer.available() >= decoderLength + macSize) {
+                if (decoderBuffer.available() >= (decoderLength + macSize)) {
                     byte[] data = decoderBuffer.array();
                     // Decrypt the remaining of the packet
                     if (inCipher != null) {
@@ -1000,7 +1050,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                     }
 
                     if (log.isTraceEnabled()) {
-                        log.trace("decode({}) Received packet #{}: {}", this, Long.valueOf(seqi), buf.printHex());
+                        log.trace("decode({}) Received packet #{}: {}", this, seqi, buf.printHex());
                     }
 
                     // Update stats
@@ -1201,7 +1251,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             size += readLen;
         }
 
-        boolean firstKexPacketFollows = buffer.getBoolean();
+        firstKexPacketFollows = buffer.getBoolean();
         if (log.isTraceEnabled()) {
             log.trace("receiveKexInit(" + toString() + ") first kex packet follows: " + firstKexPacketFollows);
         }
@@ -1362,6 +1412,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         inBlocksCount.set(0L);
         outBlocksCount.set(0L);
         lastKeyTimeValue.set(System.currentTimeMillis());
+        firstKexPacketFollows = null;
     }
 
     /**

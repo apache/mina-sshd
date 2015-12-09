@@ -51,11 +51,12 @@ public interface KeyExchange extends NamedResource {
     /**
      * Process the next packet
      *
-     * @param buffer the packet
+     * @param cmd the command
+     * @param buffer the packet contents positioned after the command
      * @return a boolean indicating if the processing is complete or if more packets are to be received
      * @throws Exception if an error occurs
      */
-    boolean next(Buffer buffer) throws Exception;
+    boolean next(int cmd, Buffer buffer) throws Exception;
 
     /**
      * The message digest used by this key exchange algorithm.

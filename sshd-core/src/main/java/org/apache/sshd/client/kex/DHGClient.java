@@ -98,8 +98,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
     }
 
     @Override
-    public boolean next(Buffer buffer) throws Exception {
-        int cmd = buffer.getUByte();
+    public boolean next(int cmd, Buffer buffer) throws Exception {
         Session session = getSession();
         if (log.isDebugEnabled()) {
             log.debug("next({})[{}] process command={}", this, session, KeyExchange.Utils.getSimpleKexOpcodeName(cmd));
