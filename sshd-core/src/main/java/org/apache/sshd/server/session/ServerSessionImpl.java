@@ -66,7 +66,19 @@ public class ServerSessionImpl extends AbstractServerSession {
 
     @Override
     public void startService(String name) throws Exception {
-        currentService = ServiceFactory.Utils.create(getFactoryManager().getServiceFactories(), name, this);
+        currentService = ServiceFactory.Utils.create(
+                        getFactoryManager().getServiceFactories(),
+                        ValidateUtils.checkNotNullAndNotEmpty(name, "No service name"),
+                        this);
+        /*
+         * According to RFC4253:
+         *
+         *      If the server rejects the service request, it SHOULD send an
+         *      appropriate SSH_MSG_DISCONNECT message and MUST disconnect.
+         */
+        if (currentService == null) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Unknown service: " + name);
+        }
     }
 
     @Override
