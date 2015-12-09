@@ -364,7 +364,7 @@ public class ClientSessionImpl extends AbstractClientSession {
         SocketAddress remoteAddress = ioSession.getRemoteAddress();
 
         if (!serverKeyVerifier.verifyServerKey(this, remoteAddress, kex.getServerKey())) {
-            throw new SshException("Server key did not validate");
+            throw new SshException(SshConstants.SSH2_DISCONNECT_HOST_KEY_NOT_VERIFIABLE, "Server key did not validate");
         }
     }
 
