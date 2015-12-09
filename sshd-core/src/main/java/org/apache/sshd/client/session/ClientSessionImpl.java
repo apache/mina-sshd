@@ -146,6 +146,17 @@ public class ClientSessionImpl extends AbstractClientSession {
         super.exceptionCaught(t);
     }
 
+    @Override
+    protected void handleDisconnect(int code, String msg, String lang, Buffer buffer) throws Exception {
+        synchronized (lock) {
+            if (!authFuture.isDone()) {
+                authFuture.setException(new SshException(code, msg));
+            }
+        }
+
+        super.handleDisconnect(code, msg, lang, buffer);
+    }
+
     protected String nextServiceName() {
         synchronized (lock) {
             return nextServiceFactory.getName();
