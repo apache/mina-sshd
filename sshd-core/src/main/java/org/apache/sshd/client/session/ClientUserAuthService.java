@@ -122,7 +122,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
         ClientSession session = getClientSession();
         String username = session.getUsername();
         if (log.isDebugEnabled()) {
-            log.debug("auth({})[{}] Send SSH_MSG_USERAUTH_REQUEST for 'none'", session, service);
+            log.debug("auth({})[{}] send SSH_MSG_USERAUTH_REQUEST for 'none'", session, service);
         }
 
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, username.length() + service.length() + Integer.SIZE);
@@ -174,7 +174,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
         if (cmd == SshConstants.SSH_MSG_USERAUTH_SUCCESS) {
             if (log.isDebugEnabled()) {
                 log.debug("processUserAuth({}) SSH_MSG_USERAUTH_SUCCESS Succeeded with {}",
-                          session, userAuth);
+                          session, (userAuth == null) ? "<unknown>" : userAuth.getName());
             }
             if (userAuth != null) {
                 try {
@@ -207,7 +207,8 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
                     }
                 }
             }
-            tryNext();
+
+            tryNext(cmd);
             return;
         }
 
@@ -215,27 +216,52 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
             throw new IllegalStateException("Received unknown packet: " + SshConstants.getCommandMessageName(cmd));
         }
 
+        if (log.isDebugEnabled()) {
+            log.debug("processUserAuth({}) delegate processing of {} to {}",
+                      session, SshConstants.getCommandMessageName(cmd), userAuth.getName());
+        }
+
         buffer.rpos(buffer.rpos() - 1);
         if (!userAuth.process(buffer)) {
-            tryNext();
+            tryNext(cmd);
         }
     }
 
-    protected void tryNext() throws Exception {
+    protected void tryNext(int cmd) throws Exception {
         ClientSession session = getClientSession();
         // Loop until we find something to try
         while (true) {
             if (userAuth == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("tryNext({}) starting authentication mechanisms: client={}, server={}",
+                              session, clientMethods, serverMethods);
+                }
                 currentMethod = 0;
             } else if (!userAuth.process(null)) {
-                userAuth.destroy();
+                if (log.isDebugEnabled()) {
+                    log.debug("tryNext({}) no initial request sent by method={}", session, userAuth.getName());
+                }
+
+                try {
+                    userAuth.destroy();
+                } finally {
+                    userAuth = null;
+                }
+
                 currentMethod++;
             } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("tryNext({}) successfully processed initial buffer by method={}", session, userAuth.getName());
+                }
                 return;
             }
 
-            while (currentMethod < clientMethods.size() && !serverMethods.contains(clientMethods.get(currentMethod))) {
-                currentMethod++;
+            String method = null;
+            for (; currentMethod < clientMethods.size(); currentMethod++) {
+                method = clientMethods.get(currentMethod);
+                if (serverMethods.contains(method)) {
+                    break;
+                }
             }
 
             if (currentMethod >= clientMethods.size()) {
@@ -249,11 +275,11 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
                 return;
             }
 
-            String method = clientMethods.get(currentMethod);
             userAuth = NamedFactory.Utils.create(authFactories, method);
             if (userAuth == null) {
                 throw new UnsupportedOperationException("Failed to find a user-auth factory for method=" + method);
             }
+
             if (log.isDebugEnabled()) {
                 log.debug("tryNext({}) attempting method={}", session, method);
             }

@@ -34,6 +34,12 @@ public interface UserAuth extends ClientSessionHolder, UserAuthInstance<ClientSe
 
     void init(ClientSession session, String service, Collection<?> identities) throws Exception;
 
+    /**
+     * @param buffer The {@link Buffer} to process - {@code null} if not a response buffer
+     * @return {@code true} if request handled - {@code false} if the next authentication
+     * mechanism should be used
+     * @throws Exception
+     */
     boolean process(Buffer buffer) throws Exception;
 
     void destroy();

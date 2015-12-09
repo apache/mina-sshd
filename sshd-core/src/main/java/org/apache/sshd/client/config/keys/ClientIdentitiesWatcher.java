@@ -80,7 +80,7 @@ public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements 
                 KeyPair kp = p.getClientIdentity();
                 if (kp == null) {
                     if (log.isDebugEnabled()) {
-                        log.debug("loadKeys({}) no key loaded");
+                        log.debug("loadKeys({}) no key loaded", p);
                     }
                     continue;
                 }

@@ -793,6 +793,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
     }
 
+    //////////////////////////////////////////////////////////////////////////
+
     public static void main(String[] args) throws Exception {
         Handler fh = new ConsoleHandler();
         fh.setLevel(Level.FINEST);

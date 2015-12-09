@@ -117,7 +117,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 String algo = KeyUtils.getKeyType(key);
                 String name = getName();
                 if (log.isDebugEnabled()) {
-                    log.debug("process({}@{})[{}] Send SSH_MSG_USERAUTH_REQUEST request {} type={} - fingerprint={}",
+                    log.debug("process({}@{})[{}] send SSH_MSG_USERAUTH_REQUEST request {} type={} - fingerprint={}",
                               username, session, service, name, algo, KeyUtils.getFingerPrint(key));
                 }
 
@@ -144,7 +144,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             String algo = KeyUtils.getKeyType(key);
             String name = getName();
             if (log.isDebugEnabled()) {
-                log.debug("process({}@{})[{}] Send SSH_MSG_USERAUTH_REQUEST reply {} type={} - fingerprint={}",
+                log.debug("process({}@{})[{}] send SSH_MSG_USERAUTH_REQUEST reply {} type={} - fingerprint={}",
                           username, session, service, name, algo, KeyUtils.getFingerPrint(key));
             }
 

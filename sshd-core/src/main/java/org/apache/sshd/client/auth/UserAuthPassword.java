@@ -74,6 +74,11 @@ public class UserAuthPassword extends AbstractUserAuth {
                 sendPassword(buffer, session, current, current);
                 return true;
             }
+
+            if (log.isDebugEnabled()) {
+                log.debug("process({}@{})[{}] no more passwords to send", username, session, service);
+            }
+
             return false;
         }
 
