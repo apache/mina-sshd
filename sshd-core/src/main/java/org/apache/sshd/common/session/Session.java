@@ -226,8 +226,8 @@ public interface Session
     /**
      * Initiate a new key exchange.
      *
-     * @return An {@link KeyExchangeFuture} for awaiting the completion of the exchange
-     * @throws IOException If failed to negotiate keys
+     * @return A {@link KeyExchangeFuture} for awaiting the completion of the exchange
+     * @throws IOException If failed to request keys re-negotiation
      */
     KeyExchangeFuture reExchangeKeys() throws IOException;
 

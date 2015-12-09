@@ -167,7 +167,8 @@ public class ServerTest extends BaseTestSupport {
                 assertFalse("Authentication unexpectedly successful", authFuture.isSuccess());
             } while (authFuture.getException() == null);
 
-            assertNotNull("Missing auth future exception", authFuture.getException());
+            Throwable t = authFuture.getException();
+            assertNotNull("Missing auth future exception", t);
             assertTrue("Number trials (" + nbTrials + ") below min.=" + MAX_AUTH_REQUESTS, nbTrials > MAX_AUTH_REQUESTS);
         } finally {
             client.stop();

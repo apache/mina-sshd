@@ -424,7 +424,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 handleIgnore(buffer);
                 break;
             case SshConstants.SSH_MSG_UNIMPLEMENTED:
-                handleUnimplented(buffer);
+                handleUnimplemented(buffer);
                 break;
             case SshConstants.SSH_MSG_DEBUG:
                 handleDebug(buffer);
@@ -439,7 +439,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 handleKexInit(buffer);
                 break;
             case SshConstants.SSH_MSG_NEWKEYS:
-                handleNewKeys(cmd);
+                handleNewKeys(cmd, buffer);
                 break;
             default:
                 if ((cmd >= SshConstants.SSH_MSG_KEX_FIRST) && (cmd <= SshConstants.SSH_MSG_KEX_LAST)) {
@@ -521,17 +521,21 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
     }
 
-    protected void handleUnimplented(Buffer buffer) throws Exception {
-        int seqNo = buffer.getInt();
+    protected void handleUnimplemented(Buffer buffer) throws Exception {
+        handleUnimplemented(buffer.getInt(), buffer);
+    }
+
+    protected void handleUnimplemented(int seqNo, Buffer buffer) throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("handleUnimplented({}) SSH_MSG_UNIMPLEMENTED #{}", this, seqNo);
         }
     }
 
     protected void handleDebug(Buffer buffer) throws Exception {
-        boolean display = buffer.getBoolean();
-        String msg = buffer.getString();
-        String lang = buffer.getString();
+        handleDebug(buffer.getBoolean(), buffer.getString(), buffer.getString(), buffer);
+    }
+
+    protected void handleDebug(boolean display, String msg, String lang, Buffer buffer) throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("handleDebug({}) SSH_MSG_DEBUG (display={}) [lang={}] '{}'",
                       this, display, lang, msg);
@@ -539,18 +543,23 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     protected void handleDisconnect(Buffer buffer) throws Exception  {
-        int code = buffer.getInt();
-        String msg = buffer.getString();
-        String lang = buffer.getString();
+        handleDisconnect(buffer.getInt(), buffer.getString(), buffer.getString(), buffer);
+    }
+
+    protected void handleDisconnect(int code, String msg, String lang, Buffer buffer) throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("handleDisconnect({}) SSH_MSG_DISCONNECT reason={}, [lang={}] msg={}",
                       this, SshConstants.getDisconnectReasonName(code), lang, msg);
         }
+
         close(true);
     }
 
-    protected void handleServiceRequest(Buffer buffer) throws IOException {
-        String serviceName = buffer.getString();
+    protected void handleServiceRequest(Buffer buffer) throws Exception {
+        handleServiceRequest(buffer.getString(), buffer);
+    }
+
+    protected void handleServiceRequest(String serviceName, Buffer buffer) throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("handleServiceRequest({}) SSH_MSG_SERVICE_REQUEST '{}'", this, serviceName);
         }
@@ -569,16 +578,21 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Bad service request: " + serviceName);
             return;
         }
+
         if (log.isDebugEnabled()) {
             log.debug("handleServiceRequest({}) Accepted service {}", this, serviceName);
         }
+
         Buffer response = prepareBuffer(SshConstants.SSH_MSG_SERVICE_ACCEPT, BufferUtils.clear(buffer));
         response.putString(serviceName);
         writePacket(response);
     }
 
-    protected void handleServiceAccept(Buffer buffer) throws IOException {
-        String serviceName = buffer.getString();
+    protected void handleServiceAccept(Buffer buffer) throws Exception {
+        handleServiceAccept(buffer.getString(), buffer);
+    }
+
+    protected void handleServiceAccept(String serviceName, Buffer buffer) throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("handleServiceAccept({}) SSH_MSG_SERVICE_ACCEPT service={}", this, serviceName);
         }
@@ -605,7 +619,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         sendSessionEvent(SessionListener.Event.KexCompleted);
     }
 
-    protected void handleNewKeys(int cmd) throws Exception {
+    protected void handleNewKeys(int cmd, Buffer buffer) throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("handleNewKeys({}) SSH_MSG_NEWKEYS command={}", this, SshConstants.getCommandMessageName(cmd));
         }
@@ -1692,27 +1706,36 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     @Override
     public KeyExchangeFuture reExchangeKeys() throws IOException {
-        if (kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
-            log.info("reExchangeKeys({}) Initiating key re-exchange", this);
-            sendKexInit();
-
-            DefaultKeyExchangeFuture kexFuture = kexFutureHolder.getAndSet(new DefaultKeyExchangeFuture(null));
-            if (kexFuture != null) {
-                synchronized (kexFuture) {
-                    Object value = kexFuture.getValue();
-                    if (value == null) {
-                        kexFuture.setValue(new SshException("New KEX started while previous one still ongoing"));
-                    }
-                }
-            }
-        }
-
+        requestNewKeysExchange();
         return ValidateUtils.checkNotNull(kexFutureHolder.get(), "No current KEX future on state=%s", kexState.get());
     }
 
     protected void checkRekey() throws IOException {
         if (isRekeyRequired()) {
-            reExchangeKeys();
+            requestNewKeysExchange();
+        }
+    }
+
+    protected void requestNewKeysExchange() throws IOException {
+        if (!kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
+            if (log.isDebugEnabled()) {
+                log.debug("requestNewKeysExchange({}) KEX state not DONE: {}", this, kexState.get());
+            }
+
+            return;
+        }
+
+        log.info("requestNewKeysExchange({}) Initiating key re-exchange", this);
+        sendKexInit();
+
+        DefaultKeyExchangeFuture kexFuture = kexFutureHolder.getAndSet(new DefaultKeyExchangeFuture(null));
+        if (kexFuture != null) {
+            synchronized (kexFuture) {
+                Object value = kexFuture.getValue();
+                if (value == null) {
+                    kexFuture.setValue(new SshException("New KEX started while previous one still ongoing"));
+                }
+            }
         }
     }
 

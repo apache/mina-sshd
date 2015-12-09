@@ -264,16 +264,25 @@ public class KeyReExchangeTest extends BaseTestSupport {
                      InputStream inPipe = new PipedInputStream(pipedIn);
                      OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
                      ByteArrayOutputStream out = new ByteArrayOutputStream() {
+                         private long writeCount = 0L;
+
                          @Override
                          public void write(int b) {
                              super.write(b);
+                             updateWriteCount(1L);
                              pipedCount.release(1);
                          }
 
                          @Override
                          public void write(byte[] b, int off, int len) {
                              super.write(b, off, len);
+                             updateWriteCount(len);
                              pipedCount.release(len);
+                         }
+
+                         private void updateWriteCount(long delta) {
+                             writeCount += delta;
+                             outputDebugMessage("OUT write count=%d", writeCount);
                          }
                      };
                      ByteArrayOutputStream err = new ByteArrayOutputStream()) {
@@ -333,16 +342,25 @@ public class KeyReExchangeTest extends BaseTestSupport {
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession();
                  ByteArrayOutputStream sent = new ByteArrayOutputStream();
                  ByteArrayOutputStream out = new ByteArrayOutputStream() {
+                     private long writeCount = 0L;
+
                      @Override
                      public void write(int b) {
                          super.write(b);
+                         updateWriteCount(1L);
                          pipedCount.release(1);
                      }
 
                      @Override
                      public void write(byte[] b, int off, int len) {
                          super.write(b, off, len);
+                         updateWriteCount(len);
                          pipedCount.release(len);
+                     }
+
+                     private void updateWriteCount(long delta) {
+                         writeCount += delta;
+                         outputDebugMessage("OUT write count=%d", writeCount);
                      }
                  }) {
                 session.addPasswordIdentity(getCurrentTestName());
@@ -436,16 +454,25 @@ public class KeyReExchangeTest extends BaseTestSupport {
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession();
                  ByteArrayOutputStream sent = new ByteArrayOutputStream();
                  ByteArrayOutputStream out = new ByteArrayOutputStream() {
+                     private long writeCount = 0L;
+
                      @Override
                      public void write(int b) {
                          super.write(b);
+                         updateWriteCount(1L);
                          pipedCount.release(1);
                      }
 
                      @Override
                      public void write(byte[] b, int off, int len) {
                          super.write(b, off, len);
+                         updateWriteCount(len);
                          pipedCount.release(len);
+                     }
+
+                     private void updateWriteCount(long delta) {
+                         writeCount += delta;
+                         outputDebugMessage("OUT write count=%d", writeCount);
                      }
                  }) {
                 session.addPasswordIdentity(getCurrentTestName());
@@ -557,16 +584,25 @@ public class KeyReExchangeTest extends BaseTestSupport {
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession();
                  ByteArrayOutputStream sent = new ByteArrayOutputStream();
                  ByteArrayOutputStream out = new ByteArrayOutputStream() {
+                     private long writeCount = 0L;
+
                      @Override
                      public void write(int b) {
                          super.write(b);
+                         updateWriteCount(1L);
                          pipedCount.release(1);
                      }
 
                      @Override
                      public void write(byte[] b, int off, int len) {
                          super.write(b, off, len);
+                         updateWriteCount(len);
                          pipedCount.release(len);
+                     }
+
+                     private void updateWriteCount(long delta) {
+                         writeCount += delta;
+                         outputDebugMessage("OUT write count=%d", writeCount);
                      }
                  }) {
                 session.addPasswordIdentity(getCurrentTestName());

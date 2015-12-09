@@ -35,13 +35,13 @@ public class OutputCountTrackingOutputStream extends FilterOutputStream {
 
     @Override
     public void write(int b) throws IOException {
-        super.write(b);
+        out.write(b);
         updateWriteCount(1L);
     }
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
-        super.write(b, off, len);
+        out.write(b, off, len); // don't call super since it calls the single 'write'
         updateWriteCount(len);
     }
 
