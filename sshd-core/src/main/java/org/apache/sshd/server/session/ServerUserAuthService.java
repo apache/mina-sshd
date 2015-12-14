@@ -139,7 +139,12 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             if (this.authUserName == null || this.authService == null) {
                 this.authUserName = username;
                 this.authService = service;
-            } else if (!this.authUserName.equals(username) || !this.authService.equals(service)) {
+            } else if (this.authUserName.equals(username) && this.authService.equals(service)) {
+                if (nbAuthRequests++ > maxAuthRequests) {
+                    session.disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Too many authentication failures: " + nbAuthRequests);
+                    return;
+                }
+            } else {
                 session.disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                         "Change of username or service is not allowed (" + this.authUserName + ", " + this.authService + ") -> ("
                                 + username + ", " + service + ")");
@@ -148,11 +153,6 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
             // TODO: verify that the service is supported
             this.authMethod = method;
-            if (nbAuthRequests++ > maxAuthRequests) {
-                session.disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Too many authentication failures: " + nbAuthRequests);
-                return;
-            }
-
             if (log.isDebugEnabled()) {
                 log.debug("process({}) Authenticating user '{}' with service '{}' and method '{}' (attempt {} / {})",
                           session, username, service, method, nbAuthRequests, maxAuthRequests);
@@ -179,6 +179,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 // This should not happen
                 throw new IllegalStateException("No current authentication mechanism for cmd=" + SshConstants.getCommandMessageName(cmd));
             }
+
             if (log.isDebugEnabled()) {
                 log.debug("process({}) Received authentication message={} for mechanism={}",
                           session, SshConstants.getCommandMessageName(cmd), currentAuth.getName());
@@ -192,6 +193,9 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 if (log.isDebugEnabled()) {
                     log.debug("process({}) Failed ({}) to authenticate using method={}: {}",
                               session, e.getClass().getSimpleName(), currentAuth.getName(), e.getMessage());
+                }
+                if (log.isTraceEnabled()) {
+                    log.trace("process(" + session + ") " + currentAuth.getName() + " failure details", e);
                 }
             }
         }
