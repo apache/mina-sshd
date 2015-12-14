@@ -156,11 +156,12 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
     };
 
+    // NOTE: order is important as it defines the preference
     public static final List<NamedFactory<UserAuth>> DEFAULT_USER_AUTH_FACTORIES =
             Collections.unmodifiableList(Arrays.<NamedFactory<UserAuth>>asList(
                     UserAuthPublicKeyFactory.INSTANCE,
-                    UserAuthKeyboardInteractiveFactory.INSTANCE,
-                    UserAuthPasswordFactory.INSTANCE
+                    UserAuthPasswordFactory.INSTANCE,
+                    UserAuthKeyboardInteractiveFactory.INSTANCE
             ));
     public static final List<ServiceFactory> DEFAULT_SERVICE_FACTORIES =
             Collections.unmodifiableList(Arrays.asList(
