@@ -19,9 +19,11 @@
 package org.apache.sshd.client.session;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.ClientAuthenticationManager;
 import org.apache.sshd.client.auth.UserAuth;
@@ -51,17 +53,15 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
      * The AuthFuture that is being used by the current auth request.  This encodes the state.
      * isSuccess -> authenticated, else if isDone -> server waiting for user auth, else authenticating.
      */
-    private final AuthFuture authFuture;
+    private final AtomicReference<AuthFuture> authFutureHolder = new AtomicReference<>();
 
     private final ClientSessionImpl clientSession;
+    private final List<String> clientMethods;
+    private final List<NamedFactory<UserAuth>> authFactories;
 
     private String service;
-
-    private List<NamedFactory<UserAuth>> authFactories;
-    private List<String> clientMethods;
     private List<String> serverMethods;
     private UserAuth userAuth;
-
     private int currentMethod;
 
     public ClientUserAuthService(Session s) {
@@ -69,8 +69,8 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
             throw new IllegalStateException("Client side service used on server side");
         }
         clientSession = (ClientSessionImpl) s;
-        authFuture = new DefaultAuthFuture(clientSession.getLock());
-        authFactories = clientSession.getUserAuthFactories();
+        authFactories = ValidateUtils.checkNotNullAndNotEmpty(
+                clientSession.getUserAuthFactories(), "No user auth factories for %s", s);
         clientMethods = new ArrayList<>();
 
         String prefs = PropertyResolverUtils.getString(s, ClientAuthenticationManager.PREFERRED_AUTHS);
@@ -116,14 +116,38 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
     }
 
     public AuthFuture auth(String service) throws IOException {
-        this.service = ValidateUtils.checkNotNullAndNotEmpty(service, "No service");
+        this.service = ValidateUtils.checkNotNullAndNotEmpty(service, "No service name");
 
         ClientSession session = getClientSession();
-        String username = session.getUsername();
+        // check if any previous future in use
+        AuthFuture authFuture = new DefaultAuthFuture(clientSession.getLock());
+        AuthFuture currentFuture = authFutureHolder.getAndSet(authFuture);
+        if (currentFuture != null) {
+            if (currentFuture.isDone()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("auth({})[{}] request new authentication", session, service);
+                }
+            } else {
+                currentFuture.setException(new InterruptedIOException("New authentication started before previous completed"));
+            }
+        }
+
+        // start from scratch
+        serverMethods = null;
+        currentMethod = 0;
+        if (userAuth != null) {
+            try {
+                userAuth.destroy();
+            } finally {
+                userAuth = null;
+            }
+        }
+
         if (log.isDebugEnabled()) {
             log.debug("auth({})[{}] send SSH_MSG_USERAUTH_REQUEST for 'none'", session, service);
         }
 
+        String username = session.getUsername();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, username.length() + service.length() + Integer.SIZE);
         buffer.putString(username);
         buffer.putString(service);
@@ -136,9 +160,10 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
     @Override
     public void process(int cmd, Buffer buffer) throws Exception {
         ClientSession session = getClientSession();
-        if (this.authFuture.isSuccess()) {
+        AuthFuture authFuture = ValidateUtils.checkNotNull(authFutureHolder.get(), "No current future");
+        if (authFuture.isSuccess()) {
             throw new IllegalStateException("UserAuth message delivered to authenticated client");
-        } else if (this.authFuture.isDone()) {
+        } else if (authFuture.isDone()) {
             if (log.isDebugEnabled()) {
                 log.debug("process({}) Ignoring random message - cmd={}",
                           session, SshConstants.getCommandMessageName(cmd));
@@ -184,6 +209,8 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
             }
             session.setAuthenticated();
             ((ClientSessionImpl) session).switchToNextService();
+
+            AuthFuture authFuture = ValidateUtils.checkNotNull(authFutureHolder.get(), "No current future");
             // Will wake up anyone sitting in waitFor
             authFuture.setAuthed(true);
             return;
@@ -270,6 +297,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
                 }
 
                 // also wake up anyone sitting in waitFor
+                AuthFuture authFuture = ValidateUtils.checkNotNull(authFutureHolder.get(), "No current future");
                 authFuture.setException(new SshException(SshConstants.SSH2_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE, "No more authentication methods available"));
                 return;
             }
@@ -289,7 +317,8 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
 
     @Override
     protected void preClose() {
-        if (!authFuture.isDone()) {
+        AuthFuture authFuture = authFutureHolder.get();
+        if ((authFuture != null) && (!authFuture.isDone())) {
             authFuture.setException(new SshException("Session is closed"));
         }
 
