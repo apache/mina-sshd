@@ -54,7 +54,7 @@ import org.junit.runners.MethodSorters;
 public class SinglePublicKeyAuthTest extends BaseTestSupport {
 
     private SshServer sshd;
-    private int port = 0;
+    private int port;
     private KeyPair pairRsa = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
     private KeyPair pairRsaBad;
     private PublickeyAuthenticator delegate;
