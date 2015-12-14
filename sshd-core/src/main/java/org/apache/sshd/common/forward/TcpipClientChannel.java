@@ -19,6 +19,7 @@
 package org.apache.sshd.common.forward;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import org.apache.sshd.client.channel.AbstractClientChannel;
@@ -90,14 +91,19 @@ public class TcpipClientChannel extends AbstractClientChannel {
         }
 
         Session session = getSession();
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN);
+        InetAddress srcAddress = src.getAddress();
+        String srcHost = srcAddress.getHostAddress();
+        InetAddress dstAddress = dst.getAddress();
+        String dstHost = dstAddress.getHostAddress();
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN,
+                type.length() + srcHost.length() + dstHost.length() + Long.SIZE);
         buffer.putString(type);
         buffer.putInt(getId());
         buffer.putInt(localWindow.getSize());
         buffer.putInt(localWindow.getPacketSize());
-        buffer.putString(dst.getAddress().getHostAddress());
+        buffer.putString(dstHost);
         buffer.putInt(dst.getPort());
-        buffer.putString(src.getAddress().getHostAddress());
+        buffer.putString(srcHost);
         buffer.putInt(src.getPort());
         writePacket(buffer);
         return openFuture;

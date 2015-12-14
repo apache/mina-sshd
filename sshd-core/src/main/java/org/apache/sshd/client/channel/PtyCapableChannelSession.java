@@ -211,7 +211,7 @@ public class PtyCapableChannelSession extends ChannelSession {
         ptyWidth = width;
 
         Session session = getSession();
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
         buffer.putInt(getRecipient());
         buffer.putString("window-change");
         buffer.putBoolean(false);
@@ -229,7 +229,7 @@ public class PtyCapableChannelSession extends ChannelSession {
                 log.debug("doOpenPty({}) Send agent forwarding request", this);
             }
 
-            Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
+            Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
             buffer.putInt(getRecipient());
             buffer.putString("auth-agent-req@openssh.com");
             buffer.putBoolean(false);
@@ -242,7 +242,7 @@ public class PtyCapableChannelSession extends ChannelSession {
                           this, ptyType, ptyColumns, ptyLines, ptyHeight, ptyWidth, ptyModes);
             }
 
-            Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
+            Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Byte.MAX_VALUE);
             buffer.putInt(getRecipient());
             buffer.putString("pty-req");
             buffer.putBoolean(false);

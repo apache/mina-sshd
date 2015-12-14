@@ -44,7 +44,7 @@ public class ChannelShell extends PtyCapableChannelSession {
         }
 
         Session session = getSession();
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Integer.SIZE);
         buffer.putInt(getRecipient());
         buffer.putString("shell");
         buffer.putBoolean(false);

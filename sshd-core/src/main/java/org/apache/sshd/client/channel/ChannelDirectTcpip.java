@@ -70,18 +70,21 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
 
         openFuture = new DefaultOpenFuture(lock);
         if (log.isDebugEnabled()) {
-            log.debug("Send SSH_MSG_CHANNEL_OPEN on channel {}", getId());
+            log.debug("open({}) SSH_MSG_CHANNEL_OPEN", this);
         }
 
         Session session = getSession();
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN);
+        String remoteName = remote.getHostName();
+        String localName = local.getHostName();
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN,
+                            type.length() + remoteName.length() + localName.length() + Long.SIZE);
         buffer.putString(type);
         buffer.putInt(getId());
         buffer.putInt(localWindow.getSize());
         buffer.putInt(localWindow.getPacketSize());
-        buffer.putString(remote.getHostName());
+        buffer.putString(remoteName);
         buffer.putInt(remote.getPort());
-        buffer.putString(local.getHostName());
+        buffer.putString(localName);
         buffer.putInt(local.getPort());
         writePacket(buffer);
         return openFuture;

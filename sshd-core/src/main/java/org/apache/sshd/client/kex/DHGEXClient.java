@@ -92,7 +92,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
         if (log.isDebugEnabled()) {
             log.debug("init({}) Send SSH_MSG_KEX_DH_GEX_REQUEST", s);
         }
-        Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST);
+        Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST, Integer.SIZE);
         buffer.putInt(min);
         buffer.putInt(prf);
         buffer.putInt(max);

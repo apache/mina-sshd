@@ -21,6 +21,7 @@ package org.apache.sshd.server.x11;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.BindException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
@@ -201,12 +202,15 @@ public class X11ForwardSupport extends AbstractInnerCloseable implements IoHandl
                 log.debug("open({}) SSH_MSG_CHANNEL_OPEN", this);
             }
 
-            Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN);
+            InetAddress remoteAddress = remote.getAddress();
+            String remoteHost = remoteAddress.getHostAddress();
+            Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN,
+                    remoteHost.length() + type.length() + Integer.SIZE);
             buffer.putString(type);
             buffer.putInt(getId());
             buffer.putInt(localWindow.getSize());
             buffer.putInt(localWindow.getPacketSize());
-            buffer.putString(remote.getAddress().getHostAddress());
+            buffer.putString(remoteHost);
             buffer.putInt(remote.getPort());
             writePacket(buffer);
             return openFuture;

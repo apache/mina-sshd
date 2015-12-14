@@ -22,11 +22,12 @@ package org.apache.sshd.client.session;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.security.KeyPair;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.sshd.client.ClientFactoryManager;
+import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
+import org.apache.sshd.client.auth.PasswordIdentityProvider;
 import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
@@ -58,46 +59,17 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractClientSession extends AbstractSession implements ClientSession {
-    /**
-     * Compares 2 password identities - returns zero ONLY if <U>both</U> compared
-     * objects are {@link String}s and equal to each other
-     */
-    public static final Comparator<Object> PASSWORD_IDENTITY_COMPARATOR = new Comparator<Object>() {
-        @Override
-        public int compare(Object o1, Object o2) {
-            if (!(o1 instanceof String) || !(o2 instanceof String)) {
-                return -1;
-            } else {
-                return ((String) o1).compareTo((String) o2);
-            }
-        }
-    };
-
-    /**
-     * Compares 2 {@link KeyPair} identities - returns zero ONLY if <U>both</U> compared
-     * objects are {@link KeyPair}s and equal to each other
-     */
-    public static final Comparator<Object> KEYPAIR_IDENTITY_COMPARATOR = new Comparator<Object>() {
-        @Override
-        public int compare(Object o1, Object o2) {
-            if ((!(o1 instanceof KeyPair)) || (!(o2 instanceof KeyPair))) {
-                return -1;
-            } else if (KeyUtils.compareKeyPairs((KeyPair) o1, (KeyPair) o2)) {
-                return 0;
-            } else {
-                return 1;
-            }
-        }
-    };
-
-    private final List<Object> identities = new ArrayList<>();
+    private final List<Object> identities = new CopyOnWriteArrayList<>();
+    private final AuthenticationIdentitiesProvider identitiesProvider;
     private ServerKeyVerifier serverKeyVerifier;
     private UserInteraction userInteraction;
+    private PasswordIdentityProvider passwordIdentityProvider;
     private List<NamedFactory<UserAuth>> userAuthFactories;
     private ScpTransferEventListener scpListener;
 
     protected AbstractClientSession(ClientFactoryManager factoryManager, IoSession ioSession) {
         super(false, factoryManager, ioSession);
+        identitiesProvider = AuthenticationIdentitiesProvider.Utils.wrap(identities);
     }
 
     @Override
@@ -135,8 +107,19 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         this.userAuthFactories = userAuthFactories; // OK if null/empty - inherit from parent
     }
 
-    protected List<Object> getRegisteredIdentities() {
-        return identities;
+    @Override
+    public AuthenticationIdentitiesProvider getRegisteredIdentities() {
+        return identitiesProvider;
+    }
+
+    @Override
+    public PasswordIdentityProvider getPasswordIdentityProvider() {
+        return resolveEffectiveProvider(PasswordIdentityProvider.class, passwordIdentityProvider, getFactoryManager().getPasswordIdentityProvider());
+    }
+
+    @Override
+    public void setPasswordIdentityProvider(PasswordIdentityProvider provider) {
+        passwordIdentityProvider = provider;
     }
 
     @Override
@@ -153,7 +136,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
             return null;
         }
 
-        int index = findIdentityIndex(PASSWORD_IDENTITY_COMPARATOR, password);
+        int index = AuthenticationIdentitiesProvider.Utils.findIdentityIndex(
+                identities, AuthenticationIdentitiesProvider.Utils.PASSWORD_IDENTITY_COMPARATOR, password);
         if (index >= 0) {
             return (String) identities.remove(index);
         } else {
@@ -180,23 +164,13 @@ public abstract class AbstractClientSession extends AbstractSession implements C
             return null;
         }
 
-        int index = findIdentityIndex(KEYPAIR_IDENTITY_COMPARATOR, kp);
+        int index = AuthenticationIdentitiesProvider.Utils.findIdentityIndex(
+                identities, AuthenticationIdentitiesProvider.Utils.KEYPAIR_IDENTITY_COMPARATOR, kp);
         if (index >= 0) {
             return (KeyPair) identities.remove(index);
         } else {
             return null;
         }
-    }
-
-    protected int findIdentityIndex(Comparator<? super Object> comp, Object target) {
-        for (int index = 0; index < identities.size(); index++) {
-            Object value = identities.get(index);
-            if (comp.compare(value, target) == 0) {
-                return index;
-            }
-        }
-
-        return -1;
     }
 
     @Override

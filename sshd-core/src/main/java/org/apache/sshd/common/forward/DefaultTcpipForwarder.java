@@ -149,16 +149,18 @@ public class DefaultTcpipForwarder extends AbstractInnerCloseable implements Tcp
         ValidateUtils.checkNotNull(local, "Local address is null");
         ValidateUtils.checkNotNull(remote, "Remote address is null");
 
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST);
+        String remoteHost = remote.getHostName();
+        int remotePort = remote.getPort();
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST, remoteHost.length() + Long.SIZE);
         buffer.putString("tcpip-forward");
         buffer.putBoolean(true);
-        buffer.putString(remote.getHostName());
-        buffer.putInt(remote.getPort());
+        buffer.putString(remoteHost);
+        buffer.putInt(remotePort);
         Buffer result = session.request(buffer);
         if (result == null) {
             throw new SshException("Tcpip forwarding request denied by server");
         }
-        int port = (remote.getPort() == 0) ? result.getInt() : remote.getPort();
+        int port = (remotePort == 0) ? result.getInt() : remote.getPort();
         // TODO: Is it really safe to only store the local address after the request ?
         SshdSocketAddress prev;
         synchronized (remoteToLocal) {
@@ -169,7 +171,7 @@ public class DefaultTcpipForwarder extends AbstractInnerCloseable implements Tcp
             throw new IOException("Multiple remote port forwarding bindings on port=" + port + ": current=" + remote + ", previous=" + prev);
         }
 
-        SshdSocketAddress bound = new SshdSocketAddress(remote.getHostName(), port);
+        SshdSocketAddress bound = new SshdSocketAddress(remoteHost, port);
         if (log.isDebugEnabled()) {
             log.debug("startRemotePortForwarding(" + remote + " -> " + local + "): " + bound);
         }
@@ -189,10 +191,11 @@ public class DefaultTcpipForwarder extends AbstractInnerCloseable implements Tcp
                 log.debug("stopRemotePortForwarding(" + remote + ") cancel forwarding to " + bound);
             }
 
-            Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST);
+            String remoteHost = remote.getHostName();
+            Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST, remoteHost.length() + Long.SIZE);
             buffer.putString("cancel-tcpip-forward");
             buffer.putBoolean(false);
-            buffer.putString(remote.getHostName());
+            buffer.putString(remoteHost);
             buffer.putInt(remote.getPort());
             session.writePacket(buffer);
         } else {

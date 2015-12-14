@@ -87,7 +87,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         if (log.isDebugEnabled()) {
             log.debug("init({})[{}] Send SSH_MSG_KEXDH_INIT", this, s);
         }
-        Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_KEXDH_INIT);
+        Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_KEXDH_INIT, e.length + Integer.SIZE);
         buffer.putMPInt(e);
 
         s.writePacket(buffer);

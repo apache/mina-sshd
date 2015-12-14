@@ -72,7 +72,7 @@ public class ClientConnectionService extends AbstractConnectionService {
     protected void sendHeartBeat() {
         String request = PropertyResolverUtils.getStringProperty(session, ClientFactoryManager.HEARTBEAT_REQUEST, ClientFactoryManager.DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING);
         try {
-            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST);
+            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST, request.length() + Byte.SIZE);
             buf.putString(request);
             buf.putBoolean(false);
             session.writePacket(buf);

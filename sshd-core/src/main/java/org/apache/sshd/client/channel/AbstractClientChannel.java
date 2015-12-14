@@ -285,7 +285,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         log.debug("Send SSH_MSG_CHANNEL_OPEN on channel {}", this);
 
         Session session = getSession();
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN);
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN, type.length() + Integer.SIZE);
         buffer.putString(type);
         buffer.putInt(getId());
         buffer.putInt(localWindow.getSize());

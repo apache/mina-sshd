@@ -59,11 +59,12 @@ public class ChannelSubsystem extends ChannelSession {
         }
 
         Session session = getSession();
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
+        String systemName = getSubsystem();
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, systemName.length() + Integer.SIZE);
         buffer.putInt(getRecipient());
         buffer.putString("subsystem");
         buffer.putBoolean(false);
-        buffer.putString(getSubsystem());
+        buffer.putString(systemName);
         writePacket(buffer);
 
         super.doOpen();
