@@ -48,7 +48,7 @@ public class KeyPairIdentity implements PublicKeyIdentity {
 
     @Override
     public byte[] sign(byte[] data) throws Exception {
-        String keyType = KeyUtils.getKeyType(pair);
+        String keyType = KeyUtils.getKeyType(getPublicKey());
         Signature verifier = ValidateUtils.checkNotNull(
                 NamedFactory.Utils.create(manager.getSignatureFactories(), keyType),
                 "No signer could be located for key type=%s",
@@ -56,5 +56,13 @@ public class KeyPairIdentity implements PublicKeyIdentity {
         verifier.initSigner(pair.getPrivate());
         verifier.update(data, 0, data.length);
         return verifier.sign();
+    }
+
+    @Override
+    public String toString() {
+        PublicKey pubKey = getPublicKey();
+        return getClass().getSimpleName() + "[" + manager + "]"
+             + " type=" + KeyUtils.getKeyType(pubKey)
+             + ", fingerprint=" + KeyUtils.getFingerPrint(pubKey);
     }
 }

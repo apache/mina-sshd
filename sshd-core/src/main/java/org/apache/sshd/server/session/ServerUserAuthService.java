@@ -65,7 +65,8 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         serverSession = (ServerSession) s;
         maxAuthRequests = PropertyResolverUtils.getIntProperty(s, ServerAuthenticationManager.MAX_AUTH_REQUESTS, ServerAuthenticationManager.DEFAULT_MAX_AUTH_REQUESTS);
 
-        List<NamedFactory<UserAuth>> factories = serverSession.getUserAuthFactories();
+        List<NamedFactory<UserAuth>> factories = ValidateUtils.checkNotNullAndNotEmpty(
+                serverSession.getUserAuthFactories(), "No user auth factories for %s", s);
         userAuthFactories = new ArrayList<>(factories);
         // Get authentication methods
         authMethods = new ArrayList<>();

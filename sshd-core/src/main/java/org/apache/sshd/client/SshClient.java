@@ -38,9 +38,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -49,6 +51,8 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import org.apache.sshd.agent.SshAgentFactory;
+import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
+import org.apache.sshd.client.auth.PasswordIdentityProvider;
 import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.UserAuthKeyboardInteractiveFactory;
 import org.apache.sshd.client.auth.UserAuthPasswordFactory;
@@ -178,9 +182,12 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     private HostConfigEntryResolver hostConfigEntryResolver;
     private ClientIdentityLoader clientIdentityLoader;
     private FilePasswordProvider filePasswordProvider;
+    private PasswordIdentityProvider passwordIdentityProvider;
+    private final List<Object> identities = new CopyOnWriteArrayList<>();
+    private final AuthenticationIdentitiesProvider identitiesProvider;
 
     public SshClient() {
-        super();
+        identitiesProvider = AuthenticationIdentitiesProvider.Utils.wrap(identities);
     }
 
     public SessionFactory getSessionFactory() {
@@ -249,6 +256,72 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     @Override
     public void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories) {
         this.userAuthFactories = ValidateUtils.checkNotNullAndNotEmpty(userAuthFactories, "No user auth factories");
+    }
+
+    @Override
+    public AuthenticationIdentitiesProvider getRegisteredIdentities() {
+        return identitiesProvider;
+    }
+
+    @Override
+    public PasswordIdentityProvider getPasswordIdentityProvider() {
+        return passwordIdentityProvider;
+    }
+
+    @Override
+    public void setPasswordIdentityProvider(PasswordIdentityProvider provider) {
+        passwordIdentityProvider = provider;
+    }
+
+    @Override
+    public void addPasswordIdentity(String password) {
+        identities.add(ValidateUtils.checkNotNullAndNotEmpty(password, "No password provided"));
+        if (log.isDebugEnabled()) { // don't show the password in the log
+            log.debug("addPasswordIdentity({}) {}", this, KeyUtils.getFingerPrint(password));
+        }
+    }
+
+    @Override
+    public String removePasswordIdentity(String password) {
+        if (GenericUtils.isEmpty(password)) {
+            return null;
+        }
+
+        int index = AuthenticationIdentitiesProvider.Utils.findIdentityIndex(
+                identities, AuthenticationIdentitiesProvider.Utils.PASSWORD_IDENTITY_COMPARATOR, password);
+        if (index >= 0) {
+            return (String) identities.remove(index);
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public void addPublicKeyIdentity(KeyPair kp) {
+        ValidateUtils.checkNotNull(kp, "No key-pair to add");
+        ValidateUtils.checkNotNull(kp.getPublic(), "No public key");
+        ValidateUtils.checkNotNull(kp.getPrivate(), "No private key");
+
+        identities.add(kp);
+
+        if (log.isDebugEnabled()) {
+            log.debug("addPublicKeyIdentity({}) {}", this, KeyUtils.getFingerPrint(kp.getPublic()));
+        }
+    }
+
+    @Override
+    public KeyPair removePublicKeyIdentity(KeyPair kp) {
+        if (kp == null) {
+            return null;
+        }
+
+        int index = AuthenticationIdentitiesProvider.Utils.findIdentityIndex(
+                identities, AuthenticationIdentitiesProvider.Utils.KEYPAIR_IDENTITY_COMPARATOR, kp);
+        if (index >= 0) {
+            return (KeyPair) identities.remove(index);
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -501,35 +574,74 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         session.setUsername(username);
 
         if (useDefaultIdentities) {
-            // check if session listener intervened
-            KeyPairProvider kpSession = session.getKeyPairProvider();
-            KeyPairProvider kpClient = ValidateUtils.checkNotNull(getKeyPairProvider(), "No default key-pair provider");
-            if (kpSession == null) {
-                session.setKeyPairProvider(kpClient);
-            } else {
-                if (kpSession != kpClient) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("onConnectOperationComplete({}) key-pair provider override", session);
-                    }
-                }
-            }
+            setupDefaultSessionIdentities(session);
         }
 
         int numIds = GenericUtils.size(identities);
         if (numIds > 0) {
             if (log.isDebugEnabled()) {
-                log.debug("onConnectOperationComplete({}@{}) adding {} identities", username, address, numIds);
+                log.debug("onConnectOperationComplete({}) adding {} identities", session, numIds);
             }
             for (KeyPair kp : identities) {
                 if (log.isTraceEnabled()) {
-                    log.trace("onConnectOperationComplete({}@{}) add identity type={}, fingerprint={}",
-                              username, address, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
+                    log.trace("onConnectOperationComplete({}) add identity type={}, fingerprint={}",
+                              session, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
                 }
                 session.addPublicKeyIdentity(kp);
             }
         }
 
         connectFuture.setSession(session);
+    }
+
+    protected void setupDefaultSessionIdentities(ClientSession session) {
+        // check if session listener intervened
+        KeyPairProvider kpSession = session.getKeyPairProvider();
+        KeyPairProvider kpClient = getKeyPairProvider();
+        if (kpSession == null) {
+            session.setKeyPairProvider(kpClient);
+        } else {
+            if (kpSession != kpClient) {
+                if (log.isDebugEnabled()) {
+                    log.debug("setupDefaultSessionIdentities({}) key-pair provider override", session);
+                }
+            }
+        }
+
+        PasswordIdentityProvider passSession = session.getPasswordIdentityProvider();
+        PasswordIdentityProvider passClient = getPasswordIdentityProvider();
+        if (passSession == null) {
+            session.setPasswordIdentityProvider(passClient);
+        } else {
+            if (passSession != passClient) {
+                if (log.isDebugEnabled()) {
+                    log.debug("setupDefaultSessionIdentities({}) password provider override", session);
+                }
+            }
+        }
+
+        AuthenticationIdentitiesProvider idsClient = getRegisteredIdentities();
+        for (Iterator<?> iter = GenericUtils.iteratorOf((idsClient == null) ? null : idsClient.loadIdentities()); iter.hasNext();) {
+            Object id = iter.next();
+            if (id instanceof String) {
+                if (log.isTraceEnabled()) {
+                    log.trace("setupDefaultSessionIdentities({}) add password fingerprint={}",
+                              session, KeyUtils.getFingerPrint(id.toString()));
+                }
+                session.addPasswordIdentity((String) id);
+            } else if (id instanceof KeyPair) {
+                KeyPair kp = (KeyPair) id;
+                if (log.isTraceEnabled()) {
+                    log.trace("setupDefaultSessionIdentities({}) add identity type={}, fingerprint={}",
+                              session, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
+                }
+                session.addPublicKeyIdentity(kp);
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("setupDefaultSessionIdentities({}) ignored identity={}", session, id);
+                }
+            }
+        }
     }
 
     protected IoConnector createConnector() {

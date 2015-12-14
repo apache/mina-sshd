@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
@@ -563,6 +564,78 @@ public final class GenericUtils {
             public String toString() {
                 return Supplier.class.getSimpleName() + "[" + value + "]";
             }
+        };
+    }
+
+    /**
+     * Resolves to an always non-{@code null} iterator
+     *
+     * @param iterable The {@link Iterable} instance
+     * @return A non-{@code null} iterator which may be empty if no iterable
+     * instance or no iterator returned from it
+     * @see #iteratorOf(Iterator)
+     */
+    public static <T> Iterator<T> iteratorOf(Iterable<T> iterable) {
+        return iteratorOf((iterable == null) ? null : iterable.iterator());
+    }
+
+    /**
+     * Resolves to an always non-{@code null} iterator
+     *
+     * @param iter The {@link Iterator} instance
+     * @return  A non-{@code null} iterator which may be empty if no iterator instance
+     * @see Collections#emptyIterator()
+     */
+    public static <T> Iterator<T> iteratorOf(Iterator<T> iter) {
+        return (iter == null) ? Collections.<T>emptyIterator() : iter;
+    }
+
+    public static <T> Iterable<T> multiIterableSuppliers(final Iterable<? extends Supplier<? extends Iterable<? extends T>>> providers) {
+        return new Iterable<T>() {
+            @Override
+            public Iterator<T> iterator() {
+                return new Iterator<T>() {
+                    private final Iterator<? extends Supplier<? extends Iterable<? extends T>>> iter = iteratorOf(providers);
+                    private Iterator<? extends T> current = nextIterator();
+
+                    @Override
+                    public boolean hasNext() {
+                        return current != null;
+                    }
+
+                    @Override
+                    public T next() {
+                        if (current == null) {
+                            throw new NoSuchElementException("No more elements");
+                        }
+
+                        T value = current.next();
+                        if (!current.hasNext()) {
+                            current = nextIterator();
+                        }
+
+                        return value;
+                    }
+
+                    @Override
+                    public void remove() {
+                        throw new UnsupportedOperationException("remove");
+                    }
+
+                    private Iterator<? extends T> nextIterator() {
+                        while (iter.hasNext()) {
+                            Supplier<? extends Iterable<? extends T>> supplier = iter.next();
+                            Iterator<? extends T> values = iteratorOf((supplier == null) ? null : supplier.get());
+                            if (values.hasNext()) {
+                                return values;
+                            }
+                        }
+
+                        return null;
+                    }
+                };
+            }
+
         };
     }
 }

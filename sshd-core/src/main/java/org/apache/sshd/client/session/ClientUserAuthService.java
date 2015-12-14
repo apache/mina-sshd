@@ -36,6 +36,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
@@ -54,7 +55,6 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
 
     private final ClientSessionImpl clientSession;
 
-    private List<Object> identities;
     private String service;
 
     private List<NamedFactory<UserAuth>> authFactories;
@@ -115,9 +115,8 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
         // ignored
     }
 
-    public AuthFuture auth(List<Object> identities, String service) throws IOException {
-        this.identities = new ArrayList<>(identities);
-        this.service = service;
+    public AuthFuture auth(String service) throws IOException {
+        this.service = ValidateUtils.checkNotNullAndNotEmpty(service, "No service");
 
         ClientSession session = getClientSession();
         String username = session.getUsername();
@@ -284,7 +283,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
                 log.debug("tryNext({}) attempting method={}", session, method);
             }
 
-            userAuth.init(session, service, identities);
+            userAuth.init(session, service);
         }
     }
 

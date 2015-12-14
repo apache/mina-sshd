@@ -30,7 +30,7 @@ import java.util.Map;
 
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.IdentityUtils;
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -88,7 +88,7 @@ public class ClientIdentityTest extends BaseTestSupport {
             }
         }
 
-        KeyPairProvider provider = IdentityUtils.createKeyPairProvider(ids, true /* supported only */);
+        KeyIdentityProvider provider = IdentityUtils.createKeyPairProvider(ids, true /* supported only */);
         assertNotNull("No provider generated", provider);
 
         Iterable<KeyPair> keys = provider.loadKeys();

@@ -18,11 +18,8 @@
  */
 package org.apache.sshd.client.auth;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -87,16 +84,9 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     }
 
     @Override
-    public void init(ClientSession session, String service, Collection<?> identities) throws Exception {
-        super.init(session, service, identities);
-
-        List<String> pwds = new ArrayList<>();
-        for (Object o : identities) {
-            if (o instanceof String) {
-                pwds.add((String) o);
-            }
-        }
-        passwords = pwds.iterator();
+    public void init(ClientSession session, String service) throws Exception {
+        super.init(session, service);
+        passwords = PasswordIdentityProvider.Utils.iteratorOf(session);
         maxTrials = PropertyResolverUtils.getIntProperty(session, ClientAuthenticationManager.PASSWORD_PROMPTS, ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS);
         ValidateUtils.checkTrue(maxTrials > 0, "Non-positive max. trials: %d", maxTrials);
     }

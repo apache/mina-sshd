@@ -37,6 +37,7 @@ import java.util.Objects;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -139,7 +140,7 @@ public class BuiltinClientIdentitiesWatcherTest extends BaseTestSupport {
         }
     }
 
-    private static void testMultipleFilesWatch(String phase, KeyPairProvider watcher, Collection<? extends KeyPair> expected) {
+    private static void testMultipleFilesWatch(String phase, KeyIdentityProvider watcher, Collection<? extends KeyPair> expected) {
         Collection<? extends KeyPair> actual = (Collection<? extends KeyPair>) watcher.loadKeys();
         assertEquals(phase + ": mismatched sizes", GenericUtils.size(expected), GenericUtils.size(actual));
 

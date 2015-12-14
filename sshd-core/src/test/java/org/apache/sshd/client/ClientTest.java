@@ -363,7 +363,7 @@ public class ClientTest extends BaseTestSupport {
                         channel.setIn(inPipe);
                         channel.setOut(out);
                         channel.setErr(err);
-                        channel.open().verify(3L, TimeUnit.SECONDS);
+                        channel.open().verify(6L, TimeUnit.SECONDS);
                         break;  // 1st success means all methods have been invoked
                     }
                 } catch (IOException e) {
@@ -1295,7 +1295,7 @@ public class ClientTest extends BaseTestSupport {
                 channel.open().verify(9L, TimeUnit.SECONDS);
 
                 AbstractSession cs = (AbstractSession) session;
-                Buffer buffer = cs.createBuffer(SshConstants.SSH_MSG_DISCONNECT);
+                Buffer buffer = cs.createBuffer(SshConstants.SSH_MSG_DISCONNECT, Integer.SIZE);
                 buffer.putInt(SshConstants.SSH2_DISCONNECT_BY_APPLICATION);
                 buffer.putString("Cancel");
                 buffer.putString("");   // TODO add language tag

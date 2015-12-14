@@ -50,6 +50,7 @@ import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
+import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProviderHolder;
 import org.apache.sshd.common.random.Random;
@@ -99,7 +100,7 @@ public class Utils {
         return getFirstKeyPair(ValidateUtils.checkNotNull(holder, "No holder").getKeyPairProvider());
     }
 
-    public static KeyPair getFirstKeyPair(KeyPairProvider provider) {
+    public static KeyPair getFirstKeyPair(KeyIdentityProvider provider) {
         ValidateUtils.checkNotNull(provider, "No key pair provider");
         Iterable<? extends KeyPair> pairs = ValidateUtils.checkNotNull(provider.loadKeys(), "No loaded keys");
         Iterator<? extends KeyPair> iter = ValidateUtils.checkNotNull(pairs.iterator(), "No keys iterator");
@@ -130,7 +131,7 @@ public class Utils {
         }
     }
 
-    private static <P extends KeyPairProvider> P validateKeyPairProvider(P provider) {
+    private static <P extends KeyIdentityProvider> P validateKeyPairProvider(P provider) {
         ValidateUtils.checkNotNull(provider, "No provider");
 
         // get the I/O out of the way

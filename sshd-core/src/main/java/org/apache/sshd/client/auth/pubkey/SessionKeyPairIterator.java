@@ -16,49 +16,45 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.sshd.client.auth.pubkey;
 
-import java.security.PublicKey;
+import java.security.KeyPair;
+import java.util.Iterator;
 
-import org.apache.sshd.agent.SshAgent;
-import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
- * Uses an {@link SshAgent} to generate the identity signature
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class KeyAgentIdentity implements PublicKeyIdentity {
-    private final SshAgent agent;
-    private final PublicKey key;
-    private final String comment;
+public class SessionKeyPairIterator implements Iterator<KeyPairIdentity> {
 
-    public KeyAgentIdentity(SshAgent agent, PublicKey key, String comment) {
-        this.agent = ValidateUtils.checkNotNull(agent, "No signing agent");
-        this.key = ValidateUtils.checkNotNull(key, "No public key");
-        this.comment = comment;
+    private final KexFactoryManager manager;
+    private final Iterator<KeyPair> keys;
+
+    public SessionKeyPairIterator(KexFactoryManager manager, Iterator<KeyPair> keys) {
+        this.manager = ValidateUtils.checkNotNull(manager, "No KEX factory manager");
+        this.keys = keys;   // OK if null
     }
 
     @Override
-    public PublicKey getPublicKey() {
-        return key;
-    }
-
-    public String getComment() {
-        return comment;
+    public boolean hasNext() {
+        return (keys != null) && keys.hasNext();
     }
 
     @Override
-    public byte[] sign(byte[] data) throws Exception {
-        return agent.sign(getPublicKey(), data);
+    public KeyPairIdentity next() {
+        return new KeyPairIdentity(manager, keys.next());
+    }
+
+    @Override
+    public void remove() {
+        throw new UnsupportedOperationException("No removal allowed");
     }
 
     @Override
     public String toString() {
-        PublicKey pubKey = getPublicKey();
-        return getClass().getSimpleName() + "[" + KeyUtils.getKeyType(pubKey) + "]"
-             + " fingerprint=" + KeyUtils.getFingerPrint(pubKey)
-             + ", comment=" + getComment();
+        return getClass().getSimpleName() + "[" + manager + "]";
     }
 }

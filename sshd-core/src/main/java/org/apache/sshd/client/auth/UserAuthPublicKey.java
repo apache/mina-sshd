@@ -18,41 +18,27 @@
  */
 package org.apache.sshd.client.auth;
 
+import java.io.Closeable;
 import java.io.IOException;
-import java.security.KeyPair;
 import java.security.PublicKey;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
-
-import org.apache.sshd.agent.SshAgent;
-import org.apache.sshd.agent.SshAgentFactory;
-import org.apache.sshd.client.auth.pubkey.KeyAgentIdentity;
-import org.apache.sshd.client.auth.pubkey.KeyPairIdentity;
 import org.apache.sshd.client.auth.pubkey.PublicKeyIdentity;
+import org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyIterator;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.kex.KeyExchange;
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Pair;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
- * TODO Add javadoc
- *
+ * Implements the &quot;publickey&quot; authentication mechanism
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthPublicKey extends AbstractUserAuth {
     public static final String NAME = UserAuthPublicKeyFactory.NAME;
 
-    private SshAgent agent;
     private Iterator<PublicKeyIdentity> keys;
     private PublicKeyIdentity current;
 
@@ -61,51 +47,15 @@ public class UserAuthPublicKey extends AbstractUserAuth {
     }
 
     @Override
-    public void init(ClientSession session, String service, Collection<?> identities) throws Exception {
-        super.init(session, service, identities);
-
-        List<PublicKeyIdentity> ids = new ArrayList<>();
-        for (Object o : identities) {
-            if (o instanceof KeyPair) {
-                ids.add(new KeyPairIdentity(session, (KeyPair) o));
-            }
-        }
-
-        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No session factory manager");
-        SshAgentFactory factory = manager.getAgentFactory();
-        if (factory != null) {
-            this.agent = ValidateUtils.checkNotNull(factory.createClient(manager), "No agent created");
-            Collection<Pair<PublicKey, String>> agentKeys = agent.getIdentities();
-            if (GenericUtils.size(agentKeys) > 0) {
-                for (Pair<PublicKey, String> pair : agentKeys) {
-                    PublicKey key = pair.getFirst();
-                    if (log.isDebugEnabled()) {
-                        log.debug("init({}) add agent public key type={}: comment={}, fingerprint={}",
-                                  session, pair.getSecond(), KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
-                    }
-                    ids.add(new KeyAgentIdentity(agent, key));
-                }
-            }
-        } else {
-            this.agent = null;
-        }
-
-        KeyPairProvider provider = session.getKeyPairProvider();
-        if (provider != null) {
-            for (KeyPair kp : provider.loadKeys()) {
-                if (log.isDebugEnabled()) {
-                    log.debug("init({}) add provider public key type={}: {}",
-                              session, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
-                }
-                ids.add(new KeyPairIdentity(session, kp));
-            }
-        }
-        this.keys = ids.iterator();
+    public void init(ClientSession session, String service) throws Exception {
+        super.init(session, service);
+        releaseKeys();  // just making sure in case multiple calls to the method
+        keys = new UserAuthPublicKeyIterator(session);
     }
 
     @Override
     protected boolean sendAuthDataRequest(ClientSession session, String service) throws Exception {
-        if (!keys.hasNext()) {
+        if ((keys == null) || (!keys.hasNext())) {
             if (log.isDebugEnabled()) {
                 log.debug("sendAuthDataRequest({})[{}] no more keys to send", session, service);
             }
@@ -114,6 +64,10 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         }
 
         current = keys.next();
+        if (log.isTraceEnabled()) {
+            log.trace("sendAuthDataRequest({})[{}] current key details: {}", session, service, current);
+        }
+
         PublicKey key = current.getPublicKey();
         String algo = KeyUtils.getKeyType(key);
         String name = getName();
@@ -121,7 +75,6 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             log.debug("sendAuthDataRequest({})[{}] send SSH_MSG_USERAUTH_REQUEST request {} type={} - fingerprint={}",
                       session, service, name, algo, KeyUtils.getFingerPrint(key));
         }
-
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
         buffer.putString(session.getUsername());
         buffer.putString(service);
@@ -145,7 +98,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         String algo = KeyUtils.getKeyType(key);
         String name = getName();
         if (log.isDebugEnabled()) {
-            log.debug("processAuthDataRequest({})[{}] send SSH_MSG_USERAUTH_PK_OK reply for {}: type={}, fingerprint={}",
+            log.debug("processAuthDataRequest({})[{}] send SSH_MSG_USERAUTH_PK_OK reply {} type={} - fingerprint={}",
                       session, service, name, algo, KeyUtils.getFingerPrint(key));
         }
 
@@ -181,16 +134,25 @@ public class UserAuthPublicKey extends AbstractUserAuth {
 
     @Override
     public void destroy() {
-        if (agent != null) {
-            try {
-                agent.close();
-            } catch (IOException e) {
-                throw new RuntimeException("Failed (" + e.getClass().getSimpleName() + ") to close agent: " + e.getMessage(), e);
-            } finally {
-                agent = null;
-            }
+        try {
+            releaseKeys();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed (" + e.getClass().getSimpleName() + ") to close agent: " + e.getMessage(), e);
+        }
 
-            super.destroy(); // for logging
+        super.destroy(); // for logging
+    }
+
+    protected void releaseKeys() throws IOException {
+        try {
+            if (keys instanceof Closeable) {
+                if (log.isTraceEnabled()) {
+                    log.trace("releaseKeys({}) closing {}", getClientSession(), keys);
+                }
+                ((Closeable) keys).close();
+            }
+        } finally {
+            keys = null;
         }
     }
 }

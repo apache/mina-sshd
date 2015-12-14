@@ -18,8 +18,6 @@
  */
 package org.apache.sshd.client.auth;
 
-import java.util.Collection;
-
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.auth.UserAuthInstance;
@@ -34,10 +32,9 @@ public interface UserAuth extends ClientSessionHolder, UserAuthInstance<ClientSe
     /**
      * @param session The {@link ClientSession}
      * @param service The requesting service name
-     * @param identities The currently available identities - e.g., password, keys, etc.
      * @throws Exception If failed to initialize the mechanism
      */
-    void init(ClientSession session, String service, Collection<?> identities) throws Exception;
+    void init(ClientSession session, String service) throws Exception;
 
     /**
      * @param buffer The {@link Buffer} to process - {@code null} if not a response buffer,

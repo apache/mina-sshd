@@ -19,10 +19,7 @@
 package org.apache.sshd.client.auth;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 
 import org.apache.sshd.client.session.ClientSession;
@@ -32,8 +29,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
- * TODO Add javadoc
- *
+ * Implements the &quot;password&quot; authentication mechanism
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthPassword extends AbstractUserAuth {
@@ -47,34 +43,27 @@ public class UserAuthPassword extends AbstractUserAuth {
     }
 
     @Override
-    public void init(ClientSession session, String service, Collection<?> identities) throws Exception {
-        super.init(session, service, identities);
-
-        List<String> pwds = new ArrayList<>();
-        for (Object o : identities) {
-            if (o instanceof String) {
-                pwds.add((String) o);
-            }
-        }
-        this.passwords = pwds.iterator();
+    public void init(ClientSession session, String service) throws Exception {
+        super.init(session, service);
+        passwords = PasswordIdentityProvider.Utils.iteratorOf(session);
     }
 
     @Override
     protected boolean sendAuthDataRequest(ClientSession session, String service) throws Exception {
-        if (passwords.hasNext()) {
-            current = passwords.next();
-            String username = session.getUsername();
-            Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
-                                username.length() + service.length() + getName().length() + current.length() + Integer.SIZE);
-            sendPassword(buffer, session, current, current);
-            return true;
+        if ((passwords == null) || (!passwords.hasNext())) {
+            if (log.isDebugEnabled()) {
+                log.debug("sendAuthDataRequest({})[{}] no more passwords to send", session, service);
+            }
+
+            return false;
         }
 
-        if (log.isDebugEnabled()) {
-            log.debug("sendAuthDataRequest({})[{}] no more passwords to send", session, service);
-        }
-
-        return false;
+        current = passwords.next();
+        String username = session.getUsername();
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
+                            username.length() + service.length() + getName().length() + current.length() + Integer.SIZE);
+        sendPassword(buffer, session, current, current);
+        return true;
     }
 
     @Override

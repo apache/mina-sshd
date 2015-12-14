@@ -29,7 +29,7 @@ import org.apache.sshd.common.cipher.ECCurves;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface KeyPairProvider {
+public interface KeyPairProvider extends KeyIdentityProvider {
 
     /**
      * SSH identifier for RSA keys
@@ -81,13 +81,6 @@ public interface KeyPairProvider {
                 return "EMPTY_KEYPAIR_PROVIDER";
             }
         };
-
-    /**
-     * Load available keys.
-     *
-     * @return an {@link Iterable} instance of available keys, never {@code null}
-     */
-    Iterable<KeyPair> loadKeys();
 
     /**
      * Load a key of the specified type which can be "ssh-rsa", "ssh-dss", or

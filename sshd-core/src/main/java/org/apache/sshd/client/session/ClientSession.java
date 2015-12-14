@@ -20,7 +20,6 @@ package org.apache.sshd.client.session;
 
 import java.io.IOException;
 import java.nio.file.FileSystem;
-import java.security.KeyPair;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -38,7 +37,6 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.future.KeyExchangeFuture;
-import org.apache.sshd.common.keyprovider.KeyPairProviderHolder;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.Session;
 
@@ -70,39 +68,13 @@ import org.apache.sshd.common.session.Session;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ClientSession extends Session, KeyPairProviderHolder, ClientAuthenticationManager {
+public interface ClientSession extends Session, ClientAuthenticationManager {
     enum ClientSessionEvent {
         TIMEOUT,
         CLOSED,
         WAIT_AUTH,
         AUTHED;
     }
-
-    /**
-     * @param password Password to be added - may not be {@code null}/empty
-     */
-    void addPasswordIdentity(String password);
-
-    /**
-     * @param password The password to remove - ignored if {@code null}/empty
-     * @return The removed password - same one that was added via
-     * {@link #addPasswordIdentity(String)} - or {@code null} if no
-     * match found
-     */
-    String removePasswordIdentity(String password);
-
-    /**
-     * @param key The {@link KeyPair} to add - may not be {@code null}
-     */
-    void addPublicKeyIdentity(KeyPair key);
-
-    /**
-     * @param kp The {@link KeyPair} to remove - ignored if {@code null}
-     * @return The removed {@link KeyPair} - same one that was added via
-     * {@link #addPublicKeyIdentity(KeyPair)} - or {@code null} if no
-     * match found
-     */
-    KeyPair removePublicKeyIdentity(KeyPair kp);
 
     /**
      * Starts the authentication process.
