@@ -23,6 +23,7 @@ import java.util.Collection;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -30,7 +31,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  */
 public abstract class AbstractUserAuth extends AbstractLoggingBean implements UserAuth {
     private final String name;
-    private ClientSession session;
+    private ClientSession clientSession;
     private String service;
 
     protected AbstractUserAuth(String name) {
@@ -39,7 +40,7 @@ public abstract class AbstractUserAuth extends AbstractLoggingBean implements Us
 
     @Override
     public ClientSession getClientSession() {
-        return session;
+        return clientSession;
     }
 
     @Override
@@ -58,8 +59,29 @@ public abstract class AbstractUserAuth extends AbstractLoggingBean implements Us
 
     @Override
     public void init(ClientSession session, String service, Collection<?> identities) throws Exception {
-        this.session = ValidateUtils.checkNotNull(session, "No client session");
+        this.clientSession = ValidateUtils.checkNotNull(session, "No client session");
         this.service = ValidateUtils.checkNotNullAndNotEmpty(service, "No service");
+    }
+
+    @Override
+    public boolean process(Buffer buffer) throws Exception {
+        ClientSession session = getClientSession();
+        String service = getService();
+        if (buffer == null) {
+            return sendAuthDataRequest(session, service);
+        } else {
+            return processAuthDataRequest(session, service, buffer);
+        }
+    }
+
+    protected abstract boolean sendAuthDataRequest(ClientSession session, String service) throws Exception;
+    protected abstract boolean processAuthDataRequest(ClientSession session, String service, Buffer buffer) throws Exception;
+
+    @Override
+    public void destroy() {
+        if (log.isDebugEnabled()) {
+            log.debug("destroy({})[{}]", getClientSession(), getService());
+        }
     }
 
     @Override

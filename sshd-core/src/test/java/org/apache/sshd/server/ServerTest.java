@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
@@ -38,7 +39,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.client.ClientAuthenticationManager;
 import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
@@ -49,6 +52,7 @@ import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.auth.UserAuthMethodFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.TestChannelListener;
 import org.apache.sshd.common.channel.WindowClosedException;
@@ -62,7 +66,13 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
+import org.apache.sshd.server.auth.keyboard.InteractiveChallenge;
+import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
+import org.apache.sshd.server.auth.keyboard.PromptEntry;
+import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
+import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
 import org.apache.sshd.server.command.ScpCommandFactory;
+import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerSessionImpl;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -107,10 +117,8 @@ public class ServerTest extends BaseTestSupport {
         }
     }
 
-    /**
+    /*
      * Send bad password.  The server should disconnect after a few attempts
-     *
-     * @throws Exception
      */
     @Test
     public void testFailAuthenticationWithWaitFor() throws Exception {
@@ -597,6 +605,107 @@ public class ServerTest extends BaseTestSupport {
         for (Map.Entry<String, String> ee : expected.entrySet()) {
             String key = ee.getKey(), expValue = ee.getValue(), actValue = vars.get(key);
             assertEquals("Mismatched value for " + key, expValue, actValue);
+        }
+    }
+
+    @Test   // see SSHD-611
+    public void testImmediateAuthFailureOpcode() throws Exception {
+        sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
+        sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
+        final AtomicInteger challengeCount = new AtomicInteger(0);
+        sshd.setKeyboardInteractiveAuthenticator(new KeyboardInteractiveAuthenticator() {
+            @Override
+            public InteractiveChallenge generateChallenge(ServerSession session, String username, String lang, String subMethods) {
+                challengeCount.incrementAndGet();
+                outputDebugMessage("generateChallenge(%s@%s) count=%s", username, session, challengeCount);
+                return null;
+            }
+
+            @Override
+            public boolean authenticate(ServerSession session, String username, List<String> responses) throws Exception {
+                return false;
+            }
+        });
+        sshd.start();
+
+        String authMethods = GenericUtils.join( // order is important
+                Arrays.asList(UserAuthMethodFactory.KB_INTERACTIVE, UserAuthMethodFactory.PUBLIC_KEY, UserAuthMethodFactory.PUBLIC_KEY), ',');
+        PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PREFERRED_AUTHS, authMethods);
+
+        client.start();
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
+            AuthFuture auth = session.auth();
+            assertTrue("Failed to complete authentication on time", auth.await(17L, TimeUnit.SECONDS));
+            assertFalse("Unexpected authentication success", auth.isSuccess());
+            assertEquals("Mismatched interactive challenge calls", 1, challengeCount.get());
+        } finally {
+            client.stop();
+        }
+    }
+
+    @Test
+    public void testMaxKeyboardInteractiveTrialsSetting() throws Exception {
+        sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
+        sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
+
+        final InteractiveChallenge challenge = new InteractiveChallenge();
+        challenge.setInteractionInstruction(getCurrentTestName());
+        challenge.setInteractionName(getClass().getSimpleName());
+        challenge.setLanguageTag("il-heb");
+        challenge.addPrompt(new PromptEntry("Password", false));
+        final AtomicInteger serverCount = new AtomicInteger(0);
+        sshd.setKeyboardInteractiveAuthenticator(new KeyboardInteractiveAuthenticator() {
+            @Override
+            public InteractiveChallenge generateChallenge(ServerSession session, String username, String lang, String subMethods) {
+                return challenge;
+            }
+
+            @Override
+            public boolean authenticate(ServerSession session, String username, List<String> responses) throws Exception {
+                outputDebugMessage("authenticate(%s@%s) count=%s", username, session, serverCount);
+                serverCount.incrementAndGet();
+                return false;
+            }
+        });
+        sshd.start();
+
+        String authMethods = GenericUtils.join( // order is important
+                Arrays.asList(UserAuthMethodFactory.KB_INTERACTIVE, UserAuthMethodFactory.PUBLIC_KEY, UserAuthMethodFactory.PUBLIC_KEY), ',');
+        PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PREFERRED_AUTHS, authMethods);
+        final AtomicInteger clientCount = new AtomicInteger(0);
+        final String[] replies = { getCurrentTestName() };
+        client.setUserInteraction(new UserInteraction() {
+            @Override
+            public void welcome(ClientSession session, String banner, String lang) {
+                // ignored
+            }
+
+            @Override
+            public boolean isInteractionAllowed(ClientSession session) {
+                return true;
+            }
+
+            @Override
+            public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                clientCount.incrementAndGet();
+                return replies;
+            }
+
+            @Override
+            public String getUpdatedPassword(ClientSession session, String prompt, String lang) {
+                throw new UnsupportedOperationException("Unexpected updated password request");
+            }
+        });
+        client.start();
+
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
+            AuthFuture auth = session.auth();
+            assertTrue("Failed to complete authentication on time", auth.await(17L, TimeUnit.SECONDS));
+            assertFalse("Unexpected authentication success", auth.isSuccess());
+            assertEquals("Mismatched interactive server challenge calls", ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS, serverCount.get());
+            assertEquals("Mismatched interactive client challenge calls", ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS, clientCount.get());
+        } finally {
+            client.stop();
         }
     }
 

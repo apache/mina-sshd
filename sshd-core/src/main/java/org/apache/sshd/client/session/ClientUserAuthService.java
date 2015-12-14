@@ -199,6 +199,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
             }
             if (partial || (serverMethods == null)) {
                 serverMethods = Arrays.asList(GenericUtils.split(mths, ','));
+                currentMethod = 0;
                 if (userAuth != null) {
                     try {
                         userAuth.destroy();
@@ -236,7 +237,6 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
                     log.debug("tryNext({}) starting authentication mechanisms: client={}, server={}",
                               session, clientMethods, serverMethods);
                 }
-                currentMethod = 0;
             } else if (!userAuth.process(null)) {
                 if (log.isDebugEnabled()) {
                     log.debug("tryNext({}) no initial request sent by method={}", session, userAuth.getName());

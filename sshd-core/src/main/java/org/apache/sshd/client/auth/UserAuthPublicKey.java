@@ -104,81 +104,79 @@ public class UserAuthPublicKey extends AbstractUserAuth {
     }
 
     @Override
-    public boolean process(Buffer buffer) throws Exception {
-        ClientSession session = getClientSession();
-        String username = session.getUsername();
-        String service = getService();
-
-        // Send next key
-        if (buffer == null) {
-            if (keys.hasNext()) {
-                current = keys.next();
-                PublicKey key = current.getPublicKey();
-                String algo = KeyUtils.getKeyType(key);
-                String name = getName();
-                if (log.isDebugEnabled()) {
-                    log.debug("process({}@{})[{}] send SSH_MSG_USERAUTH_REQUEST request {} type={} - fingerprint={}",
-                              username, session, service, name, algo, KeyUtils.getFingerPrint(key));
-                }
-
-                buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
-                buffer.putString(username);
-                buffer.putString(service);
-                buffer.putString(name);
-                buffer.putBoolean(false);
-                buffer.putString(algo);
-                buffer.putPublicKey(key);
-                session.writePacket(buffer);
-                return true;
-            }
-
+    protected boolean sendAuthDataRequest(ClientSession session, String service) throws Exception {
+        if (!keys.hasNext()) {
             if (log.isDebugEnabled()) {
-                log.debug("process({}@{})[{}] no more keys to send", username, session, service);
+                log.debug("sendAuthDataRequest({})[{}] no more keys to send", session, service);
             }
+
             return false;
         }
 
-        int cmd = buffer.getUByte();
-        if (cmd == SshConstants.SSH_MSG_USERAUTH_PK_OK) {
-            PublicKey key = current.getPublicKey();
-            String algo = KeyUtils.getKeyType(key);
-            String name = getName();
-            if (log.isDebugEnabled()) {
-                log.debug("process({}@{})[{}] send SSH_MSG_USERAUTH_REQUEST reply {} type={} - fingerprint={}",
-                          username, session, service, name, algo, KeyUtils.getFingerPrint(key));
-            }
-
-            buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, BufferUtils.clear(buffer));
-            buffer.putString(username);
-            buffer.putString(service);
-            buffer.putString(name);
-            buffer.putBoolean(true);
-            buffer.putString(algo);
-            buffer.putPublicKey(key);
-
-            Buffer bs = new ByteArrayBuffer();
-            KeyExchange kex = session.getKex();
-            bs.putBytes(kex.getH());
-            bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
-            bs.putString(username);
-            bs.putString(service);
-            bs.putString(name);
-            bs.putBoolean(true);
-            bs.putString(algo);
-            bs.putPublicKey(key);
-
-            byte[] sig = current.sign(bs.getCompactData());
-            bs = new ByteArrayBuffer(algo.length() + sig.length + Long.SIZE, false);
-            bs.putString(algo);
-            bs.putBytes(sig);
-            buffer.putBytes(bs.array(), bs.rpos(), bs.available());
-
-            session.writePacket(buffer);
-            return true;
+        current = keys.next();
+        PublicKey key = current.getPublicKey();
+        String algo = KeyUtils.getKeyType(key);
+        String name = getName();
+        if (log.isDebugEnabled()) {
+            log.debug("sendAuthDataRequest({})[{}] send SSH_MSG_USERAUTH_REQUEST request {} type={} - fingerprint={}",
+                      session, service, name, algo, KeyUtils.getFingerPrint(key));
         }
 
-        throw new IllegalStateException("process(" + username + "@" + session + ")[" + service + "]"
-                + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
+        buffer.putString(session.getUsername());
+        buffer.putString(service);
+        buffer.putString(name);
+        buffer.putBoolean(false);
+        buffer.putString(algo);
+        buffer.putPublicKey(key);
+        session.writePacket(buffer);
+        return true;
+    }
+
+    @Override
+    protected boolean processAuthDataRequest(ClientSession session, String service, Buffer buffer) throws Exception {
+        int cmd = buffer.getUByte();
+        if (cmd != SshConstants.SSH_MSG_USERAUTH_PK_OK) {
+            throw new IllegalStateException("processAuthDataRequest(" + session + ")[" + service + "]"
+                    + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
+        }
+
+        PublicKey key = current.getPublicKey();
+        String algo = KeyUtils.getKeyType(key);
+        String name = getName();
+        if (log.isDebugEnabled()) {
+            log.debug("processAuthDataRequest({})[{}] send SSH_MSG_USERAUTH_PK_OK reply for {}: type={}, fingerprint={}",
+                      session, service, name, algo, KeyUtils.getFingerPrint(key));
+        }
+
+        String username = session.getUsername();
+        buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, BufferUtils.clear(buffer));
+        buffer.putString(username);
+        buffer.putString(service);
+        buffer.putString(name);
+        buffer.putBoolean(true);
+        buffer.putString(algo);
+        buffer.putPublicKey(key);
+
+        Buffer bs = new ByteArrayBuffer();
+        KeyExchange kex = session.getKex();
+        bs.putBytes(kex.getH());
+        bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
+        bs.putString(username);
+        bs.putString(service);
+        bs.putString(name);
+        bs.putBoolean(true);
+        bs.putString(algo);
+        bs.putPublicKey(key);
+
+        byte[] sig = current.sign(bs.getCompactData());
+        bs = new ByteArrayBuffer(algo.length() + sig.length + Long.SIZE, false);
+        bs.putString(algo);
+        bs.putBytes(sig);
+        buffer.putBytes(bs.array(), bs.rpos(), bs.available());
+
+        session.writePacket(buffer);
+        return true;
     }
 
     @Override
@@ -191,6 +189,8 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             } finally {
                 agent = null;
             }
+
+            super.destroy(); // for logging
         }
     }
 }

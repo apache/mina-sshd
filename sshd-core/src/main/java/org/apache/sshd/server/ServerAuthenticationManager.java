@@ -143,12 +143,14 @@ public interface ServerAuthenticationManager {
         public static List<NamedFactory<UserAuth>> resolveUserAuthFactories(
                 ServerAuthenticationManager manager, List<NamedFactory<UserAuth>> userFactories) {
             if (GenericUtils.size(userFactories) > 0) {
-                return userFactories;
+                return userFactories;   // use whatever the user decided
             }
 
             List<NamedFactory<UserAuth>> factories = new ArrayList<>();
             if (manager.getPasswordAuthenticator() != null) {
                 factories.add(DEFAULT_USER_AUTH_PASSWORD_FACTORY);
+                factories.add(DEFAULT_USER_AUTH_KB_INTERACTIVE_FACTORY);
+            } else if (manager.getKeyboardInteractiveAuthenticator() != null) {
                 factories.add(DEFAULT_USER_AUTH_KB_INTERACTIVE_FACTORY);
             }
 

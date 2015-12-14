@@ -60,56 +60,53 @@ public class UserAuthPassword extends AbstractUserAuth {
     }
 
     @Override
-    public boolean process(Buffer buffer) throws Exception {
-        ClientSession session = getClientSession();
-        String username = session.getUsername();
-        String service = getService();
-
-        // Send next password
-        if (buffer == null) {
-            if (passwords.hasNext()) {
-                current = passwords.next();
-                buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
-                                    username.length() + service.length() + getName().length() + current.length() + Integer.SIZE);
-                sendPassword(buffer, session, current, current);
-                return true;
-            }
-
-            if (log.isDebugEnabled()) {
-                log.debug("process({}@{})[{}] no more passwords to send", username, session, service);
-            }
-
-            return false;
+    protected boolean sendAuthDataRequest(ClientSession session, String service) throws Exception {
+        if (passwords.hasNext()) {
+            current = passwords.next();
+            String username = session.getUsername();
+            Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
+                                username.length() + service.length() + getName().length() + current.length() + Integer.SIZE);
+            sendPassword(buffer, session, current, current);
+            return true;
         }
 
+        if (log.isDebugEnabled()) {
+            log.debug("sendAuthDataRequest({})[{}] no more passwords to send", session, service);
+        }
+
+        return false;
+    }
+
+    @Override
+    protected boolean processAuthDataRequest(ClientSession session, String service, Buffer buffer) throws Exception {
         int cmd = buffer.getUByte();
-        if (cmd == SshConstants.SSH_MSG_USERAUTH_PASSWD_CHANGEREQ) {
-            String prompt = buffer.getString();
-            String lang = buffer.getString();
-            UserInteraction ui = session.getUserInteraction();
-            if ((ui != null) && ui.isInteractionAllowed(session)) {
-                String password = ui.getUpdatedPassword(session, prompt, lang);
-                if (GenericUtils.isEmpty(password)) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("process({}@{})[{}] No updated password for prompt={}, lang={}",
-                                  username, session, service, prompt, lang);
-                    }
-                } else {
-                    sendPassword(buffer, session, password, password);
-                    return true;
+        if (cmd != SshConstants.SSH_MSG_USERAUTH_PASSWD_CHANGEREQ) {
+            throw new IllegalStateException("processAuthDataRequest(" + session + ")[" + service + "]"
+                            + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
+        }
+
+        String prompt = buffer.getString();
+        String lang = buffer.getString();
+        UserInteraction ui = session.getUserInteraction();
+        if ((ui != null) && ui.isInteractionAllowed(session)) {
+            String password = ui.getUpdatedPassword(session, prompt, lang);
+            if (GenericUtils.isEmpty(password)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("processAuthDataRequest({})[{}] No updated password for prompt={}, lang={}",
+                              session, service, prompt, lang);
                 }
             } else {
-                if (log.isDebugEnabled()) {
-                    log.debug("process({}@{})[{}] no UI for password change request for prompt={}, lang={}",
-                              username, session, service, prompt, lang);
-                }
+                sendPassword(buffer, session, password, password);
+                return true;
             }
-
-            return false;
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("processAuthDataRequest({})[{}] no UI for password change request for prompt={}, lang={}",
+                          session, service, prompt, lang);
+            }
         }
 
-        throw new IllegalStateException("process(" + username + "@" + session + ")[" + service + "]"
-                + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
+        return false;
     }
 
     /**
@@ -130,8 +127,8 @@ public class UserAuthPassword extends AbstractUserAuth {
         String name = getName();
         boolean modified = !Objects.equals(oldPassword, newPassword);
         if (log.isDebugEnabled()) {
-            log.debug("sendPassword({}@{})[{}] send SSH_MSG_USERAUTH_REQUEST for {} - modified={}",
-                      username, session, service, name, modified);
+            log.debug("sendPassword({})[{}] send SSH_MSG_USERAUTH_REQUEST for {} - modified={}",
+                      session, service, name, modified);
         }
 
         buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, BufferUtils.clear(buffer));
@@ -145,10 +142,5 @@ public class UserAuthPassword extends AbstractUserAuth {
             buffer.putString(newPassword);
         }
         session.writePacket(buffer);
-    }
-
-    @Override
-    public void destroy() {
-        // ignored
     }
 }
