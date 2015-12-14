@@ -87,7 +87,6 @@ public interface SimpleScpClient extends SimpleClientConfigurator, Channel {
      * Creates an SCP session on the default port and logs in using the provided credentials
      *
      * @param host The target host {@link InetAddress}
-     * @param port The target port
      * @param username Username
      * @param password Password
      * @return Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
@@ -113,7 +112,6 @@ public interface SimpleScpClient extends SimpleClientConfigurator, Channel {
      * Creates an SCP session on the default port and logs in using the provided credentials
      *
      * @param host The target host {@link InetAddress}
-     * @param port The target port
      * @param username Username
      * @param identity The {@link KeyPair} identity
      * @return Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its

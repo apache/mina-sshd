@@ -32,21 +32,11 @@ public class UserAuthGSSFactory implements UserAuthFactory {
         super();
     }
 
-    /**
-     * Get the name of the authentication method.
-     *
-     * @return Tge name, always 'gssapi-with-mic' here.
-     */
     @Override
     public final String getName() {
         return NAME;
     }
 
-    /**
-     * Create a new authenticator instance.
-     *
-     * @return The instance
-     */
     @Override
     public UserAuth create() {
         return new UserAuthGSS();

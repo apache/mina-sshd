@@ -29,7 +29,7 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient;
  */
 public interface MD5HandleExtension extends SftpClientExtension {
     /**
-     * @param handle    The (remote) file {@link SftpClient.Handle}
+     * @param handle    The (remote) file {@code Handle}
      * @param offset    The offset to start calculating the hash
      * @param length    The number of data bytes to calculate the hash on - if
      *                  greater than available, then up to whatever is available

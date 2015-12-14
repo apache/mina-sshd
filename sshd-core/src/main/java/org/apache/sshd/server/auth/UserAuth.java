@@ -32,13 +32,11 @@ import org.apache.sshd.server.session.ServerSessionHolder;
 public interface UserAuth extends ServerSessionHolder, UserAuthInstance<ServerSession>, UsernameHolder {
 
     /**
-     * Try to authenticate the user.
-     * This methods should return a non {@code null} object which is the user identity if
-     * the authentication succeeded.  If the authentication failed, this method should
-     * throw an exception.  If the authentication is still ongoing, a null value should
-     * be returned.
+     * Try to authenticate the user. This methods should return a non {@code null}
+     * value indicating if the authentication succeeded. If the authentication is
+     * still ongoing, a {@code null} value should be returned.
      *
-     * @param session  the current ssh session
+     * @param session  the current {@link ServerSession} session
      * @param username the user trying to log in
      * @param service  the requested service name
      * @param buffer   the request buffer containing parameters specific to this request

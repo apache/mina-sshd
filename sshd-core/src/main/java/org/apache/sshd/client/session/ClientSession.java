@@ -59,7 +59,7 @@ import org.apache.sshd.common.session.Session;
  *
  * <P>
  * When using the client in an interactive mode, the
- * {@link #waitFor(int, long)} method can be used to listen to specific
+ * {@link #waitFor(Collection, long)} method can be used to listen to specific
  * events such as the session being established, authenticated or closed.
  * </P>
  *

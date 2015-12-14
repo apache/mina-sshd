@@ -83,7 +83,6 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
      * Creates a session on the default port and logs in using the provided credentials
      *
      * @param host The target host {@link InetAddress}
-     * @param port The target port
      * @param username Username
      * @param password Password
      * @return Created {@link ClientSession}
@@ -107,7 +106,6 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
      * Creates a session on the default port and logs in using the provided credentials
      *
      * @param host The target host {@link InetAddress}
-     * @param port The target port
      * @param username Username
      * @param identity The {@link KeyPair} identity
      * @return Created {@link ClientSession}

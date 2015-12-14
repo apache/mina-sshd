@@ -377,7 +377,7 @@ public class Utils {
      * @return The matching {@link File}
      * @throws MalformedURLException If source URI does not refer to a
      *                               file location
-     * @see URLUtils#getURLSource(URI)
+     * @see #getURLSource(URI)
      */
     public static File toFileSource(URI uri) throws MalformedURLException {
         String src = getURLSource(uri);

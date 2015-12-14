@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 public interface WaitableFuture {
 
     /**
-     * Wait {@link Long.MAX_VALUE} msec. for the asynchronous operation to complete.
+     * Wait {@link Long#MAX_VALUE} msec. for the asynchronous operation to complete.
      * The attached listeners will be notified when the operation is
      * completed.
      *
@@ -68,7 +68,7 @@ public interface WaitableFuture {
     boolean await(long timeoutMillis) throws IOException;
 
     /**
-     * Wait {@link Long.MAX_VALUE} msec. for the asynchronous operation to complete
+     * Wait {@link Long#MAX_VALUE} msec. for the asynchronous operation to complete
      * uninterruptibly. The attached listeners will be notified when the operation is
      * completed.
      *

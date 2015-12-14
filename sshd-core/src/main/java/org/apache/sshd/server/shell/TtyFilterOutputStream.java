@@ -32,7 +32,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
- * Handles the output stream while taking care of the {@link TtyOptions} for CR / LF
+ * Handles the output stream while taking care of the {@link PtyMode} for CR / LF
  * and ECHO settings
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

@@ -3270,6 +3270,7 @@ public class SftpSubsystem
      * @param h      The resolved {@link Handle} instance
      * @param type   The expected handle type
      * @return The cast type
+     * @throws IOException If a generic exception occurred
      * @throws FileNotFoundException  If the handle instance is {@code null}
      * @throws InvalidHandleException If the handle instance is not of the expected type
      */

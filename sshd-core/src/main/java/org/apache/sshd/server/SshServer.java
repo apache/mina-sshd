@@ -78,8 +78,8 @@ import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
  * </p>
  *
  * <p>
- * Some properties can also be configured using the {@link #setProperties(java.util.Map)}
- * method.
+ * Some properties can also be configured using the {@link PropertyResolverUtils}
+ * {@code updateProperty} methods.
  * </p>
  *
  * Once the SshServer instance has been configured, it can be started using the

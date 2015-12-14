@@ -33,7 +33,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
- * Handles the input while taking into account the {@link TtyOptions} for
+ * Handles the input while taking into account the {@link PtyMode}s for
  * handling CR / LF
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

@@ -1933,8 +1933,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @param authTimeoutMs The configured timeout in millis - if non-positive
      *                      then no timeout
      * @return A {@link Pair} specifying the timeout status and disconnect reason
-     * message if timeout expired, {@code null} or {@link TimeoutStatus#NoTimeout}
-     * if no timeout occurred
+     * message if timeout expired, {@code null} or {@code NoTimeout} if no timeout
+     * occurred
      * @see #getAuthTimeout()
      */
     protected Pair<TimeoutStatus, String> checkAuthenticationTimeout(long now, long authTimeoutMs) {
@@ -1950,11 +1950,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * Checks if idle timeout expired
      *
      * @param now           The current time in millis
-     * @param authTimeoutMs The configured timeout in millis - if non-positive
+     * @param idleTimeoutMs The configured timeout in millis - if non-positive
      *                      then no timeout
      * @return A {@link Pair} specifying the timeout status and disconnect reason
-     * message if timeout expired, {@code null} or {@link TimeoutStatus#NoTimeout}
-     * if no timeout occurred
+     * message if timeout expired, {@code null} or {@code NoTimeout} if no timeout
+     * occurred
      * @see #getIdleTimeout()
      */
     protected Pair<TimeoutStatus, String> checkIdleTimeout(long now, long idleTimeoutMs) {

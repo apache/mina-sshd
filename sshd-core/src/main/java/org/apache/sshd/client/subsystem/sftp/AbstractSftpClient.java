@@ -294,7 +294,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
     /**
      * @param cmd Command to be sent
      * @param request Request {@link Buffer}
-     * @return The decoded response {@link Attributes}
+     * @return The decoded response {@code Attributes}
      * @throws IOException If failed to send/receive or process the response
      * @see #send(int, Buffer)
      * @see #receive(int)

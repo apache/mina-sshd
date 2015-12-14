@@ -95,8 +95,8 @@ public final class KeyUtils {
     /**
      * The default {@link Factory} of {@link Digest}s initialized
      * as the value of {@link #getDefaultFingerPrintFactory()} if not
-     * overridden by {@link #OPENSSH_KEY_FINGERPRINT_FACTORY_PROP} or
-     * {@link #setDefaultFingerPrintFactory(Factory)}
+     * overridden by {@link #KEY_FINGERPRINT_FACTORY_PROP} or
+     * {@link #setDefaultFingerPrintFactory(DigestFactory)}
      */
     public static final DigestFactory DEFAULT_FINGERPRINT_DIGEST_FACTORY = BuiltinDigests.sha256;
 
@@ -370,7 +370,7 @@ public final class KeyUtils {
      * by the {@link #getFingerPrint(PublicKey)} and {@link #getFingerPrint(String)}
      * methods
      * @see #KEY_FINGERPRINT_FACTORY_PROP
-     * @see #setDefaultFingerPrintFactory(Factory)
+     * @see #setDefaultFingerPrintFactory(DigestFactory)
      */
     public static DigestFactory getDefaultFingerPrintFactory() {
         DigestFactory factory = null;

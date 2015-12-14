@@ -52,7 +52,7 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
 
     /**
      * {@link ChannelPipedOutputStream} is already closed and so we will not receive additional data.
-     * This is different from the {@link #closed}, which indicates that the reader of this {@link InputStream}
+     * This is different from the {@link #isOpen()}, which indicates that the reader of this {@link InputStream}
      * will not be reading data any more.
      */
     private final AtomicBoolean writerClosed = new AtomicBoolean(false);

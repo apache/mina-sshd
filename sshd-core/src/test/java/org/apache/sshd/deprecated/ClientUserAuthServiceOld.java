@@ -112,7 +112,7 @@ public class ClientUserAuthServiceOld extends AbstractCloseable implements Servi
         }
     }
 
-    /**
+    /*
      * return true if/when ready for auth; false if never ready.
      *
      * @return server is ready and waiting for auth

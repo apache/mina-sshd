@@ -170,7 +170,7 @@ public final class ClientIdentity {
      * available (e.g., after filtering unsupported ones or strict permissions)
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see {@link PublicKeyEntry#getDefaultKeysFolderPath()}
+     * @see PublicKeyEntry#getDefaultKeysFolderPath()
      * @see #loadDefaultIdentities(Path, boolean, FilePasswordProvider, LinkOption...)
      */
     public static KeyPairProvider loadDefaultKeyPairProvider(
@@ -218,7 +218,7 @@ public final class ClientIdentity {
      * <U>insensitive</U>), value=the {@link KeyPair} of the identity
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see {@link PublicKeyEntry#getDefaultKeysFolderPath()}
+     * @see PublicKeyEntry#getDefaultKeysFolderPath()
      * @see #loadDefaultIdentities(Path, boolean, FilePasswordProvider, LinkOption...)
      */
     public static Map<String, KeyPair> loadDefaultIdentities(boolean strict, FilePasswordProvider provider, LinkOption... options)
@@ -292,7 +292,6 @@ public final class ClientIdentity {
      * <U>insensitive</U>), value=the {@link Path} of the file holding the key
      * @throws IOException If failed to access the file system
      * @see KeyUtils#validateStrictKeyFilePermissions(Path, LinkOption...)
-     * @see KeyUtils#validateStrictKeyFileOwner(Path, LinkOption...)
      */
     public static Map<String, Path> scanIdentitiesFolder(
             Path dir, boolean strict, Collection<String> types, Transformer<String, String> idGenerator, LinkOption... options)

@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
  */
 public interface VerifiableFuture<T> {
     /**
-     * Wait {@link Long.MAX_VALUE} msec. and verify that the operation was successful
+     * Wait {@link Long#MAX_VALUE} msec. and verify that the operation was successful
      *
      * @return The (same) future instance
      * @throws IOException If failed to verify successfully on time

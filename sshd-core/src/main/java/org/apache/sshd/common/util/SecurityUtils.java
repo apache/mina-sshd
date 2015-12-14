@@ -97,8 +97,7 @@ public final class SecurityUtils {
 
     /**
      * System property used to control whether to automatically register the
-     * Bouncyastle JCE provider
-     * @see #DEFAULT_REGISTER_BOUNCY_CASTLE
+     * {@code Bouncyastle} JCE provider
      */
     public static final String REGISTER_BOUNCY_CASTLE_PROP = "org.apache.sshd.registerBouncyCastle";
 

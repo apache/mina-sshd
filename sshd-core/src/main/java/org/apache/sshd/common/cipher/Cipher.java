@@ -79,7 +79,7 @@ public interface Cipher extends CipherInformation {
          * @param keyLength The required key length in bits - always positive
          * @return {@code true} if the cipher transformation <U>and</U> required
          * key length are supported
-         * @see {@link javax.crypto.Cipher#getMaxAllowedKeyLength(String)}
+         * @see javax.crypto.Cipher#getMaxAllowedKeyLength(String)
          */
         public static boolean checkSupported(String xform, int keyLength) {
             ValidateUtils.checkNotNullAndNotEmpty(xform, "No transformation");

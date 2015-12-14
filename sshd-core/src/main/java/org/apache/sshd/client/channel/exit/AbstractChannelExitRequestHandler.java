@@ -83,7 +83,7 @@ public abstract class AbstractChannelExitRequestHandler<V> extends AbstractChann
      *                handler's name if invoked from {@link #process(Channel, String, boolean, Buffer)}
      * @param buffer  The received {@link Buffer} for extracting the data
      * @return The extracted data - if {@code null} then request is ignored and
-     * {@link Result#Unsupported} is returned
+     * {@code Unsupported} is returned
      * @throws Exception If failed to process the received request buffer
      */
     protected abstract V processRequestValue(Channel channel, String request, Buffer buffer) throws Exception;

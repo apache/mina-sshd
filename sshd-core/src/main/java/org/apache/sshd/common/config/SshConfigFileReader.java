@@ -378,7 +378,7 @@ public final class SshConfigFileReader {
 
     /**
      * @param props The {@link Properties} - ignored if {@code null}/empty
-     * @return A {@link BuiltinCiphers.ParseResult} of all the {@link NamedFactory}-ies
+     * @return A {@code ParseResult} of all the {@link NamedFactory}-ies
      * whose name appears in the string and represent a built-in cipher.
      * Any unknown name is <U>ignored</U>. The order of the returned result
      * is the same as the original order - bar the unknown ciphers.
@@ -393,7 +393,7 @@ public final class SshConfigFileReader {
 
     /**
      * @param props The {@link Properties} - ignored if {@code null}/empty
-     * @return A {@link BuiltinMacs.ParseResult} of all the {@link NamedFactory}-ies
+     * @return A {@code ParseResult} of all the {@link NamedFactory}-ies
      * whose name appears in the string and represent a built-in MAC. Any
      * unknown name is <U>ignored</U>. The order of the returned result
      * is the same as the original order - bar the unknown MACs.
@@ -408,7 +408,7 @@ public final class SshConfigFileReader {
 
     /**
      * @param props The {@link Properties} - ignored if {@code null}/empty
-     * @return A {@link BuiltinSignatures.ParseResult} of all the {@link NamedFactory}
+     * @return A {@code ParseResult} of all the {@link NamedFactory}
      * whose name appears in the string and represent a built-in signature. Any
      * unknown name is <U>ignored</U>. The order of the returned result is the
      * same as the original order - bar the unknown signatures. <B>Note:</B> it
@@ -422,7 +422,7 @@ public final class SshConfigFileReader {
 
     /**
      * @param props The {@link Properties} - ignored if {@code null}/empty
-     * @return A {@link BuiltinDHFactories.ParseResult} of all the {@link DHFactory}-ies
+     * @return A {@code ParseResult} of all the {@link DHFactory}-ies
      * whose name appears in the string and represent a built-in value. Any
      * unknown name is <U>ignored</U>. The order of the returned result is the
      * same as the original order - bar the unknown ones. <B>Note:</B> it is

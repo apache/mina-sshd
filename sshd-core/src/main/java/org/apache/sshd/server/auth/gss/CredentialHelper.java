@@ -36,7 +36,6 @@ import org.ietf.jgss.GSSManager;
  * Simple helper class which gets GSS credential using a fixed Krb5 login configuration.  May need generalizing to deal
  * with non-Sun JREs.
  */
-
 public final class CredentialHelper {
 
     private CredentialHelper() {
@@ -60,14 +59,9 @@ public final class CredentialHelper {
      *
      * @author Richard Evans
      */
-
     private static final class FixedLoginConfiguration extends Configuration {
 
         private AppConfigurationEntry entry;
-
-        /**
-         * Constructor.
-         */
 
         private FixedLoginConfiguration(String spn, String keytab) {
             Map<String, String> parms = new HashMap<>();
@@ -84,21 +78,10 @@ public final class CredentialHelper {
             entry = new AppConfigurationEntry("com.sun.security.auth.module.Krb5LoginModule", AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, parms);
         }
 
-        /**
-         * Get the configuration entries for a name.
-         *
-         * @param name The name
-         * @return The entries, or {@code null} if the name is not known
-         */
-
         @Override
         public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
             return new AppConfigurationEntry[]{entry};
         }
-
-        /**
-         * Refresh the configuration.  Nothing to do here.
-         */
 
         @Override
         public void refresh() {
@@ -109,7 +92,6 @@ public final class CredentialHelper {
     /**
      * Privileged action which runs as the subject to get the credentials.
      */
-
     private static final class G implements PrivilegedExceptionAction<GSSCredential> {
 
         private GSSManager mgr;
@@ -117,17 +99,9 @@ public final class CredentialHelper {
         /**
          * @param mgr The existing GSS manager
          */
-
         private G(GSSManager mgr) {
             this.mgr = mgr;
         }
-
-        /**
-         * Do the action.
-         *
-         * @return The new credentials
-         * @throws GSSException If an error occurred
-         */
 
         @Override
         public GSSCredential run() throws GSSException {

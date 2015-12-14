@@ -194,7 +194,7 @@ public abstract class BaseTestSupport extends Assert {
      * @return The {@link File} representing the location of the &quot;target&quot; folder
      * @throws IllegalArgumentException If failed to detect the folder
      */
-    protected Path detectTargetFolder() throws IllegalStateException {
+    protected Path detectTargetFolder() throws IllegalArgumentException {
         synchronized (TEMP_SUBFOLDER_NAME) {
             if (targetFolder == null) {
                 targetFolder = ValidateUtils.checkNotNull(Utils.detectTargetFolder(getClass()), "Failed to detect target folder").toPath();
@@ -279,6 +279,7 @@ public abstract class BaseTestSupport extends Assert {
 
         return result;
     }
+
     /* ----------------------- Useful extra assertions --------------------- */
 
     public static void assertEquals(String message, boolean expected, boolean actual) {

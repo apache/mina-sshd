@@ -41,8 +41,8 @@ import org.ietf.jgss.Oid;
  */
 public class UserAuthGSS extends AbstractUserAuth {
     public static final String NAME = UserAuthGSSFactory.NAME;
-    // Oids for the Kerberos 5 mechanism and principal
 
+    // Oids for the Kerberos 5 mechanism and principal
     public static final Oid KRB5_MECH = createOID("1.2.840.113554.1.2.2");
     public static final Oid KRB5_NT_PRINCIPAL = createOID("1.2.840.113554.1.2.2.1");
 
@@ -56,9 +56,6 @@ public class UserAuthGSS extends AbstractUserAuth {
         super(NAME);
     }
 
-    /**
-     * Handle the first authentication step.
-     */
     @Override
     protected Boolean doAuth(Buffer buffer, boolean initial) throws Exception {
         ServerSession session = getServerSession();

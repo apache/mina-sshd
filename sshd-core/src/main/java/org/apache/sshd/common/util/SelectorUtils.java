@@ -500,8 +500,12 @@ public final class SelectorUtils {
 
     /**
      * Tests whether two characters are equal.
+     * @param c1 1st character
+     * @param c2 2nd character
+     * @param isCaseSensitive Whether to compare case sensitive
+     * @return {@code true} if equal characters
      */
-    private static boolean equals(char c1, char c2, boolean isCaseSensitive) {
+    public static boolean equals(char c1, char c2, boolean isCaseSensitive) {
         if (c1 == c2) {
             return true;
         }
