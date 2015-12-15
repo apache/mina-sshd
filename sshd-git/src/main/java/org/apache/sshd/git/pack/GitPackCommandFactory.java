@@ -20,7 +20,7 @@ package org.apache.sshd.git.pack;
 
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.server.command.UnknownCommand;
+import org.apache.sshd.server.scp.UnknownCommand;
 
 /**
  * TODO Add javadoc

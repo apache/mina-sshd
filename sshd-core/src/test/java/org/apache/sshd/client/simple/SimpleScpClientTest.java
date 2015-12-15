@@ -29,7 +29,7 @@ import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.server.command.ScpCommandFactory;
+import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.util.test.Utils;
 import org.junit.FixMethodOrder;
 import org.junit.Test;

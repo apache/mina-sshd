@@ -25,7 +25,7 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.Service;
-import org.apache.sshd.common.auth.UsernameHolder;
+import org.apache.sshd.common.auth.MutableUserHolder;
 import org.apache.sshd.common.channel.ChannelListenerManager;
 import org.apache.sshd.common.cipher.CipherInformation;
 import org.apache.sshd.common.compression.CompressionInformation;
@@ -50,7 +50,7 @@ public interface Session
                 ChannelListenerManager,
                 PropertyResolver,
                 Closeable,
-                UsernameHolder {
+                MutableUserHolder {
 
     /**
      * Default prefix expected for the client / server identification string
@@ -86,8 +86,6 @@ public interface Session
      * @return The old value of the attribute.  {@code null} if it is new.
      */
     <T, E extends T> T setAttribute(AttributeKey<T> key, E value);
-
-    void setUsername(String username);
 
     /**
      * Retrieve the client version for this session.

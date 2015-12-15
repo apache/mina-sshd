@@ -17,24 +17,11 @@
  * under the License.
  */
 
-package org.apache.sshd.util.test;
-
-import org.apache.sshd.server.Command;
-import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.server.scp.UnknownCommand;
+package org.apache.sshd.common.auth;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UnknownCommandFactory implements CommandFactory {
-    public static final UnknownCommandFactory INSTANCE = new UnknownCommandFactory();
-
-    public UnknownCommandFactory() {
-        super();
-    }
-
-    @Override
-    public Command createCommand(String command) {
-        return new UnknownCommand(command);
-    }
+public interface MutableUserHolder extends UsernameHolder {
+    void setUsername(String username);
 }

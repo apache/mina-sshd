@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.command;
+package org.apache.sshd.server.scp;
 
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArraySet;

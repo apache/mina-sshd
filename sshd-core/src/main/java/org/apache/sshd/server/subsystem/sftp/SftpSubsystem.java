@@ -2006,7 +2006,7 @@ public class SftpSubsystem
         int readLen = Math.min(requestedLength, maxAllowed);
 
         if (log.isTraceEnabled()) {
-            log.trace("doRead({})[id={}]({})[offset={}] - req.={}, max.={}, effective={}",
+            log.trace("doRead({})[id={}]({})[offset={}] - req={}, max={}, effective={}",
                       getServerSession(), id, handle, offset, requestedLength, maxAllowed, readLen);
         }
 

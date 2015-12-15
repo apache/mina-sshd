@@ -677,7 +677,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         // Ignore exceptions that happen while closing immediately
         if ((!State.Opened.equals(curState)) && (!State.Graceful.equals(curState))) {
             if (log.isDebugEnabled()) {
-                log.debug("exceptionCaught({}) ignore {} due to state={}, message={}",
+                log.debug("exceptionCaught({}) ignore {} due to state={}, message='{}'",
                           this, t.getClass().getSimpleName(), curState, t.getMessage());
             }
             if (log.isTraceEnabled()) {

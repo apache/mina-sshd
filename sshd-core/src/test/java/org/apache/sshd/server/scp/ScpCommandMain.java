@@ -17,24 +17,17 @@
  * under the License.
  */
 
-package org.apache.sshd.util.test;
-
-import org.apache.sshd.server.Command;
-import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.server.scp.UnknownCommand;
+package org.apache.sshd.server.scp;
 
 /**
+ * Just a test class used to invoke {@link ScpCommand#main(String[])} in
+ * order to have logging - which is in {@code test} scope
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UnknownCommandFactory implements CommandFactory {
-    public static final UnknownCommandFactory INSTANCE = new UnknownCommandFactory();
-
-    public UnknownCommandFactory() {
-        super();
+public class ScpCommandMain {
+    public static void main(String[] args) throws Exception {
+        ScpCommand.main(args);
     }
 
-    @Override
-    public Command createCommand(String command) {
-        return new UnknownCommand(command);
-    }
 }

@@ -70,7 +70,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
     public Window(AbstractChannel channel, Object lock, boolean client, boolean local) {
         this.channel = ValidateUtils.checkNotNull(channel, "No channel provided");
         this.lock = (lock != null) ? lock : this;
-        this.suffix = ": " + (client ? "client" : "server") + " " + (local ? "local " : "remote") + " window";
+        this.suffix = ": " + (client ? "client" : "server") + " " + (local ? "local" : "remote") + " window";
     }
 
     @Override
@@ -119,7 +119,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("init({}) size={}, max.={}, packet={}", this, getSize(), getMaxSize(), getPacketSize());
+            log.debug("init({}) size={}, max={}, packet={}", this, getSize(), getMaxSize(), getPacketSize());
         }
     }
 

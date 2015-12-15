@@ -195,4 +195,14 @@ public final class OsUtils {
         }
     }
 
+    /**
+     * @param path The original path
+     * @return A path that can be compared with another one where case
+     * sensitivity of the underlying O/S has been taken into account -
+     * never {@code null}
+     */
+    public static String getComparablePath(String path) {
+        String p = (path == null) ? "" : path;
+        return isWin32() ? p.toLowerCase() : p;
+    }
 }

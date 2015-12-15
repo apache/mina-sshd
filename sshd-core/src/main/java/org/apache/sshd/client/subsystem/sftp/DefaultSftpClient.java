@@ -57,8 +57,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
     private final AtomicInteger cmdId = new AtomicInteger(100);
     private final Buffer receiveBuffer = new ByteArrayBuffer();
     private final byte[] workBuf = new byte[Integer.SIZE / Byte.SIZE];  // TODO in JDK-8 use Integer.BYTES
+    private final AtomicInteger versionHolder = new AtomicInteger(0);
     private boolean closing;
-    private int version;
     private final Map<String, byte[]> extensions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private final Map<String, byte[]> exposedExtensions = Collections.unmodifiableMap(extensions);
 
@@ -66,9 +66,13 @@ public class DefaultSftpClient extends AbstractSftpClient {
         this.clientSession = ValidateUtils.checkNotNull(clientSession, "No client session");
         this.channel = clientSession.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME);
         this.channel.setOut(new OutputStream() {
+            private final byte[] singleByte = new byte[1];
             @Override
             public void write(int b) throws IOException {
-                write(new byte[]{(byte) b}, 0, 1);
+                synchronized (singleByte) {
+                    singleByte[0] = (byte) b;
+                    write(singleByte);
+                }
             }
 
             @Override
@@ -85,6 +89,10 @@ public class DefaultSftpClient extends AbstractSftpClient {
                 synchronized (messages) {
                     closing = true;
                     messages.notifyAll();
+
+                    if (versionHolder.get() <= 0) {
+                        log.warn("onClose({}) closed before version negotiated", channel);
+                    }
                 }
             }
         });
@@ -93,7 +101,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     @Override
     public int getVersion() {
-        return version;
+        return versionHolder.get();
     }
 
     @Override
@@ -143,6 +151,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
             receiveBuffer.putBuffer(incoming);
             incoming = receiveBuffer;
         }
+
         // Process commands
         int rpos = incoming.rpos();
         for (int count = 0; receive(incoming); count++) {
@@ -157,6 +166,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         if (receiveBuffer != incoming && incoming.available() > 0) {
             receiveBuffer.putBuffer(incoming);
         }
+
         return read;
     }
 
@@ -300,7 +310,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
             if (id < SftpConstants.SFTP_V3) {
                 throw new SshException("Unsupported sftp version " + id);
             }
-            version = id;
+            versionHolder.set(id);
 
             while (buffer.available() > 0) {
                 String name = buffer.getString();
@@ -363,7 +373,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         buffer.putString(SftpConstants.EXT_VERSION_SELECT);
         buffer.putString(verVal);
         checkStatus(SftpConstants.SSH_FXP_EXTENDED, buffer);
-        version = selected;
+        versionHolder.set(selected);
         return selected;
     }
 }

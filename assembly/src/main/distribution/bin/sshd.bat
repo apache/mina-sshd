@@ -25,7 +25,7 @@ set DIRNAME=%~dp0%
 set PROGNAME=%~nx0%
 set ARGS=%*
 
-title Sshd
+title sshd
 
 goto BEGIN
 

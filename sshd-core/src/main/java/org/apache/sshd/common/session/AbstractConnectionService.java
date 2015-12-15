@@ -37,6 +37,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.RequestHandler;
+import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.forward.TcpipForwarder;
 import org.apache.sshd.common.forward.TcpipForwarderFactory;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -231,13 +232,22 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
 
     public void channelOpenConfirmation(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
-        int recipient = buffer.getInt();
-        if (log.isDebugEnabled()) {
-            log.debug("channelOpenConfirmation({}) Received SSH_MSG_CHANNEL_OPEN_CONFIRMATION recipient=", channel, recipient);
-        }
+        int sender = buffer.getInt();
         int rwsize = buffer.getInt();
         int rmpsize = buffer.getInt();
-        channel.handleOpenSuccess(recipient, rwsize, rmpsize, buffer);
+        if (log.isDebugEnabled()) {
+            log.debug("channelOpenConfirmation({}) SSH_MSG_CHANNEL_OPEN_CONFIRMATION sender={}, window-size={}, packet-size={}",
+                      channel, sender, rwsize, rmpsize);
+        }
+        /*
+         * NOTE: the 'sender' of the SSH_MSG_CHANNEL_OPEN_CONFIRMATION is the
+         * recipient on the client side - see rfc4254 section 5.1:
+         *
+         *      'sender channel' is the channel number allocated by the other side
+         *
+         * in our case, the server
+         */
+        channel.handleOpenSuccess(sender, rwsize, rmpsize, buffer);
     }
 
     public void channelOpenFailure(Buffer buffer) throws IOException {
@@ -353,77 +363,93 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
 
     protected void channelOpen(Buffer buffer) throws Exception {
         String type = buffer.getString();
-        final int id = buffer.getInt();
+        final int sender = buffer.getInt();
         final int rwsize = buffer.getInt();
         final int rmpsize = buffer.getInt();
+        /*
+         * NOTE: the 'sender' is the identifier assigned by the remote side - the server in this case
+         */
         if (log.isDebugEnabled()) {
-            log.debug("Received SSH_MSG_CHANNEL_OPEN id={}, type={}", id, type);
+            log.debug("channelOpen({}) SSH_MSG_CHANNEL_OPEN sender={}, type={}, window-size={}, packet-size={}",
+                      this, sender, type, rwsize, rmpsize);
         }
 
         if (isClosing()) {
-            Buffer buf = session.prepareBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, BufferUtils.clear(buffer));
-            buf.putInt(id);
-            buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
-            buf.putString("SSH server is shutting down: " + type);
-            buf.putString("");  // TODO add language tag
-            session.writePacket(buf);
-            return;
-        }
-        if (!isAllowMoreSessions()) {
-            Buffer buf = session.prepareBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, BufferUtils.clear(buffer));
-            buf.putInt(id);
-            buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
-            buf.putString("additional sessions disabled");
-            buf.putString("");  // TODO add language tag
-            session.writePacket(buf);
+            // TODO add language tag
+            sendChannelOpenFailure(buffer, sender, SshConstants.SSH_OPEN_CONNECT_FAILED, "Server is shutting down while attempting to open channel type=" + type, "");
             return;
         }
 
-        final Channel channel = NamedFactory.Utils.create(session.getFactoryManager().getChannelFactories(), type);
+        if (!isAllowMoreSessions()) {
+            // TODO add language tag
+            sendChannelOpenFailure(buffer, sender, SshConstants.SSH_OPEN_CONNECT_FAILED, "additional sessions disabled", "");
+            return;
+        }
+
+        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
+        final Channel channel = NamedFactory.Utils.create(manager.getChannelFactories(), type);
         if (channel == null) {
-            Buffer buf = session.prepareBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, BufferUtils.clear(buffer));
-            buf.putInt(id);
-            buf.putInt(SshConstants.SSH_OPEN_UNKNOWN_CHANNEL_TYPE);
-            buf.putString("Unsupported channel type: " + type);
-            buf.putString("");  // TODO add language tag
-            session.writePacket(buf);
+            // TODO add language tag
+            sendChannelOpenFailure(buffer, sender, SshConstants.SSH_OPEN_UNKNOWN_CHANNEL_TYPE, "Unsupported channel type: " + type, "");
             return;
         }
 
         final int channelId = registerChannel(channel);
-        channel.open(id, rwsize, rmpsize, buffer).addListener(new SshFutureListener<OpenFuture>() {
+        channel.open(sender, rwsize, rmpsize, buffer).addListener(new SshFutureListener<OpenFuture>() {
             @Override
+            @SuppressWarnings("synthetic-access")
             public void operationComplete(OpenFuture future) {
                 try {
                     if (future.isOpened()) {
+                        Window window = channel.getLocalWindow();
+                        if (log.isDebugEnabled()) {
+                            log.debug("operationComplete({}) send SSH_MSG_CHANNEL_OPEN_CONFIRMATION recipient={}, sender={}, window-size={}, packet-size={}",
+                                      channel, sender, channelId, window.getSize(), window.getPacketSize());
+                        }
                         Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_CONFIRMATION, Integer.SIZE);
-                        buf.putInt(id);
-                        buf.putInt(channelId);
-                        buf.putInt(channel.getLocalWindow().getSize());
-                        buf.putInt(channel.getLocalWindow().getPacketSize());
+                        buf.putInt(sender); // remote (server side) identifier
+                        buf.putInt(channelId);  // local (client side) identifier
+                        buf.putInt(window.getSize());
+                        buf.putInt(window.getPacketSize());
                         session.writePacket(buf);
                     } else {
                         Throwable exception = future.getException();
                         if (exception != null) {
                             String message = exception.getMessage();
-                            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, message.length() + Long.SIZE);
-                            buf.putInt(id);
+                            int reasonCode = 0;
                             if (exception instanceof OpenChannelException) {
-                                buf.putInt(((OpenChannelException) exception).getReasonCode());
-                                buf.putString(exception.getMessage());
+                                reasonCode = ((OpenChannelException) exception).getReasonCode();
                             } else {
-                                buf.putInt(0);
-                                buf.putString("Error opening channel: " + exception.getMessage());
+                                message = exception.getClass().getSimpleName() + " while opening channel: " + message;
                             }
-                            buf.putString("");
-                            session.writePacket(buf);
+
+                            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, message.length() + Long.SIZE);
+                            sendChannelOpenFailure(buf, sender, reasonCode, message, "");
                         }
                     }
                 } catch (IOException e) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("operationComplete({}) {}: {}",
+                                  AbstractConnectionService.this, e.getClass().getSimpleName(), e.getMessage());
+                    }
                     session.exceptionCaught(e);
                 }
             }
         });
+    }
+
+    protected void sendChannelOpenFailure(Buffer buffer, int sender, int reasonCode, String message, String lang) throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("sendChannelOpenFailure({}) sender={}, reason={}, lang={}, message='{}'",
+                      this, sender, SshConstants.getOpenErrorCodeName(reasonCode), lang, message);
+        }
+
+        Buffer buf = session.prepareBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, BufferUtils.clear(buffer));
+        buf.putInt(sender);
+        buf.putInt(reasonCode);
+        buf.putString(message);
+        buf.putString(lang);
+        session.writePacket(buf);
     }
 
     /**

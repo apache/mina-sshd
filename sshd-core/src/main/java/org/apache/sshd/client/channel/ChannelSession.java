@@ -132,23 +132,35 @@ public class ChannelSession extends AbstractClientChannel {
 
     protected void pumpInputStream() {
         try {
+            Session session = getSession();
             byte[] buffer = new byte[remoteWindow.getPacketSize()];
             while (!closeFuture.isClosed()) {
                 int len = securedRead(in, buffer, 0, buffer.length);
-                Session session = getSession();
+                if (len < 0) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("pumpInputStream({}) EOF signalled", this);
+                    }
+                    sendEof();
+                    return;
+                }
+
                 session.resetIdleTimeout();
                 if (len > 0) {
                     invertedIn.write(buffer, 0, len);
                     invertedIn.flush();
-                } else {
-                    sendEof();
-                    break;
                 }
+            }
+
+            if (log.isDebugEnabled()) {
+                log.debug("pumpInputStream({}) close future closed", this);
             }
         } catch (Exception e) {
             if (!isClosing()) {
                 if (log.isDebugEnabled()) {
                     log.debug("pumpInputStream({}) Caught {} : {}", this, e.getClass().getSimpleName(), e.getMessage());
+                }
+                if (log.isTraceEnabled()) {
+                    log.trace("pumpInputStream(" + this + ") caught exception details", e);
                 }
                 close(false);
             }

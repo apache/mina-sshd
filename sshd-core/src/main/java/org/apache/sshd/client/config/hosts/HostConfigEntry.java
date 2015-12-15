@@ -49,7 +49,7 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.sshd.common.auth.UsernameHolder;
+import org.apache.sshd.common.auth.MutableUserHolder;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.config.keys.IdentityUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
@@ -68,7 +68,7 @@ import org.apache.sshd.common.util.io.NoCloseReader;
  * file format</A>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class HostConfigEntry implements UsernameHolder {
+public class HostConfigEntry implements MutableUserHolder {
 
     /**
      * Used in a host pattern to denote zero or more consecutive characters
@@ -231,6 +231,7 @@ public class HostConfigEntry implements UsernameHolder {
         return username;
     }
 
+    @Override
     public void setUsername(String username) {
         this.username = username;
     }

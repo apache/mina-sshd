@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.server.CommandFactory;
+import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;

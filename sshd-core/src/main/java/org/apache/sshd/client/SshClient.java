@@ -77,6 +77,7 @@ import org.apache.sshd.client.simple.SimpleClient;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.ServiceFactory;
@@ -132,7 +133,7 @@ import org.apache.sshd.common.util.io.NoCloseOutputStream;
  *
  *      try(ClientSession session = client.connect(login, host, port).await().getSession()) {
  *          session.addPasswordIdentity(password);
- *          session.auth().verify();
+ *          session.auth().verify(...timeout...);
  *
  *          try(ClientChannel channel = session.createChannel("shell")) {
  *              channel.setIn(new NoCloseInputStream(System.in));
@@ -769,14 +770,14 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 }
             } else if ("-i".equals(argName)) {
                 if (i + 1 >= numArgs) {
-                    error = showError(stderr, "option requires and argument: " + argName);
+                    error = showError(stderr, "option requires an argument: " + argName);
                     break;
                 }
 
                 identities.add(new File(args[++i]));
             } else if ("-o".equals(argName)) {
                 if (i + 1 >= numArgs) {
-                    error = showError(stderr, "option requires and argument: " + argName);
+                    error = showError(stderr, "option requires an argument: " + argName);
                     break;
                 }
                 String opt = args[++i];
@@ -897,7 +898,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             // TODO use a configurable wait time
             ClientSession session = client.connect(login, host, port).verify().getSession();
             try {
-                session.auth().verify();    // TODO use a configurable wait time
+                session.auth().verify(FactoryManager.DEFAULT_AUTH_TIMEOUT);    // TODO use a configurable wait time
                 return session;
             } catch (Exception e) {
                 session.close(true);
