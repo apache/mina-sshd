@@ -213,7 +213,7 @@ setupDefaults() {
             CLASSPATH="$CLASSPATH:$file"
         fi
     done
-    DEFAULT_JAVA_DEBUG_OPTS="-Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"
+    DEFAULT_JAVA_DEBUG_OPTS="-Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"
 
     ##
     ## TODO: Move to conf/profiler/yourkit.{sh|cmd}

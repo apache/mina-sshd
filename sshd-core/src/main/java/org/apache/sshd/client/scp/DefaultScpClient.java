@@ -33,6 +33,8 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
+
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.session.ClientSession;
@@ -73,10 +75,11 @@ public class DefaultScpClient extends AbstractScpClient {
     @Override
     public void download(String remote, OutputStream local) throws IOException {
         String cmd = createReceiveCommand(remote, Collections.<Option>emptyList());
-        ChannelExec channel = openCommandChannel(getClientSession(), cmd);
+        ClientSession session = getClientSession();
+        ChannelExec channel = openCommandChannel(session, cmd);
         try {
             // NOTE: we use a mock file system since we expect no invocations for it
-            ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), new MockFileSystem(remote), listener);
+            ScpHelper helper = new ScpHelper(session, channel.getInvertedOut(), channel.getInvertedIn(), new MockFileSystem(remote), listener);
             helper.receiveFileStream(local, ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE);
         } finally {
             channel.close(false);
@@ -86,9 +89,10 @@ public class DefaultScpClient extends AbstractScpClient {
     @Override
     protected void download(String remote, FileSystem fs, Path local, Collection<Option> options) throws IOException {
         String cmd = createReceiveCommand(remote, options);
-        ChannelExec channel = openCommandChannel(getClientSession(), cmd);
+        ClientSession session = getClientSession();
+        ChannelExec channel = openCommandChannel(session, cmd);
         try {
-            ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs, listener);
+            ScpHelper helper = new ScpHelper(session, channel.getInvertedOut(), channel.getInvertedIn(), fs, listener);
             helper.receive(local,
                     options.contains(Option.Recursive),
                     options.contains(Option.TargetIsDirectory),
@@ -106,9 +110,10 @@ public class DefaultScpClient extends AbstractScpClient {
                 ? remote
                 : ValidateUtils.checkNotNullAndNotEmpty(remote.substring(namePos + 1), "No name value in remote=%s", remote);
         final String cmd = createSendCommand(remote, (time != null) ? EnumSet.of(Option.PreserveAttributes) : Collections.<Option>emptySet());
-        ChannelExec channel = openCommandChannel(clientSession, cmd);
+        ClientSession session = getClientSession();
+        ChannelExec channel = openCommandChannel(session, cmd);
         try {
-            ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), new MockFileSystem(remote), listener);
+            ScpHelper helper = new ScpHelper(session, channel.getInvertedOut(), channel.getInvertedIn(), new MockFileSystem(remote), listener);
             final Path mockPath = new MockPath(remote);
             helper.sendStream(new DefaultScpStreamResolver(name, mockPath, perms, time, size, local, cmd),
                               time != null, ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
@@ -133,7 +138,7 @@ public class DefaultScpClient extends AbstractScpClient {
             FileSystemFactory factory = manager.getFileSystemFactory();
             FileSystem fs = factory.createFileSystem(session);
             try {
-                ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs, listener);
+                ScpHelper helper = new ScpHelper(session, channel.getInvertedOut(), channel.getInvertedIn(), fs, listener);
                 executor.execute(helper, local, options);
             } finally {
                 try {
@@ -164,7 +169,8 @@ public class DefaultScpClient extends AbstractScpClient {
         boolean error = false;
         for (int index = 0; (index < numArgs) && (!error); index++) {
             String argName = args[index];
-            if ("-i".equals(argName) || "-P".equals(argName) || "-o".equals(argName)) {
+            // handled by 'setupClientSession'
+            if (SshClient.isArgumentedOption("-P", argName)) {
                 if ((index + 1) >= numArgs) {
                     error = showError(stderr, "option requires an argument: " + argName);
                     break;
@@ -172,7 +178,8 @@ public class DefaultScpClient extends AbstractScpClient {
 
                 effective.add(argName);
                 effective.add(args[++index]);
-            } else if ("-r".equals(argName) || "-p".equals(argName) || "-q".equals(argName)) {
+            } else if ("-r".equals(argName) || "-p".equals(argName) || "-q".equals(argName)
+                    || "-v".equals(argName) || "-vv".equals(argName) || "-vvv".equals(argName)) {
                 effective.add(argName);
             } else if (argName.charAt(0) == '-') {
                 error = showError(stderr, "Unknown option: " + argName);
@@ -213,12 +220,23 @@ public class DefaultScpClient extends AbstractScpClient {
     public static void main(String[] args) throws Exception {
         final PrintStream stdout = System.out;
         final PrintStream stderr = System.err;
+        OutputStream logStream = stdout;
         try (BufferedReader stdin = new BufferedReader(new InputStreamReader(new NoCloseInputStream(System.in)))) {
             args = normalizeCommandArguments(stdout, stderr, args);
+            int numArgs = GenericUtils.length(args);
+            // see the way normalizeCommandArguments works...
+            if (numArgs >= 2) {
+                Level level = SshClient.resolveLoggingVerbosity(args, numArgs - 2);
+                logStream = SshClient.resolveLoggingTargetStream(stdout, stderr, args, numArgs - 2);
+                if (logStream != null) {
+                    SshClient.setupLogging(level, stdout, stderr, logStream);
+                }
+            }
 
-            ClientSession session = GenericUtils.isEmpty(args) ? null : SshClient.setupClientSession("-P", stdin, stdout, stderr, args);
+            ClientSession session = (logStream == null) || GenericUtils.isEmpty(args)
+                    ? null : SshClient.setupClientSession("-P", stdin, stdout, stderr, args);
             if (session == null) {
-                stderr.println("usage: scp [-P port] [-i identity] [-r] [-p] [-q] [-o option=value] <source> <target>");
+                stderr.println("usage: scp [-P port] [-i identity] [-v[v][v]] [-E logoutput] [-r] [-p] [-q] [-o option=value] <source> <target>");
                 stderr.println();
                 stderr.println("Where <source> or <target> are either 'user@host:file' or a local file path");
                 stderr.println("NOTE: exactly ONE of the source or target must be remote and the other one local");
@@ -228,7 +246,6 @@ public class DefaultScpClient extends AbstractScpClient {
 
             try {
                 // see the way normalizeCommandArguments works...
-                int numArgs = GenericUtils.length(args);
                 Collection<Option> options = EnumSet.noneOf(Option.class);
                 boolean quiet = false;
                 for (int index = 0; index < numArgs; index++) {
@@ -290,6 +307,10 @@ public class DefaultScpClient extends AbstractScpClient {
                 }
             } finally {
                 session.close();
+            }
+        } finally {
+            if ((logStream != stdout) && (logStream != stderr)) {
+                logStream.close();
             }
         }
     }

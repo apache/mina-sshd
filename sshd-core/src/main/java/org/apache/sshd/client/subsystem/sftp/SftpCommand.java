@@ -22,6 +22,7 @@ package org.apache.sshd.client.subsystem.sftp;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -188,13 +189,17 @@ public class SftpCommand implements Channel {
     public static void main(String[] args) throws Exception {
         PrintStream stdout = System.out;
         PrintStream stderr = System.err;
+        OutputStream logStream = stderr;
         try (BufferedReader stdin = new BufferedReader(new InputStreamReader(new NoCloseInputStream(System.in)))) {
             Level level = SshClient.resolveLoggingVerbosity(args);
-            SshClient.setupLogging(level);
+            logStream = SshClient.resolveLoggingTargetStream(stdout, stderr, args);
+            if (logStream != null) {
+                SshClient.setupLogging(level, stdout, stderr, logStream);
+            }
 
-            ClientSession session = SshClient.setupClientSession("-P", stdin, stdout, stderr, args);
+            ClientSession session = (logStream == null) ? null : SshClient.setupClientSession("-P", stdin, stdout, stderr, args);
             if (session == null) {
-                System.err.println("usage: sftp [-v[v][v]] [-i identity] [-l login] [-P port] [-o option=value] hostname/user@host");
+                System.err.println("usage: sftp [-v[v][v]] [-E logoutput] [-i identity] [-l login] [-P port] [-o option=value] hostname/user@host");
                 System.exit(-1);
                 return;
             }
@@ -205,6 +210,10 @@ public class SftpCommand implements Channel {
                 }
             } finally {
                 session.close();
+            }
+        } finally {
+            if ((logStream != stdout) && (logStream != stderr)) {
+                logStream.close();
             }
         }
     }

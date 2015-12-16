@@ -23,13 +23,17 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StreamCorruptedException;
 import java.io.StringWriter;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.ArrayList;
@@ -733,9 +737,17 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
           Main class implementation
      *=================================*/
 
-    private static boolean showError(PrintStream stderr, String message) {
+    public static boolean showError(PrintStream stderr, String message) {
         stderr.println(message);
         return true;
+    }
+
+    public static boolean isArgumentedOption(String portOption, String argName) {
+        return portOption.equals(argName)
+             || "-i".equals(argName)
+             || "-o".equals(argName)
+             || "-l".equals(argName)
+             || "-E".equals(argName);
     }
 
     // NOTE: ClientSession#getFactoryManager is the SshClient
@@ -752,35 +764,31 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         int numArgs = GenericUtils.length(args);
         for (int i = 0; (!error) && (i < numArgs); i++) {
             String argName = args[i];
-            if (portOption.equals(argName)) {
-                if (i + 1 >= numArgs) {
+            String argVal = null;
+            if (isArgumentedOption(portOption, argName)) {
+                if ((i + 1) >= numArgs) {
                     error = showError(stderr, "option requires an argument: " + argName);
                     break;
                 }
 
+                argVal = args[++i];
+            }
+
+            if (portOption.equals(argName)) {
                 if (port > 0) {
                     error = showError(stderr, argName + " option value re-specified: " + port);
                     break;
                 }
 
-                port = Integer.parseInt(args[++i]);
+                port = Integer.parseInt(argVal);
                 if (port <= 0) {
                     error = showError(stderr, "Bad option value for " + argName + ": " + port);
                     break;
                 }
             } else if ("-i".equals(argName)) {
-                if (i + 1 >= numArgs) {
-                    error = showError(stderr, "option requires an argument: " + argName);
-                    break;
-                }
-
-                identities.add(new File(args[++i]));
+                identities.add(new File(argVal));
             } else if ("-o".equals(argName)) {
-                if (i + 1 >= numArgs) {
-                    error = showError(stderr, "option requires an argument: " + argName);
-                    break;
-                }
-                String opt = args[++i];
+                String opt = argVal;
                 int idx = opt.indexOf('=');
                 if (idx <= 0) {
                     error = showError(stderr, "bad syntax for option: " + opt);
@@ -788,17 +796,12 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 }
                 options.put(opt.substring(0, idx), opt.substring(idx + 1));
             } else if ("-l".equals(argName)) {
-                if (i + 1 >= numArgs) {
-                    error = showError(stderr, "option requires an argument: " + argName);
-                    break;
-                }
-
                 if (login != null) {
                     error = showError(stderr, argName + " option value re-specified: " + port);
                     break;
                 }
 
-                login = args[++i];
+                login = argVal;
             } else if (argName.charAt(0) != '-') {
                 if (host != null) { // assume part of a command following it
                     break;
@@ -929,8 +932,52 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return Level.WARNING;
     }
 
-    public static Handler setupLogging(Level level) {
-        Handler fh = new ConsoleHandler();
+    public static OutputStream resolveLoggingTargetStream(PrintStream stdout, PrintStream stderr, String ... args) {
+        return resolveLoggingTargetStream(stdout, stderr, args, GenericUtils.length(args));
+    }
+
+    public static OutputStream resolveLoggingTargetStream(PrintStream stdout, PrintStream stderr, String[] args, int maxIndex) {
+        for (int index = 0; index < maxIndex; index++) {
+            String argName = args[index];
+            if ("-E".equals(argName)) {
+                if ((index + 1) >= maxIndex) {
+                    showError(stderr, "Missing " + argName + " option argument");
+                    return null;
+                }
+
+                String argVal = args[index + 1];
+                if ("--".equals(argVal)) {
+                    return stdout;
+                }
+
+                try {
+                    Path path = Paths.get(argVal).normalize().toAbsolutePath();
+                    return Files.newOutputStream(path);
+                } catch (IOException e) {
+                    showError(stderr, "Failed (" + e.getClass().getSimpleName() + ") to open " + argVal + ": " + e.getMessage());
+                    return null;
+                }
+            }
+        }
+
+        return stderr;
+    }
+
+    public static Handler setupLogging(Level level, final PrintStream stdout, final PrintStream stderr, final OutputStream outputStream) {
+        Handler fh = new ConsoleHandler() {
+            {
+                setOutputStream(outputStream); // override the default (stderr)
+            }
+
+            @Override
+            protected synchronized void setOutputStream(OutputStream out) throws SecurityException {
+                if ((out == stdout) || (out == stderr)) {
+                    super.setOutputStream(new NoCloseOutputStream(out));
+                } else {
+                    super.setOutputStream(out);
+                }
+            }
+        };
         fh.setLevel(Level.FINEST);
         fh.setFormatter(new Formatter() {
             @Override
@@ -950,6 +997,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                         record.getLoggerName(), message, throwable);
             }
         });
+
         Logger root = Logger.getLogger("");
         for (Handler handler : root.getHandlers()) {
             root.removeHandler(handler);
@@ -971,10 +1019,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         boolean error = false;
         String target = null;
         Level level = Level.WARNING;
+        OutputStream logStream = stderr;
         for (int i = 0; i < numArgs; i++) {
             String argName = args[i];
             // handled by 'setupClientSession'
-            if ((command == null) && ("-i".equals(argName) || "-p".equals(argName) || "-o".equals(argName) || "-l".equals(argName))) {
+            if ((command == null) && isArgumentedOption("-p", argName)) {
                 if ((i + 1) >= numArgs) {
                     error = showError(stderr, "option requires an argument: " + argName);
                     break;
@@ -1009,6 +1058,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 agentForward = false;
             } else {
                 level = resolveLoggingVerbosity(args, i);
+                logStream = resolveLoggingTargetStream(stdout, stderr, args, i);
+                if (logStream == null) {
+                    error = true;
+                    break;
+                }
                 if ((command == null) && target == null) {
                     target = argName;
                 } else {
@@ -1020,11 +1074,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             }
         }
 
-        setupLogging(level);
-
         ClientSession session = null;
         try (BufferedReader stdin = new BufferedReader(new InputStreamReader(new NoCloseInputStream(System.in)))) {
             if (!error) {
+                setupLogging(level, stdout, stderr, logStream);
+
                 session = setupClientSession("-p", stdin, stdout, stderr, args);
                 if (session == null) {
                     error = true;
@@ -1032,7 +1086,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             }
 
             if (error) {
-                System.err.println("usage: ssh [-A|-a] [-v[v][v]] [-D socksPort] [-l login] [-p port] [-o option=value] hostname/user@host [command]");
+                System.err.println("usage: ssh [-A|-a] [-v[v][v]] [-E logoutput] [-D socksPort] [-l login] [-p port] [-o option=value] hostname/user@host [command]");
                 System.exit(-1);
                 return;
             }
@@ -1087,6 +1141,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 }
             } finally {
                 session.close();
+            }
+        } finally {
+            if ((logStream != stdout) && (logStream != stderr)) {
+                logStream.close();
             }
         }
     }

@@ -47,7 +47,7 @@ if not exist "%SSHD_HOME%" (
 )
 
 set DEFAULT_JAVA_OPTS=-server -Xmx512M -Dcom.sun.management.jmxremote
-set DEFAULT_JAVA_DEBUG_OPTS=-Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005
+set DEFAULT_JAVA_DEBUG_OPTS=-Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005
 
 rem Support for loading native libraries
 set PATH=%PATH%;%SSHD_HOME%\lib
