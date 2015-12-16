@@ -910,9 +910,26 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
     }
 
-    //////////////////////////////////////////////////////////////////////////
+    public static Level resolveLoggingVerbosity(String ... args) {
+        return resolveLoggingVerbosity(args, GenericUtils.length(args));
+    }
 
-    public static void main(String[] args) throws Exception {
+    public static Level resolveLoggingVerbosity(String[] args, int maxIndex) {
+        for (int index = 0; index < maxIndex; index++) {
+            String argName = args[index];
+            if ("-v".equals(argName)) {
+                return Level.INFO;
+            } else if ("-vv".equals(argName)) {
+                return Level.FINE;
+            } else if ("-vvv".equals(argName)) {
+                return Level.FINEST;
+            }
+        }
+
+        return Level.WARNING;
+    }
+
+    public static Handler setupLogging(Level level) {
         Handler fh = new ConsoleHandler();
         fh.setLevel(Level.FINEST);
         fh.setFormatter(new Formatter() {
@@ -938,48 +955,61 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             root.removeHandler(handler);
         }
         root.addHandler(fh);
+        root.setLevel(level);
+        return fh;
+    }
 
+    //////////////////////////////////////////////////////////////////////////
+
+    public static void main(String[] args) throws Exception {
         PrintStream stdout = System.out;
         PrintStream stderr = System.err;
         boolean agentForward = false;
         List<String> command = null;
-        int logLevel = 0;
         int socksPort = -1;
         int numArgs = GenericUtils.length(args);
         boolean error = false;
         String target = null;
+        Level level = Level.WARNING;
         for (int i = 0; i < numArgs; i++) {
             String argName = args[i];
-            if (command == null && "-D".equals(argName)) {
-                if (i + 1 >= numArgs) {
-                    System.err.println("option requires an argument: " + argName);
-                    error = true;
+            // handled by 'setupClientSession'
+            if ((command == null) && ("-i".equals(argName) || "-p".equals(argName) || "-o".equals(argName) || "-l".equals(argName))) {
+                if ((i + 1) >= numArgs) {
+                    error = showError(stderr, "option requires an argument: " + argName);
+                    break;
+                }
+
+                continue;
+            }
+
+            // verbosity handled separately
+            if ((command == null) && ("-v".equals(argName) || "-vv".equals(argName) || "-vvv".equals(argName))) {
+                continue;
+            }
+
+            if ((command == null) && "-D".equals(argName)) {
+                if ((i + 1) >= numArgs) {
+                    error = showError(stderr, "option requires an argument: " + argName);
                     break;
                 }
                 if (socksPort > 0) {
-                    stderr.println(argName + " option value re-specified: " + socksPort);
-                    error = true;
+                    error = showError(stderr, argName + " option value re-specified: " + socksPort);
                     break;
                 }
 
                 socksPort = Integer.parseInt(args[++i]);
                 if (socksPort <= 0) {
-                    stderr.println("Bad option value for " + argName + ": " + socksPort);
-                    error = true;
+                    error = showError(stderr, "Bad option value for " + argName + ": " + socksPort);
                     break;
                 }
-            } else if (command == null && "-v".equals(argName)) {
-                logLevel += 1;
-            } else if (command == null && "-vv".equals(argName)) {
-                logLevel += 2;
-            } else if (command == null && "-vvv".equals(argName)) {
-                logLevel += 3;
-            } else if (command == null && "-A".equals(argName)) {
+            } else if ((command == null) && "-A".equals(argName)) {
                 agentForward = true;
-            } else if (command == null && "-a".equals(argName)) {
+            } else if ((command == null) && "-a".equals(argName)) {
                 agentForward = false;
             } else {
-                if (command == null && target == null) {
+                level = resolveLoggingVerbosity(args, i);
+                if ((command == null) && target == null) {
                     target = argName;
                 } else {
                     if (command == null) {
@@ -990,15 +1020,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             }
         }
 
-        if (logLevel <= 0) {
-            root.setLevel(Level.WARNING);
-        } else if (logLevel == 1) {
-            root.setLevel(Level.INFO);
-        } else if (logLevel == 2) {
-            root.setLevel(Level.FINE);
-        } else {
-            root.setLevel(Level.FINEST);
-        }
+        setupLogging(level);
 
         ClientSession session = null;
         try (BufferedReader stdin = new BufferedReader(new InputStreamReader(new NoCloseInputStream(System.in)))) {
