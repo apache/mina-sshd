@@ -22,9 +22,11 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -752,8 +754,10 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         super.preClose();
     }
 
-    protected Service[] getServices() {
-        return currentService != null ? new Service[]{currentService} : new Service[0];
+    protected List<Service> getServices() {
+        return (currentService != null)
+              ? Collections.singletonList(currentService)
+              : Collections.<Service>emptyList();
     }
 
     @Override

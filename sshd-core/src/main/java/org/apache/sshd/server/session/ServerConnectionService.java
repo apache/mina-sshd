@@ -22,24 +22,24 @@ import java.io.IOException;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.AbstractConnectionService;
-import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Server side <code>ssh-connection</code> service.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ServerConnectionService extends AbstractConnectionService {
-
-    protected ServerConnectionService(Session s) throws SshException {
+public class ServerConnectionService extends AbstractConnectionService<AbstractServerSession> implements ServerSessionHolder {
+    protected ServerConnectionService(AbstractServerSession s) throws SshException {
         super(s);
 
-        ValidateUtils.checkTrue(s instanceof ServerSession, "Server side service used on client side");
-
-        if (!session.isAuthenticated()) {
+        if (!s.isAuthenticated()) {
             throw new SshException("Session is not authenticated");
         }
+    }
+
+    @Override
+    public final ServerSession getServerSession() {
+        return getSession();
     }
 
     @Override

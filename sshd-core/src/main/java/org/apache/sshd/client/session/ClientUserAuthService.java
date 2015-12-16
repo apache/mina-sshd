@@ -37,6 +37,7 @@ import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -47,7 +48,9 @@ import org.apache.sshd.common.util.closeable.AbstractCloseable;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ClientUserAuthService extends AbstractCloseable implements Service, ClientSessionHolder {
+public class ClientUserAuthService
+        extends AbstractCloseable
+        implements Service, SessionHolder<ClientSession>, ClientSessionHolder {
 
     /**
      * The AuthFuture that is being used by the current auth request.  This encodes the state.

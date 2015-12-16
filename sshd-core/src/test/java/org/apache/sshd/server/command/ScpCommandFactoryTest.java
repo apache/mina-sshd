@@ -79,12 +79,12 @@ public class ScpCommandFactoryTest extends BaseTestSupport {
      * <UL>
      * <LI>
      * Make sure the builder returns new instances on every call to
-     * {@link ScpCommandFactory.Builder#build()} method
+     * {@link org.apache.sshd.server.scp.ScpCommandFactory.Builder#build()} method
      * </LI>
      *
      * <LI>
      * Make sure values are preserved between successive invocations
-     * of the {@link ScpCommandFactory.Builder#build()} method
+     * of the {@link org.apache.sshd.server.scp.ScpCommandFactory.Builder#build()} method
      * </LI>
      * </UL
      */

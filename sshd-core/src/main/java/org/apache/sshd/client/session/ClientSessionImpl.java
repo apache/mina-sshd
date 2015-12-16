@@ -20,6 +20,7 @@ package org.apache.sshd.client.session;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -106,16 +107,12 @@ public class ClientSessionImpl extends AbstractClientSession {
     }
 
     @Override
-    protected Service[] getServices() {
-        Service[] services;
+    protected List<Service> getServices() {
         if (nextService != null) {
-            services = new Service[]{currentService, nextService};
-        } else if (currentService != null) {
-            services = new Service[]{currentService};
+            return Arrays.asList(currentService, nextService);
         } else {
-            services = new Service[0];
+            return super.getServices();
         }
-        return services;
     }
 
     @Override
@@ -175,8 +172,8 @@ public class ClientSessionImpl extends AbstractClientSession {
 
     @Override
     public KeyExchangeFuture switchToNoneCipher() throws IOException {
-        if (!(currentService instanceof AbstractConnectionService)
-                || !((AbstractConnectionService) currentService).getChannels().isEmpty()) {
+        if (!(currentService instanceof AbstractConnectionService<?>)
+                || !GenericUtils.isEmpty(((AbstractConnectionService<?>) currentService).getChannels())) {
             throw new IllegalStateException("The switch to the none cipher must be done immediately after authentication");
         }
 

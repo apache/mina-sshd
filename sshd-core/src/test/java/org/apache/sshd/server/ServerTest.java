@@ -310,27 +310,30 @@ public class ServerTest extends BaseTestSupport {
             assertTrue("No changes in open channels", channelListener.waitForModification(3L, TimeUnit.SECONDS));
             assertTrue("No open server side channels", GenericUtils.size(channelListener.getOpenChannels()) > 0);
 
-            try (AbstractSession serverSession = sshd.getActiveSessions().iterator().next();
-                 Channel channel = serverSession.getService(AbstractConnectionService.class).getChannels().iterator().next()) {
+            try (AbstractSession serverSession = sshd.getActiveSessions().iterator().next()) {
+                AbstractConnectionService<?> service = serverSession.getService(AbstractConnectionService.class);
+                Collection<? extends Channel> channels = service.getChannels();
 
-                final long MAX_TIMEOUT_VALUE = IDLE_TIMEOUT_VALUE + DISCONNECT_TIMEOUT_VALUE + TimeUnit.SECONDS.toMillis(3L);
-                for (long totalNanoTime = 0L; channel.getRemoteWindow().getSize() > 0; ) {
-                    long nanoStart = System.nanoTime();
-                    Thread.sleep(1L);
-                    long nanoEnd = System.nanoTime();
-                    long nanoDuration = nanoEnd - nanoStart;
+                try (Channel channel = channels.iterator().next()) {
+                    final long MAX_TIMEOUT_VALUE = IDLE_TIMEOUT_VALUE + DISCONNECT_TIMEOUT_VALUE + TimeUnit.SECONDS.toMillis(3L);
+                    for (long totalNanoTime = 0L; channel.getRemoteWindow().getSize() > 0; ) {
+                        long nanoStart = System.nanoTime();
+                        Thread.sleep(1L);
+                        long nanoEnd = System.nanoTime();
+                        long nanoDuration = nanoEnd - nanoStart;
 
-                    totalNanoTime += nanoDuration;
-                    assertTrue("Waiting for too long on remote window size to reach zero", totalNanoTime < TimeUnit.MILLISECONDS.toNanos(MAX_TIMEOUT_VALUE));
+                        totalNanoTime += nanoDuration;
+                        assertTrue("Waiting for too long on remote window size to reach zero", totalNanoTime < TimeUnit.MILLISECONDS.toNanos(MAX_TIMEOUT_VALUE));
+                    }
+
+                    LoggerFactory.getLogger(getClass()).info("Waiting for session idle timeouts");
+
+                    long t0 = System.currentTimeMillis();
+                    latch.await(1, TimeUnit.MINUTES);
+                    long t1 = System.currentTimeMillis(), diff = t1 - t0;
+                    assertTrue("Wait time too low: " + diff, diff > IDLE_TIMEOUT_VALUE);
+                    assertTrue("Wait time too high: " + diff, diff < MAX_TIMEOUT_VALUE);
                 }
-
-                LoggerFactory.getLogger(getClass()).info("Waiting for session idle timeouts");
-
-                long t0 = System.currentTimeMillis();
-                latch.await(1, TimeUnit.MINUTES);
-                long t1 = System.currentTimeMillis(), diff = t1 - t0;
-                assertTrue("Wait time too low: " + diff, diff > IDLE_TIMEOUT_VALUE);
-                assertTrue("Wait time too high: " + diff, diff < MAX_TIMEOUT_VALUE);
             }
         } finally {
             client.stop();

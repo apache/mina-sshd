@@ -28,8 +28,6 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.AbstractConnectionService;
-import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -37,22 +35,27 @@ import org.apache.sshd.common.util.buffer.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ClientConnectionService extends AbstractConnectionService {
-    public ClientConnectionService(Session s) throws SshException {
+public class ClientConnectionService extends AbstractConnectionService<AbstractClientSession> implements ClientSessionHolder {
+    public ClientConnectionService(AbstractClientSession s) throws SshException {
         super(s);
+    }
 
-        ValidateUtils.checkTrue(s instanceof ClientSession, "Client side service used on server side");
+    @Override
+    public final ClientSession getClientSession() {
+        return getSession();
     }
 
     @Override
     public void start() {
-        if (!((ClientSession) session).isAuthenticated()) {
+        ClientSession session = getClientSession();
+        if (!session.isAuthenticated()) {
             throw new IllegalStateException("Session is not authenticated");
         }
         startHeartBeat();
     }
 
     protected void startHeartBeat() {
+        ClientSession session = getClientSession();
         long interval = PropertyResolverUtils.getLongProperty(session, ClientFactoryManager.HEARTBEAT_INTERVAL, ClientFactoryManager.DEFAULT_HEARTBEAT_INTERVAL);
         if (interval > 0L) {
             FactoryManager manager = session.getFactoryManager();
@@ -70,6 +73,7 @@ public class ClientConnectionService extends AbstractConnectionService {
     }
 
     protected void sendHeartBeat() {
+        ClientSession session = getClientSession();
         String request = PropertyResolverUtils.getStringProperty(session, ClientFactoryManager.HEARTBEAT_REQUEST, ClientFactoryManager.DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING);
         try {
             Buffer buf = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST, request.length() + Byte.SIZE);

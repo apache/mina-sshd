@@ -53,9 +53,10 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
 /**
  * Base implementation of ConnectionService.
  *
+ * @param <S> Type of {@link AbstractSession} being used
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractConnectionService extends AbstractInnerCloseable implements ConnectionService {
+public abstract class AbstractConnectionService<S extends AbstractSession> extends AbstractInnerCloseable implements ConnectionService {
     /**
      * Property that can be used to configure max. allowed concurrent active channels
      *
@@ -78,7 +79,7 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
      */
     protected final AtomicInteger nextChannelId = new AtomicInteger(0);
 
-    protected final AbstractSession session;
+    private final S session;
 
     /**
      * The tcpip forwarder
@@ -88,9 +89,8 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
     protected final X11ForwardSupport x11Forward;
     private final AtomicBoolean allowMoreSessions = new AtomicBoolean(true);
 
-    protected AbstractConnectionService(Session session) {
-        ValidateUtils.checkTrue(session instanceof AbstractSession, "Not an AbstractSession");
-        this.session = (AbstractSession) session;
+    protected AbstractConnectionService(S session) {
+        this.session = session;
         FactoryManager manager = session.getFactoryManager();
         agentForward = new AgentForwardSupport(this);
         x11Forward = new X11ForwardSupport(this);
@@ -107,7 +107,7 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
     }
 
     @Override
-    public AbstractSession getSession() {
+    public S getSession() {
         return session;
     }
 

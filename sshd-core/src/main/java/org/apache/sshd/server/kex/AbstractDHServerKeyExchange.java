@@ -22,7 +22,7 @@ package org.apache.sshd.server.kex;
 import java.security.PublicKey;
 
 import org.apache.sshd.common.kex.dh.AbstractDHKeyExchange;
-import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerSessionHolder;
@@ -37,12 +37,12 @@ public abstract class AbstractDHServerKeyExchange extends AbstractDHKeyExchange 
     }
 
     @Override
-    public ServerSession getServerSession() {
-        return (ServerSession) super.getSession();
+    public final ServerSession getServerSession() {
+        return (ServerSession) getSession();
     }
 
     @Override
-    public void init(AbstractSession s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
+    public void init(Session s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
         super.init(s, v_s, v_c, i_s, i_c);
         ValidateUtils.checkTrue(s instanceof ServerSession, "Using a server side KeyExchange on a client");
     }

@@ -19,34 +19,43 @@
 
 package org.apache.sshd.client.auth.pubkey;
 
-import java.security.KeyPair;
 import java.util.Iterator;
 
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.kex.KexFactoryManager;
+import org.apache.sshd.client.session.ClientSessionHolder;
+import org.apache.sshd.common.session.SessionHolder;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
+ * @param <I> Type of {@link PublicKeyIdentity} being iterated
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SessionKeyPairIterator extends AbstractKeyPairIterator<KeyPairIdentity> {
-    private final Iterator<KeyPair> keys;
+public abstract class AbstractKeyPairIterator<I extends PublicKeyIdentity>
+        implements Iterator<I>, SessionHolder<ClientSession>, ClientSessionHolder {
 
-    public SessionKeyPairIterator(ClientSession session, Iterator<KeyPair> keys) {
-        super(session);
-        this.keys = keys;   // OK if null
+    private final ClientSession session;
+
+    protected AbstractKeyPairIterator(ClientSession session) {
+        this.session = ValidateUtils.checkNotNull(session, "No session");
     }
 
-    public KexFactoryManager getKexFactoryManager() {
+    @Override
+    public final ClientSession getClientSession() {
+        return session;
+    }
+
+    @Override
+    public final ClientSession getSession() {
         return getClientSession();
     }
 
     @Override
-    public boolean hasNext() {
-        return (keys != null) && keys.hasNext();
+    public void remove() {
+        throw new UnsupportedOperationException("No removal allowed");
     }
 
     @Override
-    public KeyPairIdentity next() {
-        return new KeyPairIdentity(getKexFactoryManager(), keys.next());
+    public String toString() {
+        return getClass().getSimpleName() + "[" + getClientSession() + "]";
     }
 }

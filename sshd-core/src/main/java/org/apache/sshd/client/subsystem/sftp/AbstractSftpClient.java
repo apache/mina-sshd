@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.client.subsystem.AbstractSubsystemClient;
 import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensions;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtensionFactory;
@@ -42,13 +43,12 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractSftpClient extends AbstractLoggingBean implements SftpClient, RawSftpClient {
+public abstract class AbstractSftpClient extends AbstractSubsystemClient implements SftpClient, RawSftpClient {
 
     private final AtomicReference<Map<String, Object>> parsedExtensionsHolder = new AtomicReference<>(null);
 

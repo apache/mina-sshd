@@ -22,14 +22,15 @@ package org.apache.sshd.client.kex;
 import java.security.PublicKey;
 
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.kex.dh.AbstractDHKeyExchange;
-import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractDHClientKeyExchange extends AbstractDHKeyExchange {
+public abstract class AbstractDHClientKeyExchange extends AbstractDHKeyExchange implements ClientSessionHolder {
     protected PublicKey serverKey;
 
     protected AbstractDHClientKeyExchange() {
@@ -37,7 +38,12 @@ public abstract class AbstractDHClientKeyExchange extends AbstractDHKeyExchange 
     }
 
     @Override
-    public void init(AbstractSession s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
+    public final ClientSession getClientSession() {
+        return (ClientSession) getSession();
+    }
+
+    @Override
+    public void init(Session s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
         super.init(s, v_s, v_c, i_s, i_c);
         ValidateUtils.checkTrue(s instanceof ClientSession, "Using a client side KeyExchange on a server");
     }

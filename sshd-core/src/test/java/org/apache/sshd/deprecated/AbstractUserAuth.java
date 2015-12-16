@@ -20,12 +20,15 @@ package org.apache.sshd.deprecated;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
+import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  */
-public abstract class AbstractUserAuth extends AbstractLoggingBean implements UserAuth, ClientSessionHolder {
+public abstract class AbstractUserAuth
+        extends AbstractLoggingBean
+        implements UserAuth, SessionHolder<ClientSession>, ClientSessionHolder {
     private final ClientSession session;
     private final String service;
 
@@ -37,6 +40,11 @@ public abstract class AbstractUserAuth extends AbstractLoggingBean implements Us
     @Override
     public ClientSession getClientSession() {
         return session;
+    }
+
+    @Override
+    public final ClientSession getSession() {
+        return getClientSession();
     }
 
     public String getService() {

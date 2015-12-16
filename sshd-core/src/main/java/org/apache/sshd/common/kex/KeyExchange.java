@@ -24,7 +24,7 @@ import java.util.Map;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.digest.Digest;
-import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.logging.LoggingUtils;
@@ -46,7 +46,7 @@ public interface KeyExchange extends NamedResource {
      * @param i_c     the client key init packet
      * @throws Exception if an error occurs
      */
-    void init(AbstractSession session, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception;
+    void init(Session session, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception;
 
     /**
      * Process the next packet

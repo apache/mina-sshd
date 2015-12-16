@@ -25,7 +25,6 @@ import java.util.Iterator;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -33,20 +32,14 @@ import org.apache.sshd.common.util.ValidateUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SshAgentPublicKeyIterator implements Iterator<KeyAgentIdentity>, ClientSessionHolder {
-    private final ClientSession clientSession;
+public class SshAgentPublicKeyIterator extends AbstractKeyPairIterator<KeyAgentIdentity> {
     private final SshAgent agent;
     private final Iterator<Pair<PublicKey, String>> keys;
 
     public SshAgentPublicKeyIterator(ClientSession session, SshAgent agent) throws IOException {
-        this.clientSession = ValidateUtils.checkNotNull(session, "No session");
+        super(session);
         this.agent = ValidateUtils.checkNotNull(agent, "No agent");
         keys = GenericUtils.iteratorOf(agent.getIdentities());
-    }
-
-    @Override
-    public ClientSession getClientSession() {
-        return clientSession;
     }
 
     @Override
@@ -59,15 +52,4 @@ public class SshAgentPublicKeyIterator implements Iterator<KeyAgentIdentity>, Cl
         Pair<PublicKey, String> kp = keys.next();
         return new KeyAgentIdentity(agent, kp.getFirst(), kp.getSecond());
     }
-
-    @Override
-    public void remove() {
-        throw new UnsupportedOperationException("No removal allowed");
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + getClientSession() + "]";
-    }
-
 }

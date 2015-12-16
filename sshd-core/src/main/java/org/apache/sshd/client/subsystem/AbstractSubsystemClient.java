@@ -17,36 +17,21 @@
  * under the License.
  */
 
-package org.apache.sshd.client.auth.pubkey;
-
-import java.security.KeyPair;
-import java.util.Iterator;
+package org.apache.sshd.client.subsystem;
 
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.kex.KexFactoryManager;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SessionKeyPairIterator extends AbstractKeyPairIterator<KeyPairIdentity> {
-    private final Iterator<KeyPair> keys;
-
-    public SessionKeyPairIterator(ClientSession session, Iterator<KeyPair> keys) {
-        super(session);
-        this.keys = keys;   // OK if null
+public abstract class AbstractSubsystemClient extends AbstractLoggingBean implements SubsystemClient {
+    protected AbstractSubsystemClient() {
+        super();
     }
 
-    public KexFactoryManager getKexFactoryManager() {
+    @Override
+    public final ClientSession getSession() {
         return getClientSession();
-    }
-
-    @Override
-    public boolean hasNext() {
-        return (keys != null) && keys.hasNext();
-    }
-
-    @Override
-    public KeyPairIdentity next() {
-        return new KeyPairIdentity(getKexFactoryManager(), keys.next());
     }
 }

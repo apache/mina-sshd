@@ -23,7 +23,6 @@ import java.io.IOException;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.PropertyResolver;
-import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -68,9 +67,6 @@ public interface Channel extends ChannelListenerManager, PropertyResolver, Close
     void handleEof() throws IOException;
 
     void handleFailure() throws IOException;
-
-    @Override
-    CloseFuture close(boolean immediately);
 
     void init(ConnectionService service, Session session, int id) throws IOException;
 

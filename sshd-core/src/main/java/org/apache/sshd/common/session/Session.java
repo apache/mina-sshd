@@ -234,7 +234,7 @@ public interface Session
      * If the service is not of the specified class,
      * an IllegalStateException will be thrown.
      *
-     * @param <T>   The generic service type
+     * @param <T>   The generic {@link Service} type
      * @param clazz The service class
      * @return The service instance
      * @throws IllegalStateException If failed to find a matching service

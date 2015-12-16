@@ -28,7 +28,7 @@ import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
-import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -75,7 +75,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
     }
 
     @Override
-    public void init(AbstractSession s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
+    public void init(Session s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
         super.init(s, v_s, v_c, i_s, i_c);
         dh = factory.create();
         hash = dh.getHash();

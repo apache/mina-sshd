@@ -22,13 +22,15 @@ package org.apache.sshd.common.kex.dh;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implements KeyExchange {
+public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implements KeyExchange, SessionHolder<AbstractSession> {
 
     protected byte[] v_s;
     protected byte[] v_c;
@@ -47,14 +49,16 @@ public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implemen
     }
 
     @Override
-    public void init(AbstractSession s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
-        this.session = ValidateUtils.checkNotNull(s, "No session");
+    public void init(Session s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
+        ValidateUtils.checkTrue(s instanceof AbstractSession, "Not an abstract session: %s", s);
+        this.session = (AbstractSession) s;
         this.v_s = ValidateUtils.checkNotNullAndNotEmpty(v_s, "No v_s value");
         this.v_c = ValidateUtils.checkNotNullAndNotEmpty(v_c, "No v_c value");
         this.i_s = ValidateUtils.checkNotNullAndNotEmpty(i_s, "No i_s value");
         this.i_c = ValidateUtils.checkNotNullAndNotEmpty(i_c, "No i_c value");
     }
 
+    @Override
     public AbstractSession getSession() {
         return session;
     }

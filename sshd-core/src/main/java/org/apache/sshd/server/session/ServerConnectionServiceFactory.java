@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -41,6 +42,7 @@ public class ServerConnectionServiceFactory implements ServiceFactory {
 
     @Override
     public Service create(Session session) throws IOException {
-        return new ServerConnectionService(session);
+        ValidateUtils.checkTrue(session instanceof AbstractServerSession, "Not a server session: %s", session);
+        return new ServerConnectionService((AbstractServerSession) session);
     }
 }

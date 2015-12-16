@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.util.GenericUtils;
@@ -39,16 +38,15 @@ import org.apache.sshd.common.util.ValidateUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthPublicKeyIterator implements Iterator<PublicKeyIdentity>, ClientSessionHolder, Channel {
+public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKeyIdentity> implements Channel {
 
     private final AtomicBoolean open = new AtomicBoolean(true);
-    private final ClientSession clientSession;
     private final Iterator<Iterator<? extends PublicKeyIdentity>> iterators;
     private Iterator<? extends PublicKeyIdentity> current;
     private SshAgent agent;
 
     public UserAuthPublicKeyIterator(ClientSession session) throws Exception {
-        clientSession = ValidateUtils.checkNotNull(session, "No session");
+        super(session);
 
         Collection<Iterator<? extends PublicKeyIdentity>> identities = new LinkedList<>();
         identities.add(new SessionKeyPairIterator(session, KeyIdentityProvider.Utils.iteratorOf(session)));
@@ -75,11 +73,6 @@ public class UserAuthPublicKeyIterator implements Iterator<PublicKeyIdentity>, C
     }
 
     @Override
-    public ClientSession getClientSession() {
-        return clientSession;
-    }
-
-    @Override
     public boolean hasNext() {
         if (!isOpen()) {
             return false;
@@ -99,11 +92,6 @@ public class UserAuthPublicKeyIterator implements Iterator<PublicKeyIdentity>, C
             current = nextIterator(iterators);
         }
         return pki;
-    }
-
-    @Override
-    public void remove() {
-        throw new UnsupportedOperationException("No removal allowed");
     }
 
     @Override
@@ -138,10 +126,5 @@ public class UserAuthPublicKeyIterator implements Iterator<PublicKeyIdentity>, C
         }
 
         return null;
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + getClientSession() + "]";
     }
 }

@@ -37,6 +37,9 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
+import org.apache.sshd.server.SessionAware;
+import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.session.ServerSessionHolder;
 
 /**
  * This commands provide SCP support on both server and client side.
@@ -45,7 +48,10 @@ import org.apache.sshd.server.ExitCallback;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ScpCommand extends AbstractLoggingBean implements Command, Runnable, FileSystemAware {
+public class ScpCommand
+        extends AbstractLoggingBean
+        implements Command, Runnable, FileSystemAware, SessionAware, ServerSessionHolder {
+
     protected String name;
     protected boolean optR;
     protected boolean optT;
@@ -65,6 +71,7 @@ public class ScpCommand extends AbstractLoggingBean implements Command, Runnable
     protected int sendBufferSize;
     protected int receiveBufferSize;
     protected ScpTransferEventListener listener;
+    protected ServerSession serverSession;
 
     /**
      * @param command         The command to be executed
@@ -154,6 +161,16 @@ public class ScpCommand extends AbstractLoggingBean implements Command, Runnable
     }
 
     @Override
+    public ServerSession getServerSession() {
+        return serverSession;
+    }
+
+    @Override
+    public void setSession(ServerSession session) {
+        serverSession = session;
+    }
+
+    @Override
     public void setInputStream(InputStream in) {
         this.in = in;
     }
@@ -227,7 +244,7 @@ public class ScpCommand extends AbstractLoggingBean implements Command, Runnable
     public void run() {
         int exitValue = ScpHelper.OK;
         String exitMessage = null;
-        ScpHelper helper = new ScpHelper(in, out, fileSystem, listener);
+        ScpHelper helper = new ScpHelper(getServerSession(), in, out, fileSystem, listener);
         try {
             if (optT) {
                 helper.receive(helper.resolveLocalPath(path), optR, optD, optP, receiveBufferSize);
