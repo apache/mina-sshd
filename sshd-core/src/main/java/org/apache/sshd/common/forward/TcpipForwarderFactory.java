@@ -21,16 +21,16 @@ package org.apache.sshd.common.forward;
 import org.apache.sshd.common.session.ConnectionService;
 
 /**
- * A factory for creating TcpipForwarder objects for client Port forwarding
+ * A factory for creating forwarder objects for client port forwarding
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface TcpipForwarderFactory {
 
     /**
-     * Creates the TcpipForwarder to be used for TCP/IP port forwards for
-     * this ClientSession.
+     * Creates the forwarder to be used for TCP/IP port forwards for this session.
      *
-     * @param service the service the connections are forwarded through
-     * @return the TcpipForwarder that will listen for connections and set up forwarding
+     * @param service the {@link ConnectionService} the connections are forwarded through
+     * @return the {@link TcpipForwarder} that will listen for connections and set up forwarding
      */
     TcpipForwarder create(ConnectionService service);
 

@@ -79,8 +79,6 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
      */
     protected final AtomicInteger nextChannelId = new AtomicInteger(0);
 
-    private final S session;
-
     /**
      * The tcpip forwarder
      */
@@ -89,17 +87,18 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
     protected final X11ForwardSupport x11Forward;
     private final AtomicBoolean allowMoreSessions = new AtomicBoolean(true);
 
+    private final S sessionInstance;
+
     protected AbstractConnectionService(S session) {
-        this.session = session;
-        FactoryManager manager = session.getFactoryManager();
+        sessionInstance = ValidateUtils.checkNotNull(session, "No session");
         agentForward = new AgentForwardSupport(this);
         x11Forward = new X11ForwardSupport(this);
 
-        TcpipForwarderFactory factory = ValidateUtils.checkNotNull(
-                manager.getTcpipForwarderFactory(),
-                "No forwarder factory",
-                GenericUtils.EMPTY_OBJECT_ARRAY);
-        tcpipForwarder = factory.create(this);
+        FactoryManager manager =
+                ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
+        TcpipForwarderFactory factory =
+                ValidateUtils.checkNotNull(manager.getTcpipForwarderFactory(), "No forwarder factory");
+        tcpipForwarder = ValidateUtils.checkNotNull(factory.create(this), "No forwarder created for %s", session);
     }
 
     public Collection<Channel> getChannels() {
@@ -108,7 +107,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
 
     @Override
     public S getSession() {
-        return session;
+        return sessionInstance;
     }
 
     @Override
@@ -124,7 +123,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .sequential(tcpipForwarder, agentForward, x11Forward)
+                .sequential(getTcpipForwarder(), agentForward, x11Forward)
                 .parallel(channels.values())
                 .build();
     }
@@ -135,6 +134,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
 
     @Override
     public int registerChannel(Channel channel) throws IOException {
+        final Session session = getSession();
         int maxChannels = PropertyResolverUtils.getIntProperty(session, MAX_CONCURRENT_CHANNELS_PROP, DEFAULT_MAX_CHANNELS);
         int curSize = channels.size();
         if (curSize > maxChannels) {
@@ -152,7 +152,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("registerChannel(id={}) {}", Integer.valueOf(channelId), channel);
+            log.debug("registerChannel({})[id={}] {}", this, channelId, channel);
         }
         return channelId;
     }
@@ -386,6 +386,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
             return;
         }
 
+        final Session session = getSession();
         FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
         final Channel channel = NamedFactory.Utils.create(manager.getChannelFactories(), type);
         if (channel == null) {
@@ -444,6 +445,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
                       this, sender, SshConstants.getOpenErrorCodeName(reasonCode), lang, message);
         }
 
+        final Session session = getSession();
         Buffer buf = session.prepareBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, BufferUtils.clear(buffer));
         buf.putInt(sender);
         buf.putInt(reasonCode);
@@ -462,20 +464,24 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
         String req = buffer.getString();
         boolean wantReply = buffer.getBoolean();
         if (log.isDebugEnabled()) {
-            log.debug("Received SSH_MSG_GLOBAL_REQUEST {} want-reply={}", req, Boolean.valueOf(wantReply));
+            log.debug("globalRequest({}) received SSH_MSG_GLOBAL_REQUEST {} want-reply={}",
+                      this, req, Boolean.valueOf(wantReply));
         }
 
-        List<RequestHandler<ConnectionService>> handlers = session.getFactoryManager().getGlobalRequestHandlers();
+        Session session = getSession();
+        FactoryManager manager =
+                ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
+        List<RequestHandler<ConnectionService>> handlers = manager.getGlobalRequestHandlers();
         if (GenericUtils.size(handlers) > 0) {
             for (RequestHandler<ConnectionService> handler : handlers) {
                 RequestHandler.Result result;
                 try {
                     result = handler.process(this, req, wantReply, buffer);
                 } catch (Exception e) {
-                    log.warn("globalRequest({})[want-reply={}] failed ({}) to process: {}",
-                             req, wantReply, e.getClass().getSimpleName(), e.getMessage());
+                    log.warn("globalRequest({})[{}, want-reply={}] failed ({}) to process: {}",
+                             this, req, wantReply, e.getClass().getSimpleName(), e.getMessage());
                     if (log.isDebugEnabled()) {
-                        log.debug("globalRequest(" + req + ")[want-reply=" + wantReply + "] failure details", e);
+                        log.debug("globalRequest(" + this + ")[" + req + ", want-reply=" + wantReply + "] failure details", e);
                     }
                     result = RequestHandler.Result.ReplyFailure;
                 }
@@ -483,8 +489,8 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
                 // if Unsupported then check the next handler in line
                 if (RequestHandler.Result.Unsupported.equals(result)) {
                     if (log.isTraceEnabled()) {
-                        log.trace("{}#process({})[want-reply={}] : {}",
-                                  handler.getClass().getSimpleName(), req, wantReply, result);
+                        log.trace("globalRequest({}) {}#process({})[want-reply={}] : {}",
+                                  this, handler.getClass().getSimpleName(), req, wantReply, result);
                     }
                 } else {
                     sendResponse(buffer, req, result, wantReply);
@@ -493,13 +499,13 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
             }
         }
 
-        log.warn("Unknown global request: {}", req);
+        log.warn("globalRequest({}) unknown global request: {}", this, req);
         sendResponse(buffer, req, RequestHandler.Result.Unsupported, wantReply);
     }
 
     protected void sendResponse(Buffer buffer, String req, RequestHandler.Result result, boolean wantReply) throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("sendResponse({}) result={}, want-reply={}", req, result, Boolean.valueOf(wantReply));
+            log.debug("sendResponse({})[{}] result={}, want-reply={}", this, req, result, Boolean.valueOf(wantReply));
         }
 
         if (RequestHandler.Result.Replied.equals(result) || (!wantReply)) {
@@ -515,20 +521,20 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
         buffer.rpos(5);
         buffer.wpos(5);
         buffer.putByte(cmd);
-        session.writePacket(buffer);
+        getSession().writePacket(buffer);
     }
 
     protected void requestSuccess(Buffer buffer) throws Exception {
-        session.requestSuccess(buffer);
+        getSession().requestSuccess(buffer);
     }
 
     protected void requestFailure(Buffer buffer) throws Exception {
-        session.requestFailure(buffer);
+        getSession().requestFailure(buffer);
     }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[" + session + "]";
+        return getClass().getSimpleName() + "[" + getSession() + "]";
     }
 
 }

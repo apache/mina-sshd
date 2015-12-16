@@ -56,6 +56,11 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
     }
 
     @Override
+    public final ClientSession getSession() {
+        return getClientSession();
+    }
+
+    @Override
     public void download(String remote, String local, Option... options) throws IOException {
         download(remote, local, GenericUtils.isEmpty(options) ? Collections.<Option>emptySet() : GenericUtils.of(options));
     }

@@ -45,8 +45,11 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.file.util.MockPath;
 import org.apache.sshd.common.scp.ScpTransferEventListener.FileOperation;
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SelectorUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.DirectoryScanner;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.LimitInputStream;
@@ -55,7 +58,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ScpHelper extends AbstractLoggingBean {
+public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Session> {
     /**
      * Command prefix used to identify SCP commands
      */
@@ -94,11 +97,19 @@ public class ScpHelper extends AbstractLoggingBean {
     protected final OutputStream out;
     protected final ScpTransferEventListener listener;
 
-    public ScpHelper(InputStream in, OutputStream out, FileSystem fileSystem, ScpTransferEventListener eventListener) {
-        this.in = in;
-        this.out = out;
+    private final Session session;
+
+    public ScpHelper(Session session, InputStream in, OutputStream out, FileSystem fileSystem, ScpTransferEventListener eventListener) {
+        this.session = ValidateUtils.checkNotNull(session, "No session");
+        this.in = ValidateUtils.checkNotNull(in, "No input stream");
+        this.out = ValidateUtils.checkNotNull(out, "No output stream");
         this.fileSystem = fileSystem;
         this.listener = (eventListener == null) ? ScpTransferEventListener.EMPTY : eventListener;
+    }
+
+    @Override
+    public Session getSession() {
+        return session;
     }
 
     public void receiveFileStream(final OutputStream local, final int bufferSize) throws IOException {
@@ -115,7 +126,8 @@ public class ScpHelper extends AbstractLoggingBean {
                     @Override
                     public OutputStream resolveTargetStream(String name, long length, Set<PosixFilePermission> perms) throws IOException {
                         if (log.isDebugEnabled()) {
-                            log.debug("resolveTargetStream(" + name + ")[" + perms + "][len=" + length + "] started local stream download");
+                            log.debug("resolveTargetStream({}) name={}, perms={}, len={} - started local stream download",
+                                      ScpHelper.this, name, perms, length);
                         }
                         return local;
                     }
@@ -129,7 +141,8 @@ public class ScpHelper extends AbstractLoggingBean {
                     @SuppressWarnings("synthetic-access")
                     public void postProcessReceivedData(String name, boolean preserve, Set<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
                         if (log.isDebugEnabled()) {
-                            log.debug("postProcessReceivedData(" + name + ")[" + perms + "][time=" + time + "] ended local stream download");
+                            log.debug("postProcessReceivedData({}) name={}, perms={}, preserve={} time={}",
+                                      ScpHelper.this, name, perms, preserve, time);
                         }
                     }
 
@@ -142,7 +155,8 @@ public class ScpHelper extends AbstractLoggingBean {
         });
     }
 
-    public void receive(final Path path, final boolean recursive, boolean shouldBeDir, final boolean preserve, final int bufferSize) throws IOException {
+    public void receive(Path local, final boolean recursive, boolean shouldBeDir, final boolean preserve, final int bufferSize) throws IOException {
+        final Path path = ValidateUtils.checkNotNull(local, "No local path").normalize().toAbsolutePath();
         if (shouldBeDir) {
             LinkOption[] options = IoUtils.getLinkOptions(false);
             Boolean status = IoUtils.checkFileExists(path, options);
@@ -182,21 +196,29 @@ public class ScpHelper extends AbstractLoggingBean {
                 case 'D':
                     isDir = true;
                     line = String.valueOf((char) c) + readLine();
-                    log.debug("Received header: " + line);
+                    if (log.isDebugEnabled()) {
+                        log.debug("receive({}) - Received 'D' header: {}", this, line);
+                    }
                     break;
                 case 'C':
                     line = String.valueOf((char) c) + readLine();
-                    log.debug("Received header: " + line);
+                    if (log.isDebugEnabled()) {
+                        log.debug("receive({}) - Received 'C' header: {}", this, line);
+                    }
                     break;
                 case 'T':
                     line = String.valueOf((char) c) + readLine();
-                    log.debug("Received header: " + line);
+                    if (log.isDebugEnabled()) {
+                        log.debug("receive({}) - Received 'T' header: {}", this, line);
+                    }
                     time = ScpTimestamp.parseTime(line);
                     ack();
                     continue;
                 case 'E':
                     line = String.valueOf((char) c) + readLine();
-                    log.debug("Received header: " + line);
+                    if (log.isDebugEnabled()) {
+                        log.debug("receive({}) - Received 'E' header: {}", this, line);
+                    }
                     ack();
                     return;
                 default:
@@ -212,12 +234,14 @@ public class ScpHelper extends AbstractLoggingBean {
         }
     }
 
-    public void receiveDir(String header, Path path, ScpTimestamp time, boolean preserve, int bufferSize) throws IOException {
+    public void receiveDir(String header, Path local, ScpTimestamp time, boolean preserve, int bufferSize) throws IOException {
+        Path path = ValidateUtils.checkNotNull(local, "No local path").normalize().toAbsolutePath();
         if (log.isDebugEnabled()) {
-            log.debug("Receiving directory {}", path);
+            log.debug("receiveDir({})[{}] Receiving directory {} - preserve={}, time={}, buffer-size={}",
+                      this, header, path, preserve, time, bufferSize);
         }
         if (!header.startsWith("D")) {
-            throw new IOException("Expected a D message but got '" + header + "'");
+            throw new IOException("Expected a 'D; message but got '" + header + "'");
         }
 
         Set<PosixFilePermission> perms = parseOctalPermissions(header.substring(1, 5));
@@ -276,7 +300,7 @@ public class ScpHelper extends AbstractLoggingBean {
             for (;;) {
                 header = readLine();
                 if (log.isDebugEnabled()) {
-                    log.debug("Received header: " + header);
+                    log.debug("receiveDir({})[{}] Received header: {}", this, file, header);
                 }
                 if (header.startsWith("C")) {
                     receiveFile(header, file, time, preserve, bufferSize);
@@ -300,9 +324,11 @@ public class ScpHelper extends AbstractLoggingBean {
         }
     }
 
-    public void receiveFile(String header, Path path, ScpTimestamp time, boolean preserve, int bufferSize) throws IOException {
+    public void receiveFile(String header, Path local, ScpTimestamp time, boolean preserve, int bufferSize) throws IOException {
+        Path path = ValidateUtils.checkNotNull(local, "No local path").normalize().toAbsolutePath();
         if (log.isDebugEnabled()) {
-            log.debug("Receiving file {}", path);
+            log.debug("receiveFile({})[{}] Receiving file {} - preserve={}, time={}, buffer-size={}",
+                      this, header, path, preserve, time, bufferSize);
         }
 
         receiveStream(header, new LocalFileScpTargetStreamResolver(path), time, preserve, bufferSize);
@@ -321,14 +347,15 @@ public class ScpHelper extends AbstractLoggingBean {
         final long length = Long.parseLong(header.substring(6, header.indexOf(' ', 6)));
         String name = header.substring(header.indexOf(' ', 6) + 1);
         if (length < 0L) { // TODO consider throwing an exception...
-            log.warn("receiveStream(" + resolver + ") bad length in header: " + header);
+            log.warn("receiveStream({})[{}] bad length in header: {}", this, resolver, header);
         }
 
         // if file size is less than buffer size allocate only expected file size
         int bufSize;
         if (length == 0L) {
             if (log.isDebugEnabled()) {
-                log.debug("receiveStream(" + resolver + ") zero file size (perhaps special file) using copy buffer size=" + MIN_RECEIVE_BUFFER_SIZE);
+                log.debug("receiveStream({})[{}] zero file size (perhaps special file) using copy buffer size={}",
+                          this, resolver, MIN_RECEIVE_BUFFER_SIZE);
             }
             bufSize = MIN_RECEIVE_BUFFER_SIZE;
         } else {
@@ -336,7 +363,8 @@ public class ScpHelper extends AbstractLoggingBean {
         }
 
         if (bufSize < 0) { // TODO consider throwing an exception
-            log.warn("receiveFile(" + resolver + ") bad buffer size (" + bufSize + ") using default (" + MIN_RECEIVE_BUFFER_SIZE + ")");
+            log.warn("receiveStream({})[{}] bad buffer size ({}) using default ({})",
+                     this, resolver, bufSize, MIN_RECEIVE_BUFFER_SIZE);
             bufSize = MIN_RECEIVE_BUFFER_SIZE;
         }
 
@@ -361,12 +389,11 @@ public class ScpHelper extends AbstractLoggingBean {
 
         ack();
         readAck(false);
-
     }
 
     protected void updateFileProperties(Path file, Set<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
         if (log.isTraceEnabled()) {
-            log.trace("updateFileProperties(" + file + ") permissions: " + perms);
+            log.trace("updateFileProperties({}) {} permissions={}, time={}", this, file, perms, time);
         }
         IoUtils.setPermissions(file, perms);
 
@@ -375,7 +402,7 @@ public class ScpHelper extends AbstractLoggingBean {
             FileTime lastModified = FileTime.from(time.getLastModifiedTime(), TimeUnit.MILLISECONDS);
             FileTime lastAccess = FileTime.from(time.getLastAccessTime(), TimeUnit.MILLISECONDS);
             if (log.isTraceEnabled()) {
-                log.trace("updateFileProperties(" + file + ") last-modified=" + lastModified + ", last-access=" + lastAccess);
+                log.trace("updateFileProperties({}) {} last-modified={}, last-access={}", this, file, lastModified, lastAccess);
             }
             view.setTimes(lastModified, lastAccess, null);
         }
@@ -386,18 +413,19 @@ public class ScpHelper extends AbstractLoggingBean {
     }
 
     public String readLine(boolean canEof) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        for (;;) {
-            int c = in.read();
-            if (c == '\n') {
-                return baos.toString();
-            } else if (c == -1) {
-                if (!canEof) {
-                    throw new EOFException("EOF while await end of line");
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream(Byte.MAX_VALUE)) {
+            for (;;) {
+                int c = in.read();
+                if (c == '\n') {
+                    return baos.toString(StandardCharsets.UTF_8.name());
+                } else if (c == -1) {
+                    if (!canEof) {
+                        throw new EOFException("EOF while await end of line");
+                    }
+                    return null;
+                } else {
+                    baos.write(c);
                 }
-                return null;
-            } else {
-                baos.write(c);
             }
         }
     }
@@ -426,12 +454,18 @@ public class ScpHelper extends AbstractLoggingBean {
                         sendFile(file, preserve, bufferSize);
                     } else if (Files.isDirectory(file, options)) {
                         if (!recursive) {
+                            if (log.isDebugEnabled()) {
+                                log.debug("send({}) {}: not a regular file", this, path);
+                            }
                             out.write(ScpHelper.WARNING);
                             out.write((path.replace(File.separatorChar, '/') + " not a regular file\n").getBytes(StandardCharsets.UTF_8));
                         } else {
                             sendDir(file, preserve, bufferSize);
                         }
                     } else {
+                        if (log.isDebugEnabled()) {
+                            log.debug("send({}) {}: unknown file type", this, path);
+                        }
                         out.write(ScpHelper.WARNING);
                         out.write((path.replace(File.separatorChar, '/') + " unknown file type\n").getBytes(StandardCharsets.UTF_8));
                     }
@@ -451,7 +485,8 @@ public class ScpHelper extends AbstractLoggingBean {
         }
     }
 
-    protected void send(Path file, boolean recursive, boolean preserve, int bufferSize, LinkOption... options) throws IOException {
+    protected void send(Path local, boolean recursive, boolean preserve, int bufferSize, LinkOption... options) throws IOException {
+        Path file = ValidateUtils.checkNotNull(local, "No local path").normalize().toAbsolutePath();
         Boolean status = IoUtils.checkFileExists(file, options);
         if (status == null) {
             throw new AccessDeniedException("Send file existence status cannot be determined: " + file);
@@ -493,15 +528,16 @@ public class ScpHelper extends AbstractLoggingBean {
         Path abs = lcl.isAbsolute() ? lcl : lcl.toAbsolutePath();
         Path p = abs.normalize();
         if (log.isTraceEnabled()) {
-            log.trace("resolveLocalPath({}) {}", commandPath, p);
+            log.trace("resolveLocalPath({}) {}: {}", this, commandPath, p);
         }
-        
+
         return p;
     }
 
-    public void sendFile(Path path, boolean preserve, int bufferSize) throws IOException {
+    public void sendFile(Path local, boolean preserve, int bufferSize) throws IOException {
+        Path path = ValidateUtils.checkNotNull(local, "No local path").normalize().toAbsolutePath();
         if (log.isDebugEnabled()) {
-            log.debug("Sending file {}", path);
+            log.debug("sendFile({})[preserve={},buffer-size={}] Sending file {}", this, preserve, bufferSize, path);
         }
 
         sendStream(new LocalFileScpSourceStreamResolver(path), preserve, bufferSize);
@@ -517,7 +553,8 @@ public class ScpHelper extends AbstractLoggingBean {
         int bufSize;
         if (fileSize <= 0L) {
             if (log.isDebugEnabled()) {
-                log.debug("sendStream(" + resolver + ") unknown file size (" + fileSize + ")  perhaps special file - using copy buffer size=" + MIN_SEND_BUFFER_SIZE);
+                log.debug("sendStream({})[{}] unknown file size ({}) perhaps special file - using copy buffer size={}",
+                          this, resolver, fileSize, MIN_SEND_BUFFER_SIZE);
             }
             bufSize = MIN_SEND_BUFFER_SIZE;
         } else {
@@ -525,15 +562,20 @@ public class ScpHelper extends AbstractLoggingBean {
         }
 
         if (bufSize < 0) { // TODO consider throwing an exception
-            log.warn("sendStream(" + resolver + ") bad buffer size (" + bufSize + ") using default (" + MIN_SEND_BUFFER_SIZE + ")");
+            log.warn("sendStream({})[{}] bad buffer size ({}) using default ({})",
+                     this, resolver, bufSize, MIN_SEND_BUFFER_SIZE);
             bufSize = MIN_SEND_BUFFER_SIZE;
         }
 
         ScpTimestamp time = resolver.getTimestamp();
         if (preserve && (time != null)) {
             String cmd = "T" + TimeUnit.MILLISECONDS.toSeconds(time.getLastModifiedTime())
-                    + ' ' + '0' + ' ' + TimeUnit.MILLISECONDS.toSeconds(time.getLastAccessTime())
-                    + ' ' + '0' + '\n';
+                    + " " + "0" + " " + TimeUnit.MILLISECONDS.toSeconds(time.getLastAccessTime())
+                    + " " + "0" + "\n";
+            if (log.isDebugEnabled()) {
+                log.debug("sendStream({})[{}] send timestamp={} command: {}",
+                          this, resolver, time, cmd.substring(0, cmd.length() - 1));
+            }
             out.write(cmd.getBytes(StandardCharsets.UTF_8));
             out.flush();
             readAck(false);
@@ -542,7 +584,11 @@ public class ScpHelper extends AbstractLoggingBean {
         Set<PosixFilePermission> perms = EnumSet.copyOf(resolver.getPermissions());
         String octalPerms = preserve ? getOctalPermissions(perms) : "0644";
         String fileName = resolver.getFileName();
-        String cmd = "C" + octalPerms + ' ' + fileSize + ' ' + fileName + '\n';
+        String cmd = "C" + octalPerms + " " + fileSize + " " + fileName + "\n";
+        if (log.isDebugEnabled()) {
+            log.debug("sendStream({})[{}] send 'C' command: {}",
+                      this, resolver, cmd.substring(0, cmd.length() - 1));
+        }
         out.write(cmd.getBytes(StandardCharsets.UTF_8));
         out.flush();
         readAck(false);
@@ -562,24 +608,39 @@ public class ScpHelper extends AbstractLoggingBean {
         readAck(false);
     }
 
-    public void sendDir(Path path, boolean preserve, int bufferSize) throws IOException {
+    public void sendDir(Path local, boolean preserve, int bufferSize) throws IOException {
+        Path path = ValidateUtils.checkNotNull(local, "No local path").normalize().toAbsolutePath();
         if (log.isDebugEnabled()) {
-            log.debug("Sending directory {}", path);
+            log.debug("sendDir({}) Sending directory {} - preserve={}, buffer-size={}",
+                      this, path, preserve, bufferSize);
         }
 
         BasicFileAttributes basic = Files.getFileAttributeView(path, BasicFileAttributeView.class).readAttributes();
         if (preserve) {
-            out.write(("T" + basic.lastModifiedTime().to(TimeUnit.SECONDS) + " "
-                    + "0" + " " + basic.lastAccessTime().to(TimeUnit.SECONDS) + " "
-                    + "0" + "\n").getBytes(StandardCharsets.UTF_8));
+            FileTime lastModified = basic.lastModifiedTime();
+            FileTime lastAccess = basic.lastAccessTime();
+            String cmd = "T" + lastModified.to(TimeUnit.SECONDS) + " "
+                    + "0" + " " + lastAccess.to(TimeUnit.SECONDS) + " "
+                    + "0" + "\n";
+            if (log.isDebugEnabled()) {
+                log.debug("sendDir({})[{}] send last-modified={}, last-access={} command: {}",
+                          this, path, lastModified,  lastAccess, cmd.substring(0, cmd.length() - 1));
+            }
+
+            out.write(cmd.getBytes(StandardCharsets.UTF_8));
             out.flush();
             readAck(false);
         }
 
         LinkOption[] options = IoUtils.getLinkOptions(false);
         Set<PosixFilePermission> perms = IoUtils.getPermissions(path, options);
-        out.write(("D" + (preserve ? getOctalPermissions(perms) : "0755") + " "
-                + "0" + " " + path.getFileName().toString() + "\n").getBytes(StandardCharsets.UTF_8));
+        String cmd = "D" + (preserve ? getOctalPermissions(perms) : "0755") + " "
+                + "0" + " " + path.getFileName().toString() + "\n";
+        if (log.isDebugEnabled()) {
+            log.debug("sendDir({})[{}] send 'D' command: {}",
+                      this, path, cmd.substring(0, cmd.length() - 1));
+        }
+        out.write(cmd.getBytes(StandardCharsets.UTF_8));
         out.flush();
         readAck(false);
 
@@ -602,6 +663,9 @@ public class ScpHelper extends AbstractLoggingBean {
             }
         }
 
+        if (log.isDebugEnabled()) {
+            log.debug("sendDir({})[{}] send 'E' command", this, path);
+        }
         out.write("E\n".getBytes(StandardCharsets.UTF_8));
         out.flush();
         readAck(false);
@@ -699,20 +763,45 @@ public class ScpHelper extends AbstractLoggingBean {
         int c = in.read();
         switch (c) {
             case -1:
+                if (log.isDebugEnabled()) {
+                    log.debug("readAck({})[EOF={}] received EOF", this, canEof);
+                }
                 if (!canEof) {
                     throw new EOFException("readAck - EOF before ACK");
                 }
                 break;
             case OK:
+                if (log.isDebugEnabled()) {
+                    log.debug("readAck({})[EOF={}] read OK", this, canEof);
+                }
                 break;
-            case WARNING:
-                log.warn("Received warning: " + readLine());
+            case WARNING: {
+                if (log.isDebugEnabled()) {
+                    log.debug("readAck({})[EOF={}] read warning message", this, canEof);
+                }
+
+                String line = readLine();
+                log.warn("readAck({})[EOF={}] - Received warning: {}", this, canEof, line);
                 break;
-            case ERROR:
-                throw new IOException("Received nack: " + readLine());
+            }
+            case ERROR: {
+                if (log.isDebugEnabled()) {
+                    log.debug("readAck({})[EOF={}] read error message", this, canEof);
+                }
+                String line = readLine();
+                if (log.isDebugEnabled()) {
+                    log.debug("readAck({})[EOF={}] received error: {}", this, canEof, line);
+                }
+                throw new IOException("Received nack: " + line);
+            }
             default:
                 break;
         }
         return c;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[" + getSession() + "]";
     }
 }
