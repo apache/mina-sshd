@@ -54,7 +54,7 @@ public class KeyPairIdentity implements PublicKeyIdentity {
                 "No signer could be located for key type=%s",
                 keyType);
         verifier.initSigner(pair.getPrivate());
-        verifier.update(data, 0, data.length);
+        verifier.update(data);
         return verifier.sign();
     }
 

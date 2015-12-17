@@ -91,7 +91,7 @@ public class AgentImpl implements SshAgent {
                 throw new SshException("Unsupported key type: " + pubKey.getClass().getSimpleName());
             }
             verif.initSigner(kp.getPrivate());
-            verif.update(data, 0, data.length);
+            verif.update(data);
             return verif.sign();
         } catch (IOException e) {
             throw e;

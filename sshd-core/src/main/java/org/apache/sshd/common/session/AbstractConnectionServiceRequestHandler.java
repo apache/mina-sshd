@@ -19,18 +19,26 @@
 
 package org.apache.sshd.common.session;
 
-import org.apache.sshd.common.channel.RequestHandler;
-import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ConnectionServiceRequestHandler extends RequestHandler<ConnectionService> {
+public abstract class AbstractConnectionServiceRequestHandler
+        extends AbstractLoggingBean
+        implements ConnectionServiceRequestHandler {
 
-    // required because of generics issues
-    Transformer<ConnectionServiceRequestHandler, RequestHandler<ConnectionService>> SVC2HNDLR = Transformer.Utils.identity();
+    protected AbstractConnectionServiceRequestHandler() {
+        super();
+    }
 
     @Override
-    Result process(ConnectionService service, String request, boolean wantReply, Buffer buffer) throws Exception;
+    public Result process(ConnectionService connectionService, String request, boolean wantReply, Buffer buffer) throws Exception {
+        if (log.isDebugEnabled()) {
+            log.debug("process({}) request={}, want-reply={}", connectionService, request, wantReply);
+        }
+
+        return Result.Unsupported;
+    }
 }

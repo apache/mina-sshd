@@ -58,6 +58,8 @@ import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.Transformer;
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.keys.BufferPublicKeyParser;
 
 /**
  * Provides an abstract message buffer for encoding SSH messages
@@ -276,69 +278,49 @@ public abstract class Buffer implements Readable {
     }
 
     public PublicKey getPublicKey() throws SshException {
+        return getPublicKey(BufferPublicKeyParser.Utils.DEFAULT);
+    }
+
+    /**
+     * @param parser A {@link BufferPublicKeyParser} to extract the key from the buffer
+     * - never {@code null}
+     * @return The extracted {@link PublicKey} - may be {@code null} if the parser so decided
+     * @throws SshException If failed to extract the key
+     * @see #getRawPublicKey(BufferPublicKeyParser)
+     */
+    public PublicKey getPublicKey(BufferPublicKeyParser<? extends PublicKey> parser) throws SshException {
         int ow = wpos();
         int len = getInt();
         wpos(rpos() + len);
         try {
-            return getRawPublicKey();
+            return getRawPublicKey(parser);
         } finally {
             wpos(ow);
         }
     }
 
     public PublicKey getRawPublicKey() throws SshException {
+        return getRawPublicKey(BufferPublicKeyParser.Utils.DEFAULT);
+    }
+
+    /**
+     * @param parser A {@link BufferPublicKeyParser} to extract the key from the buffer
+     * - never {@code null}
+     * @return The extracted {@link PublicKey} - may be {@code null} if the parser so decided
+     * @throws SshException If failed to extract the key
+     */
+    public PublicKey getRawPublicKey(BufferPublicKeyParser<? extends PublicKey> parser) throws SshException {
+        ValidateUtils.checkNotNull(parser, "No key data parser");
         try {
-            String keyAlg = getString();
-            if (KeyPairProvider.SSH_RSA.equals(keyAlg)) {
-                BigInteger e = getMPInt();
-                BigInteger n = getMPInt();
-                KeyFactory keyFactory = SecurityUtils.getKeyFactory("RSA");
-                return keyFactory.generatePublic(new RSAPublicKeySpec(n, e));
-            } else if (KeyPairProvider.SSH_DSS.equals(keyAlg)) {
-                BigInteger p = getMPInt();
-                BigInteger q = getMPInt();
-                BigInteger g = getMPInt();
-                BigInteger y = getMPInt();
-                KeyFactory keyFactory = SecurityUtils.getKeyFactory("DSA");
-                return keyFactory.generatePublic(new DSAPublicKeySpec(y, p, q, g));
+            String keyType = getString();
+            if (!parser.isKeyTypeSupported(keyType)) {
+                throw new NoSuchAlgorithmException("Key type=" + keyType + ") not supported by parser=" + parser);
             }
 
-            ECCurves curve = ECCurves.fromKeyType(keyAlg);
-            if (curve == null) {
-                throw new NoSuchAlgorithmException("Unsupported raw public algorithm: " + keyAlg);
-            }
-
-            String curveName = curve.getName();
-            ECParameterSpec params = curve.getParameters();
-            return getRawECKey(curveName, params);
+            return parser.getRawPublicKey(keyType, this);
         } catch (GeneralSecurityException e) {
             throw new SshException(e);
         }
-    }
-
-    protected PublicKey getRawECKey(String expectedCurve, ECParameterSpec spec) throws GeneralSecurityException {
-        String curveName = getString();
-        if (!expectedCurve.equals(curveName)) {
-            throw new InvalidKeySpecException("getRawECKey(" + expectedCurve + ") curve name does not match expected: " + curveName);
-        }
-
-        if (spec == null) {
-            throw new InvalidKeySpecException("getRawECKey(" + expectedCurve + ") missing curve parameters");
-        }
-
-        byte[] octets = getBytes();
-        ECPoint w;
-        try {
-            w = ECDSAPublicKeyEntryDecoder.octetStringToEcPoint(octets);
-        } catch (RuntimeException e) {
-            throw new InvalidKeySpecException("getRawECKey(" + expectedCurve + ")"
-                    + " cannot (" + e.getClass().getSimpleName() + ")"
-                    + " retrieve W value: " + e.getMessage(),
-                    e);
-        }
-
-        KeyFactory keyFactory = SecurityUtils.getKeyFactory("EC");
-        return keyFactory.generatePublic(new ECPublicKeySpec(w, spec));
     }
 
     public KeyPair getKeyPair() throws SshException {

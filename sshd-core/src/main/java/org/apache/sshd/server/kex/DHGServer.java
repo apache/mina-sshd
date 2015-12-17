@@ -122,14 +122,13 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         buffer.putMPInt(k);
         hash.update(buffer.array(), 0, buffer.available());
         h = hash.digest();
+        sig.update(h);
 
-        byte[] sigH;
         buffer.clear();
-        sig.update(h, 0, h.length);
         buffer.putString(algo);
         buffer.putBytes(sig.sign());
-        sigH = buffer.getCompactData();
 
+        byte[] sigH = buffer.getCompactData();
         if (log.isTraceEnabled()) {
             log.trace("next({})[{}][K_S]:  {}", this, session, BufferUtils.printHex(k_s));
             log.trace("next({})[{}][f]:    {}", this, session, BufferUtils.printHex(f));

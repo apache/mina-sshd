@@ -40,6 +40,7 @@ import org.apache.sshd.server.forward.DirectTcpipFactory;
 import org.apache.sshd.server.global.CancelTcpipForwardHandler;
 import org.apache.sshd.server.global.KeepAliveHandler;
 import org.apache.sshd.server.global.NoMoreSessionsHandler;
+import org.apache.sshd.server.global.OpenSshHostKeysHandler;
 import org.apache.sshd.server.global.TcpipForwardHandler;
 import org.apache.sshd.server.kex.DHGEXServer;
 import org.apache.sshd.server.kex.DHGServer;
@@ -74,7 +75,8 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
             KeepAliveHandler.INSTANCE,
             NoMoreSessionsHandler.INSTANCE,
             TcpipForwardHandler.INSTANCE,
-            CancelTcpipForwardHandler.INSTANCE
+            CancelTcpipForwardHandler.INSTANCE,
+            OpenSshHostKeysHandler.INSTANCE
         ));
 
     public static final PublickeyAuthenticator DEFAULT_PUBLIC_KEY_AUTHENTICATOR = DefaultAuthorizedKeysAuthenticator.INSTANCE;

@@ -26,6 +26,7 @@ import java.util.List;
 import org.apache.sshd.client.config.hosts.DefaultConfigFileHostEntryResolver;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.config.keys.ClientIdentityLoader;
+import org.apache.sshd.client.global.OpenSshHostKeysHandler;
 import org.apache.sshd.client.kex.DHGClient;
 import org.apache.sshd.client.kex.DHGEXClient;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
@@ -33,9 +34,11 @@ import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.server.forward.ForwardedTcpipFactory;
 
@@ -59,6 +62,9 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
 
     public static final List<NamedFactory<Channel>> DEFAULT_CHANNEL_FACTORIES =
             Collections.unmodifiableList(Arrays.<NamedFactory<Channel>>asList(ForwardedTcpipFactory.INSTANCE));
+    public static final List<RequestHandler<ConnectionService>> DEFAULT_GLOBAL_REQUEST_HANDLERS =
+            Collections.unmodifiableList(Arrays.<RequestHandler<ConnectionService>>asList(
+                    OpenSshHostKeysHandler.INSTANCE));
 
     public static final ServerKeyVerifier DEFAULT_SERVER_KEY_VERIFIER = AcceptAllServerKeyVerifier.INSTANCE;
     public static final HostConfigEntryResolver DEFAULT_HOST_CONFIG_ENTRY_RESOLVER = DefaultConfigFileHostEntryResolver.INSTANCE;
@@ -104,6 +110,10 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
 
         if (channelFactories == null) {
             channelFactories = DEFAULT_CHANNEL_FACTORIES;
+        }
+
+        if (globalRequestHandlers == null) {
+            globalRequestHandlers = DEFAULT_GLOBAL_REQUEST_HANDLERS;
         }
 
         if (serverKeyVerifier == null) {

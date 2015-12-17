@@ -493,19 +493,19 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
                                   this, handler.getClass().getSimpleName(), req, wantReply, result);
                     }
                 } else {
-                    sendResponse(buffer, req, result, wantReply);
+                    sendGlobalResponse(buffer, req, result, wantReply);
                     return;
                 }
             }
         }
 
         log.warn("globalRequest({}) unknown global request: {}", this, req);
-        sendResponse(buffer, req, RequestHandler.Result.Unsupported, wantReply);
+        sendGlobalResponse(buffer, req, RequestHandler.Result.Unsupported, wantReply);
     }
 
-    protected void sendResponse(Buffer buffer, String req, RequestHandler.Result result, boolean wantReply) throws IOException {
+    protected void sendGlobalResponse(Buffer buffer, String req, RequestHandler.Result result, boolean wantReply) throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("sendResponse({})[{}] result={}, want-reply={}", this, req, result, Boolean.valueOf(wantReply));
+            log.debug("sendGlobalResponse({})[{}] result={}, want-reply={}", this, req, result, wantReply);
         }
 
         if (RequestHandler.Result.Replied.equals(result) || (!wantReply)) {
@@ -513,15 +513,12 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
         }
 
         byte cmd = RequestHandler.Result.ReplySuccess.equals(result)
-                 ? SshConstants.SSH_MSG_CHANNEL_SUCCESS
-                 : SshConstants.SSH_MSG_CHANNEL_FAILURE;
-        buffer.clear();
-        // leave room for the SSH header
-        buffer.ensureCapacity(5 + 1 + (Integer.SIZE / Byte.SIZE), RESPONSE_BUFFER_GROWTH_FACTOR);
-        buffer.rpos(5);
-        buffer.wpos(5);
+                 ? SshConstants.SSH_MSG_REQUEST_SUCCESS
+                 : SshConstants.SSH_MSG_REQUEST_FAILURE;
+        Session session = getSession();
+        buffer = session.prepareBuffer(cmd, BufferUtils.clear(buffer));
         buffer.putByte(cmd);
-        getSession().writePacket(buffer);
+        session.writePacket(buffer);
     }
 
     protected void requestSuccess(Buffer buffer) throws Exception {
@@ -536,5 +533,4 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
     public String toString() {
         return getClass().getSimpleName() + "[" + getSession() + "]";
     }
-
 }

@@ -20,8 +20,11 @@ package org.apache.sshd.common;
 
 import java.io.IOException;
 
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
+
 /**
- * TODO Add javadoc
+ * Represents an SSH related exception
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -31,24 +34,20 @@ public class SshException extends IOException {
 
     private final int disconnectCode;
 
-    public SshException() {
-        this(0, null, null);
+    public SshException(String message) {
+        this(message, null);
     }
 
-    public SshException(String message) {
-        this(0, message, null);
+    public SshException(Throwable cause) {
+        this(ValidateUtils.checkNotNull(cause, "No cause").getMessage(), cause);
     }
 
     public SshException(String message, Throwable cause) {
         this(0, message, cause);
     }
 
-    public SshException(Throwable cause) {
-        this(0, null, cause);
-    }
-
     public SshException(int disconnectCode) {
-        this(disconnectCode, null, null);
+        this(disconnectCode, SshConstants.getDisconnectReasonName(disconnectCode));
     }
 
     public SshException(int disconnectCode, String message) {
@@ -56,11 +55,11 @@ public class SshException extends IOException {
     }
 
     public SshException(int disconnectCode, Throwable cause) {
-        this(disconnectCode, null, cause);
+        this(disconnectCode, SshConstants.getDisconnectReasonName(disconnectCode), cause);
     }
 
     public SshException(int disconnectCode, String message, Throwable cause) {
-        super(message);
+        super(GenericUtils.isEmpty(message) ? SshConstants.getDisconnectReasonName(disconnectCode) : message);
         this.disconnectCode = disconnectCode;
         if (cause != null) {
             initCause(cause);

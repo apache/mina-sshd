@@ -446,7 +446,7 @@ public final class KeyUtils {
      * @see #getFingerPrint(Digest, PublicKey)
      */
     public static String getFingerPrint(Factory<? extends Digest> f, PublicKey key) {
-        return getFingerPrint(ValidateUtils.checkNotNull(f, "No digest factory").create(), key);
+        return (key == null) ? null : getFingerPrint(ValidateUtils.checkNotNull(f, "No digest factory").create(), key);
     }
 
     /**

@@ -18,8 +18,8 @@
  */
 package org.apache.sshd.server.global;
 
+import org.apache.sshd.common.session.AbstractConnectionServiceRequestHandler;
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.session.ConnectionServiceRequestHandler;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -27,7 +27,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class NoMoreSessionsHandler implements ConnectionServiceRequestHandler {
+public class NoMoreSessionsHandler extends AbstractConnectionServiceRequestHandler {
     public static final NoMoreSessionsHandler INSTANCE = new NoMoreSessionsHandler();
 
     public NoMoreSessionsHandler() {
@@ -39,8 +39,8 @@ public class NoMoreSessionsHandler implements ConnectionServiceRequestHandler {
         if (request.startsWith("no-more-sessions@")) {
             connectionService.setAllowMoreSessions(false);
             return Result.ReplyFailure;
+        } else {
+            return super.process(connectionService, request, wantReply, buffer);
         }
-        return Result.Unsupported;
     }
-
 }

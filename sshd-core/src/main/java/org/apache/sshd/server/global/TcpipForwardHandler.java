@@ -21,19 +21,19 @@ package org.apache.sshd.server.global;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.forward.TcpipForwarder;
+import org.apache.sshd.common.session.AbstractConnectionServiceRequestHandler;
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.session.ConnectionServiceRequestHandler;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
  * Handler for tcpip-forward global request.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class TcpipForwardHandler extends AbstractLoggingBean implements ConnectionServiceRequestHandler {
+public class TcpipForwardHandler extends AbstractConnectionServiceRequestHandler {
     public static final String REQUEST = "tcpip-forward";
 
     /**
@@ -49,33 +49,28 @@ public class TcpipForwardHandler extends AbstractLoggingBean implements Connecti
 
     @Override
     public Result process(ConnectionService connectionService, String request, boolean wantReply, Buffer buffer) throws Exception {
-        if (REQUEST.equals(request)) {
-            String address = buffer.getString();
-            int port = buffer.getInt();
-            SshdSocketAddress socketAddress = new SshdSocketAddress(address, port);
-            TcpipForwarder forwarder = connectionService.getTcpipForwarder();
-            SshdSocketAddress bound = forwarder.localPortForwardingRequested(socketAddress);
-            if (log.isDebugEnabled()) {
-                log.debug("process(" + connectionService + ")[" + request + "] " + socketAddress + " => " + bound + ", reply=" + wantReply);
-            }
-
-            port = bound.getPort();
-            if (wantReply) {
-                buffer.clear();
-                // leave room for the SSH header
-                buffer.ensureCapacity(5 + 1 + (Integer.SIZE / Byte.SIZE), RESPONSE_BUFFER_GROWTH_FACTOR);
-                buffer.rpos(5);
-                buffer.wpos(5);
-                buffer.putByte(SshConstants.SSH_MSG_REQUEST_SUCCESS);
-                buffer.putInt(port);
-
-                Session session = connectionService.getSession();
-                session.writePacket(buffer);
-            }
-            return Result.Replied;
+        if (!REQUEST.equals(request)) {
+            return super.process(connectionService, request, wantReply, buffer);
         }
 
-        return Result.Unsupported;
-    }
+        String address = buffer.getString();
+        int port = buffer.getInt();
+        SshdSocketAddress socketAddress = new SshdSocketAddress(address, port);
+        TcpipForwarder forwarder = connectionService.getTcpipForwarder();
+        SshdSocketAddress bound = forwarder.localPortForwardingRequested(socketAddress);
+        if (log.isDebugEnabled()) {
+            log.debug("process({})[{}] {} => {}, reply={}",
+                      connectionService, request, socketAddress, bound, wantReply);
+        }
 
+        port = bound.getPort();
+        if (wantReply) {
+            Session session = connectionService.getSession();
+            buffer = session.prepareBuffer(SshConstants.SSH_MSG_REQUEST_SUCCESS, BufferUtils.clear(buffer));
+            buffer.putInt(port);
+            session.writePacket(buffer);
+        }
+
+        return Result.Replied;
+    }
 }

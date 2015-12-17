@@ -42,6 +42,11 @@ public interface KeyPairProvider extends KeyIdentityProvider {
     String SSH_DSS = "ssh-dss";
 
     /**
+     * SSH identifier for ED25519 elliptic curve keys
+     */
+    String SSH_ED25519 = "ssh-ed25519";
+
+    /**
      * SSH identifier for EC keys in NIST curve P-256
      */
     String ECDSA_SHA2_NISTP256 = ECCurves.nistp256.getKeyType();
