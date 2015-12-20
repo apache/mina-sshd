@@ -187,6 +187,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     protected List<NamedFactory<UserAuth>> userAuthFactories;
 
     private ServerKeyVerifier serverKeyVerifier;
+    private Collection<String> serverKeyAlgorithmsFilter;
     private HostConfigEntryResolver hostConfigEntryResolver;
     private ClientIdentityLoader clientIdentityLoader;
     private FilePasswordProvider filePasswordProvider;
@@ -214,6 +215,16 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     @Override
     public void setServerKeyVerifier(ServerKeyVerifier serverKeyVerifier) {
         this.serverKeyVerifier = ValidateUtils.checkNotNull(serverKeyVerifier, "No server key verifier");
+    }
+
+    @Override
+    public Collection<String> getServerKeyAlgorithmsFilter() {
+        return serverKeyAlgorithmsFilter;
+    }
+
+    @Override
+    public void setServerKeyAlgorithmsFilter(Collection<String> serverKeyAlgorithmsFilter) {
+        this.serverKeyAlgorithmsFilter = serverKeyAlgorithmsFilter; // OK if null - no filter
     }
 
     @Override

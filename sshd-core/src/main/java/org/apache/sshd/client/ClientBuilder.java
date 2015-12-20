@@ -20,6 +20,7 @@
 package org.apache.sshd.client;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -72,6 +73,7 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
     public static final FilePasswordProvider DEFAULT_FILE_PASSWORD_PROVIDER = FilePasswordProvider.EMPTY;
 
     protected ServerKeyVerifier serverKeyVerifier;
+    protected Collection<String> serverKeyAlgorithmsFilter;
     protected HostConfigEntryResolver hostConfigEntryResolver;
     protected ClientIdentityLoader clientIdentityLoader;
     protected FilePasswordProvider filePasswordProvider;
@@ -82,6 +84,11 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
 
     public ClientBuilder serverKeyVerifier(ServerKeyVerifier serverKeyVerifier) {
         this.serverKeyVerifier = serverKeyVerifier;
+        return me();
+    }
+
+    public ClientBuilder serverKeyAlgorithmsFilter(Collection<String> serverKeyAlgorithmsFilter) {
+        this.serverKeyAlgorithmsFilter = serverKeyAlgorithmsFilter;
         return me();
     }
 
@@ -143,6 +150,7 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
     public SshClient build(boolean isFillWithDefaultValues) {
         SshClient client = super.build(isFillWithDefaultValues);
         client.setServerKeyVerifier(serverKeyVerifier);
+        client.setServerKeyAlgorithmsFilter(serverKeyAlgorithmsFilter);
         client.setHostConfigEntryResolver(hostConfigEntryResolver);
         client.setClientIdentityLoader(clientIdentityLoader);
         client.setFilePasswordProvider(filePasswordProvider);

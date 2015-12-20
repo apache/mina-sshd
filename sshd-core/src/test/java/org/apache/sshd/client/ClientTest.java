@@ -1342,6 +1342,31 @@ public class ClientTest extends BaseTestSupport {
         assertNull("Session closure not signalled", clientSessionHolder.get());
     }
 
+    public void testWaitAuthKeyFilter() throws Exception {
+        client.setServerKeyAlgorithmsFilter(Collections.singletonList(KeyPairProvider.SSH_RSA));
+        client.start();
+
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            Collection<ClientSession.ClientSessionEvent> result =
+                    session.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.WAIT_AUTH), TimeUnit.SECONDS.toMillis(10L));
+        } finally {
+            client.stop();
+        }
+    }
+
+    @Test(expected=SshException.class)
+    public void testWaitAuthKeyFilterError() throws Exception {
+        client.setServerKeyAlgorithmsFilter(Collections.singletonList("ssh-error"));
+        client.start();
+
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            Collection<ClientSession.ClientSessionEvent> result =
+                    session.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.WAIT_AUTH), TimeUnit.SECONDS.toMillis(10L));
+        } finally {
+            client.stop();
+        }
+    }
+
     @Test
     public void testCreateChannelByType() throws Exception {
         client.start();

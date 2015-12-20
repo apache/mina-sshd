@@ -119,31 +119,8 @@ public class ServerSessionImpl extends AbstractServerSession {
         KeyPairProvider kpp = getKeyPairProvider();
         Collection<String> supported = NamedResource.Utils.getNameList(getSignatureFactories());
         Iterable<String> provided = (kpp == null) ? null : kpp.getKeyTypes();
-        if ((provided == null) || GenericUtils.isEmpty(supported)) {
-            return resolveEmptySignaturesProposal(supported, provided);
-        }
 
-        StringBuilder resolveKeys = null;
-        for (String keyType : provided) {
-            if (!supported.contains(keyType)) {
-                if (log.isDebugEnabled()) {
-                    log.debug("resolveAvailableSignaturesProposal({})[{}] {} not in suppored list: {}",
-                              this, provided, keyType, supported);
-                }
-                continue;
-            }
-
-            if (resolveKeys == null) {
-                resolveKeys = new StringBuilder(supported.size() * 16 /* ecdsa-sha2-xxxx */);
-            }
-
-            if (resolveKeys.length() > 0) {
-                resolveKeys.append(',');
-            }
-
-            resolveKeys.append(keyType);
-        }
-
+        String resolveKeys = filterAvailableSignaturesProposal(supported, provided);
         if (GenericUtils.isEmpty(resolveKeys)) {
             return resolveEmptySignaturesProposal(supported, provided);
         } else {

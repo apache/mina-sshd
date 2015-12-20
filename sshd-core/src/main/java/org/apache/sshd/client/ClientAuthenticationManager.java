@@ -20,6 +20,7 @@
 package org.apache.sshd.client;
 
 import java.security.KeyPair;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
@@ -98,6 +99,15 @@ public interface ClientAuthenticationManager extends KeyPairProviderHolder {
      */
     ServerKeyVerifier getServerKeyVerifier();
     void setServerKeyVerifier(ServerKeyVerifier serverKeyVerifier);
+
+    /**
+     * Retrieve the server key algorithms filter to be used for kex
+     * to an SSH server.
+     *
+     * @return the {@code List<String>} to use - all {@code null}
+     */
+    Collection<String> getServerKeyAlgorithmsFilter();
+    void setServerKeyAlgorithmsFilter(Collection<String> setServerKeyAlgorithmsFilter);
 
     /**
      * @return A {@link UserInteraction} object to communicate with the user

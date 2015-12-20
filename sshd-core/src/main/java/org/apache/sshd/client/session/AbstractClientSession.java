@@ -22,6 +22,7 @@ package org.apache.sshd.client.session;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.security.KeyPair;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -62,6 +63,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     private final List<Object> identities = new CopyOnWriteArrayList<>();
     private final AuthenticationIdentitiesProvider identitiesProvider;
     private ServerKeyVerifier serverKeyVerifier;
+    private Collection<String> serverKeyAlgorithmsFilter;
     private UserInteraction userInteraction;
     private PasswordIdentityProvider passwordIdentityProvider;
     private List<NamedFactory<UserAuth>> userAuthFactories;
@@ -85,6 +87,17 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     @Override
     public void setServerKeyVerifier(ServerKeyVerifier serverKeyVerifier) {
         this.serverKeyVerifier = serverKeyVerifier; // OK if null - inherit from parent
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public Collection<String> getServerKeyAlgorithmsFilter() {
+        return resolveEffectiveProvider(Collection.class, this.serverKeyAlgorithmsFilter, getFactoryManager().getServerKeyAlgorithmsFilter());
+    }
+
+    @Override
+    public void setServerKeyAlgorithmsFilter(Collection<String> serverKeyAlgorithmsFilter) {
+        this.serverKeyAlgorithmsFilter = serverKeyAlgorithmsFilter; // OK if null - inherit from parent
     }
 
     @Override
@@ -342,7 +355,14 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     protected String resolveAvailableSignaturesProposal(FactoryManager manager) {
         // the client does not have to provide keys for the available signatures
         ValidateUtils.checkTrue(manager == getFactoryManager(), "Mismatched factory manager instances");
-        return NamedResource.Utils.getNames(getSignatureFactories());
+
+        Collection<String> supported = NamedResource.Utils.getNameList(getSignatureFactories());
+        Collection<String> provided = getServerKeyAlgorithmsFilter();
+        if (provided == null) {
+            return GenericUtils.join(supported, ',');
+        } else {
+            return filterAvailableSignaturesProposal(supported, provided);
+        }
     }
 
     @Override

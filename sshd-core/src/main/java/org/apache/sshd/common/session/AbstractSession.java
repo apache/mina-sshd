@@ -1855,6 +1855,39 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         return resolveAvailableSignaturesProposal(getFactoryManager());
     }
 
+    protected String filterAvailableSignaturesProposal(Collection<String> supported, Iterable<String> provided) {
+        if ((provided == null) || GenericUtils.isEmpty(supported)) {
+            return null;
+        }
+
+        StringBuilder resolveKeys = null;
+        for (String keyType : provided) {
+            if (!supported.contains(keyType)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("resolveAvailableSignaturesProposal({})[{}] {} not in suppored list: {}",
+                              this, provided, keyType, supported);
+                }
+                continue;
+            }
+
+            if (resolveKeys == null) {
+                resolveKeys = new StringBuilder(supported.size() * 16 /* ecdsa-sha2-xxxx */);
+            }
+
+            if (resolveKeys.length() > 0) {
+                resolveKeys.append(',');
+            }
+
+            resolveKeys.append(keyType);
+        }
+
+        if (GenericUtils.isEmpty(resolveKeys)) {
+            return null;
+        } else {
+            return resolveKeys.toString();
+        }
+    }
+
     /**
      * @param manager The {@link FactoryManager}
      * @return A comma-separated list of all the signature protocols to be
