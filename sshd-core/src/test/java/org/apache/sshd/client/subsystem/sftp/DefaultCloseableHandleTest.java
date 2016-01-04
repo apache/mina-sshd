@@ -57,7 +57,7 @@ public class DefaultCloseableHandleTest extends BaseTestSupport {
             }
         }).when(client).close(Matchers.any(Handle.class));
 
-        CloseableHandle handle = new DefaultCloseableHandle(client, id);
+        CloseableHandle handle = new DefaultCloseableHandle(client, getCurrentTestName(), id);
         try {
             assertTrue("Handle not initially open", handle.isOpen());
         } finally {
@@ -81,7 +81,7 @@ public class DefaultCloseableHandleTest extends BaseTestSupport {
             }
         }).when(client).close(Matchers.any(Handle.class));
 
-        CloseableHandle handle = new DefaultCloseableHandle(client, getCurrentTestName().getBytes(StandardCharsets.UTF_8));
+        CloseableHandle handle = new DefaultCloseableHandle(client, getCurrentTestName(), getCurrentTestName().getBytes(StandardCharsets.UTF_8));
         for (int index = 0; index < Byte.SIZE; index++) {
             handle.close();
         }

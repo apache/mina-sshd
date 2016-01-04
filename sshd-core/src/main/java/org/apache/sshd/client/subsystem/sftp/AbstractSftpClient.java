@@ -689,7 +689,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         buffer.putInt(mode);
         writeAttributes(buffer, new Attributes());
 
-        CloseableHandle handle = new DefaultCloseableHandle(this, checkHandle(SftpConstants.SSH_FXP_OPEN, buffer));
+        CloseableHandle handle = new DefaultCloseableHandle(this, path, checkHandle(SftpConstants.SSH_FXP_OPEN, buffer));
         if (log.isTraceEnabled()) {
             log.trace("open({})[{}] options={}: {}", getClientSession(), path, options, handle);
         }
@@ -895,7 +895,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
         buffer.putString(path);
 
-        CloseableHandle handle = new DefaultCloseableHandle(this, checkHandle(SftpConstants.SSH_FXP_OPENDIR, buffer));
+        CloseableHandle handle = new DefaultCloseableHandle(this, path, checkHandle(SftpConstants.SSH_FXP_OPENDIR, buffer));
         if (log.isTraceEnabled()) {
             log.trace("openDir({})[{}}: {}", getClientSession(), path, handle);
         }

@@ -75,11 +75,20 @@ public interface SftpClient extends SubsystemClient {
     }
 
     class Handle {
+        private final String path;
         private final byte[] id;
 
-        Handle(byte[] id) {
+        Handle(String path, byte[] id) {
             // clone the original so the handle is immutable
+            this.path = ValidateUtils.checkNotNullAndNotEmpty(path, "No remote path");
             this.id = ValidateUtils.checkNotNullAndNotEmpty(id, "No handle ID").clone();
+        }
+
+        /**
+         * @return The remote path represented by this handle
+         */
+        public String getPath() {
+            return path;
         }
 
         public int length() {
@@ -119,14 +128,14 @@ public interface SftpClient extends SubsystemClient {
 
         @Override
         public String toString() {
-            return BufferUtils.printHex(BufferUtils.EMPTY_HEX_SEPARATOR, id);
+            return getPath() + ": " + BufferUtils.printHex(BufferUtils.EMPTY_HEX_SEPARATOR, id);
         }
     }
 
     // CHECKSTYLE:OFF
     abstract class CloseableHandle extends Handle implements Channel, Closeable {
-        protected CloseableHandle(byte[] id) {
-            super(id);
+        protected CloseableHandle(String path, byte[] id) {
+            super(path, id);
         }
     }
     // CHECKSTYLE:ON
