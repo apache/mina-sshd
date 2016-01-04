@@ -26,13 +26,13 @@ import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.keyprovider.KeyPairProviderHolder;
 import org.apache.sshd.common.mac.Mac;
-import org.apache.sshd.common.signature.Signature;
+import org.apache.sshd.common.signature.SignatureFactoriesManager;
 
 /**
  * Holds KEX negotiation stage configuration
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface KexFactoryManager extends KeyPairProviderHolder {
+public interface KexFactoryManager extends KeyPairProviderHolder, SignatureFactoriesManager {
     /**
      * Retrieve the list of named factories for <code>KeyExchange</code>.
      *
@@ -64,12 +64,4 @@ public interface KexFactoryManager extends KeyPairProviderHolder {
      */
     List<NamedFactory<Mac>> getMacFactories();
     void setMacFactories(List<NamedFactory<Mac>> macFactories);
-
-    /**
-     * Retrieve the list of named factories for <code>Signature</code>.
-     *
-     * @return a list of named <code>Signature</code> factories, never {@code null}
-     */
-    List<NamedFactory<Signature>> getSignatureFactories();
-    void setSignatureFactories(List<NamedFactory<Signature>> signatureFactories);
 }

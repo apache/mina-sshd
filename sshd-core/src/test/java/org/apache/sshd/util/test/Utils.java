@@ -34,8 +34,11 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.security.CodeSource;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.ProtectionDomain;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -49,6 +52,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -106,6 +110,21 @@ public class Utils {
         Iterator<? extends KeyPair> iter = ValidateUtils.checkNotNull(pairs.iterator(), "No keys iterator");
         ValidateUtils.checkTrue(iter.hasNext(), "Empty loaded kyes iterator");
         return ValidateUtils.checkNotNull(iter.next(), "No key pair in iterator");
+    }
+
+    public static KeyPair generateKeyPair(String algorithm, int keySize) throws GeneralSecurityException {
+        KeyPairGenerator gen = SecurityUtils.getKeyPairGenerator(algorithm);
+        if ("EC".equalsIgnoreCase(algorithm)) {
+            ECCurves curve = ECCurves.fromCurveSize(keySize);
+            if (curve == null) {
+                throw new InvalidKeySpecException("Unknown curve for key size=" + keySize);
+            }
+            gen.initialize(curve.getParameters());
+        } else {
+            gen.initialize(keySize);
+        }
+
+        return gen.generateKeyPair();
     }
 
     // uses a cached instance to avoid re-creating the keys as it is a time-consuming effort

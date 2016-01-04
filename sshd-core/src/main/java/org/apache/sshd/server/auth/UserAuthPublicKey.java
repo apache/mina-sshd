@@ -19,11 +19,15 @@
 package org.apache.sshd.server.auth;
 
 import java.security.PublicKey;
+import java.util.Collection;
+import java.util.List;
 
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.signature.Signature;
+import org.apache.sshd.common.signature.SignatureFactoriesManager;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -36,11 +40,28 @@ import org.apache.sshd.server.session.ServerSession;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthPublicKey extends AbstractUserAuth {
+public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFactoriesManager {
     public static final String NAME = UserAuthPublicKeyFactory.NAME;
 
+    private List<NamedFactory<Signature>> factories;
+
     public UserAuthPublicKey() {
+        this(null);
+    }
+
+    public UserAuthPublicKey(List<NamedFactory<Signature>> factories) {
         super(NAME);
+        this.factories = factories; // OK if null/empty
+    }
+
+    @Override
+    public List<NamedFactory<Signature>> getSignatureFactories() {
+        return factories;
+    }
+
+    @Override
+    public void setSignatureFactories(List<NamedFactory<Signature>> factories) {
+        this.factories = factories;
     }
 
     @Override
@@ -57,13 +78,18 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         ServerSession session = getServerSession();
         String username = getUsername();
         PublicKey key = buffer.getRawPublicKey();
+        Collection<NamedFactory<Signature>> factories =
+                ValidateUtils.checkNotNullAndNotEmpty(
+                        SignatureFactoriesManager.Utils.resolveSignatureFactories(this, session),
+                        "No signature factories for session=%s",
+                        session);
         if (log.isDebugEnabled()) {
-            log.debug("doAuth({}@{}) verify key type={}, fingerprint={}",
-                      username, session, alg, KeyUtils.getFingerPrint(key));
+            log.debug("doAuth({}@{}) verify key type={}, factories={}, fingerprint={}",
+                      username, session, alg, NamedResource.Utils.getNames(factories), KeyUtils.getFingerPrint(key));
         }
 
         Signature verifier = ValidateUtils.checkNotNull(
-                NamedFactory.Utils.create(session.getSignatureFactories(), alg),
+                NamedFactory.Utils.create(factories, alg),
                 "No verifier located for algorithm=%s",
                 alg);
         verifier.initVerifier(key);

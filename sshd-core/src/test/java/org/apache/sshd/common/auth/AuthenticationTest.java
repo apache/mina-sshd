@@ -19,7 +19,10 @@
 package org.apache.sshd.common.auth;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.security.KeyPair;
+import java.security.PublicKey;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -32,15 +35,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.auth.PasswordIdentityProvider;
+import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.future.AuthFuture;
+import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
+import org.apache.sshd.common.signature.BuiltinSignatures;
+import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -55,11 +63,13 @@ import org.apache.sshd.server.auth.keyboard.PromptEntry;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordChangeRequiredException;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
+import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerSessionImpl;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -583,6 +593,60 @@ public class AuthenticationTest extends BaseTestSupport {
                 s.auth().verify(11L, TimeUnit.SECONDS);
                 assertEquals("Mismatched load passwords count", 1, loadCount.get());
                 assertSame("Mismatched passwords identity provider", provider, s.getPasswordIdentityProvider());
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    @Test   // see SSHD-618
+    public void testPublicKeyAuthDifferentThanKex() throws Exception {
+        final KeyPairProvider serverKeys = KeyPairProvider.Utils.wrap(
+                    Utils.generateKeyPair("RSA", 1024),
+                    Utils.generateKeyPair("DSA", 512),
+                    Utils.generateKeyPair("EC", 256));
+        sshd.setKeyPairProvider(serverKeys);
+        sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
+        sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
+
+        final KeyPair clientIdentity = Utils.generateKeyPair("EC", 256);
+        sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
+            @Override
+            public boolean authenticate(String username, PublicKey key, ServerSession session) {
+                String keyType = KeyUtils.getKeyType(key);
+                String expType = KeyUtils.getKeyType(clientIdentity);
+                assertEquals("Mismatched client key types", expType, keyType);
+                assertKeyEquals("Mismatched authentication public keys", clientIdentity.getPublic(), key);
+                return true;
+            }
+        });
+
+        try (SshClient client = setupTestClient()) {
+            // force server to use only the RSA key
+            final NamedFactory<Signature> kexSignature = BuiltinSignatures.rsa;
+            client.setSignatureFactories(Collections.<NamedFactory<Signature>>singletonList(kexSignature));
+            client.setServerKeyVerifier(new ServerKeyVerifier() {
+                @Override
+                public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
+                    String keyType = KeyUtils.getKeyType(serverKey);
+                    String expType = kexSignature.getName();
+                    assertEquals("Mismatched server key type", expType, keyType);
+
+                    KeyPair kp = ValidateUtils.checkNotNull(serverKeys.loadKey(keyType), "No server key for type=%s", keyType);
+                    assertKeyEquals("Mismatched server public keys", kp.getPublic(), serverKey);
+                    return true;
+                }
+            });
+
+            // allow only EC keys for public key authentication
+            org.apache.sshd.client.auth.UserAuthPublicKeyFactory factory = new org.apache.sshd.client.auth.UserAuthPublicKeyFactory();
+            factory.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(BuiltinSignatures.nistp256, BuiltinSignatures.nistp384, BuiltinSignatures.nistp521));
+            client.setUserAuthFactories(Collections.<NamedFactory<UserAuth>>singletonList(factory));
+
+            client.start();
+            try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                s.addPublicKeyIdentity(clientIdentity);
+                s.auth().verify(11L, TimeUnit.SECONDS);
             } finally {
                 client.stop();
             }

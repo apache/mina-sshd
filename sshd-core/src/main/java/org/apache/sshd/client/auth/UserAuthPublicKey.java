@@ -22,12 +22,17 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.security.PublicKey;
 import java.util.Iterator;
+import java.util.List;
+
 import org.apache.sshd.client.auth.pubkey.PublicKeyIdentity;
 import org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyIterator;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.signature.Signature;
+import org.apache.sshd.common.signature.SignatureFactoriesManager;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -36,21 +41,37 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  * Implements the &quot;publickey&quot; authentication mechanism
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthPublicKey extends AbstractUserAuth {
+public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFactoriesManager {
     public static final String NAME = UserAuthPublicKeyFactory.NAME;
 
     private Iterator<PublicKeyIdentity> keys;
     private PublicKeyIdentity current;
+    private List<NamedFactory<Signature>> factories;
 
     public UserAuthPublicKey() {
+        this(null);
+    }
+
+    public UserAuthPublicKey(List<NamedFactory<Signature>> factories) {
         super(NAME);
+        this.factories = factories; // OK if null/empty
+    }
+
+    @Override
+    public List<NamedFactory<Signature>> getSignatureFactories() {
+        return factories;
+    }
+
+    @Override
+    public void setSignatureFactories(List<NamedFactory<Signature>> factories) {
+        this.factories = factories;
     }
 
     @Override
     public void init(ClientSession session, String service) throws Exception {
         super.init(session, service);
         releaseKeys();  // just making sure in case multiple calls to the method
-        keys = new UserAuthPublicKeyIterator(session);
+        keys = new UserAuthPublicKeyIterator(session, this);
     }
 
     @Override

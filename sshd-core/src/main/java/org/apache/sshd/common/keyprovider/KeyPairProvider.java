@@ -19,9 +19,15 @@
 package org.apache.sshd.common.keyprovider;
 
 import java.security.KeyPair;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Objects;
 
 import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * Provider for key pairs.  This provider is used on the server side to provide
@@ -102,4 +108,66 @@ public interface KeyPairProvider extends KeyIdentityProvider {
      */
     Iterable<String> getKeyTypes();
 
+    /**
+     * A helper class for key-pair providers
+     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+     */
+    // CHECKSTYLE:OFF
+    final class Utils {
+    // CHECKSTYLE:ON
+        private Utils() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
+
+        public static KeyPairProvider wrap(KeyPair ... pairs) {
+            return wrap(GenericUtils.isEmpty(pairs) ? Collections.<KeyPair>emptyList() : Arrays.asList(pairs));
+        }
+
+        public static KeyPairProvider wrap(final Iterable<KeyPair> pairs) {
+            return new KeyPairProvider() {
+                @Override
+                public Iterable<KeyPair> loadKeys() {
+                    return pairs;
+                }
+
+                @Override
+                public KeyPair loadKey(String type) {
+                    if (pairs == null) {
+                        return null;
+                    }
+
+                    for (KeyPair kp : pairs) {
+                        String t = KeyUtils.getKeyType(kp);
+                        if (Objects.equals(type, t)) {
+                            return kp;
+                        }
+                    }
+
+                    return null;
+                }
+
+                @Override
+                public Iterable<String> getKeyTypes() {
+                    if (pairs == null) {
+                        return Collections.emptyList();
+                    }
+
+                    // use a LinkedHashSet so as to preserve the order but avoid duplicates
+                    Collection<String> types = new LinkedHashSet<>();
+                    for (KeyPair kp : pairs) {
+                        String t = KeyUtils.getKeyType(kp);
+                        if (GenericUtils.isEmpty(t)) {
+                            continue;   // avoid unknown key types
+                        }
+
+                        if (!types.add(t)) {
+                            continue;   // debug breakpoint
+                        }
+                    }
+
+                    return types;
+                }
+            };
+        }
+    }
 }

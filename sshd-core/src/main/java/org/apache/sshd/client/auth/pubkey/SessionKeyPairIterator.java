@@ -23,21 +23,19 @@ import java.security.KeyPair;
 import java.util.Iterator;
 
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.kex.KexFactoryManager;
+import org.apache.sshd.common.signature.SignatureFactoriesManager;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SessionKeyPairIterator extends AbstractKeyPairIterator<KeyPairIdentity> {
+    private final SignatureFactoriesManager signatureFactories;
     private final Iterator<KeyPair> keys;
 
-    public SessionKeyPairIterator(ClientSession session, Iterator<KeyPair> keys) {
+    public SessionKeyPairIterator(ClientSession session, SignatureFactoriesManager signatureFactories, Iterator<KeyPair> keys) {
         super(session);
+        this.signatureFactories = signatureFactories;   // OK if null
         this.keys = keys;   // OK if null
-    }
-
-    public KexFactoryManager getKexFactoryManager() {
-        return getClientSession();
     }
 
     @Override
@@ -47,6 +45,6 @@ public class SessionKeyPairIterator extends AbstractKeyPairIterator<KeyPairIdent
 
     @Override
     public KeyPairIdentity next() {
-        return new KeyPairIdentity(getKexFactoryManager(), keys.next());
+        return new KeyPairIdentity(signatureFactories, getClientSession(), keys.next());
     }
 }

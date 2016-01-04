@@ -137,6 +137,10 @@ public interface KeyIdentityProvider {
             return GenericUtils.multiIterableSuppliers(suppliers);
         }
 
+        public static KeyIdentityProvider wrap(KeyPair ... pairs) {
+            return wrap(GenericUtils.isEmpty(pairs) ? Collections.<KeyPair>emptyList() : Arrays.asList(pairs));
+        }
+
         public static KeyIdentityProvider wrap(final Iterable<KeyPair> keys) {
             return new KeyIdentityProvider() {
                 @Override

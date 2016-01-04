@@ -20,11 +20,13 @@ package org.apache.sshd.client.auth.pubkey;
 
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.util.Collection;
 
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.signature.Signature;
+import org.apache.sshd.common.signature.SignatureFactoriesManager;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -34,10 +36,12 @@ import org.apache.sshd.common.util.ValidateUtils;
  */
 public class KeyPairIdentity implements PublicKeyIdentity {
     private final KeyPair pair;
-    private final KexFactoryManager manager;
+    private final Collection<NamedFactory<Signature>> signatureFactories;
 
-    public KeyPairIdentity(KexFactoryManager manager, KeyPair pair) {
-        this.manager = ValidateUtils.checkNotNull(manager, "No manager");
+    public KeyPairIdentity(SignatureFactoriesManager primary, SignatureFactoriesManager secondary, KeyPair pair) {
+        this.signatureFactories = ValidateUtils.checkNotNullAndNotEmpty(
+                SignatureFactoriesManager.Utils.resolveSignatureFactories(primary, secondary),
+                "No available signature factories");
         this.pair = ValidateUtils.checkNotNull(pair, "No key pair");
     }
 
@@ -50,7 +54,7 @@ public class KeyPairIdentity implements PublicKeyIdentity {
     public byte[] sign(byte[] data) throws Exception {
         String keyType = KeyUtils.getKeyType(getPublicKey());
         Signature verifier = ValidateUtils.checkNotNull(
-                NamedFactory.Utils.create(manager.getSignatureFactories(), keyType),
+                NamedFactory.Utils.create(signatureFactories, keyType),
                 "No signer could be located for key type=%s",
                 keyType);
         verifier.initSigner(pair.getPrivate());
@@ -61,8 +65,9 @@ public class KeyPairIdentity implements PublicKeyIdentity {
     @Override
     public String toString() {
         PublicKey pubKey = getPublicKey();
-        return getClass().getSimpleName() + "[" + manager + "]"
+        return getClass().getSimpleName()
              + " type=" + KeyUtils.getKeyType(pubKey)
+             + ", factories=" + NamedResource.Utils.getNames(signatureFactories)
              + ", fingerprint=" + KeyUtils.getFingerPrint(pubKey);
     }
 }

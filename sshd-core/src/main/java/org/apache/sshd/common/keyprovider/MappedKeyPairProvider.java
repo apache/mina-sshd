@@ -20,8 +20,14 @@
 package org.apache.sshd.common.keyprovider;
 
 import java.security.KeyPair;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
+import java.util.TreeMap;
 
+import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -47,8 +53,16 @@ public class MappedKeyPairProvider implements KeyPairProvider {
 
     private final Map<String, KeyPair> pairsMap;
 
+    public MappedKeyPairProvider(KeyPair ... pairs) {
+        this(GenericUtils.isEmpty(pairs) ? Collections.<KeyPair>emptyList() : Arrays.asList(pairs));
+    }
+
+    public MappedKeyPairProvider(Collection<? extends KeyPair> pairs) {
+        this(mapUniquePairs(pairs));
+    }
+
     public MappedKeyPairProvider(Map<String, KeyPair> pairsMap) {
-        this.pairsMap = ValidateUtils.checkNotNull(pairsMap, "No pairs map provided");
+        this.pairsMap = ValidateUtils.checkNotNullAndNotEmpty(pairsMap, "No pairs map provided");
     }
 
     @Override
@@ -69,5 +83,20 @@ public class MappedKeyPairProvider implements KeyPairProvider {
     @Override
     public String toString() {
         return String.valueOf(getKeyTypes());
+    }
+
+    public static Map<String, KeyPair> mapUniquePairs(Collection<? extends KeyPair> pairs) {
+        if (GenericUtils.isEmpty(pairs)) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, KeyPair> pairsMap = new TreeMap<String, KeyPair>(String.CASE_INSENSITIVE_ORDER);
+        for (KeyPair kp : pairs) {
+            String keyType = ValidateUtils.checkNotNullAndNotEmpty(KeyUtils.getKeyType(kp), "Cannot determine key type");
+            KeyPair prev = pairsMap.put(keyType, kp);
+            ValidateUtils.checkTrue(prev == null, "Multiple keys of type=%s", keyType);
+        }
+
+        return pairsMap;
     }
 }

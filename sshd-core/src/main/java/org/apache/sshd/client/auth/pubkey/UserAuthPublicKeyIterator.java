@@ -32,6 +32,7 @@ import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
+import org.apache.sshd.common.signature.SignatureFactoriesManager;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -45,11 +46,11 @@ public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKey
     private Iterator<? extends PublicKeyIdentity> current;
     private SshAgent agent;
 
-    public UserAuthPublicKeyIterator(ClientSession session) throws Exception {
+    public UserAuthPublicKeyIterator(ClientSession session, SignatureFactoriesManager signatureFactories) throws Exception {
         super(session);
 
         Collection<Iterator<? extends PublicKeyIdentity>> identities = new LinkedList<>();
-        identities.add(new SessionKeyPairIterator(session, KeyIdentityProvider.Utils.iteratorOf(session)));
+        identities.add(new SessionKeyPairIterator(session, signatureFactories, KeyIdentityProvider.Utils.iteratorOf(session)));
 
         FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No session factory manager");
         SshAgentFactory factory = manager.getAgentFactory();

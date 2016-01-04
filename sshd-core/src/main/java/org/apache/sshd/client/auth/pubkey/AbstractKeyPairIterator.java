@@ -20,7 +20,6 @@
 package org.apache.sshd.client.auth.pubkey;
 
 import java.util.Iterator;
-
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.session.SessionHolder;
