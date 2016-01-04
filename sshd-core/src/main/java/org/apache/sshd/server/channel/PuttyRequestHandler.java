@@ -43,13 +43,15 @@ public class PuttyRequestHandler extends AbstractChannelRequestHandler {
     public static final Set<PtyMode> PUTTY_OPTIONS =
             Collections.unmodifiableSet(EnumSet.of(PtyMode.ECHO, PtyMode.ICRNL, PtyMode.ONLCR));
 
+    public static final PuttyRequestHandler INSTANCE = new PuttyRequestHandler();
+
     public PuttyRequestHandler() {
         super();
     }
 
     @Override
     public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
-        if (isPuttyRequest(request)) {
+        if (!isPuttyRequest(request)) {
             return Result.Unsupported;
         }
 
