@@ -140,6 +140,7 @@ public class GitPackCommand implements Command, Runnable {
      *
      * @param value the delimited string to parse.
      * @param delim the characters delimiting the tokens.
+     * @param trim {@code true} if the strings are trimmed before being added to the list
      * @return a list of string or an empty list if there are none.
      */
     private static List<String> parseDelimitedString(String value, String delim, boolean trim) {
