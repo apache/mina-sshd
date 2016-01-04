@@ -86,7 +86,7 @@ public class ChannelSession extends AbstractServerChannel {
 
     public ChannelSession() {
         addRequestHandler(new ChannelSessionRequestHandler());
-        addRequestHandler(new PuttyRequestHandler());
+        addRequestHandler(PuttyRequestHandler.INSTANCE);
     }
 
     @Override
@@ -578,24 +578,27 @@ public class ChannelSession extends AbstractServerChannel {
         Session session = getSession();
         ValidateUtils.checkTrue(session instanceof ServerSession, "Session not a server one");
 
-        FactoryManager manager = session.getFactoryManager();
-        ForwardingFilter filter = manager.getTcpipForwardingFilter();
-        if ((filter == null) || (!filter.canForwardX11(session))) {
-            if (log.isDebugEnabled()) {
-                log.debug("handleX11Forwarding(" + this + ")[haveFilter=" + (filter != null) + "] filtered out");
-            }
-            return false;
-        }
-
         boolean singleConnection = buffer.getBoolean();
         String authProtocol = buffer.getString();
         String authCookie = buffer.getString();
         int screenId = buffer.getInt();
-        String display = service.createX11Display(singleConnection, authProtocol, authCookie, screenId);
-        if (GenericUtils.isEmpty(display)) {
+
+        FactoryManager manager = session.getFactoryManager();
+        ForwardingFilter filter = manager.getTcpipForwardingFilter();
+        if ((filter == null) || (!filter.canForwardX11(session))) {
             if (log.isDebugEnabled()) {
-                log.debug("handleX11Forwarding(" + this + ") no X.11 display created");
+                log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={}, filter={}: filtered",
+                          this, singleConnection, authProtocol, authCookie, screenId, filter);
             }
+            return false;
+        }
+
+        String display = service.createX11Display(singleConnection, authProtocol, authCookie, screenId);
+        if (log.isDebugEnabled()) {
+            log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={} - display='{}'",
+                      this, singleConnection, authProtocol, authCookie, screenId, display);
+        }
+        if (GenericUtils.isEmpty(display)) {
             return false;
         }
 
