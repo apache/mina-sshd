@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
@@ -75,7 +76,6 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.server.ServerFactoryManager;
 
 /**
  * <P>
@@ -189,14 +189,21 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected final AtomicLong inBlocksCount = new AtomicLong(0L);
     protected final AtomicLong outBlocksCount = new AtomicLong(0L);
     protected final AtomicLong lastKeyTimeValue = new AtomicLong(0L);
+    // we initialize them here in case super constructor calls some methods that use these values
+    protected long maxRekyPackets = FactoryManager.DEFAULT_REKEY_PACKETS_LIMIT;
+    protected long maxRekeyBytes = FactoryManager.DEFAULT_REKEY_BYTES_LIMIT;
+    protected long maxRekeyInterval = FactoryManager.DEFAULT_REKEY_TIME_LIMIT;
     protected final Queue<PendingWriteFuture> pendingPackets = new LinkedList<>();
 
     protected Service currentService;
-    // we initialize them here in case super constructor calls some methods that use these values
-    protected long maxRekyPackets = ServerFactoryManager.DEFAULT_REKEY_PACKETS_LIMIT;
-    protected long maxRekeyBytes = ServerFactoryManager.DEFAULT_REKEY_BYTES_LIMIT;
-    protected long maxRekeyInterval = ServerFactoryManager.DEFAULT_REKEY_TIME_LIMIT;
-    protected final AtomicLong maxRekeyBlocks = new AtomicLong(ServerFactoryManager.DEFAULT_REKEY_BYTES_LIMIT / 16);
+
+    // SSH_MSG_IGNORE stream padding
+    protected int ignorePacketDataLength = FactoryManager.DEFAULT_IGNORE_MESSAGE_SIZE;
+    protected long ignorePacketsFrequency = FactoryManager.DEFAULT_IGNORE_MESSAGE_FREQUENCY;
+    protected int ignorePacketsVariance = FactoryManager.DEFAULT_IGNORE_MESSAGE_VARIANCE;
+
+    protected final AtomicLong maxRekeyBlocks = new AtomicLong(FactoryManager.DEFAULT_REKEY_BYTES_LIMIT / 16);
+    protected final AtomicLong ignorePacketsCount = new AtomicLong(FactoryManager.DEFAULT_IGNORE_MESSAGE_FREQUENCY);
 
     /**
      * The factory manager used to retrieve factories of Ciphers, Macs and other objects
@@ -217,14 +224,14 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         this.factoryManager = factoryManager;
         this.ioSession = ioSession;
 
-        maxRekeyBytes = PropertyResolverUtils.getLongProperty(this, ServerFactoryManager.REKEY_BYTES_LIMIT, maxRekeyBytes);
-        maxRekeyInterval = PropertyResolverUtils.getLongProperty(this, ServerFactoryManager.REKEY_TIME_LIMIT, maxRekeyInterval);
-        maxRekyPackets = PropertyResolverUtils.getLongProperty(this, ServerFactoryManager.REKEY_PACKETS_LIMIT, maxRekyPackets);
+        Factory<Random> factory = ValidateUtils.checkNotNull(factoryManager.getRandomFactory(), "No random factory for %s", ioSession);
+        random = ValidateUtils.checkNotNull(factory.create(), "No randomizer instance for %s", ioSession);
+
+        refreshConfiguration();
 
         ClassLoader loader = getClass().getClassLoader();
         sessionListenerProxy = EventListenerUtils.proxyWrapper(SessionListener.class, loader, sessionListeners);
         channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, loader, channelListeners);
-        random = ValidateUtils.checkNotNull(factoryManager.getRandomFactory(), "No random factory").create();
 
         // Delegate the task of further notifications to the session
         addSessionListener(factoryManager.getSessionListenerProxy());
@@ -378,6 +385,27 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
     }
 
+    /**
+     * Refresh whatever internal configuration is not {@code final}
+     */
+    protected void refreshConfiguration() {
+        synchronized (lock) {
+            // re-keying configuration
+            maxRekeyBytes = PropertyResolverUtils.getLongProperty(this, FactoryManager.REKEY_BYTES_LIMIT, maxRekeyBytes);
+            maxRekeyInterval = PropertyResolverUtils.getLongProperty(this, FactoryManager.REKEY_TIME_LIMIT, maxRekeyInterval);
+            maxRekyPackets = PropertyResolverUtils.getLongProperty(this, FactoryManager.REKEY_PACKETS_LIMIT, maxRekyPackets);
+
+            // intermittent SSH_MSG_IGNORE stream padding
+            ignorePacketDataLength = PropertyResolverUtils.getIntProperty(this, FactoryManager.IGNORE_MESSAGE_SIZE, FactoryManager.DEFAULT_IGNORE_MESSAGE_SIZE);
+            ignorePacketsFrequency = PropertyResolverUtils.getLongProperty(this, FactoryManager.IGNORE_MESSAGE_FREQUENCY, FactoryManager.DEFAULT_IGNORE_MESSAGE_FREQUENCY);
+            ignorePacketsVariance = PropertyResolverUtils.getIntProperty(this, FactoryManager.IGNORE_MESSAGE_VARIANCE, FactoryManager.DEFAULT_IGNORE_MESSAGE_VARIANCE);
+            if (ignorePacketsVariance >= ignorePacketsFrequency) {
+                ignorePacketsVariance = 0;
+            }
+
+            ignorePacketsCount.set(calculateNextIgnorePacketCount(random, ignorePacketsFrequency, ignorePacketsVariance));
+        }
+    }
 
     /**
      * Abstract method for processing incoming decoded packets.
@@ -518,8 +546,16 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     protected void handleIgnore(Buffer buffer) throws Exception {
+        handleIgnore(buffer.getBytes(), buffer);
+    }
+
+    protected void handleIgnore(byte[] data, Buffer buffer) throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("handleIgnore({}) SSH_MSG_IGNORE", this);
+        }
+
+        if (log.isTraceEnabled()) {
+            log.trace("handleIgnore({}) data: {}", this, BufferUtils.printHex(data));
         }
     }
 
@@ -833,13 +869,69 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     protected IoWriteFuture doWritePacket(Buffer buffer) throws IOException {
+        Buffer ignoreBuf = null;
+        int ignoreDataLen = resolveIgnoreBufferDataLength();
+        if (ignoreDataLen > 0) {
+            ignoreBuf = createBuffer(SshConstants.SSH_MSG_IGNORE, ignoreDataLen + Byte.SIZE);
+            ignoreBuf.putInt(ignoreDataLen);
+
+            int wpos = ignoreBuf.wpos();
+            synchronized (lock) {
+                random.fill(ignoreBuf.array(), wpos, ignoreDataLen);
+            }
+            ignoreBuf.wpos(wpos + ignoreDataLen);
+
+            if (log.isDebugEnabled()) {
+                log.debug("doWritePacket({}) append SSH_MSG_IGNORE message", this);
+            }
+        }
+
         // Synchronize all write requests as needed by the encoding algorithm
         // and also queue the write request in this synchronized block to ensure
         // packets are sent in the correct order
         synchronized (encodeLock) {
+            if (ignoreBuf != null) {
+                encode(ignoreBuf);
+                ioSession.write(ignoreBuf);
+            }
+
             encode(buffer);
             return ioSession.write(buffer);
         }
+    }
+
+    protected int resolveIgnoreBufferDataLength() {
+        if ((ignorePacketDataLength <= 0) || (ignorePacketsFrequency <= 0L) || (ignorePacketsVariance < 0)) {
+            return 0;
+        }
+
+        long count = ignorePacketsCount.decrementAndGet();
+        if (count > 0L) {
+            return 0;
+        }
+
+        synchronized (lock) {
+            ignorePacketsCount.set(calculateNextIgnorePacketCount(random, ignorePacketsFrequency, ignorePacketsVariance));
+            return ignorePacketDataLength + random.random(ignorePacketDataLength);
+        }
+    }
+
+    protected long calculateNextIgnorePacketCount(Random r, long freq, int variance) {
+        if ((freq <= 0L) || (variance < 0)) {
+            return -1L;
+        }
+
+        if (variance == 0) {
+            return freq;
+        }
+
+        int extra = r.random((variance < 0) ? (0 - variance) : variance);
+        long count = (variance < 0) ? (freq - extra) : (freq + extra);
+        if (log.isTraceEnabled()) {
+            log.trace("calculateNextIgnorePacketCount({}) count={}", this, count);
+        }
+
+        return count;
     }
 
     /**
@@ -892,7 +984,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             len += outMac.getBlockSize();
         }
 
-        return prepareBuffer(cmd, new ByteArrayBuffer(new byte[Math.max(len, ByteArrayBuffer.DEFAULT_SIZE)], false));
+        return prepareBuffer(cmd, new ByteArrayBuffer(new byte[len + Byte.SIZE], false));
     }
 
     @Override
@@ -974,7 +1066,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             outBytesCount.addAndGet(len);
             // Make buffer ready to be read
             buffer.rpos(off);
-        } catch (SshException e) {
+        } catch (IOException e) {
             throw e;
         } catch (Exception e) {
             throw new SshException(e);
@@ -1417,7 +1509,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         // select the lowest cipher size
         int avgCipherBlockSize = Math.min(inBlockSize, outBlockSize);
         long recommendedByteRekeyBlocks = 1L << Math.min((avgCipherBlockSize * Byte.SIZE) / 4, 63);    // in case (block-size / 4) > 63
-        maxRekeyBlocks.set(PropertyResolverUtils.getLongProperty(this, ServerFactoryManager.REKEY_BLOCKS_LIMIT, recommendedByteRekeyBlocks));
+        maxRekeyBlocks.set(PropertyResolverUtils.getLongProperty(this, FactoryManager.REKEY_BLOCKS_LIMIT, recommendedByteRekeyBlocks));
         if (log.isDebugEnabled()) {
             log.debug("receiveNewKeys({}) inCipher={}, outCipher={}, recommended blocks limit={}, actual={}",
                       this, inCipher, outCipher, recommendedByteRekeyBlocks, maxRekeyBlocks);

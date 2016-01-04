@@ -69,7 +69,6 @@ public interface IoSession extends Closeable {
      */
     IoWriteFuture write(Buffer buffer);
 
-
     /**
      * Closes this session immediately or after all queued write requests
      * are flushed.  This operation is asynchronous.  Wait for the returned

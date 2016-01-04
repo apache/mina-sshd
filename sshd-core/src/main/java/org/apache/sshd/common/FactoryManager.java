@@ -198,6 +198,90 @@ public interface FactoryManager extends KexFactoryManager, SessionListenerManage
     String DEFAULT_VERSION = "SSHD-UNKNOWN";
 
     /**
+     * Key re-exchange will be automatically performed after the session
+     * has sent or received the given amount of bytes. If non-positive,
+     * then disabled. The default value is {@link #DEFAULT_REKEY_BYTES_LIMIT}
+     */
+    String REKEY_BYTES_LIMIT = "rekey-bytes-limit";
+
+    /**
+     * Default value for {@link #REKEY_BYTES_LIMIT} if no override
+     * @see <A HREF="https://tools.ietf.org/html/rfc4253#page-23">RFC4253 section 9</A>
+     */
+    long DEFAULT_REKEY_BYTES_LIMIT = 1024L * 1024L * 1024L; // 1GB
+
+    /**
+     * Key re-exchange will be automatically performed after the specified
+     * amount of time has elapsed since the last key exchange - in milliseconds.
+     * If non-positive then disabled. The default value is {@link #DEFAULT_REKEY_TIME_LIMIT}
+     */
+    String REKEY_TIME_LIMIT = "rekey-time-limit";
+
+    /**
+     * Default value for {@link #REKEY_TIME_LIMIT} if none specified
+     * @see <A HREF="https://tools.ietf.org/html/rfc4253#page-23">RFC4253 section 9</A>
+     */
+    long DEFAULT_REKEY_TIME_LIMIT = 60L * 60L * 1000L; // 1 hour
+
+    /**
+     * Key re-exchange will be automatically performed after the specified
+     * number of packets has been exchanged - positive 64-bit value. If
+     * non-positive then disabled. The default is {@link #DEFAULT_REKEY_PACKETS_LIMIT}
+     */
+    String REKEY_PACKETS_LIMIT = "rekey-packets-limit";
+
+    /**
+     * Default value for {@link #REKEY_PACKETS_LIMIT} if none specified
+     * @see <A HREF="https://tools.ietf.org/html/rfc4344#page-3">RFC4344 section 3.1</A>
+     */
+    long DEFAULT_REKEY_PACKETS_LIMIT = 1L << 31;
+
+    /**
+     * Key re-exchange will be automatically performed after the specified
+     * number of cipher blocks has been processed - positive 64-bit value. If
+     * non-positive then disabled. The default is calculated according to
+     * <A HREF="https://tools.ietf.org/html/rfc4344#page-3">RFC4344 section 3.2</A>
+     */
+    String REKEY_BLOCKS_LIMIT = "rekey-blocks-limit";
+
+    /**
+     * Average number of packets to be skipped before an {@code SSH_MSG_IGNORE}
+     * message is inserted in the stream. If non-positive, then feature is disabled
+     * @see #IGNORE_MESSAGE_VARIANCE
+     */
+    String IGNORE_MESSAGE_FREQUENCY = "ignore-message-frequency";
+
+    /**
+     * Default value of {@link #IGNORE_MESSAGE_FREQUENCY} if none set.
+     */
+    long DEFAULT_IGNORE_MESSAGE_FREQUENCY = 1024L;
+
+    /**
+     * The variance to be used around the configured {@link #IGNORE_MESSAGE_FREQUENCY}
+     * value in order to avoid insertion at a set frequency. If zero, then <U>exact</U>
+     * frequency is used. If negative, then the <U>absolute</U> value is used. If
+     * greater or equal to the frequency, then assumed to be zero - i.e., no variance
+     */
+    String IGNORE_MESSAGE_VARIANCE = "ignore-message-variance";
+
+    /**
+     * Default value for {@link #IGNORE_MESSAGE_VARIANCE} if none configured
+     */
+    int DEFAULT_IGNORE_MESSAGE_VARIANCE = 32;
+
+    /**
+     * Minimum size of {@code SSH_MSG_IGNORE} payload to send if feature enabled. If
+     * non-positive then no message is sent. Otherwise, the actual size is between this
+     * size and twice its value
+     */
+    String IGNORE_MESSAGE_SIZE = "ignore-message-size";
+
+    /**
+     * Value of {@link #IGNORE_MESSAGE_SIZE} if none configured
+     */
+    int DEFAULT_IGNORE_MESSAGE_SIZE = 16;
+
+    /**
      * An upper case string identifying the version of the software used on
      * client or server side. This version includes the name of the software
      * and usually looks like this: <code>SSHD-1.0</code>

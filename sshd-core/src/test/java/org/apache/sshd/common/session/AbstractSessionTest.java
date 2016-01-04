@@ -19,10 +19,21 @@
 package org.apache.sshd.common.session;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.channel.IoWriteFutureImpl;
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.io.IoService;
+import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -43,9 +54,19 @@ public class AbstractSessionTest extends BaseTestSupport {
 
     private MySession session;
 
+    public AbstractSessionTest() {
+        super();
+    }
+
     @Before
     public void setUp() throws Exception {
         session = new MySession();
+    }
+
+    public void tearDown() throws Exception {
+        if (session != null) {
+            session.close();
+        }
     }
 
     @Test
@@ -111,9 +132,130 @@ public class AbstractSessionTest extends BaseTestSupport {
         fail("Unexpected success: " + ident);
     }
 
+    @Test   // see SSHD-619
+    public void testMsgIgnorePadding() throws Exception {
+        final long frequency = Byte.SIZE;
+        PropertyResolverUtils.updateProperty(session, FactoryManager.IGNORE_MESSAGE_SIZE, Short.SIZE);
+        PropertyResolverUtils.updateProperty(session, FactoryManager.IGNORE_MESSAGE_FREQUENCY, frequency);
+        PropertyResolverUtils.updateProperty(session, FactoryManager.IGNORE_MESSAGE_VARIANCE, 0);
+        session.refreshConfiguration();
+
+        Buffer msg = session.createBuffer(SshConstants.SSH_MSG_DEBUG, Long.SIZE);
+        msg.putBoolean(true);   // display ?
+        msg.putString(getCurrentTestName());    // message
+        msg.putString("");  // language
+
+        MyIoSession ioSession = (MyIoSession) session.getIoSession();
+        Queue<Buffer> queue = ioSession.getOutgoingMessages();
+        int numIgnores = 0;
+        for (int cycle = 0; cycle < Byte.SIZE; cycle++) {
+            for (long index = 0; index <= frequency; index++) {
+                session.writePacket(msg);
+
+                Buffer data = queue.remove();
+                if (data != msg) {
+                    int cmd = data.getUByte();
+                    assertEquals("Mismatched buffer command at cycle " + cycle + "[" + index + "]", SshConstants.SSH_MSG_IGNORE, cmd);
+
+                    int len = data.getInt();
+                    assertTrue("Mismatched random padding data length at cycle " + cycle + "[" + index + "]: " + len, len >= Short.SIZE);
+                    numIgnores++;
+                }
+            }
+        }
+
+        assertEquals("Mismatched number of ignore messages", Byte.SIZE, numIgnores);
+    }
+
+    public static class MyIoSession implements IoSession {
+        private final Queue<Buffer> outgoing = new LinkedBlockingQueue<>();
+        private final AtomicBoolean open = new AtomicBoolean(true);
+
+        public MyIoSession() {
+            super();
+        }
+
+        public Queue<Buffer> getOutgoingMessages() {
+            return outgoing;
+        }
+
+        @Override
+        public boolean isClosed() {
+            return !isOpen();
+        }
+
+        @Override
+        public boolean isClosing() {
+            return !isOpen();
+        }
+
+        @Override
+        public boolean isOpen() {
+            return open.get();
+        }
+
+        @Override
+        public void close() throws IOException {
+            close(true);
+        }
+
+        @Override
+        public long getId() {
+            return 0;
+        }
+
+        @Override
+        public Object getAttribute(Object key) {
+            return null;
+        }
+
+        @Override
+        public Object setAttribute(Object key, Object value) {
+            return null;
+        }
+
+        @Override
+        public SocketAddress getRemoteAddress() {
+            return null;
+        }
+
+        @Override
+        public SocketAddress getLocalAddress() {
+            return null;
+        }
+
+        @Override
+        public IoWriteFuture write(Buffer buffer) {
+            if (!isOpen()) {
+                throw new IllegalStateException("Not open");
+            }
+            if (!outgoing.offer(buffer)) {
+                throw new IllegalStateException("Failed to offer outgoing buffer");
+            }
+
+            IoWriteFutureImpl future = new IoWriteFutureImpl(buffer);
+            future.setValue(Boolean.TRUE);
+            return future;
+        }
+
+        @Override
+        public CloseFuture close(boolean immediately) {
+            if (open.getAndSet(false)) {
+                outgoing.clear();
+            }
+
+            return null;
+        }
+
+        @Override
+        public IoService getService() {
+            return null;
+        }
+    }
+
     public static class MySession extends AbstractSession {
         public MySession() {
-            super(true, org.apache.sshd.util.test.Utils.setupTestServer(AbstractSessionTest.class), null);
+            super(true, org.apache.sshd.util.test.Utils.setupTestServer(AbstractSessionTest.class), new MyIoSession());
         }
 
         @Override
@@ -128,6 +270,11 @@ public class AbstractSessionTest extends BaseTestSupport {
 
         public String doReadIdentification(Buffer buffer) {
             return super.doReadIdentification(buffer, false);
+        }
+
+        @Override
+        protected void encode(Buffer buffer) throws IOException {
+            // ignored
         }
 
         @Override
