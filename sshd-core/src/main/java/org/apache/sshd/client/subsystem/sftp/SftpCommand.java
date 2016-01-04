@@ -20,13 +20,19 @@
 package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.channels.Channel;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -40,11 +46,14 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatExtensionInfo;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatPathExtension;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.StatVfsExtensionParser;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 
 /**
@@ -56,6 +65,7 @@ public class SftpCommand implements Channel {
     private final SftpClient client;
     private final Map<String, CommandExecutor> commandsMap;
     private String cwdRemote;
+    private String cwdLocal;
 
     @SuppressWarnings("synthetic-access")
     public SftpCommand(SftpClient client) {
@@ -68,6 +78,7 @@ public class SftpCommand implements Channel {
                 new InfoCommandExecutor(),
                 new VersionCommandExecutor(),
                 new CdCommandExecutor(),
+                new LcdCommandExecutor(),
                 new MkdirCommandExecutor(),
                 new LsCommandExecutor(),
                 new LStatCommandExecutor(),
@@ -76,11 +87,14 @@ public class SftpCommand implements Channel {
                 new RmdirCommandExecutor(),
                 new RenameCommandExecutor(),
                 new StatVfsCommandExecutor(),
+                new GetCommandExecutor(),
+                new PutCommandExecutor(),
                 new HelpCommandExecutor()
         )) {
             map.put(e.getName(), e);
         }
         commandsMap = Collections.unmodifiableMap(map);
+        cwdLocal = System.getProperty("user.dir");
     }
 
     public final SftpClient getClient() {
@@ -134,6 +148,25 @@ public class SftpCommand implements Channel {
         }
     }
 
+    protected String resolveLocalPath(String pathArg) {
+        String cwd = getCurrentLocalDirectory();
+        if (GenericUtils.isEmpty(pathArg)) {
+            return cwd;
+        }
+
+        if (OsUtils.isWin32()) {
+            if ((pathArg.length() >= 2) && (pathArg.charAt(1) == ':')) {
+                return pathArg;
+            }
+        } else {
+            if (pathArg.charAt(0) == '/') {
+                return pathArg;
+            }
+        }
+
+        return cwd + File.separator + pathArg.replace('/', File.separatorChar);
+    }
+
     protected String resolveRemotePath(String pathArg) {
         String cwd = getCurrentRemoteDirectory();
         if (GenericUtils.isEmpty(pathArg)) {
@@ -166,6 +199,14 @@ public class SftpCommand implements Channel {
 
     public void setCurrentRemoteDirectory(String path) {
         cwdRemote = path;
+    }
+
+    public String getCurrentLocalDirectory() {
+        return cwdLocal;
+    }
+
+    public void setCurrentLocalDirectory(String path) {
+        cwdLocal = path;
     }
 
     @Override
@@ -234,6 +275,10 @@ public class SftpCommand implements Channel {
     }
 
     private class PwdCommandExecutor implements CommandExecutor {
+        protected PwdCommandExecutor() {
+            super();
+        }
+
         @Override
         public String getName() {
             return "pwd";
@@ -242,7 +287,8 @@ public class SftpCommand implements Channel {
         @Override
         public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
             ValidateUtils.checkTrue(GenericUtils.isEmpty(args), "Unexpected arguments: %s", args);
-            stdout.append('\t').println(getCurrentRemoteDirectory());
+            stdout.append('\t').append("Remote: ").println(getCurrentRemoteDirectory());
+            stdout.append('\t').append("Local: ").println(getCurrentLocalDirectory());
             return false;
         }
     }
@@ -290,7 +336,7 @@ public class SftpCommand implements Channel {
         }
     }
 
-    private class CdCommandExecutor implements CommandExecutor {
+    private class CdCommandExecutor extends PwdCommandExecutor {
         @Override
         public String getName() {
             return "cd";
@@ -303,7 +349,28 @@ public class SftpCommand implements Channel {
             String newPath = resolveRemotePath(args);
             SftpClient sftp = getClient();
             setCurrentRemoteDirectory(sftp.canonicalPath(newPath));
-            return false;
+            return super.executeCommand("", stdin, stdout, stderr);
+        }
+    }
+
+    private class LcdCommandExecutor extends PwdCommandExecutor {
+        @Override
+        public String getName() {
+            return "lcd";
+        }
+
+        @Override
+        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+            if (GenericUtils.isEmpty(args)) {
+                setCurrentLocalDirectory(System.getProperty("user.home"));
+            } else {
+                Path path = Paths.get(resolveLocalPath(args)).normalize().toAbsolutePath();
+                ValidateUtils.checkTrue(Files.exists(path), "No such local directory: %s", path);
+                ValidateUtils.checkTrue(Files.isDirectory(path), "Path is not a directory: %s", path);
+                setCurrentLocalDirectory(path.toString());
+            }
+
+            return super.executeCommand("", stdin, stdout, stderr);
         }
     }
 
@@ -416,8 +483,13 @@ public class SftpCommand implements Channel {
                 }
 
                 sftp.rmdir(path);
-            } else {
+            } else if (attrs.isRegularFile()) {
                 sftp.remove(path);
+            } else {
+                if (verbose) {
+                    stdout.append('\t').append("Skip special file ").println(path);
+                    return;
+                }
             }
 
             if (verbose) {
@@ -533,6 +605,7 @@ public class SftpCommand implements Channel {
             return false;
         }
     }
+
     private class HelpCommandExecutor implements CommandExecutor {
         @Override
         public String getName() {
@@ -546,6 +619,169 @@ public class SftpCommand implements Channel {
             for (String cmd : commandsMap.keySet()) {
                 stdout.append('\t').println(cmd);
             }
+            return false;
+        }
+    }
+
+    private abstract class TransferCommandExecutor implements CommandExecutor {
+        protected TransferCommandExecutor() {
+            super();
+        }
+
+        protected void createDirectories(SftpClient sftp, String remotePath) throws IOException {
+            try {
+                Attributes attrs = sftp.stat(remotePath);
+                ValidateUtils.checkTrue(attrs.isDirectory(), "Remote path already exists but is not a directory: %s", remotePath);
+                return;
+            } catch (SftpException e) {
+                int status = e.getStatus();
+                ValidateUtils.checkTrue(status == SftpConstants.SSH_FX_NO_SUCH_FILE, "Failed to get status of %s: %s", remotePath, e.getMessage());
+            }
+
+            int pos = remotePath.lastIndexOf('/');
+            ValidateUtils.checkTrue(pos > 0, "No more parents for %s", remotePath);
+            createDirectories(sftp, remotePath.substring(0, pos));
+        }
+
+        protected void transferFile(SftpClient sftp, Path localPath, String remotePath, boolean upload, PrintStream stdout, boolean verbose) throws IOException {
+            // Create the file's hierarchy
+            if (upload) {
+                int pos = remotePath.lastIndexOf('/');
+                ValidateUtils.checkTrue(pos > 0, "Missing full remote file path: %s", remotePath);
+                createDirectories(sftp, remotePath.substring(0, pos));
+            } else {
+                Files.createDirectories(localPath.getParent());
+            }
+
+            try (InputStream input = upload ? Files.newInputStream(localPath) : sftp.read(remotePath);
+                 OutputStream output = upload ? sftp.write(remotePath) : Files.newOutputStream(localPath)) {
+                IoUtils.copy(input, output, SftpClient.IO_BUFFER_SIZE);
+            }
+
+            if (verbose) {
+                stdout.append('\t')
+                      .append("Copied ").append(upload ? localPath.toString() : remotePath)
+                      .append(" to ").println(upload ? remotePath : localPath.toString());
+            }
+        }
+
+        protected void transferRemoteDir(SftpClient sftp, Path localPath, String remotePath, Attributes attrs, PrintStream stdout, boolean verbose) throws IOException {
+            if (attrs.isDirectory()) {
+                for (DirEntry entry : sftp.readDir(remotePath)) {
+                    String name = entry.getFilename();
+                    if (".".equals(name) || "..".equals(name)) {
+                        continue;
+                    }
+
+                    transferRemoteDir(sftp, localPath.resolve(name), remotePath + "/" + name, entry.getAttributes(), stdout, verbose);
+                }
+            } else if (attrs.isRegularFile()) {
+                transferFile(sftp, localPath, remotePath, false, stdout, verbose);
+            } else {
+                if (verbose) {
+                    stdout.append('\t').append("Skip remote special file ").println(remotePath);
+                }
+            }
+        }
+
+        protected void transferLocalDir(SftpClient sftp, Path localPath, String remotePath, PrintStream stdout, boolean verbose) throws IOException {
+            if (Files.isDirectory(localPath)) {
+                try (DirectoryStream<Path> ds = Files.newDirectoryStream(localPath)) {
+                    for (Path entry : ds) {
+                        String name = entry.getFileName().toString();
+                        transferLocalDir(sftp, localPath.resolve(name), remotePath + "/" + name, stdout, verbose);
+                    }
+                }
+            } else if (Files.isRegularFile(localPath)) {
+                transferFile(sftp, localPath, remotePath, true, stdout, verbose);
+            } else {
+                if (verbose) {
+                    stdout.append('\t').append("Skip local special file ").println(localPath);
+                }
+            }
+        }
+
+        protected void executeCommand(String args, boolean upload, PrintStream stdout) throws IOException {
+            String[] comps = GenericUtils.split(args, ' ');
+            int numArgs = GenericUtils.length(comps);
+            ValidateUtils.checkTrue((numArgs >= 1) && (numArgs <= 3), "Invalid number of arguments: %s", args);
+
+            String src = comps[0];
+            boolean recursive = false;
+            boolean verbose = false;
+            int tgtIndex = 1;
+            if (src.charAt(0) == '-') {
+                ValidateUtils.checkTrue(src.length() > 1, "Missing flags specification: %s", args);
+                ValidateUtils.checkTrue(numArgs >= 2, "Missing source specification: %s", args);
+
+                for (int index = 1; index < src.length(); index++) {
+                    char ch = src.charAt(index);
+                    switch(ch) {
+                        case 'r' :
+                            recursive = true;
+                            break;
+                        case 'v':
+                            verbose = true;
+                            break;
+                        default:
+                            throw new IllegalArgumentException("Unknown flag (" + String.valueOf(ch) + ")");
+                    }
+                }
+                src = comps[1];
+                tgtIndex++;
+            }
+
+            String tgt = (tgtIndex < numArgs) ? comps[tgtIndex] : null;
+            String localPath;
+            String remotePath;
+            if (upload) {
+                localPath = src;
+                remotePath = ValidateUtils.checkNotNullAndNotEmpty(tgt, "No remote target specified: %s", args);
+            } else {
+                localPath = GenericUtils.isEmpty(tgt) ? getCurrentLocalDirectory() : tgt;
+                remotePath = src;
+            }
+
+            SftpClient sftp = getClient();
+            Path local = Paths.get(resolveLocalPath(localPath)).normalize().toAbsolutePath();
+            String remote = resolveRemotePath(remotePath);
+            if (recursive) {
+                if (upload) {
+                    ValidateUtils.checkTrue(Files.isDirectory(local), "Local path not a directory or does not exist: %s", local);
+                    transferLocalDir(sftp, local, remote, stdout, verbose);
+                } else {
+                    Attributes attrs = sftp.stat(remote);
+                    ValidateUtils.checkTrue(attrs.isDirectory(), "Remote path not a directory: %s", remote);
+                    transferRemoteDir(sftp, local, remote, attrs, stdout, verbose);
+                }
+            } else {
+                transferFile(sftp, local, remote, upload, stdout, verbose);
+            }
+        }
+    }
+
+    private class GetCommandExecutor extends TransferCommandExecutor {
+        @Override
+        public String getName() {
+            return "get";
+        }
+
+        @Override
+        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+            executeCommand(args, false, stdout);
+            return false;
+        }
+    }
+
+    private class PutCommandExecutor extends TransferCommandExecutor {
+        @Override
+        public String getName() {
+            return "put";
+        }
+
+        @Override
+        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+            executeCommand(args, true, stdout);
             return false;
         }
     }
