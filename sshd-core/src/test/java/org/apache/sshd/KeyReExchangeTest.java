@@ -40,6 +40,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
@@ -51,7 +52,6 @@ import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.io.NullOutputStream;
-import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JSchLogger;
@@ -97,13 +97,13 @@ public class KeyReExchangeTest extends BaseTestSupport {
     protected void setUp(long bytesLimit, long timeLimit, long packetsLimit) throws Exception {
         sshd = setupTestServer();
         if (bytesLimit > 0L) {
-            PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.REKEY_BYTES_LIMIT, bytesLimit);
+            PropertyResolverUtils.updateProperty(sshd, FactoryManager.REKEY_BYTES_LIMIT, bytesLimit);
         }
         if (timeLimit > 0L) {
-            PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.REKEY_TIME_LIMIT, timeLimit);
+            PropertyResolverUtils.updateProperty(sshd, FactoryManager.REKEY_TIME_LIMIT, timeLimit);
         }
         if (packetsLimit > 0L) {
-            PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.REKEY_PACKETS_LIMIT, packetsLimit);
+            PropertyResolverUtils.updateProperty(sshd, FactoryManager.REKEY_PACKETS_LIMIT, packetsLimit);
         }
 
         sshd.start();
