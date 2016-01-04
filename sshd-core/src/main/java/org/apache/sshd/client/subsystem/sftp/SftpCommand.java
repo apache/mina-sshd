@@ -36,6 +36,7 @@ import java.util.logging.Level;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
+import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatExtensionInfo;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatPathExtension;
 import org.apache.sshd.common.NamedResource;
@@ -297,7 +298,7 @@ public class SftpCommand implements Channel {
 
         @Override
         public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
-            ValidateUtils.checkNotNullAndNotEmpty(args, "No remote directory specified", args);
+            ValidateUtils.checkNotNullAndNotEmpty(args, "No remote directory specified");
 
             String newPath = resolveRemotePath(args);
             SftpClient sftp = getClient();
@@ -314,7 +315,7 @@ public class SftpCommand implements Channel {
 
         @Override
         public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
-            ValidateUtils.checkNotNullAndNotEmpty(args, "No remote directory specified", args);
+            ValidateUtils.checkNotNullAndNotEmpty(args, "No remote directory specified");
 
             String path = resolveRemotePath(args);
             SftpClient sftp = getClient();
@@ -359,12 +360,69 @@ public class SftpCommand implements Channel {
 
         @Override
         public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
-            ValidateUtils.checkNotNullAndNotEmpty(args, "No remote directory specified", args);
+            String[] comps = GenericUtils.split(args, ' ');
+            int numArgs = GenericUtils.length(comps);
+            ValidateUtils.checkTrue(numArgs >= 1, "No arguments");
+            ValidateUtils.checkTrue(numArgs <= 2, "Too many arguments: %s", args);
 
-            String path = resolveRemotePath(args);
+            String remotePath = comps[0];
+            boolean recursive = false;
+            boolean verbose = false;
+            if (remotePath.charAt(0) == '-') {
+                ValidateUtils.checkTrue(remotePath.length() > 1, "Missing flags specification: %s", args);
+                ValidateUtils.checkTrue(numArgs == 2, "Missing remote directory: %s", args);
+
+                for (int index = 1; index < remotePath.length(); index++) {
+                    char ch = remotePath.charAt(index);
+                    switch(ch) {
+                        case 'r' :
+                            recursive = true;
+                            break;
+                        case 'v':
+                            verbose = true;
+                            break;
+                        default:
+                            throw new IllegalArgumentException("Unknown flag (" + String.valueOf(ch) + ")");
+                    }
+                }
+                remotePath = comps[1];
+            }
+
+            String path = resolveRemotePath(remotePath);
             SftpClient sftp = getClient();
-            sftp.remove(path);
+            if (recursive) {
+                Attributes attrs = sftp.stat(path);
+                ValidateUtils.checkTrue(attrs.isDirectory(), "Remote path not a directory: %s", args);
+                removeRecursive(sftp, path, attrs, stdout, verbose);
+            } else {
+                sftp.remove(path);
+                if (verbose) {
+                    stdout.append('\t').append("Removed ").println(path);
+                }
+            }
+
             return false;
+        }
+
+        private void removeRecursive(SftpClient sftp, String path, Attributes attrs, PrintStream stdout, boolean verbose) throws IOException {
+            if (attrs.isDirectory()) {
+                for (DirEntry entry : sftp.readDir(path)) {
+                    String name = entry.getFilename();
+                    if (".".equals(name) || "..".equals(name)) {
+                        continue;
+                    }
+
+                    removeRecursive(sftp, path + "/" + name, entry.getAttributes(), stdout, verbose);
+                }
+
+                sftp.rmdir(path);
+            } else {
+                sftp.remove(path);
+            }
+
+            if (verbose) {
+                stdout.append('\t').append("Removed ").println(path);
+            }
         }
     }
 
@@ -376,7 +434,7 @@ public class SftpCommand implements Channel {
 
         @Override
         public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
-            ValidateUtils.checkNotNullAndNotEmpty(args, "No remote directory specified", args);
+            ValidateUtils.checkNotNullAndNotEmpty(args, "No remote directory specified");
 
             String path = resolveRemotePath(args);
             SftpClient sftp = getClient();
@@ -413,13 +471,15 @@ public class SftpCommand implements Channel {
         @Override
         public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
             String[] comps = GenericUtils.split(args, ' ');
-            ValidateUtils.checkTrue(GenericUtils.length(comps) == 1, "Invalid number of arguments: %s", args);
+            int numArgs = GenericUtils.length(comps);
+            ValidateUtils.checkTrue(numArgs <= 1, "Invalid number of arguments: %s", args);
 
             SftpClient sftp = getClient();
             OpenSSHStatPathExtension ext = sftp.getExtension(OpenSSHStatPathExtension.class);
             ValidateUtils.checkTrue(ext.isSupported(), "Extension not supported by server: %s", ext.getName());
 
-            OpenSSHStatExtensionInfo info = ext.stat(resolveRemotePath(GenericUtils.trimToEmpty(comps[0])));
+            String remPath = resolveRemotePath((numArgs >= 1) ? GenericUtils.trimToEmpty(comps[0]) :  GenericUtils.trimToEmpty(args));
+            OpenSSHStatExtensionInfo info = ext.stat(remPath);
             Field[] fields = info.getClass().getFields();
             for (Field f : fields) {
                 String name = f.getName();
