@@ -33,6 +33,7 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
@@ -142,7 +143,7 @@ public class X11ForwardSupport extends AbstractInnerCloseable implements IoHandl
                 log.error("Could not run xauth", e);
                 return null;
             }
-            return "localhost:" + displayNumber + "." + screen;
+            return SshdSocketAddress.LOCALHOST_NAME + ":" + displayNumber + "." + screen;
         } else {
             return null;
         }
