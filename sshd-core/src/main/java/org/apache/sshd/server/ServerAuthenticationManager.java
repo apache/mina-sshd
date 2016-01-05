@@ -26,14 +26,15 @@ import java.util.List;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.auth.UserAuth;
-import org.apache.sshd.server.auth.UserAuthKeyboardInteractiveFactory;
-import org.apache.sshd.server.auth.UserAuthPasswordFactory;
-import org.apache.sshd.server.auth.UserAuthPublicKeyFactory;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 import org.apache.sshd.server.auth.gss.UserAuthGSSFactory;
+import org.apache.sshd.server.auth.hostbased.HostBasedAuthenticator;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
+import org.apache.sshd.server.auth.keyboard.UserAuthKeyboardInteractiveFactory;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
+import org.apache.sshd.server.auth.password.UserAuthPasswordFactory;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
+import org.apache.sshd.server.auth.pubkey.UserAuthPublicKeyFactory;
 
 /**
  * Holds providers and helpers related to the server side authentication process
@@ -67,7 +68,7 @@ public interface ServerAuthenticationManager {
      * {@code null}), then client authentication requests based on keys will be
      * rejected.
      *
-     * @return the <code>PublickeyAuthenticator</code> or {@code null}
+     * @return the {@link PublickeyAuthenticator} or {@code null}
      */
     PublickeyAuthenticator getPublickeyAuthenticator();
     void setPasswordAuthenticator(PasswordAuthenticator passwordAuthenticator);
@@ -78,7 +79,7 @@ public interface ServerAuthenticationManager {
      * {@code null}), then client authentication requests based on passwords
      * will be rejected.
      *
-     * @return the <code>PasswordAuthenticator</code> or {@code null}
+     * @return the {@link PasswordAuthenticator} or {@code null}
      */
     PasswordAuthenticator getPasswordAuthenticator();
     void setPublickeyAuthenticator(PublickeyAuthenticator publickeyAuthenticator);
@@ -100,10 +101,20 @@ public interface ServerAuthenticationManager {
      * {@code null}), then client authentication requests based on gssapi
      * will be rejected.
      *
-     * @return the <code>GSSAuthenticator</code> or {@code null}
+     * @return the {@link GSSAuthenticator} or {@code null}
      */
     GSSAuthenticator getGSSAuthenticator();
     void setGSSAuthenticator(GSSAuthenticator gssAuthenticator);
+
+    /**
+     * Retrieve the {@code HostBasedAuthenticator} to be used by the SSH server. If
+     * no authenticator has been configured (i.e. this method returns {@code null}),
+     * then client authentication requests based on this method will be rejected.
+     *
+     * @return the {@link HostBasedAuthenticator} or {@code null}
+     */
+    HostBasedAuthenticator getHostBasedAuthenticator();
+    void setHostBasedAuthenticator(HostBasedAuthenticator hostBasedAuthenticator);
 
     // CHECKSTYLE:OFF
     final class Utils {

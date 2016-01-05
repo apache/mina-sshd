@@ -34,6 +34,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.security.Signature;
+import java.security.cert.CertificateFactory;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -590,6 +591,17 @@ public final class SecurityUtils {
             return Signature.getInstance(algorithm);
         } else {
             return Signature.getInstance(algorithm, providerName);
+        }
+    }
+
+    public static synchronized CertificateFactory getCertificateFactory(String type) throws GeneralSecurityException {
+        register();
+
+        String providerName = getSecurityProvider();
+        if (GenericUtils.isEmpty(providerName)) {
+            return CertificateFactory.getInstance(type);
+        } else {
+            return CertificateFactory.getInstance(type, providerName);
         }
     }
 }

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,14 +35,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
-import org.apache.sshd.client.auth.PasswordIdentityProvider;
 import org.apache.sshd.client.auth.UserAuth;
-import org.apache.sshd.client.auth.UserInteraction;
+import org.apache.sshd.client.auth.hostbased.HostKeyIdentityProvider;
+import org.apache.sshd.client.auth.keyboard.UserInteraction;
+import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -54,15 +57,16 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.auth.UserAuthKeyboardInteractiveFactory;
-import org.apache.sshd.server.auth.UserAuthPasswordFactory;
+import org.apache.sshd.server.auth.hostbased.HostBasedAuthenticator;
 import org.apache.sshd.server.auth.keyboard.DefaultKeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.keyboard.InteractiveChallenge;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.keyboard.PromptEntry;
+import org.apache.sshd.server.auth.keyboard.UserAuthKeyboardInteractiveFactory;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordChangeRequiredException;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
+import org.apache.sshd.server.auth.password.UserAuthPasswordFactory;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
@@ -164,10 +168,10 @@ public class AuthenticationTest extends BaseTestSupport {
 
         final AtomicInteger changesCount = new AtomicInteger(0);
         sshd.setUserAuthFactories(Collections.<NamedFactory<org.apache.sshd.server.auth.UserAuth>>singletonList(
-            new org.apache.sshd.server.auth.UserAuthPasswordFactory() {
+            new org.apache.sshd.server.auth.password.UserAuthPasswordFactory() {
                 @Override
-                public org.apache.sshd.server.auth.UserAuth create() {
-                    return new org.apache.sshd.server.auth.UserAuthPassword() {
+                public org.apache.sshd.server.auth.password.UserAuthPassword create() {
+                    return new org.apache.sshd.server.auth.password.UserAuthPassword() {
                         @Override
                         protected Boolean handleClientPasswordChangeRequest(
                                 Buffer buffer, ServerSession session, String username, String oldPassword, String newPassword)
@@ -214,10 +218,10 @@ public class AuthenticationTest extends BaseTestSupport {
 
             final AtomicInteger sentCount = new AtomicInteger(0);
             client.setUserAuthFactories(Collections.<NamedFactory<org.apache.sshd.client.auth.UserAuth>>singletonList(
-                new org.apache.sshd.client.auth.UserAuthPasswordFactory() {
+                new org.apache.sshd.client.auth.password.UserAuthPasswordFactory() {
                     @Override
-                    public org.apache.sshd.client.auth.UserAuth create() {
-                        return new org.apache.sshd.client.auth.UserAuthPassword() {
+                    public org.apache.sshd.client.auth.password.UserAuthPassword create() {
+                        return new org.apache.sshd.client.auth.password.UserAuthPassword() {
                             @Override
                             protected void sendPassword(Buffer buffer, ClientSession session, String oldPassword, String newPassword) throws IOException {
                                 int count = sentCount.incrementAndGet();
@@ -315,14 +319,14 @@ public class AuthenticationTest extends BaseTestSupport {
                     assertEquals("Mismatched user language",
                             PropertyResolverUtils.getStringProperty(
                                     client,
-                                    org.apache.sshd.client.auth.UserAuthKeyboardInteractive.INTERACTIVE_LANGUAGE_TAG,
-                                    org.apache.sshd.client.auth.UserAuthKeyboardInteractive.DEFAULT_INTERACTIVE_LANGUAGE_TAG),
+                                    org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive.INTERACTIVE_LANGUAGE_TAG,
+                                    org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive.DEFAULT_INTERACTIVE_LANGUAGE_TAG),
                             lang);
                     assertEquals("Mismatched client sub-methods",
                             PropertyResolverUtils.getStringProperty(
                                     client,
-                                    org.apache.sshd.client.auth.UserAuthKeyboardInteractive.INTERACTIVE_SUBMETHODS,
-                                    org.apache.sshd.client.auth.UserAuthKeyboardInteractive.DEFAULT_INTERACTIVE_SUBMETHODS),
+                                    org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive.INTERACTIVE_SUBMETHODS,
+                                    org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive.DEFAULT_INTERACTIVE_SUBMETHODS),
                             subMethods);
 
                     InteractiveChallenge challenge = super.generateChallenge(session, username, lang, subMethods);
@@ -639,7 +643,7 @@ public class AuthenticationTest extends BaseTestSupport {
             });
 
             // allow only EC keys for public key authentication
-            org.apache.sshd.client.auth.UserAuthPublicKeyFactory factory = new org.apache.sshd.client.auth.UserAuthPublicKeyFactory();
+            org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory factory = new org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory();
             factory.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(BuiltinSignatures.nistp256, BuiltinSignatures.nistp384, BuiltinSignatures.nistp521));
             client.setUserAuthFactories(Collections.<NamedFactory<UserAuth>>singletonList(factory));
 
@@ -647,6 +651,45 @@ public class AuthenticationTest extends BaseTestSupport {
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.addPublicKeyIdentity(clientIdentity);
                 s.auth().verify(11L, TimeUnit.SECONDS);
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    @Test
+    public void testHostBasedAuthentication() throws Exception {
+        final String CLIENT_USERNAME = getClass().getSimpleName();
+        final String CLIENT_HOSTNAME = SshdSocketAddress.toAddressString(SshdSocketAddress.getFirstExternalNetwork4Address());
+        final KeyPair CLIENT_HOSTKEY = Utils.generateKeyPair("RSA", 1024);
+        final AtomicInteger invocationCount = new AtomicInteger(0);
+        sshd.setHostBasedAuthenticator(new HostBasedAuthenticator() {
+            @Override
+            public boolean authenticate(ServerSession session, String username,
+                    PublicKey clientHostKey, String clientHostName, String clientUsername, List<X509Certificate> certificates) {
+                invocationCount.incrementAndGet();
+                return CLIENT_USERNAME.equals(clientUsername)
+                    && CLIENT_HOSTNAME.equals(clientHostName)
+                    && KeyUtils.compareKeys(CLIENT_HOSTKEY.getPublic(), clientHostKey);
+            }
+        });
+        sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
+        sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
+        sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
+        sshd.setUserAuthFactories(Collections.<NamedFactory<org.apache.sshd.server.auth.UserAuth>>singletonList(org.apache.sshd.server.auth.hostbased.UserAuthHostBasedFactory.INSTANCE));
+
+        try (SshClient client = setupTestClient()) {
+            org.apache.sshd.client.auth.hostbased.UserAuthHostBasedFactory factory =
+                    new org.apache.sshd.client.auth.hostbased.UserAuthHostBasedFactory();
+            // TODO factory.setClientHostname(CLIENT_HOSTNAME);
+            factory.setClientUsername(CLIENT_USERNAME);
+            factory.setClientHostKeys(HostKeyIdentityProvider.Utils.wrap(CLIENT_HOSTKEY));
+
+            client.setUserAuthFactories(Collections.<NamedFactory<org.apache.sshd.client.auth.UserAuth>>singletonList(factory));
+            client.start();
+            try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                s.auth().verify(11L, TimeUnit.SECONDS);
+                assertEquals("Mismatched authenticator invocation count", 1, invocationCount.get());
             } finally {
                 client.stop();
             }

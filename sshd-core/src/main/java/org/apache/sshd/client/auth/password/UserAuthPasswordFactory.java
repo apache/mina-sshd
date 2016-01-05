@@ -16,37 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.sshd.client.auth.password;
 
-package org.apache.sshd.common.auth;
-
-import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.client.auth.AbstractUserAuthFactory;
 
 /**
- * Represents a user authentication method
- *
- * @param <M> The authentication method factory type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-// CHECKSTYLE:OFF
-public interface UserAuthMethodFactory<M> extends NamedFactory<M> {
-    /**
-     * Password authentication method name
-     */
-    String PASSWORD = "password";
+public class UserAuthPasswordFactory extends AbstractUserAuthFactory {
+    public static final String NAME = PASSWORD;
+    public static final UserAuthPasswordFactory INSTANCE = new UserAuthPasswordFactory();
 
-    /**
-     * Public key authentication method name
-     */
-    String PUBLIC_KEY = "publickey";
+    public UserAuthPasswordFactory() {
+        super(NAME);
+    }
 
-    /**
-     * Keyboard interactive authentication method
-     */
-    String KB_INTERACTIVE = "keyboard-interactive";
-
-    /**
-     * Host-based authentication method
-     */
-    String HOST_BASED = "hostbased";
+    @Override
+    public UserAuthPassword create() {
+        return new UserAuthPassword();
+    }
 }
-//CHECKSTYLE:ON

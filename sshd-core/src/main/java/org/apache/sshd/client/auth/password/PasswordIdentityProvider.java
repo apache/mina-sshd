@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.client.auth;
+package org.apache.sshd.client.auth.password;
 
 import java.util.ArrayList;
 import java.util.Arrays;

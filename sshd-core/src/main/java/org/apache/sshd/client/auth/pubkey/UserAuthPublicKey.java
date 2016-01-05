@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.auth;
+package org.apache.sshd.client.auth.pubkey;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -24,13 +24,11 @@ import java.security.PublicKey;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.sshd.client.auth.pubkey.PublicKeyIdentity;
-import org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyIterator;
+import org.apache.sshd.client.auth.AbstractUserAuth;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -132,9 +130,10 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         buffer.putString(algo);
         buffer.putPublicKey(key);
 
-        Buffer bs = new ByteArrayBuffer();
-        KeyExchange kex = session.getKex();
-        bs.putBytes(kex.getH());
+        byte[] id = session.getSessionId();
+        Buffer bs = new ByteArrayBuffer(id.length + username.length() + service.length() + name.length()
+            + algo.length() + ByteArrayBuffer.DEFAULT_SIZE + Long.SIZE, false);
+        bs.putBytes(id);
         bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
         bs.putString(username);
         bs.putString(service);

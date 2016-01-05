@@ -23,7 +23,7 @@ import java.security.PublicKey;
 import java.util.Iterator;
 
 import org.apache.sshd.agent.SshAgent;
-import org.apache.sshd.client.auth.UserAuthPublicKeyFactory;
+import org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.SshConstants;

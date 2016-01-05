@@ -30,7 +30,7 @@ public class UserAuthNoneFactory extends AbstractUserAuthFactory {
     }
 
     @Override
-    public UserAuth create() {
+    public UserAuthNone create() {
         return new UserAuthNone();
     }
 }

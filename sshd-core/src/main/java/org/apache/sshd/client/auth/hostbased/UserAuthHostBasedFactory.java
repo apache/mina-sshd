@@ -16,43 +16,29 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.auth;
+
+package org.apache.sshd.client.auth.hostbased;
 
 import java.util.List;
 
+import org.apache.sshd.client.auth.AbstractUserAuthFactory;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
-import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthPublicKeyFactory extends AbstractUserAuthFactory implements SignatureFactoriesManager {
-    public static final String NAME = PUBLIC_KEY;
-    public static final UserAuthPublicKeyFactory INSTANCE = new UserAuthPublicKeyFactory() {
-        @Override
-        public List<NamedFactory<Signature>> getSignatureFactories() {
-            return null;
-        }
-
-        @Override
-        public void setSignatureFactories(List<NamedFactory<Signature>> factories) {
-            if (!GenericUtils.isEmpty(factories)) {
-                throw new UnsupportedOperationException("Not allowed to change default instance signature factories");
-            }
-        }
-    };
+public class UserAuthHostBasedFactory extends AbstractUserAuthFactory implements SignatureFactoriesManager {
+    public static final String NAME = HOST_BASED;
 
     private List<NamedFactory<Signature>> factories;
+    private HostKeyIdentityProvider clientHostKeys;
+    private String clientUsername;
+    private String clientHostname;
 
-    public UserAuthPublicKeyFactory() {
-        this(null);
-    }
-
-    public UserAuthPublicKeyFactory(List<NamedFactory<Signature>> factories) {
+    public UserAuthHostBasedFactory() {
         super(NAME);
-        this.factories = factories; // OK if null/empty
     }
 
     @Override
@@ -65,8 +51,36 @@ public class UserAuthPublicKeyFactory extends AbstractUserAuthFactory implements
         this.factories = factories;
     }
 
+    public HostKeyIdentityProvider getClientHostKeys() {
+        return clientHostKeys;
+    }
+
+    public void setClientHostKeys(HostKeyIdentityProvider clientHostKeys) {
+        this.clientHostKeys = clientHostKeys;
+    }
+
+    public String getClientUsername() {
+        return clientUsername;
+    }
+
+    public void setClientUsername(String clientUsername) {
+        this.clientUsername = clientUsername;
+    }
+
+    public String getClientHostname() {
+        return clientHostname;
+    }
+
+    public void setClientHostname(String clientHostname) {
+        this.clientHostname = clientHostname;
+    }
+
     @Override
-    public UserAuth create() {
-        return new UserAuthPublicKey(getSignatureFactories());
+    public UserAuthHostBased create() {
+        UserAuthHostBased auth = new UserAuthHostBased(getClientHostKeys());
+        auth.setClientHostname(getClientHostname());
+        auth.setClientUsername(getClientUsername());
+        auth.setSignatureFactories(getSignatureFactories());
+        return auth;
     }
 }

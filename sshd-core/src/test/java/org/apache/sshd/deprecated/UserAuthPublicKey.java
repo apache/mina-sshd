@@ -21,7 +21,7 @@ package org.apache.sshd.deprecated;
 import java.io.IOException;
 import java.security.KeyPair;
 
-import org.apache.sshd.client.auth.UserAuthPublicKeyFactory;
+import org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;

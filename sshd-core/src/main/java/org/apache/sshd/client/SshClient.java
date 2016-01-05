@@ -56,12 +56,12 @@ import java.util.logging.Logger;
 
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
-import org.apache.sshd.client.auth.PasswordIdentityProvider;
 import org.apache.sshd.client.auth.UserAuth;
-import org.apache.sshd.client.auth.UserAuthKeyboardInteractiveFactory;
-import org.apache.sshd.client.auth.UserAuthPasswordFactory;
-import org.apache.sshd.client.auth.UserAuthPublicKeyFactory;
-import org.apache.sshd.client.auth.UserInteraction;
+import org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractiveFactory;
+import org.apache.sshd.client.auth.keyboard.UserInteraction;
+import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
+import org.apache.sshd.client.auth.password.UserAuthPasswordFactory;
+import org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
@@ -1029,6 +1029,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     break;
                 }
 
+                i++;
                 continue;
             }
 
@@ -1109,7 +1110,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
                 try {
                     if (socksPort >= 0) {
-                        session.startDynamicPortForwarding(new SshdSocketAddress("localhost", socksPort));
+                        session.startDynamicPortForwarding(new SshdSocketAddress(SshdSocketAddress.LOCALHOST_NAME, socksPort));
                         Thread.sleep(Long.MAX_VALUE);
                     } else {
                         ClientChannel channel;

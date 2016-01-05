@@ -46,6 +46,7 @@ import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.auth.UserAuth;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
+import org.apache.sshd.server.auth.hostbased.HostBasedAuthenticator;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
@@ -116,6 +117,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     private PasswordAuthenticator passwordAuthenticator;
     private PublickeyAuthenticator publickeyAuthenticator;
     private KeyboardInteractiveAuthenticator interactiveAuthenticator;
+    private HostBasedAuthenticator hostBasedAuthenticator;
     private GSSAuthenticator gssAuthenticator;
 
     public SshServer() {
@@ -226,6 +228,16 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     @Override
     public void setGSSAuthenticator(GSSAuthenticator gssAuthenticator) {
         this.gssAuthenticator = gssAuthenticator;
+    }
+
+    @Override
+    public HostBasedAuthenticator getHostBasedAuthenticator() {
+        return hostBasedAuthenticator;
+    }
+
+    @Override
+    public void setHostBasedAuthenticator(HostBasedAuthenticator hostBasedAuthenticator) {
+        this.hostBasedAuthenticator = hostBasedAuthenticator;
     }
 
     @Override

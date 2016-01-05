@@ -48,11 +48,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.auth.UserAuth;
-import org.apache.sshd.client.auth.UserAuthKeyboardInteractive;
-import org.apache.sshd.client.auth.UserAuthKeyboardInteractiveFactory;
-import org.apache.sshd.client.auth.UserAuthPasswordFactory;
-import org.apache.sshd.client.auth.UserAuthPublicKeyFactory;
-import org.apache.sshd.client.auth.UserInteraction;
+import org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive;
+import org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractiveFactory;
+import org.apache.sshd.client.auth.keyboard.UserInteraction;
+import org.apache.sshd.client.auth.password.UserAuthPasswordFactory;
+import org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
@@ -98,6 +98,8 @@ import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.keyboard.DefaultKeyboardInteractiveAuthenticator;
+import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
+import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.channel.ChannelSessionFactory;
@@ -918,21 +920,8 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testPublicKeyAuth() throws Exception {
-        client.start();
-
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
-            assertNotNull("Client session creation not signalled", clientSessionHolder.get());
-            KeyPair pair = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
-            session.addPublicKeyIdentity(pair);
-            session.auth().verify(5L, TimeUnit.SECONDS);
-        } finally {
-            client.stop();
-        }
-        assertNull("Session closure not signalled", clientSessionHolder.get());
-    }
-
-    @Test
-    public void testPublicKeyAuthNew() throws Exception {
+        sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
+        sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPublicKeyFactory.INSTANCE));
         client.start();
 
@@ -974,7 +963,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testPasswordAuthNew() throws Exception {
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPasswordFactory()));
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPasswordFactory.INSTANCE));
         client.start();
 
         try (ClientSession session = createTestClientSession()) {
@@ -987,7 +976,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testPasswordAuthNewWithFailureOnFirstIdentity() throws Exception {
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPasswordFactory()));
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPasswordFactory.INSTANCE));
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -1035,7 +1024,7 @@ public class ClientTest extends BaseTestSupport {
         final Collection<String> mismatchedPrompts = new LinkedList<String>();
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractiveFactory() {
             @Override
-            public UserAuth create() {
+            public UserAuthKeyboardInteractive create() {
                 return new UserAuthKeyboardInteractive() {
                     @Override
                     protected boolean useCurrentPassword(String password, String name, String instruction, String lang, String[] prompt, boolean[] echo) {

@@ -274,12 +274,40 @@ public final class NumberUtils {
         if (len <= 0) {
             return Collections.emptyList();
         }
-    
+
         List<Integer> l = new ArrayList<>(len);
         for (int v : values) {
             l.add(Integer.valueOf(v));
         }
-    
+
         return l;
+    }
+
+    /**
+     * Checks if optional sign and all others are '0'-'9'
+     * @param cs The {@link CharSequence} to check
+     * @return {@code true} if valid integer number
+     */
+    public static boolean isIntegerNumber(CharSequence cs) {
+        if (GenericUtils.isEmpty(cs)) {
+            return false;
+        }
+
+        for (int index = 0; index < cs.length(); index++) {
+            char c = cs.charAt(0);
+            if ((c >= '0') && (c <= '9')) {
+                continue;
+            }
+
+            if ((c == '+') || (c == '-')) {
+                if (index == 0) {
+                    continue;
+                }
+            }
+
+            return false;
+        }
+
+        return true;
     }
 }

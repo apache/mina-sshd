@@ -27,6 +27,7 @@ import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.auth.UserAuth;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
+import org.apache.sshd.server.auth.hostbased.HostBasedAuthenticator;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
@@ -39,6 +40,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     private PublickeyAuthenticator publickeyAuthenticator;
     private KeyboardInteractiveAuthenticator interactiveAuthenticator;
     private GSSAuthenticator gssAuthenticator;
+    private HostBasedAuthenticator hostBasedAuthenticator;
     private List<NamedFactory<UserAuth>> userAuthFactories;
 
     protected AbstractServerSession(ServerFactoryManager factoryManager, IoSession ioSession) {
@@ -88,6 +90,16 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     @Override
     public void setGSSAuthenticator(GSSAuthenticator gssAuthenticator) {
         this.gssAuthenticator = gssAuthenticator; // OK if null - inherit from parent
+    }
+
+    @Override
+    public HostBasedAuthenticator getHostBasedAuthenticator() {
+        return resolveEffectiveProvider(HostBasedAuthenticator.class, hostBasedAuthenticator, getFactoryManager().getHostBasedAuthenticator());
+    }
+
+    @Override
+    public void setHostBasedAuthenticator(HostBasedAuthenticator hostBasedAuthenticator) {
+        this.hostBasedAuthenticator = hostBasedAuthenticator;
     }
 
     @Override

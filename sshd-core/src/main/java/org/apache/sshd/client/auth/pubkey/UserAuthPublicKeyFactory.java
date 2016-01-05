@@ -16,10 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.auth;
+package org.apache.sshd.client.auth.pubkey;
 
 import java.util.List;
 
+import org.apache.sshd.client.auth.AbstractUserAuthFactory;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
@@ -66,7 +67,7 @@ public class UserAuthPublicKeyFactory extends AbstractUserAuthFactory implements
     }
 
     @Override
-    public UserAuth create() {
+    public UserAuthPublicKey create() {
         return new UserAuthPublicKey(getSignatureFactories());
     }
 }

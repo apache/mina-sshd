@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.auth;
+package org.apache.sshd.server.auth.keyboard;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,8 +27,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
-import org.apache.sshd.server.auth.keyboard.InteractiveChallenge;
-import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
+import org.apache.sshd.server.auth.AbstractUserAuth;
 import org.apache.sshd.server.session.ServerSession;
 
 /**

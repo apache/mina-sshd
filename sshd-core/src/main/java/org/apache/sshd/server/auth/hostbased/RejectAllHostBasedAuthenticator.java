@@ -16,21 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.auth;
+
+package org.apache.sshd.server.auth.hostbased;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthPasswordFactory extends AbstractUserAuthFactory {
-    public static final String NAME = PASSWORD;
-    public static final UserAuthPasswordFactory INSTANCE = new UserAuthPasswordFactory();
+public final class RejectAllHostBasedAuthenticator extends StaticHostBasedAuthenticator {
+    public static final RejectAllHostBasedAuthenticator INSTANCE = new RejectAllHostBasedAuthenticator();
 
-    public UserAuthPasswordFactory() {
-        super(NAME);
-    }
-
-    @Override
-    public UserAuth create() {
-        return new UserAuthPassword();
+    private RejectAllHostBasedAuthenticator() {
+        super(false);
     }
 }

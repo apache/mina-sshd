@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.auth;
+package org.apache.sshd.server.auth.pubkey;
 
 import java.security.PublicKey;
 import java.util.Collection;
@@ -32,7 +32,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
+import org.apache.sshd.server.auth.AbstractUserAuth;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -102,7 +102,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                 log.debug("doAuth({}@{}) key type={}, fingerprint={} - no authenticator",
                           username, session, alg, KeyUtils.getFingerPrint(key));
             }
-            return false;
+            return Boolean.FALSE;
         }
 
         boolean authed = authenticator.authenticate(username, key, session);
@@ -128,25 +128,30 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         }
 
         // verify signature
-        Buffer buf = new ByteArrayBuffer();
-        buf.putBytes(session.getKex().getH());
+        byte[] id = session.getSessionId();
+        String service = getService();
+        String name = getName();
+        Buffer buf = new ByteArrayBuffer(id.length + username.length() + service.length() + name.length()
+            + alg.length() + ByteArrayBuffer.DEFAULT_SIZE + Long.SIZE, false);
+        buf.putBytes(id);
         buf.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
         buf.putString(username);
-        buf.putString(getService());
-        buf.putString(getName());
+        buf.putString(service);
+        buf.putString(name);
         buf.putBoolean(true);
         buf.putString(alg);
         buffer.rpos(oldPos);
         buffer.wpos(oldPos + 4 + len);
         buf.putBuffer(buffer);
-        verifier.update(buf.array(), buf.rpos(), buf.available());
+
         if (log.isTraceEnabled()) {
             log.trace("doAuth({}@{}) key type={}, fingerprint={} - verification data={}",
                       username, session, alg, KeyUtils.getFingerPrint(key), buf.printHex());
             log.trace("doAuth({}@{}) key type={}, fingerprint={} - expected signature={}",
-                    username, session, alg, KeyUtils.getFingerPrint(key), BufferUtils.printHex(sig));
+                      username, session, alg, KeyUtils.getFingerPrint(key), BufferUtils.printHex(sig));
         }
 
+        verifier.update(buf.array(), buf.rpos(), buf.available());
         if (!verifier.verify(sig)) {
             throw new Exception("Key verification failed");
         }

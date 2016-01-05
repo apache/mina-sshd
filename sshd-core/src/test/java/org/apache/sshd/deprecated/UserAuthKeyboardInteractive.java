@@ -21,7 +21,7 @@ package org.apache.sshd.deprecated;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.sshd.client.auth.UserInteraction;
+import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.buffer.Buffer;
