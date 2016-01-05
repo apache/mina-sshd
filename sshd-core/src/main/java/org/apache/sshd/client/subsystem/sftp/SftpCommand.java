@@ -241,7 +241,7 @@ public class SftpCommand implements Channel {
 
             ClientSession session = (logStream == null) ? null : SshClient.setupClientSession("-P", stdin, stdout, stderr, args);
             if (session == null) {
-                System.err.println("usage: sftp [-v[v][v]] [-E logoutput] [-i identity] [-l login] [-P port] [-o option=value] hostname/user@host");
+                System.err.println("usage: sftp [-v[v][v]] [-E logoutput] [-i identity] [-l login] [-P port] [-o option=value] [-w password] hostname/user@host");
                 System.exit(-1);
                 return;
             }

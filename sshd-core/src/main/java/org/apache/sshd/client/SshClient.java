@@ -747,6 +747,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
              || "-i".equals(argName)
              || "-o".equals(argName)
              || "-l".equals(argName)
+             || "-w".equals(argName)
              || "-E".equals(argName);
     }
 
@@ -758,6 +759,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         int port = -1;
         String host = null;
         String login = null;
+        String password = null;
         boolean error = false;
         List<File> identities = new ArrayList<>();
         Map<String, String> options = new LinkedHashMap<>();
@@ -785,6 +787,12 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     error = showError(stderr, "Bad option value for " + argName + ": " + port);
                     break;
                 }
+            } else if ("-w".equals(argName)) {
+                if (GenericUtils.length(password) > 0) {
+                    error = showError(stderr, argName + " option value re-specified: " + password);
+                    break;
+                }
+                password = argVal;
             } else if ("-i".equals(argName)) {
                 identities.add(new File(argVal));
             } else if ("-o".equals(argName)) {
@@ -901,6 +909,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             // TODO use a configurable wait time
             ClientSession session = client.connect(login, host, port).verify().getSession();
             try {
+                if (GenericUtils.length(password) > 0) {
+                    session.addPasswordIdentity(password);
+                }
                 session.auth().verify(FactoryManager.DEFAULT_AUTH_TIMEOUT);    // TODO use a configurable wait time
                 return session;
             } catch (Exception e) {
@@ -1087,7 +1098,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             }
 
             if (error) {
-                System.err.println("usage: ssh [-A|-a] [-v[v][v]] [-E logoutput] [-D socksPort] [-l login] [-p port] [-o option=value] hostname/user@host [command]");
+                System.err.println("usage: ssh [-A|-a] [-v[v][v]] [-E logoutput] [-D socksPort] [-l login] [-p port] [-o option=value] [-w password] hostname/user@host [command]");
                 System.exit(-1);
                 return;
             }

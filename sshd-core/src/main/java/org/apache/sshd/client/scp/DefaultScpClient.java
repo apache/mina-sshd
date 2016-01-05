@@ -236,7 +236,7 @@ public class DefaultScpClient extends AbstractScpClient {
             ClientSession session = (logStream == null) || GenericUtils.isEmpty(args)
                     ? null : SshClient.setupClientSession("-P", stdin, stdout, stderr, args);
             if (session == null) {
-                stderr.println("usage: scp [-P port] [-i identity] [-v[v][v]] [-E logoutput] [-r] [-p] [-q] [-o option=value] <source> <target>");
+                stderr.println("usage: scp [-P port] [-i identity] [-v[v][v]] [-E logoutput] [-r] [-p] [-q] [-o option=value] [-w password] <source> <target>");
                 stderr.println();
                 stderr.println("Where <source> or <target> are either 'user@host:file' or a local file path");
                 stderr.println("NOTE: exactly ONE of the source or target must be remote and the other one local");
