@@ -65,6 +65,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
@@ -79,6 +80,7 @@ import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.slf4j.Logger;
@@ -93,6 +95,19 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     public static final long DEFAULT_CONNECT_TIME = SftpClient.DEFAULT_WAIT_TIMEOUT;
     public static final String AUTH_TIME_PROP_NAME = "sftp-fs-auth-time";
     public static final long DEFAULT_AUTH_TIME = SftpClient.DEFAULT_WAIT_TIMEOUT;
+    /**
+     * <P>
+     * URI parameter that can be used to specify a special version selection. Options are:
+     * </P>
+     * <UL>
+     *      <LI>{@code max} - select maximum available version for the client</LI>
+     *      <LI>{@code min} - select minimum available version for the client</LI>
+     *      <LI>{@code current} - whatever version is reported by the server</LI>
+     *      <LI>{@code nnn} - select <U>only</U> the specified version</LI>
+     *      <LI>{@code a,b,c} - select one of the specified versions (if available) in preference order</LI>
+     * </UL>
+     */
+    public static final String VERSION_PARAM = "version";
 
     public static final Set<Class<? extends FileAttributeView>> UNIVERSAL_SUPPORTED_VIEWS =
             Collections.unmodifiableSet(new HashSet<Class<? extends FileAttributeView>>() {
@@ -163,7 +178,9 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         String username = ui[0];
         String password = ui[1];
         String id = getFileSystemIdentifier(host, port, username);
-        PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(Collections.unmodifiableMap(env));
+        Map<String, Object> params = resolveFileSystemParameters(env, parseURIParameters(uri));
+        PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(params);
+        SftpVersionSelector selector = resolveSftpVersionSelector(uri, getSftpVersionSelector(), resolver);
 
         SftpFileSystem fileSystem;
         synchronized (fileSystems) {
@@ -177,10 +194,21 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                 session = client.connect(username, host, port)
                         .verify(PropertyResolverUtils.getLongProperty(resolver, CONNECT_TIME_PROP_NAME, DEFAULT_CONNECT_TIME))
                         .getSession();
+                if (GenericUtils.size(params) > 0) {
+                    for (Map.Entry<String, ?> pe : params.entrySet()) {
+                        String key = pe.getKey();
+                        Object value = pe.getValue();
+                        if (VERSION_PARAM.equalsIgnoreCase(key)) {
+                            continue;
+                        }
+
+                        PropertyResolverUtils.updateProperty(session, key, value);
+                    }
+                }
                 session.addPasswordIdentity(password);
                 session.auth().verify(PropertyResolverUtils.getLongProperty(resolver, AUTH_TIME_PROP_NAME, DEFAULT_AUTH_TIME));
 
-                fileSystem = new SftpFileSystem(this, id, session, getSftpVersionSelector());
+                fileSystem = new SftpFileSystem(this, id, session, selector);
                 fileSystems.put(id, fileSystem);
             } catch (Exception e) {
                 if (session != null) {
@@ -212,6 +240,88 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             log.debug("newFileSystem({}): {}", uri.toASCIIString(), fileSystem);
         }
         return fileSystem;
+    }
+
+    protected SftpVersionSelector resolveSftpVersionSelector(URI uri, SftpVersionSelector defaultSelector, PropertyResolver resolver) {
+        String preference = PropertyResolverUtils.getString(resolver, VERSION_PARAM);
+        if (GenericUtils.isEmpty(preference)) {
+            return defaultSelector;
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("resolveSftpVersionSelector({}) preference={}", uri, preference);
+        }
+
+        if ("max".equalsIgnoreCase(preference)) {
+            return SftpVersionSelector.MAXIMUM;
+        } else if ("min".equalsIgnoreCase(preference)) {
+            return SftpVersionSelector.MINIMUM;
+        } else if ("current".equalsIgnoreCase(preference)) {
+            return SftpVersionSelector.CURRENT;
+        }
+
+        String[] values = GenericUtils.split(preference, ',');
+        if (values.length == 1) {
+            return SftpVersionSelector.Utils.fixedVersionSelector(Integer.parseInt(values[0]));
+        }
+
+        int[] preferred = new int[values.length];
+        for (int index = 0; index < values.length; index++) {
+            preferred[index] = Integer.parseInt(values[index]);
+        }
+
+        return SftpVersionSelector.Utils.preferredVersionSelector(preferred);
+    }
+
+    // NOTE: URI parameters override environment ones
+    public static Map<String, Object> resolveFileSystemParameters(Map<String, ?> env, Map<String, Object> uriParams) {
+        if (GenericUtils.isEmpty(env)) {
+            return GenericUtils.isEmpty(uriParams) ? Collections.<String,Object>emptyMap() : uriParams;
+        } else if (GenericUtils.isEmpty(uriParams)) {
+            return Collections.unmodifiableMap(env);
+        }
+
+        Map<String, Object> resolved = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
+        resolved.putAll(env);
+        resolved.putAll(uriParams);
+        return resolved;
+    }
+
+    public static Map<String, Object> parseURIParameters(URI uri) {
+        return parseURIParameters((uri == null) ? "" : uri.getQuery());
+    }
+
+    public static Map<String, Object> parseURIParameters(String params) {
+        if (GenericUtils.isEmpty(params)) {
+            return Collections.emptyMap();
+        }
+
+        if (params.charAt(0) == '?') {
+            if (params.length() == 1) {
+                return Collections.emptyMap();
+            }
+            params = params.substring(1);
+        }
+
+        String[] pairs = GenericUtils.split(params, '&');
+        Map<String, Object> map = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
+        for (String p : pairs) {
+            int pos = p.indexOf('=');
+            if (pos < 0) {
+                map.put(p, Boolean.TRUE);
+                continue;
+            }
+
+            String key = p.substring(0, pos);
+            String value = p.substring(pos + 1);
+            if (NumberUtils.isIntegerNumber(value)) {
+                map.put(key, Long.parseLong(value));
+            } else {
+                map.put(key, value);
+            }
+        }
+
+        return map;
     }
 
     public SftpFileSystem newFileSystem(ClientSession session) throws IOException {
@@ -1117,6 +1227,25 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     }
 
     public static URI createFileSystemURI(String host, int port, String username, String password) {
-        return URI.create(SftpConstants.SFTP_SUBSYSTEM_NAME + "://" + username + ":" + password + "@" + host + ":" + port + "/");
+        return createFileSystemURI(host, port, username, password, Collections.<String, Object>emptyMap());
+    }
+
+    public static URI createFileSystemURI(String host, int port, String username, String password, Map<String, ?> params) {
+        StringBuilder sb = new StringBuilder(Byte.MAX_VALUE);
+        sb.append(SftpConstants.SFTP_SUBSYSTEM_NAME)
+          .append("://").append(username).append(':').append(password)
+          .append('@').append(host).append(':').append(port)
+          .append('/');
+        if (GenericUtils.size(params) > 0) {
+            boolean firstParam = true;
+            for (Map.Entry<String, ?> pe : params.entrySet()) {
+                String key = pe.getKey();
+                Object value = pe.getValue();
+                sb.append(firstParam ? '?' : '&').append(key).append('=').append(Objects.toString(value, null));
+                firstParam = false;
+            }
+        }
+
+        return URI.create(sb.toString());
     }
 }

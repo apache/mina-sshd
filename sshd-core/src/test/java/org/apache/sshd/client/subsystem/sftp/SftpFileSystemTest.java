@@ -56,8 +56,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
@@ -65,6 +67,7 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.scp.ScpCommandFactory;
+import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.Utils;
@@ -117,6 +120,34 @@ public class SftpFileSystemTest extends BaseTestSupport {
                 })) {
             assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
             testFileSystem(fs, ((SftpFileSystem) fs).getVersion());
+        }
+    }
+
+    @Test   // see SSHD-578
+    public void testFileSystemURIParameters() throws Exception {
+        Map<String, Object> params = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
+        params.put("test-class-name", getClass().getSimpleName());
+        params.put("test-pkg-name", getClass().getPackage().getName());
+        params.put("test-name", getCurrentTestName());
+
+        int expectedVersion = (SftpSubsystem.LOWER_SFTP_IMPL + SftpSubsystem.HIGHER_SFTP_IMPL) / 2;
+        params.put(SftpFileSystemProvider.VERSION_PARAM, Integer.valueOf(expectedVersion));
+        try (SftpFileSystem fs = (SftpFileSystem) FileSystems.newFileSystem(createDefaultFileSystemURI(params), Collections.<String, Object>emptyMap())) {
+            try (SftpClient sftpClient = fs.getClient()) {
+                assertEquals("Mismatched negotiated version", expectedVersion, sftpClient.getVersion());
+
+                Session session = sftpClient.getClientSession();
+                for (Map.Entry<String, ?> pe : params.entrySet()) {
+                    String key = pe.getKey();
+                    Object expected = pe.getValue();
+                    if (SftpFileSystemProvider.VERSION_PARAM.equalsIgnoreCase(key)) {
+                        continue;
+                    }
+
+                    Object actual = PropertyResolverUtils.getObject(session, key);
+                    assertEquals("Mismatched value for param '" + key + "'", expected, actual);
+                }
+            }
         }
     }
 
@@ -214,9 +245,10 @@ public class SftpFileSystemTest extends BaseTestSupport {
             Collection<SftpFileSystem> fsList = new LinkedList<>();
             try {
                 Collection<String> idSet = new HashSet<>();
+                Map<String, Object> empty = Collections.<String, Object>emptyMap();
                 for (int index = 0; index < 4; index++) {
                     String credentials = getCurrentTestName() + "-user-" + index;
-                    SftpFileSystem expected = provider.newFileSystem(createFileSystemURI(credentials), Collections.<String, Object>emptyMap());
+                    SftpFileSystem expected = provider.newFileSystem(createFileSystemURI(credentials, empty), empty);
                     fsList.add(expected);
 
                     String id = expected.getId();
@@ -426,14 +458,18 @@ public class SftpFileSystemTest extends BaseTestSupport {
     }
 
     private URI createDefaultFileSystemURI() {
-        return createFileSystemURI(getCurrentTestName());
+        return createDefaultFileSystemURI(Collections.<String, Object>emptyMap());
     }
 
-    private URI createFileSystemURI(String username) {
-        return createFileSystemURI(username, port);
+    private URI createDefaultFileSystemURI(Map<String, ?> params) {
+        return createFileSystemURI(getCurrentTestName(), params);
     }
 
-    private static URI createFileSystemURI(String username, int port) {
-        return SftpFileSystemProvider.createFileSystemURI(TEST_LOCALHOST, port, username, username);
+    private URI createFileSystemURI(String username, Map<String, ?> params) {
+        return createFileSystemURI(username, port, params);
+    }
+
+    private static URI createFileSystemURI(String username, int port, Map<String, ?> params) {
+        return SftpFileSystemProvider.createFileSystemURI(TEST_LOCALHOST, port, username, username, params);
     }
 }
