@@ -38,11 +38,6 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
      */
     protected static final Object CANCELED = new Object();
 
-    /**
-     * A value indicating a {@code null} value
-     */
-    protected static final Object NULL = new Object();
-
     protected AbstractSshFuture() {
         super();
     }

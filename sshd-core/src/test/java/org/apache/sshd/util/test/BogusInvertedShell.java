@@ -27,9 +27,10 @@ import java.util.Map;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.session.ServerSessionHolder;
 import org.apache.sshd.server.shell.InvertedShell;
 
-public class BogusInvertedShell implements InvertedShell {
+public class BogusInvertedShell implements InvertedShell, ServerSessionHolder {
 
     private final OutputStream in;
     private final InputStream out;
@@ -45,6 +46,11 @@ public class BogusInvertedShell implements InvertedShell {
         this.in = in;
         this.out = out;
         this.err = err;
+    }
+
+    @Override
+    public ServerSession getServerSession() {
+        return session;
     }
 
     @Override

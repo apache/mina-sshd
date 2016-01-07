@@ -54,6 +54,10 @@ public class LoadTest extends BaseTestSupport {
     private SshServer sshd;
     private int port;
 
+    public LoadTest() {
+        super();
+    }
+
     @Before
     public void setUp() throws Exception {
         sshd = setupTestServer();

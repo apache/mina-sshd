@@ -20,6 +20,7 @@ package org.apache.sshd.common.session;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
@@ -171,7 +172,6 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected final Object encodeLock = new Object();
     protected final Object decodeLock = new Object();
     protected final Object requestLock = new Object();
-    protected final AtomicReference<Buffer> requestResult = new AtomicReference<>();
     protected final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
 
     // Session timeout measurements
@@ -210,6 +210,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      */
     private final FactoryManager factoryManager;
     private final Map<String, Object> properties = new ConcurrentHashMap<>();
+    private final AtomicReference<Object> requestResult = new AtomicReference<>();
 
     /**
      * Create a new session.
@@ -771,6 +772,12 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             }
         }
 
+        // if anyone waiting for global response notify them about the closing session
+        synchronized (requestResult) {
+            requestResult.set(GenericUtils.NULL);
+            requestResult.notify();
+        }
+
         // Fire 'close' event
         SessionListener listener = getSessionListenerProxy();
         try {
@@ -934,28 +941,54 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         return count;
     }
 
-    /**
-     * Send a global request and wait for the response.
-     * This must only be used when sending a SSH_MSG_GLOBAL_REQUEST with a result expected,
-     * else it will wait forever.
-     *
-     * @param buffer the buffer containing the global request
-     * @return <code>true</code> if the request was successful, <code>false</code> otherwise.
-     * @throws IOException if an error occurred when encoding sending the packet
-     */
     @Override
-    public Buffer request(Buffer buffer) throws IOException {
+    public Buffer request(Buffer buffer, long timeout, TimeUnit unit) throws IOException {
+        ValidateUtils.checkTrue(timeout > 0L, "Non-positive timeout requested: %d", timeout);
+
+        long maxWaitMillis = TimeUnit.MILLISECONDS.convert(timeout, unit);
+        if (maxWaitMillis <= 0L) {
+            throw new IllegalArgumentException("Requested timeout below 1 msec: " + timeout + " " + unit);
+        }
+
+        Object result;
         synchronized (requestLock) {
             try {
+                writePacket(buffer);
+
                 synchronized (requestResult) {
-                    writePacket(buffer);
-                    requestResult.wait();
-                    return requestResult.get();
+                    while (isOpen() && (maxWaitMillis > 0L) && (requestResult.get() == null)) {
+                        long waitStart = System.nanoTime();
+                        requestResult.wait(maxWaitMillis);
+                        long waitEnd = System.nanoTime();
+                        long waitDuration = waitEnd - waitStart;
+                        long waitMillis = TimeUnit.NANOSECONDS.toMillis(waitDuration);
+                        if (waitMillis > 0L) {
+                            maxWaitMillis -= waitMillis;
+                        } else {
+                            maxWaitMillis--;
+                        }
+                    }
+
+                    result = requestResult.getAndSet(null);
                 }
             } catch (InterruptedException e) {
                 throw (InterruptedIOException) new InterruptedIOException("Interrupted while waiting for request result").initCause(e);
             }
         }
+
+        if (!isOpen()) {
+            throw new IOException("Session is closed or closing");
+        }
+
+        if (result == null) {
+            throw new SocketTimeoutException("No response received after " + timeout + " " + unit);
+        }
+
+        if (result instanceof Buffer) {
+            return (Buffer) result;
+        }
+
+        return null;
     }
 
     @Override
@@ -1690,7 +1723,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     protected void requestFailure(Buffer buffer) throws Exception {
         synchronized (requestResult) {
-            requestResult.set(null);
+            requestResult.set(GenericUtils.NULL);
             resetIdleTimeout();
             requestResult.notify();
         }

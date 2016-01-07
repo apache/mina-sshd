@@ -182,7 +182,7 @@ public interface Session
      *
      * @param buffer the buffer to encode and send
      * @return a future that can be used to check when the packet has actually been sent
-     * @throws java.io.IOException if an error occurred when encoding sending the packet
+     * @throws IOException if an error occurred when encoding sending the packet
      */
     IoWriteFuture writePacket(Buffer buffer) throws IOException;
 
@@ -196,20 +196,21 @@ public interface Session
      * @param timeout the timeout
      * @param unit    the time unit of the timeout parameter
      * @return a future that can be used to check when the packet has actually been sent
-     * @throws java.io.IOException if an error occurred when encoding sending the packet
+     * @throws IOException if an error occurred when encoding sending the packet
      */
     IoWriteFuture writePacket(Buffer buffer, long timeout, TimeUnit unit) throws IOException;
 
     /**
-     * Send a global request and wait for the response.
-     * This must only be used when sending a SSH_MSG_GLOBAL_REQUEST with a result expected,
-     * else it will wait forever.
+     * Send a global request and wait for the response. This must only be used when sending
+     * a {@code SSH_MSG_GLOBAL_REQUEST} with a result expected, else it will time out
      *
      * @param buffer the buffer containing the global request
+     * @param timeout The number of time units to wait - must be <U>positive</U>
+     * @param unit The {@link TimeUnit} to wait for the response
      * @return the return buffer if the request was successful, {@code null} otherwise.
-     * @throws java.io.IOException if an error occurred when encoding sending the packet
+     * @throws IOException if an error occurred when encoding sending the packet
      */
-    Buffer request(Buffer buffer) throws IOException;
+    Buffer request(Buffer buffer, long timeout, TimeUnit unit) throws IOException;
 
     /**
      * Handle any exceptions that occurred on this session.

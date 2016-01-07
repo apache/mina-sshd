@@ -21,6 +21,7 @@ package org.apache.sshd.common.future;
 import java.io.InterruptedIOException;
 import java.lang.reflect.Array;
 
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -96,7 +97,7 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
                 return;
             }
 
-            result = newValue != null ? newValue : NULL;
+            result = (newValue != null) ? newValue : GenericUtils.NULL;
             lock.notifyAll();
         }
 
@@ -109,7 +110,7 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
      */
     public Object getValue() {
         synchronized (lock) {
-            return result == NULL ? null : result;
+            return (result == GenericUtils.NULL) ? null : result;
         }
     }
 

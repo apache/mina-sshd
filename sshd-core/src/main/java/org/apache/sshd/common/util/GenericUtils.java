@@ -54,6 +54,12 @@ public final class GenericUtils {
     public static final Object[] EMPTY_OBJECT_ARRAY = {};
 
     /**
+     * A value indicating a {@code null} value - to be used as a placeholder
+     * where {@code null}s are not allowed
+     */
+    public static final Object NULL = new Object();
+
+    /**
      * The complement of {@link String#CASE_INSENSITIVE_ORDER}
      */
     public static final Comparator<String> CASE_SENSITIVE_ORDER = new Comparator<String>() {

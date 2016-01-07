@@ -27,12 +27,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
@@ -44,6 +46,7 @@ import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -53,11 +56,26 @@ import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 import org.apache.sshd.server.forward.ForwardingFilter;
 
 /**
- * TODO Add javadoc
+ * Requests a &quot;tcpip-forward&quot; action
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultTcpipForwarder extends AbstractInnerCloseable implements TcpipForwarder {
+public class DefaultTcpipForwarder
+        extends AbstractInnerCloseable
+        implements TcpipForwarder, SessionHolder<Session> {
+
+    /**
+     * Used to configure the timeout (milliseconds) for receiving a response
+     * for the forwarding request
+     *
+     * @see #DEFAULT_FORWARD_REQUEST_TIMEOUT
+     */
+    public static final String FORWARD_REQUEST_TIMEOUT = "tcpip-forward-request-timeout";
+
+    /**
+     * Default value for {@link #FORWARD_REQUEST_TIMEOUT} if none specified
+     */
+    public static final long DEFAULT_FORWARD_REQUEST_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
 
     private final ConnectionService service;
     private final IoHandlerFactory socksProxyIoHandlerFactory = new IoHandlerFactory() {
@@ -66,7 +84,7 @@ public class DefaultTcpipForwarder extends AbstractInnerCloseable implements Tcp
             return new SocksProxy(getConnectionService());
         }
     };
-    private final Session session;
+    private final Session sessionInstance;
     private final Map<Integer, SshdSocketAddress> localToRemote = new HashMap<>();
     private final Map<Integer, SshdSocketAddress> remoteToLocal = new HashMap<>();
     private final Map<Integer, SocksProxy> dynamicLocal = new HashMap<>();
@@ -81,7 +99,12 @@ public class DefaultTcpipForwarder extends AbstractInnerCloseable implements Tcp
 
     public DefaultTcpipForwarder(ConnectionService service) {
         this.service = ValidateUtils.checkNotNull(service, "No connection service");
-        this.session = ValidateUtils.checkNotNull(service.getSession(), "No session");
+        this.sessionInstance = ValidateUtils.checkNotNull(service.getSession(), "No session");
+    }
+
+    @Override
+    public Session getSession() {
+        return sessionInstance;
     }
 
     public final ConnectionService getConnectionService() {
@@ -151,12 +174,15 @@ public class DefaultTcpipForwarder extends AbstractInnerCloseable implements Tcp
 
         String remoteHost = remote.getHostName();
         int remotePort = remote.getPort();
+        Session session = getSession();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST, remoteHost.length() + Long.SIZE);
         buffer.putString("tcpip-forward");
         buffer.putBoolean(true);    // want reply
         buffer.putString(remoteHost);
         buffer.putInt(remotePort);
-        Buffer result = session.request(buffer);
+
+        long timeout = PropertyResolverUtils.getLongProperty(session, FORWARD_REQUEST_TIMEOUT, DEFAULT_FORWARD_REQUEST_TIMEOUT);
+        Buffer result = session.request(buffer, timeout, TimeUnit.MILLISECONDS);
         if (result == null) {
             throw new SshException("Tcpip forwarding request denied by server");
         }
@@ -192,6 +218,7 @@ public class DefaultTcpipForwarder extends AbstractInnerCloseable implements Tcp
             }
 
             String remoteHost = remote.getHostName();
+            Session session = getSession();
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST, remoteHost.length() + Long.SIZE);
             buffer.putString("cancel-tcpip-forward");
             buffer.putBoolean(false);   // want reply
@@ -269,7 +296,8 @@ public class DefaultTcpipForwarder extends AbstractInnerCloseable implements Tcp
         ValidateUtils.checkNotNull(local, "Local address is null");
         ValidateUtils.checkTrue(local.getPort() >= 0, "Invalid local port: %s", local);
 
-        FactoryManager manager = session.getFactoryManager();
+        Session session = getSession();
+        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
         if ((filter == null) || (!filter.canListen(local, session))) {
             if (log.isDebugEnabled()) {
@@ -330,7 +358,8 @@ public class DefaultTcpipForwarder extends AbstractInnerCloseable implements Tcp
      */
     private InetSocketAddress doBind(SshdSocketAddress address, Factory<? extends IoHandler> handlerFactory) throws IOException {
         if (acceptor == null) {
-            FactoryManager manager = session.getFactoryManager();
+            Session session = getSession();
+            FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
             IoServiceFactory factory = manager.getIoServiceFactory();
             IoHandler handler = handlerFactory.create();
             acceptor = factory.createAcceptor(handler);
@@ -365,7 +394,7 @@ public class DefaultTcpipForwarder extends AbstractInnerCloseable implements Tcp
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[" + session + "]";
+        return getClass().getSimpleName() + "[" + getSession() + "]";
     }
 
     //

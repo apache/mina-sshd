@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd;
+package org.apache.sshd.common.forward;
 
 import java.io.InputStream;
 import java.io.OutputStream;

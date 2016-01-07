@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd;
+package org.apache.sshd.common.forward;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -69,14 +69,13 @@ import com.jcraft.jsch.Session;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class PortForwardingLoadTest extends BaseTestSupport {
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    private final Logger log;
     private SshServer sshd;
     private int sshPort;
-    private int echoPort;
     private IoAcceptor acceptor;
 
     public PortForwardingLoadTest() {
-        super();
+        log = LoggerFactory.getLogger(getClass());
     }
 
     @BeforeClass
@@ -104,9 +103,8 @@ public class PortForwardingLoadTest extends BaseTestSupport {
         });
         acceptor.setReuseAddress(true);
         acceptor.bind(new InetSocketAddress(0));
-        echoPort = acceptor.getLocalAddress().getPort();
+        log.info("setUp() echo address = {}", acceptor.getLocalAddress());
         this.acceptor = acceptor;
-
     }
 
     @After
@@ -261,48 +259,54 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             Thread.sleep(50);
             assertTrue("Server not started", started[0]);
 
-            final boolean lenOK[] = new boolean[NUM_ITERATIONS];
-            final boolean dataOK[] = new boolean[NUM_ITERATIONS];
+            final RuntimeException lenOK[] = new RuntimeException[NUM_ITERATIONS];
+            final RuntimeException dataOK[] = new RuntimeException[NUM_ITERATIONS];
             byte b2[] = new byte[PAYLOAD.length()];
             byte b1[] = new byte[b2.length / 2];
 
             for (int i = 0; i < NUM_ITERATIONS; i++) {
                 final int ii = i;
                 try (Socket s = new Socket(TEST_LOCALHOST, sinkPort);
-                     InputStream sockIn = s.getInputStream()) {
-
+                    InputStream sockIn = s.getInputStream()) {
                     s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
 
                     int read1 = sockIn.read(b1);
-                    String part1 = new String(b1, 0, read1);
+                    String part1 = new String(b1, 0, read1, StandardCharsets.UTF_8);
                     Thread.sleep(50);
 
                     int read2 = sockIn.read(b2);
-                    String part2 = new String(b2, 0, read2);
+                    String part2 = new String(b2, 0, read2, StandardCharsets.UTF_8);
                     int totalRead = read1 + read2;
-                    lenOK[ii] = PAYLOAD.length() == totalRead;
+                    lenOK[ii] = (PAYLOAD.length() == totalRead)
+                            ? null
+                            : new IndexOutOfBoundsException("Mismatched length: expected=" + PAYLOAD.length() + ", actual=" + totalRead);
 
                     String readData = part1 + part2;
-                    dataOK[ii] = PAYLOAD.equals(readData);
-                    if (!lenOK[ii]) {
-                        throw new IndexOutOfBoundsException("Mismatched length: expected=" + PAYLOAD.length() + ", actual=" + totalRead);
+                    dataOK[ii] = PAYLOAD.equals(readData) ? null : new IllegalStateException("Mismatched content");
+                    if (lenOK[ii] != null) {
+                        throw lenOK[ii];
                     }
 
-                    if (!dataOK[ii]) {
-                        throw new IllegalStateException("Mismatched content");
+                    if (dataOK[ii] != null) {
+                        throw dataOK[ii];
                     }
                 } catch (Exception e) {
-                    log.error("Failed to complete iteration #" + i, e);
+                    if (e instanceof IOException) {
+                        log.warn("I/O exception in iteration #" + i, e);
+                    } else {
+                        log.error("Failed to complete iteration #" + i, e);
+                    }
                 }
             }
             int ok = 0;
             for (int i = 0; i < NUM_ITERATIONS; i++) {
-                ok += lenOK[i] ? 1 : 0;
+                ok += (lenOK[i] == null) ? 1 : 0;
             }
-            Thread.sleep(50);
+            log.info("Successful iteration: " + ok + " out of " + NUM_ITERATIONS);
+            Thread.sleep(55L);
             for (int i = 0; i < NUM_ITERATIONS; i++) {
-                assertTrue("Bad length at iteration " + i, lenOK[i]);
-                assertTrue("Bad data at iteration " + i, dataOK[i]);
+                assertNull("Bad length at iteration " + i, lenOK[i]);
+                assertNull("Bad data at iteration " + i, dataOK[i]);
             }
             session.delPortForwardingR(forwardedPort);
             ss.close();
