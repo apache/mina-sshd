@@ -1,17 +1,18 @@
 *               text=auto
-*.sh            eol=lf
-*.properties    eol=lf
-*.groovy        eol=lf
-*.scala         eol=lf
-*.pl            eol=lf
-*.awk           eol=lf
-*.xml           eol=lf
-*.yaml          eol=lf
-*.json          eol=lf
-*.py            eol=lf
-*.js            eol=lf
-*.bat           eol=crlf
-*.vbs	        eol=crlf
+*.txt           text eol=lf
+*.sh            text eol=lf
+*.properties    text eol=lf
+*.groovy        text eol=lf
+*.scala         text eol=lf
+*.pl            text eol=lf
+*.awk           text eol=lf
+*.xml           text eol=lf
+*.yaml          text eol=lf
+*.json          text eol=lf
+*.py            text eol=lf
+*.js            text eol=lf
+*.bat           text eol=crlf
+*.vbs	        text eol=crlf
 *.jpg           -text
 *.pdf           -text
 *.png           -text
