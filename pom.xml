@@ -103,7 +103,7 @@
         <spring.version>3.0.6.RELEASE</spring.version>
         <jgit.version>3.4.1.201406201815-r</jgit.version>
         <junit.version>4.12</junit.version>
-        <surefire.plugin.version>2.19</surefire.plugin.version>
+        <surefire.plugin.version>2.19.1</surefire.plugin.version>
         <httpcomps.version>4.4.1</httpcomps.version>
     </properties>
 
