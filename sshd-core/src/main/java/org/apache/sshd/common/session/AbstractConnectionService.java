@@ -194,6 +194,9 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
             case SshConstants.SSH_MSG_CHANNEL_FAILURE:
                 channelFailure(buffer);
                 break;
+            case SshConstants.SSH_MSG_CHANNEL_SUCCESS:
+                channelSuccess(buffer);
+                break;
             case SshConstants.SSH_MSG_CHANNEL_WINDOW_ADJUST:
                 channelWindowAdjust(buffer);
                 break;
@@ -341,6 +344,17 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
     public void channelFailure(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
         channel.handleFailure();
+    }
+
+    /**
+     * Process a success on a channel
+     *
+     * @param buffer the buffer containing the packet
+     * @throws IOException if an error occurs
+     */
+    public void channelSuccess(Buffer buffer) throws IOException {
+        Channel channel = getChannel(buffer);
+        channel.handleSuccess();
     }
 
     /**
@@ -499,7 +513,11 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
             }
         }
 
-        log.warn("globalRequest({}) unknown global request: {}", this, req);
+        handleUnknownRequest(buffer, req, wantReply);
+    }
+
+    protected void handleUnknownRequest(Buffer buffer, String req, boolean wantReply) throws IOException {
+        log.warn("handleUnknownRequest({}) unknown global request: {}", this, req);
         sendGlobalResponse(buffer, req, RequestHandler.Result.Unsupported, wantReply);
     }
 

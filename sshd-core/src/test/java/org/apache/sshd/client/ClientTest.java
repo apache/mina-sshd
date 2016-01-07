@@ -55,6 +55,7 @@ import org.apache.sshd.client.auth.password.UserAuthPasswordFactory;
 import org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
+import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
@@ -1337,9 +1338,11 @@ public class ClientTest extends BaseTestSupport {
 
         Collection<ClientChannel> channels = new LinkedList<>();
         try (ClientSession session = createTestClientSession()) {
-            channels.add(session.createChannel(ClientChannel.CHANNEL_SUBSYSTEM, SftpConstants.SFTP_SUBSYSTEM_NAME));
-            channels.add(session.createChannel(ClientChannel.CHANNEL_EXEC, getCurrentTestName()));
-            channels.add(session.createChannel(ClientChannel.CHANNEL_SHELL, getClass().getSimpleName()));
+            // required since we do not use an SFTP subsystem
+            PropertyResolverUtils.updateProperty(session, ChannelSubsystem.REQUEST_SUBSYSTEM_REPLY, false);
+            channels.add(session.createChannel(Channel.CHANNEL_SUBSYSTEM, SftpConstants.SFTP_SUBSYSTEM_NAME));
+            channels.add(session.createChannel(Channel.CHANNEL_EXEC, getCurrentTestName()));
+            channels.add(session.createChannel(Channel.CHANNEL_SHELL, getClass().getSimpleName()));
 
             Set<Integer> ids = new HashSet<Integer>(channels.size());
             for (ClientChannel c : channels) {
@@ -1370,6 +1373,8 @@ public class ClientTest extends BaseTestSupport {
         Map<String,TestChannelListener> clientListeners = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         addChannelListener(clientListeners, client, new TestChannelListener(client.getClass().getSimpleName()));
 
+        // required since we do not use an SFTP subsystem
+        PropertyResolverUtils.updateProperty(client, ChannelSubsystem.REQUEST_SUBSYSTEM_REPLY, false);
         client.start();
         try (ClientSession session = createTestClientSession()) {
             addChannelListener(clientListeners, session, new TestChannelListener(session.getClass().getSimpleName()));

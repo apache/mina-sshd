@@ -52,7 +52,7 @@ public abstract class AbstractChannelExitRequestHandler<V> extends AbstractChann
         this.notifier = ValidateUtils.checkNotNull(notifier, "No event notifier");
     }
 
-    @Override
+    @Override   // see RFC4254 section 6.10
     public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
         String name = getName();
         if (name.equals(request)) {

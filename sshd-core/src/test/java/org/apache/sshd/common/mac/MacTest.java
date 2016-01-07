@@ -31,6 +31,7 @@ import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -156,7 +157,7 @@ public class MacTest extends BaseTestSupport {
             session.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
             session.connect();
 
-            com.jcraft.jsch.Channel channel = session.openChannel("shell");
+            com.jcraft.jsch.Channel channel = session.openChannel(Channel.CHANNEL_SHELL);
             channel.connect();
 
             try (OutputStream stdin = channel.getOutputStream();

@@ -21,6 +21,7 @@ package org.apache.sshd.common.channel;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -89,6 +90,11 @@ public abstract class AbstractChannel
     private int id = -1;
     private int recipient = -1;
     private Session session;
+    /**
+     * A {@link Map} of sent requests - key = request name, value = timestamp when
+     * request was sent.
+     */
+    private final Map<String, Date> pendingRequests = new ConcurrentHashMap<>();
     private final Map<String, Object> properties = new ConcurrentHashMap<>();
 
     protected AbstractChannel(boolean client) {
@@ -162,12 +168,55 @@ public abstract class AbstractChannel
         shutdownExecutor = shutdown;
     }
 
+    /**
+     * Add a channel request to the tracked pending ones if reply is expected
+     *
+     * @param request The request type
+     * @param wantReply {@code true} if reply is expected
+     * @return The allocated {@link Date} timestamp - {@code null} if no reply
+     * is expected (in which case the request is not tracked)
+     * @throws IllegalArgumentException If the request is already being tracked
+     * @see #removePendingRequest(String)
+     */
+    protected Date addPendingRequest(String request, boolean wantReply) {
+        if (!wantReply) {
+            return null;
+        }
+
+        Date pending = new Date(System.currentTimeMillis());
+        Date prev = pendingRequests.put(request, pending);
+        ValidateUtils.checkTrue(prev == null, "Multiple pending requests of type=%s", request);
+        if (log.isDebugEnabled()) {
+            log.debug("addPendingRequest({}) request={}, pending={}", this, request, pending);
+        }
+        return pending;
+    }
+
+    /**
+     * Removes a channel request from the tracked ones
+     *
+     * @param request The request type
+     * @return The allocated {@link Date} timestamp - {@code null} if the
+     * specified request type is not being tracked or has not been added to
+     * the tracked ones to begin with
+     * @see #addPendingRequest(String, boolean)
+     */
+    protected Date removePendingRequest(String request) {
+        Date pending = pendingRequests.remove(request);
+        if (log.isDebugEnabled()) {
+            log.debug("removePendingRequest({}) request={}, pending={}", this, request, pending);
+        }
+        return pending;
+    }
+
     @Override
     public void handleRequest(Buffer buffer) throws IOException {
-        String req = buffer.getString();
-        boolean wantReply = buffer.getBoolean();
+        handleChannelRequest(buffer.getString(), buffer.getBoolean(), buffer);
+    }
+
+    protected void handleChannelRequest(String req, boolean wantReply, Buffer buffer) throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("handleRequest({}) SSH_MSG_CHANNEL_REQUEST {} wantReply={}", this, req, wantReply);
+            log.debug("handleChannelRequest({}) SSH_MSG_CHANNEL_REQUEST {} wantReply={}", this, req, wantReply);
         }
 
         for (RequestHandler<Channel> handler : handlers) {
@@ -199,8 +248,47 @@ public abstract class AbstractChannel
         }
 
         // none of the handlers processed the request
-        log.warn("handleRequest({}) Unknown channel request: {}[want-reply={}]", this, req, wantReply);
-        sendResponse(buffer, req, RequestHandler.Result.Unsupported, wantReply);
+        handleUnknownChannelRequest(req, wantReply, buffer);
+    }
+
+    /**
+     * Called when none of the register request handlers reported handling the request
+     *
+     * @param req       The request type
+     * @param wantReply Whether reply is requested
+     * @param buffer    The {@link Buffer} containing extra request-specific data
+     * @throws IOException If failed to send the response (if needed)
+     * @see #handleInternalRequest(String, boolean, Buffer)
+     */
+    protected void handleUnknownChannelRequest(String req, boolean wantReply, Buffer buffer) throws IOException {
+        RequestHandler.Result r = handleInternalRequest(req, wantReply, buffer);
+        if ((r == null) || RequestHandler.Result.Unsupported.equals(r)) {
+            log.warn("handleUnknownChannelRequest({}) Unknown channel request: {}[want-reply={}]", this, req, wantReply);
+            sendResponse(buffer, req, RequestHandler.Result.Unsupported, wantReply);
+        } else {
+            sendResponse(buffer, req, r, wantReply);
+        }
+    }
+
+    /**
+     * Called by {@link #handleUnknownChannelRequest(String, boolean, Buffer)}
+     * in order to allow channel request handling if none of the registered handlers
+     * processed the request - last chance.
+     *
+     * @param req       The request type
+     * @param wantReply Whether reply is requested
+     * @param buffer    The {@link Buffer} containing extra request-specific data
+     * @return          The handling result - if {@code null} or {@code Unsupported}
+     *                  and reply is required then a failure message will be sent
+     * @throws IOException If failed to process the request internally
+     */
+    protected RequestHandler.Result handleInternalRequest(String req, boolean wantReply, Buffer buffer) throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("handleInternalRequest({})[want-reply={}] unknown type: {}",
+                      this, wantReply, req);
+        }
+
+        return RequestHandler.Result.Unsupported;
     }
 
     protected void sendResponse(Buffer buffer, String req, RequestHandler.Result result, boolean wantReply) throws IOException {
@@ -484,7 +572,7 @@ public abstract class AbstractChannel
     @Override
     public void handleEof() throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("handleEof({}) SH_MSG_CHANNEL_EOF", this);
+            log.debug("handleEof({}) SSH_MSG_CHANNEL_EOF", this);
         }
         setEofSignalled(true);
         notifyStateChanged();
@@ -497,6 +585,13 @@ public abstract class AbstractChannel
             log.debug("handleWindowAdjust({}) SSH_MSG_CHANNEL_WINDOW_ADJUST window={}", this, window);
         }
         remoteWindow.expand(window);
+    }
+
+    @Override
+    public void handleSuccess() throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("handleFhandleSuccessailure({}) SSH_MSG_CHANNEL_SUCCESS", this);
+        }
     }
 
     @Override

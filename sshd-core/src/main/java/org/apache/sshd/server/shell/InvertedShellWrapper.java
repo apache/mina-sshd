@@ -252,4 +252,9 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
         }
         return false;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + ": " + String.valueOf(shell);
+    }
 }

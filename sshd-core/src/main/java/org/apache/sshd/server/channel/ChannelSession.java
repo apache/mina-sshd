@@ -34,11 +34,11 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.channel.AbstractChannelRequestHandler;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.PtyMode;
+import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.future.CloseFuture;
@@ -85,7 +85,6 @@ public class ChannelSession extends AbstractServerChannel {
     protected final CloseFuture commandExitFuture = new DefaultCloseFuture(lock);
 
     public ChannelSession() {
-        addRequestHandler(new ChannelSessionRequestHandler());
         addRequestHandler(PuttyRequestHandler.INSTANCE);
     }
 
@@ -231,70 +230,81 @@ public class ChannelSession extends AbstractServerChannel {
         throw new UnsupportedOperationException("Server channel does not support extended data");
     }
 
-    /**
-     * @param type   The request type
-     * @param buffer The {@link Buffer} containing extra request-specific content
-     * @return A {@link Boolean} representing the success/failure of handling
-     * the request - {@code null} if unknown request received
-     * @throws IOException If request requires some extra response and failed
-     *                     to generate it
-     */
-    public Boolean handleRequest(String type, Buffer buffer) throws IOException {
-        switch (type) {
+    @Override
+    protected RequestHandler.Result handleInternalRequest(String requestType, boolean wantReply, Buffer buffer) throws IOException {
+        switch (requestType) {
             case "env":
-                return handleEnv(buffer);
+                return handleEnv(buffer, wantReply);
             case "pty-req":
-                return handlePtyReq(buffer);
+                return handlePtyReq(buffer, wantReply);
             case "window-change":
-                return handleWindowChange(buffer);
+                return handleWindowChange(buffer, wantReply);
             case "signal":
-                return handleSignal(buffer);
+                return handleSignal(buffer, wantReply);
             case "break":
-                return handleBreak(buffer);
-            case "shell":
-                if ((this.type == null) && handleShell(buffer)) {
-                    this.type = type;
-                    return Boolean.TRUE;
+                return handleBreak(buffer, wantReply);
+            case Channel.CHANNEL_SHELL:
+                if (this.type == null) {
+                    RequestHandler.Result r = handleShell(buffer, wantReply);
+                    if (RequestHandler.Result.ReplySuccess.equals(r) || RequestHandler.Result.Replied.equals(r)) {
+                        this.type = requestType;
+                    }
+                    return r;
                 } else {
-                    return Boolean.FALSE;
+                    if (log.isDebugEnabled()) {
+                        log.debug("handleInternalRequest({})[want-reply={}] type already set for request={}: {}",
+                                  this, wantReply, requestType, this.type);
+                    }
+                    return RequestHandler.Result.ReplyFailure;
                 }
-            case "exec":
-                if ((this.type == null) && handleExec(buffer)) {
-                    this.type = type;
-                    return Boolean.TRUE;
+            case Channel.CHANNEL_EXEC:
+                if (this.type == null) {
+                    RequestHandler.Result r = handleExec(buffer, wantReply);
+                    if (RequestHandler.Result.ReplySuccess.equals(r) || RequestHandler.Result.Replied.equals(r)) {
+                        this.type = requestType;
+                    }
+                    return r;
                 } else {
-                    return Boolean.FALSE;
+                    if (log.isDebugEnabled()) {
+                        log.debug("handleInternalRequest({})[want-reply={}] type already set for request={}: {}",
+                                  this, wantReply, requestType, this.type);
+                    }
+                    return RequestHandler.Result.ReplyFailure;
                 }
-            case "subsystem":
-                if ((this.type == null) && handleSubsystem(buffer)) {
-                    this.type = type;
-                    return Boolean.TRUE;
+            case Channel.CHANNEL_SUBSYSTEM:
+                if (this.type == null) {
+                    RequestHandler.Result r = handleSubsystem(buffer, wantReply);
+                    if (RequestHandler.Result.ReplySuccess.equals(r) || RequestHandler.Result.Replied.equals(r)) {
+                        this.type = requestType;
+                    }
+                    return r;
                 } else {
-                    return Boolean.FALSE;
+                    if (log.isDebugEnabled()) {
+                        log.debug("handleInternalRequest({})[want-reply={}] type already set for request={}: {}",
+                                  this, wantReply, requestType, this.type);
+                    }
+                    return RequestHandler.Result.ReplyFailure;
                 }
             case "auth-agent-req@openssh.com":
-                return handleAgentForwarding(buffer);
+                return handleAgentForwarding(buffer, wantReply);
             case "x11-req":
-                return handleX11Forwarding(buffer);
+                return handleX11Forwarding(buffer, wantReply);
             default:
-                if (log.isDebugEnabled()) {
-                    log.debug("handleRequest({}) unknown type: {}", this, type);
-                }
-                return null;
+                return super.handleInternalRequest(requestType, wantReply, buffer);
         }
     }
 
-    protected boolean handleEnv(Buffer buffer) throws IOException {
+    protected RequestHandler.Result handleEnv(Buffer buffer, boolean wantReply) throws IOException {
         String name = buffer.getString();
         String value = buffer.getString();
         addEnvVariable(name, value);
         if (log.isDebugEnabled()) {
             log.debug("handleEnv({}): {} = {}", this, name, value);
         }
-        return true;
+        return RequestHandler.Result.ReplySuccess;
     }
 
-    protected boolean handlePtyReq(Buffer buffer) throws IOException {
+    protected RequestHandler.Result handlePtyReq(Buffer buffer, boolean wantReply) throws IOException {
         String term = buffer.getString();
         int tColumns = buffer.getInt();
         int tRows = buffer.getInt();
@@ -331,10 +341,10 @@ public class ChannelSession extends AbstractServerChannel {
         addEnvVariable(Environment.ENV_TERM, term);
         addEnvVariable(Environment.ENV_COLUMNS, Integer.toString(tColumns));
         addEnvVariable(Environment.ENV_LINES, Integer.toString(tRows));
-        return true;
+        return RequestHandler.Result.ReplySuccess;
     }
 
-    protected boolean handleWindowChange(Buffer buffer) throws IOException {
+    protected RequestHandler.Result handleWindowChange(Buffer buffer, boolean wantReply) throws IOException {
         int tColumns = buffer.getInt();
         int tRows = buffer.getInt();
         int tWidth = buffer.getInt();
@@ -348,10 +358,11 @@ public class ChannelSession extends AbstractServerChannel {
         e.set(Environment.ENV_COLUMNS, Integer.toString(tColumns));
         e.set(Environment.ENV_LINES, Integer.toString(tRows));
         e.signal(Signal.WINCH);
-        return true;
+        return RequestHandler.Result.ReplySuccess;
     }
 
-    protected boolean handleSignal(Buffer buffer) throws IOException {
+    // see RFC4254 section 6.10
+    protected RequestHandler.Result handleSignal(Buffer buffer, boolean wantReply) throws IOException {
         String name = buffer.getString();
         if (log.isDebugEnabled()) {
             log.debug("handleSignal({}): {}", this, name);
@@ -363,36 +374,36 @@ public class ChannelSession extends AbstractServerChannel {
         } else {
             log.warn("handleSignal({}) unknown signal received: {}", this, name);
         }
-        return true;
+        return RequestHandler.Result.ReplySuccess;
     }
 
     // see rfc4335
-    protected boolean handleBreak(Buffer buffer) throws IOException {
+    protected RequestHandler.Result handleBreak(Buffer buffer, boolean wantReply) throws IOException {
         long breakLength = buffer.getUInt();
         if (log.isDebugEnabled()) {
             log.debug("handleBreak({}) length={}", this, breakLength);
         }
 
         getEnvironment().signal(Signal.INT);
-        return true;
+        return RequestHandler.Result.ReplySuccess;
     }
 
-    protected boolean handleShell(Buffer buffer) throws IOException {
+    protected RequestHandler.Result handleShell(Buffer buffer, boolean wantReply) throws IOException {
         // If we're already closing, ignore incoming data
         if (isClosing()) {
             if (log.isDebugEnabled()) {
                 log.debug("handleShell({}) - closing", this);
             }
-            return false;
+            return RequestHandler.Result.ReplyFailure;
         }
 
-        ServerFactoryManager manager = ((ServerSession) getSession()).getFactoryManager();
-        Factory<Command> factory = manager.getShellFactory();
+        ServerFactoryManager manager = ValidateUtils.checkNotNull(getServerSession(), "No server session").getFactoryManager();
+        Factory<Command> factory = ValidateUtils.checkNotNull(manager, "No server factory manager").getShellFactory();
         if (factory == null) {
             if (log.isDebugEnabled()) {
                 log.debug("handleShell({}) - no shell factory", this);
             }
-            return false;
+            return RequestHandler.Result.ReplyFailure;
         }
 
         command = factory.create();
@@ -400,26 +411,26 @@ public class ChannelSession extends AbstractServerChannel {
             if (log.isDebugEnabled()) {
                 log.debug("handleShell({}) - no shell command", this);
             }
-            return false;
+            return RequestHandler.Result.ReplyFailure;
         }
 
         prepareCommand();
         command.start(getEnvironment());
-        return true;
+        return RequestHandler.Result.ReplySuccess;
     }
 
-    protected boolean handleExec(Buffer buffer) throws IOException {
+    protected RequestHandler.Result handleExec(Buffer buffer, boolean wantReply) throws IOException {
         // If we're already closing, ignore incoming data
         if (isClosing()) {
-            return false;
+            return RequestHandler.Result.ReplyFailure;
         }
 
         String commandLine = buffer.getString();
-        ServerFactoryManager manager = ((ServerSession) getSession()).getFactoryManager();
-        CommandFactory factory = manager.getCommandFactory();
+        ServerFactoryManager manager = ValidateUtils.checkNotNull(getServerSession(), "No server session").getFactoryManager();
+        CommandFactory factory = ValidateUtils.checkNotNull(manager, "No server factory manager").getCommandFactory();
         if (factory == null) {
             log.warn("handleExec({}) No command factory for command: {}", this, commandLine);
-            return false;
+            return RequestHandler.Result.ReplyFailure;
         }
 
         if (log.isDebugEnabled()) {
@@ -431,34 +442,39 @@ public class ChannelSession extends AbstractServerChannel {
         } catch (RuntimeException e) {
             log.warn("handleExec({}) Failed ({}) to create command for {}: {}",
                      this, e.getClass().getSimpleName(), commandLine, e.getMessage());
-            return false;
+            return RequestHandler.Result.ReplyFailure;
         }
 
         prepareCommand();
         // Launch command
         command.start(getEnvironment());
-        return true;
+        return RequestHandler.Result.ReplySuccess;
     }
 
-    protected boolean handleSubsystem(Buffer buffer) throws IOException {
+    protected RequestHandler.Result handleSubsystem(Buffer buffer, boolean wantReply) throws IOException {
         String subsystem = buffer.getString();
-        ServerFactoryManager manager = ((ServerSession) getSession()).getFactoryManager();
-        List<NamedFactory<Command>> factories = manager.getSubsystemFactories();
+        if (log.isDebugEnabled()) {
+            log.debug("handleSubsystem({})[want-reply={}] sybsystem={}",
+                      this, wantReply, subsystem);
+        }
+
+        ServerFactoryManager manager = ValidateUtils.checkNotNull(getServerSession(), "No server session").getFactoryManager();
+        List<NamedFactory<Command>> factories = ValidateUtils.checkNotNull(manager, "No server factory manager").getSubsystemFactories();
         if (GenericUtils.isEmpty(factories)) {
             log.warn("handleSubsystem({}) No factories for subsystem: {}", this, subsystem);
-            return false;
+            return RequestHandler.Result.ReplyFailure;
         }
 
         command = NamedFactory.Utils.create(factories, subsystem);
         if (command == null) {
             log.warn("handleSubsystem({}) Unsupported subsystem: {}", this, subsystem);
-            return false;
+            return RequestHandler.Result.ReplyFailure;
         }
 
         prepareCommand();
         // Launch command
         command.start(getEnvironment());
-        return true;
+        return RequestHandler.Result.ReplySuccess;
     }
 
     /**
@@ -555,26 +571,24 @@ public class ChannelSession extends AbstractServerChannel {
         return v != null ? v.intValue() : 0;
     }
 
-    protected boolean handleAgentForwarding(Buffer buffer) throws IOException {
-        Session session = getSession();
-        ValidateUtils.checkTrue(session instanceof ServerSession, "Session not a server one");
-
-        FactoryManager manager = session.getFactoryManager();
+    protected RequestHandler.Result handleAgentForwarding(Buffer buffer, boolean wantReply) throws IOException {
+        ServerSession session = getServerSession();
+        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No session factory manager");
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
         SshAgentFactory factory = manager.getAgentFactory();
         if ((factory == null) || (filter == null) || (!filter.canForwardAgent(session))) {
             if (log.isDebugEnabled()) {
                 log.debug("handleAgentForwarding(" + this + ")[haveFactory=" + (factory != null) + ",haveFilter=" + (filter != null) + "] filtered out");
             }
-            return false;
+            return RequestHandler.Result.ReplyFailure;
         }
 
         String authSocket = service.initAgentForward();
         addEnvVariable(SshAgent.SSH_AUTHSOCKET_ENV_NAME, authSocket);
-        return true;
+        return RequestHandler.Result.ReplySuccess;
     }
 
-    protected boolean handleX11Forwarding(Buffer buffer) throws IOException {
+    protected RequestHandler.Result handleX11Forwarding(Buffer buffer, boolean wantReply) throws IOException {
         Session session = getSession();
         ValidateUtils.checkTrue(session instanceof ServerSession, "Session not a server one");
 
@@ -590,7 +604,7 @@ public class ChannelSession extends AbstractServerChannel {
                 log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={}, filter={}: filtered",
                           this, singleConnection, authProtocol, authCookie, screenId, filter);
             }
-            return false;
+            return RequestHandler.Result.ReplyFailure;
         }
 
         String display = service.createX11Display(singleConnection, authProtocol, authCookie, screenId);
@@ -599,11 +613,11 @@ public class ChannelSession extends AbstractServerChannel {
                       this, singleConnection, authProtocol, authCookie, screenId, display);
         }
         if (GenericUtils.isEmpty(display)) {
-            return false;
+            return RequestHandler.Result.ReplyFailure;
         }
 
         addEnvVariable(X11ForwardSupport.ENV_DISPLAY, display);
-        return true;
+        return RequestHandler.Result.ReplySuccess;
     }
 
     protected void addEnvVariable(String name, String value) {
@@ -626,22 +640,6 @@ public class ChannelSession extends AbstractServerChannel {
             close(false);
         } else {
             commandExitFuture.setClosed();
-        }
-    }
-
-    private class ChannelSessionRequestHandler extends AbstractChannelRequestHandler {
-        ChannelSessionRequestHandler() {
-            super();
-        }
-
-        @Override
-        public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
-            Boolean r = handleRequest(request, buffer);
-            if (r == null) {
-                return Result.Unsupported;
-            } else {
-                return r ? Result.ReplySuccess : Result.ReplyFailure;
-            }
         }
     }
 }

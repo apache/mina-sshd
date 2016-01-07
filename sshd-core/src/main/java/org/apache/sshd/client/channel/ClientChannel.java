@@ -39,10 +39,6 @@ import org.apache.sshd.common.io.IoOutputStream;
  */
 public interface ClientChannel extends Channel {
 
-    String CHANNEL_EXEC = "exec";
-    String CHANNEL_SHELL = "shell";
-    String CHANNEL_SUBSYSTEM = "subsystem";
-
     enum ClientChannelEvent {
         TIMEOUT,
         CLOSED,

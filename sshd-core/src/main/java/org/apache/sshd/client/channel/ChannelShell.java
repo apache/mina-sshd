@@ -19,17 +19,26 @@
 package org.apache.sshd.client.channel;
 
 import java.io.IOException;
+import java.util.Date;
 
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
- * TODO Add javadoc
+ * Client channel to open a remot shell
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelShell extends PtyCapableChannelSession {
+    /**
+     * Configure whether reply for the &quot;shell&quot; request is required
+     * @see #DEFAULT_REQUEST_SHELL_REPLY
+     */
+    public static final String REQUEST_SHELL_REPLY = "channel-shell-want-reply";
+    public static final boolean DEFAULT_REQUEST_SHELL_REPLY = false;
 
     public ChannelShell() {
         super(true);
@@ -44,12 +53,31 @@ public class ChannelShell extends PtyCapableChannelSession {
         }
 
         Session session = getSession();
+        boolean wantReply = PropertyResolverUtils.getBooleanProperty(this, REQUEST_SHELL_REPLY, DEFAULT_REQUEST_SHELL_REPLY);
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Integer.SIZE);
         buffer.putInt(getRecipient());
-        buffer.putString("shell");
-        buffer.putBoolean(false);
+        buffer.putString(Channel.CHANNEL_SHELL);
+        buffer.putBoolean(wantReply);
+        addPendingRequest(Channel.CHANNEL_SHELL, wantReply);
         writePacket(buffer);
 
         super.doOpen();
+    }
+
+    @Override
+    public void handleSuccess() throws IOException {
+        Date pending = removePendingRequest(Channel.CHANNEL_SHELL);
+        if (log.isDebugEnabled()) {
+            log.debug("handleSuccess({}) pending={}", this, pending);
+        }
+    }
+
+    @Override
+    public void handleFailure() throws IOException {
+        Date pending = removePendingRequest(Channel.CHANNEL_SHELL);
+        if (pending != null) {
+            log.warn("handleFailure({}) pending={}", this, pending);
+            close(true);
+        }
     }
 }

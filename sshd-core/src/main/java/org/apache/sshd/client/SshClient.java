@@ -139,7 +139,7 @@ import org.apache.sshd.common.util.io.NoCloseOutputStream;
  *          session.addPasswordIdentity(password);
  *          session.auth().verify(...timeout...);
  *
- *          try(ClientChannel channel = session.createChannel("shell")) {
+ *          try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
  *              channel.setIn(new NoCloseInputStream(System.in));
  *              channel.setOut(new NoCloseOutputStream(System.out));
  *              channel.setErr(new NoCloseOutputStream(System.err));
@@ -995,11 +995,12 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             public String format(LogRecord record) {
                 String message = formatMessage(record);
                 String throwable = "";
-                if (record.getThrown() != null) {
+                Throwable t = record.getThrown();
+                if (t != null) {
                     StringWriter sw = new StringWriter();
                     try (PrintWriter pw = new PrintWriter(sw)) {
                         pw.println();
-                        record.getThrown().printStackTrace(pw);
+                        t.printStackTrace(pw);
                     }
                     throwable = sw.toString();
                 }
@@ -1034,7 +1035,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         for (int i = 0; i < numArgs; i++) {
             String argName = args[i];
             // handled by 'setupClientSession'
-            if ((command == null) && isArgumentedOption("-p", argName)) {
+            if (GenericUtils.isEmpty(command) && isArgumentedOption("-p", argName)) {
                 if ((i + 1) >= numArgs) {
                     error = showError(stderr, "option requires an argument: " + argName);
                     break;
@@ -1045,11 +1046,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             }
 
             // verbosity handled separately
-            if ((command == null) && ("-v".equals(argName) || "-vv".equals(argName) || "-vvv".equals(argName))) {
+            if (GenericUtils.isEmpty(command) && ("-v".equals(argName) || "-vv".equals(argName) || "-vvv".equals(argName))) {
                 continue;
             }
 
-            if ((command == null) && "-D".equals(argName)) {
+            if (GenericUtils.isEmpty(command) && "-D".equals(argName)) {
                 if ((i + 1) >= numArgs) {
                     error = showError(stderr, "option requires an argument: " + argName);
                     break;
@@ -1064,9 +1065,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     error = showError(stderr, "Bad option value for " + argName + ": " + socksPort);
                     break;
                 }
-            } else if ((command == null) && "-A".equals(argName)) {
+            } else if (GenericUtils.isEmpty(command) && "-A".equals(argName)) {
                 agentForward = true;
-            } else if ((command == null) && "-a".equals(argName)) {
+            } else if (GenericUtils.isEmpty(command) && "-a".equals(argName)) {
                 agentForward = false;
             } else {
                 level = resolveLoggingVerbosity(args, i);
@@ -1075,7 +1076,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     error = true;
                     break;
                 }
-                if ((command == null) && target == null) {
+                if (GenericUtils.isEmpty(command) && target == null) {
                     target = argName;
                 } else {
                     if (command == null) {
@@ -1125,17 +1126,17 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                         Thread.sleep(Long.MAX_VALUE);
                     } else {
                         ClientChannel channel;
-                        if (command == null) {
-                            channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                        if (GenericUtils.isEmpty(command)) {
+                            channel = session.createChannel(Channel.CHANNEL_SHELL);
                             ((ChannelShell) channel).setAgentForwarding(agentForward);
                             channel.setIn(new NoCloseInputStream(System.in));
                         } else {
-                            StringWriter w = new StringWriter();
+                            StringBuilder w = new StringBuilder();
                             for (String cmd : command) {
-                                w.append(cmd).append(" ");
+                                w.append(cmd).append(' ');
                             }
-                            w.close();
-                            channel = session.createChannel(ClientChannel.CHANNEL_EXEC, w.toString());
+
+                            channel = session.createChannel(Channel.CHANNEL_EXEC, w.toString().trim());
                         }
 
                         try {

@@ -420,7 +420,7 @@ public interface SftpClient extends SubsystemClient {
     int IO_BUFFER_SIZE = 32 * 1024;
     int DEFAULT_READ_BUFFER_SIZE = IO_BUFFER_SIZE;
     int DEFAULT_WRITE_BUFFER_SIZE = IO_BUFFER_SIZE;
-    long DEFAULT_WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
+    long DEFAULT_WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
 
     /**
      * Property that can be used on the {@link org.apache.sshd.common.FactoryManager}

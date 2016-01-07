@@ -46,6 +46,7 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.SshdSocketAddress;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.forward.TcpipForwarder;
 import org.apache.sshd.common.io.IoSession;
@@ -180,11 +181,11 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     public ClientChannel createChannel(String type, String subType) throws IOException {
-        if (ClientChannel.CHANNEL_SHELL.equals(type)) {
+        if (Channel.CHANNEL_SHELL.equals(type)) {
             return createShellChannel();
-        } else if (ClientChannel.CHANNEL_EXEC.equals(type)) {
+        } else if (Channel.CHANNEL_EXEC.equals(type)) {
             return createExecChannel(subType);
-        } else if (ClientChannel.CHANNEL_SUBSYSTEM.equals(type)) {
+        } else if (Channel.CHANNEL_SUBSYSTEM.equals(type)) {
             return createSubsystemChannel(subType);
         } else {
             throw new IllegalArgumentException("Unsupported channel type " + type);
@@ -265,7 +266,13 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     @Override
     public SftpClient createSftpClient(SftpVersionSelector selector) throws IOException {
         DefaultSftpClient client = new DefaultSftpClient(this);
-        client.negotiateVersion(selector);
+        try {
+            client.negotiateVersion(selector);
+        } catch (IOException | RuntimeException e) {
+            client.close();
+            throw e;
+        }
+
         return client;
     }
 

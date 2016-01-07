@@ -34,6 +34,10 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface Channel extends ChannelListenerManager, PropertyResolver, Closeable {
+    // Known types of channels
+    String CHANNEL_EXEC = "exec";
+    String CHANNEL_SHELL = "shell";
+    String CHANNEL_SUBSYSTEM = "subsystem";
 
     /**
      * @return Local channel identifier
@@ -66,6 +70,16 @@ public interface Channel extends ChannelListenerManager, PropertyResolver, Close
 
     void handleEof() throws IOException;
 
+    /**
+     * Handle channel request success
+     * @throws IOException If failed to handle
+     */
+    void handleSuccess() throws IOException;
+
+    /**
+     * Handle channel request failure
+     * @throws IOException If failed to handle
+     */
     void handleFailure() throws IOException;
 
     void init(ConnectionService service, Session session, int id) throws IOException;

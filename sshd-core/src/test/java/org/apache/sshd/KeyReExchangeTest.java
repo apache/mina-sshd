@@ -43,6 +43,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
@@ -219,7 +220,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
             s.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
             s.connect();
 
-            com.jcraft.jsch.Channel c = s.openChannel("shell");
+            com.jcraft.jsch.Channel c = s.openChannel(Channel.CHANNEL_SHELL);
             c.connect();
             try (OutputStream os = c.getOutputStream();
                  InputStream is = c.getInputStream()) {

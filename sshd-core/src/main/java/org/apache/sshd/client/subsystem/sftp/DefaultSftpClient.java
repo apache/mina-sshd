@@ -19,18 +19,23 @@
 package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.channel.ChannelSubsystem;
@@ -58,7 +63,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
     private final Buffer receiveBuffer = new ByteArrayBuffer();
     private final byte[] workBuf = new byte[Integer.SIZE / Byte.SIZE];  // TODO in JDK-8 use Integer.BYTES
     private final AtomicInteger versionHolder = new AtomicInteger(0);
-    private boolean closing;
+    private final AtomicBoolean closing = new AtomicBoolean(false);
     private final Map<String, byte[]> extensions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private final Map<String, byte[]> exposedExtensions = Collections.unmodifiableMap(extensions);
 
@@ -81,22 +86,30 @@ public class DefaultSftpClient extends AbstractSftpClient {
             }
         });
         this.channel.setErr(new ByteArrayOutputStream(Byte.MAX_VALUE));
-        this.channel.open().verify(PropertyResolverUtils.getLongProperty(clientSession, SFTP_CHANNEL_OPEN_TIMEOUT, DEFAULT_CHANNEL_OPEN_TIMEOUT));
+
+        long initializationTimeout = PropertyResolverUtils.getLongProperty(clientSession, SFTP_CHANNEL_OPEN_TIMEOUT, DEFAULT_CHANNEL_OPEN_TIMEOUT);
+        this.channel.open().verify(initializationTimeout);
         this.channel.onClose(new Runnable() {
             @SuppressWarnings("synthetic-access")
             @Override
             public void run() {
                 synchronized (messages) {
-                    closing = true;
+                    closing.set(true);
                     messages.notifyAll();
+                }
 
-                    if (versionHolder.get() <= 0) {
-                        log.warn("onClose({}) closed before version negotiated", channel);
-                    }
+                if (versionHolder.get() <= 0) {
+                    log.warn("onClose({}) closed before version negotiated", channel);
                 }
             }
         });
-        init();
+
+        try {
+            init(initializationTimeout);
+        } catch (IOException | RuntimeException e) {
+            this.channel.close(true);
+            throw e;
+        }
     }
 
     @Override
@@ -121,7 +134,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     @Override
     public boolean isClosing() {
-        return closing;
+        return closing.get();
     }
 
     @Override
@@ -154,7 +167,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
         // Process commands
         int rpos = incoming.rpos();
-        for (int count = 0; receive(incoming); count++) {
+        for (int count = 1; receive(incoming); count++) {
             if (log.isTraceEnabled()) {
                 log.trace("data({}) Processed {} data messages", getClientChannel(), count);
             }
@@ -241,8 +254,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
         Integer reqId = id;
         synchronized (messages) {
             for (int count = 1;; count++) {
-                if (closing) {
-                    throw new SshException("Channel has been closed");
+                if (isClosing() || (!isOpen())) {
+                    throw new SshException("Channel is being closed");
                 }
                 Buffer buffer = messages.remove(reqId);
                 if (buffer != null) {
@@ -282,8 +295,10 @@ public class DefaultSftpClient extends AbstractSftpClient {
         return buffer;
     }
 
-    protected void init() throws IOException {
-        // Init packet
+    protected void init(long initializationTimeout) throws IOException {
+        ValidateUtils.checkTrue(initializationTimeout > 0L, "Invalid initialization timeout: %d", initializationTimeout);
+
+        // Send init packet
         OutputStream dos = channel.getInvertedIn();
         BufferUtils.writeInt(dos, 5 /* total length */, workBuf);
         dos.write(SftpConstants.SSH_FXP_INIT);
@@ -292,15 +307,42 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
         Buffer buffer;
         synchronized (messages) {
-            while (messages.isEmpty()) {
+            /*
+             * We need to use a timeout since if the remote server does not support
+             * SFTP, we will not know it immediately. This is due to the fact that the
+             * request for the subsystem does not contain a reply as to its success or
+             * failure. Thus, the SFTP channel is created by the client, but there is
+             * no one on the other side to reply - thus the need for the timeout
+             */
+            for (long remainingTimeout = initializationTimeout; (remainingTimeout > 0L) && messages.isEmpty() && (!isClosing()) && isOpen();) {
                 try {
-                    messages.wait();
+                    long sleepStart = System.nanoTime();
+                    messages.wait(remainingTimeout);
+                    long sleepEnd = System.nanoTime();
+                    long sleepDuration = sleepEnd - sleepStart;
+                    long sleepMillis = TimeUnit.NANOSECONDS.toMillis(sleepDuration);
+                    if (sleepMillis < 1L) {
+                        remainingTimeout--;
+                    } else {
+                        remainingTimeout -= sleepMillis;
+                    }
                 } catch (InterruptedException e) {
                     throw (IOException) new InterruptedIOException("Interruppted init()").initCause(e);
                 }
             }
-            buffer = messages.remove(messages.keySet().iterator().next());
 
+            if (isClosing() || (!isOpen())) {
+                throw new EOFException("Closing while await init message");
+            }
+
+            if (messages.isEmpty()) {
+                throw new SocketTimeoutException("No incoming initialization response received within " + initializationTimeout + " msec.");
+            }
+
+            Collection<Integer> ids = messages.keySet();
+            Iterator<Integer> iter = ids.iterator();
+            Integer reqId = iter.next();
+            buffer = messages.remove(reqId);
         }
 
         int length = buffer.getInt();

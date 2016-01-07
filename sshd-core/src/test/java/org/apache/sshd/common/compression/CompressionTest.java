@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JSchLogger;
@@ -99,7 +100,7 @@ public class CompressionTest extends BaseTestSupport {
 
         s.connect();
         try {
-            com.jcraft.jsch.Channel c = s.openChannel("shell");
+            com.jcraft.jsch.Channel c = s.openChannel(Channel.CHANNEL_SHELL);
             c.connect();
             try (OutputStream os = c.getOutputStream();
                  InputStream is = c.getInputStream()) {

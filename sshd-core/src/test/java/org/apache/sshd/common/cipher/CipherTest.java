@@ -29,6 +29,7 @@ import java.util.List;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.server.SshServer;
@@ -133,7 +134,7 @@ public class CipherTest extends BaseTestSupport {
         s.connect();
 
         try {
-            com.jcraft.jsch.Channel c = s.openChannel("shell");
+            com.jcraft.jsch.Channel c = s.openChannel(Channel.CHANNEL_SHELL);
             c.connect();
 
             try (OutputStream os = c.getOutputStream();

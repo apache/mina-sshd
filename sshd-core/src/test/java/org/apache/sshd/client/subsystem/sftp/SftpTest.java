@@ -20,10 +20,12 @@ package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
@@ -58,6 +60,7 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.channel.WindowClosedException;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.random.Random;
@@ -1121,6 +1124,29 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 try (SftpClient sftp = session.createSftpClient(selector)) {
                     assertEquals("Mismatched negotiated version", selected.get(), sftp.getVersion());
                     testClient(client, sftp);
+                }
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    @Test   // see SSHD-621
+    public void testServerDoesNotSupportSftp() throws Exception {
+        sshd.setSubsystemFactories(null);
+
+        try (SshClient client = setupTestClient()) {
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                PropertyResolverUtils.updateProperty(session, SftpClient.SFTP_CHANNEL_OPEN_TIMEOUT, TimeUnit.SECONDS.toMillis(4L));
+                try (SftpClient sftp = session.createSftpClient()) {
+                    fail("Unexpected SFTP client creation success");
+                } catch(SocketTimeoutException | EOFException | WindowClosedException e) {
+                    // expected - ignored
                 }
             } finally {
                 client.stop();

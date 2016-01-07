@@ -214,7 +214,7 @@ public class PtyCapableChannelSession extends ChannelSession {
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
         buffer.putInt(getRecipient());
         buffer.putString("window-change");
-        buffer.putBoolean(false);
+        buffer.putBoolean(false);   // want-reply
         buffer.putInt(ptyColumns);
         buffer.putInt(ptyLines);
         buffer.putInt(ptyHeight);
@@ -232,7 +232,7 @@ public class PtyCapableChannelSession extends ChannelSession {
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
             buffer.putInt(getRecipient());
             buffer.putString("auth-agent-req@openssh.com");
-            buffer.putBoolean(false);
+            buffer.putBoolean(false);   // want-reply
             writePacket(buffer);
         }
 
@@ -245,7 +245,7 @@ public class PtyCapableChannelSession extends ChannelSession {
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Byte.MAX_VALUE);
             buffer.putInt(getRecipient());
             buffer.putString("pty-req");
-            buffer.putBoolean(false);
+            buffer.putBoolean(false);   // want-reply
             buffer.putString(ptyType);
             buffer.putInt(ptyColumns);
             buffer.putInt(ptyLines);
@@ -275,7 +275,7 @@ public class PtyCapableChannelSession extends ChannelSession {
                 Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, key.length() + value.length() + Integer.SIZE);
                 buffer.putInt(getRecipient());
                 buffer.putString("env");
-                buffer.putBoolean(false);
+                buffer.putBoolean(false);   // want-reply
                 buffer.putString(key);
                 buffer.putString(value);
                 writePacket(buffer);

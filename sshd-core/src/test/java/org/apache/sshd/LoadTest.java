@@ -35,6 +35,7 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
@@ -128,7 +129,7 @@ public class LoadTest extends BaseTestSupport {
 
                 try (ByteArrayOutputStream out = new ByteArrayOutputStream();
                      ByteArrayOutputStream err = new ByteArrayOutputStream();
-                     ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
+                     ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL)) {
                     channel.setOut(out);
                     channel.setErr(err);
 

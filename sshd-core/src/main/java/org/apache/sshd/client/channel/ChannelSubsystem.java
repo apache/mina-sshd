@@ -19,8 +19,11 @@
 package org.apache.sshd.client.channel;
 
 import java.io.IOException;
+import java.util.Date;
 
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.session.Session;
@@ -33,6 +36,22 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelSubsystem extends ChannelSession {
+    /**
+     * Configure whether reply for the &quot;subsystem&quoot; request is required
+     * @see #DEFAULT_REQUEST_SUBSYSTEM_REPLY
+     */
+    public static final String REQUEST_SUBSYSTEM_REPLY = "channel-subsystem-want-reply";
+
+    /**
+     * <P>
+     * Default value for {@link #REQUEST_SUBSYSTEM_REPLY} - according to
+     * <A HREF="https://tools.ietf.org/html/rfc4254#section-6.5">RFC4254 section 6.5:</A>
+     * </P>
+     * <P>
+     * It is RECOMMENDED that the reply to these messages be requested and checked.
+     * </P>
+     */
+    public static final boolean DEFAULT_REQUEST_SUBSYSTEM_REPLY = true;
 
     private final String subsystem;
 
@@ -54,20 +73,42 @@ public class ChannelSubsystem extends ChannelSession {
 
     @Override
     protected void doOpen() throws IOException {
+        String systemName = getSubsystem();
         if (log.isDebugEnabled()) {
-            log.debug("doOpen({}) SSH_MSG_CHANNEL_REQUEST exec", this);
+            log.debug("doOpen({}) SSH_MSG_CHANNEL_REQUEST subsystem={}", this, systemName);
         }
 
         Session session = getSession();
-        String systemName = getSubsystem();
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, systemName.length() + Integer.SIZE);
+        boolean wantReply = PropertyResolverUtils.getBooleanProperty(this, REQUEST_SUBSYSTEM_REPLY, DEFAULT_REQUEST_SUBSYSTEM_REPLY);
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST,
+                Channel.CHANNEL_SUBSYSTEM.length() + systemName.length() + Integer.SIZE);
         buffer.putInt(getRecipient());
-        buffer.putString("subsystem");
-        buffer.putBoolean(false);
+        buffer.putString(Channel.CHANNEL_SUBSYSTEM);
+        buffer.putBoolean(wantReply);
         buffer.putString(systemName);
+        addPendingRequest(Channel.CHANNEL_SUBSYSTEM, wantReply);
         writePacket(buffer);
 
         super.doOpen();
+    }
+
+    @Override
+    public void handleSuccess() throws IOException {
+        String systemName = getSubsystem();
+        Date pending = removePendingRequest(Channel.CHANNEL_SUBSYSTEM);
+        if (log.isDebugEnabled()) {
+            log.debug("handleSuccess({}) subsystem={}, pending since={}", this, systemName, pending);
+        }
+    }
+
+    @Override
+    public void handleFailure() throws IOException {
+        String systemName = getSubsystem();
+        Date pending = removePendingRequest(Channel.CHANNEL_SUBSYSTEM);
+        if (pending != null) {
+            log.warn("handleFailure({}) susbsystem={}, pending since={}", this, systemName, pending);
+            close(true);
+        }
     }
 
     public void onClose(final Runnable run) {

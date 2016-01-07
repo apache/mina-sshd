@@ -29,8 +29,10 @@ import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
+import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
@@ -104,6 +106,27 @@ public class ChannelSession extends AbstractClientChannel {
                 });
             }
         }
+    }
+
+    @Override
+    protected RequestHandler.Result handleInternalRequest(String req, boolean wantReply, Buffer buffer) throws IOException {
+        switch (req) {
+            case "xon-xoff":
+                return handleXonXoff(buffer, wantReply);
+            default:
+                return super.handleInternalRequest(req, wantReply, buffer);
+        }
+    }
+
+    // see RFC4254 section 6.8
+    protected RequestHandler.Result handleXonXoff(Buffer buffer, boolean wantReply) throws IOException {
+        boolean clientCanDo = buffer.getBoolean();
+        if (log.isDebugEnabled()) {
+            log.debug("handleXonXoff({})[want-reply={}] client-can-do={}",
+                      this, wantReply, clientCanDo);
+        }
+
+        return RequestHandler.Result.ReplySuccess;
     }
 
     @Override

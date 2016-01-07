@@ -34,6 +34,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -109,7 +110,7 @@ public class KexTest extends BaseTestSupport {
                     session.addPasswordIdentity(getCurrentTestName());
                     session.auth().verify(5L, TimeUnit.SECONDS);
 
-                    try (ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                    try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL);
                          PipedOutputStream pipedIn = new PipedOutputStream();
                          InputStream inPipe = new PipedInputStream(pipedIn);
                          ByteArrayOutputStream err = new ByteArrayOutputStream();

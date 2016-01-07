@@ -153,7 +153,7 @@ public class DefaultTcpipForwarder extends AbstractInnerCloseable implements Tcp
         int remotePort = remote.getPort();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST, remoteHost.length() + Long.SIZE);
         buffer.putString("tcpip-forward");
-        buffer.putBoolean(true);
+        buffer.putBoolean(true);    // want reply
         buffer.putString(remoteHost);
         buffer.putInt(remotePort);
         Buffer result = session.request(buffer);
@@ -194,7 +194,7 @@ public class DefaultTcpipForwarder extends AbstractInnerCloseable implements Tcp
             String remoteHost = remote.getHostName();
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST, remoteHost.length() + Long.SIZE);
             buffer.putString("cancel-tcpip-forward");
-            buffer.putBoolean(false);
+            buffer.putBoolean(false);   // want reply
             buffer.putString(remoteHost);
             buffer.putInt(remote.getPort());
             session.writePacket(buffer);

@@ -30,6 +30,7 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -81,7 +82,7 @@ public class KeepAliveTest extends BaseTestSupport {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
-            try (ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
+            try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL)) {
                 Collection<ClientChannel.ClientChannelEvent> result =
                         channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), WAIT);
                 assertTrue("Wrong channel state: " + result,
@@ -103,7 +104,7 @@ public class KeepAliveTest extends BaseTestSupport {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
-            try (ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
+            try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL)) {
                 Collection<ClientChannel.ClientChannelEvent> result =
                         channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), WAIT);
                 assertTrue("Wrong channel state: " + result, result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
@@ -124,7 +125,7 @@ public class KeepAliveTest extends BaseTestSupport {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
-            try (ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+            try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL);
                  ByteArrayOutputStream out = new ByteArrayOutputStream();
                  ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 

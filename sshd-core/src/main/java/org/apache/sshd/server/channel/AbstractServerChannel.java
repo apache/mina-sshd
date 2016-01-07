@@ -30,6 +30,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.server.session.ServerSession;
 
 /**
  * TODO Add javadoc
@@ -46,6 +47,11 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
 
     protected AbstractServerChannel(String discriminator) {
         super(discriminator, false);
+    }
+
+    @Override
+    public ServerSession getServerSession() {
+        return (ServerSession) getSession();
     }
 
     @Override

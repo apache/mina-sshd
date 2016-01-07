@@ -281,8 +281,11 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         if (isClosing()) {
             throw new SshException("Session has been closed");
         }
+
         openFuture = new DefaultOpenFuture(lock);
-        log.debug("Send SSH_MSG_CHANNEL_OPEN on channel {}", this);
+        if (log.isDebugEnabled()) {
+            log.debug("open({}) Send SSH_MSG_CHANNEL_OPEN - type={}", this, type);
+        }
 
         Session session = getSession();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN, type.length() + Integer.SIZE);

@@ -39,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.random.Random;
@@ -819,7 +820,7 @@ public class ScpTest extends BaseTestSupport {
     }
 
     protected String readFile(com.jcraft.jsch.Session session, String path, long expectedSize) throws Exception {
-        ChannelExec c = (ChannelExec) session.openChannel("exec");
+        ChannelExec c = (ChannelExec) session.openChannel(Channel.CHANNEL_EXEC);
         c.setCommand("scp -f " + path);
         c.connect();
 
@@ -852,7 +853,7 @@ public class ScpTest extends BaseTestSupport {
     }
 
     protected String readDir(com.jcraft.jsch.Session session, String path, String fileName, long expectedSize) throws Exception {
-        ChannelExec c = (ChannelExec) session.openChannel("exec");
+        ChannelExec c = (ChannelExec) session.openChannel(Channel.CHANNEL_EXEC);
         c.setCommand("scp -r -f " + path);
         c.connect();
 
@@ -892,7 +893,7 @@ public class ScpTest extends BaseTestSupport {
     }
 
     protected void readFileError(com.jcraft.jsch.Session session, String path) throws Exception {
-        ChannelExec c = (ChannelExec) session.openChannel("exec");
+        ChannelExec c = (ChannelExec) session.openChannel(Channel.CHANNEL_EXEC);
         String command = "scp -f " + path;
         c.setCommand(command);
         c.connect();
@@ -909,7 +910,7 @@ public class ScpTest extends BaseTestSupport {
     }
 
     protected void sendFile(com.jcraft.jsch.Session session, String path, String name, String data) throws Exception {
-        ChannelExec c = (ChannelExec) session.openChannel("exec");
+        ChannelExec c = (ChannelExec) session.openChannel(Channel.CHANNEL_EXEC);
         String command = "scp -t " + path;
         c.setCommand(command);
         c.connect();
@@ -944,7 +945,7 @@ public class ScpTest extends BaseTestSupport {
     }
 
     protected void sendFileError(com.jcraft.jsch.Session session, String path, String name, String data) throws Exception {
-        ChannelExec c = (ChannelExec) session.openChannel("exec");
+        ChannelExec c = (ChannelExec) session.openChannel(Channel.CHANNEL_EXEC);
         String command = "scp -t " + path;
         c.setCommand(command);
         c.connect();
@@ -964,7 +965,7 @@ public class ScpTest extends BaseTestSupport {
     }
 
     protected void sendDir(com.jcraft.jsch.Session session, String path, String dirName, String fileName, String data) throws Exception {
-        ChannelExec c = (ChannelExec) session.openChannel("exec");
+        ChannelExec c = (ChannelExec) session.openChannel(Channel.CHANNEL_EXEC);
         String command = "scp -t -r " + path;
         c.setCommand(command);
         c.connect();
