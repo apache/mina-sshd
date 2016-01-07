@@ -103,7 +103,7 @@ public interface TcpipForwarder extends Closeable {
      * Called when the other side requested a remote port forward.
      *
      * @param local The request address
-     * @return The bound local addresses
+     * @return The bound local {@link SshdSocketAddress} - {@code null} if not allowed to forward
      * @throws IOException If failed to handle request
      */
     SshdSocketAddress localPortForwardingRequested(SshdSocketAddress local) throws IOException;

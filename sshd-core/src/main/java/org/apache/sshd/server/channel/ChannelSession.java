@@ -589,9 +589,7 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected RequestHandler.Result handleX11Forwarding(Buffer buffer, boolean wantReply) throws IOException {
-        Session session = getSession();
-        ValidateUtils.checkTrue(session instanceof ServerSession, "Session not a server one");
-
+        ServerSession session = getServerSession();
         boolean singleConnection = buffer.getBoolean();
         String authProtocol = buffer.getString();
         String authCookie = buffer.getString();

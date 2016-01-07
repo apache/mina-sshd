@@ -303,8 +303,9 @@ public class DefaultTcpipForwarder
             if (log.isDebugEnabled()) {
                 log.debug("localPortForwardingRequested(" + session + ")[" + local + "][haveFilter=" + (filter != null) + "] rejected");
             }
-            throw new IOException("Rejected address: " + local);
+            return null;
         }
+
         InetSocketAddress bound = doBind(local, staticIoHandlerFactory);
         SshdSocketAddress result = new SshdSocketAddress(bound.getHostString(), bound.getPort());
         if (log.isDebugEnabled()) {

@@ -44,7 +44,7 @@ public interface ForwardingFilter {
      * variable.
      * </p>
      *
-     * @param session session requesting permission to forward the agent.
+     * @param session The {@link Session} requesting permission to forward the agent.
      * @return true if the agent forwarding is permitted, false if denied.
      */
     boolean canForwardAgent(Session session);
@@ -60,7 +60,7 @@ public interface ForwardingFilter {
      * user's X11 display server.
      * </p>
      *
-     * @param session session requesting permission to forward X11 connections.
+     * @param session The {@link Session} requesting permission to forward X11 connections.
      * @return true if the X11 forwarding is permitted, false if denied.
      */
     boolean canForwardX11(Session session);
@@ -80,7 +80,7 @@ public interface ForwardingFilter {
      *
      * @param address address the client has requested this server listen
      *                for inbound connections on, and relay them through the client.
-     * @param session session requesting permission to listen for connections.
+     * @param session The {@link Session} requesting permission to listen for connections.
      * @return true if the socket is permitted; false if it must be denied.
      */
     boolean canListen(SshdSocketAddress address, Session session);
