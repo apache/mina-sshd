@@ -34,6 +34,7 @@ import java.nio.file.attribute.AclEntryPermission;
 import java.nio.file.attribute.AclEntryType;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -48,12 +49,14 @@ import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.subsystem.sftp.DefaultGroupPrincipal;
 import org.apache.sshd.server.subsystem.sftp.InvalidHandleException;
+import org.apache.sshd.server.subsystem.sftp.UnixDateFormat;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -879,5 +882,73 @@ public final class SftpHelper {
             millis += TimeUnit.NANOSECONDS.toMillis(nanoseconds);
         }
         return FileTime.from(millis, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Creates an &quot;ls -l&quot; compatible long name string
+     *
+     * @param shortName The short file name - can also be &quot;.&quot; or &quot;..&quot;
+     * @param attributes The file's attributes - e.g., size, owner, permissions, etc.
+     * @return A {@link String} representing the &quot;long&quot; file name as per
+     * <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-02">SFTP version 3 - section 7</A>
+     */
+    public static String getLongName(String shortName, Map<String, ?> attributes) {
+        String owner = Objects.toString(attributes.get("owner"), null);
+        String username = OsUtils.getCanonicalUser(owner);
+        if (GenericUtils.isEmpty(username)) {
+            username = SftpUniversalOwnerAndGroup.Owner.getName();
+        }
+
+        String group = Objects.toString(attributes.get("group"), null);
+        group = OsUtils.resolveCanonicalGroup(group, owner);
+        if (GenericUtils.isEmpty(group)) {
+            group = SftpUniversalOwnerAndGroup.Group.getName();
+        }
+
+        Number length = (Number) attributes.get("size");
+        if (length == null) {
+            length = 0L;
+        }
+
+        String lengthString = String.format("%1$8s", length);
+        String linkCount = Objects.toString(attributes.get("nlink"), null);
+        if (GenericUtils.isEmpty(linkCount)) {
+            linkCount = "1";
+        }
+
+        Boolean isDirectory = (Boolean) attributes.get("isDirectory");
+        Boolean isLink = (Boolean) attributes.get("isSymbolicLink");
+        @SuppressWarnings("unchecked")
+        Set<PosixFilePermission> perms = (Set<PosixFilePermission>) attributes.get("permissions");
+        if (perms == null) {
+            perms = EnumSet.noneOf(PosixFilePermission.class);
+        }
+        String permsString = PosixFilePermissions.toString(perms);
+        String timeStamp = UnixDateFormat.getUnixDate((FileTime) attributes.get("lastModifiedTime"));
+        StringBuilder sb = new StringBuilder(
+                GenericUtils.length(linkCount) + GenericUtils.length(username) + GenericUtils.length(group)
+              + GenericUtils.length(timeStamp) + GenericUtils.length(lengthString)
+              + GenericUtils.length(permsString) + GenericUtils.length(shortName)
+              + Integer.SIZE);
+        sb.append(SftpHelper.getBool(isDirectory) ? 'd' : (SftpHelper.getBool(isLink) ? 'l' : '-')).append(permsString);
+
+        sb.append(' ');
+        for (int index = linkCount.length(); index < 3; index++) {
+            sb.append(' ');
+        }
+        sb.append(linkCount);
+
+        sb.append(' ').append(username);
+        for (int index = username.length(); index < 8; index++) {
+            sb.append(' ');
+        }
+
+        sb.append(' ').append(group);
+        for (int index = group.length(); index < 8; index++) {
+            sb.append(' ');
+        }
+
+        sb.append(' ').append(lengthString).append(' ').append(timeStamp).append(' ').append(shortName);
+        return sb.toString();
     }
 }

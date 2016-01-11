@@ -457,8 +457,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                             if (log.isDebugEnabled()) {
                                 log.debug("send({}) {}: not a regular file", this, path);
                             }
-                            out.write(ScpHelper.WARNING);
-                            out.write((path.replace(File.separatorChar, '/') + " not a regular file\n").getBytes(StandardCharsets.UTF_8));
+                            sendWarning(path.replace(File.separatorChar, '/') + " not a regular file");
                         } else {
                             sendDir(file, preserve, bufferSize);
                         }
@@ -466,8 +465,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                         if (log.isDebugEnabled()) {
                             log.debug("send({}) {}: unknown file type", this, path);
                         }
-                        out.write(ScpHelper.WARNING);
-                        out.write((path.replace(File.separatorChar, '/') + " unknown file type\n").getBytes(StandardCharsets.UTF_8));
+                        sendWarning(path.replace(File.separatorChar, '/') + " unknown file type");
                     }
                 }
             } else {
@@ -752,6 +750,34 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         }
 
         return p;
+    }
+
+    protected void sendWarning(String message) throws IOException {
+        sendResponseMessage(WARNING, message);
+    }
+
+    protected void sendError(String message) throws IOException {
+        sendResponseMessage(ERROR, message);
+    }
+
+    protected void sendResponseMessage(int level, String message) throws IOException {
+        sendResponseMessage(out, level, message);
+    }
+
+    public static <O extends OutputStream> O sendWarning(O out, String message) throws IOException {
+        return sendResponseMessage(out, WARNING, message);
+    }
+
+    public static <O extends OutputStream> O sendError(O out, String message) throws IOException {
+        return sendResponseMessage(out, ERROR, message);
+    }
+
+    public static <O extends OutputStream> O sendResponseMessage(O out, int level, String message) throws IOException {
+        out.write(level);
+        out.write(message.getBytes(StandardCharsets.UTF_8));
+        out.write('\n');
+        out.flush();
+        return out;
     }
 
     public void ack() throws IOException {

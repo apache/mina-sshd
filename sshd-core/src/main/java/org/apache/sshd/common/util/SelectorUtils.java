@@ -19,7 +19,6 @@
 package org.apache.sshd.common.util;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.util.ArrayList;
 import java.util.List;
@@ -187,8 +186,7 @@ public final class SelectorUtils {
      * @return <code>true</code> if the pattern matches against the string,
      * or <code>false</code> otherwise.
      */
-    public static boolean matchPath(String pattern, String str,
-                                    boolean isCaseSensitive) {
+    public static boolean matchPath(String pattern, String str, boolean isCaseSensitive) {
         if (pattern.length() > (REGEX_HANDLER_PREFIX.length() + PATTERN_HANDLER_SUFFIX.length() + 1)
                 && pattern.startsWith(REGEX_HANDLER_PREFIX) && pattern.endsWith(PATTERN_HANDLER_SUFFIX)) {
             pattern = pattern.substring(REGEX_HANDLER_PREFIX.length(), pattern.length()
@@ -545,9 +543,8 @@ public final class SelectorUtils {
      * @param path      Original path - ignored if {@code null}/empty
      * @param separator The separator used for the path components
      * @return normalized path
-     * @throws IOException when the path is invalid (e.g. '/first/../..')
      */
-    public static String normalizePath(String path, String separator) throws IOException {
+    public static String normalizePath(String path, String separator) {
         if (GenericUtils.isEmpty(path)) {
             return path;
         }
@@ -583,16 +580,23 @@ public final class SelectorUtils {
 
         // serialize
         StringBuilder buffer = new StringBuilder(path.length());
-        for (int i = 0; i < tokens.size(); i++) {
-            if ((i > 0) || ((i == 0) && startsWithSeparator)) {
+        for (int index = 0; index < tokens.size(); index++) {
+            String token = tokens.get(index);
+            if (index == 0) {
+                if (startsWithSeparator) {
+                    buffer.append(separator);
+                } else if (OsUtils.isWin32() && isWindowsDriveSpecified(token)) {
+                    buffer.append(separator);
+                }
+            } else {
                 buffer.append(separator);
             }
-            buffer.append(tokens.get(i));
-        }
+            buffer.append(token);
 
-        // for root Windows drive we need to return "C:/" or we get errors from the local file system
-        if (OsUtils.isWin32() && (buffer.length() == 2) && isWindowsDriveSpecified(buffer)) {
-            buffer.append(separator);
+            // for root Windows drive we need to return "C:/" or we get errors from the local file system
+            if ((tokens.size() == 1) && OsUtils.isWin32() && isWindowsDriveSpecified(token)) {
+                buffer.append(separator);
+            }
         }
 
         return buffer.toString();
@@ -738,7 +742,11 @@ public final class SelectorUtils {
 
         // This code is reached if we are running on Windows
         String localPath = path.replace('/', File.separatorChar);
-        if ((localPath.length() < 2) || (localPath.charAt(1) != ':')) {
+        // check if '/c:' prefix
+        if ((localPath.charAt(0) == File.separatorChar) && isWindowsDriveSpecified(localPath, 1, localPath.length() - 1)) {
+            localPath = localPath.substring(1);
+        }
+        if (!isWindowsDriveSpecified(localPath)) {
             return localPath;   // assume a relative path
         }
 
@@ -759,13 +767,16 @@ public final class SelectorUtils {
     }
 
     public static boolean isWindowsDriveSpecified(CharSequence cs) {
-        if ((GenericUtils.length(cs) < 2) || (cs.charAt(1) != ':')) {
+        return isWindowsDriveSpecified(cs, 0, GenericUtils.length(cs));
+    }
+
+    public static boolean isWindowsDriveSpecified(CharSequence cs, int offset, int len) {
+        if ((len < 2) || (cs.charAt(offset + 1) != ':')) {
             return false;
         }
 
-        char drive = cs.charAt(0);
-        return ((drive >= 'a') && (drive <= 'z'))
-                || ((drive >= 'A') && (drive <= 'Z'));
+        char drive = cs.charAt(offset);
+        return ((drive >= 'a') && (drive <= 'z')) || ((drive >= 'A') && (drive <= 'Z'));
     }
 
     /**

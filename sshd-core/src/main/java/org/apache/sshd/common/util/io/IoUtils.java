@@ -271,19 +271,7 @@ public final class IoUtils {
         try {
             UserPrincipal principal = Files.getOwner(path, options);
             String owner = (principal == null) ? null : principal.getName();
-            if (GenericUtils.isEmpty(owner)) {
-                return owner;
-            }
-
-            // Windows owner sometime has the domain and/or group prepended to it
-            if (OsUtils.isWin32()) {
-                int pos = owner.lastIndexOf('\\');
-                if (pos > 0) {
-                    return owner.substring(pos + 1);
-                }
-            }
-
-            return owner;
+            return OsUtils.getCanonicalUser(owner);
         } catch (UnsupportedOperationException e) {
             return null;
         }

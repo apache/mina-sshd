@@ -131,12 +131,61 @@ public final class OsUtils {
                 return username;
             }
 
-            username = System.getProperty(CURRENT_USER_OVERRIDE_PROP, System.getProperty("user.name"));
+            username = getCanonicalUser(System.getProperty(CURRENT_USER_OVERRIDE_PROP, System.getProperty("user.name")));
             ValidateUtils.checkNotNullAndNotEmpty(username, "No username available");
             CURRENT_USER_HOLDER.set(username);
         }
 
         return username;
+    }
+
+    /**
+     * Remove {@code Windows} domain and/or group prefix as well as &quot;(User);&quot suffix
+     *
+     * @param user The original username - ignored if {@code null}/empty
+     * @return The canonical user - unchanged if {@code Unix} O/S
+     */
+    public static String getCanonicalUser(String user) {
+        if (GenericUtils.isEmpty(user)) {
+            return user;
+        }
+
+        // Windows owner sometime has the domain and/or group prepended to it
+        if (isWin32()) {
+            int pos = user.lastIndexOf('\\');
+            if (pos > 0) {
+                user = user.substring(pos + 1);
+            }
+
+            pos = user.indexOf(' ');
+            if (pos > 0) {
+                user = user.substring(0, pos).trim();
+            }
+        }
+
+        return user;
+    }
+
+    /**
+     * Attempts to resolve canonical group name for {@code Windows}
+     *
+     * @param group The original group name - used if not {@code null}/empty
+     * @param user The owner name - sometimes it contains a group name
+     * @return The canonical group name
+     */
+    public static String resolveCanonicalGroup(String group, String user) {
+        if (isUNIX()) {
+            return group;
+        }
+
+        // we reach this code only for Windows
+        if (GenericUtils.isEmpty(group)) {
+            int pos = GenericUtils.isEmpty(user) ? -1 : user.lastIndexOf('\\');
+            return (pos > 0) ? user.substring(0, pos) : group;
+        }
+
+        int pos = group.indexOf(' ');
+        return (pos < 0) ? group : group.substring(0, pos).trim();
     }
 
     /**

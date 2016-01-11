@@ -22,6 +22,7 @@ import java.io.File;
 import java.util.Random;
 
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.junit.Assume;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -55,7 +56,7 @@ public class SelectorUtilsTest extends BaseTestSupport {
             String actual = SelectorUtils.applySlashifyRules(expected, slash);
             assertSame("Mismatched results for '" + expected + "'", expected, actual);
         }
-        
+
         String[] comps = { getClass().getSimpleName(),  getCurrentTestName() };
         Random rnd = new Random(System.nanoTime());
         StringBuilder sb = new StringBuilder(Byte.MAX_VALUE);
@@ -63,7 +64,7 @@ public class SelectorUtilsTest extends BaseTestSupport {
             if (sb.length() > 0) {
                 sb.setLength(0);        // start from scratch
             }
-            
+
             boolean prepend = rnd.nextBoolean();
             if (prepend) {
                 slashify(sb, rnd, slash);
@@ -74,12 +75,12 @@ public class SelectorUtilsTest extends BaseTestSupport {
                 slashify(sb, rnd, slash);
                 sb.append(comps[j]);
             }
-            
+
             boolean append = rnd.nextBoolean();
             if (append) {
                 slashify(sb, rnd, slash);
             }
-            
+
             String path = sb.toString();
             sb.setLength(0);
             if (prepend) {
@@ -90,11 +91,11 @@ public class SelectorUtilsTest extends BaseTestSupport {
             for (int j = 1; j < comps.length; j++) {
                 sb.append(slash).append(comps[j]);
             }
-            
+
             if (append) {
                 sb.append(slash).append('.');
             }
-            
+
             String expected = sb.toString();
             String actual = SelectorUtils.applySlashifyRules(path, slash);
             assertEquals("Mismatched results for path=" + path, expected, actual);
@@ -120,14 +121,32 @@ public class SelectorUtilsTest extends BaseTestSupport {
             String actual = SelectorUtils.translateToFileSystemPath(expected, File.separator, File.separator);
             assertSame("Mismatched instance for translated result", expected, actual);
         }
-        
+
         for (String fsSeparator : new String[] { String.valueOf('.'), "##" }) {
             String expected = path.replace(File.separator, fsSeparator);
             String actual = SelectorUtils.translateToFileSystemPath(path, File.separator, fsSeparator);
             assertEquals("Mismatched translation result for separator='" + fsSeparator + "'", expected, actual);
-            
+
             actual = SelectorUtils.translateToFileSystemPath(actual, fsSeparator, File.separator);
             assertEquals("Mismatched translation revert for separator='" + fsSeparator + "'", path, actual);
         }
+    }
+
+    @Test
+    public void testAbsoluteWindowsPathTranslation() {
+        Assume.assumeTrue("Not tested on Windows", OsUtils.isWin32());
+        String expected = detectTargetFolder().toString();
+        for (String prefix : new String[]{ "", "/" }) {
+            String actual = SelectorUtils.translateToLocalPath(prefix + expected.replace('/', File.separatorChar));
+            assertEquals("Mismatched result for prefix='" + prefix + "'", expected, actual);
+        }
+    }
+
+    @Test
+    public void testNormalizeWindowsPath() {
+        Assume.assumeTrue("Not tested on Windows", OsUtils.isWin32());
+        String path = detectTargetFolder().toString().replace(File.separatorChar, '/');
+        String actual = SelectorUtils.normalizePath(path, "/");
+        assertEquals("Mismatched result", "/" + path, actual);
     }
 }

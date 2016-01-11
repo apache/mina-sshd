@@ -400,19 +400,26 @@ public class SftpCommand implements Channel {
         @Override
         public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
             String[] comps = GenericUtils.split(args, ' ');
-            // ignore all flag
-            String pathArg = GenericUtils.isEmpty(comps) ? null : GenericUtils.trimToEmpty(comps[comps.length - 1]);
-            String cwd = getCurrentRemoteDirectory();
-            if (GenericUtils.isEmpty(pathArg) || (pathArg.charAt(0) == '-')) {
-                pathArg = cwd;
+            int numComps = GenericUtils.length(comps);
+            String pathArg = (numComps <= 0) ? null : GenericUtils.trimToEmpty(comps[numComps - 1]);
+            String flags = (numComps >= 2) ? GenericUtils.trimToEmpty(comps[0]) : null;
+            // ignore all flags
+            if ((GenericUtils.length(pathArg) > 0) && (pathArg.charAt(0) == '-')) {
+                flags = pathArg;
+                pathArg = null;
             }
 
             String path = resolveRemotePath(pathArg);
             SftpClient sftp = getClient();
+            int version = sftp.getVersion();
+            boolean showLongName = (version == SftpConstants.SFTP_V3) && (GenericUtils.length(flags) > 1) && (flags.indexOf('l') > 0);
             for (SftpClient.DirEntry entry : sftp.readDir(path)) {
                 String fileName = entry.getFilename();
                 SftpClient.Attributes attrs = entry.getAttributes();
                 appendFileAttributes(stdout.append('\t').append(fileName), sftp, path + "/" + fileName, attrs).println();
+                if (showLongName) {
+                    stdout.append("\t\tlong-name: ").println(entry.getLongFilename());
+                }
             }
 
             return false;

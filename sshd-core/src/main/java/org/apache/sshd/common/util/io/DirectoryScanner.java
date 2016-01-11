@@ -138,6 +138,7 @@ public class DirectoryScanner {
     protected boolean isCaseSensitive = true;
 
     public DirectoryScanner() {
+        super();
     }
 
     public DirectoryScanner(String basedir, String... includes) {
@@ -155,8 +156,7 @@ public class DirectoryScanner {
      *                Must not be {@code null}.
      */
     public void setBasedir(String basedir) {
-        setBasedir(new File(basedir.replace('/', File.separatorChar).replace(
-                '\\', File.separatorChar)));
+        setBasedir(new File(basedir.replace('/', File.separatorChar).replace('\\', File.separatorChar)));
     }
 
     /**
@@ -203,7 +203,6 @@ public class DirectoryScanner {
             }
         }
     }
-
 
     /**
      * Scans the base directory for files which match at least one include

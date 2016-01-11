@@ -87,7 +87,6 @@ public final class UnixDateFormat {
             sb.append(' ');
             sb.append(year);
         } else {
-
             // hour
             int hh = cal.get(Calendar.HOUR_OF_DAY);
             if (hh < 10) {

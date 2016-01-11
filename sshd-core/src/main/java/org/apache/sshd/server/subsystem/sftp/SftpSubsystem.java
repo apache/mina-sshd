@@ -49,7 +49,6 @@ import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.attribute.UserPrincipalNotFoundException;
@@ -58,7 +57,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -861,7 +859,7 @@ public class SftpSubsystem
         try {
             hashValue = doMD5Hash(id, targetType, target, startOffset, length, quickCheckHash);
             if (log.isTraceEnabled()) {
-                log.debug("doMD5Hash({})({})[{}] offset={}, length={}, quick-hash={} - hash={}",
+                log.trace("doMD5Hash({})({})[{}] offset={}, length={}, quick-hash={} - hash={}",
                           getServerSession(), targetType, target, startOffset, length,
                           BufferUtils.printHex(':', quickCheckHash),
                           BufferUtils.printHex(':', hashValue));
@@ -1564,6 +1562,9 @@ public class SftpSubsystem
                                 log.debug("doRealPath({}) - failed ({}) to retrieve attributes of {}: {}",
                                           getServerSession(), e.getClass().getSimpleName(), p, e.getMessage());
                             }
+                            if (log.isTraceEnabled()) {
+                                log.trace("doRealPath(" + getServerSession() + ")[" + p + "] attributes retrieval failure details", e);
+                            }
                         }
                     } else {
                         if (log.isDebugEnabled()) {
@@ -1753,8 +1754,10 @@ public class SftpSubsystem
     protected void doReadDir(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
         Handle h = handles.get(handle);
-        log.debug("doReadDir({})[id={}] SSH_FXP_READDIR (handle={}[{}])",
-                  getServerSession(), id, handle, h);
+        if (log.isDebugEnabled()) {
+            log.debug("doReadDir({})[id={}] SSH_FXP_READDIR (handle={}[{}])",
+                      getServerSession(), id, handle, h);
+        }
 
         Buffer reply = null;
         try {
@@ -2570,7 +2573,7 @@ public class SftpSubsystem
 
         if (version == SftpConstants.SFTP_V3) {
             f = resolveFile(normalizedPath);
-            buffer.putString(getLongName(f, attrs));
+            buffer.putString(getLongName(f, getShortName(f), attrs));
             buffer.putInt(0);   // no flags
         } else if (version >= SftpConstants.SFTP_V4) {
             writeAttrs(buffer, attrs);
@@ -2654,7 +2657,7 @@ public class SftpSubsystem
 
         buffer.putString(shortName);
         if (version == SftpConstants.SFTP_V3) {
-            String longName = getLongName(f, options);
+            String longName = getLongName(f, shortName, options);
             buffer.putString(longName);
             if (log.isTraceEnabled()) {
                 log.trace("writeDirEntry(" + getServerSession() + ") id=" + id + ")[" + index + "] - "
@@ -2670,68 +2673,22 @@ public class SftpSubsystem
         writeAttrs(buffer, attrs);
     }
 
-    protected String getLongName(Path f, LinkOption... options) throws IOException {
-        return getLongName(f, true, options);
+    protected String getLongName(Path f, String shortName, LinkOption... options) throws IOException {
+        return getLongName(f, shortName, true, options);
     }
 
-    protected String getLongName(Path f, boolean sendAttrs, LinkOption... options) throws IOException {
+    protected String getLongName(Path f, String shortName, boolean sendAttrs, LinkOption... options) throws IOException {
         Map<String, Object> attributes;
         if (sendAttrs) {
             attributes = getAttributes(f, options);
         } else {
             attributes = Collections.emptyMap();
         }
-        return getLongName(f, attributes);
+        return getLongName(f, shortName, attributes);
     }
 
-    protected String getLongName(Path f, Map<String, ?> attributes) throws IOException {
-        String username;
-        if (attributes.containsKey("owner")) {
-            username = Objects.toString(attributes.get("owner"), null);
-        } else {
-            username = "owner";
-        }
-        if (username.length() > 8) {
-            username = username.substring(0, 8);
-        } else {
-            for (int i = username.length(); i < 8; i++) {
-                username = username + " ";
-            }
-        }
-        String group;
-        if (attributes.containsKey("group")) {
-            group = Objects.toString(attributes.get("group"), null);
-        } else {
-            group = "group";
-        }
-        if (group.length() > 8) {
-            group = group.substring(0, 8);
-        } else {
-            for (int i = group.length(); i < 8; i++) {
-                group = group + " ";
-            }
-        }
-
-        Number length = (Number) attributes.get("size");
-        if (length == null) {
-            length = 0L;
-        }
-        String lengthString = String.format("%1$8s", length);
-
-        Boolean isDirectory = (Boolean) attributes.get("isDirectory");
-        Boolean isLink = (Boolean) attributes.get("isSymbolicLink");
-        @SuppressWarnings("unchecked")
-        Set<PosixFilePermission> perms = (Set<PosixFilePermission>) attributes.get("permissions");
-        if (perms == null) {
-            perms = EnumSet.noneOf(PosixFilePermission.class);
-        }
-
-        return (SftpHelper.getBool(isDirectory) ? "d" : (SftpHelper.getBool(isLink) ? "l" : "-"))
-                + PosixFilePermissions.toString(perms) + "  "
-                + (attributes.containsKey("nlink") ? attributes.get("nlink") : "1")
-                + " " + username + " " + group + " " + lengthString + " "
-                + UnixDateFormat.getUnixDate((FileTime) attributes.get("lastModifiedTime"))
-                + " " + getShortName(f);
+    protected String getLongName(Path f, String shortName, Map<String, ?> attributes) throws IOException {
+        return SftpHelper.getLongName(shortName, attributes);
     }
 
     protected String getShortName(Path f) throws IOException {
@@ -2895,6 +2852,10 @@ public class SftpSubsystem
                     log.debug("resolveMissingFileAttributes({})[{}[{}]] failed ({}) to resolve missing value: {}",
                               getServerSession(), file, name, e.getClass().getSimpleName(), e.getMessage());
                 }
+                if (log.isTraceEnabled()) {
+                    log.trace("resolveMissingFileAttributes(" + getServerSession() + ")"
+                            + "[" + file + "[" + name + "]] missing value resolution failure details", e);
+                }
             }
         }
 
@@ -3046,6 +3007,11 @@ public class SftpSubsystem
         } else {
             log.warn("handleSetFileAttributeFailure({})[{}] {}:{}={} - failed ({}) to set: {}",
                      getServerSession(), file, view, attribute, value, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("handleSetFileAttributeFailure(" + getServerSession() + ")"
+                        + "[" + file + "] " + view + ":" + attribute + "=" + value
+                        + " failure details", e);
+            }
             if (e instanceof IOException) {
                 throw (IOException) e;
             } else {
