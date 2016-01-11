@@ -48,6 +48,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.common.PropertyResolver;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -62,9 +64,87 @@ import org.apache.sshd.server.subsystem.sftp.UnixDateFormat;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class SftpHelper {
+    /**
+     * Used to control whether to append the end-of-list indicator for
+     * SSH_FXP_NAME responses via {@link #indicateEndOfNamesList(Buffer, int, PropertyResolver, Boolean)}
+     * call, as indicated by <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.4">SFTP v6 - section 9.4</A>
+     */
+    public static final String APPEND_END_OF_LIST_INDICATOR = "sftp-append-eol-indicator";
+
+    /**
+     * Default value for {@link #APPEND_END_OF_LIST_INDICATOR} if none configured
+     */
+    public static final boolean DEFAULT_APPEND_END_OF_LIST_INDICATOR = true;
 
     private SftpHelper() {
         throw new UnsupportedOperationException("No instance allowed");
+    }
+
+    /**
+     * Retrieves the end-of-file indicator for {@code SSH_FXP_DATA} responses, provided
+     * the version is at least 6, and the buffer has enough available data
+     *
+     * @param buffer  The {@link Buffer} to retrieve the data from
+     * @param version The SFTP version being used
+     * @return The indicator value - {@code null} if none retrieved
+     * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.3">SFTP v6 - section 9.3</A>
+     */
+    public static Boolean getEndOfFileIndicatorValue(Buffer buffer, int version) {
+        return (version <  SftpConstants.SFTP_V6) || (buffer.available() < 1) ? null : Boolean.valueOf(buffer.getBoolean());
+    }
+
+    /**
+     * Retrieves the end-of-list indicator for {@code SSH_FXP_NAME} responses, provided
+     * the version is at least 6, and the buffer has enough available data
+     *
+     * @param buffer  The {@link Buffer} to retrieve the data from
+     * @param version The SFTP version being used
+     * @return The indicator value - {@code null} if none retrieved
+     * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.4">SFTP v6 - section 9.4</A>
+     * @see #indicateEndOfNamesList(Buffer, int, PropertyResolver, Boolean)
+     */
+    public static Boolean getEndOfListIndicatorValue(Buffer buffer, int version) {
+        return (version <  SftpConstants.SFTP_V6) || (buffer.available() < 1) ? null : Boolean.valueOf(buffer.getBoolean());
+    }
+
+    /**
+     * Appends the end-of-list={@code TRUE} indicator for {@code SSH_FXP_NAME} responses, provided
+     * the version is at least 6 and the feature is enabled
+     *
+     * @param buffer   The {@link Buffer} to append the indicator
+     * @param version  The SFTP version being used
+     * @param resolver The {@link PropertyResolver} to query whether to enable the feature
+     * @return The actual indicator value used - {@code null} if none appended
+     * @see #indicateEndOfNamesList(Buffer, int, PropertyResolver, Boolean)
+     */
+    public static Boolean indicateEndOfNamesList(Buffer buffer, int version, PropertyResolver resolver) {
+        return indicateEndOfNamesList(buffer, version, resolver, Boolean.TRUE);
+    }
+
+    /**
+     * Appends the end-of-list indicator for {@code SSH_FXP_NAME} responses, provided the version
+     * is at least 6, the feature is enabled and the indicator value is not {@code null}
+     *
+     * @param buffer         The {@link Buffer} to append the indicator
+     * @param version        The SFTP version being used
+     * @param resolver       The {@link PropertyResolver} to query whether to enable the feature
+     * @param indicatorValue The indicator value - {@code null} means don't append the indicator
+     * @return The actual indicator value used - {@code null} if none appended
+     * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.4">SFTP v6 - section 9.4</A>
+     * @see #APPEND_END_OF_LIST_INDICATOR
+     * @see #DEFAULT_APPEND_END_OF_LIST_INDICATOR
+     */
+    public static Boolean indicateEndOfNamesList(Buffer buffer, int version, PropertyResolver resolver, Boolean indicatorValue) {
+        if ((version < SftpConstants.SFTP_V6) || (indicatorValue == null)) {
+            return null;
+        }
+
+        if (!PropertyResolverUtils.getBooleanProperty(resolver, APPEND_END_OF_LIST_INDICATOR, DEFAULT_APPEND_END_OF_LIST_INDICATOR)) {
+            return null;
+        }
+
+        buffer.putBoolean(indicatorValue.booleanValue());
+        return indicatorValue;
     }
 
     /**

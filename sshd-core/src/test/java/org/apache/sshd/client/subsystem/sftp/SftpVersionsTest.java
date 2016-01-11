@@ -38,10 +38,12 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
+import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
@@ -445,6 +447,54 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         }
 
         assertEquals("Mismatched invocations count", numInvoked, numInvocations.get());
+    }
+
+    @Test   // see SSHD-623
+    public void testEndOfListIndicator() throws Exception {
+        try (SshClient client = setupTestClient()) {
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                try (SftpClient sftp = session.createSftpClient(getTestedVersion())) {
+                    AtomicReference<Boolean> eolIndicator = new AtomicReference<>();
+                    int version = sftp.getVersion();
+                    Path targetPath = detectTargetFolder();
+                    Path parentPath = targetPath.getParent();
+                    String remotePath = Utils.resolveRelativeRemotePath(parentPath, targetPath);
+
+                    try (CloseableHandle handle = sftp.openDir(remotePath)) {
+                        List<DirEntry> entries = sftp.readDir(handle, eolIndicator);
+                        for (int index = 1; entries != null; entries = sftp.readDir(handle, eolIndicator), index++) {
+                            Boolean value = eolIndicator.get();
+                            if (version < SftpConstants.SFTP_V6) {
+                                assertNull("Unexpected indicator value at iteration #" + index, value);
+                            } else {
+                                assertNotNull("No indicator returned at iteration #" + index, value);
+                                if (value.booleanValue()) {
+                                    break;
+                                }
+                            }
+                            eolIndicator.set(null);    // make sure starting fresh
+                        }
+
+                        Boolean value = eolIndicator.get();
+                        if (version < SftpConstants.SFTP_V6) {
+                            assertNull("Unexpected end-of-list indication received at end of entries", value);
+                            assertNull("Unexpected no last entries indication", entries);
+                        } else {
+                            assertNotNull("No end-of-list indication received at end of entries", value);
+                            assertNotNull("No last received entries", entries);
+                            assertTrue("Bad end-of-list value", value.booleanValue());
+                        }
+                    }
+                }
+            } finally {
+                client.stop();
+            }
+        }
     }
 
     @Override

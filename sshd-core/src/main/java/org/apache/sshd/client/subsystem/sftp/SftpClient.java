@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.subsystem.SubsystemClient;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
@@ -485,9 +486,52 @@ public interface SftpClient extends SubsystemClient {
 
     void rename(String oldPath, String newPath, Collection<CopyMode> options) throws IOException;
 
+    /**
+     * Reads data from the open (file) handle
+     *
+     * @param handle     The file {@link Handle} to read from
+     * @param fileOffset The file offset to read from
+     * @param dst        The destination buffer
+     * @return Number of read bytes - {@code -1} if EOF reached
+     * @throws IOException If failed to read the data
+     * @see #read(Handle, long, byte[], int, int)
+     */
     int read(Handle handle, long fileOffset, byte[] dst) throws IOException;
 
+    /**
+     * Reads data from the open (file) handle
+     *
+     * @param handle     The file {@link Handle} to read from
+     * @param fileOffset The file offset to read from
+     * @param dst        The destination buffer
+     * @param eofSignalled If not {@code null} then upon return holds a value indicating
+     *                   whether EOF was reached due to the read. If {@code null} indicator
+     *                   value then this indication is not available
+     * @return Number of read bytes - {@code -1} if EOF reached
+     * @throws IOException If failed to read the data
+     * @see #read(Handle, long, byte[], int, int, AtomicReference)
+     * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.3">SFTP v6 - section 9.3</A>
+     */
+    int read(Handle handle, long fileOffset, byte[] dst, AtomicReference<Boolean> eofSignalled) throws IOException;
+
     int read(Handle handle, long fileOffset, byte[] dst, int dstOffset, int len) throws IOException;
+
+    /**
+     * Reads data from the open (file) handle
+     *
+     * @param handle     The file {@link Handle} to read from
+     * @param fileOffset The file offset to read from
+     * @param dst        The destination buffer
+     * @param dstOffset  Offset in destination buffer to place the read data
+     * @param len        Available destination buffer size to read
+     * @param eofSignalled If not {@code null} then upon return holds a value indicating
+     *                   whether EOF was reached due to the read. If {@code null} indicator
+     *                   value then this indication is not available
+     * @return Number of read bytes - {@code -1} if EOF reached
+     * @throws IOException If failed to read the data
+     * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.3">SFTP v6 - section 9.3</A>
+     */
+    int read(Handle handle, long fileOffset, byte[] dst, int dstOffset, int len, AtomicReference<Boolean> eofSignalled) throws IOException;
 
     void write(Handle handle, long fileOffset, byte[] src) throws IOException;
 
@@ -510,6 +554,19 @@ public interface SftpClient extends SubsystemClient {
      * @throws IOException If failed to access the remote site
      */
     List<DirEntry> readDir(Handle handle) throws IOException;
+
+    /**
+     * @param handle Directory {@link Handle} to read from
+     * @return A {@link List} of entries - {@code null} to indicate no more entries
+     * @param eolIndicator An indicator that can be used to get information
+     * whether end of list has been reached - ignored if {@code null}. Upon
+     * return, set value indicates whether all entries have been exhausted - a {@code null}
+     * value means that this information cannot be provided and another call to
+     * {@code readDir} is necessary in order to verify that no more entries are pending
+     * @throws IOException If failed to access the remote site
+     * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.4">SFTP v6 - section 9.4</A>
+     */
+    List<DirEntry> readDir(Handle handle, AtomicReference<Boolean> eolIndicator) throws IOException;
 
     String canonicalPath(String path) throws IOException;
 

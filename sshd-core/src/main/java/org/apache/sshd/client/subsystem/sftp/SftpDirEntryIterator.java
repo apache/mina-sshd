@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.channels.Channel;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
@@ -37,6 +38,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterator<DirEntry>, Channel {
+    private final AtomicReference<Boolean> eolIndicator = new AtomicReference<>();
     private final SftpClient client;
     private final String dirPath;
     private CloseableHandle dirHandle;
@@ -127,10 +129,20 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterato
 
     protected List<DirEntry> load(CloseableHandle handle) {
         try {
-            List<DirEntry> entries = client.readDir(handle);
-            if (entries == null) {
+            // check if previous call yielded an end-of-list indication
+            Boolean eolReached = eolIndicator.getAndSet(null);
+            if ((eolReached != null) && eolReached.booleanValue()) {
                 if (log.isTraceEnabled()) {
-                    log.trace("load(" + getPath() + ") exhausted all entries");
+                    log.trace("load({}) exhausted all entries on previous call", getPath());
+                }
+                return null;
+            }
+
+            List<DirEntry> entries = client.readDir(handle, eolIndicator);
+            eolReached = eolIndicator.get();
+            if ((entries == null) || ((eolReached != null) && eolReached.booleanValue())) {
+                if (log.isTraceEnabled()) {
+                    log.trace("load({}) exhausted all entries - EOL={}", getPath(), eolReached);
                 }
                 close();
             }

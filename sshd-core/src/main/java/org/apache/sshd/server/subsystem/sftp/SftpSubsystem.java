@@ -1536,10 +1536,19 @@ public class SftpSubsystem
                  */
                 result = doRealPathV345(id, path, options);
             } else {
-                // see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13 section 8.9
-                int control = 0;
+                /*
+                 * See https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-8.9
+                 *
+                 *      This field is optional, and if it is not present in the packet, it
+                 *      is assumed to be SSH_FXP_REALPATH_NO_CHECK.
+                 */
+                int control = SftpConstants.SSH_FXP_REALPATH_NO_CHECK;
                 if (buffer.available() > 0) {
                     control = buffer.getUByte();
+                    if (log.isDebugEnabled()) {
+                        log.debug("doRealPath({}) - control=0x{} for path={}",
+                                  getServerSession(), Integer.toHexString(control), path);
+                    }
                 }
 
                 Collection<String> extraPaths = new LinkedList<>();
@@ -1551,35 +1560,42 @@ public class SftpSubsystem
 
                 Path p = result.getFirst();
                 Boolean status = result.getSecond();
-                if (control == SftpConstants.SSH_FXP_REALPATH_STAT_IF) {
-                    if (status == null) {
-                        attrs = handleUnknownStatusFileAttributes(p, SftpConstants.SSH_FILEXFER_ATTR_ALL, options);
-                    } else if (status) {
-                        try {
-                            attrs = getAttributes(p, IoUtils.getLinkOptions(false));
-                        } catch (IOException e) {
+                switch (control) {
+                    case SftpConstants.SSH_FXP_REALPATH_STAT_IF:
+                        if (status == null) {
+                            attrs = handleUnknownStatusFileAttributes(p, SftpConstants.SSH_FILEXFER_ATTR_ALL, options);
+                        } else if (status) {
+                            try {
+                                attrs = getAttributes(p, IoUtils.getLinkOptions(false));
+                            } catch (IOException e) {
+                                if (log.isDebugEnabled()) {
+                                    log.debug("doRealPath({}) - failed ({}) to retrieve attributes of {}: {}",
+                                              getServerSession(), e.getClass().getSimpleName(), p, e.getMessage());
+                                }
+                                if (log.isTraceEnabled()) {
+                                    log.trace("doRealPath(" + getServerSession() + ")[" + p + "] attributes retrieval failure details", e);
+                                }
+                            }
+                        } else {
                             if (log.isDebugEnabled()) {
-                                log.debug("doRealPath({}) - failed ({}) to retrieve attributes of {}: {}",
-                                          getServerSession(), e.getClass().getSimpleName(), p, e.getMessage());
-                            }
-                            if (log.isTraceEnabled()) {
-                                log.trace("doRealPath(" + getServerSession() + ")[" + p + "] attributes retrieval failure details", e);
+                                log.debug("doRealPath({}) - dummy attributes for non-existing file: {}", getServerSession(), p);
                             }
                         }
-                    } else {
-                        if (log.isDebugEnabled()) {
-                            log.debug("doRealPath({}) - dummy attributes for non-existing file: {}",
-                                      getServerSession(), p);
+                        break;
+                    case SftpConstants.SSH_FXP_REALPATH_STAT_ALWAYS:
+                        if (status == null) {
+                            attrs = handleUnknownStatusFileAttributes(p, SftpConstants.SSH_FILEXFER_ATTR_ALL, options);
+                        } else if (status) {
+                            attrs = getAttributes(p, options);
+                        } else {
+                            throw new FileNotFoundException(p.toString());
                         }
-                    }
-                } else if (control == SftpConstants.SSH_FXP_REALPATH_STAT_ALWAYS) {
-                    if (status == null) {
-                        attrs = handleUnknownStatusFileAttributes(p, SftpConstants.SSH_FILEXFER_ATTR_ALL, options);
-                    } else if (status) {
-                        attrs = getAttributes(p, options);
-                    } else {
-                        throw new FileNotFoundException(p.toString());
-                    }
+                        break;
+                    case SftpConstants.SSH_FXP_REALPATH_NO_CHECK:
+                        break;
+                    default:
+                        log.warn("doRealPath({}) unknown control value 0x{} for path={}",
+                                 getServerSession(), Integer.toHexString(control), p);
                 }
             }
         } catch (IOException | RuntimeException e) {
@@ -1594,6 +1610,10 @@ public class SftpSubsystem
         Path p = resolveFile(path);
         int numExtra = GenericUtils.size(extraPaths);
         if (numExtra > 0) {
+            if (log.isDebugEnabled()) {
+                log.debug("doRealPathV6({})[id={}] path={}, extra={}",
+                          getServerSession(), id, path, extraPaths);
+            }
             StringBuilder sb = new StringBuilder(GenericUtils.length(path) + numExtra * 8);
             sb.append(path);
 
@@ -1795,12 +1815,14 @@ public class SftpSubsystem
 
                 int count = doReadDir(id, handle, dh, reply, PropertyResolverUtils.getIntProperty(getServerSession(), MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH));
                 BufferUtils.updateLengthPlaceholder(reply, lenPos, count);
-                if (log.isDebugEnabled()) {
-                    log.debug("doReadDir({})({})[{}] - sent {} entries", getServerSession(), handle, h, count);
-                }
+                ServerSession session = getServerSession();
                 if ((!dh.isSendDot()) && (!dh.isSendDotDot()) && (!dh.hasNext())) {
-                    // if no more files to send
                     dh.markDone();
+                }
+
+                Boolean indicator = SftpHelper.indicateEndOfNamesList(reply, getVersion(), session, Boolean.valueOf(dh.isDone()));
+                if (log.isDebugEnabled()) {
+                    log.debug("doReadDir({})({})[{}] - seding {} entries - eol={}", session, handle, h, count, indicator);
                 }
             } else {
                 // empty directory
@@ -2556,6 +2578,33 @@ public class SftpSubsystem
         send(buffer);
     }
 
+    protected void sendLink(Buffer buffer, int id, String link) throws IOException {
+        //in case we are running on Windows
+        String unixPath = link.replace(File.separatorChar, '/');
+        //normalize the given path, use *nix style separator
+        String normalizedPath = SelectorUtils.normalizePath(unixPath, "/");
+
+        buffer.putByte((byte) SftpConstants.SSH_FXP_NAME);
+        buffer.putInt(id);
+        buffer.putInt(1);   // one response
+        buffer.putString(normalizedPath);
+
+        /*
+         * As per the spec (https://tools.ietf.org/html/draft-ietf-secsh-filexfer-02#section-6.10):
+         *
+         *      The server will respond with a SSH_FXP_NAME packet containing only
+         *      one name and a dummy attributes value.
+         */
+        Map<String, Object> attrs = Collections.<String, Object>emptyMap();
+        if (version == SftpConstants.SFTP_V3) {
+            buffer.putString(SftpHelper.getLongName(normalizedPath, attrs));
+        }
+
+        writeAttrs(buffer, attrs);
+        SftpHelper.indicateEndOfNamesList(buffer, getVersion(), getServerSession());
+        send(buffer);
+    }
+
     protected void sendPath(Buffer buffer, int id, Path f, Map<String, ?> attrs) throws IOException {
         buffer.putByte((byte) SftpConstants.SSH_FXP_NAME);
         buffer.putInt(id);
@@ -2574,34 +2623,10 @@ public class SftpSubsystem
         if (version == SftpConstants.SFTP_V3) {
             f = resolveFile(normalizedPath);
             buffer.putString(getLongName(f, getShortName(f), attrs));
-            buffer.putInt(0);   // no flags
-        } else if (version >= SftpConstants.SFTP_V4) {
-            writeAttrs(buffer, attrs);
-        } else {
-            throw new IllegalStateException("sendPath(" + f + ") unsupported version: " + version);
-        }
-        send(buffer);
-    }
-
-    protected void sendLink(Buffer buffer, int id, String link) throws IOException {
-        //in case we are running on Windows
-        String unixPath = link.replace(File.separatorChar, '/');
-        buffer.putByte((byte) SftpConstants.SSH_FXP_NAME);
-        buffer.putInt(id);
-        buffer.putInt(1);   // one response
-
-        buffer.putString(unixPath);
-        if (version == SftpConstants.SFTP_V3) {
-            buffer.putString(unixPath);
         }
 
-        /*
-         * As per the spec:
-         *
-         *      The server will respond with a SSH_FXP_NAME packet containing only
-         *      one name and a dummy attributes value.
-         */
-        SftpHelper.writeAttrs(buffer, version, Collections.<String, Object>emptyMap());
+        writeAttrs(buffer, attrs);
+        SftpHelper.indicateEndOfNamesList(buffer, getVersion(), getServerSession());
         send(buffer);
     }
 
@@ -2740,7 +2765,7 @@ public class SftpSubsystem
     }
 
     protected void writeAttrs(Buffer buffer, Map<String, ?> attributes) throws IOException {
-        SftpHelper.writeAttrs(buffer, version, attributes);
+        SftpHelper.writeAttrs(buffer, getVersion(), attributes);
     }
 
     protected Map<String, Object> getAttributes(Path file, LinkOption... options) throws IOException {
@@ -3225,7 +3250,7 @@ public class SftpSubsystem
     }
 
     protected Map<String, Object> readAttrs(Buffer buffer) throws IOException {
-        return SftpHelper.readAttrs(buffer, version);
+        return SftpHelper.readAttrs(buffer, getVersion());
     }
 
     /**

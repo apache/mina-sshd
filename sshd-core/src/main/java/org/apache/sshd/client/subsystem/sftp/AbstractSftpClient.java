@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.subsystem.AbstractSubsystemClient;
 import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensions;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
@@ -104,11 +105,6 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
     @Override
     public InputStream read(String path, Collection<OpenMode> mode) throws IOException {
         return read(path, DEFAULT_READ_BUFFER_SIZE, mode);
-    }
-
-    @Override
-    public int read(Handle handle, long fileOffset, byte[] dst) throws IOException {
-        return read(handle, fileOffset, dst, 0, dst.length);
     }
 
     @Override
@@ -367,10 +363,13 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             if (version == SftpConstants.SFTP_V3) {
                 longName = buffer.getString();
             }
+
             Attributes attrs = readAttributes(buffer);
+            Boolean indicator = SftpHelper.getEndOfListIndicatorValue(buffer, version);
+            // TODO decide what to do if not-null and not TRUE
             if (log.isTraceEnabled()) {
-                log.trace("checkOneName({})[id={}] ({})[{}]: {}",
-                          getClientChannel(), id, name, longName, attrs);
+                log.trace("checkOneName({})[id={}] ({})[{}] eol={}: {}",
+                          getClientChannel(), id, name, longName, indicator, attrs);
             }
             return name;
         }
@@ -766,8 +765,27 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         checkStatus(SftpConstants.SSH_FXP_RENAME, buffer);
     }
 
-    @Override
+    @Override   // TODO make this a default method in Java 8
+    public int read(Handle handle, long fileOffset, byte[] dst) throws IOException {
+        return read(handle, fileOffset, dst, null);
+    }
+
+    @Override   // TODO make this a default method in Java 8
+    public int read(Handle handle, long fileOffset, byte[] dst, AtomicReference<Boolean> eofSignalled) throws IOException {
+        return read(handle, fileOffset, dst, 0, dst.length, eofSignalled);
+    }
+
+    @Override   // TODO make this a default method in Java 8
     public int read(Handle handle, long fileOffset, byte[] dst, int dstOffset, int len) throws IOException {
+        return read(handle, fileOffset, dst, dstOffset, len, null);
+    }
+
+    @Override
+    public int read(Handle handle, long fileOffset, byte[] dst, int dstOffset, int len, AtomicReference<Boolean> eofSignalled) throws IOException {
+        if (eofSignalled != null) {
+            eofSignalled.set(null);
+        }
+
         if (!isOpen()) {
             throw new IOException("read(" + handle + "/" + fileOffset + ")[" + dstOffset + "/" + len + "] client is closed");
         }
@@ -777,22 +795,38 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         buffer.putBytes(id);
         buffer.putLong(fileOffset);
         buffer.putInt(len);
-        return checkData(SftpConstants.SSH_FXP_READ, buffer, dstOffset, dst);
+        return checkData(SftpConstants.SSH_FXP_READ, buffer, dstOffset, dst, eofSignalled);
     }
 
-    protected int checkData(int cmd, Buffer request, int dstOffset, byte[] dst) throws IOException {
+    protected int checkData(int cmd, Buffer request, int dstOffset, byte[] dst, AtomicReference<Boolean> eofSignalled) throws IOException {
+        if (eofSignalled != null) {
+            eofSignalled.set(null);
+        }
         int reqId = send(cmd, request);
         Buffer response = receive(reqId);
-        return checkData(response, dstOffset, dst);
+        return checkData(response, dstOffset, dst, eofSignalled);
     }
 
-    protected int checkData(Buffer buffer, int dstoff, byte[] dst) throws IOException {
+    protected int checkData(Buffer buffer, int dstoff, byte[] dst, AtomicReference<Boolean> eofSignalled) throws IOException {
+        if (eofSignalled != null) {
+            eofSignalled.set(null);
+        }
+
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
         if (type == SftpConstants.SSH_FXP_DATA) {
             int len = buffer.getInt();
             buffer.getRawBytes(dst, dstoff, len);
+            Boolean indicator = SftpHelper.getEndOfFileIndicatorValue(buffer, getVersion());
+            if (log.isTraceEnabled()) {
+                log.trace("checkData({}][id={}] offset={}, len={}, EOF={}",
+                          getClientChannel(), id, dstoff, len, indicator);
+            }
+            if (eofSignalled != null) {
+                eofSignalled.set(indicator);
+            }
+
             return len;
         }
 
@@ -903,8 +937,16 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         return handle;
     }
 
-    @Override
+    @Override   // TODO in JDK-8 make this a default method
     public List<DirEntry> readDir(Handle handle) throws IOException {
+        return readDir(handle, null);
+    }
+
+    @Override
+    public List<DirEntry> readDir(Handle handle, AtomicReference<Boolean> eolIndicator) throws IOException {
+        if (eolIndicator != null) {
+            eolIndicator.set(null);    // assume unknown information
+        }
         if (!isOpen()) {
             throw new IOException("readDir(" + handle + ") client is closed");
         }
@@ -912,27 +954,43 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         byte[] id = handle.getIdentifier();
         Buffer buffer = new ByteArrayBuffer(id.length + Byte.SIZE /* some extra fields */, false);
         buffer.putBytes(id);
-        return checkDir(receive(send(SftpConstants.SSH_FXP_READDIR, buffer)));
+        return checkDir(receive(send(SftpConstants.SSH_FXP_READDIR, buffer)), eolIndicator);
     }
 
-    protected List<DirEntry> checkDir(Buffer buffer) throws IOException {
+    protected List<DirEntry> checkDir(Buffer buffer, AtomicReference<Boolean> eolIndicator) throws IOException {
+        if (eolIndicator != null) {
+            eolIndicator.set(null);    // assume unknown
+        }
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
         if (type == SftpConstants.SSH_FXP_NAME) {
             int len = buffer.getInt();
+            int version = getVersion();
+            ClientChannel channel = getClientChannel();
+            if (log.isDebugEnabled()) {
+                log.debug("checkDir({}}[id={}] reading {} entries", channel, id, len);
+            }
             List<DirEntry> entries = new ArrayList<DirEntry>(len);
             for (int i = 0; i < len; i++) {
                 String name = buffer.getString();
-                int version = getVersion();
                 String longName = (version == SftpConstants.SFTP_V3) ? buffer.getString() : null;
                 Attributes attrs = readAttributes(buffer);
                 if (log.isTraceEnabled()) {
                     log.trace("checkDir({})[id={}][{}] ({})[{}]: {}",
-                              getClientChannel(), id, i, name, longName, attrs);
+                              channel, id, i, name, longName, attrs);
                 }
 
                 entries.add(new DirEntry(name, longName, attrs));
+            }
+
+            Boolean indicator = SftpHelper.getEndOfListIndicatorValue(buffer, version);
+            if (eolIndicator != null) {
+                eolIndicator.set(indicator);
+            }
+
+            if (log.isDebugEnabled()) {
+                log.debug("checkDir({}}[id={}] read count={}, eol={}", channel, entries.size(), indicator);
             }
             return entries;
         }
