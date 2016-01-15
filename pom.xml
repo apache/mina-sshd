@@ -28,7 +28,7 @@
 
     <groupId>org.apache.sshd</groupId>
     <artifactId>sshd</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.1.0</version>
     <name>Apache Mina SSHD</name>
     <packaging>pom</packaging>
     <inceptionYear>2008</inceptionYear>
@@ -76,7 +76,7 @@
         <connection>scm:git:http://git-wip-us.apache.org/repos/asf/mina-sshd.git</connection>
         <developerConnection>scm:git:http://git-wip-us.apache.org/repos/asf/mina-sshd.git</developerConnection>
         <url>https://git-wip-us.apache.org/repos/asf?p=mina-sshd.git</url>
-        <tag>HEAD</tag>
+        <tag>sshd-1.1.0</tag>
     </scm>
 
     <properties>
@@ -484,12 +484,12 @@
 
 									<!-- Check annotations conventions -->
 									<!-- See http://checkstyle.sourceforge.net/config_annotation.html -->
-								<module name="MissingOverride"/>
-								<module name="MissingDeprecated"/>
+								<module name="MissingOverride" />
+								<module name="MissingDeprecated" />
 								<module name="AnnotationLocation">
-									<property name="allowSamelineMultipleAnnotations" value="false"/>
-									<property name="allowSamelineSingleParameterlessAnnotation" value="false"/>
-									<property name="allowSamelineParameterizedAnnotation" value="false"/>
+									<property name="allowSamelineMultipleAnnotations" value="false" />
+									<property name="allowSamelineSingleParameterlessAnnotation" value="false" />
+									<property name="allowSamelineParameterizedAnnotation" value="false" />
 								</module>
 
 									<!-- Checks for Naming Conventions.                  -->
@@ -585,7 +585,7 @@
 								<module name="NeedBraces" />
 								<module name="RightCurly" />
 								<module name="EmptyCatchBlock">
-									<property name="exceptionVariableName" value="expected|ignore"/>
+									<property name="exceptionVariableName" value="expected|ignore" />
 								</module>
 
 									<!-- Checks for common coding problems               -->
