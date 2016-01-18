@@ -20,6 +20,7 @@
 package org.apache.sshd.common.util.buffer;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Random;
 
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
@@ -47,5 +48,23 @@ public class BufferUtilsTest extends BaseTestSupport {
             outputDebugMessage("Decode(sep=%s) expected=%s, actual=%s", sepName, expValue, actValue);
             assertArrayEquals("Mismatched result for sep='" + sepName + "'", expData, actData);
         }
+    }
+
+    @Test
+    public void testGetCompactClone() {
+        byte[] expected = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
+        final int OFFSET = Byte.SIZE / 2;
+        byte[] data = new byte[expected.length + 2 * OFFSET];
+        Random rnd = new Random(System.nanoTime());
+        rnd.nextBytes(data);
+        System.arraycopy(expected, 0, data, OFFSET, expected.length);
+
+        Buffer buf = ByteArrayBuffer.getCompactClone(data, OFFSET, expected.length);
+        assertEquals("Mismatched cloned buffer read position", 0, buf.rpos());
+        assertEquals("Mismatched cloned buffer available size", expected.length, buf.available());
+
+        byte[] actual = buf.array();
+        assertNotSame("Original data not cloned", data, actual);
+        assertArrayEquals("Mismatched cloned contents", expected, actual);
     }
 }

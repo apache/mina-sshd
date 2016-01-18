@@ -21,7 +21,9 @@ package org.apache.sshd.common.util.buffer;
 
 import java.nio.charset.Charset;
 
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -194,5 +196,37 @@ public final class ByteArrayBuffer extends Buffer {
     @Override
     protected int size() {
         return data.length;
+    }
+
+    /**
+     * Creates a compact buffer (i.e., one that starts at offset zero) containing a <U>copy</U>
+     * of the original data
+     *
+     * @param data   The original data buffer
+     * @return A {@link ByteArrayBuffer} containing a <U>copy</U> of the original data
+     * starting at zero read position
+     * @see #getCompactClone(byte[], int, int)
+     */
+    public static ByteArrayBuffer getCompactClone(byte[] data) {
+        return getCompactClone(data, 0, NumberUtils.length(data));
+    }
+
+    /**
+     * Creates a compact buffer (i.e., one that starts at offset zero) containing a <U>copy</U>
+     * of the original data
+     *
+     * @param data   The original data buffer
+     * @param offset The offset of the valid data in the buffer
+     * @param len    The size (in bytes) of of the valid data in the buffer
+     * @return A {@link ByteArrayBuffer} containing a <U>copy</U> of the original data
+     * starting at zero read position
+     */
+    public static ByteArrayBuffer getCompactClone(byte[] data, int offset, int len) {
+        byte[] clone = (len > 0) ? new byte[len] : GenericUtils.EMPTY_BYTE_ARRAY;
+        if (len > 0) {
+            System.arraycopy(data, offset, clone, 0, len);
+        }
+
+        return new ByteArrayBuffer(clone, true);
     }
 }

@@ -72,9 +72,12 @@ public class UserAuthAgent extends AbstractUserAuth {
             bs.putString(KeyUtils.getKeyType(key));
             bs.putPublicKey(key);
 
-            Buffer bs2 = new ByteArrayBuffer();
-            bs2.putString(KeyUtils.getKeyType(key));
-            bs2.putBytes(agent.sign(key, bs.getCompactData()));
+            String keyType = KeyUtils.getKeyType(key);
+            byte[] contents = bs.getCompactData();
+            byte[] signature = agent.sign(key, contents);
+            Buffer bs2 = new ByteArrayBuffer(keyType.length() + signature.length + Long.SIZE, false);
+            bs2.putString(keyType);
+            bs2.putBytes(signature);
             buffer.putBytes(bs2.array(), bs2.rpos(), bs2.available());
 
             session.writePacket(buffer);

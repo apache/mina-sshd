@@ -142,7 +142,15 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         bs.putString(algo);
         bs.putPublicKey(key);
 
-        byte[] sig = current.sign(bs.getCompactData());
+        byte[] contents = bs.getCompactData();
+        byte[] sig = current.sign(contents);
+        if (log.isTraceEnabled()) {
+            log.trace("processAuthDataRequest({})[{}] name={}, key type={}, fingerprint={} - verification data={}",
+                      session, service, name, algo, KeyUtils.getFingerPrint(key), BufferUtils.printHex(contents));
+            log.trace("processAuthDataRequest({})[{}] name={}, key type={}, fingerprint={} - generated signature={}",
+                      session, service, name, algo, KeyUtils.getFingerPrint(key), BufferUtils.printHex(sig));
+        }
+
         bs = new ByteArrayBuffer(algo.length() + sig.length + Long.SIZE, false);
         bs.putString(algo);
         bs.putBytes(sig);

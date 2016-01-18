@@ -1714,8 +1714,10 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     protected void requestSuccess(Buffer buffer) throws Exception {
+        // use a copy of the original data in case it is re-used on return
+        Buffer resultBuf = ByteArrayBuffer.getCompactClone(buffer.array(), buffer.rpos(), buffer.available());
         synchronized (requestResult) {
-            requestResult.set(new ByteArrayBuffer(buffer.getCompactData()));
+            requestResult.set(resultBuf);
             resetIdleTimeout();
             requestResult.notify();
         }
