@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;

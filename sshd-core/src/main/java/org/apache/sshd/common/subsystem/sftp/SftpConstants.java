@@ -77,7 +77,7 @@ public final class SftpConstants {
     public static final int SSH_FX_NO_MEDIA = 13;
     public static final int SSH_FX_NO_SPACE_ON_FILESYSTEM = 14;
     public static final int SSH_FX_QUOTA_EXCEEDED = 15;
-    public static final int SSH_FX_UNKNOWN_PRINCIPLE = 16;
+    public static final int SSH_FX_UNKNOWN_PRINCIPAL = 16;
     public static final int SSH_FX_LOCK_CONFLICT = 17;
     public static final int SSH_FX_DIR_NOT_EMPTY = 18;
     public static final int SSH_FX_NOT_A_DIRECTORY = 19;

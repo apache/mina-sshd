@@ -86,6 +86,7 @@ import org.apache.sshd.common.digest.DigestFactory;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.subsystem.sftp.SftpHelper;
 import org.apache.sshd.common.subsystem.sftp.extensions.AclSupportedParser;
 import org.apache.sshd.common.subsystem.sftp.extensions.SpaceAvailableExtensionInfo;
@@ -1765,7 +1766,7 @@ public class SftpSubsystem
         if (!status) {
             throw new FileNotFoundException(p.toString());
         } else if (Files.isDirectory(p, options)) {
-            throw new FileNotFoundException(p.toString() + " is as a folder");
+            throw new SftpException(SftpConstants.SSH_FX_FILE_IS_A_DIRECTORY, p.toString() + " is a folder");
         } else {
             doRemove(id, p);
         }
@@ -3201,7 +3202,7 @@ public class SftpSubsystem
         UserPrincipalLookupService lookupService = fileSystem.getUserPrincipalLookupService();
         try {
             if (lookupService == null) {
-                throw new UserPrincipalNotFoundException("No lookup service");
+                throw new UserPrincipalNotFoundException(groupName);
             }
             return lookupService.lookupPrincipalByGroupName(groupName);
         } catch (IOException e) {
@@ -3216,7 +3217,7 @@ public class SftpSubsystem
         UserPrincipalLookupService lookupService = fileSystem.getUserPrincipalLookupService();
         try {
             if (lookupService == null) {
-                throw new UserPrincipalNotFoundException("No lookup service");
+                throw new UserPrincipalNotFoundException(username);
             }
             return lookupService.lookupPrincipalByName(username);
         } catch (IOException e) {
@@ -3278,7 +3279,7 @@ public class SftpSubsystem
         return type.cast(h);
     }
 
-    protected void sendStatus(Buffer buffer, int id, Exception e) throws IOException {
+    protected void sendStatus(Buffer buffer, int id, Throwable e) throws IOException {
         int substatus = SftpHelper.resolveSubstatus(e);
         sendStatus(buffer, id, substatus, e.toString());
     }

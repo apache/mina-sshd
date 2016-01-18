@@ -66,6 +66,7 @@ import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.subsystem.sftp.extensions.AclSupportedParser.AclCapabilities;
 import org.apache.sshd.common.subsystem.sftp.extensions.NewlineParser.Newline;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
@@ -948,7 +949,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     try {
                         sftp.rename(file2Path, file3Path);
                         fail("Unxpected rename success of " + file2Path + " => " + file3Path);
-                    } catch (org.apache.sshd.client.subsystem.sftp.SftpException e) {
+                    } catch (org.apache.sshd.common.subsystem.sftp.SftpException e) {
                         assertEquals("Mismatched status for failed rename of " + file2Path + " => " + file3Path, SftpConstants.SSH_FX_NO_SUCH_FILE, e.getStatus());
                     }
 
@@ -959,7 +960,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     try {
                         sftp.rename(file1Path, file2Path);
                         fail("Unxpected rename success of " + file1Path + " => " + file2Path);
-                    } catch (org.apache.sshd.client.subsystem.sftp.SftpException e) {
+                    } catch (org.apache.sshd.common.subsystem.sftp.SftpException e) {
                         assertEquals("Mismatched status for failed rename of " + file1Path + " => " + file2Path, SftpConstants.SSH_FX_FILE_ALREADY_EXISTS, e.getStatus());
                     }
 

@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileAttributeView;
 
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 

@@ -36,6 +36,7 @@ import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
+import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -458,6 +459,10 @@ public final class SftpHelper {
             return SftpConstants.SSH_FX_INVALID_PARAMETER;
         } else if (t instanceof UnsupportedOperationException) {
             return SftpConstants.SSH_FX_OP_UNSUPPORTED;
+        } else if (t instanceof UserPrincipalNotFoundException) {
+            return SftpConstants.SSH_FX_UNKNOWN_PRINCIPAL;
+        } else if (t instanceof SftpException) {
+            return ((SftpException) t).getStatus();
         } else {
             return SftpConstants.SSH_FX_FAILURE;
         }

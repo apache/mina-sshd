@@ -16,11 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.subsystem.sftp;
+package org.apache.sshd.common.subsystem.sftp;
 
 import java.io.IOException;
-
-import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 
 /**
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>

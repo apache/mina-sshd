@@ -47,6 +47,7 @@ import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatExten
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatPathExtension;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.StatVfsExtensionParser;
 import org.apache.sshd.common.util.GenericUtils;
