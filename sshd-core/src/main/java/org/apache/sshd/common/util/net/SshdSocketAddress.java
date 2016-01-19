@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
+package org.apache.sshd.common.util.net;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;

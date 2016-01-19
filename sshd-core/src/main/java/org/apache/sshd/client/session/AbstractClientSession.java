@@ -45,7 +45,6 @@ import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.forward.TcpipForwarder;
@@ -55,6 +54,7 @@ import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

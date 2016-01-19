@@ -961,20 +961,10 @@
         </repository>
     </distributionManagement>
 
-    <profiles>
-        <profile>
-            <id>experimental</id>
-            <modules>
-                <module>sshd-pam</module>
-                <module>sshd-sftp</module>
-            </modules>
-        </profile>
-    </profiles>
-
     <modules>
         <module>sshd-core</module>
+        <module>sshd-ldap</module>
         <module>sshd-git</module>
         <module>assembly</module>
     </modules>
-
 </project>

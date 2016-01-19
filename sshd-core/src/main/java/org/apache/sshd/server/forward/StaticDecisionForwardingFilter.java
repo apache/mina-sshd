@@ -18,9 +18,9 @@
  */
 package org.apache.sshd.server.forward;
 
-import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
  * A {@link ForwardingFilter} implementation that returns the same &quot;static&quot;

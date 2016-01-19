@@ -23,9 +23,9 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
  * Determines if a forwarding request will be permitted.

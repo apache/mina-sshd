@@ -85,7 +85,6 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.ServiceFactory;
-import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
@@ -105,6 +104,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
  * <P>

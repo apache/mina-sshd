@@ -35,10 +35,10 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.scp.ScpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
-import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
  * <P>An authenticated session to a given SSH server</P>

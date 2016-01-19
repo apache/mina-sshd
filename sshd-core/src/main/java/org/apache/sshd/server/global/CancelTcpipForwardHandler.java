@@ -19,7 +19,6 @@
 package org.apache.sshd.server.global;
 
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.forward.TcpipForwarder;
 import org.apache.sshd.common.session.AbstractConnectionServiceRequestHandler;
 import org.apache.sshd.common.session.ConnectionService;
@@ -27,6 +26,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
  * Handler for cancel-tcpip-forward global request.

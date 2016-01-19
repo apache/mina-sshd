@@ -20,6 +20,7 @@
 package org.apache.sshd.common;
 
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.forward.ForwardingFilter;
 import org.apache.sshd.server.forward.RejectAllForwardingFilter;

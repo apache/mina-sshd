@@ -36,7 +36,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
-import org.apache.sshd.common.SshdSocketAddress;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.util.test.BaseTestSupport;

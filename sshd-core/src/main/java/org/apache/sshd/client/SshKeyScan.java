@@ -58,7 +58,6 @@ import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
@@ -78,6 +77,7 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.logging.AbstractSimplifiedLog;
 import org.apache.sshd.common.util.logging.LoggingUtils;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
  * A naive implementation of <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh-keyscan&sektion=1">ssh-keyscan(1)</A>

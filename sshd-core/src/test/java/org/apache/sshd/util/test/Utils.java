@@ -203,6 +203,25 @@ public class Utils {
         return path;
     }
 
+    public static File resolve(File root, String... children) {
+        if (GenericUtils.isEmpty(children)) {
+            return root;
+        } else {
+            return resolve(root, Arrays.asList(children));
+        }
+    }
+
+    public static File resolve(File root, Collection<String> children) {
+        File path = root;
+        if (!GenericUtils.isEmpty(children)) {
+            for (String child : children) {
+                path = new File(path, child);
+            }
+        }
+
+        return path;
+    }
+
     /**
      * Removes the specified file - if it is a directory, then its children
      * are deleted recursively and then the directory itself. <B>Note:</B>

@@ -43,7 +43,6 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.BuiltinFactory;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.BuiltinCompressions;
@@ -63,6 +62,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseReader;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.ServerBuilder;
 import org.apache.sshd.server.SshServer;
 

@@ -1,0 +1,31 @@
+version: 1
+
+dn: ou=People,dc=sshd,dc=apache,dc=org
+ou: People
+objectClass: top
+objectClass: organizationalUnit
+description: Parent object of all users accounts
+
+dn: cn=Guillaume Nodet,ou=People,dc=sshd,dc=apache,dc=org
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectclass: inetOrgPerson
+cn: Guillaume Nodet
+givenName: Guillaume
+sn: Nodet
+uid: gnodet
+userpassword: gnodet
+mail: gnodet@apache.org
+
+dn: cn=Lyor Goldstein,ou=People,dc=sshd,dc=apache,dc=org
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectclass: inetOrgPerson
+cn: Lyor Goldstein
+givenName: Lyor
+sn: Goldstein
+uid: lgoldstein
+userpassword: lgoldstein
+mail: lgoldstein@apache.org

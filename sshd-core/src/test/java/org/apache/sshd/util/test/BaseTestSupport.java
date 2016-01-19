@@ -47,10 +47,10 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
-import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.SshServer;
 import org.junit.Assert;
 import org.junit.Rule;

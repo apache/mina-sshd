@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
@@ -33,6 +32,7 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
  * SOCKS proxy server, supporting simple socks4/5 protocols.

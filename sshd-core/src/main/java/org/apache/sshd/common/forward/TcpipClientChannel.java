@@ -28,12 +28,12 @@ import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
  * TODO Add javadoc

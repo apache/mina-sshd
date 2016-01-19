@@ -30,7 +30,7 @@ import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.SshdSocketAddress;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;

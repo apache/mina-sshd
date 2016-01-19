@@ -22,7 +22,7 @@ package org.apache.sshd.common.forward;
 import java.io.IOException;
 
 import org.apache.sshd.common.Closeable;
-import org.apache.sshd.common.SshdSocketAddress;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 public interface TcpipForwarder extends Closeable {
 

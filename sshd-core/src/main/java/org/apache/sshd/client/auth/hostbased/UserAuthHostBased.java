@@ -30,7 +30,6 @@ import org.apache.sshd.client.auth.AbstractUserAuth;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
@@ -41,6 +40,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

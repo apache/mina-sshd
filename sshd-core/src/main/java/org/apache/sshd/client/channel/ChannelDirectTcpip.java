@@ -26,7 +26,6 @@ import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
@@ -34,6 +33,7 @@ import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
  * TODO Add javadoc
