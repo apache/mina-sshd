@@ -234,7 +234,8 @@ public class X11ForwardSupport extends AbstractInnerCloseable implements IoHandl
         @Override
         protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {
             localWindow.consumeAndCheck(len);
-            serverSession.write(new ByteArrayBuffer(data, off, len));
+            // use a clone in case data buffer is re-used
+            serverSession.write(ByteArrayBuffer.getCompactClone(data, off, len));
         }
 
         @Override
