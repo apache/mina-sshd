@@ -28,9 +28,9 @@
     </parent>
 
     <artifactId>sshd-ldap</artifactId>
-    <name>Apache Mina SSHD :: Git</name>
+    <name>Apache Mina SSHD :: LDAP</name>
     <packaging>jar</packaging>
-    <inceptionYear>2008</inceptionYear>
+    <inceptionYear>2016</inceptionYear>
 
     <properties>
         <projectRoot>${basedir}/..</projectRoot>

@@ -127,6 +127,15 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
             directoryService.setSystemPartition(systemPartition);
         }
 
+        // Create a new partition for the special extra attributes
+        {
+            JdbmPartition partition = new JdbmPartition();
+            partition.setId("openssh-lpk");
+            partition.setSuffix("cn=openssh-lpk,cn=schema,cn=config");
+            partition.setPartitionDir(assertHierarchyTargetFolderExists(Utils.deleteRecursive(new File(workingDirectory, partition.getId()))));
+            directoryService.addPartition(partition);
+        }
+
         // Create a new partition for the users
         {
             JdbmPartition partition = new JdbmPartition();
@@ -170,11 +179,8 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
             int id = 1;
             for (LdifEntry entry : reader) {
                 if (log.isDebugEnabled()) {
-                    log.debug("Add LDIF entry={}", entry);
+                    log.debug("Process LDIF entry={}", entry);
                 }
-
-                ChangeType changeType = entry.getChangeType();
-                assertEquals("Mismatched change type in users ldif entry=" + entry, ChangeType.Add, changeType);
 
                 Entry data = entry.getEntry();
                 EntryAttribute userAttr = data.get("uid");
@@ -184,10 +190,19 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
                     ValidateUtils.checkTrue(usersMap.put(username, passAttr.getString()) == null, "Multiple entries for user=%s", username);
                 }
 
-                InternalAddRequest addRequest = new AddRequestImpl(id++);
-                addRequest.setEntry(data);
+                ChangeType changeType = entry.getChangeType();
                 try {
-                    session.add(addRequest);
+                    switch (changeType) {
+                        case Add: {
+                            InternalAddRequest addRequest = new AddRequestImpl(id++);
+                            addRequest.setEntry(data);
+                            session.add(addRequest);
+                            break;
+                        }
+
+                        default:
+                            throw new UnsupportedOperationException("Unsupported change type (" + changeType + ") for entry=" + entry);
+                    }
                 } catch (Exception e) {
                     log.error("Failed (" + e.getClass().getSimpleName() + ") to add entry=" + entry + ": " + e.getMessage(), e);
                     throw e;

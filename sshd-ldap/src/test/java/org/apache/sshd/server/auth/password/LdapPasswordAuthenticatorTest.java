@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.directory.server.core.DirectoryService;
 import org.apache.directory.server.ldap.LdapServer;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.server.auth.BaseAuthenticatorTest;
 import org.apache.sshd.server.session.ServerSession;
@@ -50,6 +51,7 @@ public class LdapPasswordAuthenticatorTest extends BaseAuthenticatorTest {
     public static void startApacheDs() throws Exception {
         ldapContextHolder.set(startApacheDs(LdapPasswordAuthenticatorTest.class));
         usersMap = populateUsers(ldapContextHolder.get().getSecond(), LdapPasswordAuthenticatorTest.class, LdapPasswordAuthenticator.DEFAULT_PASSWORD_ATTR_NAME);
+        assertFalse("No users retrieved", GenericUtils.isEmpty(usersMap));
     }
 
     @AfterClass

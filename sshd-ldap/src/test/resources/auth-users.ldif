@@ -1,31 +1,35 @@
 version: 1
 
+## Add People group definition
 dn: ou=People,dc=sshd,dc=apache,dc=org
 ou: People
 objectClass: top
 objectClass: organizationalUnit
 description: Parent object of all users accounts
 
+## Add users
 dn: cn=Guillaume Nodet,ou=People,dc=sshd,dc=apache,dc=org
 objectClass: top
 objectClass: person
 objectClass: organizationalPerson
-objectclass: inetOrgPerson
+objectClass: inetOrgPerson
 cn: Guillaume Nodet
 givenName: Guillaume
 sn: Nodet
 uid: gnodet
 userpassword: gnodet
 mail: gnodet@apache.org
+description: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDEAGEwosEIS7koPfYFf2qXAqV+gGiuf3wizjYCz8UdYtmSBINRQhWvVtiWAiLOcHiI/nYSTXctIFyzbWJ74BqvgoZS8eujaPUyBO+asF3enfyrnug9uvqrhsGqnsqFSaAYSQG3p4paKThRhxGX1jqMy6wJaTED1d9SxHs9gnGCZLk1yAr0w/mDkF59YmPoAibmyz1aaXGkjPBWa4ac+RBTEuOxt0hz+ykA7rNua5QPMdNx3sXrv80ECDEs78poOiZgkRvBEnA4qCvSK5FBB5DkVn+3cUhd36tEhKz79u8mLAsrUrgi/JKcrdAZSCyS4oPRt9NEm9YZxcYzqDH98RDp sshd@apache.org
 
 dn: cn=Lyor Goldstein,ou=People,dc=sshd,dc=apache,dc=org
 objectClass: top
 objectClass: person
 objectClass: organizationalPerson
-objectclass: inetOrgPerson
+objectClass: inetOrgPerson
 cn: Lyor Goldstein
 givenName: Lyor
 sn: Goldstein
 uid: lgoldstein
 userpassword: lgoldstein
 mail: lgoldstein@apache.org
+description: ssh-dss AAAAB3NzaC1kc3MAAACBAJ6tabphvozXBCnOe2j48OF6pSGmV7+7mRrPxiyPY5mHcHGJXwsE4Rvu81epbTghX3A/s1sme1QtmVVOU3Y3NIxmDBK5UQmSIYS+chXe45GBwC6uJawOn4lPIYw15PJg2ZfjxC1QU5fa6HSQ3vX2MZfYFhEovlBd4mGo2+XY0DqHAAAAFQDeDO2UFNZRBFNN1jEBojpeALh7oQAAAIAI/wYgC1kTjsIFaVvgK3RcGb+lYW0EiuiuG0q37+BzcqtEgjVckvxoCTeghcyf6vhB+ZbrM9we2jH3JvmF4gmtmzjW8UtgYCB2ovRYmd21cSPQW2F9U+sIl2+2sI9rsyrAdyhW1qZ4HVIrKH0RdWkAkjQ+8EGKHKXKo6aEV/HdpAAAAIAv80m0MZoocokStZV7EclLwt3ihvN7/Tjf5aHS9fY8b1ev2Z7eIVm3UHirggEeJMQgIw3MBE/T1ttYyqwnVdOatBJVcVLXYUPuXrq6f9/TYEpYxLqowjOwPaAkZAnecVYo0eU52VSkR38onu7juk4BNzHtLILTvtZppQ6l3loOpA== sshd@apache.org
