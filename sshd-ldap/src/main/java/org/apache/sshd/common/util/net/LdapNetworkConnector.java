@@ -47,9 +47,11 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 /**
  * Uses the <A HREF="http://docs.oracle.com/javase/7/docs/technotes/guides/jndi/jndi-ldap.html">
  * LDAP Naming Service Provider for the Java Naming and Directory Interface (JNDI)</A>
+ *
+ * @param <C> Type of context being passed to {@link #resolveAttributes(String, String, Object)}
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class LdapNetworkConnector extends NetworkConnector {
+public class LdapNetworkConnector<C> extends NetworkConnector {
     public static final String DEFAULT_LDAP_PROTOCOL = "ldap";
     public static final int DEFAULT_LDAP_PORT = 389;
 
@@ -103,6 +105,22 @@ public class LdapNetworkConnector extends NetworkConnector {
         setReturningObjFlag(DEFAULT_LDAP_RETURN_OBJVALUE);
         setReferralMode(DEFAULT_LDAP_REFERRAL_MODE);
         setBinaryAttributes(DEFAULT_BINARY_ATTRIBUTES);
+    }
+
+    @Override
+    public void setConnectTimeout(long connectTimeout) {
+        // value must fit in an integer
+        ValidateUtils.checkTrue((connectTimeout >= Integer.MIN_VALUE) && (connectTimeout <= Integer.MAX_VALUE), "Invalid connect timeout: %d", connectTimeout);
+        ldapEnv.put("com.sun.jndi.ldap.connect.timeout", Long.toString(connectTimeout));
+        super.setConnectTimeout(connectTimeout);
+    }
+
+    @Override
+    public void setReadTimeout(long readTimeout) {
+        // value must fit in an integer
+        ValidateUtils.checkTrue((readTimeout >= Integer.MIN_VALUE) && (readTimeout <= Integer.MAX_VALUE), "Invalid read timeout: %d", readTimeout);
+        super.setReadTimeout(readTimeout);
+        ldapEnv.put("com.sun.jndi.ldap.read.timeout", Long.toString(readTimeout));
     }
 
     public String getLdapFactory() {
@@ -319,54 +337,82 @@ public class LdapNetworkConnector extends NetworkConnector {
      *                 may be {@code null}/empty if not required for the specific query
      * @param password Password Password to be used if necessary - may be {@code null}/empty if not
      *                 required for the specific query
-     * @param queryContext User specific query context - relevant only for derived classes that want
+     * @param queryContext User specific query context - relevant for derived classes that want
      *                 to override some of query processing methods
      * @return A {@link Map} of the retrieved attributes - <B>Note:</B> if {@link #isAccumulateMultiValues()}
      * is {@code true} and multiple values are encountered for an attribute then a {@link List} of them is
      * mapped as its value
      * @throws NamingException If failed to executed the LDAP query
+     * @see #queryAttributes(Object, DirContext, Map, String, String)
      */
-    public Map<String, Object> resolveAttributes(String username, String password, Object queryContext) throws NamingException {
-        DirContext context = initializeDirContext(queryContext, ldapEnv, username, password);
+    public Map<String, Object> resolveAttributes(String username, String password, C queryContext) throws NamingException {
+        // create a copy of the original environment so we can change it
+        DirContext context = initializeDirContext(queryContext, new HashMap<String, Object>(ldapEnv), username, password);
         try {
-            Map<?, ?> ldapConfig = context.getEnvironment();
-            String baseDN = resolveBaseDN(queryContext, ldapConfig, username, password);
-            String filter = resolveSearchFilter(queryContext, ldapConfig, username, password);
-            NamingEnumeration<? extends SearchResult> result =
-                    context.search(ValidateUtils.checkNotNullAndNotEmpty(baseDN, "No base DN"),
-                                   ValidateUtils.checkNotNullAndNotEmpty(filter, "No filter"),
-                                   searchControls);
-            try {
-                Map<String, Object> attrsMap = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
-                String referralMode = Objects.toString(ldapConfig.get(Context.REFERRAL), null);
-                for (int index = 0;; index++) {
-                    if (!result.hasMore()) {
-                        break;
-                    }
-
-                    processSearchResult(queryContext, ldapConfig, attrsMap, index, result.next());
-
-                    // if not following referrals stop at the 1st result regardless if there are others
-                    if ("ignore".equals(referralMode)) {
-                        break;
-                    }
-                }
-
-                return attrsMap;
-            } finally {
-                result.close();
-            }
+            return queryAttributes(queryContext, context, context.getEnvironment(), username, password);
         } finally {
             context.close();
         }
     }
 
-    protected DirContext initializeDirContext(Object queryContext, Map<String, ?> ldapConfig, String username, String password) throws NamingException {
-        Map<String, Object> env;
-        synchronized (ldapConfig) { // create a copy so we can change it
-            env = new HashMap<String, Object>(ldapConfig);
-        }
+    /**
+     * @param queryContext The user-specific query context
+     * @param context The initialized {@link DirContext}
+     * @param ldapConfig The LDAP environment setup
+     * @param username The username
+     * @param password The password
+     * @return A {@link Map} of the retrieved attributes - <B>Note:</B> if {@link #isAccumulateMultiValues()}
+     * is {@code true} and multiple values are encountered for an attribute then a {@link List} of them is
+     * mapped as its value
+     * @throws NamingException If failed to executed the LDAP query
+     */
+    protected Map<String, Object> queryAttributes(C queryContext, DirContext context, Map<?, ?> ldapConfig, String username, String password) throws NamingException {
+        String baseDN = resolveBaseDN(queryContext, ldapConfig, username, password);
+        String filter = resolveSearchFilter(queryContext, ldapConfig, username, password);
+        NamingEnumeration<? extends SearchResult> result =
+                context.search(ValidateUtils.checkNotNullAndNotEmpty(baseDN, "No base DN"),
+                               ValidateUtils.checkNotNullAndNotEmpty(filter, "No filter"),
+                               searchControls);
+        try {
+            Map<String, Object> attrsMap = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
+            String referralMode = Objects.toString(ldapConfig.get(Context.REFERRAL), null);
+            for (int index = 0;; index++) {
+                if (!result.hasMore()) {
+                    break;
+                }
 
+                processSearchResult(queryContext, ldapConfig, attrsMap, index, result.next());
+
+                // if not following referrals stop at the 1st result regardless if there are others
+                if ("ignore".equals(referralMode)) {
+                    break;
+                }
+            }
+
+            return attrsMap;
+        } finally {
+            result.close();
+        }
+    }
+
+    protected DirContext initializeDirContext(C queryContext, Map<String, Object> env, String username, String password) throws NamingException {
+        Map<String, ?> ldapConfig = setupDirContextEnvironment(queryContext, env, username, password);
+        return new InitialDirContext(new Hashtable<String, Object>(ldapConfig));
+    }
+
+    /**
+     * Called in order to set up the environment configuration passed to the
+     * {@link InitialDirContext#InitialDirContext(Hashtable)} constructor
+     *
+     * @param queryContext The caller-specific query context
+     * @param env The current environment setup
+     * @param username The username - may be {@code null}/empty
+     * @param password The password  - may be {@code null}/empty
+     * @return An updated environment configuration - can be a <U>new</U> instance
+     * or just the original one with some changes in it
+     * @throws NamingException If failed to set up the environment
+     */
+    protected Map<String, Object> setupDirContextEnvironment(C queryContext, Map<String, Object> env, String username, String password) throws NamingException {
         if (!env.containsKey(Context.PROVIDER_URL)) {
             int port = getPort();
             ValidateUtils.checkTrue(port > 0, "No port configured");
@@ -391,20 +437,20 @@ public class LdapNetworkConnector extends NetworkConnector {
             }
         }
 
-        return new InitialDirContext(new Hashtable<String, Object>(env));
+        return env;
     }
 
-    protected String resolveBaseDN(Object queryContext, Map<?, ?> ldapConfig, String username, String password) throws NamingException {
+    protected String resolveBaseDN(C queryContext, Map<?, ?> ldapConfig, String username, String password) throws NamingException {
         Object[] bindParams = {username, password};
         return ValidateUtils.checkNotNull(baseDNPattern, "No base DN pattern").format(bindParams);
     }
 
-    protected String resolveSearchFilter(Object queryContext, Map<?, ?> ldapConfig, String username, String password) throws NamingException {
+    protected String resolveSearchFilter(C queryContext, Map<?, ?> ldapConfig, String username, String password) throws NamingException {
         Object[] bindParams = {username, password};
         return ValidateUtils.checkNotNull(searchFilterPattern, "No search filter pattern").format(bindParams);
     }
 
-    protected void processSearchResult(Object queryContext, Map<?, ?> ldapConfig, Map<String, Object> attrsMap,
+    protected void processSearchResult(C queryContext, Map<?, ?> ldapConfig, Map<String, Object> attrsMap,
             int resultIndex, SearchResult result)
                     throws NamingException {
         String dn = result.getName();
@@ -422,7 +468,7 @@ public class LdapNetworkConnector extends NetworkConnector {
     }
 
     // returns the most up-to-date value mapped for the attribute
-    protected Object processResultAttributeValue(Object queryContext, Map<?, ?> ldapConfig,
+    protected Object processResultAttributeValue(C queryContext, Map<?, ?> ldapConfig,
             String dn, int resultIndex, Map<String, Object> attrsMap, Attribute a)
                     throws NamingException {
         String attrID = a.getID();
@@ -460,7 +506,7 @@ public class LdapNetworkConnector extends NetworkConnector {
     }
 
     @SuppressWarnings("unchecked")
-    protected Object accumulateAttributeValue(Object queryContext, Map<String, Object> attrsMap, String attrID, Object attrVal) {
+    protected Object accumulateAttributeValue(C queryContext, Map<String, Object> attrsMap, String attrID, Object attrVal) {
         Object prev = attrsMap.put(attrID, attrVal);
         if (prev == null) {
             return null;    // debug breakpoint

@@ -77,13 +77,16 @@ public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
 
     @Test
     public void testPublicKeyComparison() throws Exception {
+        Pair<LdapServer, DirectoryService> ldapContext = ldapContextHolder.get();
         LdapPublickeyAuthenticator auth = new LdapPublickeyAuthenticator();
+        auth.setHost(getHost(ldapContext));
+        auth.setPort(getPort(ldapContext));
         auth.setBaseDN(BASE_DN_TEST);
-        auth.setPort(getPort(ldapContextHolder.get()));
         auth.setKeyAttributeName(TEST_ATTR_NAME);
         auth.setRetrievedAttributes(TEST_ATTR_NAME);
 
         ServerSession session = Mockito.mock(ServerSession.class);
+        outputDebugMessage("%s: %s", getCurrentTestName(), auth);
         for (Map.Entry<String, PublicKey> ke : keysMap.entrySet()) {
             String username = ke.getKey();
             PublicKey key = ke.getValue();

@@ -67,6 +67,18 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
         super();
     }
 
+    public static String getHost(Pair<LdapServer, DirectoryService> context) {
+        return getHost((context == null) ? null : context.getFirst());
+    }
+
+    public static String getHost(LdapServer ldapServer) {
+        return getHost((ldapServer == null) ? null : ldapServer.getTransports());
+    }
+
+    public static String getHost(Transport ... transports) {
+        return GenericUtils.isEmpty(transports) ? null : transports[0].getAddress();
+    }
+
     public static int getPort(Pair<LdapServer, DirectoryService> context) {
         return getPort((context == null) ? null : context.getFirst());
     }
@@ -127,15 +139,6 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
             directoryService.setSystemPartition(systemPartition);
         }
 
-        // Create a new partition for the special extra attributes
-        {
-            JdbmPartition partition = new JdbmPartition();
-            partition.setId("openssh-lpk");
-            partition.setSuffix("cn=openssh-lpk,cn=schema,cn=config");
-            partition.setPartitionDir(assertHierarchyTargetFolderExists(Utils.deleteRecursive(new File(workingDirectory, partition.getId()))));
-            directoryService.addPartition(partition);
-        }
-
         // Create a new partition for the users
         {
             JdbmPartition partition = new JdbmPartition();
@@ -149,7 +152,7 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
         directoryService.getChangeLog().setEnabled(false);
 
         LdapServer ldapServer = new LdapServer();
-        ldapServer.setTransports(new TcpTransport(PORT));
+        ldapServer.setTransports(new TcpTransport(TEST_LOCALHOST, PORT));
         ldapServer.setDirectoryService(directoryService);
 
         log.info("Starting directory service ...");

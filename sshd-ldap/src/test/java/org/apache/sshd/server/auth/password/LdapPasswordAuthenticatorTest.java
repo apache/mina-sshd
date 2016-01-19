@@ -61,11 +61,14 @@ public class LdapPasswordAuthenticatorTest extends BaseAuthenticatorTest {
 
     @Test   // the user's password is compared with the LDAP stored one
     public void testPasswordComparison() throws Exception {
+        Pair<LdapServer, DirectoryService> ldapContext = ldapContextHolder.get();
         LdapPasswordAuthenticator auth = new LdapPasswordAuthenticator();
+        auth.setHost(getHost(ldapContext));
+        auth.setPort(getPort(ldapContext));
         auth.setBaseDN(BASE_DN_TEST);
-        auth.setPort(getPort(ldapContextHolder.get()));
 
         ServerSession session = Mockito.mock(ServerSession.class);
+        outputDebugMessage("%s: %s", getCurrentTestName(), auth);
         for (Map.Entry<String, String> ue : usersMap.entrySet()) {
             String username = ue.getKey();
             String password = ue.getValue();
