@@ -77,9 +77,10 @@ public class DefaultScpClient extends AbstractScpClient {
         String cmd = createReceiveCommand(remote, Collections.<Option>emptyList());
         ClientSession session = getClientSession();
         ChannelExec channel = openCommandChannel(session, cmd);
-        try {
+        try (InputStream invOut = channel.getInvertedOut();
+             OutputStream invIn = channel.getInvertedIn()) {
             // NOTE: we use a mock file system since we expect no invocations for it
-            ScpHelper helper = new ScpHelper(session, channel.getInvertedOut(), channel.getInvertedIn(), new MockFileSystem(remote), listener);
+            ScpHelper helper = new ScpHelper(session, invOut, invIn, new MockFileSystem(remote), listener);
             helper.receiveFileStream(local, ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE);
         } finally {
             channel.close(false);
@@ -91,8 +92,9 @@ public class DefaultScpClient extends AbstractScpClient {
         String cmd = createReceiveCommand(remote, options);
         ClientSession session = getClientSession();
         ChannelExec channel = openCommandChannel(session, cmd);
-        try {
-            ScpHelper helper = new ScpHelper(session, channel.getInvertedOut(), channel.getInvertedIn(), fs, listener);
+        try (InputStream invOut = channel.getInvertedOut();
+             OutputStream invIn = channel.getInvertedIn()) {
+            ScpHelper helper = new ScpHelper(session, invOut, invIn, fs, listener);
             helper.receive(local,
                     options.contains(Option.Recursive),
                     options.contains(Option.TargetIsDirectory),
@@ -112,8 +114,10 @@ public class DefaultScpClient extends AbstractScpClient {
         final String cmd = createSendCommand(remote, (time != null) ? EnumSet.of(Option.PreserveAttributes) : Collections.<Option>emptySet());
         ClientSession session = getClientSession();
         ChannelExec channel = openCommandChannel(session, cmd);
-        try {
-            ScpHelper helper = new ScpHelper(session, channel.getInvertedOut(), channel.getInvertedIn(), new MockFileSystem(remote), listener);
+        try (InputStream invOut = channel.getInvertedOut();
+             OutputStream invIn = channel.getInvertedIn()) {
+            // NOTE: we use a mock file system since we expect no invocations for it
+            ScpHelper helper = new ScpHelper(session, invOut, invIn, new MockFileSystem(remote), listener);
             final Path mockPath = new MockPath(remote);
             helper.sendStream(new DefaultScpStreamResolver(name, mockPath, perms, time, size, local, cmd),
                               time != null, ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
@@ -137,8 +141,10 @@ public class DefaultScpClient extends AbstractScpClient {
             FactoryManager manager = session.getFactoryManager();
             FileSystemFactory factory = manager.getFileSystemFactory();
             FileSystem fs = factory.createFileSystem(session);
-            try {
-                ScpHelper helper = new ScpHelper(session, channel.getInvertedOut(), channel.getInvertedIn(), fs, listener);
+
+            try (InputStream invOut = channel.getInvertedOut();
+                 OutputStream invIn = channel.getInvertedIn()) {
+                ScpHelper helper = new ScpHelper(session, invOut, invIn, fs, listener);
                 executor.execute(helper, local, options);
             } finally {
                 try {

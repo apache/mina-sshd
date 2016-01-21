@@ -118,8 +118,10 @@ public class ScpCommand
         if (log.isDebugEnabled()) {
             log.debug("Executing command {}", command);
         }
-        String[] args = command.split(" ");
-        for (int i = 1; i < args.length; i++) {
+
+        String[] args = GenericUtils.split(command, ' ');
+        int numArgs = GenericUtils.length(args);
+        for (int i = 1; i < numArgs; i++) {
             String argVal = args[i];
             if (argVal.charAt(0) == '-') {
                 for (int j = 1; j < argVal.length(); j++) {
@@ -141,16 +143,21 @@ public class ScpCommand
                             optD = true;
                             break;
                         default:  // ignored
-//                            error = new IOException("Unsupported option: " + args[i].charAt(j));
-//                            return;
+                            if (log.isDebugEnabled()) {
+                                log.debug("Unknown flag ('{}') in command={}", option, command);
+                            }
                     }
                 }
             } else {
                 String prevArg = args[i - 1];
                 path = command.substring(command.indexOf(prevArg) + prevArg.length() + 1);
+
+                int pathLen = path.length();
+                char startDelim = path.charAt(0);
+                char endDelim = (pathLen > 2) ? path.charAt(pathLen - 1) : '\0';
                 // remove quotes
-                if ((path.startsWith("\"") && path.endsWith("\"")) || (path.startsWith("'") && path.endsWith("'"))) {
-                    path = path.substring(1, path.length() - 1);
+                if ((pathLen > 2) && (startDelim == endDelim) && ((startDelim == '\'') || (startDelim == '"'))) {
+                    path = path.substring(1, pathLen - 1);
                 }
                 break;
             }

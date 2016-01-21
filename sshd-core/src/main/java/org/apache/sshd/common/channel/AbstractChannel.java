@@ -580,7 +580,7 @@ public abstract class AbstractChannel
         // Only accept extended data for stderr
         if (ex != SshConstants.SSH_EXTENDED_DATA_STDERR) {
             if (log.isDebugEnabled()) {
-                log.debug("handleExtendedData({}) send SSH_MSG_CHANNEL_FAILURE - non STDERR type: {}", this, ex);
+                log.debug("handleExtendedData({}) SSH_MSG_CHANNEL_FAILURE - non STDERR type: {}", this, ex);
             }
             Session s = getSession();
             buffer = s.prepareBuffer(SshConstants.SSH_MSG_CHANNEL_FAILURE, BufferUtils.clear(buffer));
@@ -589,14 +589,15 @@ public abstract class AbstractChannel
             return;
         }
         int len = buffer.getInt();
-        if (len < 0 || len > ByteArrayBuffer.MAX_LEN) {
+        if ((len < 0) || (len > ByteArrayBuffer.MAX_LEN)) {
             throw new IllegalStateException("Bad item length: " + len);
         }
         if (log.isDebugEnabled()) {
             log.debug("handleExtendedData({}) SSH_MSG_CHANNEL_EXTENDED_DATA len={}", this, len);
         }
         if (log.isTraceEnabled()) {
-            log.trace("handleExtendedData({}) extended data: {}", this, BufferUtils.printHex(buffer.array(), buffer.rpos(), len));
+            log.trace("handleExtendedData({}) extended data: {}",
+                      this, BufferUtils.printHex(buffer.array(), buffer.rpos(), len));
         }
         if (isEofSignalled()) {
             // TODO consider throwing an exception
