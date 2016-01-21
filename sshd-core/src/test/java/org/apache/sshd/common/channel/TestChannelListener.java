@@ -94,7 +94,7 @@ public class TestChannelListener extends AbstractLoggingBean implements ChannelL
     }
 
     @Override
-    public void channelClosed(Channel channel) {
+    public void channelClosed(Channel channel, Throwable reason) {
         Assert.assertTrue("Unknown closed channel instance: " + channel, activeChannels.remove(channel));
         modificationsCounter.release();
         log.info("channelClosed({})", channel);

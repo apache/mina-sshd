@@ -275,7 +275,7 @@ public class ClientTest extends BaseTestSupport {
             }
 
             @Override
-            public void channelClosed(Channel channel) {
+            public void channelClosed(Channel channel, Throwable reason) {
                 updateChannelConfigProperty(channel, "channelClosed");
             }
 
@@ -315,6 +315,11 @@ public class ClientTest extends BaseTestSupport {
         final Logger log = LoggerFactory.getLogger(getClass());
         client.addChannelListener(new ChannelListener() {
             @Override
+            public void channelInitialized(Channel channel) {
+                handleChannelEvent("Initialized", channel);
+            }
+
+            @Override
             public void channelOpenSuccess(Channel channel) {
                 handleChannelEvent("OpenSuccess", channel);
             }
@@ -330,13 +335,8 @@ public class ClientTest extends BaseTestSupport {
             }
 
             @Override
-            public void channelInitialized(Channel channel) {
-                handleChannelEvent("Initialized", channel);
-            }
-
-            @Override
-            public void channelClosed(Channel channel) {
-                handleChannelEvent("Closed", channel);
+            public void channelClosed(Channel channel, Throwable reason) {
+                log.info("channelClosed(" + channel + ") reason=" + reason);
             }
 
             private void handleChannelEvent(String name, Channel channel) {
@@ -347,7 +347,7 @@ public class ClientTest extends BaseTestSupport {
                     }
                 }
 
-                log.info("handleChannelEvent({})[{}]", name, id);
+                log.info("handleChannelEvent({})[{}] id={}", channel, name, id);
                 throw new ChannelFailureException(name);
             }
         });
@@ -359,29 +359,44 @@ public class ClientTest extends BaseTestSupport {
              InputStream inPipe = new PipedInputStream(pipedIn);
              ByteArrayOutputStream out = new ByteArrayOutputStream();
              ByteArrayOutputStream err = new ByteArrayOutputStream()) {
-            // we expect failures either on channel init or open - the one on close is ignored...
+            // we expect failures either on channel init or open
             for (int retryCount = 0; retryCount <= 3; retryCount++) {
                 try {
+                    out.reset();
+                    err.reset();
+
                     try(ChannelShell channel = session.createShellChannel()) {
                         channel.setIn(inPipe);
                         channel.setOut(out);
                         channel.setErr(err);
-                        channel.open().verify(6L, TimeUnit.SECONDS);
+                        channel.open().verify(11L, TimeUnit.SECONDS);
+
+                        log.info("Channel established at retry#" + retryCount);
+                        try (OutputStream stdin = channel.getInvertedIn()) {
+                            stdin.write((getCurrentTestName() + "-retry#" + retryCount + "\n").getBytes(StandardCharsets.UTF_8));
+                        }
                         break;  // 1st success means all methods have been invoked
                     }
                 } catch (IOException e) {
+                    outputDebugMessage("%s at retry #%d: %s", e.getClass().getSimpleName(), retryCount, e.getMessage());
                     synchronized (eventsMap) {
                         eventsMap.remove("Closed"); // since it is called anyway but does not cause an IOException
                         assertTrue("Unexpected failure at retry #" + retryCount, eventsMap.size() < 3);
                     }
+                } catch(IllegalStateException e) {
+                    // sometimes due to timing issues we get this problem
+                    assertTrue("Premature exception phase - count=" + retryCount, retryCount > 0);
+                    assertTrue("Session not closing", session.isClosing() || session.isClosed());
+                    log.warn("Session closing prematurely: " + session);
+                    return;
                 }
             }
         } finally {
             client.stop();
         }
 
-        assertEquals("Mismatched total failures count on test end", 3, eventsMap.size());
-        assertEquals("Mismatched open failures count on test end", 1, failuresSet.size());
+        assertEquals("Mismatched total failures count on test end", 2, eventsMap.size());
+        assertEquals("Mismatched open failures count on test end: " + failuresSet, 1, failuresSet.size());
     }
 
     @Test
@@ -404,7 +419,7 @@ public class ClientTest extends BaseTestSupport {
             }
 
             @Override
-            public void channelClosed(Channel channel) {
+            public void channelClosed(Channel channel, Throwable reason) {
                 assertSame("Mismatched closed channel instances", channel, channelHolder.getAndSet(null));
             }
         });
@@ -1476,7 +1491,8 @@ public class ClientTest extends BaseTestSupport {
         private final String name;
 
         public ChannelFailureException(String name) {
-            this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No event name provided");
+            super(ValidateUtils.checkNotNullAndNotEmpty(name, "No event name provided"));
+            this.name = name;
         }
 
         @Override

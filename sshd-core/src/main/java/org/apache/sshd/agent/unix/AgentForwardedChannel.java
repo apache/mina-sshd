@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.tomcat.jni.Socket;
 import org.apache.tomcat.jni.Status;
 
@@ -58,10 +59,8 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
 
     @Override
     protected synchronized void doOpen() throws IOException {
-        if (streaming == Streaming.Async) {
-            throw new IllegalArgumentException("Asynchronous streaming isn't supported yet on this channel");
-        }
-        invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
+        ValidateUtils.checkTrue(!Streaming.Async.equals(streaming), "Asynchronous streaming isn't supported yet on this channel");
+        invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
     }
 
     @Override

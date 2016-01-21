@@ -30,6 +30,7 @@ import org.apache.sshd.agent.common.AbstractAgentProxy;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
@@ -85,10 +86,8 @@ public class AgentForwardedChannel extends AbstractClientChannel {
 
     @Override
     protected void doOpen() throws IOException {
-        if (streaming == Streaming.Async) {
-            throw new IllegalArgumentException("Asynchronous streaming isn't supported yet on this channel");
-        }
-        invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
+        ValidateUtils.checkTrue(!Streaming.Async.equals(streaming), "Asynchronous streaming isn't supported yet on this channel");
+        invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
     }
 
     @Override

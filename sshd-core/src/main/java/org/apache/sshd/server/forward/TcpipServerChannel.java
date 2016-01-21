@@ -32,6 +32,7 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.channel.OpenChannelException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoConnectFuture;
@@ -48,7 +49,6 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.channel.AbstractServerChannel;
-import org.apache.sshd.server.channel.OpenChannelException;
 
 /**
  * TODO Add javadoc
@@ -142,7 +142,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         }
 
         // TODO: revisit for better threading. Use async io ?
-        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
+        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
         IoHandler handler = new IoHandler() {
             @SuppressWarnings("synthetic-access")
             @Override
@@ -202,7 +202,8 @@ public class TcpipServerChannel extends AbstractServerChannel {
             Throwable e = GenericUtils.peelException(t);
             try {
                 listener.channelOpenFailure(this, e);
-            } catch (Throwable ignored) {
+            } catch (Throwable err) {
+                Throwable ignored = GenericUtils.peelException(err);
                 log.warn("handleChannelConnectResult({})[exception] failed ({}) to inform listener of open failure={}: {}",
                          this, ignored.getClass().getSimpleName(), e.getClass().getSimpleName(), ignored.getMessage());
                 if (log.isDebugEnabled()) {
@@ -225,18 +226,19 @@ public class TcpipServerChannel extends AbstractServerChannel {
         ChannelListener listener = getChannelListenerProxy();
         try {
             listener.channelOpenFailure(this, problem);
-        } catch (Throwable ignored) {
+        } catch (Throwable err) {
+            Throwable ignored = GenericUtils.peelException(err);
             log.warn("handleChannelOpenFailure({}) failed ({}) to inform listener of open failure={}: {}",
                      this, ignored.getClass().getSimpleName(), problem.getClass().getSimpleName(), ignored.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("handleChannelOpenFailure(" + this + ") listener inform open failure details", ignored);
+            }
         }
 
         closeImmediately0();
 
         if (problem instanceof ConnectException) {
-            f.setException(new OpenChannelException(
-                    SshConstants.SSH_OPEN_CONNECT_FAILED,
-                    problem.getMessage(),
-                    problem));
+            f.setException(new OpenChannelException(SshConstants.SSH_OPEN_CONNECT_FAILED, problem.getMessage(), problem));
         } else {
             f.setException(problem);
         }

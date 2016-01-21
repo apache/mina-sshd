@@ -85,6 +85,12 @@ public interface Channel extends ChannelListenerManager, PropertyResolver, Close
     void init(ConnectionService service, Session session, int id) throws IOException;
 
     /**
+     * @return {@code true} if call to {@link #init(ConnectionService, Session, int)} was
+     * successfully completed
+     */
+    boolean isInitialized();
+
+    /**
      * For a server channel, this method will actually open the channel
      *
      * @param recipient  Recipient identifier

@@ -56,7 +56,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
         final OpenFuture f = new DefaultOpenFuture(this);
         ChannelListener listener = getChannelListenerProxy();
         try {
-            out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
+            out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
 
             Session session = getSession();
             FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
@@ -70,9 +70,13 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
             Throwable e = GenericUtils.peelException(t);
             try {
                 listener.channelOpenFailure(this, e);
-            } catch (Throwable ignored) {
+            } catch (Throwable err) {
+                Throwable ignored = GenericUtils.peelException(err);
                 log.warn("doInit({}) failed ({}) to inform listener of open failure={}: {}",
                          this, ignored.getClass().getSimpleName(), e.getClass().getSimpleName(), ignored.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("doInit(" + this + ") inform listener open failure details", ignored);
+                }
             }
             f.setException(e);
         }
@@ -97,11 +101,6 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
                 closeImmediately0();
             }
         });
-    }
-
-    @Override
-    public void handleEof() throws IOException {
-        super.handleEof();
     }
 
     @Override

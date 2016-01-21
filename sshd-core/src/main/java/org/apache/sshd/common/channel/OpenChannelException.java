@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.channel;
+package org.apache.sshd.common.channel;
 
 /**
  * Documents failure of a channel to open as expected.

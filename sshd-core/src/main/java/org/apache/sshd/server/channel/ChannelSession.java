@@ -203,6 +203,10 @@ public class ChannelSession extends AbstractServerChannel {
                 log.debug("handleEof({}) failed ({}) to close receiver: {}",
                           this, e.getClass().getSimpleName(), e.getMessage());
             }
+
+            if (log.isTraceEnabled()) {
+                log.trace("handleEof(" + this + ") receiver close failure details", e);
+            }
         }
     }
 
@@ -515,8 +519,8 @@ public class ChannelSession extends AbstractServerChannel {
             ((AsyncCommand) command).setIoOutputStream(asyncOut);
             ((AsyncCommand) command).setIoErrorStream(asyncErr);
         } else {
-            out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
-            err = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA);
+            out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA, false);
+            err = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA, false);
             if (log.isTraceEnabled()) {
                 // Wrap in logging filters
                 String channelId = toString();

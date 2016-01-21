@@ -69,6 +69,8 @@ public interface ChannelListener extends EventListener {
      * {@link #channelOpenFailure(Channel, Throwable)} have been called
      *
      * @param channel The referenced {@link Channel}
+     * @param reason The reason why the channel is being closed - if {@code null}
+     * then normal closure
      */
-    void channelClosed(Channel channel);
+    void channelClosed(Channel channel, Throwable reason);
 }

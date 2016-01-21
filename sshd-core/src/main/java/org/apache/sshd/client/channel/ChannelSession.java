@@ -52,7 +52,7 @@ public class ChannelSession extends AbstractClientChannel {
 
     @Override
     protected void doOpen() throws IOException {
-        if (streaming == Streaming.Async) {
+        if (Streaming.Async.equals(streaming)) {
             asyncIn = new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA) {
                 @SuppressWarnings("synthetic-access")
                 @Override
@@ -69,7 +69,7 @@ public class ChannelSession extends AbstractClientChannel {
             asyncOut = new ChannelAsyncInputStream(this);
             asyncErr = new ChannelAsyncInputStream(this);
         } else {
-            invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
+            invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
             if (out == null) {
                 ChannelPipedInputStream pis = new ChannelPipedInputStream(this, localWindow);
                 ChannelPipedOutputStream pos = new ChannelPipedOutputStream(pis);

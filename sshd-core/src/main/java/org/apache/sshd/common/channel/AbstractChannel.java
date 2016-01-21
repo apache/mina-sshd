@@ -77,7 +77,9 @@ public abstract class AbstractChannel
     protected final Window localWindow;
     protected final Window remoteWindow;
     protected ConnectionService service;
-    protected final AtomicBoolean eof = new AtomicBoolean(false);
+    protected final AtomicBoolean initialized = new AtomicBoolean(false);
+    protected final AtomicBoolean eofReceived = new AtomicBoolean(false);
+    protected final AtomicBoolean eofSent = new AtomicBoolean(false);
     protected AtomicReference<GracefulState> gracefulState = new AtomicReference<GracefulState>(GracefulState.Opened);
     protected final DefaultCloseFuture gracefulFuture = new DefaultCloseFuture(lock);
     protected final List<RequestHandler<Channel>> handlers = new ArrayList<RequestHandler<Channel>>();
@@ -327,11 +329,17 @@ public abstract class AbstractChannel
             listener.channelInitialized(this);
         } catch (RuntimeException t) {
             Throwable e = GenericUtils.peelException(t);
-            throw new IOException("Failed (" + e.getClass().getSimpleName() + ") to notify channel " + toString() + " initialization: " + e.getMessage(), e);
+            throw new IOException("Failed (" + e.getClass().getSimpleName() + ") to notify channel " + this + " initialization: " + e.getMessage(), e);
         }
         // delegate the rest of the notifications to the channel
         addChannelListener(listener);
         configureWindow();
+        initialized.set(true);
+    }
+
+    @Override
+    public boolean isInitialized() {
+        return initialized.get();
     }
 
     protected void notifyStateChanged() {
@@ -373,8 +381,15 @@ public abstract class AbstractChannel
     @Override
     public void handleClose() throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("handleClose({}) SSH_MSG_CHANNEL_CLOSE on channel", this);
+            log.debug("handleClose({}) SSH_MSG_CHANNEL_CLOSE", this);
         }
+
+        if (!eofSent.getAndSet(true)) {
+            if (log.isDebugEnabled()) {
+                log.debug("handleClose({}) prevent sending EOF", this);
+            }
+        }
+
         if (gracefulState.compareAndSet(GracefulState.Opened, GracefulState.CloseReceived)) {
             close(false);
         } else if (gracefulState.compareAndSet(GracefulState.CloseSent, GracefulState.Closed)) {
@@ -383,12 +398,22 @@ public abstract class AbstractChannel
     }
 
     @Override
+    public CloseFuture close(boolean immediately) {
+        if (!eofSent.getAndSet(true)) {
+            if (log.isDebugEnabled()) {
+                log.debug("close({}) prevent sending EOF", this);
+            }
+        }
+
+        return super.close(immediately);
+    }
+
+    @Override
     protected Closeable getInnerCloseable() {
         return new GracefulChannelCloseable();
     }
 
     public class GracefulChannelCloseable extends IoBaseCloseable {
-
         private final AtomicBoolean closing = new AtomicBoolean(false);
 
         public GracefulChannelCloseable() {
@@ -413,13 +438,17 @@ public abstract class AbstractChannel
         public CloseFuture close(final boolean immediately) {
             final Channel channel = AbstractChannel.this;
             if (log.isDebugEnabled()) {
-                log.debug("close({})[immediately={}] SSH_MSG_CHANNEL_CLOSE on channel", channel, immediately);
+                log.debug("close({})[immediately={}] processing", channel, immediately);
             }
 
             setClosing(true);
             if (immediately) {
                 gracefulFuture.setClosed();
             } else if (!gracefulFuture.isClosed()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("close({})[immediately={}] send SSH_MSG_CHANNEL_CLOSE", channel, immediately);
+                }
+
                 Session s = getSession();
                 Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_CLOSE, Short.SIZE);
                 buffer.putInt(getRecipient());
@@ -452,6 +481,10 @@ public abstract class AbstractChannel
                         log.debug("close({})[immediately={}] {} while writing SSH_MSG_CHANNEL_CLOSE packet on channel: {}",
                                   channel, immediately, e.getClass().getSimpleName(), e.getMessage());
                     }
+
+                    if (log.isTraceEnabled()) {
+                        log.trace("close(" + channel + ")[immediately=" + immediately + "] packet write failure details", e);
+                    }
                     channel.close(true);
                 }
             }
@@ -473,10 +506,13 @@ public abstract class AbstractChannel
     protected void preClose() {
         ChannelListener listener = getChannelListenerProxy();
         try {
-            listener.channelClosed(this);
+            listener.channelClosed(this, null);
         } catch (RuntimeException t) {
             Throwable e = GenericUtils.peelException(t);
-            log.warn(e.getClass().getSimpleName() + " while signal channel " + toString() + " closed: " + e.getMessage(), e);
+            log.warn("preClose({}) {} while signal channel closed: {}", this, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("preClose(" + this + ") channel closed signalling failure details", e);
+            }
         } finally {
             // clear the listeners since we are closing the channel (quicker GC)
             this.channelListeners.clear();
@@ -531,6 +567,10 @@ public abstract class AbstractChannel
         if (log.isTraceEnabled()) {
             log.trace("handleData({}) data: {}", this, BufferUtils.printHex(buffer.array(), buffer.rpos(), len));
         }
+        if (isEofSignalled()) {
+            // TODO consider throwing an exception
+            log.warn("handleData({}) extra {} bytes sent after EOF", this, len);
+        }
         doWriteData(buffer.array(), buffer.rpos(), len);
     }
 
@@ -558,24 +598,28 @@ public abstract class AbstractChannel
         if (log.isTraceEnabled()) {
             log.trace("handleExtendedData({}) extended data: {}", this, BufferUtils.printHex(buffer.array(), buffer.rpos(), len));
         }
+        if (isEofSignalled()) {
+            // TODO consider throwing an exception
+            log.warn("handleExtendedData({}) extra {} bytes sent after EOF", this, len);
+        }
         doWriteExtendedData(buffer.array(), buffer.rpos(), len);
-    }
-
-    public boolean isEofSignalled() {
-        return eof.get();
-    }
-
-    public void setEofSignalled(boolean on) {
-        eof.set(on);
     }
 
     @Override
     public void handleEof() throws IOException {
-        if (log.isDebugEnabled()) {
-            log.debug("handleEof({}) SSH_MSG_CHANNEL_EOF", this);
+        if (eofReceived.getAndSet(true)) {
+            // TODO consider throwing an exception
+            log.warn("handleEof({}) already signalled", this);
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("handleEof({}) SSH_MSG_CHANNEL_EOF", this);
+            }
         }
-        setEofSignalled(true);
         notifyStateChanged();
+    }
+
+    public boolean isEofSignalled() {
+        return eofReceived.get();
     }
 
     @Override
@@ -607,13 +651,32 @@ public abstract class AbstractChannel
     protected abstract void doWriteExtendedData(byte[] data, int off, int len) throws IOException;
 
     protected void sendEof() throws IOException {
+        if (eofSent.getAndSet(true)) {
+            if (log.isDebugEnabled()) {
+                log.debug("sendEof({}) already sent", this);
+            }
+            return;
+        }
+
+        if (isClosing()) {
+            if (log.isDebugEnabled()) {
+                log.debug("sendEof({}) already closing or closed", this);
+            }
+            return;
+        }
+
         if (log.isDebugEnabled()) {
             log.debug("sendEof({}) SSH_MSG_CHANNEL_EOF", this);
         }
+
         Session s = getSession();
         Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_EOF, Short.SIZE);
         buffer.putInt(getRecipient());
         writePacket(buffer);
+    }
+
+    public boolean isEofSent() {
+        return eofSent.get();
     }
 
     @Override

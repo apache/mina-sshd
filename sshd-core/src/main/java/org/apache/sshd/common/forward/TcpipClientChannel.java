@@ -114,7 +114,7 @@ public class TcpipClientChannel extends AbstractClientChannel {
         if (streaming == Streaming.Async) {
             throw new IllegalArgumentException("Asynchronous streaming isn't supported yet on this channel");
         }
-        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
+        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
         invertedIn = out;
     }
 

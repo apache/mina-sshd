@@ -85,7 +85,8 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
             Throwable e = GenericUtils.peelException(t);
             try {
                 listener.channelOpenFailure(this, e);
-            } catch (Throwable ignored) {
+            } catch (Throwable err) {
+                Throwable ignored = GenericUtils.peelException(err);
                 log.warn("doInit({}) failed ({}) to inform listener of open failure={}: {}",
                          this, ignored.getClass().getSimpleName(), e.getClass().getSimpleName(), ignored.getMessage());
                 if (log.isDebugEnabled()) {

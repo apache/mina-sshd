@@ -169,7 +169,7 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
             }
 
             @Override
-            public void channelClosed(Channel channel) {
+            public void channelClosed(Channel channel, Throwable reason) {
                 // ignored
             }
         });

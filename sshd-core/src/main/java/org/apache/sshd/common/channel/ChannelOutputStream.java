@@ -50,6 +50,7 @@ public class ChannelOutputStream extends OutputStream implements Channel {
     private final long maxWaitTimeout;
     private final Logger log;
     private final byte cmd;
+    private final boolean eofOnClose;
     private final byte[] b = new byte[1];
     private final AtomicBoolean closedState = new AtomicBoolean(false);
     private Buffer buffer;
@@ -57,18 +58,23 @@ public class ChannelOutputStream extends OutputStream implements Channel {
     private int lastSize;
     private boolean noDelay;
 
-    public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, Logger log, byte cmd) {
-        this(channel, remoteWindow, PropertyResolverUtils.getLongProperty(channel, WAIT_FOR_SPACE_TIMEOUT, DEFAULT_WAIT_FOR_SPACE_TIMEOUT), log, cmd);
+    public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, Logger log, byte cmd, boolean eofOnClose) {
+        this(channel, remoteWindow, PropertyResolverUtils.getLongProperty(channel, WAIT_FOR_SPACE_TIMEOUT, DEFAULT_WAIT_FOR_SPACE_TIMEOUT), log, cmd, eofOnClose);
     }
 
-    public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, long maxWaitTimeout, Logger log, byte cmd) {
+    public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, long maxWaitTimeout, Logger log, byte cmd, boolean eofOnClose) {
         this.channel = ValidateUtils.checkNotNull(channel, "No channel");
         this.remoteWindow = ValidateUtils.checkNotNull(remoteWindow, "No remote window");
         ValidateUtils.checkTrue(maxWaitTimeout > 0L, "Non-positive max. wait time: %d", maxWaitTimeout);
         this.maxWaitTimeout = maxWaitTimeout;
         this.log = ValidateUtils.checkNotNull(log, "No logger");
         this.cmd = cmd;
+        this.eofOnClose = eofOnClose;
         newBuffer(0);
+    }
+
+    public boolean isEofOnClose() {
+        return eofOnClose;
     }
 
     public void setNoDelay(boolean noDelay) {
@@ -200,6 +206,9 @@ public class ChannelOutputStream extends OutputStream implements Channel {
 
             try {
                 flush();
+                if (isEofOnClose()) {
+                    channel.sendEof();
+                }
             } finally {
                 closedState.set(true);
             }

@@ -36,6 +36,8 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelListener;
+import org.apache.sshd.common.channel.OpenChannelException;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.forward.TcpipForwarder;
@@ -47,7 +49,6 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
-import org.apache.sshd.server.channel.OpenChannelException;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 
 /**
@@ -134,7 +135,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
 
     @Override
     public int registerChannel(Channel channel) throws IOException {
-        final Session session = getSession();
+        Session session = getSession();
         int maxChannels = PropertyResolverUtils.getIntProperty(session, MAX_CONCURRENT_CHANNELS_PROP, DEFAULT_MAX_CHANNELS);
         int curSize = channels.size();
         if (curSize > maxChannels) {
@@ -143,18 +144,40 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
 
         int channelId = getNextChannelId();
         channel.init(this, session, channelId);
-        synchronized (lock) {
-            if (isClosing()) {
-                throw new IllegalStateException("Session is being closed: " + toString());
-            }
 
-            channels.put(channelId, channel);
+        boolean registered = false;
+        synchronized (lock) {
+            if (!isClosing()) {
+                channels.put(channelId, channel);
+                registered = true;
+            }
+        }
+
+        if (!registered) {
+            handleChannelRegistrationFailure(channel, channelId);
         }
 
         if (log.isDebugEnabled()) {
             log.debug("registerChannel({})[id={}] {}", this, channelId, channel);
         }
         return channelId;
+    }
+
+    protected void handleChannelRegistrationFailure(Channel channel, int channelId) throws IOException {
+        RuntimeException reason = new IllegalStateException("Channel id=" + channelId + " not registered because session is being closed: " + this);
+        ChannelListener listener = channel.getChannelListenerProxy();
+        try {
+            listener.channelClosed(channel, reason);
+        } catch (Throwable err) {
+            Throwable ignored = GenericUtils.peelException(err);
+            log.warn("registerChannel({})[{}] failed ({}) to inform of channel closure: {}",
+                     this, channel, ignored.getClass().getSimpleName(), ignored.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("registerChannel(" + this + ")[" + channel + "] inform closure failure details", ignored);
+            }
+        }
+
+        throw reason;
     }
 
     /**
@@ -365,13 +388,18 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
      * @throws IOException if the channel does not exists
      */
     protected Channel getChannel(Buffer buffer) throws IOException {
-        int recipient = buffer.getInt();
+        return getChannel(buffer.getInt(), buffer);
+    }
+
+    protected Channel getChannel(int recipient, Buffer buffer) throws IOException {
         Channel channel = channels.get(recipient);
         if (channel == null) {
-            buffer.rpos(buffer.rpos() - 5);
-            int cmd = buffer.getUByte();
+            byte[] data = buffer.array();
+            int curPos = buffer.rpos();
+            int cmd = (curPos >= 5) ? data[curPos - 5] & 0xFF : -1;
             throw new SshException("Received " + SshConstants.getCommandMessageName(cmd) + " on unknown channel " + recipient);
         }
+
         return channel;
     }
 
