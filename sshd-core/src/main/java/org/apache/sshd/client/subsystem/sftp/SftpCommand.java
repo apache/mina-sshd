@@ -763,6 +763,12 @@ public class SftpCommand implements Channel {
                     transferRemoteDir(sftp, local, remote, attrs, stdout, verbose);
                 }
             } else {
+                if (Files.exists(local) && Files.isDirectory(local)) {
+                    int pos = remote.lastIndexOf('/');
+                    String name = (pos >= 0) ? remote.substring(pos + 1) : remote;
+                    local = local.resolve(name);
+                }
+
                 transferFile(sftp, local, remote, upload, stdout, verbose);
             }
         }
