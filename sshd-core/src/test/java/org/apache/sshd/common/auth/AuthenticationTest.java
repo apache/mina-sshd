@@ -23,6 +23,7 @@ import java.net.SocketAddress;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -44,6 +45,8 @@ import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -54,6 +57,7 @@ import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
@@ -651,6 +655,63 @@ public class AuthenticationTest extends BaseTestSupport {
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.addPublicKeyIdentity(clientIdentity);
                 s.auth().verify(11L, TimeUnit.SECONDS);
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    @Test   // see SSHD-624
+    public void testMismatchedUserAuthPkOkData() throws Exception {
+        final AtomicInteger challengeCounter = new AtomicInteger(0);
+        sshd.setUserAuthFactories(Collections.<NamedFactory<org.apache.sshd.server.auth.UserAuth>>singletonList(
+                new org.apache.sshd.server.auth.pubkey.UserAuthPublicKeyFactory() {
+                    @Override
+                    public org.apache.sshd.server.auth.pubkey.UserAuthPublicKey create() {
+                        return new org.apache.sshd.server.auth.pubkey.UserAuthPublicKey() {
+                            @Override
+                            protected void sendPublicKeyResponse(ServerSession session, String username, String alg, PublicKey key,
+                                    byte[] keyBlob, int offset, int blobLen, Buffer buffer) throws Exception {
+                                int count = challengeCounter.incrementAndGet();
+                                outputDebugMessage("sendPublicKeyChallenge(%s)[%s]: count=%d", session, alg, count);
+                                if (count == 1) {
+                                    // send wrong key type
+                                    super.sendPublicKeyResponse(session, username, KeyPairProvider.SSH_DSS, key, keyBlob, offset, blobLen, buffer);
+                                } else if (count == 2) {
+                                    // send another key
+                                    KeyPair otherPair = org.apache.sshd.util.test.Utils.generateKeyPair("RSA", 1024);
+                                    PublicKey otherKey = otherPair.getPublic();
+                                    Buffer buf = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_PK_OK, BufferUtils.clear(buffer));
+                                    buf.putString(alg);
+                                    buf.putPublicKey(otherKey);
+                                    session.writePacket(buf);
+                                } else {
+                                    super.sendPublicKeyResponse(session, username, alg, key, keyBlob, offset, blobLen, buffer);
+                                }
+                            }
+                        };
+                    }
+
+        }));
+
+        try (SshClient client = setupTestClient()) {
+            KeyPair clientIdentity = Utils.generateKeyPair("RSA", 1024);
+            client.start();
+
+            try {
+                for (int index = 1; index <= 4; index++) {
+                    try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                        s.addPublicKeyIdentity(clientIdentity);
+                        s.auth().verify(17L, TimeUnit.SECONDS);
+                        assertEquals("Mismatched number of challenges", 3, challengeCounter.get());
+                        break;
+                    } catch(SshException e) {   // expected
+                        outputDebugMessage("%s on retry #%d: %s", e.getClass().getSimpleName(), index, e.getMessage());
+
+                        Throwable t = e.getCause();
+                        assertObjectInstanceOf("Unexpected failure cause at retry #" + index, InvalidKeySpecException.class, t);
+                    }
+                }
             } finally {
                 client.stop();
             }

@@ -19,6 +19,7 @@
 package org.apache.sshd.server.auth.pubkey;
 
 import java.security.PublicKey;
+import java.security.SignatureException;
 import java.util.Collection;
 import java.util.List;
 
@@ -110,27 +111,33 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             log.debug("doAuth({}@{}) key type={}, fingerprint={} - authentication result: {}",
                       username, session, alg, KeyUtils.getFingerPrint(key), authed);
         }
+
         if (!authed) {
             return Boolean.FALSE;
         }
 
         if (!hasSig) {
-            if (log.isDebugEnabled()) {
-                log.debug("doAuth({}@{}) send SSH_MSG_USERAUTH_PK_OK for key type={}, fingerprint={}",
-                           username, session, alg, KeyUtils.getFingerPrint(key));
-            }
-
-            Buffer buf = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_PK_OK, BufferUtils.clear(buffer));
-            buf.putString(alg);
-            buf.putRawBytes(buffer.array(), oldPos, 4 + len);
-            session.writePacket(buf);
+            sendPublicKeyResponse(session, username, alg, key, buffer.array(), oldPos, 4 + len, buffer);
             return null;
         }
 
-        // verify signature
+        buffer.rpos(oldPos);
+        buffer.wpos(oldPos + 4 + len);
+        if (!verifySignature(session, getService(), getName(), username, alg, key, buffer, verifier, sig)) {
+            throw new SignatureException("Key verification failed");
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("doAuth({}@{}) key type={}, fingerprint={} - verified",
+                      username, session, alg, KeyUtils.getFingerPrint(key));
+        }
+
+        return Boolean.TRUE;
+    }
+
+    protected boolean verifySignature(ServerSession session, String service, String name, String username,
+            String alg, PublicKey key, Buffer buffer, Signature verifier, byte[] sig) throws Exception {
         byte[] id = session.getSessionId();
-        String service = getService();
-        String name = getName();
         Buffer buf = new ByteArrayBuffer(id.length + username.length() + service.length() + name.length()
             + alg.length() + ByteArrayBuffer.DEFAULT_SIZE + Long.SIZE, false);
         buf.putBytes(id);
@@ -140,27 +147,29 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         buf.putString(name);
         buf.putBoolean(true);
         buf.putString(alg);
-        buffer.rpos(oldPos);
-        buffer.wpos(oldPos + 4 + len);
         buf.putBuffer(buffer);
 
         if (log.isTraceEnabled()) {
-            log.trace("doAuth({}@{}) key type={}, fingerprint={} - verification data={}",
-                      username, session, alg, KeyUtils.getFingerPrint(key), buf.printHex());
-            log.trace("doAuth({}@{}) key type={}, fingerprint={} - expected signature={}",
-                      username, session, alg, KeyUtils.getFingerPrint(key), BufferUtils.printHex(sig));
+            log.trace("verifySignature({}@{})[{}][{}] key type={}, fingerprint={} - verification data={}",
+                      username, session, service, name, alg, KeyUtils.getFingerPrint(key), buf.printHex());
+            log.trace("verifySignature({}@{})[{}][{}] key type={}, fingerprint={} - expected signature={}",
+                      username, session, service, name, alg, KeyUtils.getFingerPrint(key), BufferUtils.printHex(sig));
         }
 
         verifier.update(buf.array(), buf.rpos(), buf.available());
-        if (!verifier.verify(sig)) {
-            throw new Exception("Key verification failed");
-        }
+        return verifier.verify(sig);
+    }
 
+    protected void sendPublicKeyResponse(ServerSession session, String username, String alg, PublicKey key,
+            byte[] keyBlob, int offset, int blobLen, Buffer buffer) throws Exception {
         if (log.isDebugEnabled()) {
-            log.debug("doAuth({}@{}) key type={}, fingerprint={} - verified",
-                      username, session, alg, KeyUtils.getFingerPrint(key));
+            log.debug("doAuth({}@{}) send SSH_MSG_USERAUTH_PK_OK for key type={}, fingerprint={}",
+                       username, session, alg, KeyUtils.getFingerPrint(key));
         }
 
-        return Boolean.TRUE;
+        Buffer buf = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_PK_OK, BufferUtils.clear(buffer));
+        buf.putString(alg);
+        buf.putRawBytes(keyBlob, offset, blobLen);
+        session.writePacket(buf);
     }
 }

@@ -21,6 +21,7 @@ package org.apache.sshd.client.auth.pubkey;
 import java.io.Closeable;
 import java.io.IOException;
 import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Iterator;
 import java.util.List;
 
@@ -107,18 +108,34 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
 
     @Override
     protected boolean processAuthDataRequest(ClientSession session, String service, Buffer buffer) throws Exception {
+        String name = getName();
         int cmd = buffer.getUByte();
         if (cmd != SshConstants.SSH_MSG_USERAUTH_PK_OK) {
-            throw new IllegalStateException("processAuthDataRequest(" + session + ")[" + service + "]"
+            throw new IllegalStateException("processAuthDataRequest(" + session + ")[" + service + "][" + name + "]"
                     + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
         }
 
+        /*
+         * Make sure the server echo-ed the same key we sent as
+         * sanctioned by RFC4252 section 7
+         */
         PublicKey key = current.getPublicKey();
         String algo = KeyUtils.getKeyType(key);
-        String name = getName();
+        String rspKeyType = buffer.getString();
+        if (!rspKeyType.equals(algo)) {
+            throw new InvalidKeySpecException("processAuthDataRequest(" + session + ")[" + service + "][" + name + "]"
+                    + " mismatched key types: expected=" + algo + ", actual=" + rspKeyType);
+        }
+
+        PublicKey rspKey = buffer.getPublicKey();
+        if (!KeyUtils.compareKeys(rspKey, key)) {
+            throw new InvalidKeySpecException("processAuthDataRequest(" + session + ")[" + service + "][" + name + "]"
+                    + " mismatched " + algo + " keys: expected=" + KeyUtils.getFingerPrint(key) + ", actual=" + KeyUtils.getFingerPrint(rspKey));
+        }
+
         if (log.isDebugEnabled()) {
-            log.debug("processAuthDataRequest({})[{}] send SSH_MSG_USERAUTH_PK_OK reply {} type={} - fingerprint={}",
-                      session, service, name, algo, KeyUtils.getFingerPrint(key));
+            log.debug("processAuthDataRequest({})[{}][{}] SSH_MSG_USERAUTH_PK_OK type={}, fingerprint={}",
+                      session, service, name, rspKeyType, KeyUtils.getFingerPrint(rspKey));
         }
 
         String username = session.getUsername();
@@ -129,7 +146,12 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         buffer.putBoolean(true);
         buffer.putString(algo);
         buffer.putPublicKey(key);
+        appendSignature(session, service, name, username, algo, key, buffer);
+        session.writePacket(buffer);
+        return true;
+    }
 
+    protected void appendSignature(ClientSession session, String service, String name, String username, String algo, PublicKey key, Buffer buffer) throws Exception {
         byte[] id = session.getSessionId();
         Buffer bs = new ByteArrayBuffer(id.length + username.length() + service.length() + name.length()
             + algo.length() + ByteArrayBuffer.DEFAULT_SIZE + Long.SIZE, false);
@@ -145,19 +167,16 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         byte[] contents = bs.getCompactData();
         byte[] sig = current.sign(contents);
         if (log.isTraceEnabled()) {
-            log.trace("processAuthDataRequest({})[{}] name={}, key type={}, fingerprint={} - verification data={}",
+            log.trace("appendSignature({})[{}] name={}, key type={}, fingerprint={} - verification data={}",
                       session, service, name, algo, KeyUtils.getFingerPrint(key), BufferUtils.printHex(contents));
-            log.trace("processAuthDataRequest({})[{}] name={}, key type={}, fingerprint={} - generated signature={}",
+            log.trace("appendSignature({})[{}] name={}, key type={}, fingerprint={} - generated signature={}",
                       session, service, name, algo, KeyUtils.getFingerPrint(key), BufferUtils.printHex(sig));
         }
 
-        bs = new ByteArrayBuffer(algo.length() + sig.length + Long.SIZE, false);
+        bs.clear();
         bs.putString(algo);
         bs.putBytes(sig);
         buffer.putBytes(bs.array(), bs.rpos(), bs.available());
-
-        session.writePacket(buffer);
-        return true;
     }
 
     @Override
