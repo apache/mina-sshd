@@ -657,7 +657,7 @@ public class AuthenticationTest extends BaseTestSupport {
         }
     }
 
-    @Test
+    @Test   // see SSHD-620
     public void testHostBasedAuthentication() throws Exception {
         final String CLIENT_USERNAME = getClass().getSimpleName();
         final String CLIENT_HOSTNAME = SshdSocketAddress.toAddressString(SshdSocketAddress.getFirstExternalNetwork4Address());

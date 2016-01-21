@@ -93,9 +93,10 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
 
     @Override
     protected boolean sendAuthDataRequest(ClientSession session, String service) throws Exception {
+        String name = getName();
         if ((keys == null) || (!keys.hasNext())) {
             if (log.isDebugEnabled()) {
-                log.debug("sendAuthDataRequest({})[{}] no more keys to send", session, service);
+                log.debug("sendAuthDataRequest({})[{}][{}] no more keys to send", session, service, name);
             }
 
             return false;
@@ -106,8 +107,8 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
         PublicKey pub = kp.getPublic();
         String keyType = KeyUtils.getKeyType(pub);
         if (log.isTraceEnabled()) {
-            log.trace("sendAuthDataRequest({})[{}] current key details: type={}, fingerprint={}",
-                      session, service, keyType, KeyUtils.getFingerPrint(pub));
+            log.trace("sendAuthDataRequest({})[{}][{}] current key details: type={}, fingerprint={}",
+                      session, service, name, keyType, KeyUtils.getFingerPrint(pub));
         }
 
         Collection<NamedFactory<Signature>> factories =
@@ -125,8 +126,8 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
         String clientUsername = resolveClientUsername();
         String clientHostname = resolveClientHostname();
         if (log.isDebugEnabled()) {
-            log.debug("sendAuthDataRequest({})[{}] client={}@{}",
-                      session, service, clientUsername, clientHostname);
+            log.debug("sendAuthDataRequest({})[{}][{}] client={}@{}",
+                      session, service, name, clientUsername, clientHostname);
         }
 
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
@@ -144,39 +145,53 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
             }
         }
         byte[] keyBytes = buffer.getCompactData();
-
-        buffer.clear();
-        buffer.putBytes(id);
-        buffer.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
-        buffer.putString(username);
-        buffer.putString(getService());
-        buffer.putString(getName());
-        buffer.putString(keyType);
-        buffer.putBytes(keyBytes);
-        buffer.putString(clientHostname);
-        buffer.putString(clientUsername);
-
         verifier.initSigner(kp.getPrivate());
-        verifier.update(buffer.array(), buffer.rpos(), buffer.available());
-        byte[] signature = verifier.sign();
-        if (log.isTraceEnabled()) {
-            log.trace("sendAuthDataRequest({})[{}] type={}, fingerprint={}, client={}@{}: signature={}",
-                      session, service, keyType, KeyUtils.getFingerPrint(pub),
-                      clientUsername, clientHostname, BufferUtils.printHex(signature));
-        }
 
         buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, buffer);
         buffer.putString(username);
-        buffer.putString(getService());
-        buffer.putString(getName());
+        buffer.putString(service);
+        buffer.putString(name);
         buffer.putString(keyType);
         buffer.putBytes(keyBytes);
         buffer.putString(clientHostname);
         buffer.putString(clientUsername);
-        buffer.putBytes(signature);
-
+        appendSignature(session, service, name, username, keyType, pub, keyBytes, clientHostname, clientUsername, verifier, buffer);
         session.writePacket(buffer);
         return true;
+    }
+
+    protected void appendSignature(ClientSession session, String service, String name, String username,
+            String keyType, PublicKey key, byte[] keyBytes,
+            String clientHostname, String clientUsername,
+            Signature verifier, Buffer buffer) throws Exception {
+        byte[] id = session.getSessionId();
+        Buffer bs = new ByteArrayBuffer(id.length + username.length() + service.length() + name.length()
+            + keyType.length() + keyBytes.length
+            + clientHostname.length() + clientUsername.length()
+            + ByteArrayBuffer.DEFAULT_SIZE + Long.SIZE, false);
+        bs.putBytes(id);
+        bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
+        bs.putString(username);
+        bs.putString(service);
+        bs.putString(name);
+        bs.putString(keyType);
+        bs.putBytes(keyBytes);
+        bs.putString(clientHostname);
+        bs.putString(clientUsername);
+
+        verifier.update(bs.array(), bs.rpos(), bs.available());
+        byte[] signature = verifier.sign();
+        if (log.isTraceEnabled()) {
+            log.trace("appendSignature({})[{}][{}] type={}, fingerprint={}, client={}@{}: signature={}",
+                      session, service, name, keyType, KeyUtils.getFingerPrint(key),
+                      clientUsername, clientHostname, BufferUtils.printHex(signature));
+        }
+
+        bs.clear();
+
+        bs.putString(keyType);
+        bs.putBytes(signature);
+        buffer.putBytes(bs.array(), bs.rpos(), bs.available());
     }
 
     @Override
