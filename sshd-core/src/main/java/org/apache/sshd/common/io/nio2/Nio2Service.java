@@ -20,6 +20,7 @@ package org.apache.sshd.common.io.nio2;
 
 import java.io.IOException;
 import java.net.SocketOption;
+import java.net.SocketTimeoutException;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.NetworkChannel;
 import java.util.Collection;
@@ -37,6 +38,7 @@ import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
+import org.apache.sshd.common.util.closeable.CloseableUtils;
 
 /**
  */
@@ -48,7 +50,9 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
     protected final AsynchronousChannelGroup group;
 
     protected Nio2Service(FactoryManager manager, IoHandler handler, AsynchronousChannelGroup group) {
-        log.trace("Creating {}", getClass().getSimpleName());
+        if (log.isTraceEnabled()) {
+            log.trace("Creating {}", getClass().getSimpleName());
+        }
         this.manager = ValidateUtils.checkNotNull(manager, "No factory manager provided");
         this.handler = ValidateUtils.checkNotNull(handler, "No I/O handler provided");
         this.group = ValidateUtils.checkNotNull(group, "No async. channel group provided");
@@ -57,9 +61,19 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
 
     public void dispose() {
         try {
-            close(true).await();    // TODO use verify+(configurable) timeout
+            long maxWait = CloseableUtils.getMaxCloseWaitTime(manager);
+            boolean successful = close(true).await(maxWait);
+            if (!successful) {
+                throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");
+            }
         } catch (IOException e) {
-            log.debug("Exception caught while closing", e);
+            if (log.isDebugEnabled()) {
+                log.debug(e.getClass().getSimpleName() + " while stopping service: " + e.getMessage());
+            }
+
+            if (log.isTraceEnabled()) {
+                log.trace("Stop exception details", e);
+            }
         }
     }
 

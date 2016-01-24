@@ -30,6 +30,7 @@ import java.io.StreamCorruptedException;
 import java.io.StringWriter;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.SocketTimeoutException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -396,9 +397,19 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     public void stop() {
         try {
-            close(true).await();    // TODO use verify + configurable timeout
+            long maxWait = PropertyResolverUtils.getLongProperty(this, STOP_WAIT_TIME, DEFAULT_STOP_WAIT_TIME);
+            boolean successful = close(true).await(maxWait);
+            if (!successful) {
+                throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");
+            }
         } catch (IOException e) {
-            log.debug("Exception caught while stopping client", e);
+            if (log.isDebugEnabled()) {
+                log.debug(e.getClass().getSimpleName() + " while stopping client: " + e.getMessage());
+            }
+
+            if (log.isTraceEnabled()) {
+                log.trace("Stop exception details", e);
+            }
         }
     }
 

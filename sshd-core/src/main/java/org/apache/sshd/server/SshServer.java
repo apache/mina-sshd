@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -316,7 +317,11 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     public void stop(boolean immediately) throws IOException {
-        close(immediately).await(); // TODO use verify + configurable timeout
+        long maxWait = immediately ? PropertyResolverUtils.getLongProperty(this, STOP_WAIT_TIME, DEFAULT_STOP_WAIT_TIME) : Long.MAX_VALUE;
+        boolean successful = close(immediately).await(maxWait);
+        if (!successful) {
+            throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");
+        }
     }
 
     public void open() throws IOException {

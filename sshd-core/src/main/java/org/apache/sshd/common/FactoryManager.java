@@ -144,6 +144,18 @@ public interface FactoryManager extends KexFactoryManager, SessionListenerManage
     long DEFAULT_CHANNEL_CLOSE_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
 
     /**
+     * Timeout (milliseconds) to wait for client / server stop request
+     * if immediate stop requested.
+     * @see #DEFAULT_STOP_WAIT_TIME
+     */
+    String STOP_WAIT_TIME = "stop-wait-time";
+
+    /**
+     * Default value for {@link #STOP_WAIT_TIME} if none specified
+     */
+    long DEFAULT_STOP_WAIT_TIME = TimeUnit.MINUTES.toMillis(1L);
+
+    /**
      * Socket backlog.
      * See {@link java.nio.channels.AsynchronousServerSocketChannel#bind(java.net.SocketAddress, int)}
      */
