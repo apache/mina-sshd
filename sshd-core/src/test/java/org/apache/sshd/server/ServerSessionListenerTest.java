@@ -106,6 +106,11 @@ public class ServerSessionListenerTest extends BaseTestSupport {
                 throwException("SessionClosed", session);
             }
 
+            @Override
+            public void sessionException(Session session, Throwable t) {
+                // ignored
+            }
+
             private void throwException(String phase, Session session) {
                 IoSession ioSession = session.getIoSession();
                 SocketAddress addr = ioSession.getRemoteAddress();
@@ -173,6 +178,11 @@ public class ServerSessionListenerTest extends BaseTestSupport {
             }
 
             @Override
+            public void sessionException(Session session, Throwable t) {
+                // ignored
+            }
+
+            @Override
             public void sessionClosed(Session session) {
                 // ignored
             }
@@ -216,6 +226,11 @@ public class ServerSessionListenerTest extends BaseTestSupport {
 
             @Override
             public void sessionEvent(Session session, Event event) {
+                // ignored
+            }
+
+            @Override
+            public void sessionException(Session session, Throwable t) {
                 // ignored
             }
 

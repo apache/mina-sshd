@@ -47,6 +47,17 @@ public interface SessionListener extends EventListener {
     void sessionEvent(Session session, Event event);
 
     /**
+     * An exception was caught and the session will be closed
+     * (if not already so). <B>Note:</B> the code makes no guarantee
+     * that at this stage {@link #sessionClosed(Session)} will be called
+     * or perhaps has already been called
+     *
+     * @param session The referenced {@link Session}
+     * @param t The caught exception
+     */
+    void sessionException(Session session, Throwable t);
+
+    /**
      * A session has been closed
      *
      * @param session The closed {@link Session}

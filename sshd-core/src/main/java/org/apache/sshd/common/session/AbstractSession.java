@@ -735,6 +735,25 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             log.debug("exceptionCaught(" + this + ")[state=" + curState + "] details", t);
         }
 
+        SessionListener listener = getSessionListenerProxy();
+        try {
+            listener.sessionException(this, t);
+        } catch (Throwable err) {
+            Throwable e = GenericUtils.peelException(err);
+            if (log.isDebugEnabled()) {
+                log.debug("exceptionCaught(" + this + ") signal session exception details", e);
+            }
+
+            if (log.isTraceEnabled()) {
+                Throwable[] suppressed = e.getSuppressed();
+                if (GenericUtils.length(suppressed) > 0) {
+                    for (Throwable s : suppressed) {
+                        log.trace("exceptionCaught(" + this + ") suppressed session exception signalling", s);
+                    }
+                }
+            }
+        }
+
         if (State.Opened.equals(curState) && (t instanceof SshException)) {
             int code = ((SshException) t).getDisconnectCode();
             if (code > 0) {

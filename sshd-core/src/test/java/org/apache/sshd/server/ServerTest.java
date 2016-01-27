@@ -218,6 +218,11 @@ public class ServerTest extends BaseTestSupport {
             }
 
             @Override
+            public void sessionException(Session session, Throwable t) {
+                outputDebugMessage("Session %s exception %s caught: %s", session, t.getClass().getSimpleName(), t.getMessage());
+            }
+
+            @Override
             public void sessionClosed(Session session) {
                 outputDebugMessage("Session closed: %s", session);
                 latch.countDown();
@@ -282,6 +287,11 @@ public class ServerTest extends BaseTestSupport {
             @Override
             public void sessionEvent(Session session, Event event) {
                 outputDebugMessage("Session %s event: %s", session, event);
+            }
+
+            @Override
+            public void sessionException(Session session, Throwable t) {
+                outputDebugMessage("Session %s exception %s caught: %s", session, t.getClass().getSimpleName(), t.getMessage());
             }
 
             @Override
@@ -378,6 +388,11 @@ public class ServerTest extends BaseTestSupport {
             }
 
             @Override
+            public void sessionException(Session session, Throwable t) {
+                outputDebugMessage("Session %s exception %s caught: %s", session, t.getClass().getSimpleName(), t.getMessage());
+            }
+
+            @Override
             public void sessionClosed(Session session) {
                 outputDebugMessage("Session closed: %s", session);
             }
@@ -437,6 +452,11 @@ public class ServerTest extends BaseTestSupport {
             }
 
             @Override
+            public void sessionException(Session session, Throwable t) {
+                outputDebugMessage("Session %s exception %s caught: %s", session, t.getClass().getSimpleName(), t.getMessage());
+            }
+
+            @Override
             public void sessionClosed(Session session) {
                 sigSem.release();
             }
@@ -473,6 +493,11 @@ public class ServerTest extends BaseTestSupport {
             }
 
             @Override
+            public void sessionException(Session session, Throwable t) {
+                // ignored
+            }
+
+            @Override
             public void sessionClosed(Session session) {
                 // ignored
             }
@@ -491,6 +516,11 @@ public class ServerTest extends BaseTestSupport {
                 if (event == Event.KexCompleted) {
                     clientEventCount.incrementAndGet();
                 }
+            }
+
+            @Override
+            public void sessionException(Session session, Throwable t) {
+                // ignored
             }
 
             @Override

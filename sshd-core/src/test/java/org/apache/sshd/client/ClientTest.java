@@ -154,6 +154,12 @@ public class ClientTest extends BaseTestSupport {
         }
 
         @Override
+        public void sessionException(Session session, Throwable t) {
+            assertObjectInstanceOf("Non client session exception notification", ClientSession.class, session);
+            assertNotNull("No session exception data", t);
+        }
+
+        @Override
         public void sessionClosed(Session session) {
             assertObjectInstanceOf("Non client session closure notification", ClientSession.class, session);
             assertSame("Mismatched client session closure instance", clientSessionHolder.getAndSet(null), session);
@@ -248,6 +254,11 @@ public class ClientTest extends BaseTestSupport {
             @Override
             public void sessionClosed(Session session) {
                 updateSessionConfigProperty(session, "sessionClosed");
+            }
+
+            @Override
+            public void sessionException(Session session, Throwable t) {
+                // ignored
             }
 
             private void updateSessionConfigProperty(Session session, Object value) {

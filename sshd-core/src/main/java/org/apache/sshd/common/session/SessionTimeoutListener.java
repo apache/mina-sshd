@@ -52,6 +52,17 @@ public class SessionTimeoutListener extends AbstractLoggingBean implements Sessi
     }
 
     @Override
+    public void sessionException(Session session, Throwable t) {
+        if (log.isDebugEnabled()) {
+            log.debug("sessionException({}) {}: {}", session, t.getClass().getSimpleName(), t.getMessage());
+        }
+        if (log.isTraceEnabled()) {
+            log.trace("sessionException(" + session + ") details", t);
+        }
+        sessionClosed(session);
+    }
+
+    @Override
     public void sessionClosed(Session s) {
         if (sessions.remove(s)) {
             log.debug("sessionClosed({}) un-tracked", s);

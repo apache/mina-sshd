@@ -404,6 +404,11 @@ public class KeyReExchangeTest extends BaseTestSupport {
                         }
 
                         @Override
+                        public void sessionException(Session session, Throwable t) {
+                            // ignored
+                        }
+
+                        @Override
                         public void sessionClosed(Session session) {
                             // ignored
                         }
@@ -513,6 +518,11 @@ public class KeyReExchangeTest extends BaseTestSupport {
                                 int count = exchanges.incrementAndGet();
                                 outputDebugMessage("Key established for %s - count=%d", session, count);
                             }
+                        }
+
+                        @Override
+                        public void sessionException(Session session, Throwable t) {
+                            // ignored
                         }
 
                         @Override
@@ -653,6 +663,11 @@ public class KeyReExchangeTest extends BaseTestSupport {
                                 int count = exchanges.incrementAndGet();
                                 outputDebugMessage("Key established for %s - count=%d", session, count);
                             }
+                        }
+
+                        @Override
+                        public void sessionException(Session session, Throwable t) {
+                            // ignored
                         }
 
                         @Override

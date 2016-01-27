@@ -103,6 +103,11 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
             }
 
             @Override
+            public void sessionException(Session session, Throwable t) {
+                // ignored
+            }
+
+            @Override
             public void sessionClosed(Session session) {
                 // ignored
             }

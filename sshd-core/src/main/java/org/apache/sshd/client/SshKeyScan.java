@@ -351,6 +351,11 @@ public class SshKeyScan extends AbstractSimplifiedLog
     }
 
     @Override
+    public void sessionException(Session session, Throwable t) {
+        logSessionEvent(session, t);
+    }
+
+    @Override
     public void sessionClosed(Session session) {
         logSessionEvent(session, "Closed");
     }

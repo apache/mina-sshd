@@ -560,6 +560,11 @@ public class AuthenticationTest extends BaseTestSupport {
                 }
 
                 @Override
+                public void sessionException(Session session, Throwable t) {
+                    // ignored
+                }
+
+                @Override
                 public void sessionClosed(Session session) {
                     // ignored
                 }

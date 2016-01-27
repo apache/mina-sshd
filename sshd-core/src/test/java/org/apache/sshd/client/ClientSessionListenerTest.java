@@ -102,6 +102,11 @@ public class ClientSessionListenerTest extends BaseTestSupport {
             }
 
             @Override
+            public void sessionException(Session session, Throwable t) {
+                // ignored
+            }
+
+            @Override
             public void sessionClosed(Session session) {
                 // ignored
             }
@@ -144,6 +149,11 @@ public class ClientSessionListenerTest extends BaseTestSupport {
                     clientSession.setServerKeyVerifier(verifier);
                     clientSession.setUserInteraction(UserInteraction.NONE);
                 }
+            }
+
+            @Override
+            public void sessionException(Session session, Throwable t) {
+                // ignored
             }
 
             @Override
