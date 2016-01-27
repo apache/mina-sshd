@@ -34,6 +34,7 @@ import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.OpenChannelException;
+import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoConnectFuture;
@@ -152,7 +153,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         }
 
         // TODO: revisit for better threading. Use async io ?
-        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+        out = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
         IoHandler handler = new IoHandler() {
             @SuppressWarnings("synthetic-access")
             @Override
@@ -348,11 +349,11 @@ public class TcpipServerChannel extends AbstractServerChannel {
         // Make sure we copy the data as the incoming buffer may be reused
         Buffer buf = ByteArrayBuffer.getCompactClone(data, off, len);
         ioSession.write(buf).addListener(new SshFutureListener<IoWriteFuture>() {
-            @SuppressWarnings("synthetic-access")
             @Override
             public void operationComplete(IoWriteFuture future) {
                 try {
-                    localWindow.consumeAndCheck(len);
+                    Window wLocal = getLocalWindow();
+                    wLocal.consumeAndCheck(len);
                 } catch (IOException e) {
                     Session session = getSession();
                     session.exceptionCaught(e);

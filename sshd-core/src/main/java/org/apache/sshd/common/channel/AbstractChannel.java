@@ -48,7 +48,6 @@ import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
-import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 import org.apache.sshd.common.util.closeable.IoBaseCloseable;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -74,8 +73,6 @@ public abstract class AbstractChannel
 
     protected ExecutorService executor;
     protected boolean shutdownExecutor;
-    protected final Window localWindow;
-    protected final Window remoteWindow;
     protected ConnectionService service;
     protected final AtomicBoolean initialized = new AtomicBoolean(false);
     protected final AtomicBoolean eofReceived = new AtomicBoolean(false);
@@ -92,6 +89,9 @@ public abstract class AbstractChannel
     private int id = -1;
     private int recipient = -1;
     private Session session;
+
+    private final Window localWindow;
+    private final Window remoteWindow;
     /**
      * A {@link Map} of sent requests - key = request name, value = timestamp when
      * request was sent.
@@ -532,7 +532,7 @@ public abstract class AbstractChannel
             this.channelListeners.clear();
         }
 
-        IOException err = IoUtils.closeQuietly(localWindow, remoteWindow);
+        IOException err = IoUtils.closeQuietly(getLocalWindow(), getRemoteWindow());
         if (err != null) {
             if (log.isDebugEnabled()) {
                 log.debug("Failed (" + err.getClass().getSimpleName() + ") to pre-close window(s) of " + this + ": " + err.getMessage());
@@ -571,15 +571,12 @@ public abstract class AbstractChannel
 
     @Override
     public void handleData(Buffer buffer) throws IOException {
-        int len = buffer.getInt();
-        if (len < 0 || len > ByteArrayBuffer.MAX_LEN) {
-            throw new IllegalStateException("Bad item length: " + len);
-        }
+        int len = validateIncomingDataSize(SshConstants.SSH_MSG_CHANNEL_DATA, buffer.getInt());
         if (log.isDebugEnabled()) {
             log.debug("handleData({}) SSH_MSG_CHANNEL_DATA len={}", this, len);
         }
         if (log.isTraceEnabled()) {
-            log.trace("handleData({}) data: {}", this, BufferUtils.printHex(buffer.array(), buffer.rpos(), len));
+            log.trace("handleData({}) data: {} ...", this, BufferUtils.printHex(buffer.array(), buffer.rpos(), Math.min(len, Byte.MAX_VALUE)));
         }
         if (isEofSignalled()) {
             // TODO consider throwing an exception
@@ -602,10 +599,8 @@ public abstract class AbstractChannel
             writePacket(buffer);
             return;
         }
-        int len = buffer.getInt();
-        if ((len < 0) || (len > ByteArrayBuffer.MAX_LEN)) {
-            throw new IllegalStateException("Bad item length: " + len);
-        }
+
+        int len = validateIncomingDataSize(SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA, buffer.getInt());
         if (log.isDebugEnabled()) {
             log.debug("handleExtendedData({}) SSH_MSG_CHANNEL_EXTENDED_DATA len={}", this, len);
         }
@@ -618,6 +613,32 @@ public abstract class AbstractChannel
             log.warn("handleExtendedData({}) extra {} bytes sent after EOF", this, len);
         }
         doWriteExtendedData(buffer.array(), buffer.rpos(), len);
+    }
+
+    protected int validateIncomingDataSize(int cmd, int len) {
+        /*
+         * According to RFC 4254 section 5.1
+         *
+         *      The 'maximum packet size' specifies the maximum size of an
+         *      individual data packet that can be sent to the sender
+         *
+         * The local window reflects our preference - i.e., how much our peer
+         * should send at most
+         */
+        Window wLocal = getLocalWindow();
+        int maxLocalSize = wLocal.getPacketSize();
+
+        /*
+         * The reason for the +4 is that there seems to be some confusion whether
+         * the max. packet size includes the length field or not
+         */
+        if ((len < 0) || (len > (maxLocalSize + 4))) {
+            throw new IllegalStateException("Bad length (" + len + ") "
+                    + " for cmd=" + SshConstants.getCommandMessageName(cmd)
+                    + " - max. allowed=" + maxLocalSize);
+        }
+
+        return len;
     }
 
     @Override
@@ -643,7 +664,9 @@ public abstract class AbstractChannel
         if (log.isDebugEnabled()) {
             log.debug("handleWindowAdjust({}) SSH_MSG_CHANNEL_WINDOW_ADJUST window={}", this, window);
         }
-        remoteWindow.expand(window);
+
+        Window wRemote = getRemoteWindow();
+        wRemote.expand(window);
     }
 
     @Override

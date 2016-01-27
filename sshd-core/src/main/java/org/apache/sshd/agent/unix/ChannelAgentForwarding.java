@@ -77,7 +77,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
         final OpenFuture f = new DefaultOpenFuture(this);
         ChannelListener listener = getChannelListenerProxy();
         try {
-            out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+            out = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
             authSocket = PropertyResolverUtils.getString(this, SshAgent.SSH_AUTHSOCKET_ENV_NAME);
             pool = Pool.create(AprLibrary.getInstance().getRootPool());
             handle = Local.create(authSocket, pool);

@@ -31,6 +31,7 @@ import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
+import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
@@ -76,12 +77,13 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
         Session session = getSession();
         String remoteName = remote.getHostName();
         String localName = local.getHostName();
+        Window wLocal = getLocalWindow();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN,
                             type.length() + remoteName.length() + localName.length() + Long.SIZE);
         buffer.putString(type);
         buffer.putInt(getId());
-        buffer.putInt(localWindow.getSize());
-        buffer.putInt(localWindow.getPacketSize());
+        buffer.putInt(wLocal.getSize());
+        buffer.putInt(wLocal.getPacketSize());
         buffer.putString(remoteName);
         buffer.putInt(remote.getPort());
         buffer.putString(localName);
@@ -96,9 +98,9 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
             asyncIn = new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA);
             asyncOut = new ChannelAsyncInputStream(this);
         } else {
-            out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+            out = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
             invertedIn = out;
-            ChannelPipedInputStream pis = new ChannelPipedInputStream(this, localWindow);
+            ChannelPipedInputStream pis = new ChannelPipedInputStream(this, getLocalWindow());
             pipe = new ChannelPipedOutputStream(pis);
             in = pis;
             invertedOut = in;
@@ -109,7 +111,9 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
         pipe.write(data, off, len);
         pipe.flush();
-        localWindow.consumeAndCheck(len);
+
+        Window wLocal = getLocalWindow();
+        wLocal.consumeAndCheck(len);
     }
 
 }

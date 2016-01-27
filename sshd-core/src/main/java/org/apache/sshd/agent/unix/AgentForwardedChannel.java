@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.tomcat.jni.Socket;
 import org.apache.tomcat.jni.Status;
@@ -63,7 +64,7 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
     @Override
     protected synchronized void doOpen() throws IOException {
         ValidateUtils.checkTrue(!Streaming.Async.equals(streaming), "Asynchronous streaming isn't supported yet on this channel");
-        invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+        invertedIn = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
     }
 
     @Override
@@ -74,7 +75,9 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
 
     @Override
     protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {
-        localWindow.consumeAndCheck(len);
+        Window wLocal = getLocalWindow();
+        wLocal.consumeAndCheck(len);
+
         int result = Socket.send(socket, data, off, len);
         if (result < Status.APR_SUCCESS) {
             AgentServerProxy.throwException(result);

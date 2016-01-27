@@ -40,6 +40,7 @@ import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.channel.RequestHandler;
+import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.future.CloseFuture;
@@ -174,7 +175,7 @@ public class ChannelSession extends AbstractServerChannel {
             }
         }
 
-        IOException e = IoUtils.closeQuietly(remoteWindow, out, err, receiver);
+        IOException e = IoUtils.closeQuietly(getRemoteWindow(), out, err, receiver);
         if (e != null) {
             if (log.isDebugEnabled()) {
                 log.debug("doCloseImmediately({}) failed ({}) to close resources: {}",
@@ -220,7 +221,8 @@ public class ChannelSession extends AbstractServerChannel {
         if (receiver != null) {
             int r = receiver.data(this, data, off, len);
             if (r > 0) {
-                localWindow.consumeAndCheck(r);
+                Window wLocal = getLocalWindow();
+                wLocal.consumeAndCheck(r);
             }
         } else {
             if (tempBuffer == null) {
@@ -520,8 +522,9 @@ public class ChannelSession extends AbstractServerChannel {
             ((AsyncCommand) command).setIoOutputStream(asyncOut);
             ((AsyncCommand) command).setIoErrorStream(asyncErr);
         } else {
-            out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA, false);
-            err = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA, false);
+            Window wRemote = getRemoteWindow();
+            out = new ChannelOutputStream(this, wRemote, log, SshConstants.SSH_MSG_CHANNEL_DATA, false);
+            err = new ChannelOutputStream(this, wRemote, log, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA, false);
             if (log.isTraceEnabled()) {
                 // Wrap in logging filters
                 String channelId = toString();
@@ -539,7 +542,7 @@ public class ChannelSession extends AbstractServerChannel {
                 setDataReceiver(recv);
                 ((AsyncCommand) command).setIoInputStream(recv.getIn());
             } else {
-                PipeDataReceiver recv = new PipeDataReceiver(this, localWindow);
+                PipeDataReceiver recv = new PipeDataReceiver(this, getLocalWindow());
                 setDataReceiver(recv);
                 command.setInputStream(recv.getIn());
             }

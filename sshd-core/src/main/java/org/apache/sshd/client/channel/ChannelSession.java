@@ -30,6 +30,7 @@ import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
 import org.apache.sshd.common.channel.RequestHandler;
+import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -69,15 +70,17 @@ public class ChannelSession extends AbstractClientChannel {
             asyncOut = new ChannelAsyncInputStream(this);
             asyncErr = new ChannelAsyncInputStream(this);
         } else {
-            invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+            invertedIn = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+
+            Window wLocal = getLocalWindow();
             if (out == null) {
-                ChannelPipedInputStream pis = new ChannelPipedInputStream(this, localWindow);
+                ChannelPipedInputStream pis = new ChannelPipedInputStream(this, wLocal);
                 ChannelPipedOutputStream pos = new ChannelPipedOutputStream(pis);
                 out = pos;
                 invertedOut = pis;
             }
             if (err == null) {
-                ChannelPipedInputStream pis = new ChannelPipedInputStream(this, localWindow);
+                ChannelPipedInputStream pis = new ChannelPipedInputStream(this, wLocal);
                 ChannelPipedOutputStream pos = new ChannelPipedOutputStream(pis);
                 err = pos;
                 invertedErr = pis;
@@ -159,7 +162,8 @@ public class ChannelSession extends AbstractClientChannel {
     protected void pumpInputStream() {
         try {
             Session session = getSession();
-            byte[] buffer = new byte[remoteWindow.getPacketSize()];
+            Window wRemote = getRemoteWindow();
+            byte[] buffer = new byte[wRemote.getPacketSize()];
             while (!closeFuture.isClosed()) {
                 int len = securedRead(in, buffer, 0, buffer.length);
                 if (len < 0) {

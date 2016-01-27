@@ -34,6 +34,7 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoServiceFactory;
@@ -205,12 +206,13 @@ public class X11ForwardSupport extends AbstractInnerCloseable implements IoHandl
 
             InetAddress remoteAddress = remote.getAddress();
             String remoteHost = remoteAddress.getHostAddress();
+            Window wLocal = getLocalWindow();
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN,
                     remoteHost.length() + type.length() + Integer.SIZE);
             buffer.putString(type);
             buffer.putInt(getId());
-            buffer.putInt(localWindow.getSize());
-            buffer.putInt(localWindow.getPacketSize());
+            buffer.putInt(wLocal.getSize());
+            buffer.putInt(wLocal.getPacketSize());
             buffer.putString(remoteHost);
             buffer.putInt(remote.getPort());
             writePacket(buffer);
@@ -222,7 +224,7 @@ public class X11ForwardSupport extends AbstractInnerCloseable implements IoHandl
             if (streaming == Streaming.Async) {
                 throw new IllegalArgumentException("Asynchronous streaming isn't supported yet on this channel");
             }
-            out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+            out = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
             invertedIn = out;
         }
 
@@ -233,7 +235,8 @@ public class X11ForwardSupport extends AbstractInnerCloseable implements IoHandl
 
         @Override
         protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {
-            localWindow.consumeAndCheck(len);
+            Window wLocal = getLocalWindow();
+            wLocal.consumeAndCheck(len);
             // use a clone in case data buffer is re-used
             serverSession.write(ByteArrayBuffer.getCompactClone(data, off, len));
         }

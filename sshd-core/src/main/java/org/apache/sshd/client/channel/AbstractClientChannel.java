@@ -40,6 +40,7 @@ import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelListener;
+import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.session.Session;
@@ -288,11 +289,12 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         }
 
         Session session = getSession();
+        Window wLocal = getLocalWindow();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN, type.length() + Integer.SIZE);
         buffer.putString(type);
         buffer.putInt(getId());
-        buffer.putInt(localWindow.getSize());
-        buffer.putInt(localWindow.getPacketSize());
+        buffer.putInt(wLocal.getSize());
+        buffer.putInt(wLocal.getPacketSize());
         writePacket(buffer);
         return openFuture;
     }
@@ -308,7 +310,9 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
         Session session = getSession();
         FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
-        this.remoteWindow.init(rwSize, packetSize, manager.getProperties());
+        Window wRemote = getRemoteWindow();
+        wRemote.init(rwSize, packetSize, manager.getProperties());
+
         ChannelListener listener = getChannelListenerProxy();
         try {
             doOpen();
@@ -377,8 +381,10 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         } else if (out != null) {
             out.write(data, off, len);
             out.flush();
+
             if (invertedOut == null) {
-                localWindow.consumeAndCheck(len);
+                Window wLocal = getLocalWindow();
+                wLocal.consumeAndCheck(len);
             }
         } else {
             throw new IllegalStateException("No output stream for channel");
@@ -396,8 +402,10 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         } else if (err != null) {
             err.write(data, off, len);
             err.flush();
+
             if (invertedErr == null) {
-                localWindow.consumeAndCheck(len);
+                Window wLocal = getLocalWindow();
+                wLocal.consumeAndCheck(len);
             }
         } else {
             throw new IllegalStateException("No error stream for channel");

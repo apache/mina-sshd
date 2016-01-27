@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
+import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -48,7 +49,8 @@ public class ChannelSessionTest extends BaseTestSupport {
 
         try (ChannelSession channelSession = new ChannelSession() {
                 {
-                    this.remoteWindow.init(PropertyResolverUtils.toPropertyResolver(Collections.<String,Object>emptyMap()));
+                    Window wRemote = getRemoteWindow();
+                    wRemote.init(PropertyResolverUtils.toPropertyResolver(Collections.<String,Object>emptyMap()));
                 }
         }) {
             final AtomicBoolean expanded = new AtomicBoolean(false);

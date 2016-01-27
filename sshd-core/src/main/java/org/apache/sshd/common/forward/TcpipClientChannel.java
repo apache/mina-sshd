@@ -29,6 +29,7 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -95,12 +96,13 @@ public class TcpipClientChannel extends AbstractClientChannel {
         String srcHost = srcAddress.getHostAddress();
         InetAddress dstAddress = dst.getAddress();
         String dstHost = dstAddress.getHostAddress();
+        Window wLocal = getLocalWindow();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN,
                 type.length() + srcHost.length() + dstHost.length() + Long.SIZE);
         buffer.putString(type);
         buffer.putInt(getId());
-        buffer.putInt(localWindow.getSize());
-        buffer.putInt(localWindow.getPacketSize());
+        buffer.putInt(wLocal.getSize());
+        buffer.putInt(wLocal.getPacketSize());
         buffer.putString(dstHost);
         buffer.putInt(dst.getPort());
         buffer.putString(srcHost);
@@ -114,7 +116,7 @@ public class TcpipClientChannel extends AbstractClientChannel {
         if (streaming == Streaming.Async) {
             throw new IllegalArgumentException("Asynchronous streaming isn't supported yet on this channel");
         }
-        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+        out = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
         invertedIn = out;
     }
 
@@ -127,7 +129,8 @@ public class TcpipClientChannel extends AbstractClientChannel {
     protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {
         // Make sure we copy the data as the incoming buffer may be reused
         Buffer buf = ByteArrayBuffer.getCompactClone(data, off, len);
-        localWindow.consumeAndCheck(len);
+        Window wLocal = getLocalWindow();
+        wLocal.consumeAndCheck(len);
         serverSession.write(buf);
     }
 
