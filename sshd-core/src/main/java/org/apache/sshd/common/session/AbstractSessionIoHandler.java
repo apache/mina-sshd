@@ -21,6 +21,7 @@ package org.apache.sshd.common.session;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.Readable;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -35,13 +36,16 @@ public abstract class AbstractSessionIoHandler extends AbstractLoggingBean imple
 
     @Override
     public void sessionCreated(IoSession ioSession) throws Exception {
-        AbstractSession session = createSession(ioSession);
+        AbstractSession session = ValidateUtils.checkNotNull(
+                createSession(ioSession), "No session created for %s", ioSession);
         AbstractSession.attachSession(ioSession, session);
     }
 
     @Override
     public void sessionClosed(IoSession ioSession) throws Exception {
-        AbstractSession.getSession(ioSession).close(true);
+        AbstractSession session = ValidateUtils.checkNotNull(
+                AbstractSession.getSession(ioSession), "No abstract session to handle closure of %s", ioSession);
+        session.close(true);
     }
 
     @Override
@@ -56,7 +60,9 @@ public abstract class AbstractSessionIoHandler extends AbstractLoggingBean imple
 
     @Override
     public void messageReceived(IoSession ioSession, Readable message) throws Exception {
-        AbstractSession.getSession(ioSession).messageReceived(message);
+        AbstractSession session = ValidateUtils.checkNotNull(
+                AbstractSession.getSession(ioSession), "No abstract session to handle incoming message for %s", ioSession);
+        session.messageReceived(message);
     }
 
     protected abstract AbstractSession createSession(IoSession ioSession) throws Exception;

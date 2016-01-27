@@ -290,7 +290,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 try (SftpClient sftp = session.createSftpClient()) {
                     SftpClient.Attributes attrs = sftp.stat(escapePath);
                     fail("Unexpected escape success for path=" + escapePath + ": " + attrs);
-                } catch(SftpException e) {
+                } catch (SftpException e) {
                     if (OsUtils.isWin32()) {
                         assertEquals("Mismatched status for " + escapePath,
                                      SftpConstants.getStatusName(SftpConstants.SSH_FX_INVALID_FILENAME),
@@ -1146,7 +1146,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 PropertyResolverUtils.updateProperty(session, SftpClient.SFTP_CHANNEL_OPEN_TIMEOUT, TimeUnit.SECONDS.toMillis(4L));
                 try (SftpClient sftp = session.createSftpClient()) {
                     fail("Unexpected SFTP client creation success");
-                } catch(SocketTimeoutException | EOFException | WindowClosedException e) {
+                } catch (SocketTimeoutException | EOFException | WindowClosedException e) {
                     // expected - ignored
                 }
             } finally {

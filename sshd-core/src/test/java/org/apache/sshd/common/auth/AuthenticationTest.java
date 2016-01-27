@@ -574,6 +574,9 @@ public class AuthenticationTest extends BaseTestSupport {
                 assertFalse("Unexpected authentication success", future.isSuccess());
 
                 Throwable actual = future.getException();
+                if (actual instanceof IOException) {
+                    actual = actual.getCause();
+                }
                 assertSame("Mismatched authentication failure reason", expected, actual);
             } finally {
                 client.stop();
@@ -705,7 +708,7 @@ public class AuthenticationTest extends BaseTestSupport {
                         s.auth().verify(17L, TimeUnit.SECONDS);
                         assertEquals("Mismatched number of challenges", 3, challengeCounter.get());
                         break;
-                    } catch(SshException e) {   // expected
+                    } catch (SshException e) {   // expected
                         outputDebugMessage("%s on retry #%d: %s", e.getClass().getSimpleName(), index, e.getMessage());
 
                         Throwable t = e.getCause();
@@ -751,6 +754,63 @@ public class AuthenticationTest extends BaseTestSupport {
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.auth().verify(11L, TimeUnit.SECONDS);
                 assertEquals("Mismatched authenticator invocation count", 1, invocationCount.get());
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    @Test   // see SSHD-625
+    public void testRuntimeErrorsInAuthenticators() throws Exception {
+        final Error thrown = new OutOfMemoryError(getCurrentTestName());
+        final PasswordAuthenticator authPassword = sshd.getPasswordAuthenticator();
+        final AtomicInteger passCounter = new AtomicInteger(0);
+        sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
+            @Override
+            public boolean authenticate(String username, String password, ServerSession session)
+                    throws PasswordChangeRequiredException {
+                int count = passCounter.incrementAndGet();
+                if (count == 1) {
+                    throw thrown;
+                }
+                return authPassword.authenticate(username, password, session);
+            }
+        });
+
+        final PublickeyAuthenticator authPubkey = sshd.getPublickeyAuthenticator();
+        final AtomicInteger pubkeyCounter = new AtomicInteger(0);
+        sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
+            @Override
+            public boolean authenticate(String username, PublicKey key, ServerSession session) {
+                int count = pubkeyCounter.incrementAndGet();
+                if (count == 1) {
+                    throw thrown;
+                }
+                return authPubkey.authenticate(username, key, session);
+            }
+        });
+        sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
+
+        try (SshClient client = setupTestClient()) {
+            KeyPair kp = Utils.generateKeyPair("RSA", 1024);
+            client.start();
+            try {
+                for (int index = 1; index < 3; index++) {
+                    try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                        s.addPasswordIdentity(getCurrentTestName());
+                        s.addPublicKeyIdentity(kp);
+
+                        AuthFuture auth = s.auth();
+                        assertTrue("Failed to complete authentication on time", auth.await(11L, TimeUnit.SECONDS));
+                        if (auth.isSuccess()) {
+                            assertTrue("Premature authentication success", index > 1);
+                            break;
+                        }
+
+                        assertEquals("Password authenticator not consulted", 1, passCounter.get());
+                        assertEquals("Pubkey authenticator not consulted", 1, pubkeyCounter.get());
+                    }
+                }
             } finally {
                 client.stop();
             }

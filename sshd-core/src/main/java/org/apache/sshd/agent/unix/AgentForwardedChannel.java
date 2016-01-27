@@ -19,6 +19,7 @@
 package org.apache.sshd.agent.unix;
 
 import java.io.IOException;
+import java.io.OutputStream;
 
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.common.SshConstants;
@@ -40,6 +41,7 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
     public void run() {
         try {
             byte[] buf = new byte[1024];
+            OutputStream invIn = getInvertedIn();
             while (true) {
                 int result = Socket.recv(socket, buf, 0, buf.length);
                 if (result == -Status.APR_EOF) {
@@ -47,11 +49,12 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
                 } else if (result < Status.APR_SUCCESS) {
                     AgentServerProxy.throwException(result);
                 }
-                getInvertedIn().write(buf, 0, result);
-                getInvertedIn().flush();
+
+                invIn.write(buf, 0, result);
+                invIn.flush();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.warn("Processing loop exception", e);
         } finally {
             close(false);
         }

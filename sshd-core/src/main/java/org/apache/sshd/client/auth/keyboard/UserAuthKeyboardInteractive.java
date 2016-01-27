@@ -28,6 +28,7 @@ import org.apache.sshd.client.auth.AbstractUserAuth;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -261,8 +262,18 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         }
 
         UserInteraction ui = session.getUserInteraction();
-        if ((ui != null) && ui.isInteractionAllowed(session)) {
-            return ui.interactive(session, name, instruction, lang, prompt, echo);
+        try {
+            if ((ui != null) && ui.isInteractionAllowed(session)) {
+                return ui.interactive(session, name, instruction, lang, prompt, echo);
+            }
+        } catch (Error e) {
+            log.warn("getUserResponses({}) failed ({}) to consult interaction: {}",
+                     session, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("getUserResponses(" + session + ") interaction consultation failure details", e);
+            }
+
+            throw new RuntimeSshException(e);
         }
 
         if (log.isDebugEnabled()) {

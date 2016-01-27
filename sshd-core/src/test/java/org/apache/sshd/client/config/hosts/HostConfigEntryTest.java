@@ -256,7 +256,7 @@ public class HostConfigEntryTest extends BaseTestSupport {
             try {
                 String result = HostConfigEntry.resolveIdentityFilePath(pattern, HOST, PORT, USER);
                 System.out.append('\t').append(pattern).append(" => ").println(result);
-            } catch(Exception e) {
+            } catch (Exception e) {
                 System.err.append("Failed (").append(e.getClass().getSimpleName())
                           .append(") to process pattern=").append(pattern)
                           .append(": ").println(e.getMessage());

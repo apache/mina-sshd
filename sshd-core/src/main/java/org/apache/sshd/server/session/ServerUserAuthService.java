@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolverUtils;
@@ -159,15 +160,18 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                           session, username, service, method, nbAuthRequests, maxAuthRequests);
             }
 
-            NamedFactory<UserAuth> factory = NamedResource.Utils.findByName(method, String.CASE_INSENSITIVE_ORDER, userAuthFactories);
+            Factory<UserAuth> factory = NamedResource.Utils.findByName(method, String.CASE_INSENSITIVE_ORDER, userAuthFactories);
             if (factory != null) {
                 currentAuth = ValidateUtils.checkNotNull(factory.create(), "No authenticator created for method=%s", method);
                 try {
                     authed = currentAuth.auth(session, username, service, buffer);
                 } catch (Exception e) {
                     if (log.isDebugEnabled()) {
-                        log.debug("process({}) Failed ({}) to authenticate using method={}: {}",
+                        log.debug("process({}) Failed ({}) to authenticate using factory method={}: {}",
                                   session, e.getClass().getSimpleName(), method, e.getMessage());
+                    }
+                    if (log.isTraceEnabled()) {
+                        log.trace("process(" + session + ") factory authentication=" + method + " failure details", e);
                     }
                 }
             } else {
@@ -192,11 +196,11 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             } catch (Exception e) {
                 // Continue
                 if (log.isDebugEnabled()) {
-                    log.debug("process({}) Failed ({}) to authenticate using method={}: {}",
+                    log.debug("process({}) Failed ({}) to authenticate using current method={}: {}",
                               session, e.getClass().getSimpleName(), currentAuth.getName(), e.getMessage());
                 }
                 if (log.isTraceEnabled()) {
-                    log.trace("process(" + session + ") " + currentAuth.getName() + " failure details", e);
+                    log.trace("process(" + session + ") current authentiaction=" + currentAuth.getName() + " failure details", e);
                 }
             }
         }

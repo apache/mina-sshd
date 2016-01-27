@@ -327,6 +327,14 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                 if (log.isDebugEnabled()) {
                     log.debug("handleOpenSuccess(" + this + ") inform listener open failure details", ignored);
                 }
+                if (log.isTraceEnabled()) {
+                    Throwable[] suppressed = ignored.getSuppressed();
+                    if (GenericUtils.length(suppressed) > 0) {
+                        for (Throwable s : suppressed) {
+                            log.trace("handleOpenSuccess(" + this + ") suppressed channel open failure signalling", s);
+                        }
+                    }
+                }
             }
 
             this.openFuture.setException(e);

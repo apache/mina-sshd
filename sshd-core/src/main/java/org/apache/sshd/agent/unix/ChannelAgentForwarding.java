@@ -115,7 +115,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
 
             listener.channelOpenSuccess(this);
             f.setOpened();
-        } catch (Exception t) {
+        } catch (Throwable t) {
             Throwable e = GenericUtils.peelException(t);
             try {
                 listener.channelOpenFailure(this, e);
@@ -125,6 +125,14 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
                          this, ignored.getClass().getSimpleName(), e.getClass().getSimpleName(), ignored.getMessage());
                 if (log.isDebugEnabled()) {
                     log.debug("doInit(" + this + ") inform listener open failure details", ignored);
+                }
+                if (log.isTraceEnabled()) {
+                    Throwable[] suppressed = ignored.getSuppressed();
+                    if (GenericUtils.length(suppressed) > 0) {
+                        for (Throwable s : suppressed) {
+                            log.trace("doInit(" + this + ") suppressed channel open failure signalling", s);
+                        }
+                    }
                 }
             }
             f.setException(e);

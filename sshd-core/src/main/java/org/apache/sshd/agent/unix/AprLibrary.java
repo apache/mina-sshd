@@ -51,15 +51,22 @@ final class AprLibrary {
 
     /**
      * APR library singleton constructor. Called only when accessing the
-     * singleton the first time.
-     * It's initializing an APR memory pool for the whole package (a.k.a mother or root pool).
+     * singleton the first time. It is initializing an APR memory pool for
+     * the whole package (a.k.a mother or root pool).
+     *
+     * @throws RuntimeException if failed to load the library. <B>Note:</B>
+     * callers should inspect the <U>cause</U> of the exception in case an
+     * {@link Error} was thrown (e.g., {@code UnsatisfiedLinkError}).
      */
     private AprLibrary() {
         try {
             Library.initialize(null);
-        } catch (Exception e) {
-            throw new RuntimeException(
-                    "Error loading Apache Portable Runtime (APR).", e);
+        } catch (Throwable e) {
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            } else {
+                throw new RuntimeException("Error loading Apache Portable Runtime (APR).", e);
+            }
         }
         pool = Pool.create(0);
     }

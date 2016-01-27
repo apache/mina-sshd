@@ -25,6 +25,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -159,10 +160,10 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
 
     @Override
     public synchronized void destroy() throws Exception {
-        Exception err = null;
+        Throwable err = null;
         try {
             shell.destroy();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.warn("destroy({}) failed ({}) to destroy shell: {}",
                      this, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
@@ -185,7 +186,11 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
         }
 
         if (err != null) {
-            throw err;
+            if (err instanceof Exception) {
+                throw (Exception) err;
+            } else {
+                throw new RuntimeSshException(err);
+            }
         }
     }
 
@@ -219,10 +224,10 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
                 // method would consume at least two threads
                 Thread.sleep(pumpSleepTime);
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             try {
                 shell.destroy();
-            } catch (Exception err) {
+            } catch (Throwable err) {
                 log.warn("pumpStreams({}) failed ({}) to destroy shell: {}",
                          this, e.getClass().getSimpleName(), e.getMessage());
                 if (log.isDebugEnabled()) {

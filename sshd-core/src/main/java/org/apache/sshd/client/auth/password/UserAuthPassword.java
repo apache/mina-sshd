@@ -25,6 +25,7 @@ import java.util.Objects;
 import org.apache.sshd.client.auth.AbstractUserAuth;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -79,22 +80,37 @@ public class UserAuthPassword extends AbstractUserAuth {
         String prompt = buffer.getString();
         String lang = buffer.getString();
         UserInteraction ui = session.getUserInteraction();
-        if ((ui != null) && ui.isInteractionAllowed(session)) {
-            String password = ui.getUpdatedPassword(session, prompt, lang);
+        boolean interactive;
+        String password;
+        try {
+            interactive = (ui != null) && ui.isInteractionAllowed(session);
+            password = interactive ? ui.getUpdatedPassword(session, prompt, lang) : null;
+        } catch (Error e) {
+            log.warn("processAuthDataRequest({})[{}] failed ({}) to consult interaction: {}",
+                     session, service, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("processAuthDataRequest(" + session + ")[" + service + "] interaction consultation failure details", e);
+            }
+
+            throw new RuntimeSshException(e);
+        }
+
+        if (interactive) {
             if (GenericUtils.isEmpty(password)) {
                 if (log.isDebugEnabled()) {
                     log.debug("processAuthDataRequest({})[{}] No updated password for prompt={}, lang={}",
                               session, service, prompt, lang);
                 }
+                return false;
             } else {
                 sendPassword(buffer, session, password, password);
                 return true;
             }
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug("processAuthDataRequest({})[{}] no UI for password change request for prompt={}, lang={}",
-                          session, service, prompt, lang);
-            }
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("processAuthDataRequest({})[{}] no UI for password change request for prompt={}, lang={}",
+                      session, service, prompt, lang);
         }
 
         return false;

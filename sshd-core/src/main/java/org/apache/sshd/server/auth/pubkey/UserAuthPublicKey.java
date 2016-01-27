@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.signature.Signature;
@@ -106,7 +107,19 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             return Boolean.FALSE;
         }
 
-        boolean authed = authenticator.authenticate(username, key, session);
+        boolean authed;
+        try {
+            authed = authenticator.authenticate(username, key, session);
+        } catch (Error e) {
+            log.warn("doAuth({}@{}) failed ({}) to consult delegate for {} key={}: {}",
+                     username, session, e.getClass().getSimpleName(), alg, KeyUtils.getFingerPrint(key), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("doAuth(" + username + "@" + session + ") delegate failure details", e);
+            }
+
+            throw new RuntimeSshException(e);
+        }
+
         if (log.isDebugEnabled()) {
             log.debug("doAuth({}@{}) key type={}, fingerprint={} - authentication result: {}",
                       username, session, alg, KeyUtils.getFingerPrint(key), authed);

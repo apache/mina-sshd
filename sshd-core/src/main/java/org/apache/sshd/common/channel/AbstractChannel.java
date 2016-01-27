@@ -225,7 +225,7 @@ public abstract class AbstractChannel
             RequestHandler.Result result;
             try {
                 result = handler.process(this, req, wantReply, buffer);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 log.warn("handleRequest({}) {} while {}#process({})[want-reply={}]: {}",
                          this, e.getClass().getSimpleName(), handler.getClass().getSimpleName(),
                          req, wantReply, e.getMessage());
@@ -327,9 +327,15 @@ public abstract class AbstractChannel
         ChannelListener listener = session.getChannelListenerProxy();
         try {
             listener.channelInitialized(this);
-        } catch (RuntimeException t) {
+        } catch (Throwable t) {
             Throwable e = GenericUtils.peelException(t);
-            throw new IOException("Failed (" + e.getClass().getSimpleName() + ") to notify channel " + this + " initialization: " + e.getMessage(), e);
+            if (e instanceof IOException) {
+                throw (IOException) e;
+            } else if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            } else {
+                throw new IOException("Failed (" + e.getClass().getSimpleName() + ") to notify channel " + this + " initialization: " + e.getMessage(), e);
+            }
         }
         // delegate the rest of the notifications to the channel
         addChannelListener(listener);
@@ -507,11 +513,19 @@ public abstract class AbstractChannel
         ChannelListener listener = getChannelListenerProxy();
         try {
             listener.channelClosed(this, null);
-        } catch (RuntimeException t) {
+        } catch (Throwable t) {
             Throwable e = GenericUtils.peelException(t);
             log.warn("preClose({}) {} while signal channel closed: {}", this, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("preClose(" + this + ") channel closed signalling failure details", e);
+            }
+            if (log.isTraceEnabled()) {
+                Throwable[] suppressed = e.getSuppressed();
+                if (GenericUtils.length(suppressed) > 0) {
+                    for (Throwable s : suppressed) {
+                        log.trace("preClose(" + this + ") suppressed closed channel signalling failure", s);
+                    }
+                }
             }
         } finally {
             // clear the listeners since we are closing the channel (quicker GC)

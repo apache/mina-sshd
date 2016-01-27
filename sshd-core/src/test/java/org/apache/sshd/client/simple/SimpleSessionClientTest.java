@@ -97,7 +97,7 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
             public void sessionCreated(Session session) {
                 try {
                     Thread.sleep(CONNECT_TIMEOUT + 150L);
-                } catch(InterruptedException e) {
+                } catch (InterruptedException e) {
                     // ignored
                 }
             }
@@ -112,7 +112,7 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
         long nanoStart = System.nanoTime();
         try(ClientSession session = simple.sessionLogin(TEST_LOCALHOST, port, getCurrentTestName(), getCurrentTestName())) {
             fail("Unexpected connection success");
-        } catch(IOException e) {
+        } catch (IOException e) {
             long nanoEnd = System.nanoTime();
             long nanoDuration = nanoEnd - nanoStart;
             long nanoTimeout = TimeUnit.MILLISECONDS.toNanos(CONNECT_TIMEOUT);
@@ -131,7 +131,7 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
             public boolean authenticate(String username, String password, ServerSession session) {
                 try {
                     Thread.sleep(AUTH_TIMEOUT + 150L);
-                } catch(InterruptedException e) {
+                } catch (InterruptedException e) {
                     // ignored
                 }
                 return delegate.authenticate(username, password, session);
@@ -142,7 +142,7 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
         long nanoStart = System.nanoTime();
         try(ClientSession session = simple.sessionLogin(TEST_LOCALHOST, port, getCurrentTestName(), getCurrentTestName())) {
             fail("Unexpected connection success");
-        } catch(IOException e) {
+        } catch (IOException e) {
             long nanoEnd = System.nanoTime();
             long nanoDuration = nanoEnd - nanoStart;
             long nanoTimeout = TimeUnit.MILLISECONDS.toNanos(AUTH_TIMEOUT);

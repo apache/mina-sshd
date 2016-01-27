@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutorService;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelFactory;
@@ -43,6 +44,7 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Readable;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
@@ -106,8 +108,6 @@ public class TcpipServerChannel extends AbstractServerChannel {
 
     @Override
     protected OpenFuture doInit(Buffer buffer) {
-        final OpenFuture f = new DefaultOpenFuture(this);
-
         String hostToConnect = buffer.getString();
         int portToConnect = buffer.getInt();
         String originatorIpAddress = buffer.getString();
@@ -130,15 +130,25 @@ public class TcpipServerChannel extends AbstractServerChannel {
         }
 
         Session session = getSession();
-        FactoryManager manager = session.getFactoryManager();
+        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
-        if ((address == null) || (filter == null) || (!filter.canConnect(type, address, session))) {
-            if (log.isDebugEnabled()) {
-                log.debug("doInit(" + this + ")[" + type + "][haveFilter=" + (filter != null) + "] filtered out " + address);
+        final OpenFuture f = new DefaultOpenFuture(this);
+        try {
+            if ((address == null) || (filter == null) || (!filter.canConnect(type, address, session))) {
+                if (log.isDebugEnabled()) {
+                    log.debug("doInit(" + this + ")[" + type + "][haveFilter=" + (filter != null) + "] filtered out " + address);
+                }
+                super.close(true);
+                f.setException(new OpenChannelException(SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "Connection denied"));
+                return f;
             }
-            super.close(true);
-            f.setException(new OpenChannelException(SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "Connection denied"));
-            return f;
+        } catch (Error e) {
+            log.warn("doInit({})[{}] failed ({}) to consult forwarding filter: {}",
+                     session, type, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("doInit(" + this + ")[" + type + "] filter consultation failure details", e);
+            }
+            throw new RuntimeSshException(e);
         }
 
         // TODO: revisit for better threading. Use async io ?
@@ -209,6 +219,14 @@ public class TcpipServerChannel extends AbstractServerChannel {
                 if (log.isDebugEnabled()) {
                     log.debug("handleChannelConnectResult(" + this + ")[exception] listener exception details", ignored);
                 }
+                if (log.isTraceEnabled()) {
+                    Throwable[] suppressed = ignored.getSuppressed();
+                    if (GenericUtils.length(suppressed) > 0) {
+                        for (Throwable s : suppressed) {
+                            log.trace("handleChannelConnectResult(" + this + ") suppressed channel open failure signalling", s);
+                        }
+                    }
+                }
             }
             f.setException(e);
         }
@@ -218,8 +236,31 @@ public class TcpipServerChannel extends AbstractServerChannel {
         ioSession = session;
 
         ChannelListener listener = getChannelListenerProxy();
-        listener.channelOpenSuccess(this);
-        f.setOpened();
+        try {
+            listener.channelOpenSuccess(this);
+            f.setOpened();
+        } catch (Throwable t) {
+            Throwable e = GenericUtils.peelException(t);
+            try {
+                listener.channelOpenFailure(this, e);
+            } catch (Throwable err) {
+                Throwable ignored = GenericUtils.peelException(err);
+                log.warn("handleChannelOpenSuccess({}) failed ({}) to inform listener of open failure={}: {}",
+                         this, ignored.getClass().getSimpleName(), e.getClass().getSimpleName(), ignored.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("doInit(" + this + ") listener inform failure details", ignored);
+                }
+                if (log.isTraceEnabled()) {
+                    Throwable[] suppressed = ignored.getSuppressed();
+                    if (GenericUtils.length(suppressed) > 0) {
+                        for (Throwable s : suppressed) {
+                            log.trace("handleChannelOpenSuccess(" + this + ") suppressed channel open failure signalling", s);
+                        }
+                    }
+                }
+            }
+            f.setException(e);
+        }
     }
 
     protected void handleChannelOpenFailure(OpenFuture f, Throwable problem) {
@@ -232,6 +273,14 @@ public class TcpipServerChannel extends AbstractServerChannel {
                      this, ignored.getClass().getSimpleName(), problem.getClass().getSimpleName(), ignored.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("handleChannelOpenFailure(" + this + ") listener inform open failure details", ignored);
+            }
+            if (log.isTraceEnabled()) {
+                Throwable[] suppressed = ignored.getSuppressed();
+                if (GenericUtils.length(suppressed) > 0) {
+                    for (Throwable s : suppressed) {
+                        log.trace("handleOpenChannelFailure(" + this + ") suppressed channel open failure signalling", s);
+                    }
+                }
             }
         }
 

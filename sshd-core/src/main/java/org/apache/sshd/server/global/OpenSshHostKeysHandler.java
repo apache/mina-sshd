@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.global.AbstractOpenSshHostKeysHandler;
@@ -108,7 +109,18 @@ public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler imple
                     "No signer could be located for key type=%s",
                     keyType);
 
-            KeyPair kp = ValidateUtils.checkNotNull(kpp.loadKey(keyType), "No key of type=%s available", keyType);
+            KeyPair kp;
+            try {
+                kp = ValidateUtils.checkNotNull(kpp.loadKey(keyType), "No key of type=%s available", keyType);
+            } catch (Error e) {
+                log.warn("handleHostKeys({}) failed ({}) to load key of type={}: {}",
+                         session, e.getClass().getSimpleName(), keyType, e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("handleHostKey(" + session + ") " + keyType + " key load failure details", e);
+                }
+
+                throw new RuntimeSshException(e);
+            }
             verifier.initSigner(kp.getPrivate());
 
             buf.clear();

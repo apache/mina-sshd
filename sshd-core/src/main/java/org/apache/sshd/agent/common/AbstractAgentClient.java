@@ -81,6 +81,9 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
                 log.debug("Failed ({}) to handle command={}: {}",
                           e.getClass().getSimpleName(), cmd, e.getMessage());
             }
+            if (log.isTraceEnabled()) {
+                log.trace("Received command=" + cmd + " handling failure details", e);
+            }
             rep.clear();
             rep.putInt(0);
             rep.rpos(rep.wpos());

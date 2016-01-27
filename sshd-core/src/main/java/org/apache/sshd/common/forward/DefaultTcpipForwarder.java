@@ -35,6 +35,7 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -299,11 +300,20 @@ public class DefaultTcpipForwarder
         Session session = getSession();
         FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
-        if ((filter == null) || (!filter.canListen(local, session))) {
-            if (log.isDebugEnabled()) {
-                log.debug("localPortForwardingRequested(" + session + ")[" + local + "][haveFilter=" + (filter != null) + "] rejected");
+        try {
+            if ((filter == null) || (!filter.canListen(local, session))) {
+                if (log.isDebugEnabled()) {
+                    log.debug("localPortForwardingRequested(" + session + ")[" + local + "][haveFilter=" + (filter != null) + "] rejected");
+                }
+                return null;
             }
-            return null;
+        } catch (Error e) {
+            log.warn("localPortForwardingRequested({})[{}] failed ({}) to consult forwarding filter: {}",
+                     session, local, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("localPortForwardingRequested(" + this + ")[" + local + "] filter consultation failure details", e);
+            }
+            throw new RuntimeSshException(e);
         }
 
         InetSocketAddress bound = doBind(local, staticIoHandlerFactory);

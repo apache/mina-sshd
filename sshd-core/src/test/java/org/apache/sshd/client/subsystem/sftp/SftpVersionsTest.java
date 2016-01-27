@@ -376,7 +376,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                         try {
                             super.setFileExtensions(file, extensions, options);
                             assertFalse("Expected exception not generated for version=" + currentVersion, currentVersion >= SftpConstants.SFTP_V6);
-                        } catch(UnsupportedOperationException e) {
+                        } catch (UnsupportedOperationException e) {
                             assertTrue("Unexpected exception for version=" + currentVersion, currentVersion >= SftpConstants.SFTP_V6);
                         }
                     }

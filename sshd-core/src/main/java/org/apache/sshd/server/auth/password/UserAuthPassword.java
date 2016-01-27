@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.server.auth.password;
 
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -76,7 +77,18 @@ public class UserAuthPassword extends AbstractUserAuth {
         }
 
         try {
-            boolean authed = auth.authenticate(username, password, session);
+            boolean authed;
+            try {
+                authed = auth.authenticate(username, password, session);
+            } catch (Error e) {
+                log.warn("checkPassword({}) failed ({}) to consult authenticator: {}",
+                         session, e.getClass().getSimpleName(), e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("checkPassword(" + session + ") authenticator failure details", e);
+                }
+
+                throw new RuntimeSshException(e);
+            }
             if (log.isDebugEnabled()) {
                 log.debug("checkPassword({}) authentication result: {}", session, authed);
             }

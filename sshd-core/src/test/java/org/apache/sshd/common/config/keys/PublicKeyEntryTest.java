@@ -51,7 +51,7 @@ public class PublicKeyEntryTest extends BaseTestSupport {
                 PublicKey key = entry.resolvePublicKey(resolver);
                 assertSame("Mismatched successful resolver", PublicKeyEntryResolver.IGNORING, resolver);
                 assertNull("Unexpected success for resolver=" + resolver + ": " + KeyUtils.getFingerPrint(key), key);
-            } catch(GeneralSecurityException e) {
+            } catch (GeneralSecurityException e) {
                 assertObjectInstanceOf("Mismatched thrown exception for resolver=" + resolver, InvalidKeySpecException.class, e);
             }
         }

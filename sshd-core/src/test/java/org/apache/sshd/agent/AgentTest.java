@@ -65,9 +65,14 @@ public class AgentTest extends BaseTestSupport {
             String authSocket;
             try {
                 authSocket = agent.start();
-            } catch (UnsatisfiedLinkError e) {
-                // the native library is not available, so these tests should be skipped
-                authSocket = null;
+            } catch (RuntimeException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof UnsatisfiedLinkError) {
+                    // the native library is not available, so these tests should be skipped
+                    authSocket = null;
+                } else {
+                    throw e;
+                }
             }
             Assume.assumeTrue("Native library N/A", authSocket != null);
 

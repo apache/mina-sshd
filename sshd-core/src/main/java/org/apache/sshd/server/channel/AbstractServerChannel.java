@@ -81,7 +81,7 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
         try {
             listener.channelOpenSuccess(this);
             f.setOpened();
-        } catch (RuntimeException t) {
+        } catch (Throwable t) {
             Throwable e = GenericUtils.peelException(t);
             try {
                 listener.channelOpenFailure(this, e);
@@ -91,6 +91,14 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
                          this, ignored.getClass().getSimpleName(), e.getClass().getSimpleName(), ignored.getMessage());
                 if (log.isDebugEnabled()) {
                     log.debug("doInit(" + this + ") listener inform failure details", ignored);
+                }
+                if (log.isTraceEnabled()) {
+                    Throwable[] suppressed = ignored.getSuppressed();
+                    if (GenericUtils.length(suppressed) > 0) {
+                        for (Throwable s : suppressed) {
+                            log.trace("doInit(" + this + ") suppressed channel open failure signalling", s);
+                        }
+                    }
                 }
             }
             f.setException(e);

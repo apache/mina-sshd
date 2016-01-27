@@ -194,6 +194,9 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
                 } catch (Exception e) {
                     log.warn("Failed (" + e.getClass().getSimpleName() + ")"
                             + " to load key resource=" + r + ": " + e.getMessage());
+                    if (log.isDebugEnabled()) {
+                        log.debug("Key resource=" + r + " load failure details", e);
+                    }
                     nextKeyPair = null;
                     continue;
                 }

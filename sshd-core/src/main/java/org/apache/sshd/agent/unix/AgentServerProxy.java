@@ -110,10 +110,12 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
                                 AgentServerProxy.this.service.registerChannel(channel);
                                 channel.open().verify(PropertyResolverUtils.getLongProperty(session, CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
                             } catch (Exception e) {
-                                if (isOpen()) {
-                                    if (log.isDebugEnabled()) {
-                                        log.debug(e.getClass().getSimpleName() + " while authentication forwarding: " + e.getMessage(), e);
-                                    }
+                                if (log.isDebugEnabled()) {
+                                    log.debug("run(open={}) {} while authentication forwarding: {}",
+                                              isOpen(), e.getClass().getSimpleName(), e.getMessage());
+                                }
+                                if (log.isTraceEnabled()) {
+                                    log.trace("run(open=" + isOpen() + ") authentication forwarding failure details", e);
                                 }
                             }
                         }

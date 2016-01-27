@@ -80,13 +80,16 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
             }
 
             return accepted;
-        } catch (Exception e) {
+        } catch (Throwable e) {
             if (log.isDebugEnabled()) {
                 log.debug("authenticate(" + username + ")[" + session + "][" + getPath() + "]"
                         + " failed (" + e.getClass().getSimpleName() + ")"
                         + " to resolve delegate: " + e.getMessage());
             }
 
+            if (log.isTraceEnabled()) {
+                log.trace("authenticate(" + username + ")[" + session + "][" + getPath() + "] failure details", e);
+            }
             return false;
         }
     }

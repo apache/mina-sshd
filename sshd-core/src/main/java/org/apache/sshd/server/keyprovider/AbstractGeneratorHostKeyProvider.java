@@ -114,7 +114,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
                 if (Files.exists(keyPath, options) && Files.isRegularFile(keyPath, options)) {
                     try {
                         keyPair = readKeyPair(keyPath, IoUtils.EMPTY_OPEN_OPTIONS);
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         log.warn("Failed ({}) to load from {}: {}",
                                  e.getClass().getSimpleName(), keyPath, e.getMessage());
                         if (log.isDebugEnabled()) {
@@ -129,7 +129,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
             String alg = getAlgorithm();
             try {
                 keyPair = generateKeyPair(alg);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 log.warn("loadKeys({})[{}] Failed ({}) to generate {} key-pair: {}",
                          keyPath, alg, e.getClass().getSimpleName(), alg, e.getMessage());
                 if (log.isDebugEnabled()) {
@@ -140,7 +140,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
             if ((keyPair != null) && (keyPath != null)) {
                 try {
                     writeKeyPair(keyPair, keyPath);
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     log.warn("loadKeys({})[{}] Failed ({}) to write {} key: {}",
                              alg, keyPath, e.getClass().getSimpleName(), alg, e.getMessage());
                     if (log.isDebugEnabled()) {
@@ -169,7 +169,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
         if ((!Files.exists(keyPath)) || isOverwriteAllowed()) {
             try (OutputStream os = Files.newOutputStream(keyPath, options)) {
                 doWriteKeyPair(keyPath.toString(), kp, os);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 log.warn("writeKeyPair({}) failed ({}) to write key {}: {}",
                          keyPath, e.getClass().getSimpleName(), e.getMessage());
                 if (log.isDebugEnabled()) {

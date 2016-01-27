@@ -33,6 +33,7 @@ import org.apache.sshd.client.future.DefaultAuthFuture;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -180,8 +181,18 @@ public class ClientUserAuthService
             }
 
             UserInteraction ui = session.getUserInteraction();
-            if ((ui != null) && ui.isInteractionAllowed(session)) {
-                ui.welcome(session, welcome, lang);
+            try {
+                if ((ui != null) && ui.isInteractionAllowed(session)) {
+                    ui.welcome(session, welcome, lang);
+                }
+            } catch (Error e) {
+                log.warn("process({}) failed ({}) to consult interaction: {}",
+                         session, e.getClass().getSimpleName(), e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("process(" + session + ") interaction consultation failure details", e);
+                }
+
+                throw new RuntimeSshException(e);
             }
         } else {
             buffer.rpos(buffer.rpos() - 1);

@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.signature.Signature;
@@ -113,7 +114,20 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
             return Boolean.FALSE;
         }
 
-        boolean authed = authenticator.authenticate(session, username, clientKey, clientHostName, clientUsername, certs);
+        boolean authed;
+        try {
+            authed = authenticator.authenticate(session, username, clientKey, clientHostName, clientUsername, certs);
+        } catch (Error e) {
+            log.warn("doAuth({}@{}) failed ({}) to consult authenticator for {} key={}: {}",
+                    username, session, e.getClass().getSimpleName(),
+                    keyType, KeyUtils.getFingerPrint(clientKey), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("doAuth(" + username + "@" + session + ") delegate consultation failure details", e);
+            }
+
+            throw new RuntimeSshException(e);
+        }
+
         if (log.isDebugEnabled()) {
             log.debug("doAuth({}@{}) key type={}, fingerprint={}, client={}@{}, num-certs={} - authentication result: {}",
                       username, session, keyType, KeyUtils.getFingerPrint(clientKey),

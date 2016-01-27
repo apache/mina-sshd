@@ -88,7 +88,7 @@ public class SftpVersionSelectorTest extends BaseTestSupport {
                     int actual = selector.selectVersion(version, unavailable);
                     fail("Unexpected selected version (" + actual + ")"
                        + " for current= " + version + ", available=" + unavailable + ", preferred=" + preferred);
-                } catch(IllegalStateException e) {
+                } catch (IllegalStateException e) {
                     // expected
                 }
             }

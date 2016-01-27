@@ -33,6 +33,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
@@ -162,7 +163,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (command != null) {
             try {
                 command.destroy();
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 log.warn("doCloseImmediately({}) failed ({}) to destroy command: {}",
                          this, e.getClass().getSimpleName(), e.getMessage());
                 if (log.isDebugEnabled()) {
@@ -580,11 +581,20 @@ public class ChannelSession extends AbstractServerChannel {
         FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No session factory manager");
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
         SshAgentFactory factory = manager.getAgentFactory();
-        if ((factory == null) || (filter == null) || (!filter.canForwardAgent(session))) {
-            if (log.isDebugEnabled()) {
-                log.debug("handleAgentForwarding(" + this + ")[haveFactory=" + (factory != null) + ",haveFilter=" + (filter != null) + "] filtered out");
+        try {
+            if ((factory == null) || (filter == null) || (!filter.canForwardAgent(session))) {
+                if (log.isDebugEnabled()) {
+                    log.debug("handleAgentForwarding(" + this + ")[haveFactory=" + (factory != null) + ",haveFilter=" + (filter != null) + "] filtered out");
+                }
+                return RequestHandler.Result.ReplyFailure;
             }
-            return RequestHandler.Result.ReplyFailure;
+        } catch (Error e) {
+            log.warn("handleAgentForwarding({}) failed ({}) to consult forwarding filter: {}",
+                     this, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("handleAgentForwarding(" + this + ") filter consultation failure details", e);
+            }
+            throw new RuntimeSshException(e);
         }
 
         String authSocket = service.initAgentForward();
@@ -599,14 +609,23 @@ public class ChannelSession extends AbstractServerChannel {
         String authCookie = buffer.getString();
         int screenId = buffer.getInt();
 
-        FactoryManager manager = session.getFactoryManager();
+        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
-        if ((filter == null) || (!filter.canForwardX11(session))) {
-            if (log.isDebugEnabled()) {
-                log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={}, filter={}: filtered",
-                          this, singleConnection, authProtocol, authCookie, screenId, filter);
+        try {
+            if ((filter == null) || (!filter.canForwardX11(session))) {
+                if (log.isDebugEnabled()) {
+                    log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={}, filter={}: filtered",
+                              this, singleConnection, authProtocol, authCookie, screenId, filter);
+                }
+                return RequestHandler.Result.ReplyFailure;
             }
-            return RequestHandler.Result.ReplyFailure;
+        } catch (Error e) {
+            log.warn("handleX11Forwarding({}) failed ({}) to consult forwarding filter: {}",
+                     this, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("handleX11Forwarding(" + this + ") filter consultation failure details", e);
+            }
+            throw new RuntimeSshException(e);
         }
 
         String display = service.createX11Display(singleConnection, authProtocol, authCookie, screenId);

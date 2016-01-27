@@ -77,6 +77,15 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
                 if (log.isDebugEnabled()) {
                     log.debug("doInit(" + this + ") inform listener open failure details", ignored);
                 }
+
+                if (log.isTraceEnabled()) {
+                    Throwable[] suppressed = ignored.getSuppressed();
+                    if (GenericUtils.length(suppressed) > 0) {
+                        for (Throwable s : suppressed) {
+                            log.trace("doInit(" + this + ") suppressed channel open failure signalling", s);
+                        }
+                    }
+                }
             }
             f.setException(e);
         }

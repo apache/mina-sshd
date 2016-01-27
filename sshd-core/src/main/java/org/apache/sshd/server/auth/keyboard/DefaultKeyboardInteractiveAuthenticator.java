@@ -22,6 +22,7 @@ package org.apache.sshd.server.auth.keyboard;
 import java.util.List;
 
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -88,7 +89,17 @@ public class DefaultKeyboardInteractiveAuthenticator
             throw new SshException("Mismatched number of responses");
         }
 
-        return auth.authenticate(username, responses.get(0), session);
+        try {
+            return auth.authenticate(username, responses.get(0), session);
+        } catch (Error e) {
+            log.warn("authenticate({}) failed ({}) to consult password authenticator: {}",
+                    session, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("authenticate(" + session + ") authenticator failure details", e);
+            }
+
+            throw new RuntimeSshException(e);
+        }
     }
 
     protected String getInteractionName(ServerSession session) {

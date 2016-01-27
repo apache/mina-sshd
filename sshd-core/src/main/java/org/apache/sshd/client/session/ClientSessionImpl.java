@@ -36,6 +36,7 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
@@ -99,7 +100,16 @@ public class ClientSessionImpl extends AbstractClientSession {
 
         // Inform the listener of the newly created session
         SessionListener listener = getSessionListenerProxy();
-        listener.sessionCreated(this);
+        try {
+            listener.sessionCreated(this);
+        } catch (Throwable t) {
+            Throwable e = GenericUtils.peelException(t);
+            if (e instanceof Exception) {
+                throw (Exception) e;
+            } else {
+                throw new RuntimeSshException(e);
+            }
+        }
 
         sendClientIdentification();
         kexState.set(KexState.INIT);

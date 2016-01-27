@@ -20,9 +20,13 @@ package org.apache.sshd.agent.common;
 
 import java.io.IOException;
 
+import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.agent.SshAgentServer;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
 /**
@@ -41,7 +45,10 @@ public class AgentForwardSupport extends AbstractCloseable {
     public String initialize() throws IOException {
         try {
             if (agentId == null) {
-                agentServer = service.getSession().getFactoryManager().getAgentFactory().createServer(service);
+                Session session = ValidateUtils.checkNotNull(service.getSession(), "No session");
+                FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No session factory manager");
+                SshAgentFactory factory = ValidateUtils.checkNotNull(manager.getAgentFactory(), "No agent factory");
+                agentServer = ValidateUtils.checkNotNull(factory.createServer(service), "No agent server created");
                 agentId = agentServer.getId();
             }
             return agentId;

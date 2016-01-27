@@ -28,6 +28,7 @@ import java.util.List;
 import org.apache.sshd.client.auth.AbstractUserAuth;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.signature.Signature;
@@ -70,25 +71,58 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
     public void init(ClientSession session, String service) throws Exception {
         super.init(session, service);
         releaseKeys();  // just making sure in case multiple calls to the method
-        keys = new UserAuthPublicKeyIterator(session, this);
+
+        try {
+            keys = new UserAuthPublicKeyIterator(session, this);
+        } catch (Error e) {
+            log.warn("init({})[{}] failed ({}) to initialize session keys: {}",
+                     session, service, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("init(" + session + ")[" + service + "] session keys initialization failure details", e);
+            }
+
+            throw new RuntimeSshException(e);
+        }
     }
 
     @Override
     protected boolean sendAuthDataRequest(ClientSession session, String service) throws Exception {
-        if ((keys == null) || (!keys.hasNext())) {
-            if (log.isDebugEnabled()) {
-                log.debug("sendAuthDataRequest({})[{}] no more keys to send", session, service);
+        try {
+            if ((keys == null) || (!keys.hasNext())) {
+                if (log.isDebugEnabled()) {
+                    log.debug("sendAuthDataRequest({})[{}] no more keys to send", session, service);
+                }
+
+                return false;
             }
 
-            return false;
+            current = keys.next();
+        } catch (Error e) {
+            log.warn("sendAuthDataRequest({})[{}] failed ({}) to get next key: {}",
+                     session, service, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("sendAuthDataRequest(" + session + ")[" + service + "] next key fetch failure details", e);
+            }
+
+            throw new RuntimeSshException(e);
         }
 
-        current = keys.next();
         if (log.isTraceEnabled()) {
             log.trace("sendAuthDataRequest({})[{}] current key details: {}", session, service, current);
         }
 
-        PublicKey key = current.getPublicKey();
+        PublicKey key;
+        try {
+            key = current.getPublicKey();
+        } catch (Error e) {
+            log.warn("sendAuthDataRequest({})[{}] failed ({}) to retrieve public key: {}",
+                     session, service, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("sendAuthDataRequest(" + session + ")[" + service + "] public key retrieval failure details", e);
+            }
+
+            throw new RuntimeSshException(e);
+        }
         String algo = KeyUtils.getKeyType(key);
         String name = getName();
         if (log.isDebugEnabled()) {
@@ -119,7 +153,18 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
          * Make sure the server echo-ed the same key we sent as
          * sanctioned by RFC4252 section 7
          */
-        PublicKey key = current.getPublicKey();
+        PublicKey key;
+        try {
+            key = current.getPublicKey();
+        } catch (Error e) {
+            log.warn("processAuthDataRequest({})[{}][{}] failed ({}) to retrieve public key: {}",
+                     session, service, name, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("processAuthDataRequest(" + session + ")[" + service + "][" + name + "] public key retrieval failure details", e);
+            }
+
+            throw new RuntimeSshException(e);
+        }
         String algo = KeyUtils.getKeyType(key);
         String rspKeyType = buffer.getString();
         if (!rspKeyType.equals(algo)) {
@@ -165,7 +210,19 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         bs.putPublicKey(key);
 
         byte[] contents = bs.getCompactData();
-        byte[] sig = current.sign(contents);
+        byte[] sig;
+        try {
+            sig = current.sign(contents);
+        } catch (Error e) {
+            log.warn("appendSignature({})[{}][{}] failed ({}) to sign contents: {}",
+                     session, service, name, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("appendSignature(" + session + ")[" + service + "][" + name + "] signing failure details", e);
+            }
+
+            throw new RuntimeSshException(e);
+        }
+
         if (log.isTraceEnabled()) {
             log.trace("appendSignature({})[{}] name={}, key type={}, fingerprint={} - verification data={}",
                       session, service, name, algo, KeyUtils.getFingerPrint(key), BufferUtils.printHex(contents));

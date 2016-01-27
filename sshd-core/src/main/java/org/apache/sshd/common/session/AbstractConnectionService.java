@@ -175,6 +175,14 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
             if (log.isDebugEnabled()) {
                 log.debug("registerChannel(" + this + ")[" + channel + "] inform closure failure details", ignored);
             }
+            if (log.isTraceEnabled()) {
+                Throwable[] suppressed = ignored.getSuppressed();
+                if (GenericUtils.length(suppressed) > 0) {
+                    for (Throwable s : suppressed) {
+                        log.trace("registerChannel(" + this + ")[" + channel + "] suppressed channel closed signalling", s);
+                    }
+                }
+            }
         }
 
         throw reason;
@@ -519,7 +527,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
                 RequestHandler.Result result;
                 try {
                     result = handler.process(this, req, wantReply, buffer);
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     log.warn("globalRequest({})[{}, want-reply={}] failed ({}) to process: {}",
                              this, req, wantReply, e.getClass().getSimpleName(), e.getMessage());
                     if (log.isDebugEnabled()) {

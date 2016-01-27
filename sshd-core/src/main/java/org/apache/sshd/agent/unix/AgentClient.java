@@ -97,6 +97,10 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
         } catch (Exception e) {
             if (isOpen()) {
                 log.warn(e.getClass().getSimpleName() + " while still open: " + e.getMessage());
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("Closed client loop exception", e);
+                }
             }
         } finally {
             try {

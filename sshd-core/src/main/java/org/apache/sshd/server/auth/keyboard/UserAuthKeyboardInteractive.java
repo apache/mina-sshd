@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.GenericUtils;
@@ -58,7 +59,18 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                 return false;
             }
 
-            InteractiveChallenge challenge = auth.generateChallenge(session, getUsername(), lang, subMethods);
+            InteractiveChallenge challenge;
+            try {
+                challenge = auth.generateChallenge(session, username, lang, subMethods);
+            } catch (Error e) {
+                log.warn("doAuth({}@{}) failed ({}) to generate authenticator challenge: {}",
+                         username, session, e.getClass().getSimpleName(), e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("doAuth(" + username + "@" + session + ") authenticator challenge failure details", e);
+                }
+                throw new RuntimeSshException(e);
+            }
+
             if (challenge == null) {
                 if (log.isDebugEnabled()) {
                     log.debug("doAuth({}@{})[methods={}, lang={}] - no interactive challenge generated",
@@ -103,7 +115,18 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                 return false;
             }
 
-            boolean authed = auth.authenticate(session, username, responses);
+            boolean authed;
+            try {
+                authed = auth.authenticate(session, username, responses);
+            } catch (Error e) {
+                log.warn("doAuth({}@{}) failed ({}) to consult authenticator: {}",
+                         username, session, e.getClass().getSimpleName(), e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("doAuth(" + username + "@" + session + ") authenticator consultation failure details", e);
+                }
+                throw new RuntimeSshException(e);
+            }
+
             if (log.isDebugEnabled()) {
                 log.debug("doAuth({}@{}) authenticate {} responses result: {}",
                           username, session, num, authed);

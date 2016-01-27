@@ -46,6 +46,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -277,7 +278,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @param session   the session to attach
      */
     public static void attachSession(IoSession ioSession, AbstractSession session) {
-        ioSession.setAttribute(SESSION, session);
+        ValidateUtils.checkNotNull(ioSession, "No I/O session").setAttribute(SESSION, ValidateUtils.checkNotNull(session, "No SSH session"));
     }
 
     @Override
@@ -425,7 +426,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             synchronized (lock) {
                 doHandleMessage(buffer);
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             DefaultKeyExchangeFuture kexFuture = kexFutureHolder.get();
             // if have any ongoing KEX notify it about the failure
             if (kexFuture != null) {
@@ -437,7 +438,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 }
             }
 
-            throw e;
+            if (e instanceof Exception) {
+                throw (Exception) e;
+            } else {
+                throw new RuntimeSshException(e);
+            }
         }
     }
 
@@ -782,11 +787,20 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         SessionListener listener = getSessionListenerProxy();
         try {
             listener.sessionClosed(this);
-        } catch (RuntimeException t) {
+        } catch (Throwable t) {
             Throwable e = GenericUtils.peelException(t);
             log.warn("preClose({}) {} while signal session closed: {}", this, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("preClose(" + this + ") signal session closed exception details", e);
+            }
+
+            if (log.isTraceEnabled()) {
+                Throwable[] suppressed = e.getSuppressed();
+                if (GenericUtils.length(suppressed) > 0) {
+                    for (Throwable s : suppressed) {
+                        log.trace("preClose(" + this + ") suppressed session closed signalling", s);
+                    }
+                }
             }
         } finally {
             // clear the listeners since we are closing the session (quicker GC)
@@ -1832,7 +1846,18 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     protected void sendSessionEvent(SessionListener.Event event) throws IOException {
         SessionListener listener = getSessionListenerProxy();
-        listener.sessionEvent(this, event);
+        try {
+            listener.sessionEvent(this, event);
+        } catch (Throwable e) {
+            Throwable t = GenericUtils.peelException(e);
+            if (t instanceof IOException) {
+                throw (IOException) t;
+            } else if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            } else {
+                throw new IOException("Failed (" + t.getClass().getSimpleName() + ") to send session event: " + t.getMessage(), t);
+            }
+        }
     }
 
     @Override

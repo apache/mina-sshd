@@ -144,6 +144,9 @@ public class ChannelSession extends AbstractClientChannel {
                     log.debug("doCloseImmediately({}) failed {} to shutdown stream pumper: {}",
                               this, e.getClass().getSimpleName(), e.getMessage());
                 }
+                if (log.isTraceEnabled()) {
+                    log.trace("doCloseImmediately(" + this + ") stream pumper shutdown error details", e);
+                }
             } finally {
                 pumper = null;
                 pumperService = null;

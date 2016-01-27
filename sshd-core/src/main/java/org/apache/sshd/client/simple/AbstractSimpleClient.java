@@ -109,6 +109,10 @@ public abstract class AbstractSimpleClient extends AbstractLoggingBean implement
                         log.debug("createSftpClient({}) failed ({}) to close client: {}",
                                   session, t.getClass().getSimpleName(), t.getMessage());
                     }
+
+                    if (log.isTraceEnabled()) {
+                        log.trace("createSftpClient(" + session + ") client close failure details", t);
+                    }
                     err = GenericUtils.accumulateException(err, t);
                 }
             }
@@ -128,6 +132,9 @@ public abstract class AbstractSimpleClient extends AbstractLoggingBean implement
                           session, e.getClass().getSimpleName(), e.getMessage());
             }
 
+            if (log.isTraceEnabled()) {
+                log.trace("createSftpClient(" + session + ") session close failure details", e);
+            }
             err = GenericUtils.accumulateException(err, e);
         }
 
@@ -264,6 +271,10 @@ public abstract class AbstractSimpleClient extends AbstractLoggingBean implement
                 if (log.isDebugEnabled()) {
                     log.debug("createScpClient({}) failed ({}) to close session: {}",
                               session, t.getClass().getSimpleName(), t.getMessage());
+                }
+
+                if (log.isTraceEnabled()) {
+                    log.trace("createScpClient(" + session + ") session close failure details", t);
                 }
                 e.addSuppressed(t);
             }

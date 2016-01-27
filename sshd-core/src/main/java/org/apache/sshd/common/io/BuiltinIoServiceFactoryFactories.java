@@ -58,7 +58,7 @@ public enum BuiltinIoServiceFactoryFactories implements NamedFactory<IoServiceFa
         Class<? extends IoServiceFactoryFactory> clazz = getFactoryClass();
         try {
             return clazz.newInstance();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
             } else {

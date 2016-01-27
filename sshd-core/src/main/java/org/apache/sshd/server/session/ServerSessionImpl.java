@@ -27,6 +27,7 @@ import java.util.Objects;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -59,7 +60,16 @@ public class ServerSessionImpl extends AbstractServerSession {
 
         // Inform the listener of the newly created session
         SessionListener listener = getSessionListenerProxy();
-        listener.sessionCreated(this);
+        try {
+            listener.sessionCreated(this);
+        } catch (Throwable t) {
+            Throwable e = GenericUtils.peelException(t);
+            if (e instanceof Exception) {
+                throw (Exception) e;
+            } else {
+                throw new RuntimeSshException(e);
+            }
+        }
 
         sendServerIdentification();
     }
@@ -118,7 +128,19 @@ public class ServerSessionImpl extends AbstractServerSession {
 
         KeyPairProvider kpp = getKeyPairProvider();
         Collection<String> supported = NamedResource.Utils.getNameList(getSignatureFactories());
-        Iterable<String> provided = (kpp == null) ? null : kpp.getKeyTypes();
+        Iterable<String> provided;
+        try {
+            provided = (kpp == null) ? null : kpp.getKeyTypes();
+        } catch (Error e) {
+            log.warn("resolveAvailableSignaturesProposal({}) failed ({}) to get key types: {}",
+                     this, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("resolveAvailableSignaturesProposal(" + this + ") fetch key types failure details", e);
+            }
+
+            throw new RuntimeSshException(e);
+        }
+
         if ((provided == null) || GenericUtils.isEmpty(supported)) {
             return resolveEmptySignaturesProposal(supported, provided);
         }
@@ -203,9 +225,19 @@ public class ServerSessionImpl extends AbstractServerSession {
 
     @Override
     public KeyPair getHostKey() {
-        String value = getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
+        String keyType = getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
         KeyPairProvider provider = ValidateUtils.checkNotNull(getKeyPairProvider(), "No host keys provider");
-        return provider.loadKey(value);
+        try {
+            return provider.loadKey(keyType);
+        } catch (Error e) {
+            log.warn("getHostKey({}) failed ({}) to load key of type={}: {}",
+                     this, e.getClass().getSimpleName(), keyType, e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("getHostKey(" + this + ") " + keyType + " key load failure details", e);
+            }
+
+            throw new RuntimeSshException(e);
+        }
     }
 
     @Override

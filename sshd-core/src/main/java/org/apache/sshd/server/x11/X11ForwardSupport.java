@@ -139,7 +139,7 @@ public class X11ForwardSupport extends AbstractInnerCloseable implements IoHandl
                     p = new ProcessBuilder(XAUTH_COMMAND, "add", authDisplay, authenticationProtocol, authenticationCookie).start();
                     result = p.waitFor();
                 }
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 log.error("Could not run xauth", e);
                 return null;
             }

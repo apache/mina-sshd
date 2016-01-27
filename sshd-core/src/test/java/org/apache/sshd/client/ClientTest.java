@@ -383,7 +383,9 @@ public class ClientTest extends BaseTestSupport {
                         eventsMap.remove("Closed"); // since it is called anyway but does not cause an IOException
                         assertTrue("Unexpected failure at retry #" + retryCount, eventsMap.size() < 3);
                     }
-                } catch(IllegalStateException e) {
+                } catch (ChannelFailureException e) {
+                    assertEquals("Mismatched failure reason", "Initialized", e.getMessage());
+                } catch (IllegalStateException e) {
                     // sometimes due to timing issues we get this problem
                     assertTrue("Premature exception phase - count=" + retryCount, retryCount > 0);
                     assertTrue("Session not closing", session.isClosing() || session.isClosed());
