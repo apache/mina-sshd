@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerHolder;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
@@ -30,7 +31,9 @@ import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractIoServiceFactory extends AbstractCloseable implements IoServiceFactory, ExecutorServiceCarrier {
+public abstract class AbstractIoServiceFactory
+                extends AbstractCloseable
+                implements IoServiceFactory, FactoryManagerHolder, ExecutorServiceCarrier {
 
     private final FactoryManager manager;
     private final ExecutorService executor;
@@ -42,6 +45,7 @@ public abstract class AbstractIoServiceFactory extends AbstractCloseable impleme
         shutdownExecutor = shutdownOnExit;
     }
 
+    @Override
     public final FactoryManager getFactoryManager() {
         return manager;
     }

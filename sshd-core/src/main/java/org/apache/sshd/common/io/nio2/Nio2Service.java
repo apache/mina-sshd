@@ -31,6 +31,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerHolder;
+import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
@@ -42,12 +44,12 @@ import org.apache.sshd.common.util.closeable.CloseableUtils;
 
 /**
  */
-public abstract class Nio2Service extends AbstractInnerCloseable implements IoService {
-    protected final FactoryManager manager;
-    protected final IoHandler handler;
+public abstract class Nio2Service extends AbstractInnerCloseable implements IoService, FactoryManagerHolder {
     protected final Map<Long, IoSession> sessions;
     protected final AtomicBoolean disposing = new AtomicBoolean();
-    protected final AsynchronousChannelGroup group;
+    private final FactoryManager manager;
+    private final IoHandler handler;
+    private final AsynchronousChannelGroup group;
 
     protected Nio2Service(FactoryManager manager, IoHandler handler, AsynchronousChannelGroup group) {
         if (log.isTraceEnabled()) {
@@ -59,9 +61,22 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
         this.sessions = new ConcurrentHashMap<>();
     }
 
+    protected AsynchronousChannelGroup getChannelGroup() {
+        return group;
+    }
+
+    @Override
+    public FactoryManager getFactoryManager() {
+        return manager;
+    }
+
+    public IoHandler getIoHandler() {
+        return handler;
+    }
+
     public void dispose() {
         try {
-            long maxWait = CloseableUtils.getMaxCloseWaitTime(manager);
+            long maxWait = CloseableUtils.getMaxCloseWaitTime(getFactoryManager());
             boolean successful = close(true).await(maxWait);
             if (!successful) {
                 throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");
@@ -92,6 +107,7 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
     }
 
     protected <T> void setOption(NetworkChannel socket, String property, SocketOption<T> option, T defaultValue) throws IOException {
+        PropertyResolver manager = getFactoryManager();
         String valStr = PropertyResolverUtils.getString(manager, property);
         T val = defaultValue;
         if (!GenericUtils.isEmpty(valStr)) {

@@ -24,6 +24,7 @@ import java.net.StandardSocketOptions;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.CompletionHandler;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -36,26 +37,29 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  */
 public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
     public static final int DEFAULT_BACKLOG = 0;
 
-    private final Map<SocketAddress, AsynchronousServerSocketChannel> channels;
+    protected final Map<SocketAddress, AsynchronousServerSocketChannel> channels = new ConcurrentHashMap<>();
     private int backlog = DEFAULT_BACKLOG;
 
     public Nio2Acceptor(FactoryManager manager, IoHandler handler, AsynchronousChannelGroup group) {
         super(manager, handler, group);
-        channels = new ConcurrentHashMap<SocketAddress, AsynchronousServerSocketChannel>();
         backlog = PropertyResolverUtils.getIntProperty(manager, FactoryManager.SOCKET_BACKLOG, DEFAULT_BACKLOG);
     }
 
     @Override
     public void bind(Collection<? extends SocketAddress> addresses) throws IOException {
+        AsynchronousChannelGroup group = getChannelGroup();
         for (SocketAddress address : addresses) {
-            log.debug("Binding Nio2Acceptor to address {}", address);
-            AsynchronousServerSocketChannel socket = AsynchronousServerSocketChannel.open(group);
+            if (log.isDebugEnabled()) {
+                log.debug("Binding Nio2Acceptor to address {}", address);
+            }
+            AsynchronousServerSocketChannel socket = openAsynchronousServerSocketChannel(address, group);
             setOption(socket, FactoryManager.SOCKET_KEEPALIVE, StandardSocketOptions.SO_KEEPALIVE, null);
             setOption(socket, FactoryManager.SOCKET_LINGER, StandardSocketOptions.SO_LINGER, null);
             setOption(socket, FactoryManager.SOCKET_RCVBUF, StandardSocketOptions.SO_RCVBUF, null);
@@ -65,8 +69,23 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
             socket.bind(address, backlog);
             SocketAddress local = socket.getLocalAddress();
             channels.put(local, socket);
-            socket.accept(local, new AcceptCompletionHandler(socket));
+
+            CompletionHandler<AsynchronousSocketChannel, ? super SocketAddress> handler =
+                    ValidateUtils.checkNotNull(createSocketCompletionHandler(channels, socket),
+                                               "No completion handler created for address=%s",
+                                               address);
+            socket.accept(local, handler);
         }
+    }
+
+    protected AsynchronousServerSocketChannel openAsynchronousServerSocketChannel(
+            SocketAddress address, AsynchronousChannelGroup group) throws IOException {
+        return AsynchronousServerSocketChannel.open(group);
+    }
+
+    protected CompletionHandler<AsynchronousSocketChannel, ? super SocketAddress> createSocketCompletionHandler(
+            Map<SocketAddress, AsynchronousServerSocketChannel> channelsMap, AsynchronousServerSocketChannel socket) throws IOException {
+        return new AcceptCompletionHandler(socket);
     }
 
     @Override
@@ -133,15 +152,15 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
         super.doCloseImmediately();
     }
 
-    class AcceptCompletionHandler extends Nio2CompletionHandler<AsynchronousSocketChannel, SocketAddress> {
-        private final AsynchronousServerSocketChannel socket;
+    protected class AcceptCompletionHandler extends Nio2CompletionHandler<AsynchronousSocketChannel, SocketAddress> {
+        protected final AsynchronousServerSocketChannel socket;
 
         AcceptCompletionHandler(AsynchronousServerSocketChannel socket) {
             this.socket = socket;
         }
 
-        @SuppressWarnings("synthetic-access")
         @Override
+        @SuppressWarnings("synthetic-access")
         protected void onCompleted(AsynchronousSocketChannel result, SocketAddress address) {
             // Verify that the address has not been unbound
             if (!channels.containsKey(address)) {
@@ -151,7 +170,8 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
             Nio2Session session = null;
             try {
                 // Create a session
-                session = new Nio2Session(Nio2Acceptor.this, manager, handler, result);
+                IoHandler handler = getIoHandler();
+                session = ValidateUtils.checkNotNull(createSession(Nio2Acceptor.this, address, result, handler), "No NIO2 session created");
                 handler.sessionCreated(session);
                 sessions.put(session.getId(), session);
                 session.startReading();
@@ -164,9 +184,9 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                         session.close();
                     } catch (Throwable t) {
                         log.warn("Failed (" + t.getClass().getSimpleName() + ")"
-                                        + " to close accepted connection from " + address
-                                        + ": " + t.getMessage(),
-                                t);
+                               + " to close accepted connection from " + address
+                               + ": " + t.getMessage(),
+                                 t);
                     }
                 }
             }
@@ -180,12 +200,20 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
         }
 
         @SuppressWarnings("synthetic-access")
+        protected Nio2Session createSession(Nio2Acceptor acceptor, SocketAddress address, AsynchronousSocketChannel channel, IoHandler handler) throws Throwable {
+            if (log.isTraceEnabled()) {
+                log.trace("createNio2Session({}) address={}", acceptor, address);
+            }
+            return new Nio2Session(acceptor, getFactoryManager(), handler, channel);
+        }
+
         @Override
+        @SuppressWarnings("synthetic-access")
         protected void onFailed(final Throwable exc, final SocketAddress address) {
             if (channels.containsKey(address) && !disposing.get()) {
                 log.warn("Caught " + exc.getClass().getSimpleName()
-                                + " while accepting incoming connection from " + address
-                                + ": " + exc.getMessage(),
+                       + " while accepting incoming connection from " + address
+                       + ": " + exc.getMessage(),
                         exc);
             }
         }

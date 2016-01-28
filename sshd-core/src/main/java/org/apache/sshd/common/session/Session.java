@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.Closeable;
-import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerHolder;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.auth.MutableUserHolder;
@@ -48,6 +48,7 @@ public interface Session
         extends KexFactoryManager,
                 SessionListenerManager,
                 ChannelListenerManager,
+                FactoryManagerHolder,
                 PropertyResolver,
                 Closeable,
                 MutableUserHolder {
@@ -100,11 +101,6 @@ public interface Session
      * @return the server version.
      */
     String getServerVersion();
-
-    /**
-     * @return the {@link FactoryManager} that has created this session, can not be {@code null}
-     */
-    FactoryManager getFactoryManager();
 
     /**
      * Retrieve one of the negotiated values during the KEX stage
