@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.session;
 
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.Readable;
@@ -62,7 +63,19 @@ public abstract class AbstractSessionIoHandler extends AbstractLoggingBean imple
     public void messageReceived(IoSession ioSession, Readable message) throws Exception {
         AbstractSession session = ValidateUtils.checkNotNull(
                 AbstractSession.getSession(ioSession), "No abstract session to handle incoming message for %s", ioSession);
-        session.messageReceived(message);
+        try {
+            session.messageReceived(message);
+        } catch (Error e) {
+            if (log.isDebugEnabled()) {
+                log.debug("messageReceived({}) failed {} to handle message: {}",
+                          ioSession, e.getClass().getSimpleName(), e.getMessage());
+            }
+
+            if (log.isTraceEnabled()) {
+                log.trace("messageReceived(" + ioSession + ") message handling error details", e);
+            }
+            throw new RuntimeSshException(e);
+        }
     }
 
     protected abstract AbstractSession createSession(IoSession ioSession) throws Exception;
