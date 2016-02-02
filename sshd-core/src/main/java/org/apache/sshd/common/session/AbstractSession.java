@@ -413,11 +413,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * Abstract method for processing incoming decoded packets.
      * The given buffer will hold the decoded packet, starting from
      * the command byte at the read position.
-     * Packets must be processed within this call or be copied because
-     * the given buffer is meant to be changed and updated when this
-     * method returns.
      *
-     * @param buffer the buffer containing the packet
+     * @param buffer The {@link Buffer} containing the packet - it may be
+     * re-used to generate the response once request has been decoded
      * @throws Exception if an exception occurs while handling this packet.
      * @see #doHandleMessage(Buffer)
      */
@@ -1207,7 +1205,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                     seqi = (seqi + 1) & 0xffffffffL;
                     // Get padding
                     int pad = decoderBuffer.getUByte();
-                    Buffer buf;
+                    Buffer packet;
                     int wpos = decoderBuffer.wpos();
                     // Decompress if needed
                     if ((inCompression != null) && inCompression.isCompressionExecuted() && (authed || (!inCompression.isDelayed()))) {
@@ -1219,16 +1217,18 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
                         decoderBuffer.wpos(decoderBuffer.rpos() + decoderLength - 1 - pad);
                         inCompression.uncompress(decoderBuffer, uncompressBuffer);
-                        buf = uncompressBuffer;
+                        packet = uncompressBuffer;
                     } else {
                         decoderBuffer.wpos(decoderLength + 4 - pad);
-                        buf = decoderBuffer;
+                        packet = decoderBuffer;
                     }
 
                     if (log.isTraceEnabled()) {
-                        log.trace("decode({}) Received packet #{}: {}", this, seqi, buf.printHex());
+                        log.trace("decode({}) Received packet #{}: {}", this, seqi, packet.printHex());
                     }
 
+                    // create a copy of the packet in case it is re-used for the response
+                    Buffer buf = ByteArrayBuffer.getCompactClone(packet.array(), packet.rpos(), packet.available());
                     // Update stats
                     inPacketsCount.incrementAndGet();
                     inBytesCount.addAndGet(buf.available());
