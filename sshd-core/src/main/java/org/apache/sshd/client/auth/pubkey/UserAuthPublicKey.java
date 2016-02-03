@@ -225,9 +225,9 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
 
         if (log.isTraceEnabled()) {
             log.trace("appendSignature({})[{}] name={}, key type={}, fingerprint={} - verification data={}",
-                      session, service, name, algo, KeyUtils.getFingerPrint(key), BufferUtils.printHex(contents));
+                      session, service, name, algo, KeyUtils.getFingerPrint(key), BufferUtils.toHex(contents));
             log.trace("appendSignature({})[{}] name={}, key type={}, fingerprint={} - generated signature={}",
-                      session, service, name, algo, KeyUtils.getFingerPrint(key), BufferUtils.printHex(sig));
+                      session, service, name, algo, KeyUtils.getFingerPrint(key), BufferUtils.toHex(sig));
         }
 
         bs.clear();

@@ -213,7 +213,7 @@ public class MacVectorsTest extends BaseTestSupport {
 
         byte[] actual = new byte[mac.getBlockSize()];
         mac.doFinal(actual);
-        assertArrayEquals("Mismatched results for actual=" + BufferUtils.printHex(BufferUtils.EMPTY_HEX_SEPARATOR, actual), expected, actual);
+        assertArrayEquals("Mismatched results for actual=" + BufferUtils.toHex(BufferUtils.EMPTY_HEX_SEPARATOR, actual), expected, actual);
     }
 
     private static class VectorSeed {

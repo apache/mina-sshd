@@ -313,7 +313,7 @@ public class SftpCommand implements Channel {
 
                 stdout.append('\t').append(name).append(": ");
                 if (info == null) {
-                    stdout.println(BufferUtils.printHex(value));
+                    stdout.println(BufferUtils.toHex(value));
                 } else {
                     stdout.println(info);
                 }

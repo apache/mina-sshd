@@ -1077,8 +1077,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     private static void assertNewlineValue(Newline nl) {
         assertEquals("Mismatched NL value",
-                     BufferUtils.printHex(':', IoUtils.EOL.getBytes(StandardCharsets.UTF_8)),
-                     BufferUtils.printHex(':', nl.getNewline().getBytes(StandardCharsets.UTF_8)));
+                     BufferUtils.toHex(':', IoUtils.EOL.getBytes(StandardCharsets.UTF_8)),
+                     BufferUtils.toHex(':', nl.getNewline().getBytes(StandardCharsets.UTF_8)));
     }
 
     private static void assertSupportedAclCapabilities(AclCapabilities caps) {

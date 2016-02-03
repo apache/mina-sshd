@@ -116,7 +116,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
                 int flags = req.getInt();
                 if (log.isDebugEnabled()) {
                     log.debug("SSH2_AGENTC_SIGN_REQUEST key={}, flags=0x{}, data={}",
-                              signingKey.getAlgorithm(), Integer.toHexString(flags), BufferUtils.printHex(':', data));
+                              signingKey.getAlgorithm(), Integer.toHexString(flags), BufferUtils.toHex(':', data));
                 }
                 String keyType = ValidateUtils.checkNotNullAndNotEmpty(
                         KeyUtils.getKeyType(signingKey),

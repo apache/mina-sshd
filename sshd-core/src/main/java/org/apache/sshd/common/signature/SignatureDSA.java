@@ -60,7 +60,7 @@ public class SignatureDSA extends AbstractSignature {
             int remainLen = parser.readLength();
             /*
              * There are supposed to be 2 INTEGERs, each encoded with:
-             * 
+             *
              *  - one byte representing the fact that it is an INTEGER
              *  - one byte of the integer encoding length
              *  - at least one byte of integer data (zero length is not an option)
@@ -106,7 +106,7 @@ public class SignatureDSA extends AbstractSignature {
 
         if (sigLen != DSA_SIGNATURE_LENGTH) {
             throw new SignatureException("Bad signature length (" + sigLen + " instead of " + DSA_SIGNATURE_LENGTH + ")"
-                    + " for " + BufferUtils.printHex(':', data));
+                    + " for " + BufferUtils.toHex(':', data));
         }
 
         byte[] rEncoding;

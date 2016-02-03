@@ -44,7 +44,7 @@ public class PipeDataReceiver extends AbstractLoggingBean implements ChannelData
         this.in = in;
         this.out = new ChannelPipedOutputStream(in);
         if (log.isTraceEnabled()) {
-            out = new LoggingFilterOutputStream(out, "IN(" + resolver + "): ", log);
+            out = new LoggingFilterOutputStream(out, "IN(" + resolver + "): ", log, resolver);
         }
     }
 

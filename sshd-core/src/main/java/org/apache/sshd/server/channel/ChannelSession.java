@@ -625,8 +625,8 @@ public class ChannelSession extends AbstractServerChannel {
             if (log.isTraceEnabled()) {
                 // Wrap in logging filters
                 String channelId = toString();
-                out = new LoggingFilterOutputStream(out, "OUT(" + channelId + ")", log);
-                err = new LoggingFilterOutputStream(err, "ERR(" + channelId + ")", log);
+                out = new LoggingFilterOutputStream(out, "OUT(" + this + ")", log, this);
+                err = new LoggingFilterOutputStream(err, "ERR(" + this + ")", log, this);
             }
             command.setOutputStream(out);
             command.setErrorStream(err);

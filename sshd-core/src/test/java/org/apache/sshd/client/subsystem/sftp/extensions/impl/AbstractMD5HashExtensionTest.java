@@ -149,7 +149,7 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
                     MD5FileExtension file = assertExtensionCreated(sftp, MD5FileExtension.class);
                     try {
                         byte[] actual = file.getHash(srcFolder, 0L, 0L, quickHash);
-                        fail("Unexpected file success on folder=" + srcFolder + ": " + BufferUtils.printHex(':', actual));
+                        fail("Unexpected file success on folder=" + srcFolder + ": " + BufferUtils.toHex(':', actual));
                     } catch (IOException e) {    // expected - not allowed to hash a folder
                         assertTrue("Not an SftpException for file hash on " + srcFolder, e instanceof SftpException);
                     }
@@ -158,7 +158,7 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
                     try (CloseableHandle dirHandle = sftp.openDir(srcFolder)) {
                         try {
                             byte[] actual = hndl.getHash(dirHandle, 0L, 0L, quickHash);
-                            fail("Unexpected handle success on folder=" + srcFolder + ": " + BufferUtils.printHex(':', actual));
+                            fail("Unexpected handle success on folder=" + srcFolder + ": " + BufferUtils.toHex(':', actual));
                         } catch (IOException e) {    // expected - not allowed to hash a folder
                             assertTrue("Not an SftpException for handle hash on " + srcFolder, e instanceof SftpException);
                         }
@@ -170,10 +170,10 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
                                 byte[] actualHash = useFile ? file.getHash(srcPath, 0L, 0L, qh) : hndl.getHash(fileHandle, 0L, 0L, qh);
                                 String type = useFile ? file.getClass().getSimpleName() : hndl.getClass().getSimpleName();
                                 if (!Arrays.equals(expectedHash, actualHash)) {
-                                    fail("Mismatched hash for quick=" + BufferUtils.printHex(':', qh)
+                                    fail("Mismatched hash for quick=" + BufferUtils.toHex(':', qh)
                                             + " using " + type + " on " + srcFile
-                                            + ": expected=" + BufferUtils.printHex(':', expectedHash)
-                                            + ", actual=" + BufferUtils.printHex(':', actualHash));
+                                            + ": expected=" + BufferUtils.toHex(':', expectedHash)
+                                            + ", actual=" + BufferUtils.toHex(':', actualHash));
                                 }
                             }
                         }

@@ -129,7 +129,7 @@ public interface SftpClient extends SubsystemClient {
 
         @Override
         public String toString() {
-            return getPath() + ": " + BufferUtils.printHex(BufferUtils.EMPTY_HEX_SEPARATOR, id);
+            return getPath() + ": " + BufferUtils.toHex(BufferUtils.EMPTY_HEX_SEPARATOR, id);
         }
     }
 

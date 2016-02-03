@@ -559,7 +559,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
 
         if (log.isTraceEnabled()) {
-            log.trace("handleIgnore({}) data: {}", this, BufferUtils.printHex(data));
+            log.trace("handleIgnore({}) data: {}", this, BufferUtils.toHex(data));
         }
     }
 
@@ -1083,8 +1083,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             int off = buffer.rpos() - 5;
             // Debug log the packet
             if (log.isTraceEnabled()) {
-                log.trace("encode({}) Sending packet #{}: {}", this, Long.valueOf(seqo), buffer.printHex());
+                buffer.dumpHex(getSimplifiedLogger(), "encode(" + this + ") packet #" + seqo, this);
             }
+
             // Compress the packet if needed
             if ((outCompression != null) && outCompression.isCompressionExecuted() && (authed || (!outCompression.isDelayed()))) {
                 outCompression.compress(buffer);
@@ -1162,7 +1163,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                     decoderLength = decoderBuffer.getInt();
                     // Check packet length validity
                     if ((decoderLength < 5) || (decoderLength > (256 * 1024))) {
-                        log.warn("decode({}) Error decoding packet(invalid length) {}", this, decoderBuffer.printHex());
+                        log.warn("decode({}) Error decoding packet(invalid length): {}", this, decoderLength);
+                        decoderBuffer.dumpHex(getSimplifiedLogger(), "decode(" + this + ") invalid length packet", this);
                         throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                                 "Invalid packet length: " + decoderLength);
                     }
@@ -1224,7 +1226,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                     }
 
                     if (log.isTraceEnabled()) {
-                        log.trace("decode({}) Received packet #{}: {}", this, seqi, packet.printHex());
+                        packet.dumpHex(getSimplifiedLogger(), "decode(" + this + ") packet #" + seqi, this);
                     }
 
                     // create a copy of the packet in case it is re-used for the response
@@ -1372,7 +1374,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         buffer.wpos(p + SshConstants.MSG_KEX_COOKIE_SIZE);
         random.fill(buffer.array(), p, SshConstants.MSG_KEX_COOKIE_SIZE);
         if (log.isTraceEnabled()) {
-            log.trace("sendKexInit(" + toString() + ") cookie=" + BufferUtils.printHex(buffer.array(), p, SshConstants.MSG_KEX_COOKIE_SIZE, ':'));
+            log.trace("sendKexInit(" + toString() + ") cookie=" + BufferUtils.toHex(buffer.array(), p, SshConstants.MSG_KEX_COOKIE_SIZE, ':'));
         }
 
         for (KexProposalOption paramType : KexProposalOption.VALUES) {
@@ -1411,7 +1413,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         buffer.rpos(cookieStartPos + SshConstants.MSG_KEX_COOKIE_SIZE);
         size += SshConstants.MSG_KEX_COOKIE_SIZE;
         if (log.isTraceEnabled()) {
-            log.trace("receiveKexInit(" + toString() + ") cookie=" + BufferUtils.printHex(d, cookieStartPos, SshConstants.MSG_KEX_COOKIE_SIZE, ':'));
+            log.trace("receiveKexInit(" + toString() + ") cookie=" + BufferUtils.toHex(d, cookieStartPos, SshConstants.MSG_KEX_COOKIE_SIZE, ':'));
         }
 
         // Read proposal
@@ -1473,7 +1475,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         if (sessionId == null) {
             sessionId = h.clone();
             if (log.isDebugEnabled()) {
-                log.debug("receiveNewKeys({}) session ID={}", this, BufferUtils.printHex(':', sessionId));
+                log.debug("receiveNewKeys({}) session ID={}", this, BufferUtils.toHex(':', sessionId));
             }
         }
 
@@ -2004,7 +2006,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         Map<KexProposalOption, String> proposal = createProposal(resolvedAlgorithms);
         byte[] seed = sendKexInit(proposal);
         if (log.isTraceEnabled()) {
-            log.trace("sendKexInit({}) proposal={} seed: {}", this, proposal, BufferUtils.printHex(':', seed));
+            log.trace("sendKexInit({}) proposal={} seed: {}", this, proposal, BufferUtils.toHex(':', seed));
         }
         setKexSeed(seed);
         return seed;

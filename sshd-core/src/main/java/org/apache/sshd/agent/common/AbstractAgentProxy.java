@@ -116,7 +116,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
         if (log.isDebugEnabled()) {
             log.debug("sign({})[{}] {}: {}",
                       KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key),
-                      algorithm, BufferUtils.printHex(':', signature));
+                      algorithm, BufferUtils.toHex(':', signature));
         }
 
         return signature;

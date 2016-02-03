@@ -231,8 +231,8 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
             byte[] actualHash = values.iterator().next();
             if (!Arrays.equals(expectedHash, actualHash)) {
                 fail("Mismatched hashes for " + name
-                   + ": expected=" + BufferUtils.printHex(':', expectedHash)
-                   + ", actual=" + BufferUtils.printHex(':', expectedHash));
+                   + ": expected=" + BufferUtils.toHex(':', expectedHash)
+                   + ", actual=" + BufferUtils.toHex(':', expectedHash));
             }
         }
     }

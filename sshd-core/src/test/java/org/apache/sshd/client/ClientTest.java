@@ -829,7 +829,7 @@ public class ClientTest extends BaseTestSupport {
 
             outputDebugMessage("Waiting for channel to be closed");
             Collection<ClientChannel.ClientChannelEvent> result =
-                    channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                    channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(35L));
             assertFalse("Timeout while waiting on channel close", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
             channel.close(false);
             client.stop();

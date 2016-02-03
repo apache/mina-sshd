@@ -45,11 +45,11 @@ public class RequiredServerKeyVerifier extends AbstractLoggingBean implements Se
     public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
         if (requiredKey.equals(serverKey)) {
             if (log.isDebugEnabled()) {
-                log.debug("Server at {} presented expected key: {}", remoteAddress, BufferUtils.printHex(serverKey.getEncoded()));
+                log.debug("Server at {} presented expected key: {}", remoteAddress, BufferUtils.toHex(serverKey.getEncoded()));
             }
             return true;
         } else {
-            log.error("Server at {} presented wrong key: {}", remoteAddress, BufferUtils.printHex(serverKey.getEncoded()));
+            log.error("Server at {} presented wrong key: {}", remoteAddress, BufferUtils.toHex(serverKey.getEncoded()));
             return false;
         }
     }

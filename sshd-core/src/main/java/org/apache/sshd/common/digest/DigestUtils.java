@@ -205,7 +205,7 @@ public final class DigestUtils {
         byte[] data = d.digest();
         String algo = d.getAlgorithm();
         if (BuiltinDigests.md5.getAlgorithm().equals(algo)) {
-            return algo + ":" + BufferUtils.printHex(':', data).toLowerCase();
+            return algo + ":" + BufferUtils.toHex(':', data).toLowerCase();
         } else {
             return algo.replace("-", "").toUpperCase() + ":" + Base64.encodeToString(data).replaceAll("=", "");
         }

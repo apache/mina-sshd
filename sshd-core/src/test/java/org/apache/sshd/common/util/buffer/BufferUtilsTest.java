@@ -41,7 +41,7 @@ public class BufferUtilsTest extends BaseTestSupport {
         String expValue = getClass().getName() + "#" + getCurrentTestName();
         byte[] expData = expValue.getBytes(StandardCharsets.UTF_8);
         for (char sep : new char[]{BufferUtils.EMPTY_HEX_SEPARATOR, ':'}) {
-            String hexData = BufferUtils.printHex(sep, expData);
+            String hexData = BufferUtils.toHex(sep, expData);
             byte[] actData = BufferUtils.decodeHex(sep, hexData);
             String actValue = new String(actData, StandardCharsets.UTF_8);
             String sepName = (BufferUtils.EMPTY_HEX_SEPARATOR == sep) ? "EMPTY" : Character.toString(sep);

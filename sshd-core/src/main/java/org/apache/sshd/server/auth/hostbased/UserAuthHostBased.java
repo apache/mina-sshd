@@ -166,10 +166,10 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
         if (log.isTraceEnabled()) {
             log.trace("doAuth({}@{}) key type={}, fingerprint={}, client={}@{}, num-certs={} - verification data: {}",
                       username, session, keyType, KeyUtils.getFingerPrint(clientKey),
-                      clientUsername, clientHostName, GenericUtils.size(certs), buf.printHex());
+                      clientUsername, clientHostName, GenericUtils.size(certs), buf.toHex());
             log.trace("doAuth({}@{}) key type={}, fingerprint={}, client={}@{}, num-certs={} - expected signature: {}",
                     username, session, keyType, KeyUtils.getFingerPrint(clientKey),
-                    clientUsername, clientHostName, GenericUtils.size(certs), BufferUtils.printHex(signature));
+                    clientUsername, clientHostName, GenericUtils.size(certs), BufferUtils.toHex(signature));
         }
 
         verifier.update(buf.array(), buf.rpos(), buf.available());

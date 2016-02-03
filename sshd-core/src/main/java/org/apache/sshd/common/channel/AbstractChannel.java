@@ -576,7 +576,8 @@ public abstract class AbstractChannel
             log.debug("handleData({}) SSH_MSG_CHANNEL_DATA len={}", this, len);
         }
         if (log.isTraceEnabled()) {
-            log.trace("handleData({}) data: {} ...", this, BufferUtils.printHex(buffer.array(), buffer.rpos(), Math.min(len, Byte.MAX_VALUE)));
+            BufferUtils.dumpHex(getSimplifiedLogger(), BufferUtils.DEFAULT_HEXDUMP_LEVEL, "handleData(" + this + ")",
+                    this, BufferUtils.DEFAULT_HEX_SEPARATOR, buffer.array(), buffer.rpos(), len);
         }
         if (isEofSignalled()) {
             // TODO consider throwing an exception
@@ -605,8 +606,8 @@ public abstract class AbstractChannel
             log.debug("handleExtendedData({}) SSH_MSG_CHANNEL_EXTENDED_DATA len={}", this, len);
         }
         if (log.isTraceEnabled()) {
-            log.trace("handleExtendedData({}) extended data: {}",
-                      this, BufferUtils.printHex(buffer.array(), buffer.rpos(), len));
+            BufferUtils.dumpHex(getSimplifiedLogger(), BufferUtils.DEFAULT_HEXDUMP_LEVEL, "handleExtendedData(" + this + ")",
+                    this, BufferUtils.DEFAULT_HEX_SEPARATOR, buffer.array(), buffer.rpos(), len);
         }
         if (isEofSignalled()) {
             // TODO consider throwing an exception

@@ -22,12 +22,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
+import java.util.logging.Level;
 
+import org.apache.sshd.common.PropertyResolver;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.logging.SimplifiedLog;
 
 /**
  * TODO Add javadoc
@@ -35,12 +39,13 @@ import org.apache.sshd.common.util.io.IoUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class BufferUtils {
-
     public static final char DEFAULT_HEX_SEPARATOR = ' ';
-
     public static final char EMPTY_HEX_SEPARATOR = '\0';
-
     public static final String HEX_DIGITS = "0123456789abcdef";
+
+    public static final String HEXDUMP_CHUNK_SIZE = "sshd-hexdump-chunk-size";
+    public static final int DEFAULT_HEXDUMP_CHUNK_SIZE = 64;
+    public static final Level DEFAULT_HEXDUMP_LEVEL = Level.FINEST;
 
     public static final Int2IntFunction DEFAULT_BUFFER_GROWTH_FACTOR =
         new Int2IntFunction() {
@@ -57,34 +62,85 @@ public final class BufferUtils {
         throw new UnsupportedOperationException("No instance allowed");
     }
 
-    public static String printHex(byte... array) {
-        return printHex(array, 0, NumberUtils.length(array));
+    public static void dumpHex(SimplifiedLog logger, Level level, String prefix, PropertyResolver resolver, char sep, byte ... data) {
+        dumpHex(logger, level, prefix, resolver, sep, data, 0, NumberUtils.length(data));
     }
 
-    public static String printHex(char sep, byte... array) {
-        return printHex(array, 0, NumberUtils.length(array), sep);
+    public static void dumpHex(SimplifiedLog logger, Level level, String prefix, PropertyResolver resolver, char sep, byte[] data, int offset, int len) {
+        dumpHex(logger, level, prefix, sep, PropertyResolverUtils.getIntProperty(resolver, HEXDUMP_CHUNK_SIZE, DEFAULT_HEXDUMP_CHUNK_SIZE), data, offset, len);
     }
 
-    public static String printHex(byte[] array, int offset, int len) {
-        return printHex(array, offset, len, DEFAULT_HEX_SEPARATOR);
+    public static void dumpHex(SimplifiedLog logger, Level level, String prefix, char sep, int chunkSize, byte ... data) {
+        dumpHex(logger, level, prefix, sep, chunkSize, data, 0, NumberUtils.length(data));
     }
 
-    public static String printHex(byte[] array, int offset, int len, char sep) {
+    public static void dumpHex(SimplifiedLog logger, Level level, String prefix, char sep, int chunkSize, byte[] data, int offset, int len) {
+        if ((logger == null) || (level == null) || (!logger.isEnabled(level))) {
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder(chunkSize * 3 /* HEX */ + prefix.length() + Long.SIZE /* some extra */);
+        sb.append(prefix);
+        for (int remainLen = len, chunkIndex = 1, curOffset = offset, totalLen = 0; remainLen > 0; chunkIndex++) {
+            sb.setLength(prefix.length());    // reset for next chunk
+
+            sb.append(" [chunk #").append(chunkIndex).append(']');
+
+            int dumpSize = Math.min(chunkSize, remainLen);
+            totalLen += dumpSize;
+            sb.append('(').append(totalLen).append('/').append(len).append(')');
+
+            try {
+                appendHex(sb.append(' '), data, curOffset, dumpSize, sep);
+            } catch (IOException e) {   // unexpected
+                sb.append(e.getClass().getSimpleName()).append(": ").append(e.getMessage());
+            }
+
+            logger.log(level, sb.toString());
+            remainLen -= dumpSize;
+            curOffset += dumpSize;
+        }
+    }
+
+    public static String toHex(byte... array) {
+        return toHex(array, 0, NumberUtils.length(array));
+    }
+
+    public static String toHex(char sep, byte... array) {
+        return toHex(array, 0, NumberUtils.length(array), sep);
+    }
+
+    public static String toHex(byte[] array, int offset, int len) {
+        return toHex(array, offset, len, DEFAULT_HEX_SEPARATOR);
+    }
+
+    public static String toHex(byte[] array, int offset, int len, char sep) {
         if (len <= 0) {
             return "";
         }
 
-        StringBuilder sb = new StringBuilder(len * 3 /* 2 HEX + sep */);
+        try {
+            return appendHex(new StringBuilder(len * 3 /* 2 HEX + sep */), array, offset, len, sep).toString();
+        } catch (IOException e) {   // unexpected
+            return e.getClass().getSimpleName() + ": " + e.getMessage();
+        }
+    }
+
+    public static <A extends Appendable> A appendHex(A sb, byte[] array, int offset, int len, char sep) throws IOException {
+        if (len <= 0) {
+            return sb;
+        }
+
         for (int curOffset = offset, maxOffset = offset + len; curOffset < maxOffset; curOffset++) {
             byte b = array[curOffset];
-            if ((sb.length() > 0) && (sep != EMPTY_HEX_SEPARATOR)) {
+            if ((curOffset > offset) && (sep != EMPTY_HEX_SEPARATOR)) {
                 sb.append(sep);
             }
             sb.append(HEX_DIGITS.charAt((b >> 4) & 0x0F));
             sb.append(HEX_DIGITS.charAt(b & 0x0F));
         }
 
-        return sb.toString();
+        return sb;
     }
 
     /**

@@ -818,7 +818,7 @@ public class SftpSubsystem
                 if (log.isTraceEnabled()) {
                     log.trace("doCheckFileHash({})[{}] offset={}, length={} - algo={}, hash={}",
                               getServerSession(), file, startOffset, length,
-                              digest.getAlgorithm(), BufferUtils.printHex(':', hashValue));
+                              digest.getAlgorithm(), BufferUtils.toHex(':', hashValue));
                 }
                 buffer.putBytes(hashValue);
             } else {
@@ -842,7 +842,7 @@ public class SftpSubsystem
                     if (log.isTraceEnabled()) {
                         log.trace("doCheckFileHash({})({})[{}] offset={}, length={} - algo={}, hash={}",
                                   getServerSession(), file, count, startOffset, length,
-                                  digest.getAlgorithm(), BufferUtils.printHex(':', hashValue));
+                                  digest.getAlgorithm(), BufferUtils.toHex(':', hashValue));
                     }
                     buffer.putBytes(hashValue);
                 }
@@ -862,8 +862,8 @@ public class SftpSubsystem
             if (log.isTraceEnabled()) {
                 log.trace("doMD5Hash({})({})[{}] offset={}, length={}, quick-hash={} - hash={}",
                           getServerSession(), targetType, target, startOffset, length,
-                          BufferUtils.printHex(':', quickCheckHash),
-                          BufferUtils.printHex(':', hashValue));
+                          BufferUtils.toHex(':', quickCheckHash),
+                          BufferUtils.toHex(':', hashValue));
             }
 
         } catch (Exception e) {
@@ -883,7 +883,7 @@ public class SftpSubsystem
         if (log.isDebugEnabled()) {
             log.debug("doMD5Hash({})({})[{}] offset={}, length={}, quick-hash={}",
                       getServerSession(), targetType, target, startOffset, length,
-                      BufferUtils.printHex(':', quickCheckHash));
+                      BufferUtils.toHex(':', quickCheckHash));
         }
 
         Path path;
@@ -987,8 +987,8 @@ public class SftpSubsystem
                     if (log.isTraceEnabled()) {
                         log.trace("doMD5Hash({})({}) offset={}, length={} - quick-hash mismatched expected={}, actual={}",
                                   getServerSession(), path, startOffset, length,
-                                  BufferUtils.printHex(':', quickCheckHash),
-                                  BufferUtils.printHex(':', hashValue));
+                                  BufferUtils.toHex(':', quickCheckHash),
+                                  BufferUtils.toHex(':', hashValue));
                     }
                 }
             }
@@ -1021,8 +1021,8 @@ public class SftpSubsystem
         if (log.isTraceEnabled()) {
             log.trace("doMD5Hash({})({}) offset={}, length={} - matches={}, quick={} hash={}",
                       getServerSession(), path, startOffset, length, hashMatches,
-                      BufferUtils.printHex(':', quickCheckHash),
-                      BufferUtils.printHex(':', hashValue));
+                      BufferUtils.toHex(':', quickCheckHash),
+                      BufferUtils.toHex(':', hashValue));
         }
 
         return hashValue;
@@ -2201,7 +2201,7 @@ public class SftpSubsystem
         // use several rounds in case the file handle size is relatively small so we might get conflicts
         for (int index = 0; index < maxFileHandleRounds; index++) {
             randomizer.fill(workBuf, 0, fileHandleSize);
-            String handle = BufferUtils.printHex(workBuf, 0, fileHandleSize, BufferUtils.EMPTY_HEX_SEPARATOR);
+            String handle = BufferUtils.toHex(workBuf, 0, fileHandleSize, BufferUtils.EMPTY_HEX_SEPARATOR);
             if (handles.containsKey(handle)) {
                 if (log.isTraceEnabled()) {
                     log.trace("generateFileHandle({})[{}] handle={} in use at round {}",
@@ -2437,7 +2437,7 @@ public class SftpSubsystem
 
         if (log.isDebugEnabled()) {
             log.debug("appendNewlineExtension({}) value={}",
-                      getServerSession(), BufferUtils.printHex(':', value.getBytes(StandardCharsets.UTF_8)));
+                      getServerSession(), BufferUtils.toHex(':', value.getBytes(StandardCharsets.UTF_8)));
         }
 
         buffer.putString(SftpConstants.EXT_NEWLINE);

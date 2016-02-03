@@ -44,7 +44,7 @@ public abstract class AbstractOpenSSHStatCommandExtension extends AbstractSftpCl
 
         if (log.isDebugEnabled()) {
             log.debug("doGetStat({})[{}]", getName(),
-                    (target instanceof CharSequence) ? target : BufferUtils.printHex(BufferUtils.EMPTY_HEX_SEPARATOR, (byte[]) target));
+                      (target instanceof CharSequence) ? target : BufferUtils.toHex(BufferUtils.EMPTY_HEX_SEPARATOR, (byte[]) target));
         }
 
         buffer = checkExtendedReplyBuffer(receive(sendExtendedCommand(buffer)));

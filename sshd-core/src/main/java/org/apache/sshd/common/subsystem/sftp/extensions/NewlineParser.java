@@ -93,7 +93,7 @@ public class NewlineParser extends AbstractParser<Newline> {
             if (GenericUtils.isEmpty(nl)) {
                 return nl;
             } else {
-                return BufferUtils.printHex(':', nl.getBytes(StandardCharsets.UTF_8));
+                return BufferUtils.toHex(':', nl.getBytes(StandardCharsets.UTF_8));
             }
         }
     }

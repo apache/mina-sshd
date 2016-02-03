@@ -48,7 +48,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
 
+import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.ECDSAPublicKeyEntryDecoder;
@@ -60,6 +62,7 @@ import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.keys.BufferPublicKeyParser;
+import org.apache.sshd.common.util.logging.SimplifiedLog;
 
 /**
  * Provides an abstract message buffer for encoding SSH messages
@@ -106,8 +109,16 @@ public abstract class Buffer implements Readable {
 
     public abstract void clear();
 
-    public String printHex() {
-        return BufferUtils.printHex(array(), rpos(), available());
+    public String toHex() {
+        return BufferUtils.toHex(array(), rpos(), available());
+    }
+
+    public void dumpHex(SimplifiedLog logger, String prefix, PropertyResolver resolver) {
+        dumpHex(logger, BufferUtils.DEFAULT_HEXDUMP_LEVEL, prefix, resolver);
+    }
+
+    public void dumpHex(SimplifiedLog logger, Level level, String prefix, PropertyResolver resolver) {
+        BufferUtils.dumpHex(logger, level, prefix, resolver, BufferUtils.DEFAULT_HEX_SEPARATOR, array(), rpos(), available());
     }
 
     /*======================

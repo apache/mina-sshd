@@ -532,7 +532,7 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
 
         Class<?> attrType = attrVal.getClass();
         if (attrType.isArray()) {
-            return (attrVal instanceof byte[]) ? BufferUtils.printHex((byte[]) attrVal) : Arrays.toString((Object[]) attrVal);
+            return (attrVal instanceof byte[]) ? BufferUtils.toHex((byte[]) attrVal) : Arrays.toString((Object[]) attrVal);
         }
 
         return attrVal.toString();
