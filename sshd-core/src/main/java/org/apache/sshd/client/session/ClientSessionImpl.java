@@ -141,24 +141,35 @@ public class ClientSessionImpl extends AbstractClientSession {
 
     @Override
     public void exceptionCaught(Throwable t) {
-        synchronized (lock) {
-            if (!authFuture.isDone()) {
-                authFuture.setException(t);
-            }
-        }
-
+        signalAuthFailure(authFuture, t);
         super.exceptionCaught(t);
     }
 
     @Override
+    protected void preClose() {
+        signalAuthFailure(authFuture, new SshException("Session is being closed"));
+        super.preClose();
+    }
+
+    @Override
     protected void handleDisconnect(int code, String msg, String lang, Buffer buffer) throws Exception {
+        signalAuthFailure(authFuture, new SshException(code, msg));
+        super.handleDisconnect(code, msg, lang, buffer);
+    }
+
+    protected void signalAuthFailure(AuthFuture future, Throwable t) {
+        boolean signalled = false;
         synchronized (lock) {
-            if (!authFuture.isDone()) {
-                authFuture.setException(new SshException(code, msg));
+            if ((future != null) && (!future.isDone())) {
+                future.setException(t);
+                signalled = true;
             }
         }
 
-        super.handleDisconnect(code, msg, lang, buffer);
+        if (log.isDebugEnabled()) {
+            log.debug("signalAuthFailure({}) type={}, signalled={}, message=\"{}\"",
+                      this, t.getClass().getSimpleName(), signalled, t.getMessage());
+        }
     }
 
     protected String nextServiceName() {
