@@ -166,8 +166,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected Compression inCompression;
     protected long seqi;
     protected long seqo;
-    protected Buffer decoderBuffer = new ByteArrayBuffer();
-    protected Buffer uncompressBuffer;
+    protected SessionWorkBuffer uncompressBuffer;
+    protected final SessionWorkBuffer decoderBuffer;
     protected int decoderState;
     protected int decoderLength;
     protected final Object encodeLock = new Object();
@@ -225,6 +225,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         this.isServer = isServer;
         this.factoryManager = factoryManager;
         this.ioSession = ioSession;
+        this.decoderBuffer = new SessionWorkBuffer(this);
 
         Factory<Random> factory = ValidateUtils.checkNotNull(factoryManager.getRandomFactory(), "No random factory for %s", ioSession);
         random = ValidateUtils.checkNotNull(factory.create(), "No randomizer instance for %s", ioSession);
@@ -625,7 +626,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             log.debug("handleServiceRequest({}) Accepted service {}", this, serviceName);
         }
 
-        Buffer response = prepareBuffer(SshConstants.SSH_MSG_SERVICE_ACCEPT, BufferUtils.clear(buffer));
+        Buffer response = createBuffer(SshConstants.SSH_MSG_SERVICE_ACCEPT, Byte.SIZE + GenericUtils.length(serviceName));
         response.putString(serviceName);
         writePacket(response);
     }
@@ -924,6 +925,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             }
         }
 
+        int curPos = buffer.rpos();
+        byte[] data = buffer.array();
+        int cmd = data[curPos] & 0xFF;  // usually the 1st byte is the command
+        buffer = validateTargetBuffer(cmd, buffer);
+
         // Synchronize all write requests as needed by the encoding algorithm
         // and also queue the write request in this synchronized block to ensure
         // packets are sent in the correct order
@@ -1038,7 +1044,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         // they actually send exactly this amount.
         //
         int bsize = outCipherSize;
-        len += 5;
+        len += SshConstants.SSH_PACKET_HEADER_LEN;
         int pad = (-len) & (bsize - 1);
         if (pad < bsize) {
             pad += bsize;
@@ -1053,10 +1059,26 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     @Override
     public Buffer prepareBuffer(byte cmd, Buffer buffer) {
-        ValidateUtils.checkNotNull(buffer, "No buffer to prepare");
-        buffer.rpos(5);
-        buffer.wpos(5);
+        buffer = validateTargetBuffer(cmd & 0xFF, buffer);
+        buffer.rpos(SshConstants.SSH_PACKET_HEADER_LEN);
+        buffer.wpos(SshConstants.SSH_PACKET_HEADER_LEN);
         buffer.putByte(cmd);
+        return buffer;
+    }
+
+    /**
+     * Makes sure that the buffer used for output is not {@code null} or one
+     * of the session's internal ones used for decoding and uncompressing
+     *
+     * @param cmd The most likely command this buffer refers to (not guaranteed to be correct)
+     * @param buffer The buffer to be examined
+     * @return The validated target instance - default same as input
+     * @throws IllegalArgumentException if any of the conditions is violated
+     */
+    protected <B extends Buffer> B validateTargetBuffer(int cmd, B buffer) {
+        ValidateUtils.checkNotNull(buffer, "No target buffer to examine for command=%d", cmd);
+        ValidateUtils.checkTrue(buffer != decoderBuffer, "Not allowed to use the internal decoder buffer for command=%d", cmd);
+        ValidateUtils.checkTrue(buffer != uncompressBuffer, "Not allowed to use the internal uncompress buffer for command=%d", cmd);
         return buffer;
     }
 
@@ -1070,17 +1092,22 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected void encode(Buffer buffer) throws IOException {
         try {
             // Check that the packet has some free space for the header
-            if (buffer.rpos() < 5) {
-                log.warn("Performance cost: when sending a packet, ensure that "
-                        + "5 bytes are available in front of the buffer");
+            int curPos = buffer.rpos();
+            if (curPos < SshConstants.SSH_PACKET_HEADER_LEN) {
+                byte[] data = buffer.array();
+                int cmd = data[curPos] & 0xFF;  // usually the 1st byte is an SSH opcode
+                log.warn("encode({}) command={} performance cost: available buffer packet header length ({}) below min. required ({})",
+                         this, SshConstants.getCommandMessageName(cmd), curPos, SshConstants.SSH_PACKET_HEADER_LEN);
                 Buffer nb = new ByteArrayBuffer(buffer.available() + Long.SIZE, false);
-                nb.wpos(5);
+                nb.wpos(SshConstants.SSH_PACKET_HEADER_LEN);
                 nb.putBuffer(buffer);
                 buffer = nb;
+                curPos = buffer.rpos();
             }
+
             // Grab the length of the packet (excluding the 5 header bytes)
             int len = buffer.available();
-            int off = buffer.rpos() - 5;
+            int off = curPos - SshConstants.SSH_PACKET_HEADER_LEN;
             // Debug log the packet
             if (log.isTraceEnabled()) {
                 buffer.dumpHex(getSimplifiedLogger(), "encode(" + this + ") packet #" + seqo, this);
@@ -1095,7 +1122,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             // Compute padding length
             int bsize = outCipherSize;
             int oldLen = len;
-            len += 5;
+            len += SshConstants.SSH_PACKET_HEADER_LEN;
             int pad = (-len) & (bsize - 1);
             if (pad < bsize) {
                 pad += bsize;
@@ -1106,7 +1133,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             buffer.putInt(len);
             buffer.putByte((byte) pad);
             // Fill padding
-            buffer.wpos(off + oldLen + 5 + pad);
+            buffer.wpos(off + oldLen + SshConstants.SSH_PACKET_HEADER_LEN + pad);
             random.fill(buffer.array(), buffer.wpos() - pad, pad);
             // Compute mac
             if (outMac != null) {
@@ -1162,7 +1189,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                     // Read packet length
                     decoderLength = decoderBuffer.getInt();
                     // Check packet length validity
-                    if ((decoderLength < 5) || (decoderLength > (256 * 1024))) {
+                    if ((decoderLength < SshConstants.SSH_PACKET_HEADER_LEN) || (decoderLength > (256 * 1024))) {
                         log.warn("decode({}) Error decoding packet(invalid length): {}", this, decoderLength);
                         decoderBuffer.dumpHex(getSimplifiedLogger(), "decode(" + this + ") invalid length packet", this);
                         throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
@@ -1212,9 +1239,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                     // Decompress if needed
                     if ((inCompression != null) && inCompression.isCompressionExecuted() && (authed || (!inCompression.isDelayed()))) {
                         if (uncompressBuffer == null) {
-                            uncompressBuffer = new ByteArrayBuffer();
+                            uncompressBuffer = new SessionWorkBuffer(this);
                         } else {
-                            uncompressBuffer.clear();
+                            uncompressBuffer.forceClear();
                         }
 
                         decoderBuffer.wpos(decoderBuffer.rpos() + decoderLength - 1 - pad);
@@ -1229,13 +1256,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                         packet.dumpHex(getSimplifiedLogger(), "decode(" + this + ") packet #" + seqi, this);
                     }
 
-                    // create a copy of the packet in case it is re-used for the response
-                    Buffer buf = ByteArrayBuffer.getCompactClone(packet.array(), packet.rpos(), packet.available());
                     // Update stats
                     inPacketsCount.incrementAndGet();
-                    inBytesCount.addAndGet(buf.available());
+                    inBytesCount.addAndGet(packet.available());
                     // Process decoded packet
-                    handleMessage(buf);
+                    handleMessage(packet);
                     // Set ready to handle next packet
                     decoderBuffer.rpos(decoderLength + 4 + macSize);
                     decoderBuffer.wpos(wpos);

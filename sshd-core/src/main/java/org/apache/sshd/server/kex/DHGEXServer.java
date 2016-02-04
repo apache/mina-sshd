@@ -126,7 +126,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
                 log.debug("next({})[{}] send SSH_MSG_KEX_DH_GEX_GROUP", this, session);
             }
 
-            buffer = session.prepareBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP, BufferUtils.clear(buffer));
+            buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP);
             buffer.putMPInt(dh.getP());
             buffer.putMPInt(dh.getG());
             session.writePacket(buffer);
@@ -151,7 +151,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             if (log.isDebugEnabled()) {
                 log.debug("next({})[{}] Send SSH_MSG_KEX_DH_GEX_GROUP", this, session);
             }
-            buffer = session.prepareBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP, BufferUtils.clear(buffer));
+            buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP);
             buffer.putMPInt(dh.getP());
             buffer.putMPInt(dh.getG());
             session.writePacket(buffer);
@@ -222,10 +222,8 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             if (log.isDebugEnabled()) {
                 log.debug("next({})[{}] Send SSH_MSG_KEX_DH_GEX_REPLY", this, session);
             }
-            buffer.clear();
-            buffer.rpos(5);
-            buffer.wpos(5);
-            buffer.putByte(SshConstants.SSH_MSG_KEX_DH_GEX_REPLY);
+
+            buffer = session.prepareBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_REPLY, BufferUtils.clear(buffer));
             buffer.putBytes(k_s);
             buffer.putBytes(f);
             buffer.putBytes(sigH);

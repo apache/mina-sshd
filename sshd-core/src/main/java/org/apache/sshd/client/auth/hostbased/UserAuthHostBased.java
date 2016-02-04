@@ -147,7 +147,7 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
         byte[] keyBytes = buffer.getCompactData();
         verifier.initSigner(kp.getPrivate());
 
-        buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, buffer);
+        buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, BufferUtils.clear(buffer));
         buffer.putString(username);
         buffer.putString(service);
         buffer.putString(name);

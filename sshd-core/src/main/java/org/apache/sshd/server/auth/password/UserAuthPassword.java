@@ -20,6 +20,7 @@ package org.apache.sshd.server.auth.password;
 
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.auth.AbstractUserAuth;
@@ -144,7 +145,8 @@ public class UserAuthPassword extends AbstractUserAuth {
                       session, prompt, lang);
         }
 
-        buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_PASSWD_CHANGEREQ, buffer);
+        buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_PASSWD_CHANGEREQ,
+                GenericUtils.length(prompt) + GenericUtils.length(lang) + Integer.SIZE);
         buffer.putString(prompt);
         buffer.putString(lang);
         session.writePacket(buffer);

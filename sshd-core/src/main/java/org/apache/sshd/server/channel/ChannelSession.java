@@ -624,7 +624,6 @@ public class ChannelSession extends AbstractServerChannel {
             err = new ChannelOutputStream(this, wRemote, log, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA, false);
             if (log.isTraceEnabled()) {
                 // Wrap in logging filters
-                String channelId = toString();
                 out = new LoggingFilterOutputStream(out, "OUT(" + this + ")", log, this);
                 err = new LoggingFilterOutputStream(err, "ERR(" + this + ")", log, this);
             }

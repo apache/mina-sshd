@@ -66,8 +66,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
             return;
         }
 
-        // we can re-use the incoming message buffer since its data has been copied to the request buffer
-        Buffer rep = BufferUtils.clear(message);
+        Buffer rep = new ByteArrayBuffer();
         rep.putInt(0);
         rep.rpos(rep.wpos());
 

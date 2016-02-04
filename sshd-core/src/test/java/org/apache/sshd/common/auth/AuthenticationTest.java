@@ -57,7 +57,6 @@ import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
@@ -689,7 +688,7 @@ public class AuthenticationTest extends BaseTestSupport {
                                     // send another key
                                     KeyPair otherPair = org.apache.sshd.util.test.Utils.generateKeyPair("RSA", 1024);
                                     PublicKey otherKey = otherPair.getPublic();
-                                    Buffer buf = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_PK_OK, BufferUtils.clear(buffer));
+                                    Buffer buf = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_PK_OK, blobLen + alg.length() + Long.SIZE);
                                     buf.putString(alg);
                                     buf.putPublicKey(otherKey);
                                     session.writePacket(buf);

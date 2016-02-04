@@ -25,7 +25,6 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
@@ -70,7 +69,7 @@ public class TcpipForwardHandler extends AbstractConnectionServiceRequestHandler
         port = bound.getPort();
         if (wantReply) {
             Session session = connectionService.getSession();
-            buffer = session.prepareBuffer(SshConstants.SSH_MSG_REQUEST_SUCCESS, BufferUtils.clear(buffer));
+            buffer = session.createBuffer(SshConstants.SSH_MSG_REQUEST_SUCCESS, Integer.SIZE / Byte.SIZE);
             buffer.putInt(port);
             session.writePacket(buffer);
         }

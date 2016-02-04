@@ -32,7 +32,7 @@ import org.apache.sshd.common.util.ValidateUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public final class ByteArrayBuffer extends Buffer {
+public class ByteArrayBuffer extends Buffer {
     public static final int DEFAULT_SIZE = 256;
     public static final int MAX_LEN = 65536;
 

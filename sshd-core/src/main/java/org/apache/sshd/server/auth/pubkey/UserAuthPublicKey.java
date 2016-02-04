@@ -30,6 +30,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -180,7 +181,8 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                        username, session, alg, KeyUtils.getFingerPrint(key));
         }
 
-        Buffer buf = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_PK_OK, BufferUtils.clear(buffer));
+        Buffer buf = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_PK_OK,
+                GenericUtils.length(alg) + blobLen + Integer.SIZE);
         buf.putString(alg);
         buf.putRawBytes(keyBlob, offset, blobLen);
         session.writePacket(buf);
