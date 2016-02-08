@@ -21,26 +21,22 @@ package org.apache.sshd.server.x11;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.BindException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.client.channel.AbstractClientChannel;
-import org.apache.sshd.client.future.DefaultOpenFuture;
-import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
-import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.channel.ChannelOutputStream;
-import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -61,15 +57,44 @@ public class X11ForwardSupport extends AbstractInnerCloseable implements IoHandl
     public static final String CHANNEL_OPEN_TIMEOUT_PROP = "x11-fwd-open-timeout";
     public static final long DEFAULT_CHANNEL_OPEN_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
 
-    public static final int X11_DISPLAY_OFFSET = 10;
-    public static final int MAX_DISPLAYS = 1000;
+    /**
+     * Configuration value to control from which X11 display number to start
+     * looking for a free value. If not specified, then {@link #DEFAULT_X11_DISPLAY_OFFSET}
+     * is used
+     */
+    public static final String X11_DISPLAY_OFFSET = "x11-fwd-display-offset";
+    public static final int DEFAULT_X11_DISPLAY_OFFSET = 10;
+
+    /**
+     * Configuration value to control up to which (but not including) X11 display number
+     * to look or a free value. If not specified, then {@link #DEFAULT_X11_MAX_DISPLAYS}
+     * is used
+     */
+    public static final String X11_MAX_DISPLAYS = "x11-fwd-max-display";
+    public static final int DEFAULT_X11_MAX_DISPLAYS = 1000;
+
+    /**
+     * Configuration value to control the base port number for the X11 display
+     * number socket binding. If not specified then {@link #DEFAULT_X11_BASE_PORT}
+     * value is used
+     */
+    public static final String X11_BASE_PORT = "x11-fwd-base-port";
+    public static final int DEFAULT_X11_BASE_PORT = 6000;
+
+    /**
+     * Configuration value to control the host used to bind to for the X11 display
+     * when looking for a free port. If not specified, then {@link #DEFAULT_X11_BIND_HOST}
+     * is used
+     */
+    public static final String X11_BIND_HOST = "x11-fwd-bind-host";
+    public static final String DEFAULT_X11_BIND_HOST = SshdSocketAddress.LOCALHOST_IP;
 
     /**
      * Key for the user DISPLAY variable
      */
     public static final String ENV_DISPLAY = "DISPLAY";
 
-    private static final String XAUTH_COMMAND = System.getProperty("sshd.XAUTH_COMMAND", "xauth");
+    public static final String XAUTH_COMMAND = System.getProperty("sshd.XAUTH_COMMAND", "xauth");
 
     private final ConnectionService service;
     private IoAcceptor acceptor;
@@ -88,10 +113,10 @@ public class X11ForwardSupport extends AbstractInnerCloseable implements IoHandl
         return builder().close(acceptor).build();
     }
 
-    public synchronized String createDisplay(boolean singleConnection,
-                                             String authenticationProtocol, String authenticationCookie,
-                                             int screen) throws IOException {
-
+    // TODO consider reducing the 'synchronized' section to specific code locations rather than entire method
+    public synchronized String createDisplay(
+            boolean singleConnection, String authenticationProtocol, String authenticationCookie, int screen)
+                    throws IOException {
         if (isClosed()) {
             throw new IllegalStateException("X11ForwardSupport is closed");
         }
@@ -99,53 +124,98 @@ public class X11ForwardSupport extends AbstractInnerCloseable implements IoHandl
             throw new IllegalStateException("X11ForwardSupport is closing");
         }
 
+        // only support non windows systems
+        if (OsUtils.isWin32()) {
+            if (log.isDebugEnabled()) {
+                log.debug("createDisplay(auth={}, cookie={}, screen={}) Windows O/S N/A",
+                          authenticationProtocol, authenticationCookie, screen);
+            }
+            return null;
+        }
+
+        Session session = ValidateUtils.checkNotNull(service.getSession(), "No session");
         if (acceptor == null) {
-            Session session = ValidateUtils.checkNotNull(service.getSession(), "No session");
             FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
             IoServiceFactory factory = ValidateUtils.checkNotNull(manager.getIoServiceFactory(), "No I/O service factory");
             acceptor = factory.createAcceptor(this);
         }
 
-        int displayNumber;
-        int port;
-        InetSocketAddress addr;
+        int minDisplayNumber = PropertyResolverUtils.getIntProperty(session, X11_DISPLAY_OFFSET, DEFAULT_X11_DISPLAY_OFFSET);
+        int maxDisplayNumber = PropertyResolverUtils.getIntProperty(session, X11_MAX_DISPLAYS, DEFAULT_X11_MAX_DISPLAYS);
+        int basePort = PropertyResolverUtils.getIntProperty(session, X11_BASE_PORT, DEFAULT_X11_BASE_PORT);
+        String bindHost = PropertyResolverUtils.getStringProperty(session, X11_BIND_HOST, DEFAULT_X11_BIND_HOST);
+        InetSocketAddress addr = null;
 
-        for (displayNumber = X11_DISPLAY_OFFSET; displayNumber < MAX_DISPLAYS; displayNumber++) {
-            port = 6000 + displayNumber;
+        // try until bind successful or max is reached
+        for (int displayNumber = minDisplayNumber; displayNumber < maxDisplayNumber; displayNumber++) {
+            int port = basePort + displayNumber;
+            addr = new InetSocketAddress(bindHost, port);
             try {
-                addr = new InetSocketAddress("127.0.0.1", port);
                 acceptor.bind(addr);
                 break;
             } catch (BindException bindErr) {
-                // try until bind succesful or max is reached
+                if (log.isDebugEnabled()) {
+                    log.debug("createDisplay(auth={}, cookie={}, screen={}) failed ({}) to bind to address={}: {}",
+                              authenticationProtocol, authenticationCookie, screen,
+                              bindErr.getClass().getSimpleName(), addr, bindErr.getMessage());
+                }
+
+                addr = null;
             }
         }
 
-        if (displayNumber >= MAX_DISPLAYS) {
-            log.error("Failed to allocate internet-domain X11 display socket.");
-            if (acceptor.getBoundAddresses().isEmpty()) {
+        if (addr == null) {
+            log.warn("createDisplay(auth={}, cookie={}, screen={})"
+                   + " failed to allocate internet-domain X11 display socket in range {}-{}",
+                     authenticationProtocol, authenticationCookie, screen,
+                     minDisplayNumber, maxDisplayNumber);
+            Collection<SocketAddress> boundAddressess = acceptor.getBoundAddresses();
+            if (GenericUtils.isEmpty(boundAddressess)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("createDisplay(auth={}, cookie={}, screen={}) closing - no more bound addresses",
+                              authenticationProtocol, authenticationCookie, screen);
+                }
                 close();
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("createDisplay(auth={}, cookie={}, screen={}) closing - remaining bound addresses: {}",
+                              authenticationProtocol, authenticationCookie, screen, boundAddressess);
+                }
             }
+
             return null;
         }
 
-        // only support non windows systems
-        String os = System.getProperty("os.name").toLowerCase();
-        if (!os.contains("windows")) {
-            try {
-                String authDisplay = "unix:" + displayNumber + "." + screen;
-                Process p = new ProcessBuilder(XAUTH_COMMAND, "remove", authDisplay).start();
-                int result = p.waitFor();
-                if (result == 0) {
-                    p = new ProcessBuilder(XAUTH_COMMAND, "add", authDisplay, authenticationProtocol, authenticationCookie).start();
-                    result = p.waitFor();
-                }
-            } catch (Throwable e) {
-                log.error("Could not run xauth", e);
-                return null;
+        int port = addr.getPort();
+        int displayNumber = port - basePort;
+        String authDisplay = "unix:" + displayNumber + "." + screen;
+        try {
+            Process p = new ProcessBuilder(XAUTH_COMMAND, "remove", authDisplay).start();
+            int result = p.waitFor();
+            if (log.isDebugEnabled()) {
+                log.debug("createDisplay({}) {} remove result={}", authDisplay, XAUTH_COMMAND, result);
             }
-            return SshdSocketAddress.LOCALHOST_NAME + ":" + displayNumber + "." + screen;
-        } else {
+
+            if (result == 0) {
+                p = new ProcessBuilder(XAUTH_COMMAND, "add", authDisplay, authenticationProtocol, authenticationCookie).start();
+                result = p.waitFor();
+
+                if (log.isDebugEnabled()) {
+                    log.debug("createDisplay({}) {} add result={}", authDisplay, XAUTH_COMMAND, result);
+                }
+            }
+
+            if (result != 0) {
+                throw new IllegalStateException("Bad " + XAUTH_COMMAND + " invocation result: " + result);
+            }
+
+            return bindHost + ":" + displayNumber + "." + screen;
+        } catch (Throwable e) {
+            log.warn("createDisplay({}) failed ({}) run xauth: {}",
+                     authDisplay, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("createDisplay(" + authDisplay + ") xauth failure details", e);
+            }
             return null;
         }
     }
@@ -154,6 +224,9 @@ public class X11ForwardSupport extends AbstractInnerCloseable implements IoHandl
     public void sessionCreated(IoSession session) throws Exception {
         ChannelForwardedX11 channel = new ChannelForwardedX11(session);
         session.setAttribute(ChannelForwardedX11.class, channel);
+        if (log.isDebugEnabled()) {
+            log.debug("sessionCreated({}) channel{}", session, channel);
+        }
         this.service.registerChannel(channel);
         channel.open().verify(PropertyResolverUtils.getLongProperty(channel, CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
     }
@@ -162,6 +235,9 @@ public class X11ForwardSupport extends AbstractInnerCloseable implements IoHandl
     public void sessionClosed(IoSession session) throws Exception {
         ChannelForwardedX11 channel = (ChannelForwardedX11) session.getAttribute(ChannelForwardedX11.class);
         if (channel != null) {
+            if (log.isDebugEnabled()) {
+                log.debug("sessionClosed({}) close channel={}", session, channel);
+            }
             channel.close(false);
         }
     }
@@ -172,6 +248,9 @@ public class X11ForwardSupport extends AbstractInnerCloseable implements IoHandl
         Buffer buffer = new ByteArrayBuffer(message.available() + Long.SIZE, false);
         buffer.putBuffer(message);
 
+        if (log.isTraceEnabled()) {
+            log.trace("messageReceived({}) channel={}, len={}", session, channel, buffer.available());
+        }
         OutputStream outputStream = channel.getInvertedIn();
         outputStream.write(buffer.array(), buffer.rpos(), buffer.available());
         outputStream.flush();
@@ -179,73 +258,12 @@ public class X11ForwardSupport extends AbstractInnerCloseable implements IoHandl
 
     @Override
     public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
-        cause.printStackTrace();
+        if (log.isDebugEnabled()) {
+            log.debug("exceptionCaught({}) {}: {}", session, cause.getClass().getSimpleName(), cause.getMessage());
+        }
+        if (log.isTraceEnabled()) {
+            log.trace("exceptionCaught(" + session + ") caught exception details", cause);
+        }
         session.close(false);
     }
-
-    public static class ChannelForwardedX11 extends AbstractClientChannel {
-        private final IoSession serverSession;
-
-        public ChannelForwardedX11(IoSession serverSession) {
-            super("x11");
-            this.serverSession = serverSession;
-        }
-
-        @Override
-        public synchronized OpenFuture open() throws IOException {
-            InetSocketAddress remote = (InetSocketAddress) serverSession.getRemoteAddress();
-            if (closeFuture.isClosed()) {
-                throw new SshException("Session has been closed");
-            }
-            openFuture = new DefaultOpenFuture(lock);
-
-            Session session = getSession();
-            if (log.isDebugEnabled()) {
-                log.debug("open({}) SSH_MSG_CHANNEL_OPEN", this);
-            }
-
-            InetAddress remoteAddress = remote.getAddress();
-            String remoteHost = remoteAddress.getHostAddress();
-            Window wLocal = getLocalWindow();
-            Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN,
-                    remoteHost.length() + type.length() + Integer.SIZE);
-            buffer.putString(type);
-            buffer.putInt(getId());
-            buffer.putInt(wLocal.getSize());
-            buffer.putInt(wLocal.getPacketSize());
-            buffer.putString(remoteHost);
-            buffer.putInt(remote.getPort());
-            writePacket(buffer);
-            return openFuture;
-        }
-
-        @Override
-        protected synchronized void doOpen() throws IOException {
-            if (streaming == Streaming.Async) {
-                throw new IllegalArgumentException("Asynchronous streaming isn't supported yet on this channel");
-            }
-            out = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
-            invertedIn = out;
-        }
-
-        @Override
-        protected Closeable getInnerCloseable() {
-            return builder().sequential(serverSession, super.getInnerCloseable()).build();
-        }
-
-        @Override
-        protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {
-            Window wLocal = getLocalWindow();
-            wLocal.consumeAndCheck(len);
-            // use a clone in case data buffer is re-used
-            serverSession.write(ByteArrayBuffer.getCompactClone(data, off, len));
-        }
-
-        @Override
-        public void handleEof() throws IOException {
-            super.handleEof();
-            serverSession.close(false);
-        }
-    }
-
 }
