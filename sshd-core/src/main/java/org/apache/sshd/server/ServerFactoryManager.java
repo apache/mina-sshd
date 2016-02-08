@@ -39,7 +39,9 @@ public interface ServerFactoryManager extends FactoryManager, ServerAuthenticati
     String MAX_CONCURRENT_SESSIONS = "max-concurrent-sessions";
 
     /**
-     * Key used to retrieve the value of the server identification string if not default.
+     * Key used to retrieve the value of the server identification string. If not set then
+     * a default is sent - consists of &quot;SSH-2.0-&quot; plus the current SSHD core
+     * artifact name and version in uppercase - e.g., &quot;SSH-2.0-SSHD-CORE-1.0.0&quot;
      */
     String SERVER_IDENTIFICATION = "server-identification";
 
@@ -107,7 +109,7 @@ public interface ServerFactoryManager extends FactoryManager, ServerAuthenticati
     /**
      * Retrieve the <code>CommandFactory</code> to be used to process commands requests.
      *
-     * @return a valid <code>CommandFactory</code> object or {@code null} if commands
+     * @return A valid {@link CommandFactory} object or {@code null} if commands
      * are not supported on this server
      */
     CommandFactory getCommandFactory();

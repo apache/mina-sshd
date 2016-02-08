@@ -87,7 +87,8 @@ public interface FactoryManager extends KexFactoryManager, SessionListenerManage
     String NIO_WORKERS = "nio-workers";
 
     /**
-     * Default number of worker threads to use if none set.
+     * Default number of worker threads to use if none set - the number
+     * of available processors + 1
      */
     int DEFAULT_NIO_WORKERS = Runtime.getRuntime().availableProcessors() + 1;
 
@@ -218,7 +219,7 @@ public interface FactoryManager extends KexFactoryManager, SessionListenerManage
 
     /**
      * Default value for {@link #REKEY_BYTES_LIMIT} if no override
-     * @see <A HREF="https://tools.ietf.org/html/rfc4253#page-23">RFC4253 section 9</A>
+     * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-9">RFC4253 section 9</A>
      */
     long DEFAULT_REKEY_BYTES_LIMIT = 1024L * 1024L * 1024L; // 1GB
 
@@ -231,7 +232,7 @@ public interface FactoryManager extends KexFactoryManager, SessionListenerManage
 
     /**
      * Default value for {@link #REKEY_TIME_LIMIT} if none specified
-     * @see <A HREF="https://tools.ietf.org/html/rfc4253#page-23">RFC4253 section 9</A>
+     * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-9">RFC4253 section 9</A>
      */
     long DEFAULT_REKEY_TIME_LIMIT = 60L * 60L * 1000L; // 1 hour
 
@@ -244,7 +245,7 @@ public interface FactoryManager extends KexFactoryManager, SessionListenerManage
 
     /**
      * Default value for {@link #REKEY_PACKETS_LIMIT} if none specified
-     * @see <A HREF="https://tools.ietf.org/html/rfc4344#page-3">RFC4344 section 3.1</A>
+     * @see <A HREF="https://tools.ietf.org/html/rfc4344#section-3.1">RFC4344 section 3.1</A>
      */
     long DEFAULT_REKEY_PACKETS_LIMIT = 1L << 31;
 
@@ -252,7 +253,7 @@ public interface FactoryManager extends KexFactoryManager, SessionListenerManage
      * Key re-exchange will be automatically performed after the specified
      * number of cipher blocks has been processed - positive 64-bit value. If
      * non-positive then disabled. The default is calculated according to
-     * <A HREF="https://tools.ietf.org/html/rfc4344#page-3">RFC4344 section 3.2</A>
+     * <A HREF="https://tools.ietf.org/html/rfc4344#section-3.2">RFC4344 section 3.2</A>
      */
     String REKEY_BLOCKS_LIMIT = "rekey-blocks-limit";
 
@@ -260,6 +261,7 @@ public interface FactoryManager extends KexFactoryManager, SessionListenerManage
      * Average number of packets to be skipped before an {@code SSH_MSG_IGNORE}
      * message is inserted in the stream. If non-positive, then feature is disabled
      * @see #IGNORE_MESSAGE_VARIANCE
+     * @see <A HREF="https://tools.ietf.org/html/rfc4251#section-9.3.1">RFC4251 section 9.3.1</A>
      */
     String IGNORE_MESSAGE_FREQUENCY = "ignore-message-frequency";
 
@@ -273,6 +275,7 @@ public interface FactoryManager extends KexFactoryManager, SessionListenerManage
      * value in order to avoid insertion at a set frequency. If zero, then <U>exact</U>
      * frequency is used. If negative, then the <U>absolute</U> value is used. If
      * greater or equal to the frequency, then assumed to be zero - i.e., no variance
+     * @see <A HREF="https://tools.ietf.org/html/rfc4251#section-9.3.1">RFC4251 section 9.3.1</A>
      */
     String IGNORE_MESSAGE_VARIANCE = "ignore-message-variance";
 
@@ -285,6 +288,7 @@ public interface FactoryManager extends KexFactoryManager, SessionListenerManage
      * Minimum size of {@code SSH_MSG_IGNORE} payload to send if feature enabled. If
      * non-positive then no message is sent. Otherwise, the actual size is between this
      * size and twice its value
+     * @see <A HREF="https://tools.ietf.org/html/rfc4251#section-9.3.1">RFC4251 section 9.3.1</A>
      */
     String IGNORE_MESSAGE_SIZE = "ignore-message-size";
 
@@ -294,9 +298,9 @@ public interface FactoryManager extends KexFactoryManager, SessionListenerManage
     int DEFAULT_IGNORE_MESSAGE_SIZE = 16;
 
     /**
-     * An upper case string identifying the version of the software used on
-     * client or server side. This version includes the name of the software
-     * and usually looks like this: <code>SSHD-1.0</code>
+     * An upper case string identifying the version of the software used on client or server side.
+     * This version includes the name and version of the software and usually looks like this:
+     * <code>SSHD-CORE-1.0</code>
      *
      * @return the version of the software
      */
@@ -307,28 +311,28 @@ public interface FactoryManager extends KexFactoryManager, SessionListenerManage
     /**
      * Retrieve the <code>Random</code> factory to be used.
      *
-     * @return the <code>Random</code> factory, never {@code null}
+     * @return The <code>Random</code> factory, never {@code null}
      */
     Factory<Random> getRandomFactory();
 
     /**
      * Retrieve the list of named factories for <code>Channel</code> objects.
      *
-     * @return a list of named <code>Channel</code> factories, never {@code null}
+     * @return A list of named <code>Channel</code> factories, never {@code null}
      */
     List<NamedFactory<Channel>> getChannelFactories();
 
     /**
      * Retrieve the agent factory for creating <code>SshAgent</code> objects.
      *
-     * @return the factory
+     * @return The {@link SshAgentFactory}
      */
     SshAgentFactory getAgentFactory();
 
     /**
      * Retrieve the <code>ScheduledExecutorService</code> to be used.
      *
-     * @return the <code>ScheduledExecutorService</code>, never {@code null}
+     * @return The {@link ScheduledExecutorService}, never {@code null}
      */
     ScheduledExecutorService getScheduledExecutorService();
 
@@ -337,21 +341,21 @@ public interface FactoryManager extends KexFactoryManager, SessionListenerManage
      * If no filter has been configured (i.e. this method returns
      * {@code null}), then all forwarding requests will be rejected.
      *
-     * @return the <code>ForwardingFilter</code> or {@code null}
+     * @return The {@link ForwardingFilter} or {@code null}
      */
     ForwardingFilter getTcpipForwardingFilter();
 
     /**
      * Retrieve the tcpip forwarder factory used to support tcpip forwarding.
      *
-     * @return the <code>TcpipForwarderFactory</code>
+     * @return The {@link TcpipForwarderFactory}
      */
     TcpipForwarderFactory getTcpipForwarderFactory();
 
     /**
      * Retrieve the <code>FileSystemFactory</code> to be used to traverse the file system.
      *
-     * @return a valid <code>FileSystemFactory</code> object or {@code null} if file based
+     * @return a valid {@link FileSystemFactory} instance or {@code null} if file based
      * interactions are not supported on this server
      */
     FileSystemFactory getFileSystemFactory();

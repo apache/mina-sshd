@@ -51,5 +51,4 @@ public interface Random extends NamedResource {
      * @return The randomly selected value in the range
      */
     int random(int n);
-
 }

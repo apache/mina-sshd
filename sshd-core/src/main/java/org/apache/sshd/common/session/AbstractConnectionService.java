@@ -63,6 +63,10 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
      * @see #registerChannel(Channel)
      */
     public static final String MAX_CONCURRENT_CHANNELS_PROP = "max-sshd-channels";
+
+    /**
+     * Default value for {@link #MAX_CONCURRENT_CHANNELS_PROP} is none specified
+     */
     public static final int DEFAULT_MAX_CHANNELS = Integer.MAX_VALUE;
 
     /**
@@ -403,7 +407,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
         if (channel == null) {
             byte[] data = buffer.array();
             int curPos = buffer.rpos();
-            int cmd = (curPos >= 5) ? data[curPos - 5] & 0xFF : -1;
+            int cmd = (curPos >= 5) ? (data[curPos - 5] & 0xFF) : -1;
             throw new SshException("Received " + SshConstants.getCommandMessageName(cmd) + " on unknown channel " + recipient);
         }
 

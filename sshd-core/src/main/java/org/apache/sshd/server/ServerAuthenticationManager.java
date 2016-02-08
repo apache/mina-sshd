@@ -137,11 +137,12 @@ public interface ServerAuthenticationManager {
 
         /**
          * If user authentication factories already set, then simply returns them. Otherwise,
-         * builds the factories list from the individual authenticators set - password,
-         * public key, keyboard-interactive, GSS, etc...
+         * builds the factories list from the individual authenticators available for
+         * the manager - password public key, keyboard-interactive, GSS, etc...
          *
          * @param manager The {@link ServerAuthenticationManager} - ignored if {@code null}
          * @return The resolved {@link List} of {@link NamedFactory} for the {@link UserAuth}s
+         * @see #resolveUserAuthFactories(ServerAuthenticationManager, List)
          */
         public static List<NamedFactory<UserAuth>> resolveUserAuthFactories(ServerAuthenticationManager manager) {
             if (manager == null) {
@@ -151,10 +152,24 @@ public interface ServerAuthenticationManager {
             }
         }
 
+        /**
+         * If user authentication factories already set, then simply returns them. Otherwise,
+         * builds the factories list from the individual authenticators available for
+         * the manager - password public key, keyboard-interactive, GSS, etc...
+         *
+         * @param manager The {@link ServerAuthenticationManager} - ignored if {@code null}
+         * @param userFactories The currently available {@link UserAuth} factories - if not
+         * {@code null}/empty then they are used as-is.
+         * @return The resolved {@link List} of {@link NamedFactory} for the {@link UserAuth}s
+         */
         public static List<NamedFactory<UserAuth>> resolveUserAuthFactories(
                 ServerAuthenticationManager manager, List<NamedFactory<UserAuth>> userFactories) {
             if (GenericUtils.size(userFactories) > 0) {
                 return userFactories;   // use whatever the user decided
+            }
+
+            if (manager == null) {
+                return Collections.emptyList();
             }
 
             List<NamedFactory<UserAuth>> factories = new ArrayList<>();

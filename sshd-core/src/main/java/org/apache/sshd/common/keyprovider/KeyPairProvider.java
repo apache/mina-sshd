@@ -94,12 +94,12 @@ public interface KeyPairProvider extends KeyIdentityProvider {
         };
 
     /**
-     * Load a key of the specified type which can be "ssh-rsa", "ssh-dss", or
-     * "ecdsa-sha2-nistp{256,384,521}". If there is no key of this type, return
+     * Load a key of the specified type which can be &quot;ssh-rsa&quot;, &quot;ssh-dss&quot;,
+     * or &quot;ecdsa-sha2-nistp{256,384,521}&quot;. If there is no key of this type, return
      * {@code null}
      *
      * @param type the type of key to load
-     * @return a valid key pair or {@code null}
+     * @return a valid key pair or {@code null} if this type of key is not available
      */
     KeyPair loadKey(String type);
 
@@ -119,12 +119,27 @@ public interface KeyPairProvider extends KeyIdentityProvider {
             throw new UnsupportedOperationException("No instance allowed");
         }
 
+        /**
+         * Wrap the provided {@link KeyPair}s into a {@link KeyPairProvider}
+         *
+         * @param pairs The available pairs - ignored if {@code null}/empty (i.e.,
+         * returns {@link #EMPTY_KEYPAIR_PROVIDER})
+         * @return The provider wrapper
+         * @see #wrap(Iterable)
+         */
         public static KeyPairProvider wrap(KeyPair ... pairs) {
-            return wrap(GenericUtils.isEmpty(pairs) ? Collections.<KeyPair>emptyList() : Arrays.asList(pairs));
+            return GenericUtils.isEmpty(pairs) ? EMPTY_KEYPAIR_PROVIDER : wrap(Arrays.asList(pairs));
         }
 
+        /**
+         * Wrap the provided {@link KeyPair}s into a {@link KeyPairProvider}
+         *
+         * @param pairs The available pairs {@link Iterable} - ignored if {@code null} (i.e.,
+         * returns {@link #EMPTY_KEYPAIR_PROVIDER})
+         * @return The provider wrapper
+         */
         public static KeyPairProvider wrap(final Iterable<KeyPair> pairs) {
-            return new KeyPairProvider() {
+            return (pairs == null) ? EMPTY_KEYPAIR_PROVIDER : new KeyPairProvider() {
                 @Override
                 public Iterable<KeyPair> loadKeys() {
                     return pairs;
@@ -132,10 +147,6 @@ public interface KeyPairProvider extends KeyIdentityProvider {
 
                 @Override
                 public KeyPair loadKey(String type) {
-                    if (pairs == null) {
-                        return null;
-                    }
-
                     for (KeyPair kp : pairs) {
                         String t = KeyUtils.getKeyType(kp);
                         if (Objects.equals(type, t)) {
@@ -148,10 +159,6 @@ public interface KeyPairProvider extends KeyIdentityProvider {
 
                 @Override
                 public Iterable<String> getKeyTypes() {
-                    if (pairs == null) {
-                        return Collections.emptyList();
-                    }
-
                     // use a LinkedHashSet so as to preserve the order but avoid duplicates
                     Collection<String> types = new LinkedHashSet<>();
                     for (KeyPair kp : pairs) {

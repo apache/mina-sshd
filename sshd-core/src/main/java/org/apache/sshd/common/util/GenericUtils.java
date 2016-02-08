@@ -596,8 +596,17 @@ public final class GenericUtils {
         return (iter == null) ? Collections.<T>emptyIterator() : iter;
     }
 
+    /**
+     * Wraps a group of {@link Supplier}s of {@link Iterable} instances into a &quot;unified&quot;
+     * {@link Iterable} of their values, in the same order as the suppliers - i.e., once the values
+     * from a specific supplier are exhausted, the next one is consulted, and so on, until all
+     * suppliers have been consulted
+     *
+     * @param providers The providers - ignored if {@code null} (i.e., return an empty iterable instance)
+     * @return The wrapping instance
+     */
     public static <T> Iterable<T> multiIterableSuppliers(final Iterable<? extends Supplier<? extends Iterable<? extends T>>> providers) {
-        return new Iterable<T>() {
+        return (providers == null) ? Collections.<T>emptyList() : new Iterable<T>() {
             @Override
             public Iterator<T> iterator() {
                 return new Iterator<T>() {
@@ -641,7 +650,6 @@ public final class GenericUtils {
                     }
                 };
             }
-
         };
     }
 }

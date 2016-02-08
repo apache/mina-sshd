@@ -55,6 +55,15 @@ public interface SignatureFactoriesManager {
             return (manager == null) ? null : manager.getSignatureFactories();
         }
 
+        /**
+         * Attempts to use the primary manager's signature factories if not {@code null}/empty,
+         * otherwise uses the secondary ones (regardless of whether there are any...)
+         *
+         * @param primary The primary {@link SignatureFactoriesManager}
+         * @param secondary The secondary {@link SignatureFactoriesManager}
+         * @return The resolved signature factories - may be {@code null}/empty
+         * @see #getSignatureFactories(SignatureFactoriesManager)
+         */
         public static List<NamedFactory<Signature>> resolveSignatureFactories(
                 SignatureFactoriesManager primary, SignatureFactoriesManager secondary) {
             List<NamedFactory<Signature>> factories = getSignatureFactories(primary);

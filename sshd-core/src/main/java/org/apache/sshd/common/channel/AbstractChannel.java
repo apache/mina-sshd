@@ -88,7 +88,7 @@ public abstract class AbstractChannel
 
     private int id = -1;
     private int recipient = -1;
-    private Session session;
+    private Session sessionInstance;
 
     private final Window localWindow;
     private final Window remoteWindow;
@@ -130,6 +130,7 @@ public abstract class AbstractChannel
         }
         this.recipient = recipient;
     }
+
     @Override
     public Window getLocalWindow() {
         return localWindow;
@@ -142,7 +143,7 @@ public abstract class AbstractChannel
 
     @Override
     public Session getSession() {
-        return session;
+        return sessionInstance;
     }
 
     @Override
@@ -317,7 +318,7 @@ public abstract class AbstractChannel
             log.debug("init() service={} session={} id={}", service, session, id);
         }
         this.service = service;
-        this.session = session;
+        this.sessionInstance = session;
         this.id = id;
 
         ChannelListener listener = session.getChannelListenerProxy();

@@ -37,7 +37,7 @@ public interface ServerSession extends Session, ServerAuthenticationManager {
 
     /**
      * @return The {@link KeyPair} representing the current session's used keys
-     * on KEX
+     * on KEX - {@code null} if not negotiated yet
      */
     KeyPair getHostKey();
 

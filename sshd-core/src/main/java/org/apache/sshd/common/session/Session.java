@@ -212,7 +212,7 @@ public interface Session
      * Handle any exceptions that occurred on this session.
      * The session will be closed and a disconnect packet will be
      * sent before if the given exception is an
-     * {@link org.apache.sshd.common.SshException}.
+     * {@link org.apache.sshd.common.SshException} with a positive error code
      *
      * @param t the exception to process
      */

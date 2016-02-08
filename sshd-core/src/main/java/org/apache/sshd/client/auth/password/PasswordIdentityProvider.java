@@ -29,12 +29,15 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Supplier;
 import org.apache.sshd.common.util.Transformer;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface PasswordIdentityProvider {
+    /**
+     * An &quot;empty&quot implementation of {@link PasswordIdentityProvider} that returns
+     * and empty group of passwords
+     */
     PasswordIdentityProvider EMPTY_PASSWORDS_PROVIDER = new PasswordIdentityProvider() {
         @Override
         public Iterable<String> loadPasswords() {
@@ -48,7 +51,7 @@ public interface PasswordIdentityProvider {
     };
 
     /**
-     * @return The currently available passwords - never {@code null}
+     * @return The currently available passwords - ignored if {@code null}
      */
     Iterable<String> loadPasswords();
 
@@ -59,11 +62,15 @@ public interface PasswordIdentityProvider {
     // CHECKSTYLE:OFF
     final class Utils {
     // CHECKSTYLE:ON
+        /**
+         * Invokes {@link PasswordIdentityProvider#loadPasswords()} and returns the result.
+         * Ignores {@code null} providers (i.e., returns an empty iterable instance)
+         */
         public static final Transformer<PasswordIdentityProvider, Iterable<String>> LOADER =
             new Transformer<PasswordIdentityProvider, Iterable<String>>() {
                 @Override
                 public Iterable<String> transform(PasswordIdentityProvider p) {
-                    return (p == null) ? null : p.loadPasswords();
+                    return (p == null) ? Collections.<String>emptyList() : p.loadPasswords();
                 }
             };
 
@@ -71,11 +78,29 @@ public interface PasswordIdentityProvider {
             throw new UnsupportedOperationException("No instance allowed");
         }
 
+        /**
+         * Creates a &quot;unified&quot; {@link Iterator} of passwords out of the registered
+         * passwords and the extra available ones as a single iterator of passwords
+         *
+         * @param session The {@link ClientSession} - ignored if {@code null} (i.e., empty
+         * iterator returned)
+         * @return The wrapping iterator
+         * @see ClientSession#getRegisteredIdentities()
+         * @see ClientSession#getPasswordIdentityProvider()
+         */
         public static Iterator<String> iteratorOf(ClientSession session) {
-            ValidateUtils.checkNotNull(session, "No session");
-            return iteratorOf(session.getRegisteredIdentities(), session.getPasswordIdentityProvider());
+            return (session == null) ? Collections.<String>emptyIterator() : iteratorOf(session.getRegisteredIdentities(), session.getPasswordIdentityProvider());
         }
 
+        /**
+         * Creates a &quot;unified&quot; {@link Iterator} of passwords out of 2 possible
+         * {@link PasswordIdentityProvider}
+         *
+         * @param identities The registered passwords
+         * @param passwords Extra available passwords
+         * @return The wrapping iterator
+         * @see #resolvePasswordIdentityProvider(PasswordIdentityProvider, PasswordIdentityProvider)
+         */
         public static Iterator<String> iteratorOf(PasswordIdentityProvider identities, PasswordIdentityProvider passwords) {
             return iteratorOf(resolvePasswordIdentityProvider(identities, passwords));
         }
@@ -83,13 +108,28 @@ public interface PasswordIdentityProvider {
         /**
          * Resolves a non-{@code null} iterator of the available passwords
          *
-         * @param provider The {@link PasswordIdentityProvider} - ignored if {@code null}
+         * @param provider The {@link PasswordIdentityProvider} - ignored if {@code null} (i.e.,
+         * return an empty iterator)
          * @return A non-{@code null} iterator - which may be empty if no provider or no passwords
          */
         public static Iterator<String> iteratorOf(PasswordIdentityProvider provider) {
             return GenericUtils.iteratorOf((provider == null) ? null : provider.loadPasswords());
         }
 
+        /**
+         * <P>Creates a &quot;unified&quot; {@link PasswordIdentityProvider} out of 2 possible ones
+         * as follows:</P></BR>
+         * <UL>
+         *      <LI>If both are {@code null} then return {@code null}.</LI>
+         *      <LI>If either one is {@code null} then use the non-{@code null} one.</LI>
+         *      <LI>If both are the same instance then use it.</U>
+         *      <LI>Otherwise, returns a wrapper that groups both providers.</LI>
+         * </UL>
+         * @param identities The registered passwords
+         * @param passwords The extra available passwords
+         * @return The resolved provider
+         * @see #multiProvider(PasswordIdentityProvider...)
+         */
         public static PasswordIdentityProvider resolvePasswordIdentityProvider(PasswordIdentityProvider identities, PasswordIdentityProvider passwords) {
             if ((passwords == null) || (identities == passwords)) {
                 return identities;
@@ -100,14 +140,35 @@ public interface PasswordIdentityProvider {
             }
         }
 
+        /**
+         * Wraps a group of {@link PasswordIdentityProvider} into a single one
+         *
+         * @param providers The providers - ignored if {@code null}/empty (i.e., returns
+         * {@link #EMPTY_PASSWORDS_PROVIDER}
+         * @return The wrapping provider
+         * @see #multiProvider(Collection)
+         */
         public static PasswordIdentityProvider multiProvider(PasswordIdentityProvider ... providers) {
-            return multiProvider(GenericUtils.isEmpty(providers) ? Collections.<PasswordIdentityProvider>emptyList() : Arrays.asList(providers));
+            return GenericUtils.isEmpty(providers) ? EMPTY_PASSWORDS_PROVIDER : multiProvider(Arrays.asList(providers));
         }
 
+        /**
+         * Wraps a group of {@link PasswordIdentityProvider} into a single one
+         *
+         * @param providers The providers - ignored if {@code null}/empty (i.e., returns
+         * {@link #EMPTY_PASSWORDS_PROVIDER}
+         * @return The wrapping provider
+         */
         public static PasswordIdentityProvider multiProvider(Collection<? extends PasswordIdentityProvider> providers) {
-            return wrap(iterableOf(providers));
+            return GenericUtils.isEmpty(providers) ? EMPTY_PASSWORDS_PROVIDER : wrap(iterableOf(providers));
         }
 
+        /**
+         * Wraps a group of {@link PasswordIdentityProvider} into an {@link Iterable} of their combined passwords
+         *
+         * @param providers The providers - ignored if {@code null}/empty (i.e., returns an empty iterable instance)
+         * @return The wrapping iterable
+         */
         public static Iterable<String> iterableOf(Collection<? extends PasswordIdentityProvider> providers) {
             if (GenericUtils.isEmpty(providers)) {
                 return Collections.emptyList();
@@ -134,8 +195,26 @@ public interface PasswordIdentityProvider {
             return GenericUtils.multiIterableSuppliers(suppliers);
         }
 
+        /**
+         * Wraps a group of passwords into a {@link PasswordIdentityProvider}
+         *
+         * @param passwords The passwords - ignored if {@code null}/empty
+         * (i.e., returns {@link #EMPTY_PASSWORDS_PROVIDER})
+         * @return The provider wrapper
+         */
+        public static PasswordIdentityProvider wrap(String ... passwords) {
+            return GenericUtils.isEmpty(passwords) ? EMPTY_PASSWORDS_PROVIDER : wrap(Arrays.asList(passwords));
+        }
+
+        /**
+         * Wraps a group of passwords into a {@link PasswordIdentityProvider}
+         *
+         * @param passwords The passwords {@link Iterable} - ignored if {@code null}
+         * (i.e., returns {@link #EMPTY_PASSWORDS_PROVIDER})
+         * @return The provider wrapper
+         */
         public static PasswordIdentityProvider wrap(final Iterable<String> passwords) {
-            return new PasswordIdentityProvider() {
+            return (passwords == null) ? EMPTY_PASSWORDS_PROVIDER : new PasswordIdentityProvider() {
                 @Override
                 public Iterable<String> loadPasswords() {
                     return passwords;

@@ -58,30 +58,78 @@ public interface Channel extends ChannelListenerManager, PropertyResolver, Close
 
     Window getRemoteWindow();
 
+    /**
+     * Invoked when <code>SSH_MSG_CHANNEL_CLOSE</code> received
+     *
+     * @throws IOException If failed to handle the message
+     */
     void handleClose() throws IOException;
 
+    /**
+     * Invoked when <code>SSH_MSG_CHANNEL_WINDOW_ADJUST</code> received
+     *
+     * @param buffer The rest of the message data {@link Buffer} after
+     * decoding the channel identifiers
+     * @throws IOException If failed to handle the message
+     */
     void handleWindowAdjust(Buffer buffer) throws IOException;
 
+    /**
+     * Invoked when <code>SSH_MSG_CHANNEL_REQUEST</code> received
+     *
+     * @param buffer The rest of the message data {@link Buffer} after
+     * decoding the channel identifiers
+     * @throws IOException If failed to handle the message
+     */
     void handleRequest(Buffer buffer) throws IOException;
 
+    /**
+     * Invoked when <code>SSH_MSG_CHANNEL_DATA</code> received
+     *
+     * @param buffer The rest of the message data {@link Buffer} after
+     * decoding the channel identifiers
+     * @throws IOException If failed to handle the message
+     */
     void handleData(Buffer buffer) throws IOException;
 
+    /**
+     * Invoked when <code>SSH_MSG_CHANNEL_EXTENDED_DATA</code> received
+     *
+     * @param buffer The rest of the message data {@link Buffer} after
+     * decoding the channel identifiers
+     * @throws IOException If failed to handle the message
+     */
     void handleExtendedData(Buffer buffer) throws IOException;
 
+    /**
+     * Invoked when <code>SSH_MSG_CHANNEL_EOF</code> received
+     *
+     * @throws IOException If failed to handle the message
+     */
     void handleEof() throws IOException;
 
     /**
-     * Handle channel request success
-     * @throws IOException If failed to handle
+     * Invoked when <code>SSH_MSG_CHANNEL_SUCCESS</code> received
+     *
+     * @throws IOException If failed to handle the message
      */
     void handleSuccess() throws IOException;
 
     /**
-     * Handle channel request failure
-     * @throws IOException If failed to handle
+     * Invoked when <code>SSH_MSG_CHANNEL_FAILURE</code> received
+     *
+     * @throws IOException If failed to handle the message
      */
     void handleFailure() throws IOException;
 
+    /**
+     * Invoked when the local channel is initial created
+     *
+     * @param service The {@link ConnectionService} through which the channel is initialized
+     * @param session The {@link Session} associated with the channel
+     * @param id The locally assigned channel identifier
+     * @throws IOException If failed to process the initialization
+     */
     void init(ConnectionService service, Session session, int id) throws IOException;
 
     /**

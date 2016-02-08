@@ -47,6 +47,7 @@ public interface ClientAuthenticationManager extends KeyPairProviderHolder {
     /**
      * Specifies the number of interactive prompts before giving up.
      * The argument to this keyword must be an integer.
+     * @see #DEFAULT_PASSWORD_PROMPTS
      */
     String PASSWORD_PROMPTS = "password-prompts";
 
@@ -55,8 +56,19 @@ public interface ClientAuthenticationManager extends KeyPairProviderHolder {
      */
     int DEFAULT_PASSWORD_PROMPTS = 3;
 
+    /**
+     * @return The {@link AuthenticationIdentitiesProvider} to be used for attempting
+     * password or public key authentication
+     */
     AuthenticationIdentitiesProvider getRegisteredIdentities();
 
+    /**
+     * Retrieve {@link PasswordIdentityProvider} used to provide password
+     * candidates
+     *
+     * @return The {@link PasswordIdentityProvider} instance - ignored if {@code null}
+     * (i.e., no passwords available)
+     */
     PasswordIdentityProvider getPasswordIdentityProvider();
     void setPasswordIdentityProvider(PasswordIdentityProvider provider);
 
