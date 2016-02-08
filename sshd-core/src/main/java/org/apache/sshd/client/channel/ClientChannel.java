@@ -31,9 +31,10 @@ import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
 
 /**
- * A client channel used to communicate with
- * the SSH server.  Client channels can be shells,
- * simple commands or subsystems
+ * A client channel used to communicate with the SSH server.  Client channels can be shells,
+ * simple commands or subsystems. <B>Note:</B> client channels may be associated with a
+ * <U>server</U> session if they are opened by the server - e.g., for agent proxy, port
+ * forwarding, etc..
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
