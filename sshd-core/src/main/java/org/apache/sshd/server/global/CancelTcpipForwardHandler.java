@@ -24,6 +24,7 @@ import org.apache.sshd.common.session.AbstractConnectionServiceRequestHandler;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.Int2IntFunction;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
@@ -55,11 +56,10 @@ public class CancelTcpipForwardHandler extends AbstractConnectionServiceRequestH
         int port = buffer.getInt();
         SshdSocketAddress socketAddress = new SshdSocketAddress(address, port);
         if (log.isDebugEnabled()) {
-            log.debug("process({})[{}] {} reply=" + wantReply,
-                      connectionService, request, socketAddress, wantReply);
+            log.debug("process({})[{}] {} reply={}", connectionService, request, socketAddress, wantReply);
         }
 
-        TcpipForwarder forwarder = connectionService.getTcpipForwarder();
+        TcpipForwarder forwarder = ValidateUtils.checkNotNull(connectionService.getTcpipForwarder(), "No TCP/IP forwarder");
         forwarder.localPortForwardingCancelled(socketAddress);
 
         if (wantReply) {

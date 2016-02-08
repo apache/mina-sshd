@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -77,6 +79,9 @@ public class DefaultTcpipForwarder
      * Default value for {@link #FORWARD_REQUEST_TIMEOUT} if none specified
      */
     public static final long DEFAULT_FORWARD_REQUEST_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
+
+    public static final Set<ClientChannel.ClientChannelEvent> STATIC_IO_MSG_RECEIVED_EVENTS =
+            Collections.unmodifiableSet(EnumSet.of(ClientChannel.ClientChannelEvent.OPENED, ClientChannel.ClientChannelEvent.CLOSED));
 
     private final ConnectionService service;
     private final IoHandlerFactory socksProxyIoHandlerFactory = new IoHandlerFactory() {
@@ -371,7 +376,7 @@ public class DefaultTcpipForwarder
         if (acceptor == null) {
             Session session = getSession();
             FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
-            IoServiceFactory factory = manager.getIoServiceFactory();
+            IoServiceFactory factory = ValidateUtils.checkNotNull(manager.getIoServiceFactory(), "No I/O service factory");
             IoHandler handler = handlerFactory.create();
             acceptor = factory.createAcceptor(handler);
         }
@@ -417,12 +422,16 @@ public class DefaultTcpipForwarder
             super();
         }
 
-        @SuppressWarnings("synthetic-access")
         @Override
+        @SuppressWarnings("synthetic-access")
         public void sessionCreated(final IoSession session) throws Exception {
             InetSocketAddress local = (InetSocketAddress) session.getLocalAddress();
             int localPort = local.getPort();
             SshdSocketAddress remote = localToRemote.get(localPort);
+            if (log.isDebugEnabled()) {
+                log.debug("sessionCreated({}) remote={}", session, remote);
+            }
+
             final TcpipClientChannel channel;
             if (remote != null) {
                 channel = new TcpipClientChannel(TcpipClientChannel.Type.Direct, session, remote);
@@ -430,12 +439,18 @@ public class DefaultTcpipForwarder
                 channel = new TcpipClientChannel(TcpipClientChannel.Type.Forwarded, session, null);
             }
             session.setAttribute(TcpipClientChannel.class, channel);
+
             service.registerChannel(channel);
             channel.open().addListener(new SshFutureListener<OpenFuture>() {
                 @Override
                 public void operationComplete(OpenFuture future) {
                     Throwable t = future.getException();
                     if (t != null) {
+                        log.warn("Failed ({}) to open channel for session={}: {}",
+                                 t.getClass().getSimpleName(), session, t.getMessage());
+                        if (log.isDebugEnabled()) {
+                            log.debug("sessionCreated(" + session + ") channel=" + channel + " open failure details", t);
+                        }
                         DefaultTcpipForwarder.this.service.unregisterChannel(channel);
                         channel.close(false);
                     }
@@ -443,22 +458,30 @@ public class DefaultTcpipForwarder
             });
         }
 
-        @SuppressWarnings("synthetic-access")
         @Override
+        @SuppressWarnings("synthetic-access")
         public void sessionClosed(IoSession session) throws Exception {
             TcpipClientChannel channel = (TcpipClientChannel) session.getAttribute(TcpipClientChannel.class);
             if (channel != null) {
-                log.debug("IoSession {} closed, will now close the channel", session);
+                if (log.isDebugEnabled()) {
+                    log.debug("sessionClosed({}) closing channel={}", session, channel);
+                }
                 channel.close(false);
             }
         }
 
         @Override
+        @SuppressWarnings("synthetic-access")
         public void messageReceived(IoSession session, Readable message) throws Exception {
             TcpipClientChannel channel = (TcpipClientChannel) session.getAttribute(TcpipClientChannel.class);
             Buffer buffer = new ByteArrayBuffer(message.available() + Long.SIZE, false);
             buffer.putBuffer(message);
-            channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.OPENED, ClientChannel.ClientChannelEvent.CLOSED), Long.MAX_VALUE);
+
+            Collection<ClientChannel.ClientChannelEvent> result = channel.waitFor(STATIC_IO_MSG_RECEIVED_EVENTS, Long.MAX_VALUE);
+            if (log.isTraceEnabled()) {
+                log.trace("messageReceived({}) channel={}, len={} wait result: {}",
+                          session, channel, result, buffer.array());
+            }
 
             OutputStream outputStream = channel.getInvertedIn();
             outputStream.write(buffer.array(), buffer.rpos(), buffer.available());
@@ -466,8 +489,14 @@ public class DefaultTcpipForwarder
         }
 
         @Override
+        @SuppressWarnings("synthetic-access")
         public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
-            cause.printStackTrace();
+            if (log.isDebugEnabled()) {
+                log.debug("exceptionCaught({}) {}: {}", session, cause.getClass().getSimpleName(), cause.getMessage());
+            }
+            if (log.isTraceEnabled()) {
+                log.trace("exceptionCaught(" + session + ") caught exception details", cause);
+            }
             session.close(false);
         }
     }
