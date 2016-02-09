@@ -342,35 +342,36 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
     protected Nio2CompletionHandler<Integer, Object> createWriteCycleCompletionHandler(
             final Nio2DefaultIoWriteFuture future, final AsynchronousSocketChannel socket, final ByteBuffer buffer) {
+        final int writeLen = buffer.remaining();
         return new Nio2CompletionHandler<Integer, Object>() {
             @Override
             protected void onCompleted(Integer result, Object attachment) {
-                handleCompletedWriteCycle(future, socket, buffer, this, result, attachment);
+                handleCompletedWriteCycle(future, socket, buffer, writeLen, this, result, attachment);
             }
 
             @Override
             protected void onFailed(Throwable exc, Object attachment) {
-                handleWriteCycleFailure(future, socket, buffer, exc, attachment);
+                handleWriteCycleFailure(future, socket, buffer, writeLen, exc, attachment);
             }
         };
     }
 
     protected void handleCompletedWriteCycle(
-            Nio2DefaultIoWriteFuture future, AsynchronousSocketChannel socket, ByteBuffer buffer,
+            Nio2DefaultIoWriteFuture future, AsynchronousSocketChannel socket, ByteBuffer buffer, int writeLen,
             Nio2CompletionHandler<Integer, Object> completionHandler, Integer result, Object attachment) {
         if (buffer.hasRemaining()) {
             try {
                 socket.write(buffer, null, completionHandler);
             } catch (Throwable t) {
                 if (log.isDebugEnabled()) {
-                    log.debug("handleCompletedWriteCycle(" + this + ") Exception caught while writing", t);
+                    log.debug("handleCompletedWriteCycle(" + this + ") Exception caught while writing " + writeLen + " bytes", t);
                 }
                 future.setWritten();
                 finishWrite(future);
             }
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("handleCompletedWriteCycle({}) finished writing", this);
+                log.debug("handleCompletedWriteCycle({}) finished writing len={}", this, writeLen);
             }
             future.setWritten();
             finishWrite(future);
@@ -378,7 +379,15 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     }
 
     protected void handleWriteCycleFailure(
-            Nio2DefaultIoWriteFuture future, AsynchronousSocketChannel socket, ByteBuffer buffer, Throwable exc, Object attachment) {
+            Nio2DefaultIoWriteFuture future, AsynchronousSocketChannel socket,
+            ByteBuffer buffer, int writeLen, Throwable exc, Object attachment) {
+        if (log.isDebugEnabled()) {
+            log.debug("handleWriteCycleFailure({}) failed ({}) to write {} bytes: {}",
+                      this, exc.getClass().getSimpleName(), writeLen, exc.getMessage());
+        }
+        if (log.isTraceEnabled()) {
+            log.trace("handleWriteCycleFailure(" + this + ") len=" + writeLen + " failure details", exc);
+        }
         future.setException(exc);
         exceptionCaught(exc);
         finishWrite(future);
