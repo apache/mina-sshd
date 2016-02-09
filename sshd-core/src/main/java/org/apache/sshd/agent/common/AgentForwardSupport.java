@@ -20,67 +20,20 @@ package org.apache.sshd.agent.common;
 
 import java.io.IOException;
 
-import org.apache.sshd.agent.SshAgentFactory;
-import org.apache.sshd.agent.SshAgentServer;
-import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.closeable.AbstractCloseable;
+import org.apache.sshd.common.Closeable;
 
 /**
  * The server side fake agent, acting as an agent, but actually forwarding the requests to the auth channel on the client side.
  */
-public class AgentForwardSupport extends AbstractCloseable {
-
-    private final ConnectionService service;
-    private String agentId;
-    private SshAgentServer agentServer;
-
-    public AgentForwardSupport(ConnectionService service) {
-        this.service = service;
-    }
-
-    public String initialize() throws IOException {
-        try {
-            if (agentId == null) {
-                Session session = ValidateUtils.checkNotNull(service.getSession(), "No session");
-                FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No session factory manager");
-                SshAgentFactory factory = ValidateUtils.checkNotNull(manager.getAgentFactory(), "No agent factory");
-                agentServer = ValidateUtils.checkNotNull(factory.createServer(service), "No agent server created");
-                agentId = agentServer.getId();
-            }
-            return agentId;
-        } catch (IOException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new SshException(e);
-        }
-    }
-
-    @Override
-    public synchronized void close() throws IOException {
-        if (agentId != null) {
-            agentId = null;
-            agentServer.close();
-            agentServer = null;
-        }
-    }
-
-    @Override
-    protected void doCloseImmediately() {
-        try {
-            close();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed (" + e.getClass().getSimpleName() + ") to close agent: " + e.getMessage(), e);
-        }
-        super.doCloseImmediately();
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + service.getSession() + "]";
-    }
-
+public interface AgentForwardSupport extends Closeable {
+    /**
+     * Initializes the agent forwarding if not already done so - i.e.,
+     * can be called more than once - only first successful call counts,
+     * the rest will return the identifier of the previously initialized
+     * agent.
+     *
+     * @return The agent ID
+     * @throws IOException If failed to initialize
+     */
+    String initialize() throws IOException;
 }

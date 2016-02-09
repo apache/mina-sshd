@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
+import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
@@ -698,7 +699,15 @@ public class ChannelSession extends AbstractServerChannel {
             throw new RuntimeSshException(e);
         }
 
-        String authSocket = service.initAgentForward();
+        AgentForwardSupport agentForward = service.getAgentForwardSupport();
+        if (agentForward == null) {
+            if (log.isDebugEnabled()) {
+                log.debug("handleAgentForwarding() no agent forward support", this);
+            }
+            return RequestHandler.Result.ReplyFailure;
+        }
+
+        String authSocket = agentForward.initialize();
         addEnvVariable(SshAgent.SSH_AUTHSOCKET_ENV_NAME, authSocket);
         return RequestHandler.Result.ReplySuccess;
     }
@@ -729,7 +738,16 @@ public class ChannelSession extends AbstractServerChannel {
             throw new RuntimeSshException(e);
         }
 
-        String display = service.createX11Display(singleConnection, authProtocol, authCookie, screenId);
+        X11ForwardSupport x11Forward = service.getX11ForwardSupport();
+        if (x11Forward == null) {
+            if (log.isDebugEnabled()) {
+                log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={} - no forwarder'",
+                          this, singleConnection, authProtocol, authCookie, screenId);
+            }
+            return RequestHandler.Result.ReplyFailure;
+        }
+
+        String display = x11Forward.createDisplay(singleConnection, authProtocol, authCookie, screenId);
         if (log.isDebugEnabled()) {
             log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={} - display='{}'",
                       this, singleConnection, authProtocol, authCookie, screenId, display);

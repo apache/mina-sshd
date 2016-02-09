@@ -20,9 +20,11 @@ package org.apache.sshd.common.session;
 
 import java.io.IOException;
 
+import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.forward.TcpipForwarder;
+import org.apache.sshd.server.x11.X11ForwardSupport;
 
 /**
  * Interface implementing ssh-connection service.
@@ -54,10 +56,10 @@ public interface ConnectionService extends Service {
     TcpipForwarder getTcpipForwarder();
 
     // TODO: remove from interface, it's server side only
-    String initAgentForward() throws IOException;
+    AgentForwardSupport getAgentForwardSupport();
 
     // TODO: remove from interface, it's server side only
-    String createX11Display(boolean singleConnection, String authenticationProtocol, String authenticationCookie, int screen) throws IOException;
+    X11ForwardSupport getX11ForwardSupport();
 
     boolean isAllowMoreSessions();
     void setAllowMoreSessions(boolean allow);

@@ -25,8 +25,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.agent.common.AgentForwardSupport;
+import org.apache.sshd.agent.common.DefaultAgentForwardSupport;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
@@ -48,6 +50,7 @@ import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
+import org.apache.sshd.server.x11.DefaultX11ForwardSupport;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 
 /**
@@ -83,26 +86,15 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
      */
     protected final AtomicInteger nextChannelId = new AtomicInteger(0);
 
-    /**
-     * The tcpip forwarder
-     */
-    protected final TcpipForwarder tcpipForwarder;
-    protected final AgentForwardSupport agentForward;
-    protected final X11ForwardSupport x11Forward;
+    private final AtomicReference<AgentForwardSupport> agentForwardHolder = new AtomicReference<>();
+    private final AtomicReference<X11ForwardSupport> x11ForwardHolder = new AtomicReference<>();
+    private final AtomicReference<TcpipForwarder> tcpipForwarderHolder = new AtomicReference<>();
     private final AtomicBoolean allowMoreSessions = new AtomicBoolean(true);
 
     private final S sessionInstance;
 
     protected AbstractConnectionService(S session) {
         sessionInstance = ValidateUtils.checkNotNull(session, "No session");
-        agentForward = new AgentForwardSupport(this);
-        x11Forward = new X11ForwardSupport(this);
-
-        FactoryManager manager =
-                ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
-        TcpipForwarderFactory factory =
-                ValidateUtils.checkNotNull(manager.getTcpipForwarderFactory(), "No forwarder factory");
-        tcpipForwarder = ValidateUtils.checkNotNull(factory.create(this), "No forwarder created for %s", session);
     }
 
     public Collection<Channel> getChannels() {
@@ -121,13 +113,84 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
 
     @Override
     public TcpipForwarder getTcpipForwarder() {
-        return tcpipForwarder;
+        TcpipForwarder forwarder;
+        S session = getSession();
+        synchronized (tcpipForwarderHolder) {
+            forwarder = tcpipForwarderHolder.get();
+            if (forwarder != null) {
+                return forwarder;
+            }
+
+            forwarder = ValidateUtils.checkNotNull(createTcpipForwarder(session), "No forwarder created for %s", session);
+            tcpipForwarderHolder.set(forwarder);
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("getTcpipForwarder({}) created instance", session);
+        }
+        return forwarder;
+    }
+
+    protected TcpipForwarder createTcpipForwarder(S session) {
+        FactoryManager manager =
+                ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
+        TcpipForwarderFactory factory =
+                ValidateUtils.checkNotNull(manager.getTcpipForwarderFactory(), "No forwarder factory");
+        return factory.create(this);
+    }
+
+    @Override
+    public X11ForwardSupport getX11ForwardSupport() {
+        X11ForwardSupport x11Support;
+        S session = getSession();
+        synchronized (x11ForwardHolder) {
+            x11Support = x11ForwardHolder.get();
+            if (x11Support != null) {
+                return x11Support;
+            }
+
+            x11Support = ValidateUtils.checkNotNull(createX11ForwardSupport(session), "No X11 forwarder created for %s", session);
+            x11ForwardHolder.set(x11Support);
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("getX11ForwardSupport({}) created instance", session);
+        }
+        return x11Support;
+    }
+
+    protected X11ForwardSupport createX11ForwardSupport(S session) {
+        return new DefaultX11ForwardSupport(this);
+    }
+
+    @Override
+    public AgentForwardSupport getAgentForwardSupport() {
+        AgentForwardSupport agentForward;
+        S session = getSession();
+        synchronized (agentForwardHolder) {
+            agentForward = agentForwardHolder.get();
+            if (agentForward != null) {
+                return agentForward;
+            }
+
+            agentForward = ValidateUtils.checkNotNull(createAgentForwardSupport(session), "No agent forward created for %s", session);
+            agentForwardHolder.set(agentForward);
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("getAgentForwardSupport({}) created instance", session);
+        }
+        return agentForward;
+    }
+
+    protected AgentForwardSupport createAgentForwardSupport(S session) {
+        return new DefaultAgentForwardSupport(this);
     }
 
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .sequential(getTcpipForwarder(), agentForward, x11Forward)
+                .sequential(tcpipForwarderHolder.get(), agentForwardHolder.get(), x11ForwardHolder.get())
                 .parallel(channels.values())
                 .build();
     }

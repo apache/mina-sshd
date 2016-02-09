@@ -18,8 +18,6 @@
  */
 package org.apache.sshd.server.session;
 
-import java.io.IOException;
-
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.AbstractConnectionService;
 
@@ -41,15 +39,4 @@ public class ServerConnectionService extends AbstractConnectionService<AbstractS
     public final ServerSession getServerSession() {
         return getSession();
     }
-
-    @Override
-    public String initAgentForward() throws IOException {
-        return agentForward.initialize();
-    }
-
-    @Override
-    public String createX11Display(boolean singleConnection, String authenticationProtocol, String authenticationCookie, int screen) throws IOException {
-        return x11Forward.createDisplay(singleConnection, authenticationProtocol, authenticationCookie, screen);
-    }
-
 }

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
@@ -29,6 +30,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.AbstractConnectionService;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.server.x11.X11ForwardSupport;
 
 /**
  * Client side <code>ssh-connection</code> service.
@@ -87,15 +89,13 @@ public class ClientConnectionService extends AbstractConnectionService<AbstractC
         }
     }
 
-    // TODO: remove from interface
     @Override
-    public String initAgentForward() throws IOException {
+    public AgentForwardSupport getAgentForwardSupport() {
         throw new IllegalStateException("Server side operation");
     }
 
-    // TODO: remove from interface
     @Override
-    public String createX11Display(boolean singleConnection, String authenticationProtocol, String authenticationCookie, int screen) throws IOException {
+    public X11ForwardSupport getX11ForwardSupport() {
         throw new IllegalStateException("Server side operation");
     }
 }
