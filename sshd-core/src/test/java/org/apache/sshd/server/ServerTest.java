@@ -44,7 +44,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
-import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientConnectionServiceFactory;
 import org.apache.sshd.client.session.ClientSession;
@@ -616,9 +616,9 @@ public class ServerTest extends BaseTestSupport {
             assertTrue("No changes in open channels", channelListener.waitForModification(3L, TimeUnit.SECONDS));
             assertTrue("No open server side channels", GenericUtils.size(channelListener.getOpenChannels()) > 0);
 
-            Collection<ClientChannel.ClientChannelEvent> result =
-                    shell.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(17L));
-            assertFalse("Channel close timeout", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
+            Collection<ClientChannelEvent> result =
+                    shell.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(17L));
+            assertFalse("Channel close timeout", result.contains(ClientChannelEvent.TIMEOUT));
 
             Integer status = shell.getExitStatus();
             assertNotNull("No exit status", status);

@@ -388,7 +388,12 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         resolver.postProcessReceivedData(name, preserve, perms, time);
 
         ack();
-        readAck(false);
+
+        int replyCode = readAck(false);
+        if (log.isDebugEnabled()) {
+            log.debug("receiveStream({})[{}] ack reply code={}", this, resolver, replyCode);
+        }
+        validateAckReplyCode("receiveStream", resolver, replyCode, false);
     }
 
     protected void updateFileProperties(Path file, Set<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
@@ -431,7 +436,11 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     }
 
     public void send(Collection<String> paths, boolean recursive, boolean preserve, int bufferSize) throws IOException {
-        readAck(false);
+        int readyCode = readAck(false);
+        if (log.isDebugEnabled()) {
+            log.debug("send({}) ready code={}", paths, readyCode);
+        }
+        validateOperationReadyCode("send", "Paths", readyCode, false);
 
         LinkOption[] options = IoUtils.getLinkOptions(false);
         for (String pattern : paths) {
@@ -475,7 +484,11 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     }
 
     public void sendPaths(Collection<? extends Path> paths, boolean recursive, boolean preserve, int bufferSize) throws IOException {
-        readAck(false);
+        int readyCode = readAck(false);
+        if (log.isDebugEnabled()) {
+            log.debug("sendPaths({}) ready code={}", paths, readyCode);
+        }
+        validateOperationReadyCode("sendPaths", "Paths", readyCode, false);
 
         LinkOption[] options = IoUtils.getLinkOptions(false);
         for (Path file : paths) {
@@ -569,27 +582,38 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         if (preserve && (time != null)) {
             String cmd = "T" + TimeUnit.MILLISECONDS.toSeconds(time.getLastModifiedTime())
                     + " " + "0" + " " + TimeUnit.MILLISECONDS.toSeconds(time.getLastAccessTime())
-                    + " " + "0" + "\n";
+                    + " " + "0";
             if (log.isDebugEnabled()) {
-                log.debug("sendStream({})[{}] send timestamp={} command: {}",
-                          this, resolver, time, cmd.substring(0, cmd.length() - 1));
+                log.debug("sendStream({})[{}] send timestamp={} command: {}", this, resolver, time, cmd);
             }
             out.write(cmd.getBytes(StandardCharsets.UTF_8));
+            out.write('\n');
             out.flush();
-            readAck(false);
+
+            int readyCode = readAck(false);
+            if (log.isDebugEnabled()) {
+                log.debug("sendStream({})[{}] command='{}' ready code={}", this, resolver, cmd, readyCode);
+            }
+            validateAckReplyCode(cmd, resolver, readyCode, false);
         }
 
         Set<PosixFilePermission> perms = EnumSet.copyOf(resolver.getPermissions());
         String octalPerms = preserve ? getOctalPermissions(perms) : "0644";
         String fileName = resolver.getFileName();
-        String cmd = "C" + octalPerms + " " + fileSize + " " + fileName + "\n";
+        String cmd = "C" + octalPerms + " " + fileSize + " " + fileName;
         if (log.isDebugEnabled()) {
-            log.debug("sendStream({})[{}] send 'C' command: {}",
-                      this, resolver, cmd.substring(0, cmd.length() - 1));
+            log.debug("sendStream({})[{}] send 'C' command: {}", this, resolver, cmd);
         }
         out.write(cmd.getBytes(StandardCharsets.UTF_8));
+        out.write('\n');
         out.flush();
-        readAck(false);
+
+        int readyCode = readAck(false);
+        if (log.isDebugEnabled()) {
+            log.debug("sendStream({})[{}] command='{}' ready code={}",
+                      this, resolver, cmd.substring(0, cmd.length() - 1), readyCode);
+        }
+        validateAckReplyCode(cmd, resolver, readyCode, false);
 
         try (InputStream in = resolver.resolveSourceStream()) {
             Path path = resolver.getEventListenerFilePath();
@@ -603,7 +627,36 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             }
         }
         ack();
-        readAck(false);
+
+        readyCode = readAck(false);
+        if (log.isDebugEnabled()) {
+            log.debug("sendStream({})[{}] command='{}' reply code={}", this, resolver, cmd, readyCode);
+        }
+        validateAckReplyCode("sendStream", resolver, readyCode, false);
+    }
+
+    protected void validateOperationReadyCode(String command, Object location, int readyCode, boolean eofAllowed) throws IOException {
+        validateCommandStatusCode(command, location, readyCode, eofAllowed);
+    }
+
+    protected void validateAckReplyCode(String command, Object location, int replyCode, boolean eofAllowed) throws IOException {
+        validateCommandStatusCode(command, location, replyCode, eofAllowed);
+    }
+
+    protected void validateCommandStatusCode(String command, Object location, int statusCode, boolean eofAllowed) throws IOException {
+        switch (statusCode) {
+            case -1:
+                if (!eofAllowed) {
+                    throw new EOFException("Unexpected EOF for command='" + command + "' on " + location);
+                }
+                break;
+            case OK:
+                break;
+            case WARNING:
+                break;
+            default:
+                throw new ScpException("Bad reply code (" + statusCode + ") for command='" + command + "' on " + location, Integer.valueOf(statusCode));
+        }
     }
 
     public void sendDir(Path local, boolean preserve, int bufferSize) throws IOException {
@@ -619,28 +672,42 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             FileTime lastAccess = basic.lastAccessTime();
             String cmd = "T" + lastModified.to(TimeUnit.SECONDS) + " "
                     + "0" + " " + lastAccess.to(TimeUnit.SECONDS) + " "
-                    + "0" + "\n";
+                    + "0";
             if (log.isDebugEnabled()) {
                 log.debug("sendDir({})[{}] send last-modified={}, last-access={} command: {}",
-                          this, path, lastModified,  lastAccess, cmd.substring(0, cmd.length() - 1));
+                          this, path, lastModified,  lastAccess, cmd);
             }
 
             out.write(cmd.getBytes(StandardCharsets.UTF_8));
+            out.write('\n');
             out.flush();
-            readAck(false);
+
+            int readyCode = readAck(false);
+            if (log.isDebugEnabled()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("sendDir({})[{}] command='{}' ready code={}", this, path, cmd, readyCode);
+                }
+            }
+            validateAckReplyCode(cmd, path, readyCode, false);
         }
 
         LinkOption[] options = IoUtils.getLinkOptions(false);
         Set<PosixFilePermission> perms = IoUtils.getPermissions(path, options);
         String cmd = "D" + (preserve ? getOctalPermissions(perms) : "0755") + " "
-                + "0" + " " + path.getFileName().toString() + "\n";
+                + "0" + " " + path.getFileName().toString();
         if (log.isDebugEnabled()) {
-            log.debug("sendDir({})[{}] send 'D' command: {}",
-                      this, path, cmd.substring(0, cmd.length() - 1));
+            log.debug("sendDir({})[{}] send 'D' command: {}", this, path, cmd);
         }
         out.write(cmd.getBytes(StandardCharsets.UTF_8));
+        out.write('\n');
         out.flush();
-        readAck(false);
+
+        int readyCode = readAck(false);
+        if (log.isDebugEnabled()) {
+            log.debug("sendDir({})[{}] command='{}' ready code={}",
+                      this, path, cmd.substring(0, cmd.length() - 1), readyCode);
+        }
+        validateAckReplyCode(cmd, path, readyCode, false);
 
         try (DirectoryStream<Path> children = Files.newDirectoryStream(path)) {
             listener.startFolderEvent(FileOperation.SEND, path, perms);
@@ -666,7 +733,13 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         }
         out.write("E\n".getBytes(StandardCharsets.UTF_8));
         out.flush();
-        readAck(false);
+
+
+        readyCode = readAck(false);
+        if (log.isDebugEnabled()) {
+            log.debug("sendDir({})[{}] 'E' command reply code=", this, path, readyCode);
+        }
+        validateAckReplyCode("E", path, readyCode, false);
     }
 
     public static String getOctalPermissions(Path path, LinkOption... options) throws IOException {
@@ -780,6 +853,23 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         return out;
     }
 
+    public static String getExitStatusName(Integer exitStatus) {
+        if (exitStatus == null) {
+            return "null";
+        }
+
+        switch (exitStatus.intValue()) {
+            case OK:
+                return "OK";
+            case WARNING:
+                return "WARNING";
+            case ERROR:
+                return "ERROR";
+            default:
+                return exitStatus.toString();
+        }
+    }
+
     public void ack() throws IOException {
         out.write(0);
         out.flush();
@@ -818,7 +908,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                 if (log.isDebugEnabled()) {
                     log.debug("readAck({})[EOF={}] received error: {}", this, canEof, line);
                 }
-                throw new IOException("Received nack: " + line);
+                throw new ScpException("Received nack: " + line, Integer.valueOf(c));
             }
             default:
                 break;

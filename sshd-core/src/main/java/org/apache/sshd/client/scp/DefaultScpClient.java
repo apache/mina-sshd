@@ -82,6 +82,7 @@ public class DefaultScpClient extends AbstractScpClient {
             // NOTE: we use a mock file system since we expect no invocations for it
             ScpHelper helper = new ScpHelper(session, invOut, invIn, new MockFileSystem(remote), listener);
             helper.receiveFileStream(local, ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE);
+            handleCommandExitStatus(cmd, channel);
         } finally {
             channel.close(false);
         }
@@ -100,6 +101,7 @@ public class DefaultScpClient extends AbstractScpClient {
                     options.contains(Option.TargetIsDirectory),
                     options.contains(Option.PreserveAttributes),
                     ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE);
+            handleCommandExitStatus(cmd, channel);
         } finally {
             channel.close(false);
         }
@@ -121,6 +123,7 @@ public class DefaultScpClient extends AbstractScpClient {
             final Path mockPath = new MockPath(remote);
             helper.sendStream(new DefaultScpStreamResolver(name, mockPath, perms, time, size, local, cmd),
                               time != null, ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
+            handleCommandExitStatus(cmd, channel);
         } finally {
             channel.close(false);
         }
@@ -150,9 +153,13 @@ public class DefaultScpClient extends AbstractScpClient {
                 try {
                     fs.close();
                 } catch (UnsupportedOperationException e) {
-                    // Ignore
+                    if (log.isDebugEnabled()) {
+                        log.debug("runUpload({}) {} => {} - failed ({}) to close file system={}: {}",
+                                  session, remote, local, e.getClass().getSimpleName(), fs, e.getMessage());
+                    }
                 }
             }
+            handleCommandExitStatus(cmd, channel);
         } finally {
             channel.close(false);
         }

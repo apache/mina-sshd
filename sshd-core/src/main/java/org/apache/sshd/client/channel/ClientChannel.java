@@ -39,18 +39,6 @@ import org.apache.sshd.common.io.IoOutputStream;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ClientChannel extends Channel {
-
-    enum ClientChannelEvent {
-        TIMEOUT,
-        CLOSED,
-        STDOUT_DATA,
-        STDERR_DATA,
-        EOF,
-        EXIT_STATUS,
-        EXIT_SIGNAL,
-        OPENED;
-    }
-
     enum Streaming {
         Async,
         Sync

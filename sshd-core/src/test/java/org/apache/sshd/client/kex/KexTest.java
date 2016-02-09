@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.Channel;
@@ -134,9 +135,9 @@ public class KexTest extends BaseTestSupport {
                         teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                         teeOut.flush();
 
-                        Collection<ClientChannel.ClientChannelEvent> result =
-                                channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
-                        assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
+                        Collection<ClientChannelEvent> result =
+                                channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                        assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
                     }
                 } finally {
                     client.stop();

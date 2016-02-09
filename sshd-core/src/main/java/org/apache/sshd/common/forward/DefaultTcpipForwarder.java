@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
@@ -80,8 +80,8 @@ public class DefaultTcpipForwarder
      */
     public static final long DEFAULT_FORWARD_REQUEST_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
 
-    public static final Set<ClientChannel.ClientChannelEvent> STATIC_IO_MSG_RECEIVED_EVENTS =
-            Collections.unmodifiableSet(EnumSet.of(ClientChannel.ClientChannelEvent.OPENED, ClientChannel.ClientChannelEvent.CLOSED));
+    public static final Set<ClientChannelEvent> STATIC_IO_MSG_RECEIVED_EVENTS =
+            Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.OPENED, ClientChannelEvent.CLOSED));
 
     private final ConnectionService service;
     private final IoHandlerFactory socksProxyIoHandlerFactory = new IoHandlerFactory() {
@@ -477,7 +477,7 @@ public class DefaultTcpipForwarder
             Buffer buffer = new ByteArrayBuffer(message.available() + Long.SIZE, false);
             buffer.putBuffer(message);
 
-            Collection<ClientChannel.ClientChannelEvent> result = channel.waitFor(STATIC_IO_MSG_RECEIVED_EVENTS, Long.MAX_VALUE);
+            Collection<ClientChannelEvent> result = channel.waitFor(STATIC_IO_MSG_RECEIVED_EVENTS, Long.MAX_VALUE);
             if (log.isTraceEnabled()) {
                 log.trace("messageReceived({}) channel={}, len={} wait result: {}",
                           session, channel, result, buffer.array());

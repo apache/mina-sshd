@@ -19,6 +19,7 @@
 package org.apache.sshd.server.channel;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
@@ -40,7 +41,7 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public abstract class AbstractServerChannel extends AbstractChannel implements ServerChannel {
 
-    protected boolean exitStatusSent;
+    protected final AtomicBoolean exitStatusSent = new AtomicBoolean(false);
 
     protected AbstractServerChannel() {
         this("");
@@ -110,20 +111,25 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
     }
 
     protected void sendExitStatus(int v) throws IOException {
-        if (!exitStatusSent) {
-            exitStatusSent = true;
+        if (exitStatusSent.getAndSet(true)) {
             if (log.isDebugEnabled()) {
-                log.debug("sendExitStatus({}) SSH_MSG_CHANNEL_REQUEST exit-status={}", this, v);
+                log.debug("sendExitStatus({}) exit-status={} - already sent", this, v);
             }
-
-            Session session = getSession();
-            Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
-            buffer.putInt(getRecipient());
-            buffer.putString("exit-status");
-            buffer.putBoolean(false);   // want-reply - must be FALSE - see https://tools.ietf.org/html/rfc4254 section 6.10
-            buffer.putInt(v);
-            writePacket(buffer);
-            notifyStateChanged();
+            notifyStateChanged();   // just in case
+            return;
         }
+
+        if (log.isDebugEnabled()) {
+            log.debug("sendExitStatus({}) SSH_MSG_CHANNEL_REQUEST exit-status={}", this, v);
+        }
+
+        Session session = getSession();
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
+        buffer.putInt(getRecipient());
+        buffer.putString("exit-status");
+        buffer.putBoolean(false);   // want-reply - must be FALSE - see https://tools.ietf.org/html/rfc4254 section 6.10
+        buffer.putInt(v);
+        writePacket(buffer);
+        notifyStateChanged();
     }
 }

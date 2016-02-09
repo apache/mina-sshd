@@ -26,7 +26,7 @@ import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.channel.ChannelExec;
-import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,13 +64,13 @@ public class GitSshdSessionProcess extends Process {
 
     @Override   // TODO in Java-8 implement also waitFor(long, TimeUnit)
     public int waitFor() throws InterruptedException {
-        Collection<ClientChannel.ClientChannelEvent> res =
-                channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), waitTimeout);
+        Collection<ClientChannelEvent> res =
+                channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), waitTimeout);
         if (log.isTraceEnabled()) {
             log.trace("waitFor({}) channel={}, timeout={} millis.: {}",
                       commandName, channel, waitTimeout, res);
         }
-        if (res.contains(ClientChannel.ClientChannelEvent.CLOSED)) {
+        if (res.contains(ClientChannelEvent.CLOSED)) {
             return 0;
         } else {
             return -1;

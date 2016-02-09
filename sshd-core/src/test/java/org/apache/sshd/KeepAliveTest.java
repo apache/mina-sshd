@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
@@ -83,11 +84,9 @@ public class KeepAliveTest extends BaseTestSupport {
             session.auth().verify(5L, TimeUnit.SECONDS);
 
             try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL)) {
-                Collection<ClientChannel.ClientChannelEvent> result =
-                        channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), WAIT);
-                assertTrue("Wrong channel state: " + result,
-                           result.containsAll(
-                                   EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED, ClientChannel.ClientChannelEvent.EOF)));
+                Collection<ClientChannelEvent> result =
+                        channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), WAIT);
+                assertTrue("Wrong channel state: " + result, result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)));
             }
         } finally {
             client.stop();
@@ -105,9 +104,9 @@ public class KeepAliveTest extends BaseTestSupport {
             session.auth().verify(5L, TimeUnit.SECONDS);
 
             try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL)) {
-                Collection<ClientChannel.ClientChannelEvent> result =
-                        channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), WAIT);
-                assertTrue("Wrong channel state: " + result, result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
+                Collection<ClientChannelEvent> result =
+                        channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), WAIT);
+                assertTrue("Wrong channel state: " + result, result.contains(ClientChannelEvent.TIMEOUT));
             }
         } finally {
             client.stop();
@@ -134,13 +133,11 @@ public class KeepAliveTest extends BaseTestSupport {
                 channel.open().verify(9L, TimeUnit.SECONDS);
 
                 assertTrue("Latch time out", TestEchoShell.latch.await(10L, TimeUnit.SECONDS));
-                Collection<ClientChannel.ClientChannelEvent> result =
-                        channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), WAIT);
+                Collection<ClientChannelEvent> result =
+                        channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), WAIT);
                 assertTrue("Wrong channel state: " + result,
                            result.containsAll(
-                               EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED,
-                                          ClientChannel.ClientChannelEvent.EOF,
-                                          ClientChannel.ClientChannelEvent.OPENED)));
+                               EnumSet.of(ClientChannelEvent.CLOSED, ClientChannelEvent.OPENED)));
             }
         } finally {
             TestEchoShell.latch = null;

@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
@@ -314,9 +315,9 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
 
-                    Collection<ClientChannel.ClientChannelEvent> result =
-                            channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
-                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
+                    Collection<ClientChannelEvent> result =
+                            channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
 
                     byte[] expected = sent.toByteArray();
                     if (!pipedCount.tryAcquire(expected.length, 13L, TimeUnit.SECONDS)) {
@@ -428,9 +429,9 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
 
-                    Collection<ClientChannel.ClientChannelEvent> result =
-                            channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
-                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
+                    Collection<ClientChannelEvent> result =
+                            channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
 
                     sentData = sent.toByteArray();
                     if (!pipedCount.tryAcquire(sentData.length, 13L, TimeUnit.SECONDS)) {
@@ -562,9 +563,9 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
 
-                    Collection<ClientChannel.ClientChannelEvent> result =
-                            channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
-                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
+                    Collection<ClientChannelEvent> result =
+                            channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
 
                     sentData = sent.toByteArray();
                     if (!pipedCount.tryAcquire(sentData.length, 13L, TimeUnit.SECONDS)) {
@@ -692,9 +693,9 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
 
-                    Collection<ClientChannel.ClientChannelEvent> result =
-                            channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
-                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
+                    Collection<ClientChannelEvent> result =
+                            channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
 
                     sentData = sent.toByteArray();
                     if (!pipedCount.tryAcquire(sentData.length, 13L, TimeUnit.SECONDS)) {

@@ -65,6 +65,7 @@ import org.apache.sshd.client.auth.password.UserAuthPasswordFactory;
 import org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.config.keys.ClientIdentityLoader;
@@ -1154,7 +1155,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                             channel.setOut(new NoCloseOutputStream(System.out));
                             channel.setErr(new NoCloseOutputStream(System.err));
                             channel.open().await(); // TODO use verify and a configurable timeout
-                            channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), 0);
+                            channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 0);
                         } finally {
                             channel.close();
                         }

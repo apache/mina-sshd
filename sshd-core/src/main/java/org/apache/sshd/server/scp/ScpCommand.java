@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.apache.sshd.common.file.FileSystemAware;
+import org.apache.sshd.common.scp.ScpException;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.util.GenericUtils;
@@ -263,9 +264,20 @@ public class ScpCommand
         } catch (IOException e) {
             ServerSession session = getServerSession();
             try {
-                exitValue = ScpHelper.ERROR;
+                Integer statusCode = null;
+                if (e instanceof ScpException) {
+                    statusCode = ((ScpException) e).getExitStatus();
+                }
+                exitValue = (statusCode == null) ? ScpHelper.ERROR : statusCode.intValue();
+                // this is an exception so status cannot be OK/WARNING
+                if ((exitValue == ScpHelper.OK) || (exitValue == ScpHelper.WARNING)) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("run({})[{}] normalize status code={}", session, name, exitValue);
+                    }
+                    exitValue = ScpHelper.ERROR;
+                }
                 exitMessage = GenericUtils.trimToEmpty(e.getMessage());
-                ScpHelper.sendResponseMessage(out, exitValue, exitMessage);
+                writeCommandResponseMessage(name, exitValue, exitMessage);
             } catch (IOException e2) {
                 if (log.isDebugEnabled()) {
                     log.debug("run({})[{}] Failed ({}) to send error response: {}",
@@ -288,6 +300,14 @@ public class ScpCommand
                 callback.onExit(exitValue, GenericUtils.trimToEmpty(exitMessage));
             }
         }
+    }
+
+    protected void writeCommandResponseMessage(String command, int exitValue, String exitMessage) throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("writeCommandResponseMessage({}) command='{}', exit-status={}: {}",
+                      getServerSession(), command, exitValue, exitMessage);
+        }
+        ScpHelper.sendResponseMessage(out, exitValue, exitMessage);
     }
 
     @Override

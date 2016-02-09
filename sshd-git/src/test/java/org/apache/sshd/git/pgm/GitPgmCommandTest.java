@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
-import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
@@ -100,9 +100,9 @@ public class GitPgmCommandTest extends BaseTestSupport {
             channel.setErr(System.err);
             channel.open().verify(11L, TimeUnit.SECONDS);
 
-            Collection<ClientChannel.ClientChannelEvent> result =
-                    channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.MINUTES.toMillis(1L));
-            assertTrue("Command '" + command + "'not completed on time: " + result, result.contains(ClientChannel.ClientChannelEvent.CLOSED));
+            Collection<ClientChannelEvent> result =
+                    channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.MINUTES.toMillis(1L));
+            assertTrue("Command '" + command + "'not completed on time: " + result, result.contains(ClientChannelEvent.CLOSED));
 
             Integer status = channel.getExitStatus();
             if (status != null) {

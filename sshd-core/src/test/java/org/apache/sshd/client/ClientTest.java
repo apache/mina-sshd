@@ -57,6 +57,7 @@ import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
@@ -578,9 +579,9 @@ public class ClientTest extends BaseTestSupport {
                                 }
                             });
 
-                Collection<ClientChannel.ClientChannelEvent> result =
-                        channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
-                assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
+                Collection<ClientChannelEvent> result =
+                        channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
                 assertEquals("Mismatched sent and received data size", nbMessages * message.length, baosOut.size());
             }
 
@@ -615,9 +616,9 @@ public class ClientTest extends BaseTestSupport {
                 // That's ok, the channel is being closed by the other side
             }
 
-            Collection<ClientChannel.ClientChannelEvent> mask = EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED);
-            Collection<ClientChannel.ClientChannelEvent> result = channel.waitFor(mask, TimeUnit.SECONDS.toMillis(15L));
-            assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
+            Collection<ClientChannelEvent> mask = EnumSet.of(ClientChannelEvent.CLOSED);
+            Collection<ClientChannelEvent> result = channel.waitFor(mask, TimeUnit.SECONDS.toMillis(15L));
+            assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
             assertTrue("Missing close event: " + result, result.containsAll(mask));
             assertTrue("Failed to close session on time", session.close(false).await(7L, TimeUnit.SECONDS));
         } finally {
@@ -660,9 +661,9 @@ public class ClientTest extends BaseTestSupport {
                 teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                 teeOut.flush();
 
-                Collection<ClientChannel.ClientChannelEvent> result =
-                        channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
-                assertFalse("Timeout while waiting on channel close", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
+                Collection<ClientChannelEvent> result =
+                        channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                assertFalse("Timeout while waiting on channel close", result.contains(ClientChannelEvent.TIMEOUT));
 
                 channel.close(false);
                 client.stop();
@@ -705,9 +706,9 @@ public class ClientTest extends BaseTestSupport {
                 pipedIn.flush();
             }
 
-            Collection<ClientChannel.ClientChannelEvent> result =
-                    channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
-            assertFalse("Timeout while waiting on channel close", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
+            Collection<ClientChannelEvent> result =
+                    channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+            assertFalse("Timeout while waiting on channel close", result.contains(ClientChannelEvent.TIMEOUT));
 
             channel.close(false);
             client.stop();
@@ -771,9 +772,9 @@ public class ClientTest extends BaseTestSupport {
                 teeOut.write(sb.toString().getBytes(StandardCharsets.UTF_8));
             }
 
-            Collection<ClientChannel.ClientChannelEvent> result =
-                    channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
-            assertFalse("Timeout while waiting on channel close", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
+            Collection<ClientChannelEvent> result =
+                    channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+            assertFalse("Timeout while waiting on channel close", result.contains(ClientChannelEvent.TIMEOUT));
 
             channel.close(false);
             client.stop();
@@ -828,9 +829,9 @@ public class ClientTest extends BaseTestSupport {
             outputDebugMessage("Sent %d Kb in %d ms", bytes / 1024, t1 - t0);
 
             outputDebugMessage("Waiting for channel to be closed");
-            Collection<ClientChannel.ClientChannelEvent> result =
-                    channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(35L));
-            assertFalse("Timeout while waiting on channel close", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
+            Collection<ClientChannelEvent> result =
+                    channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(35L));
+            assertFalse("Timeout while waiting on channel close", result.contains(ClientChannelEvent.TIMEOUT));
             channel.close(false);
             client.stop();
 

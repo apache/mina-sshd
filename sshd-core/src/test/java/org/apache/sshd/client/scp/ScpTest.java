@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
@@ -43,12 +44,17 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.random.Random;
+import org.apache.sshd.common.scp.ScpException;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.server.Command;
+import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.scp.ScpCommand;
 import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JSchLogger;
@@ -679,6 +685,101 @@ public class ScpTest extends BaseTestSupport {
                 outputDebugMessage("Download data from %s", remotePath);
                 byte[] downloaded = scp.downloadBytes(remotePath);
                 assertArrayEquals("Mismatched downloaded data", uploaded, downloaded);
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    @Test   // see SSHD-628
+    public void testScpExitStatusPropagation() throws Exception {
+        final int TEST_EXIT_VALUE = 7365;
+        class InternalScpCommand extends ScpCommand implements ExitCallback {
+            private ExitCallback delegate;
+
+            public InternalScpCommand(String command, ExecutorService executorService, boolean shutdownOnExit,
+                    int sendSize, int receiveSize, ScpTransferEventListener eventListener) {
+                super(command, executorService, shutdownOnExit, sendSize, receiveSize, eventListener);
+            }
+
+            @Override
+            protected void writeCommandResponseMessage(String command, int exitValue, String exitMessage) throws IOException {
+                outputDebugMessage("writeCommandResponseMessage(%s) status=%d", command, exitValue);
+                super.writeCommandResponseMessage(command, TEST_EXIT_VALUE, exitMessage);
+            }
+
+            @Override
+            public void setExitCallback(ExitCallback callback) {
+                delegate = callback;
+                super.setExitCallback(this);
+            }
+
+            @Override
+            public void onExit(int exitValue) {
+                onExit(exitValue, Integer.toString(exitValue));
+            }
+
+            @Override
+            public void onExit(int exitValue, String exitMessage) {
+                outputDebugMessage("onExit(%s) status=%d", this, exitValue);
+                if (exitValue == ScpHelper.OK) {
+                    delegate.onExit(TEST_EXIT_VALUE, exitMessage);
+                } else {
+                    delegate.onExit(exitValue, exitMessage);
+                }
+            }
+        }
+        sshd.setCommandFactory(new ScpCommandFactory() {
+            @Override
+            public Command createCommand(String command) {
+                ValidateUtils.checkTrue(command.startsWith(ScpHelper.SCP_COMMAND_PREFIX), "Bad SCP command: %s", command);
+                return new InternalScpCommand(command, getExecutorService(), isShutdownOnExit(), getSendBufferSize(), getReceiveBufferSize(), ScpTransferEventListener.EMPTY);
+            }
+        });
+
+        try (SshClient client = setupTestClient()) {
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                ScpClient scp = session.createScpClient();
+                Path targetPath = detectTargetFolder();
+                Path parentPath = targetPath.getParent();
+                Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
+                Utils.deleteRecursive(scpRoot);
+
+                Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
+                Path remoteFile = remoteDir.resolve("file.txt");
+                String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteFile);
+                byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
+                outputDebugMessage("Upload data to %s", remotePath);
+                try {
+                    scp.upload(data, remotePath, EnumSet.allOf(PosixFilePermission.class), null);
+                    outputDebugMessage("Upload success to %s", remotePath);
+                } catch(ScpException e) {
+                    Integer exitCode = e.getExitStatus();
+                    assertNotNull("No upload exit status", exitCode);
+                    assertEquals("Mismatched upload exit status", TEST_EXIT_VALUE, exitCode.intValue());
+                }
+
+                if (Files.deleteIfExists(remoteFile)) {
+                    outputDebugMessage("Deleted remote file %s", remoteFile);
+                }
+
+                try (OutputStream out = Files.newOutputStream(remoteFile)) {
+                    out.write(data);
+                }
+
+                try {
+                    byte[] downloaded = scp.downloadBytes(remotePath);
+                    outputDebugMessage("Download success to %s: %s", remotePath, new String(downloaded, StandardCharsets.UTF_8));
+                } catch(ScpException e) {
+                    Integer exitCode = e.getExitStatus();
+                    assertNotNull("No download exit status", exitCode);
+                    assertEquals("Mismatched download exit status", TEST_EXIT_VALUE, exitCode.intValue());
+                }
             } finally {
                 client.stop();
             }

@@ -32,14 +32,18 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.channel.ChannelExec;
+import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.file.FileSystemFactory;
+import org.apache.sshd.common.scp.ScpException;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTimestamp;
 import org.apache.sshd.common.util.GenericUtils;
@@ -51,6 +55,9 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractScpClient extends AbstractLoggingBean implements ScpClient {
+    public static final Set<ClientChannelEvent> COMMAND_WAIT_EVENTS =
+            Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.EXIT_STATUS, ClientChannelEvent.CLOSED));
+
     protected AbstractScpClient() {
         super();
     }
@@ -149,7 +156,10 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
             try {
                 fs.close();
             } catch (UnsupportedOperationException e) {
-                // Ignore
+                if (log.isDebugEnabled()) {
+                    log.debug("download({}) {} => {} - failed ({}) to close file system={}: {}",
+                              session, remote, local, e.getClass().getSimpleName(), fs, e.getMessage());
+                }
             }
         }
     }
@@ -230,6 +240,68 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
     }
 
     protected abstract <T> void runUpload(String remote, Collection<Option> options, Collection<T> local, AbstractScpClient.ScpOperationExecutor<T> executor) throws IOException;
+
+    /**
+     * Invoked by the various <code>upload/download</code> methods after having successfully
+     * completed the remote copy command and (optionally) having received an exit status
+     * from the remote server. If no exit status received within {@link FactoryManager#CHANNEL_CLOSE_TIMEOUT}
+     * the no further action is taken. Otherwise, the exit status is examined to ensure it
+     * is either OK or WARNING - if not, an {@link ScpException} is thrown
+     *
+     * @param cmd The attempted remote copy command
+     * @param channel The {@link ClientChannel} through which the command was sent - <B>Note:</B>
+     * then channel may be in the process of being closed
+     * @throws IOException If failed the command
+     * @see #handleCommandExitStatus(String, Integer)
+     */
+    protected void handleCommandExitStatus(String cmd, ClientChannel channel) throws IOException {
+        // give a chance for the exit status to be received
+        long timeout = PropertyResolverUtils.getLongProperty(channel, FactoryManager.CHANNEL_CLOSE_TIMEOUT, FactoryManager.DEFAULT_CHANNEL_CLOSE_TIMEOUT);
+        long waitStart = System.nanoTime();
+        Collection<ClientChannelEvent> events = channel.waitFor(COMMAND_WAIT_EVENTS, timeout);
+        long waitEnd = System.nanoTime();
+        if (log.isDebugEnabled()) {
+            log.debug("handleCommandExitStatus({}) cmd='{}', waited={} nanos, events={}",
+                      getClientSession(), cmd, waitEnd - waitStart, events);
+        }
+
+        /*
+         * There are sometimes race conditions in the order in which channels are closed and exit-status
+         * sent by the remote peer (if at all), thus there is no guarantee that we will have an exit
+         * status here
+         */
+        handleCommandExitStatus(cmd, channel.getExitStatus());
+    }
+
+    /**
+     * Invoked by the various <code>upload/download</code> methods after having successfully
+     * completed the remote copy command and (optionally) having received an exit status
+     * from the remote server
+     *
+     * @param cmd The attempted remote copy command
+     * @param exitStatus The exit status - if {@code null} then no status was reported
+     * @throws IOException If failed the command
+     */
+    protected void handleCommandExitStatus(String cmd, Integer exitStatus) throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("handleCommandExitStatus({}) cmd='{}', exit-status={}", getClientSession(), cmd, ScpHelper.getExitStatusName(exitStatus));
+        }
+
+        if (exitStatus == null) {
+            return;
+        }
+
+        int statusCode = exitStatus.intValue();
+        switch (statusCode) {
+            case ScpHelper.OK:  // do nothing
+                break;
+            case ScpHelper.WARNING:
+                log.warn("handleCommandExitStatus({}) cmd='{}' may have terminated with some problems", getClientSession(), cmd);
+                break;
+            default:
+                throw new ScpException("Failed to run command='" + cmd + "': " + ScpHelper.getExitStatusName(exitStatus), exitStatus);
+        }
+    }
 
     protected Collection<Option> addTargetIsDirectory(Collection<Option> options) {
         if (GenericUtils.isEmpty(options) || (!options.contains(Option.TargetIsDirectory))) {

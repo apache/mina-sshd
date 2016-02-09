@@ -203,12 +203,11 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         long t = 0;
         synchronized (lock) {
             for (Set<ClientChannelEvent> cond = EnumSet.noneOf(ClientChannelEvent.class);; cond.clear()) {
-                if (openFuture != null && openFuture.isOpened()) {
+                if ((openFuture != null) && openFuture.isOpened()) {
                     cond.add(ClientChannelEvent.OPENED);
                 }
                 if (closeFuture.isClosed()) {
                     cond.add(ClientChannelEvent.CLOSED);
-                    cond.add(ClientChannelEvent.EOF);
                 }
                 if (isEofSignalled()) {
                     cond.add(ClientChannelEvent.EOF);
