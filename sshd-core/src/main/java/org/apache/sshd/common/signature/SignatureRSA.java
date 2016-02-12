@@ -26,10 +26,17 @@ import org.apache.sshd.common.util.ValidateUtils;
  * RSA <code>Signature</code>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-6.6">RFC4253 section 6.6</A>
  */
 public class SignatureRSA extends AbstractSignature {
+    public static final String DEFAULT_ALGORITHM = "SHA1withRSA";
+
     public SignatureRSA() {
-        super("SHA1withRSA");
+        super(DEFAULT_ALGORITHM);
+    }
+
+    protected SignatureRSA(String algorithm) {
+        super(algorithm);
     }
 
     @Override

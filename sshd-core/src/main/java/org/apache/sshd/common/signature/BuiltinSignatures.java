@@ -49,7 +49,7 @@ public enum BuiltinSignatures implements SignatureFactory {
     dsa(KeyPairProvider.SSH_DSS) {
         @Override
         public Signature create() {
-            return new SignatureDSA("SHA1withDSA");
+            return new SignatureDSA();
         }
     },
     rsa(KeyPairProvider.SSH_RSA) {
@@ -61,7 +61,7 @@ public enum BuiltinSignatures implements SignatureFactory {
     nistp256(KeyPairProvider.ECDSA_SHA2_NISTP256) {
         @Override
         public Signature create() {
-            return new SignatureECDSA("SHA256withECDSA");
+            return new SignatureECDSA.SignatureECDSA256();
         }
 
         @Override
@@ -72,7 +72,7 @@ public enum BuiltinSignatures implements SignatureFactory {
     nistp384(KeyPairProvider.ECDSA_SHA2_NISTP384) {
         @Override
         public Signature create() {
-            return new SignatureECDSA("SHA384withECDSA");
+            return new SignatureECDSA.SignatureECDSA384();
         }
 
         @Override
@@ -83,7 +83,7 @@ public enum BuiltinSignatures implements SignatureFactory {
     nistp521(KeyPairProvider.ECDSA_SHA2_NISTP521) {
         @Override
         public Signature create() {
-            return new SignatureECDSA("SHA512withECDSA");
+            return new SignatureECDSA.SignatureECDSA521();
         }
 
         @Override

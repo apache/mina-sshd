@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.common.signature;
 
-import java.io.IOException;
+import java.io.StreamCorruptedException;
 import java.math.BigInteger;
 
 import org.apache.sshd.common.cipher.ECCurves;
@@ -36,6 +36,29 @@ import org.apache.sshd.common.util.io.DERWriter;
  * @see <A HREF="http://tools.ietf.org/html/rfc3278#section-8.2">RFC3278 section 8.2</A>
  */
 public class SignatureECDSA extends AbstractSignature {
+    public static class SignatureECDSA256 extends SignatureECDSA {
+        public static final String DEFAULT_ALGORITHM = "SHA256withECDSA";
+
+        public SignatureECDSA256() {
+            super(DEFAULT_ALGORITHM);
+        }
+    }
+
+    public static class SignatureECDSA384 extends SignatureECDSA {
+        public static final String DEFAULT_ALGORITHM = "SHA384withECDSA";
+
+        public SignatureECDSA384() {
+            super(DEFAULT_ALGORITHM);
+        }
+    }
+
+    public static class SignatureECDSA521 extends SignatureECDSA {
+        public static final String DEFAULT_ALGORITHM = "SHA512withECDSA";
+
+        public SignatureECDSA521() {
+            super(DEFAULT_ALGORITHM);
+        }
+    }
 
     protected SignatureECDSA(String algo) {
         super(algo);
@@ -48,20 +71,20 @@ public class SignatureECDSA extends AbstractSignature {
         try (DERParser parser = new DERParser(sig)) {
             int type = parser.read();
             if (type != 0x30) {
-                throw new IOException("Invalid signature format - not a DER SEQUENCE: 0x" + Integer.toHexString(type));
+                throw new StreamCorruptedException("Invalid signature format - not a DER SEQUENCE: 0x" + Integer.toHexString(type));
             }
 
             // length of remaining encoding of the 2 integers
             int remainLen = parser.readLength();
             /*
              * There are supposed to be 2 INTEGERs, each encoded with:
-             * 
+             *
              *  - one byte representing the fact that it is an INTEGER
              *  - one byte of the integer encoding length
              *  - at least one byte of integer data (zero length is not an option)
              */
             if (remainLen < (2 * 3)) {
-                throw new IOException("Invalid signature format - not enough encoded data length: " + remainLen);
+                throw new StreamCorruptedException("Invalid signature format - not enough encoded data length: " + remainLen);
             }
 
             BigInteger r = parser.readBigInteger();
@@ -87,7 +110,6 @@ public class SignatureECDSA extends AbstractSignature {
         }
 
         Buffer rsBuf = new ByteArrayBuffer(data);
-
         byte[] rArray = rsBuf.getMPIntAsBytes();
         byte[] rEncoding;
         try (DERWriter w = new DERWriter(rArray.length + 4)) {     // in case length > 0x7F
@@ -104,7 +126,7 @@ public class SignatureECDSA extends AbstractSignature {
 
         int remaining = rsBuf.available();
         if (remaining != 0) {
-            throw new IOException("Signature had padding - remaining=" + remaining);
+            throw new StreamCorruptedException("Signature had padding - remaining=" + remaining);
         }
 
         int length = rEncoding.length + sEncoding.length;

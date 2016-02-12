@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.common.signature;
 
-import java.io.IOException;
+import java.io.StreamCorruptedException;
 import java.math.BigInteger;
 import java.security.SignatureException;
 
@@ -38,9 +38,15 @@ import org.apache.sshd.common.util.io.DERWriter;
  * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-6.6">RFC4253 section 6.6</A>
  */
 public class SignatureDSA extends AbstractSignature {
+    public static final String DEFAULT_ALGORITHM = "SHA1withDSA";
+
     public static final int DSA_SIGNATURE_LENGTH = 40;
     // result must be 40 bytes, but length of r and s may not exceed 20 bytes
     public static final int MAX_SIGNATURE_VALUE_LENGTH = DSA_SIGNATURE_LENGTH / 2;
+
+    public SignatureDSA() {
+        this(DEFAULT_ALGORITHM);
+    }
 
     protected SignatureDSA(String algorithm) {
         super(algorithm);
@@ -53,7 +59,7 @@ public class SignatureDSA extends AbstractSignature {
         try (DERParser parser = new DERParser(sig)) {
             int type = parser.read();
             if (type != 0x30) {
-                throw new IOException("Invalid signature format - not a DER SEQUENCE: 0x" + Integer.toHexString(type));
+                throw new StreamCorruptedException("Invalid signature format - not a DER SEQUENCE: 0x" + Integer.toHexString(type));
             }
 
             // length of remaining encoding of the 2 integers
@@ -66,7 +72,7 @@ public class SignatureDSA extends AbstractSignature {
              *  - at least one byte of integer data (zero length is not an option)
              */
             if (remainLen < (2 * 3)) {
-                throw new IOException("Invalid signature format - not enough encoded data length: " + remainLen);
+                throw new StreamCorruptedException("Invalid signature format - not enough encoded data length: " + remainLen);
             }
 
             BigInteger r = parser.readBigInteger();
@@ -120,7 +126,6 @@ public class SignatureDSA extends AbstractSignature {
             w.writeBigInteger(data, MAX_SIGNATURE_VALUE_LENGTH, MAX_SIGNATURE_VALUE_LENGTH);
             sEncoding = w.toByteArray();
         }
-
 
         int length = rEncoding.length + sEncoding.length;
         byte[] encoded;
