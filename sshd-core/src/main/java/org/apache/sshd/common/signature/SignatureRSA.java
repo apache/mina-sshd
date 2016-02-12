@@ -22,6 +22,9 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 
+import java.security.PublicKey;
+import java.security.interfaces.RSAKey;
+
 /**
  * RSA <code>Signature</code>
  *
@@ -30,6 +33,8 @@ import org.apache.sshd.common.util.ValidateUtils;
  */
 public class SignatureRSA extends AbstractSignature {
     public static final String DEFAULT_ALGORITHM = "SHA1withRSA";
+
+    private int verifierSingatureSize = -1;
 
     public SignatureRSA() {
         super(DEFAULT_ALGORITHM);
@@ -45,6 +50,12 @@ public class SignatureRSA extends AbstractSignature {
     }
 
     @Override
+    public void initVerifier(PublicKey key) throws Exception {
+        super.initVerifier(key);
+        verifierSingatureSize = (((RSAKey)key).getModulus().bitLength() + Byte.SIZE - 1) / Byte.SIZE;
+    }
+
+    @Override
     public boolean verify(byte[] sig) throws Exception {
         byte[] data = sig;
         Pair<String, byte[]> encoding = extractEncodedSignature(data);
@@ -52,6 +63,13 @@ public class SignatureRSA extends AbstractSignature {
             String keyType = encoding.getFirst();
             ValidateUtils.checkTrue(KeyPairProvider.SSH_RSA.equals(keyType), "Mismatched key type: %s", keyType);
             data = encoding.getSecond();
+        }
+
+        ValidateUtils.checkTrue(verifierSingatureSize > 0, "Signature size should be initialized");
+        if (data.length < verifierSingatureSize) {
+            byte[] pad = new byte[verifierSingatureSize];
+            System.arraycopy(data, 0, pad, pad.length - data.length, data.length);
+            data = pad;
         }
 
         return doVerify(data);
