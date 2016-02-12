@@ -117,6 +117,6 @@ public class SignatureECDSA extends AbstractSignature {
             encoded = w.toByteArray();
         }
 
-        return signature.verify(encoded);
+        return doVerify(encoded);
     }
 }

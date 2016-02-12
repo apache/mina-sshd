@@ -132,6 +132,6 @@ public class SignatureDSA extends AbstractSignature {
             encoded = w.toByteArray();
         }
 
-        return signature.verify(encoded);
+        return doVerify(encoded);
     }
 }

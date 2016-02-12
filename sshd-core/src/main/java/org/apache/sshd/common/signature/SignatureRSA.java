@@ -47,7 +47,7 @@ public class SignatureRSA extends AbstractSignature {
             data = encoding.getSecond();
         }
 
-        return signature.verify(data);
+        return doVerify(data);
     }
 
 }

@@ -21,6 +21,7 @@ package org.apache.sshd.common.signature;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SignatureException;
 
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.Pair;
@@ -108,6 +109,10 @@ public abstract class AbstractSignature implements Signature {
         byte[] data = new byte[(int) dataBytesLen];
         System.arraycopy(sig, keyTypeEndPos + (Integer.SIZE / Byte.SIZE), data, 0, (int) dataBytesLen);
         return new Pair<>(keyType, data);
+    }
+
+    protected boolean doVerify(byte[] data) throws SignatureException {
+        return signature.verify(data);
     }
 
     @Override
