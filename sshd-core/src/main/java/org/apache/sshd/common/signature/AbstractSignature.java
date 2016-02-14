@@ -19,6 +19,7 @@
 package org.apache.sshd.common.signature;
 
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
@@ -36,7 +37,7 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
  */
 public abstract class AbstractSignature implements Signature {
 
-    protected java.security.Signature signature;
+    private java.security.Signature signatureInstance;
     private final String algorithm;
 
     protected AbstractSignature(String algorithm) {
@@ -48,17 +49,40 @@ public abstract class AbstractSignature implements Signature {
         return algorithm;
     }
 
+    /**
+     * Initializes the internal signature instance
+     *
+     * @param algo The signature's algorithm
+     * @param forSigning If {@code true} then it is being initialized for signing,
+     * otherwise for verifying a signature
+     * @return The {@link java.security.Signature} instance
+     * @throws GeneralSecurityException if failed to initialize
+     */
+    protected java.security.Signature doInitSignature(String algo, boolean forSigning) throws GeneralSecurityException {
+        return SecurityUtils.getSignature(algo);
+    }
+
+    /**
+     * @return The current {@link java.security.Signature} instance
+     * - {@code null} if not initialized
+     * @see #doInitSignature(String, boolean)
+     */
+    protected java.security.Signature getSignature() {
+        return signatureInstance;
+    }
 
     @Override
     public void initVerifier(PublicKey key) throws Exception {
-        signature = SecurityUtils.getSignature(getAlgorithm());
-        signature.initVerify(ValidateUtils.checkNotNull(key, "No public key provided"));
+        String algo = getAlgorithm();
+        signatureInstance = ValidateUtils.checkNotNull(doInitSignature(algo, false), "No signature instance create");
+        signatureInstance.initVerify(ValidateUtils.checkNotNull(key, "No public key provided"));
     }
 
     @Override
     public void initSigner(PrivateKey key) throws Exception {
-        signature = SecurityUtils.getSignature(getAlgorithm());
-        signature.initSign(ValidateUtils.checkNotNull(key, "No private key provided"));
+        String algo = getAlgorithm();
+        signatureInstance = ValidateUtils.checkNotNull(doInitSignature(algo, true), "No signature instance create");
+        signatureInstance.initSign(ValidateUtils.checkNotNull(key, "No private key provided"));
     }
 
     @Override
@@ -68,6 +92,7 @@ public abstract class AbstractSignature implements Signature {
 
     @Override
     public void update(byte[] hash, int off, int len) throws Exception {
+        java.security.Signature signature = ValidateUtils.checkNotNull(getSignature(), "Signature not initialized");
         signature.update(hash, off, len);
     }
 
@@ -112,6 +137,7 @@ public abstract class AbstractSignature implements Signature {
     }
 
     protected boolean doVerify(byte[] data) throws SignatureException {
+        java.security.Signature signature = ValidateUtils.checkNotNull(getSignature(), "Signature not initialized");
         return signature.verify(data);
     }
 

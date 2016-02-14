@@ -18,6 +18,10 @@
  */
 package org.apache.sshd.common.signature;
 
+import java.math.BigInteger;
+import java.security.PublicKey;
+import java.security.interfaces.RSAKey;
+
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -31,6 +35,8 @@ import org.apache.sshd.common.util.ValidateUtils;
 public class SignatureRSA extends AbstractSignature {
     public static final String DEFAULT_ALGORITHM = "SHA1withRSA";
 
+    private int verifierSignatureSize = -1;
+
     public SignatureRSA() {
         super(DEFAULT_ALGORITHM);
     }
@@ -41,7 +47,28 @@ public class SignatureRSA extends AbstractSignature {
 
     @Override
     public byte[] sign() throws Exception {
+        java.security.Signature signature = ValidateUtils.checkNotNull(getSignature(), "Signature not initialized");
         return signature.sign();
+    }
+
+    /**
+     * @return The expected number of bytes in the signature - non-positive
+     * if not initialized or not intended to be used for verification
+     */
+    protected int getVerifierSignatureSize() {
+        return verifierSignatureSize;
+    }
+
+    @Override
+    public void initVerifier(PublicKey key) throws Exception {
+        super.initVerifier(key);
+        ValidateUtils.checkTrue(key instanceof RSAKey, "Not an RSA key");
+        verifierSignatureSize = getVerifierSignatureSize((RSAKey) key);
+    }
+
+    public static int getVerifierSignatureSize(RSAKey key) {
+        BigInteger modulus = key.getModulus();
+        return (modulus.bitLength() + Byte.SIZE - 1) / Byte.SIZE;
     }
 
     @Override
@@ -54,7 +81,15 @@ public class SignatureRSA extends AbstractSignature {
             data = encoding.getSecond();
         }
 
+        int expectedSize = getVerifierSignatureSize();
+        ValidateUtils.checkTrue(expectedSize > 0, "Signature verification size has not been initialized");
+        // Pad with zero if value is trimmed
+        if (data.length < expectedSize) {
+            byte[] pad = new byte[expectedSize];
+            System.arraycopy(data, 0, pad, pad.length - data.length, data.length);
+            data = pad;
+        }
+
         return doVerify(data);
     }
-
 }

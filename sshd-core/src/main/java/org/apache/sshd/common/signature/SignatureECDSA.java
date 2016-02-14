@@ -66,6 +66,7 @@ public class SignatureECDSA extends AbstractSignature {
 
     @Override
     public byte[] sign() throws Exception {
+        java.security.Signature signature = ValidateUtils.checkNotNull(getSignature(), "Signature not initialized");
         byte[] sig = signature.sign();
 
         try (DERParser parser = new DERParser(sig)) {
