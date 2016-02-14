@@ -19,6 +19,7 @@
 package org.apache.sshd.common.signature;
 
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
@@ -48,16 +49,19 @@ public abstract class AbstractSignature implements Signature {
         return algorithm;
     }
 
+    protected java.security.Signature doInitSignature() throws GeneralSecurityException {
+        return SecurityUtils.getSignature(getAlgorithm());
+    }
 
     @Override
     public void initVerifier(PublicKey key) throws Exception {
-        signature = SecurityUtils.getSignature(getAlgorithm());
+        signature = doInitSignature();
         signature.initVerify(ValidateUtils.checkNotNull(key, "No public key provided"));
     }
 
     @Override
     public void initSigner(PrivateKey key) throws Exception {
-        signature = SecurityUtils.getSignature(getAlgorithm());
+        signature = doInitSignature();
         signature.initSign(ValidateUtils.checkNotNull(key, "No private key provided"));
     }
 
