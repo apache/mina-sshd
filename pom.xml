@@ -98,8 +98,8 @@
 
         <min.required.maven.version>3.0</min.required.maven.version>
 
-        <bouncycastle.version>1.53</bouncycastle.version>
-        <slf4j.version>1.7.13</slf4j.version>
+        <bouncycastle.version>1.54</bouncycastle.version>
+        <slf4j.version>1.7.16</slf4j.version>
         <spring.version>3.0.6.RELEASE</spring.version>
         <jgit.version>3.4.1.201406201815-r</jgit.version>
         <junit.version>4.12</junit.version>
@@ -774,7 +774,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>1.4</version>
+                <version>1.4.1</version>
                 <executions>
                     <execution>
                         <id>enforce-versions</id>
@@ -797,7 +797,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.3</version>
+                <version>3.5.1</version>
                 <configuration>
                     <source>${javac.source}</source>
                     <target>${javac.target}</target>
@@ -808,6 +808,24 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.10</version>
+                <executions>
+                    <execution>
+                        <id>install</id>
+                        <phase>install</phase>
+                        <goals>	<!-- automatically download the dependency sources - useful for debugging -->
+                            <goal>sources</goal>
+                        </goals>
+                        <configuration>
+                            <markersDirectory>${settings.localRepository}/org/apache/sshd/dependency-maven-plugin-markers</markersDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-remote-resources-plugin</artifactId>
                 <version>1.5</version>
                 <executions>
@@ -923,7 +941,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>1.9.1</version>
+                <version>1.10</version>
                  <executions>
                       <execution>
                         <id>remove-previous-artifact</id>
