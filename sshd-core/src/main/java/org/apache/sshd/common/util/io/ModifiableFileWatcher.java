@@ -213,9 +213,10 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
      * @param path    The {@link Path} to be checked - ignored if {@code null}
      *                or does not exist
      * @param options The {@link LinkOption}s to use to query the file's permissions
-     * @return The violated permission as {@link Pair} first is a message second is
-     * offending object {@link PosixFilePermission} or {@link String} for owner - {@code null} if
-     * no violations detected
+     * @return The violated permission as {@link Pair} where {@link Pair#getClass()}
+     * is a loggable message and {@link Pair#getSecond()} is the offending object
+     * - e.g., {@link PosixFilePermission} or {@link String} for owner. Return
+     * value is {@code null} if no violations detected
      * @throws IOException If failed to retrieve the permissions
      * @see #STRICTLY_PROHIBITED_FILE_PERMISSION
      */

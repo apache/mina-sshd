@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
@@ -97,6 +98,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.keyboard.DefaultKeyboardInteractiveAuthenticator;
@@ -1462,6 +1464,11 @@ public class ClientTest extends BaseTestSupport {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
+
+            InetSocketAddress addr = SshdSocketAddress.toInetSocketAddress(session.getConnectAddress());
+            assertNotNull("No reported connect address", addr);
+            assertEquals("Mismatched connect host", TEST_LOCALHOST, addr.getHostString());
+            assertEquals("Mismatched connect port", port, addr.getPort());
 
             ClientSession returnValue = session;
             session = null; // avoid 'finally' close

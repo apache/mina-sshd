@@ -23,6 +23,8 @@ import java.nio.file.Path;
 import java.security.PublicKey;
 import java.util.Collection;
 
+import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
+import org.apache.sshd.common.config.keys.AuthorizedKeysTestSupport;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;

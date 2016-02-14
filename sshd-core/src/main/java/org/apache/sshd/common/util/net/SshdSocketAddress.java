@@ -289,6 +289,47 @@ public class SshdSocketAddress extends SocketAddress {
         return true;
     }
 
+    public static String toAddressString(SocketAddress addr) {
+        if (addr == null) {
+            return null;
+        }
+
+        if (addr instanceof InetSocketAddress) {
+            return ((InetSocketAddress) addr).getHostString();
+        }
+
+        if (addr instanceof SshdSocketAddress) {
+            return ((SshdSocketAddress) addr).getHostName();
+        }
+
+        return addr.toString();
+    }
+
+    /**
+     * <P>Converts a {@code SocketAddress} into an {@link InetSocketAddress} if possible:</P></BR>
+     * <UL>
+     *      <LI>If already an {@link InetSocketAddress} then cast it as such</LI>
+     *      <LI>If an {@code SshdSocketAddress} then invoke {@link #toInetSocketAddress()}</LI>
+     *      <LI>Otherwise, throw an exception</LI>
+     * </UL>
+     *
+     * @param remoteAddress The {@link SocketAddress} - ignored if {@code null}
+     * @return The {@link InetSocketAddress} instance
+     * @throws ClassCastException if argument is not already an {@code InetSocketAddress}
+     * or a {@code SshdSocketAddress}
+     */
+    public static InetSocketAddress toInetSocketAddress(SocketAddress remoteAddress) {
+        if (remoteAddress == null) {
+            return null;
+        } else if (remoteAddress instanceof InetSocketAddress) {
+            return (InetSocketAddress) remoteAddress;
+        } else if (remoteAddress instanceof SshdSocketAddress) {
+            return ((SshdSocketAddress) remoteAddress).toInetSocketAddress();
+        } else {
+            throw new ClassCastException("Unknown remote address type: " + remoteAddress);
+        }
+    }
+
     public static String toAddressString(InetAddress addr) {
         String ip = (addr == null) ? null : addr.toString();
         if (GenericUtils.isEmpty(ip)) {

@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.server.config.keys;
+package org.apache.sshd.common.config.keys;
 
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -26,12 +26,14 @@ import java.security.PublicKey;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
+import org.apache.sshd.server.config.keys.AuthorizedKeysAuthenticator;
 import org.junit.FixMethodOrder;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -82,17 +84,17 @@ public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
     @Test
     @Ignore("It might cause some exceptions if user's file contains unsupported keys")
     public void testReadDefaultAuthorizedKeysFile() throws Exception {
-        Path path = AuthorizedKeyEntry.getDefaultAuthorizedKeysFile();
+        Path path = AuthorizedKeysAuthenticator.getDefaultAuthorizedKeysFile();
         assertNotNull("No default location", path);
 
         LinkOption[] options = IoUtils.getLinkOptions(false);
         if (!Files.exists(path, options)) {
             outputDebugMessage("Verify non-existing %s", path);
-            Collection<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readDefaultAuthorizedKeys();
+            Collection<AuthorizedKeyEntry> entries = AuthorizedKeysAuthenticator.readDefaultAuthorizedKeys();
             assertTrue("Non-empty keys even though file not found: " + entries, GenericUtils.isEmpty(entries));
         } else {
             assertFalse("Not a file: " + path, Files.isDirectory(path, options));
-            runAuthorizedKeysTests(AuthorizedKeyEntry.readDefaultAuthorizedKeys());
+            runAuthorizedKeysTests(AuthorizedKeysAuthenticator.readDefaultAuthorizedKeys());
         }
     }
 

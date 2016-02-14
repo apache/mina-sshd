@@ -50,7 +50,7 @@ public class HostConfigEntryTest extends BaseTestSupport {
         StringBuilder sb = new StringBuilder(testHost.length() + Byte.SIZE);
         List<Pair<Pattern, Boolean>> patterns = new ArrayList<>(elements.length + 1);
         // all wildcard patterns are not negated - only the actual host
-        patterns.add(HostConfigEntry.toPattern(String.valueOf(HostConfigEntry.NEGATION_CHAR_PATTERN) + testHost));
+        patterns.add(HostPatternsHolder.toPattern(String.valueOf(HostPatternsHolder.NEGATION_CHAR_PATTERN) + testHost));
 
         for (int i = 0; i < elements.length; i++) {
             sb.setLength(0);
@@ -60,17 +60,17 @@ public class HostConfigEntryTest extends BaseTestSupport {
                     sb.append('.');
                 }
                 if (i == j) {
-                    sb.append(HostConfigEntry.WILDCARD_PATTERN);
+                    sb.append(HostPatternsHolder.WILDCARD_PATTERN);
                 } else {
                     sb.append(elements[j]);
                 }
             }
 
-            patterns.add(HostConfigEntry.toPattern(sb));
+            patterns.add(HostPatternsHolder.toPattern(sb));
         }
 
         for (int index = 0; index < patterns.size(); index++) {
-            assertFalse("Unexpected match for " + patterns, HostConfigEntry.isHostMatch(testHost, patterns));
+            assertFalse("Unexpected match for " + patterns, HostPatternsHolder.isHostMatch(testHost, patterns));
             Collections.shuffle(patterns);
         }
     }
@@ -79,13 +79,13 @@ public class HostConfigEntryTest extends BaseTestSupport {
     public void testHostWildcardPatternMatching() {
         String pkgName = getClass().getPackage().getName();
         String[] elements = GenericUtils.split(pkgName, '.');
-        StringBuilder sb = new StringBuilder(pkgName.length() + Long.SIZE + 1).append(HostConfigEntry.WILDCARD_PATTERN);
+        StringBuilder sb = new StringBuilder(pkgName.length() + Long.SIZE + 1).append(HostPatternsHolder.WILDCARD_PATTERN);
         for (int index = elements.length - 1; index >= 0; index--) {
             sb.append('.').append(elements[index]);
         }
 
         String value = sb.toString();
-        Pair<Pattern, Boolean> pp = HostConfigEntry.toPattern(value);
+        Pair<Pattern, Boolean> pp = HostPatternsHolder.toPattern(value);
         Pattern pattern = pp.getFirst();
         String domain = value.substring(1); // chomp the wildcard prefix
         for (String host : new String[] {
@@ -106,13 +106,13 @@ public class HostConfigEntryTest extends BaseTestSupport {
         StringBuilder sb = new StringBuilder().append("10.0.0.");
         int sbLen = sb.length();
 
-        Pattern pattern = HostConfigEntry.toPattern(sb.append(HostConfigEntry.WILDCARD_PATTERN)).getFirst();
+        Pattern pattern = HostPatternsHolder.toPattern(sb.append(HostPatternsHolder.WILDCARD_PATTERN)).getFirst();
         for (int v = 0; v <= 255; v++) {
             sb.setLength(sbLen);    // start from scratch
             sb.append(v);
 
             String address = sb.toString();
-            assertTrue("No match for " + address, HostConfigEntry.isHostMatch(address, pattern));
+            assertTrue("No match for " + address, HostPatternsHolder.isHostMatch(address, pattern));
         }
     }
 
@@ -122,8 +122,8 @@ public class HostConfigEntryTest extends BaseTestSupport {
         StringBuilder sb = new StringBuilder(value);
         for (boolean restoreOriginal : new boolean[] { true, false }) {
             for (int index = 0; index < value.length(); index++) {
-                sb.setCharAt(index, HostConfigEntry.SINGLE_CHAR_PATTERN);
-                testCaseInsensitivePatternMatching(value, HostConfigEntry.toPattern(sb.toString()).getFirst(), true);
+                sb.setCharAt(index, HostPatternsHolder.SINGLE_CHAR_PATTERN);
+                testCaseInsensitivePatternMatching(value, HostPatternsHolder.toPattern(sb.toString()).getFirst(), true);
                 if (restoreOriginal) {
                     sb.setCharAt(index, value.charAt(index));
                 }
@@ -143,46 +143,46 @@ public class HostConfigEntryTest extends BaseTestSupport {
             String address = sb.toString();
             // replace the added digits with single char pattern
             for (int index = sbLen; index < sb.length(); index++) {
-                sb.setCharAt(index, HostConfigEntry.SINGLE_CHAR_PATTERN);
+                sb.setCharAt(index, HostPatternsHolder.SINGLE_CHAR_PATTERN);
             }
 
             String pattern = sb.toString();
-            Pair<Pattern, Boolean> pp = HostConfigEntry.toPattern(pattern);
-            assertTrue("No match for " + address + " on pattern=" + pattern, HostConfigEntry.isHostMatch(address, Collections.singletonList(pp)));
+            Pair<Pattern, Boolean> pp = HostPatternsHolder.toPattern(pattern);
+            assertTrue("No match for " + address + " on pattern=" + pattern, HostPatternsHolder.isHostMatch(address, Collections.singletonList(pp)));
         }
     }
 
     @Test
     public void testIsValidPatternChar() {
         for (char ch = '\0'; ch <= ' '; ch++) {
-            assertFalse("Unexpected valid character (0x" + Integer.toHexString(ch & 0xFF) + ")", HostConfigEntry.isValidPatternChar(ch));
+            assertFalse("Unexpected valid character (0x" + Integer.toHexString(ch & 0xFF) + ")", HostPatternsHolder.isValidPatternChar(ch));
         }
 
         for (char ch = 'a'; ch <= 'z'; ch++) {
-            assertTrue("Valid character not recognized: " + String.valueOf(ch), HostConfigEntry.isValidPatternChar(ch));
+            assertTrue("Valid character not recognized: " + String.valueOf(ch), HostPatternsHolder.isValidPatternChar(ch));
         }
 
         for (char ch = 'A'; ch <= 'Z'; ch++) {
-            assertTrue("Valid character not recognized: " + String.valueOf(ch), HostConfigEntry.isValidPatternChar(ch));
+            assertTrue("Valid character not recognized: " + String.valueOf(ch), HostPatternsHolder.isValidPatternChar(ch));
         }
 
         for (char ch = '0'; ch <= '9'; ch++) {
-            assertTrue("Valid character not recognized: " + String.valueOf(ch), HostConfigEntry.isValidPatternChar(ch));
+            assertTrue("Valid character not recognized: " + String.valueOf(ch), HostPatternsHolder.isValidPatternChar(ch));
         }
 
-        for (char ch : new char[] { '-', '_', '.', HostConfigEntry.SINGLE_CHAR_PATTERN, HostConfigEntry.WILDCARD_PATTERN }) {
-            assertTrue("Valid character not recognized: " + String.valueOf(ch), HostConfigEntry.isValidPatternChar(ch));
+        for (char ch : new char[] { '-', '_', '.', HostPatternsHolder.SINGLE_CHAR_PATTERN, HostPatternsHolder.WILDCARD_PATTERN }) {
+            assertTrue("Valid character not recognized: " + String.valueOf(ch), HostPatternsHolder.isValidPatternChar(ch));
         }
 
         for (char ch : new char[] {
                     '(', ')', '{', '}', '[', ']', '@',
                     '#', '$', '^', '&', '%', '~', '<', '>',
                     ',', '/', '\\', '\'', '"', ':', ';' }) {
-            assertFalse("Unexpected valid character: " + String.valueOf(ch), HostConfigEntry.isValidPatternChar(ch));
+            assertFalse("Unexpected valid character: " + String.valueOf(ch), HostPatternsHolder.isValidPatternChar(ch));
         }
 
         for (char ch = 0x7E; ch <= 0xFF; ch++) {
-            assertFalse("Unexpected valid character (0x" + Integer.toHexString(ch & 0xFF) + ")", HostConfigEntry.isValidPatternChar(ch));
+            assertFalse("Unexpected valid character (0x" + Integer.toHexString(ch & 0xFF) + ")", HostPatternsHolder.isValidPatternChar(ch));
         }
     }
 
@@ -220,7 +220,7 @@ public class HostConfigEntryTest extends BaseTestSupport {
 
         // global entry MUST be 1st one
         HostConfigEntry globalEntry = entries.get(0);
-        assertEquals("Mismatched global entry pattern", HostConfigEntry.ALL_HOSTS_PATTERN, globalEntry.getHost());
+        assertEquals("Mismatched global entry pattern", HostPatternsHolder.ALL_HOSTS_PATTERN, globalEntry.getHost());
 
         for (int index = 1; index < entries.size(); index++) {
             HostConfigEntry entry = entries.get(index);
@@ -274,8 +274,8 @@ public class HostConfigEntryTest extends BaseTestSupport {
         final String HOST = getCurrentTestName();
         HostConfigEntry expected = new HostConfigEntry(HOST, HOST, 7365, HOST);
         List<HostConfigEntry> matches = new ArrayList<>();
-        matches.add(new HostConfigEntry(HostConfigEntry.ALL_HOSTS_PATTERN, getClass().getSimpleName(), Short.MAX_VALUE, getClass().getSimpleName()));
-        matches.add(new HostConfigEntry(HOST + String.valueOf(HostConfigEntry.WILDCARD_PATTERN), getClass().getSimpleName(), Byte.MAX_VALUE, getClass().getSimpleName()));
+        matches.add(new HostConfigEntry(HostPatternsHolder.ALL_HOSTS_PATTERN, getClass().getSimpleName(), Short.MAX_VALUE, getClass().getSimpleName()));
+        matches.add(new HostConfigEntry(HOST + String.valueOf(HostPatternsHolder.WILDCARD_PATTERN), getClass().getSimpleName(), Byte.MAX_VALUE, getClass().getSimpleName()));
         matches.add(expected);
 
         for (int index = 0; index < matches.size(); index++) {
@@ -307,7 +307,7 @@ public class HostConfigEntryTest extends BaseTestSupport {
     }
     private static void testCaseInsensitivePatternMatching(String value, Pattern pattern, boolean expected) {
         for (int index = 0; index < value.length(); index++) {
-            boolean actual = HostConfigEntry.isHostMatch(value, pattern);
+            boolean actual = HostPatternsHolder.isHostMatch(value, pattern);
             assertEquals("Mismatched match result for " + value + " on pattern=" + pattern.pattern(), expected, actual);
             value = shuffleCase(value);
         }

@@ -32,9 +32,9 @@ import org.apache.sshd.common.util.io.IoUtils;
 
 /**
  * Monitors the {@code ~/.ssh/config} file of the user currently running
- * the server, re-loading it if necessary. It also (optionally) enforces the same
- * permissions regime as {@code OpenSSH} does for the file permissions.
-
+ * the client, re-loading it if necessary. It also (optionally) enforces
+ * the same permissions regime as {@code OpenSSH}
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DefaultConfigFileHostEntryResolver extends ConfigFileHostEntryResolver {
@@ -48,8 +48,9 @@ public class DefaultConfigFileHostEntryResolver extends ConfigFileHostEntryResol
 
     /**
      * @param strict If {@code true} then makes sure that the containing folder
-     *               has 0700 access and the file 0600. <B>Note:</B> for <I>Windows</I> it
+     *               has 0700 access and the file 0644. <B>Note:</B> for <I>Windows</I> it
      *               does not check these permissions
+     * @see #validateStrictConfigFilePermissions(Path, LinkOption...)
      */
     public DefaultConfigFileHostEntryResolver(boolean strict) {
         this(HostConfigEntry.getDefaultHostConfigFile(), strict);
@@ -64,6 +65,12 @@ public class DefaultConfigFileHostEntryResolver extends ConfigFileHostEntryResol
         this.strict = strict;
     }
 
+    /**
+     * @return If {@code true} then makes sure that the containing folder
+     * has 0700 access and the file 0644. <B>Note:</B> for <I>Windows</I> it
+     * does not check these permissions
+     * @see #validateStrictConfigFilePermissions(Path, LinkOption...)
+     */
     public final boolean isStrict() {
         return strict;
     }

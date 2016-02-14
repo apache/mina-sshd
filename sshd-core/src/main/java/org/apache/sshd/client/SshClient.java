@@ -73,6 +73,7 @@ import org.apache.sshd.client.config.keys.DefaultClientIdentitiesWatcher;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
+import org.apache.sshd.client.session.AbstractClientSession;
 import org.apache.sshd.client.session.ClientConnectionServiceFactory;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionCreator;
@@ -590,8 +591,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     protected void onConnectOperationComplete(IoSession ioSession, ConnectFuture connectFuture,
             String username, SocketAddress address, Collection<? extends KeyPair> identities, boolean useDefaultIdentities) {
-        ClientSession session = (ClientSession) AbstractSession.getSession(ioSession);
+        AbstractClientSession session = (AbstractClientSession) AbstractSession.getSession(ioSession);
         session.setUsername(username);
+        session.setConnectAddress(address);
 
         if (useDefaultIdentities) {
             setupDefaultSessionIdentities(session);

@@ -114,7 +114,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
     public void testNegatedHostEntriesResolution() throws Exception {
         HostConfigEntry positiveEntry = new HostConfigEntry(TEST_LOCALHOST, TEST_LOCALHOST, port, getCurrentTestName());
         HostConfigEntry negativeEntry = new HostConfigEntry(
-                String.valueOf(HostConfigEntry.NEGATION_CHAR_PATTERN) + positiveEntry.getHost(),
+                String.valueOf(HostPatternsHolder.NEGATION_CHAR_PATTERN) + positiveEntry.getHost(),
                 positiveEntry.getHostName(),
                 getMovedPortNumber(positiveEntry.getPort()),
                 getClass().getPackage().getName());
@@ -264,15 +264,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
     private static <S extends Session> S assertEffectiveRemoteAddress(S session, HostConfigEntry entry) {
         IoSession ioSession = session.getIoSession();
         SocketAddress remoteAddress = ioSession.getRemoteAddress();
-        InetSocketAddress inetAddress;
-        if (remoteAddress instanceof InetSocketAddress) {
-            inetAddress = (InetSocketAddress) remoteAddress;
-        } else if (remoteAddress instanceof SshdSocketAddress) {
-            inetAddress = ((SshdSocketAddress) remoteAddress).toInetSocketAddress();
-        } else {
-            throw new ClassCastException("Unknown remote address type: " + remoteAddress);
-        }
-
+        InetSocketAddress inetAddress = SshdSocketAddress.toInetSocketAddress(remoteAddress);
         assertEquals("Mismatched effective port", entry.getPort(), inetAddress.getPort());
         assertEquals("Mismatched effective user", entry.getUsername(), session.getUsername());
         return session;

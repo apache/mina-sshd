@@ -33,6 +33,8 @@ public interface Mac extends MacInformation {
 
     void updateUInt(long foo);
 
+    byte[] doFinal() throws Exception;
+
     void doFinal(byte[] buf) throws Exception;
 
     void doFinal(byte[] buf, int offset) throws Exception;

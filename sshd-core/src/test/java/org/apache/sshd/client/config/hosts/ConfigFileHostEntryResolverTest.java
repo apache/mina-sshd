@@ -61,17 +61,17 @@ public class ConfigFileHostEntryResolverTest extends BaseTestSupport {
         testConfigFileReload("Non-existing", path, reloadCount, null, resolver, expected, null);
         testConfigFileReload("Empty", path, reloadCount, Collections.<HostConfigEntry>emptyList(), resolver, expected, null);
         testConfigFileReload("Global", path, reloadCount,
-                Collections.singletonList(new HostConfigEntry(HostConfigEntry.ALL_HOSTS_PATTERN, expected.getHost(), expected.getPort(), expected.getUsername())),
+                Collections.singletonList(new HostConfigEntry(HostPatternsHolder.ALL_HOSTS_PATTERN, expected.getHost(), expected.getPort(), expected.getUsername())),
                 resolver, expected, expected);
         testConfigFileReload("Wildcard", path, reloadCount,
                 Arrays.asList(
-                        new HostConfigEntry(HostConfigEntry.ALL_HOSTS_PATTERN, getClass().getSimpleName(), 1234, getClass().getSimpleName()),
-                        new HostConfigEntry(expected.getHost() + String.valueOf(HostConfigEntry.WILDCARD_PATTERN), expected.getHost(), expected.getPort(), expected.getUsername())),
+                        new HostConfigEntry(HostPatternsHolder.ALL_HOSTS_PATTERN, getClass().getSimpleName(), 1234, getClass().getSimpleName()),
+                        new HostConfigEntry(expected.getHost() + String.valueOf(HostPatternsHolder.WILDCARD_PATTERN), expected.getHost(), expected.getPort(), expected.getUsername())),
                 resolver, expected, expected);
         testConfigFileReload("Specific", path, reloadCount,
                 Arrays.asList(
-                        new HostConfigEntry(HostConfigEntry.ALL_HOSTS_PATTERN, getClass().getSimpleName(), 1234, getClass().getSimpleName()),
-                        new HostConfigEntry(getClass().getSimpleName() + String.valueOf(HostConfigEntry.WILDCARD_PATTERN), getClass().getSimpleName(), 1234, getClass().getSimpleName()),
+                        new HostConfigEntry(HostPatternsHolder.ALL_HOSTS_PATTERN, getClass().getSimpleName(), 1234, getClass().getSimpleName()),
+                        new HostConfigEntry(getClass().getSimpleName() + String.valueOf(HostPatternsHolder.WILDCARD_PATTERN), getClass().getSimpleName(), 1234, getClass().getSimpleName()),
                         expected),
                 resolver, expected, expected);
     }

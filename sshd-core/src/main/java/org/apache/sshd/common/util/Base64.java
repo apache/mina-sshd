@@ -33,7 +33,7 @@ import java.security.InvalidParameterException;
  *         TODO replace this class with {@code java.util.Base64} when upgrading to JDK 1.8
  * @see <a href="http://www.ietf.org/rfc/rfc2045.txt">RFC 2045</a>
  */
-public class Base64 {
+public final class Base64 {
 
     /**
      * <P>Chunk size per RFC 2045 section 6.8.</P>
@@ -43,7 +43,47 @@ public class Base64 {
      *
      * @see <a href="http://www.ietf.org/rfc/rfc2045.txt">RFC 2045 section 6.8</a>
      */
-    static final int CHUNK_SIZE = 76;
+    public static final int CHUNK_SIZE = 76;
+
+    /**
+     * The base length.
+     */
+    public static final int BASELENGTH = 255;
+
+    /**
+     * Lookup length.
+     */
+    public static final int LOOKUPLENGTH = 64;
+
+    /**
+     * Used to calculate the number of bits in a byte.
+     */
+    public static final int EIGHTBIT = Byte.SIZE;
+
+    /**
+     * Used when encoding something which has fewer than 24 bits.
+     */
+    public static final int SIXTEENBIT = 2 * EIGHTBIT;
+
+    /**
+     * Used to determine how many bits data contains.
+     */
+    public static final int TWENTYFOURBITGROUP = 3 * EIGHTBIT;
+
+    /**
+     * Used to get the number of Quadruples.
+     */
+    public static final int FOURBYTE = 4;
+
+    /**
+     * Used to test the sign of a byte.
+     */
+    public static final int SIGN = -128;
+
+    /**
+     * Byte used to pad output.
+     */
+    public static final byte PAD = (byte) '=';
 
     /**
      * Chunk separator per RFC 2045 section 2.1.
@@ -51,46 +91,6 @@ public class Base64 {
      * @see <a href="http://www.ietf.org/rfc/rfc2045.txt">RFC 2045 section 2.1</a>
      */
     static final byte[] CHUNK_SEPARATOR = "\r\n".getBytes(StandardCharsets.UTF_8);
-
-    /**
-     * The base length.
-     */
-    static final int BASELENGTH = 255;
-
-    /**
-     * Lookup length.
-     */
-    static final int LOOKUPLENGTH = 64;
-
-    /**
-     * Used to calculate the number of bits in a byte.
-     */
-    static final int EIGHTBIT = 8;
-
-    /**
-     * Used when encoding something which has fewer than 24 bits.
-     */
-    static final int SIXTEENBIT = 16;
-
-    /**
-     * Used to determine how many bits data contains.
-     */
-    static final int TWENTYFOURBITGROUP = 24;
-
-    /**
-     * Used to get the number of Quadruples.
-     */
-    static final int FOURBYTE = 4;
-
-    /**
-     * Used to test the sign of a byte.
-     */
-    static final int SIGN = -128;
-
-    /**
-     * Byte used to pad output.
-     */
-    static final byte PAD = (byte) '=';
 
     // Create arrays to hold the base64 characters and a
     // lookup for base64 chars
@@ -132,7 +132,11 @@ public class Base64 {
         lookUpBase64Alphabet[63] = (byte) '/';
     }
 
-    private static boolean isBase64(byte octect) {
+    private Base64() {
+        throw new UnsupportedOperationException("No instance");
+    }
+
+    public static boolean isBase64(byte octect) {
         return octect == PAD || base64Alphabet[octect] != -1;
     }
 
@@ -145,10 +149,9 @@ public class Base64 {
      * alphabet or if the byte array is empty; false, otherwise
      */
     public static boolean isArrayByteBase64(byte[] arrayOctect) {
-
         arrayOctect = discardWhitespace(arrayOctect);
 
-        int length = arrayOctect.length;
+        int length = NumberUtils.length(arrayOctect);
         if (length == 0) {
             // shouldn't a 0 length array be valid base64 data?
             return true;
@@ -227,7 +230,8 @@ public class Base64 {
      * @return Base64-encoded data.
      */
     public static byte[] encodeBase64(byte[] binaryData, boolean isChunked) {
-        int lengthDataBits = binaryData.length * EIGHTBIT;
+        int lengthDataBytes = NumberUtils.length(binaryData);
+        int lengthDataBits = lengthDataBytes * EIGHTBIT;
         int fewerThan24bits = lengthDataBits % TWENTYFOURBITGROUP;
         int numberTriplets = lengthDataBits / TWENTYFOURBITGROUP;
         byte encodedData[];
@@ -246,7 +250,6 @@ public class Base64 {
         // for compliance with RFC 2045 MIME, then it is important to
         // allow for extra length to account for the separator(s)
         if (isChunked) {
-
             nbrChunks = CHUNK_SEPARATOR.length == 0 ? 0 : (int) Math.ceil((float) encodedDataLength / CHUNK_SIZE);
             encodedDataLength += nbrChunks * CHUNK_SEPARATOR.length;
         }
@@ -309,7 +312,6 @@ public class Base64 {
             encodedData[encodedIndex + 2] = PAD;
             encodedData[encodedIndex + 3] = PAD;
         } else if (fewerThan24bits == SIXTEENBIT) {
-
             b1 = binaryData[dataIndex];
             b2 = binaryData[dataIndex + 1];
             l = (byte) (b2 & 0x0f);
@@ -418,28 +420,50 @@ public class Base64 {
      *
      * @param data The base-64 encoded data to discard the whitespace
      *             from.
-     * @return The data, less whitespace (see RFC 2045).
+     * @return The data, less whitespace (see RFC 2045) - may be same
+     * as input if no whitespace found
      */
-    static byte[] discardWhitespace(byte[] data) {
-        byte groomedData[] = new byte[data.length];
+    public static byte[] discardWhitespace(byte[] data) {
+        if (NumberUtils.isEmpty(data)) {
+            return GenericUtils.EMPTY_BYTE_ARRAY;
+        }
+
+        byte groomedData[] = null;
         int bytesCopied = 0;
 
-        for (int i = 0; i < data.length; i++) {
-            switch (data[i]) {
-                case (byte) ' ':
-                case (byte) '\n':
-                case (byte) '\r':
-                case (byte) '\t':
-                    break;
-                default:
-                    groomedData[bytesCopied++] = data[i];
+        for (int index = 0; index < data.length; index++) {
+            byte v = data[index];
+            boolean isWhiteSpace = (v == (byte) ' ') || (v == (byte) '\t') || (v == (byte) '\r') || (v == (byte) '\n');
+            if (groomedData == null) {
+                if (isWhiteSpace) { // all values up to this index were NOT white space
+                    groomedData = new byte[data.length - 1];
+                    if (index > 0) {
+                        System.arraycopy(data, 0, groomedData, 0, index);
+                    }
+                    bytesCopied = index;
+                }
+            } else {
+                if (isWhiteSpace) {
+                    continue;
+                }
+                groomedData[bytesCopied++] = v;
             }
         }
 
-        byte packedData[] = new byte[bytesCopied];
+        if (groomedData == null) {
+            return data;    // all characters where non-whitespace
+        }
 
+        if (bytesCopied <= 0) {
+            return GenericUtils.EMPTY_BYTE_ARRAY;
+        }
+
+        if (bytesCopied == groomedData.length) {
+            return groomedData;
+        }
+
+        byte[] packedData = new byte[bytesCopied];
         System.arraycopy(groomedData, 0, packedData, 0, bytesCopied);
-
         return packedData;
     }
 

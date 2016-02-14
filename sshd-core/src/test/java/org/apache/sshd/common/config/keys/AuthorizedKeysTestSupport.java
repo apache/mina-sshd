@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.server.config.keys;
+package org.apache.sshd.common.config.keys;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -41,6 +41,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseReader;
+import org.apache.sshd.server.config.keys.AuthorizedKeysAuthenticator;
 import org.apache.sshd.util.test.BaseTestSupport;
 
 /**
@@ -76,8 +77,8 @@ public abstract class AuthorizedKeysTestSupport extends BaseTestSupport {
     protected List<String> loadDefaultSupportedKeys() throws IOException {
         return loadSupportedKeys(
                 ValidateUtils.checkNotNull(
-                        getClass().getResource(AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME),
-                        "Missing resource=" + AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME));
+                        getClass().getResource(AuthorizedKeysAuthenticator.STD_AUTHORIZED_KEYS_FILENAME),
+                        "Missing resource=" + AuthorizedKeysAuthenticator.STD_AUTHORIZED_KEYS_FILENAME));
     }
 
     public static List<String> loadSupportedKeys(URL url) throws IOException {

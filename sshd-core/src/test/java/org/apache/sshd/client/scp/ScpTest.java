@@ -758,7 +758,7 @@ public class ScpTest extends BaseTestSupport {
                 try {
                     scp.upload(data, remotePath, EnumSet.allOf(PosixFilePermission.class), null);
                     outputDebugMessage("Upload success to %s", remotePath);
-                } catch(ScpException e) {
+                } catch (ScpException e) {
                     Integer exitCode = e.getExitStatus();
                     assertNotNull("No upload exit status", exitCode);
                     assertEquals("Mismatched upload exit status", TEST_EXIT_VALUE, exitCode.intValue());
@@ -775,7 +775,7 @@ public class ScpTest extends BaseTestSupport {
                 try {
                     byte[] downloaded = scp.downloadBytes(remotePath);
                     outputDebugMessage("Download success to %s: %s", remotePath, new String(downloaded, StandardCharsets.UTF_8));
-                } catch(ScpException e) {
+                } catch (ScpException e) {
                     Integer exitCode = e.getExitStatus();
                     assertNotNull("No download exit status", exitCode);
                     assertEquals("Mismatched download exit status", TEST_EXIT_VALUE, exitCode.intValue());

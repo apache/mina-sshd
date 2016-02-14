@@ -92,15 +92,25 @@ public class BaseMac implements Mac {
     }
 
     @Override   // TODO make this a default method in Java 8
+    public byte[] doFinal() throws Exception {
+        int blockSize = getBlockSize();
+        byte[] buf = new byte[blockSize];
+        doFinal(buf);
+        return buf;
+    }
+
+    @Override   // TODO make this a default method in Java 8
     public void doFinal(byte[] buf) throws Exception {
         doFinal(buf, 0);
     }
 
     @Override
     public void doFinal(byte[] buf, int offset) throws Exception {
-        if (bsize != defbsize) {
+        int blockSize = getBlockSize();
+        int defaultSize = getDefaultBlockSize();
+        if (blockSize != defaultSize) {
             mac.doFinal(tmp, 0);
-            System.arraycopy(tmp, 0, buf, offset, bsize);
+            System.arraycopy(tmp, 0, buf, offset, blockSize);
         } else {
             mac.doFinal(buf, offset);
         }

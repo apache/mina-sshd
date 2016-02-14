@@ -19,6 +19,7 @@
 package org.apache.sshd.client.session;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.file.FileSystem;
 import java.util.Collection;
 import java.util.Map;
@@ -75,6 +76,17 @@ public interface ClientSession extends Session, ClientAuthenticationManager {
         WAIT_AUTH,
         AUTHED;
     }
+
+    /**
+     * Returns the original address (after having been translated through host
+     * configuration entries if any) that was request to connect. It contains the
+     * original host or address string that was used. <B>Note:</B> this may be
+     * different than the result of the {@link #getIoSession()} report of the
+     * remote peer
+     *
+     * @return The original requested address
+     */
+    SocketAddress getConnectAddress();
 
     /**
      * Starts the authentication process.

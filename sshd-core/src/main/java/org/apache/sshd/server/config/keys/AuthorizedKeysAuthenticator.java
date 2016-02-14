@@ -21,13 +21,19 @@ package org.apache.sshd.server.config.keys;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
+import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -47,6 +53,16 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implements PublickeyAuthenticator {
+
+    /**
+     * Standard OpenSSH authorized keys file name
+     */
+    public static final String STD_AUTHORIZED_KEYS_FILENAME = "authorized_keys";
+
+    private static final class LazyDefaultAuthorizedKeysFileHolder {
+        private static final Path KEYS_FILE = PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_AUTHORIZED_KEYS_FILENAME);
+    }
+
     private final AtomicReference<PublickeyAuthenticator> delegateHolder =  // assumes initially reject-all
             new AtomicReference<PublickeyAuthenticator>(RejectAllPublickeyAuthenticator.INSTANCE);
 
@@ -129,5 +145,30 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
         log.info("reloadAuthorizedKeys(" + username + ")[" + session + "] loaded " + GenericUtils.size(entries) + " keys from " + path);
         updateReloadAttributes();
         return entries;
+    }
+
+    /**
+     * @return The default {@link Path} location of the OpenSSH authorized keys file
+     */
+    @SuppressWarnings("synthetic-access")
+    public static Path getDefaultAuthorizedKeysFile() {
+        return LazyDefaultAuthorizedKeysFileHolder.KEYS_FILE;
+    }
+
+    /**
+     * Reads read the contents of the default OpenSSH <code>authorized_keys</code> file
+     *
+     * @param options The {@link OpenOption}s to use when reading the file
+     * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there -
+     * or empty if file does not exist
+     * @throws IOException If failed to read keys from file
+     */
+    public static List<AuthorizedKeyEntry> readDefaultAuthorizedKeys(OpenOption ... options) throws IOException {
+        Path keysFile = getDefaultAuthorizedKeysFile();
+        if (Files.exists(keysFile, IoUtils.EMPTY_LINK_OPTIONS)) {
+            return AuthorizedKeyEntry.readAuthorizedKeys(keysFile);
+        } else {
+            return Collections.emptyList();
+        }
     }
 }

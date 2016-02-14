@@ -30,15 +30,13 @@ import org.apache.sshd.client.session.ClientSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ServerKeyVerifier {
-
     /**
      * Verify that the server key provided is really the one of the host.
      *
-     * @param sshClientSession the current session
-     * @param remoteAddress    the host
-     * @param serverKey        the presented key
+     * @param clientSession    the current {@link ClientSession}
+     * @param remoteAddress    the host's {@link SocketAddress}
+     * @param serverKey        the presented server {@link PublicKey}
      * @return <code>true</code> if the key is accepted for the host
      */
-    boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey);
-
+    boolean verifyServerKey(ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey);
 }

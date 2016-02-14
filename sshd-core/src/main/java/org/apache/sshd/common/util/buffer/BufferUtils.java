@@ -314,8 +314,9 @@ public final class BufferUtils {
             // TODO use Integer.BYTES for JDK-8
             IoUtils.readFully(input, buf, offset, Integer.SIZE / Byte.SIZE);
             return getUInt(buf, offset, len);
-        } catch (IllegalArgumentException e) {
-            throw new StreamCorruptedException(e.getMessage());
+        } catch (RuntimeException | Error e) {
+            throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ")"
+                    + " to read UINT value: " + e.getMessage());
         }
     }
 
@@ -408,8 +409,9 @@ public final class BufferUtils {
         try {
             int writeLen = putUInt(value, buf, off, len);
             output.write(buf, off, writeLen);
-        } catch (IllegalArgumentException e) {
-            throw new StreamCorruptedException(e.getMessage());
+        } catch (RuntimeException | Error e) {
+            throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ")"
+                    + " to write UINT value=" + value + ": " + e.getMessage());
         }
     }
 

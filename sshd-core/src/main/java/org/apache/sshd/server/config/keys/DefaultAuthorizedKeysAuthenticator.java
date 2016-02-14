@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.sshd.common.auth.UsernameHolder;
+import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.Pair;
@@ -64,7 +65,7 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
     }
 
     public DefaultAuthorizedKeysAuthenticator(String user, boolean strict) {
-        this(user, AuthorizedKeyEntry.getDefaultAuthorizedKeysFile(), strict);
+        this(user, getDefaultAuthorizedKeysFile(), strict);
     }
 
     public DefaultAuthorizedKeysAuthenticator(File file, boolean strict) {

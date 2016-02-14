@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.server.config.keys;
+package org.apache.sshd.common.config.keys;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -41,12 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.config.keys.PublicKeyEntry;
-import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
-import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseReader;
 import org.apache.sshd.server.auth.pubkey.KeySetPublickeyAuthenticator;
@@ -63,16 +58,7 @@ import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
  */
 public class AuthorizedKeyEntry extends PublicKeyEntry {
 
-    /**
-     * Standard OpenSSH authorized keys file name
-     */
-    public static final String STD_AUTHORIZED_KEYS_FILENAME = "authorized_keys";
-
     private static final long serialVersionUID = -9007505285002809156L;
-
-    private static final class LazyDefaultAuthorizedKeysFileHolder {
-        private static final Path KEYS_FILE = PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_AUTHORIZED_KEYS_FILENAME);
-    }
 
     private String comment;
     // for options that have no value, "true" is used
@@ -171,31 +157,6 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         }
 
         return keys;
-    }
-
-    /**
-     * @return The default {@link Path} location of the OpenSSH authorized keys file
-     */
-    @SuppressWarnings("synthetic-access")
-    public static Path getDefaultAuthorizedKeysFile() {
-        return LazyDefaultAuthorizedKeysFileHolder.KEYS_FILE;
-    }
-
-    /**
-     * Reads read the contents of the default OpenSSH <code>authorized_keys</code> file
-     *
-     * @param options The {@link OpenOption}s to use when reading the file
-     * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there -
-     * or empty if file does not exist
-     * @throws IOException If failed to read keys from file
-     */
-    public static List<AuthorizedKeyEntry> readDefaultAuthorizedKeys(OpenOption ... options) throws IOException {
-        Path keysFile = getDefaultAuthorizedKeysFile();
-        if (Files.exists(keysFile, IoUtils.EMPTY_LINK_OPTIONS)) {
-            return readAuthorizedKeys(keysFile);
-        } else {
-            return Collections.emptyList();
-        }
     }
 
     /**
@@ -306,8 +267,9 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
                 if (entry == null) {    // null, empty or comment line
                     continue;
                 }
-            } catch (IllegalArgumentException e) {
-                throw new StreamCorruptedException(e.getMessage());
+            } catch (RuntimeException | Error e) {
+                throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ")"
+                        + " to parse key entry=" + line + ": " + e.getMessage());
             }
 
             if (entries == null) {

@@ -26,13 +26,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.directory.server.core.DirectoryService;
 import org.apache.directory.server.ldap.LdapServer;
+import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.auth.BaseAuthenticatorTest;
-import org.apache.sshd.server.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.server.session.ServerSession;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

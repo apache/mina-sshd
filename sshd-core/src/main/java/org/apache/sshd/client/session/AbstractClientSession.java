@@ -20,6 +20,7 @@
 package org.apache.sshd.client.session;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.file.FileSystem;
 import java.security.KeyPair;
 import java.util.List;
@@ -67,6 +68,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     private PasswordIdentityProvider passwordIdentityProvider;
     private List<NamedFactory<UserAuth>> userAuthFactories;
     private ScpTransferEventListener scpListener;
+    private SocketAddress connectAddress;
 
     protected AbstractClientSession(ClientFactoryManager factoryManager, IoSession ioSession) {
         super(false, factoryManager, ioSession);
@@ -76,6 +78,15 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     @Override
     public ClientFactoryManager getFactoryManager() {
         return (ClientFactoryManager) super.getFactoryManager();
+    }
+
+    @Override
+    public SocketAddress getConnectAddress() {
+        return connectAddress;
+    }
+
+    public void setConnectAddress(SocketAddress connectAddress) {
+        this.connectAddress = connectAddress;
     }
 
     @Override

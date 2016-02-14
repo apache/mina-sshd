@@ -21,7 +21,7 @@ package org.apache.sshd.common.util;
 import java.util.Objects;
 
 /**
- * Represents a pair of values
+ * Represents an un-modifiable pair of values
  *
  * @param <F> First value type
  * @param <S> Second value type
