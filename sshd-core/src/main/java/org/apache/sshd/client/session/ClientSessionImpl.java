@@ -269,13 +269,6 @@ public class ClientSessionImpl extends AbstractClientSession {
     }
 
     @Override
-    protected void handleMessage(Buffer buffer) throws Exception {
-        synchronized (lock) {
-            super.handleMessage(buffer);
-        }
-    }
-
-    @Override
     public Set<ClientSessionEvent> waitFor(Collection<ClientSessionEvent> mask, long timeout) {
         ValidateUtils.checkNotNull(mask, "No mask specified");
         long t = 0L;
