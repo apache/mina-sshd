@@ -25,11 +25,13 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.channel.BufferedIoOutputStream;
+import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.AsyncCommand;
 import org.apache.sshd.server.ChannelSessionAware;
@@ -144,10 +146,17 @@ public class AsyncEchoShellFactory implements Factory<Command> {
                     out.write(new ByteArrayBuffer(bytes)).addListener(new SshFutureListener<IoWriteFuture>() {
                         @Override
                         public void operationComplete(IoWriteFuture future) {
-                            try {
-                                channel.getLocalWindow().consumeAndCheck(bytes.length);
-                            } catch (IOException e) {
-                                channel.getSession().exceptionCaught(e);
+                            Session session = channel.getSession();
+                            if (future.isWritten()) {
+                                try {
+                                    Window wLocal = channel.getLocalWindow();
+                                    wLocal.consumeAndCheck(bytes.length);
+                                } catch (IOException e) {
+                                    session.exceptionCaught(e);
+                                }
+                            } else {
+                                Throwable t = future.getException();
+                                session.exceptionCaught(t);
                             }
                         }
                     });

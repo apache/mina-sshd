@@ -112,7 +112,6 @@ public class WindowAdjustTest extends BaseTestSupport {
 
     @Test(timeout = 6L * 60L * 1000L)
     public void testTrafficHeavyLoad() throws Exception {
-
         try (SshClient client = setupTestClient()) {
             client.start();
 
@@ -274,7 +273,7 @@ public class WindowAdjustTest extends BaseTestSupport {
     /**
      * Wrapper for asyncIn stream that catches Pending exception and queues the pending messages for later retry (send after previous messages were fully transfered)
      */
-    private static class AsyncInPendingWrapper {
+    private static class AsyncInPendingWrapper extends AbstractLoggingBean {
         private IoOutputStream asyncIn;
 
         // Order has to be preserved for queued writes
@@ -309,11 +308,16 @@ public class WindowAdjustTest extends BaseTestSupport {
                 asyncIn.write(msg).addListener(new SshFutureListener<IoWriteFuture>() {
                     @SuppressWarnings("synthetic-access")
                     @Override
-                    public void operationComplete(final IoWriteFuture future) {
-                        if (wasPending) {
-                            pending.remove();
+                    public void operationComplete(IoWriteFuture future) {
+                        if (future.isWritten()) {
+                            if (wasPending) {
+                                pending.remove();
+                            }
+                            writePendingIfAny();
+                        } else {
+                            Throwable t = future.getException();
+                            log.warn("Failed to write message", t);
                         }
-                        writePendingIfAny();
                     }
                 });
             } catch (final WritePendingException e) {
