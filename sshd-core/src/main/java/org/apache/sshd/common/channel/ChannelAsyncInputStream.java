@@ -19,6 +19,7 @@
 package org.apache.sshd.common.channel;
 
 import java.io.IOException;
+
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
@@ -26,7 +27,9 @@ import org.apache.sshd.common.future.DefaultVerifiableSshFuture;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoReadFuture;
 import org.apache.sshd.common.io.ReadPendingException;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.Readable;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
@@ -34,14 +37,18 @@ import org.apache.sshd.common.util.closeable.AbstractCloseable;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ChannelAsyncInputStream extends AbstractCloseable implements IoInputStream {
-
-    private final Channel channel;
+public class ChannelAsyncInputStream extends AbstractCloseable implements IoInputStream, ChannelHolder {
+    private final Channel channelInstance;
     private final Buffer buffer = new ByteArrayBuffer();
     private IoReadFutureImpl pending;
 
     public ChannelAsyncInputStream(Channel channel) {
-        this.channel = channel;
+        this.channelInstance = ValidateUtils.checkNotNull(channel, "No channel");
+    }
+
+    @Override
+    public Channel getChannel() {
+        return channelInstance;
     }
 
     public void write(Readable src) throws IOException {
@@ -109,10 +116,13 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
             }
         }
         if (nbRead > 0) {
+            Channel channel = getChannel();
             try {
-                channel.getLocalWindow().consumeAndCheck(nbRead);
+                Window wLocal = channel.getLocalWindow();
+                wLocal.consumeAndCheck(nbRead);
             } catch (IOException e) {
-                channel.getSession().exceptionCaught(e);
+                Session session = channel.getSession();
+                session.exceptionCaught(e);
             }
             future.setValue(nbRead);
         }
@@ -120,7 +130,7 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
 
     @Override
     public String toString() {
-        return "ChannelAsyncInputStream[" + channel + "]";
+        return getClass().getSimpleName() + "[" + getChannel() + "]";
     }
 
     public static class IoReadFutureImpl extends DefaultVerifiableSshFuture<IoReadFuture> implements IoReadFuture {

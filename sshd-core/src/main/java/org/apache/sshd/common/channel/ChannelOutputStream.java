@@ -21,7 +21,6 @@ package org.apache.sshd.common.channel;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
-import java.nio.channels.Channel;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -34,18 +33,16 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.slf4j.Logger;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ChannelOutputStream extends OutputStream implements Channel {
+public class ChannelOutputStream extends OutputStream implements java.nio.channels.Channel, ChannelHolder {
     /**
      * Configure max. wait time (millis) to wait for space to become available
      */
     public static final String WAIT_FOR_SPACE_TIMEOUT = "channel-output-wait-for-space-timeout";
     public static final long DEFAULT_WAIT_FOR_SPACE_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
 
-    private final AbstractChannel channel;
+    private final AbstractChannel channelInstance;
     private final Window remoteWindow;
     private final long maxWaitTimeout;
     private final Logger log;
@@ -63,7 +60,7 @@ public class ChannelOutputStream extends OutputStream implements Channel {
     }
 
     public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, long maxWaitTimeout, Logger log, byte cmd, boolean eofOnClose) {
-        this.channel = ValidateUtils.checkNotNull(channel, "No channel");
+        this.channelInstance = ValidateUtils.checkNotNull(channel, "No channel");
         this.remoteWindow = ValidateUtils.checkNotNull(remoteWindow, "No remote window");
         ValidateUtils.checkTrue(maxWaitTimeout > 0L, "Non-positive max. wait time: %d", maxWaitTimeout);
         this.maxWaitTimeout = maxWaitTimeout;
@@ -71,6 +68,11 @@ public class ChannelOutputStream extends OutputStream implements Channel {
         this.cmd = cmd;
         this.eofOnClose = eofOnClose;
         newBuffer(0);
+    }
+
+    @Override   // co-variant return
+    public AbstractChannel getChannel() {
+        return channelInstance;
     }
 
     public boolean isEofOnClose() {
@@ -102,6 +104,7 @@ public class ChannelOutputStream extends OutputStream implements Channel {
             throw new SshException("write(" + this + ") len=" + l + " - channel already closed");
         }
 
+        Channel channel = getChannel();
         Session session = channel.getSession();
         while (l > 0) {
             // The maximum amount we should admit without flushing again
@@ -152,6 +155,7 @@ public class ChannelOutputStream extends OutputStream implements Channel {
         }
 
         try {
+            AbstractChannel channel = getChannel();
             Session session = channel.getSession();
             while (bufferLength > 0) {
                 session.resetIdleTimeout();
@@ -207,6 +211,7 @@ public class ChannelOutputStream extends OutputStream implements Channel {
             try {
                 flush();
                 if (isEofOnClose()) {
+                    AbstractChannel channel = getChannel();
                     channel.sendEof();
                 }
             } finally {
@@ -215,12 +220,8 @@ public class ChannelOutputStream extends OutputStream implements Channel {
         }
     }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + channel + "]";
-    }
-
     protected void newBuffer(int size) {
+        Channel channel = getChannel();
         Session session = channel.getSession();
         buffer = session.createBuffer(cmd, size <= 0 ? 12 : 12 + size);
         buffer.putInt(channel.getRecipient());
@@ -229,5 +230,10 @@ public class ChannelOutputStream extends OutputStream implements Channel {
         }
         buffer.putInt(0);
         bufferLength = 0;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[" + getChannel() + "] " + SshConstants.getCommandMessageName(cmd & 0xFF);
     }
 }

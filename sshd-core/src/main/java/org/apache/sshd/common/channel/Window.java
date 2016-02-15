@@ -43,7 +43,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class Window extends AbstractLoggingBean implements java.nio.channels.Channel, PropertyResolver {
+public class Window extends AbstractLoggingBean implements java.nio.channels.Channel, ChannelHolder, PropertyResolver {
     /**
      * Default {@link Predicate} used to test if space became available
      */
@@ -59,7 +59,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final AtomicBoolean initialized = new AtomicBoolean(false);
     private final AtomicInteger sizeHolder = new AtomicInteger(0);
-    private final AbstractChannel channel;
+    private final AbstractChannel channelInstance;
     private final Object lock;
     private final String suffix;
 
@@ -68,9 +68,9 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
     private Map<String, Object> props = Collections.<String, Object>emptyMap();
 
     public Window(AbstractChannel channel, Object lock, boolean client, boolean local) {
-        this.channel = ValidateUtils.checkNotNull(channel, "No channel provided");
+        this.channelInstance = ValidateUtils.checkNotNull(channel, "No channel provided");
         this.lock = (lock != null) ? lock : this;
-        this.suffix = ": " + (client ? "client" : "server") + " " + (local ? "local" : "remote") + " window";
+        this.suffix = (client ? "client" : "server") + "/" + (local ? "local" : "remote");
     }
 
     @Override
@@ -80,7 +80,12 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
 
     @Override
     public PropertyResolver getParentPropertyResolver() {
-        return channel;
+        return getChannel();
+    }
+
+    @Override   // co-variant return
+    public AbstractChannel getChannel() {
+        return channelInstance;
     }
 
     public int getSize() {
@@ -191,6 +196,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         checkInitialized("check");
 
         int adjustSize = -1;
+        AbstractChannel channel = getChannel();
         synchronized (lock) {
             // TODO make the adjust factor configurable via FactoryManager property
             int size = sizeHolder.get();
@@ -339,6 +345,6 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
 
     @Override
     public String toString() {
-        return String.valueOf(channel) + suffix;
+        return getClass().getSimpleName() + "[" + suffix + "](" + String.valueOf(getChannel()) + ")";
     }
 }
