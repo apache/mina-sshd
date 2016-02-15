@@ -392,7 +392,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * Refresh whatever internal configuration is not {@code final}
      */
     protected void refreshConfiguration() {
-        synchronized (lock) {
+        synchronized (random) {
             // re-keying configuration
             maxRekeyBytes = PropertyResolverUtils.getLongProperty(this, FactoryManager.REKEY_BYTES_LIMIT, maxRekeyBytes);
             maxRekeyInterval = PropertyResolverUtils.getLongProperty(this, FactoryManager.REKEY_TIME_LIMIT, maxRekeyInterval);
@@ -915,7 +915,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             ignoreBuf.putInt(ignoreDataLen);
 
             int wpos = ignoreBuf.wpos();
-            synchronized (lock) {
+            synchronized (random) {
                 random.fill(ignoreBuf.array(), wpos, ignoreDataLen);
             }
             ignoreBuf.wpos(wpos + ignoreDataLen);
@@ -954,7 +954,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             return 0;
         }
 
-        synchronized (lock) {
+        synchronized (random) {
             ignorePacketsCount.set(calculateNextIgnorePacketCount(random, ignorePacketsFrequency, ignorePacketsVariance));
             return ignorePacketDataLength + random.random(ignorePacketDataLength);
         }
@@ -1135,7 +1135,10 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             buffer.putByte((byte) pad);
             // Fill padding
             buffer.wpos(off + oldLen + SshConstants.SSH_PACKET_HEADER_LEN + pad);
-            random.fill(buffer.array(), buffer.wpos() - pad, pad);
+            synchronized (random) {
+                random.fill(buffer.array(), buffer.wpos() - pad, pad);
+            }
+
             // Compute mac
             if (outMac != null) {
                 int macSize = outMac.getBlockSize();
@@ -1398,7 +1401,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_KEXINIT);
         int p = buffer.wpos();
         buffer.wpos(p + SshConstants.MSG_KEX_COOKIE_SIZE);
-        random.fill(buffer.array(), p, SshConstants.MSG_KEX_COOKIE_SIZE);
+        synchronized (random) {
+            random.fill(buffer.array(), p, SshConstants.MSG_KEX_COOKIE_SIZE);
+        }
         if (log.isTraceEnabled()) {
             log.trace("sendKexInit(" + toString() + ") cookie=" + BufferUtils.toHex(buffer.array(), p, SshConstants.MSG_KEX_COOKIE_SIZE, ':'));
         }
