@@ -548,6 +548,7 @@ public class ClientTest extends BaseTestSupport {
                                 public void operationComplete(IoReadFuture future) {
                                     try {
                                         future.verify(5L, TimeUnit.SECONDS);
+
                                         Buffer buffer = future.getBuffer();
                                         baosOut.write(buffer.array(), buffer.rpos(), buffer.available());
                                         buffer.rpos(buffer.rpos() + buffer.available());
@@ -567,6 +568,7 @@ public class ClientTest extends BaseTestSupport {
                                 public void operationComplete(IoReadFuture future) {
                                     try {
                                         future.verify(5L, TimeUnit.SECONDS);
+
                                         Buffer buffer = future.getBuffer();
                                         baosErr.write(buffer.array(), buffer.rpos(), buffer.available());
                                         buffer.rpos(buffer.rpos() + buffer.available());

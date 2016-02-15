@@ -203,12 +203,13 @@ public class ServerSessionImpl extends AbstractServerSession {
 
         if (!clientVersion.startsWith(DEFAULT_SSH_VERSION_PREFIX)) {
             String msg = "Unsupported protocol version: " + clientVersion;
-            ioSession.write(new ByteArrayBuffer((msg + "\n").getBytes(StandardCharsets.UTF_8))).addListener(new SshFutureListener<IoWriteFuture>() {
-                @Override
-                public void operationComplete(IoWriteFuture future) {
-                    close(true);
-                }
-            });
+            ioSession.write(new ByteArrayBuffer((msg + "\n").getBytes(StandardCharsets.UTF_8)))
+                     .addListener(new SshFutureListener<IoWriteFuture>() {
+                         @Override
+                         public void operationComplete(IoWriteFuture future) {
+                             close(true);
+                         }
+                     });
             throw new SshException(msg);
         } else {
             kexState.set(KexState.INIT);
