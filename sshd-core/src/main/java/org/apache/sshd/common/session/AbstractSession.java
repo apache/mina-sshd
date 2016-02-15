@@ -1070,6 +1070,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * Makes sure that the buffer used for output is not {@code null} or one
      * of the session's internal ones used for decoding and uncompressing
      *
+     * @param <B> The {@link Buffer} type being validated
      * @param cmd The most likely command this buffer refers to (not guaranteed to be correct)
      * @param buffer The buffer to be examined
      * @return The validated target instance - default same as input

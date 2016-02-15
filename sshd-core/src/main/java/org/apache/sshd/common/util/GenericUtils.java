@@ -364,6 +364,8 @@ public final class GenericUtils {
     /**
      * Creates a map out of a group of values
      *
+     * @param <K> The key type
+     * @param <V> The value type
      * @param keyMapper The {@link Transformer} that generates a key for a given value.
      * If the returned key is {@code null} then the value is not mapped
      * @param mapCreator The {@link Factory} used to create the result map - provided
@@ -576,6 +578,7 @@ public final class GenericUtils {
     /**
      * Resolves to an always non-{@code null} iterator
      *
+     * @param <T> Type of value being iterated
      * @param iterable The {@link Iterable} instance
      * @return A non-{@code null} iterator which may be empty if no iterable
      * instance or no iterator returned from it
@@ -588,6 +591,7 @@ public final class GenericUtils {
     /**
      * Resolves to an always non-{@code null} iterator
      *
+     * @param <T> Type of value being iterated
      * @param iter The {@link Iterator} instance
      * @return  A non-{@code null} iterator which may be empty if no iterator instance
      * @see Collections#emptyIterator()
@@ -602,6 +606,7 @@ public final class GenericUtils {
      * from a specific supplier are exhausted, the next one is consulted, and so on, until all
      * suppliers have been consulted
      *
+     * @param <T> Type of value being iterated
      * @param providers The providers - ignored if {@code null} (i.e., return an empty iterable instance)
      * @return The wrapping instance
      */

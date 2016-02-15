@@ -175,6 +175,7 @@ public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
     /**
      * Parses a local or remote SCP location in the format {@code user@host:path}
      *
+     * @param <L> Type of {@link ScpLocation} being updated
      * @param locSpec The location specification - ignored if {@code null}/empty
      * @param location The {@link ScpLocation} to update - never {@code null}
      * @return The updated location (unless no specification)
