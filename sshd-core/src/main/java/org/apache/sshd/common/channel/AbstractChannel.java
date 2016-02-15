@@ -472,8 +472,13 @@ public abstract class AbstractChannel
                                     gracefulFuture.setClosed();
                                 }
                             } else {
+                                Throwable t = future.getException();
                                 if (log.isDebugEnabled()) {
-                                    log.debug("close({})[immediately={}] failed to write SSH_MSG_CHANNEL_CLOSE on channel", channel, immediately);
+                                    log.debug("close({})[immediately={}] failed ({}) to write SSH_MSG_CHANNEL_CLOSE on channel: {}",
+                                              channel, immediately, t.getClass().getSimpleName(), t.getMessage());
+                                }
+                                if (log.isTraceEnabled()) {
+                                    log.trace("close(" + channel + ") SSH_MSG_CHANNEL_CLOSE failure details", t);
                                 }
                                 channel.close(true);
                             }
