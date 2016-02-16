@@ -46,6 +46,7 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatExtensionInfo;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatPathExtension;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
@@ -304,8 +305,15 @@ public class SftpCommand implements Channel {
         public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
             ValidateUtils.checkTrue(GenericUtils.isEmpty(args), "Unexpected arguments: %s", args);
             SftpClient sftp = getClient();
+            Session session = sftp.getSession();
+            stdout.append('\t').println(session.getServerVersion());
+
             Map<String, byte[]> extensions = sftp.getServerExtensions();
             Map<String, ?> parsed = ParserUtils.parse(extensions);
+            if (GenericUtils.size(extensions) > 0) {
+                stdout.println();
+            }
+
             for (Map.Entry<String, byte[]> ee : extensions.entrySet()) {
                 String name = ee.getKey();
                 byte[] value = ee.getValue();
