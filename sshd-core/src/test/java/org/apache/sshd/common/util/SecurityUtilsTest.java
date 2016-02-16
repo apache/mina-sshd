@@ -21,8 +21,11 @@ package org.apache.sshd.common.util;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
+import java.security.Provider;
 import java.security.PublicKey;
 import java.security.interfaces.DSAPrivateKey;
 import java.security.interfaces.DSAPublicKey;
@@ -177,6 +180,18 @@ public class SecurityUtilsTest extends BaseTestSupport {
         assertTrue("DH Group Exchange not supported", SecurityUtils.isDHGroupExchangeSupported());
         assertEquals("Mismatched max. DH group exchange key size", SecurityUtils.MAX_DHGEX_KEY_SIZE, SecurityUtils.getMaxDHGroupExchangeKeySize());
         assertTrue("ECC not supported", SecurityUtils.hasEcc());
+    }
+
+    @Test
+    public void testBouncyCastleRegistrationProperty() throws GeneralSecurityException {
+        String propValue = System.getProperty(SecurityUtils.REGISTER_BOUNCY_CASTLE_PROP);
+        Assume.assumeFalse(SecurityUtils.REGISTER_BOUNCY_CASTLE_PROP + " property not set", GenericUtils.isEmpty(propValue));
+        Assume.assumeFalse(SecurityUtils.REGISTER_BOUNCY_CASTLE_PROP + " property is " + propValue, Boolean.parseBoolean(propValue));
+        assertFalse("Unexpected registration of provider", SecurityUtils.isBouncyCastleRegistered());
+
+        KeyPairGenerator kpg = SecurityUtils.getKeyPairGenerator("RSA");
+        Provider provider = kpg.getProvider();
+        assertNotEquals("Unexpected used provider", SecurityUtils.BOUNCY_CASTLE, provider.getName());
     }
 
     @Test
