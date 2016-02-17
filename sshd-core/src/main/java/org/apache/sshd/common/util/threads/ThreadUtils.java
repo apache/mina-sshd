@@ -166,6 +166,9 @@ public final class ThreadUtils {
             ThreadGroup parentGroup = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
             String effectiveName = name.replace(' ', '-');
             group = new ThreadGroup(parentGroup, "sshd-" + effectiveName + "-group");
+            if (!group.isDaemon()) {
+                group.setDaemon(true);  // automatically destroy when last thread dies
+            }
             namePrefix = "sshd-" + effectiveName + "-thread-";
         }
 
@@ -180,7 +183,5 @@ public final class ThreadUtils {
             }
             return t;
         }
-
     }
-
 }
