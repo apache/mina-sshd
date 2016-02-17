@@ -20,6 +20,9 @@ package org.apache.sshd.server.channel;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -41,6 +44,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.channel.ChannelRequestHandler;
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.RequestHandler.Result;
@@ -78,6 +82,9 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelSession extends AbstractServerChannel {
+    public static final List<ChannelRequestHandler> DEFAULT_HANDLERS =
+            Collections.unmodifiableList(
+                    Arrays.<ChannelRequestHandler>asList(PuttyRequestHandler.INSTANCE));
 
     protected String type;
     protected ChannelAsyncOutputStream asyncOut;
@@ -92,7 +99,11 @@ public class ChannelSession extends AbstractServerChannel {
     protected final CloseFuture commandExitFuture = new DefaultCloseFuture(lock);
 
     public ChannelSession() {
-        addRequestHandler(PuttyRequestHandler.INSTANCE);
+        this(DEFAULT_HANDLERS);
+    }
+
+    public ChannelSession(Collection<? extends RequestHandler<Channel>> handlers) {
+        super(handlers);
     }
 
     @Override

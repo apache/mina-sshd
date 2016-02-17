@@ -181,7 +181,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                 session.resetIdleTimeout();
                 remoteWindow.waitAndConsume(length, maxWaitTimeout);
                 if (log.isTraceEnabled()) {
-                    log.trace("flush({}) send {}", channel, SshConstants.getCommandMessageName(cmd));
+                    log.trace("flush({}) send {} len={}", channel, SshConstants.getCommandMessageName(cmd), length);
                 }
                 channel.writePacket(buf);
             }

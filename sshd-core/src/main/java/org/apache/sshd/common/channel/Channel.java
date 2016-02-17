@@ -139,6 +139,13 @@ public interface Channel extends ChannelListenerManager, PropertyResolver, Close
     boolean isInitialized();
 
     /**
+     * @return {@code true} if the peer signaled that it will not send any
+     * more data
+     * @see <A HREF="https://www.ietf.org/rfc/rfc4254.txt">RFC 4254 - section 5.3 - SSH_MSG_CHANNEL_EOE</A>
+     */
+    boolean isEofSignalled();
+
+    /**
      * For a server channel, this method will actually open the channel
      *
      * @param recipient  Recipient identifier

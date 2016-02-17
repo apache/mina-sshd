@@ -85,12 +85,18 @@ public interface ClientChannel extends Channel {
     OpenFuture open() throws IOException;
 
     /**
+     * @return A snapshot of the current channel state
+     * @see #waitFor(Collection, long)
+     */
+    Set<ClientChannelEvent> getChannelState();
+
+    /**
      * Waits until any of the specified events in the mask is signaled
      *
      * @param mask The {@link ClientChannelEvent}s mask
      * @param timeout The timeout to wait (msec.) - if non-positive then forever
      * @return The actual signaled event - includes {@link ClientChannelEvent#TIMEOUT}
-     * if timeout expired before the expected event was signalled
+     * if timeout expired before the expected event was signaled
      */
     Set<ClientChannelEvent> waitFor(Collection<ClientChannelEvent> mask, long timeout);
 

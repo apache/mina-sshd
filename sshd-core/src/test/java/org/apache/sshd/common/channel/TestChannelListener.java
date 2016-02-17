@@ -19,6 +19,9 @@
 package org.apache.sshd.common.channel;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +38,7 @@ public class TestChannelListener extends AbstractLoggingBean implements ChannelL
     private final Collection<Channel> activeChannels = new CopyOnWriteArraySet<>();
     private final Collection<Channel> openChannels = new CopyOnWriteArraySet<>();
     private final Collection<Channel> failedChannels = new CopyOnWriteArraySet<>();
+    private final Map<Channel, Collection<String>> channelStateHints = new ConcurrentHashMap<>();
     private final Semaphore modificationsCounter = new Semaphore(0);
 
     public TestChannelListener() {
@@ -98,6 +102,24 @@ public class TestChannelListener extends AbstractLoggingBean implements ChannelL
         Assert.assertTrue("Unknown closed channel instance: " + channel, activeChannels.remove(channel));
         modificationsCounter.release();
         log.info("channelClosed({})", channel);
+    }
+
+    public Map<Channel, Collection<String>> getChannelStateHints() {
+        return channelStateHints;
+    }
+
+    @Override
+    public void channelStateChanged(Channel channel, String hint) {
+        Collection<String> hints;
+        synchronized (channelStateHints) {
+            hints = channelStateHints.get(channel);
+            if (hints == null) {
+                hints = new CopyOnWriteArrayList<>();
+                channelStateHints.put(channel, hints);
+            }
+        }
+
+        hints.add(hint);
     }
 
     @Override

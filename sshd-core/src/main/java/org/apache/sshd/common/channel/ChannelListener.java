@@ -61,6 +61,16 @@ public interface ChannelListener extends EventListener {
     void channelOpenFailure(Channel channel, Throwable reason);
 
     /**
+     * Called to inform that the channel state may have changed - e.g.,
+     * received EOF, window adjustment, etc..
+     *
+     * @param channel The {@link Channel} whose state has changed
+     * @param hint A &quot;hint&quot; as to the nature of the state change.
+     * it can be a request name or a {@code SSH_MSG_CHANNEL_XXX} command
+     */
+    void channelStateChanged(Channel channel, String hint);
+
+    /**
      * Called to inform about a channel being closed. <B>Note:</B> when the call
      * is made there are no guarantees about the channel's actual state
      * except that it either has been already closed or may be in the process

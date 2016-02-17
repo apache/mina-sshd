@@ -293,6 +293,11 @@ public class ClientTest extends BaseTestSupport {
                 updateChannelConfigProperty(channel, "channelClosed");
             }
 
+            @Override
+            public void channelStateChanged(Channel channel, String hint) {
+                // ignored
+            }
+
             private void updateChannelConfigProperty(Channel channel, Object value) {
                 PropertyResolverUtils.updateProperty(channel, CHANNEL_PROP_NAME, value);
                 channelConfigValueHolder.set(value);
@@ -346,6 +351,11 @@ public class ClientTest extends BaseTestSupport {
                 synchronized (failuresSet) {
                     assertTrue("Re-signalled failure location: " + name, failuresSet.add(name));
                 }
+            }
+
+            @Override
+            public void channelStateChanged(Channel channel, String hint) {
+                outputDebugMessage("channelStateChanged(%s): %s", channel, hint);
             }
 
             @Override
@@ -432,6 +442,11 @@ public class ClientTest extends BaseTestSupport {
             @Override
             public void channelInitialized(Channel channel) {
                 assertNull("Multiple channel initialization notifications", channelHolder.getAndSet(channel));
+            }
+
+            @Override
+            public void channelStateChanged(Channel channel, String hint) {
+                outputDebugMessage("channelStateChanged(%s): %s", channel, hint);
             }
 
             @Override

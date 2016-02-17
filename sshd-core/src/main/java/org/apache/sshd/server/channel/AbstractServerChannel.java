@@ -19,6 +19,8 @@
 package org.apache.sshd.server.channel;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.client.future.DefaultOpenFuture;
@@ -26,7 +28,9 @@ import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.AbstractChannel;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
+import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
@@ -44,11 +48,15 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
     protected final AtomicBoolean exitStatusSent = new AtomicBoolean(false);
 
     protected AbstractServerChannel() {
-        this("");
+        this(Collections.<RequestHandler<Channel>>emptyList());
     }
 
-    protected AbstractServerChannel(String discriminator) {
-        super(discriminator, false);
+    protected AbstractServerChannel(Collection<? extends RequestHandler<Channel>> handlers) {
+        this("", handlers);
+    }
+
+    protected AbstractServerChannel(String discriminator, Collection<? extends RequestHandler<Channel>> handlers) {
+        super(discriminator, false, handlers);
     }
 
     @Override
@@ -115,7 +123,7 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
             if (log.isDebugEnabled()) {
                 log.debug("sendExitStatus({}) exit-status={} - already sent", this, v);
             }
-            notifyStateChanged();   // just in case
+            notifyStateChanged("exit-status");   // just in case
             return;
         }
 
@@ -130,6 +138,6 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
         buffer.putBoolean(false);   // want-reply - must be FALSE - see https://tools.ietf.org/html/rfc4254 section 6.10
         buffer.putInt(v);
         writePacket(buffer);
-        notifyStateChanged();
+        notifyStateChanged("exit-status");
     }
 }

@@ -33,6 +33,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -54,6 +55,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.auth.UserAuthMethodFactory;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.TestChannelListener;
 import org.apache.sshd.common.channel.WindowClosedException;
 import org.apache.sshd.common.io.IoSession;
@@ -536,6 +538,102 @@ public class ServerTest extends BaseTestSupport {
             s.close(false);
         } finally {
             client.stop();
+        }
+    }
+
+    @Test   // see SSHD-645
+    public void testChannelStateChangeNotifications() throws Exception {
+        final Semaphore exitSignal = new Semaphore(0);
+        sshd.setCommandFactory(new CommandFactory() {
+            @Override
+            public Command createCommand(final String command) {
+                ValidateUtils.checkTrue(String.CASE_INSENSITIVE_ORDER.compare(command, getCurrentTestName()) == 0, "Unexpected command: %s", command);
+
+                return new Command() {
+                    private ExitCallback cb;
+
+                    @Override
+                    public void setOutputStream(OutputStream out) {
+                        // ignored
+                    }
+
+                    @Override
+                    public void setInputStream(InputStream in) {
+                        // ignored
+                    }
+
+                    @Override
+                    public void setExitCallback(ExitCallback callback) {
+                        cb = callback;
+                    }
+
+                    @Override
+                    public void setErrorStream(OutputStream err) {
+                        // ignored
+                    }
+
+                    @Override
+                    public void destroy() {
+                        // ignored
+                    }
+
+                    @Override
+                    public void start(Environment env) throws IOException {
+                        exitSignal.release();
+                        cb.onExit(0, command);
+                    }
+                };
+            }
+        });
+        sshd.start();
+        client.start();
+
+        final Collection<String> stateChangeHints = new CopyOnWriteArrayList<>();
+        try (ClientSession s = createTestClientSession(sshd);
+             ChannelExec shell = s.createExecChannel(getCurrentTestName())) {
+            shell.addChannelListener(new ChannelListener() {
+                @Override
+                public void channelStateChanged(Channel channel, String hint) {
+                    assertNotNull("No hint for channel", hint);
+                    outputDebugMessage("channelStateChanged(%s): %s", channel, hint);
+                    stateChangeHints.add(hint);
+                }
+
+                @Override
+                public void channelOpenSuccess(Channel channel) {
+                    // ignored
+                }
+
+                @Override
+                public void channelOpenFailure(Channel channel, Throwable reason) {
+                    // ignored
+                }
+
+                @Override
+                public void channelInitialized(Channel channel) {
+                    // ignored
+                }
+
+                @Override
+                public void channelClosed(Channel channel, Throwable reason) {
+                    // ignored
+                }
+            });
+            shell.open().verify(9L, TimeUnit.SECONDS);
+
+            assertTrue("Timeout while wait for exit signal", exitSignal.tryAcquire(15L, TimeUnit.SECONDS));
+            Collection<ClientChannelEvent> result =
+                    shell.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(13L));
+            assertFalse("Channel close timeout", result.contains(ClientChannelEvent.TIMEOUT));
+
+            Integer status = shell.getExitStatus();
+            assertNotNull("No exit status", status);
+        } finally {
+            client.stop();
+        }
+
+        for (String h : new String[]{"exit-status"}) {
+            assertTrue("Missing hint=" + h + " in " + stateChangeHints, stateChangeHints.contains(h));
         }
     }
 

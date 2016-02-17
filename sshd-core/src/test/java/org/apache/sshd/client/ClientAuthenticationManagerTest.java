@@ -174,6 +174,11 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
             }
 
             @Override
+            public void channelStateChanged(Channel channel, String hint) {
+                // ignored
+            }
+
+            @Override
             public void channelClosed(Channel channel, Throwable reason) {
                 // ignored
             }

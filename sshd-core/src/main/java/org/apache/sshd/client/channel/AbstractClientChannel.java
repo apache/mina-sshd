@@ -37,9 +37,11 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.AbstractChannel;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelListener;
+import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
@@ -81,8 +83,12 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     protected OpenFuture openFuture;
 
     protected AbstractClientChannel(String type) {
-        super(true);
-        this.type = type;
+        this(type, Collections.<RequestHandler<Channel>>emptyList());
+    }
+
+    protected AbstractClientChannel(String type, Collection<? extends RequestHandler<Channel>> handlers) {
+        super(true, handlers);
+        this.type = ValidateUtils.checkNotNullAndNotEmpty(type, "No channel type specified");
         this.streaming = Streaming.Sync;
 
         addChannelSignalRequestHandlers(new EventNotifier<String>() {
@@ -92,7 +98,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                 if (log.isDebugEnabled()) {
                     log.debug("notifyEvent({}): {}", AbstractClientChannel.this, event);
                 }
-                notifyStateChanged();
+                notifyStateChanged(event);
             }
         });
     }
@@ -203,26 +209,14 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         long t = 0;
         synchronized (lock) {
             for (Set<ClientChannelEvent> cond = EnumSet.noneOf(ClientChannelEvent.class);; cond.clear()) {
-                if ((openFuture != null) && openFuture.isOpened()) {
-                    cond.add(ClientChannelEvent.OPENED);
-                }
-                if (closeFuture.isClosed()) {
-                    cond.add(ClientChannelEvent.CLOSED);
-                }
-                if (isEofSignalled()) {
-                    cond.add(ClientChannelEvent.EOF);
-                }
-                if (exitStatusHolder.get() != null) {
-                    if (log.isDebugEnabled()) {
+                updateCurrentChannelState(cond);
+                if (log.isDebugEnabled()) {
+                    if (cond.contains(ClientChannelEvent.EXIT_STATUS)) {
                         log.debug("waitFor({}) mask={} - exit status={}", this, mask, exitStatusHolder);
                     }
-                    cond.add(ClientChannelEvent.EXIT_STATUS);
-                }
-                if (exitSignalHolder.get() != null) {
-                    if (log.isDebugEnabled()) {
+                    if (cond.contains(ClientChannelEvent.EXIT_SIGNAL)) {
                         log.debug("waitFor({}) mask={} - exit signal={}", this, mask, exitSignalHolder);
                     }
-                    cond.add(ClientChannelEvent.EXIT_SIGNAL);
                 }
 
                 boolean nothingInCommon = Collections.disjoint(mask, cond);
@@ -277,6 +271,35 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     }
 
     @Override
+    public Set<ClientChannelEvent> getChannelState() {
+        Set<ClientChannelEvent> cond = EnumSet.noneOf(ClientChannelEvent.class);
+        synchronized (lock) {
+            return updateCurrentChannelState(cond);
+        }
+    }
+
+    // NOTE: assumed to be called under lock
+    protected <C extends Collection<ClientChannelEvent>> C updateCurrentChannelState(C state) {
+        if ((openFuture != null) && openFuture.isOpened()) {
+            state.add(ClientChannelEvent.OPENED);
+        }
+        if (closeFuture.isClosed()) {
+            state.add(ClientChannelEvent.CLOSED);
+        }
+        if (isEofSignalled()) {
+            state.add(ClientChannelEvent.EOF);
+        }
+        if (exitStatusHolder.get() != null) {
+            state.add(ClientChannelEvent.EXIT_STATUS);
+        }
+        if (exitSignalHolder.get() != null) {
+            state.add(ClientChannelEvent.EXIT_SIGNAL);
+        }
+
+        return state;
+    }
+
+    @Override
     public synchronized OpenFuture open() throws IOException {
         if (isClosing()) {
             throw new SshException("Session has been closed");
@@ -313,6 +336,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         wRemote.init(rwSize, packetSize, manager.getProperties());
 
         ChannelListener listener = getChannelListenerProxy();
+        String changeEvent = "SSH_MSG_CHANNEL_OPEN_CONFIRMATION";
         try {
             doOpen();
 
@@ -321,6 +345,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
             this.openFuture.setOpened();
         } catch (Throwable t) {
             Throwable e = GenericUtils.peelException(t);
+            changeEvent = e.getClass().getName();
             try {
                 listener.channelOpenFailure(this, e);
             } catch (Throwable err) {
@@ -344,7 +369,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
             this.closeFuture.setClosed();
             this.doCloseImmediately();
         } finally {
-            notifyStateChanged();
+            notifyStateChanged(changeEvent);
         }
     }
 
@@ -366,7 +391,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         this.openFuture.setException(new SshException(msg));
         this.closeFuture.setClosed();
         this.doCloseImmediately();
-        notifyStateChanged();
+        notifyStateChanged("SSH_MSG_CHANNEL_OPEN_FAILURE");
     }
 
     @Override

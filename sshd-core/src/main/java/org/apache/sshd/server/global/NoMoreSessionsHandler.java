@@ -23,9 +23,10 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
- * Handler for no-more-sessions@xxx global request.
+ * Handler for &quot;no-more-sessions@xxx&quot; global request.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @see <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH protocol section 2.2</A>
  */
 public class NoMoreSessionsHandler extends AbstractConnectionServiceRequestHandler {
     public static final NoMoreSessionsHandler INSTANCE = new NoMoreSessionsHandler();

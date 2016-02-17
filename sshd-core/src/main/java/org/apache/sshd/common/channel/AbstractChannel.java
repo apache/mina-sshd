@@ -21,6 +21,7 @@ package org.apache.sshd.common.channel;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -103,15 +104,32 @@ public abstract class AbstractChannel
         this("", client);
     }
 
+    protected AbstractChannel(boolean client, Collection<? extends RequestHandler<Channel>> handlers) {
+        this("", client, handlers);
+    }
+
     protected AbstractChannel(String discriminator, boolean client) {
+        this(discriminator, client, Collections.<RequestHandler<Channel>>emptyList());
+    }
+
+    protected AbstractChannel(String discriminator, boolean client, Collection<? extends RequestHandler<Channel>> handlers) {
         super(discriminator);
         localWindow = new Window(this, null, client, true);
         remoteWindow = new Window(this, null, client, false);
         channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, getClass().getClassLoader(), channelListeners);
+        addRequestHandlers(handlers);
+    }
+
+    public void addRequestHandlers(Collection<? extends RequestHandler<Channel>> handlers) {
+        if (GenericUtils.size(handlers) > 0) {
+            for (RequestHandler<Channel> h : handlers) {
+                addRequestHandler(h);
+            }
+        }
     }
 
     public void addRequestHandler(RequestHandler<Channel> handler) {
-        handlers.add(handler);
+        handlers.add(ValidateUtils.checkNotNull(handler, "No handler instance"));
     }
 
     @Override
@@ -290,7 +308,6 @@ public abstract class AbstractChannel
             log.debug("handleInternalRequest({})[want-reply={}] unknown type: {}",
                       this, wantReply, req);
         }
-
         return RequestHandler.Result.Unsupported;
     }
 
@@ -345,7 +362,19 @@ public abstract class AbstractChannel
         return initialized.get();
     }
 
-    protected void notifyStateChanged() {
+    protected void notifyStateChanged(String hint) {
+        ChannelListener listener = getChannelListenerProxy();
+        try {
+            listener.channelStateChanged(this, hint);
+        } catch (Throwable t) {
+            Throwable e = GenericUtils.peelException(t);
+            log.warn("notifyStateChanged({})[{}] {} while signal channel state change: {}",
+                     this, hint, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("notifyStateChanged(" + this + ")[" + hint + "] channel closed signalling failure details", e);
+            }
+        }
+
         synchronized (lock) {
             lock.notifyAll();
         }
@@ -654,9 +683,10 @@ public abstract class AbstractChannel
                 log.debug("handleEof({}) SSH_MSG_CHANNEL_EOF", this);
             }
         }
-        notifyStateChanged();
+        notifyStateChanged("SSH_MSG_CHANNEL_EOF");
     }
 
+    @Override
     public boolean isEofSignalled() {
         return eofReceived.get();
     }
