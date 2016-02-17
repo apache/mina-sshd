@@ -66,8 +66,6 @@ import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
@@ -84,6 +82,45 @@ import ch.ethz.ssh2.SCPClient;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ScpTest extends BaseTestSupport {
+    private static final ScpTransferEventListener DEBUG_LISTENER = new ScpTransferEventListener() {
+        @Override
+        public void startFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms) {
+            logEvent("starFolderEvent", op, file, false, -1L, perms, null);
+        }
+
+        @Override
+        public void startFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms) {
+            logEvent("startFileEvent", op, file, true, length, perms, null);
+
+        }
+
+        @Override
+        public void endFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown) {
+            logEvent("endFolderEvent", op, file, false, -1L, perms, thrown);
+        }
+
+        @Override
+        public void endFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown) {
+            logEvent("endFileEvent", op, file, true, length, perms, thrown);
+        }
+
+        private void logEvent(String type, FileOperation op, Path path, boolean isFile, long length, Collection<PosixFilePermission> perms, Throwable t) {
+            if (!OUTPUT_DEBUG_MESSAGES) {
+                return; // just in case
+            }
+            StringBuilder sb = new StringBuilder(Byte.MAX_VALUE);
+            sb.append('\t').append(type)
+                    .append('[').append(op).append(']')
+                    .append(' ').append(isFile ? "File" : "Directory").append('=').append(path)
+                    .append(' ').append("length=").append(length)
+                    .append(' ').append("perms=").append(perms)
+            ;
+            if (t != null) {
+                sb.append(' ').append("ERROR=").append(t.getClass().getSimpleName()).append(": ").append(t.getMessage());
+            }
+            outputDebugMessage(sb.toString());
+        }
+    };
 
     private SshServer sshd;
     private int port;
@@ -1111,43 +1148,11 @@ public class ScpTest extends BaseTestSupport {
         }
     }
 
-    private ScpClient createScpClient(ClientSession session) {
-        final Logger logger = LoggerFactory.getLogger(getClass().getName() + "[" + getCurrentTestName() + "]");
-        return session.createScpClient(new ScpTransferEventListener() {
-            @Override
-            public void startFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms) {
-                logEvent("starFolderEvent", op, file, false, -1L, perms, null);
-            }
+    private static ScpClient createScpClient(ClientSession session) {
+        return session.createScpClient(getScpTransferEventListener(session));
+    }
 
-            @Override
-            public void startFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms) {
-                logEvent("startFileEvent", op, file, true, length, perms, null);
-
-            }
-
-            @Override
-            public void endFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown) {
-                logEvent("endFolderEvent", op, file, false, -1L, perms, thrown);
-            }
-
-            @Override
-            public void endFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown) {
-                logEvent("endFileEvent", op, file, true, length, perms, thrown);
-            }
-
-            private void logEvent(String type, FileOperation op, Path path, boolean isFile, long length, Collection<PosixFilePermission> perms, Throwable t) {
-                StringBuilder sb = new StringBuilder(Byte.MAX_VALUE);
-                sb.append('\t').append(type)
-                        .append('[').append(op).append(']')
-                        .append(' ').append(isFile ? "File" : "Directory").append('=').append(path)
-                        .append(' ').append("length=").append(length)
-                        .append(' ').append("perms=").append(perms)
-                ;
-                if (t != null) {
-                    sb.append(' ').append("ERROR=").append(t.getClass().getSimpleName()).append(": ").append(t.getMessage());
-                }
-                logger.info(sb.toString());
-            }
-        });
+    private static ScpTransferEventListener getScpTransferEventListener(ClientSession session) {
+        return OUTPUT_DEBUG_MESSAGES ? DEBUG_LISTENER : ScpTransferEventListener.EMPTY;
     }
 }
