@@ -222,7 +222,7 @@ public final class GenericUtils {
     }
 
     public static boolean isEmpty(Collection<?> c) {
-        return size(c) <= 0;
+        return (c == null) || c.isEmpty();
     }
 
     public static int size(Map<?, ?> m) {
@@ -230,7 +230,7 @@ public final class GenericUtils {
     }
 
     public static boolean isEmpty(Map<?, ?> m) {
-        return size(m) <= 0;
+        return (m == null) || m.isEmpty();
     }
 
     @SafeVarargs

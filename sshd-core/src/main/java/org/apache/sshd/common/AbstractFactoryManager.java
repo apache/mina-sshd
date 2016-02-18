@@ -75,6 +75,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     protected final ChannelListener channelListenerProxy;
 
     private final Map<String, Object> properties = new ConcurrentHashMap<>();
+    private PropertyResolver parentResolver = SyspropsMapWrapper.SYSPROPS_RESOLVER;
 
     protected AbstractFactoryManager() {
         ClassLoader loader = getClass().getClassLoader();
@@ -116,7 +117,11 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
 
     @Override
     public PropertyResolver getParentPropertyResolver() {
-        return null;
+        return parentResolver;
+    }
+
+    public void setParentPropertyResolver(PropertyResolver parent) {
+        parentResolver = parent;
     }
 
     @Override

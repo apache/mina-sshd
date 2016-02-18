@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
@@ -51,6 +52,44 @@ public class PropertyResolverUtilsTest extends BaseTestSupport {
         final String NODE_VALUE = getClass().getSimpleName();
         assertNull("Unexpected node previous value", PropertyResolverUtils.updateProperty(resolver, NAME, NODE_VALUE));
         assertSame("Mismatched node value", NODE_VALUE, PropertyResolverUtils.getString(resolver, NAME));
+    }
+
+    @Test
+    public void testSyspropsResolver() {
+        PropertyResolver resolver = SyspropsMapWrapper.SYSPROPS_RESOLVER;
+        Map<String, ?> props = resolver.getProperties();
+        assertTrue("Unexpected initial resolver values: " + props, GenericUtils.isEmpty(props));
+
+        final String NAME = getCurrentTestName();
+        assertNull("Unexpected initial resolved value", PropertyResolverUtils.getObject(resolver, NAME));
+
+        final String PROPKEY = SyspropsMapWrapper.getMappedSyspropKey(NAME);
+        assertNull("Unexpected property value for " + PROPKEY, System.getProperty(PROPKEY));
+
+        try {
+            long expected = System.currentTimeMillis();
+            System.setProperty(PROPKEY, Long.toString(expected));
+            testLongProperty(resolver, NAME, expected);
+        } finally {
+            System.clearProperty(PROPKEY);
+        }
+
+        try {
+            int expected = 3777347;
+            System.setProperty(PROPKEY, Integer.toString(expected));
+            testIntegerProperty(resolver, NAME, expected);
+        } finally {
+            System.clearProperty(PROPKEY);
+        }
+
+        for (final boolean expected : new boolean[]{false, true}) {
+            try {
+                System.setProperty(PROPKEY, Boolean.toString(expected));
+                testBooleanProperty(resolver, NAME, expected);
+            } finally {
+                System.clearProperty(PROPKEY);
+            }
+        }
     }
 
     @Test

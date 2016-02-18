@@ -18,6 +18,9 @@
  */
 package org.apache.sshd.common.util;
 
+import java.util.Comparator;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 
 /**
@@ -27,13 +30,40 @@ import java.util.Objects;
  * @param <S> Second value type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class Pair<F, S> {
+public class Pair<F, S> implements Map.Entry<F, S> {
+    @SuppressWarnings("rawtypes")
+    private static final Comparator<Map.Entry<Comparable, ?>> BY_KEY_COMPARATOR =
+        new Comparator<Map.Entry<Comparable, ?>>() {
+            @SuppressWarnings("unchecked")
+            @Override
+            public int compare(Entry<Comparable, ?> o1, Entry<Comparable, ?> o2) {
+                Comparable k1 = o1.getKey();
+                Comparable k2 = o2.getKey();
+                return k1.compareTo(k2);
+            }
+    };
+
     private final F first;
     private final S second;
 
     public Pair(F first, S second) {
         this.first = first;
         this.second = second;
+    }
+
+    @Override
+    public final F getKey() {
+        return getFirst();
+    }
+
+    @Override
+    public S getValue() {
+        return getSecond();
+    }
+
+    @Override
+    public S setValue(S value) {
+        throw new UnsupportedOperationException("setValue(" + value + ") N/A");
     }
 
     public final F getFirst() {
@@ -70,5 +100,16 @@ public class Pair<F, S> {
     @Override
     public String toString() {
         return Objects.toString(getFirst()) + ", " + Objects.toString(getSecond());
+    }
+
+    /**
+     * @param <K> The {@link Comparable} key type
+     * @param <V> The associated entry value
+     * @return A {@link Comparator} for {@link java.util.Map.Entry}-ies that
+     * compares the key values
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public static <K extends Comparable<K>, V> Comparator<Map.Entry<K, V>> byKeyEntryComparator() {
+        return (Comparator) BY_KEY_COMPARATOR;
     }
 }

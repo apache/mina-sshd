@@ -21,6 +21,7 @@ package org.apache.sshd.common;
 
 import java.util.Map;
 import java.util.Objects;
+
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -28,7 +29,6 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class PropertyResolverUtils {
-
     private PropertyResolverUtils() {
         throw new UnsupportedOperationException("No instance allowed");
     }
