@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.common.scp;
+package org.apache.sshd.common.scp.impl;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,6 +26,7 @@ import java.io.StreamCorruptedException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.FileTime;
@@ -33,6 +34,10 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.common.scp.ScpFileOpener;
+import org.apache.sshd.common.scp.ScpTargetStreamResolver;
+import org.apache.sshd.common.scp.ScpTimestamp;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
@@ -40,41 +45,44 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implements ScpTargetStreamResolver {
-    private final Path path;
-    private final Boolean status;
+    protected final Path path;
+    protected final ScpFileOpener opener;
+    protected final Boolean status;
     private Path file;
 
-    public LocalFileScpTargetStreamResolver(Path path) throws IOException {
-        LinkOption[] options = IoUtils.getLinkOptions(false);
-        this.status = IoUtils.checkFileExists(path, options);
+    public LocalFileScpTargetStreamResolver(Path path, ScpFileOpener opener) throws IOException {
+        LinkOption[] linkOptions = IoUtils.getLinkOptions(false);
+        this.status = IoUtils.checkFileExists(path, linkOptions);
         if (status == null) {
             throw new AccessDeniedException("Receive target file path existence status cannot be determined: " + path);
         }
 
         this.path = path;
+        this.opener = (opener == null) ? DefaultScpFileOpener.INSTANCE : opener;
     }
 
     @Override
-    public OutputStream resolveTargetStream(String name, long length, Set<PosixFilePermission> perms) throws IOException {
+    public OutputStream resolveTargetStream(Session session, String name, long length,
+            Set<PosixFilePermission> perms, OpenOption... options) throws IOException {
         if (file != null) {
             throw new StreamCorruptedException("resolveTargetStream(" + name + ")[" + perms + "] already resolved: " + file);
         }
 
-        LinkOption[] options = IoUtils.getLinkOptions(false);
-        if (status && Files.isDirectory(path, options)) {
+        LinkOption[] linkOptions = IoUtils.getLinkOptions(false);
+        if (status && Files.isDirectory(path, linkOptions)) {
             String localName = name.replace('/', File.separatorChar);   // in case we are running on Windows
             file = path.resolve(localName);
-        } else if (status && Files.isRegularFile(path, options)) {
+        } else if (status && Files.isRegularFile(path, linkOptions)) {
             file = path;
         } else if (!status) {
             Path parent = path.getParent();
 
-            Boolean parentStatus = IoUtils.checkFileExists(parent, options);
+            Boolean parentStatus = IoUtils.checkFileExists(parent, linkOptions);
             if (parentStatus == null) {
                 throw new AccessDeniedException("Receive file parent (" + parent + ") existence status cannot be determined for " + path);
             }
 
-            if (parentStatus && Files.isDirectory(parent, options)) {
+            if (parentStatus && Files.isDirectory(parent, linkOptions)) {
                 file = path;
             }
         }
@@ -83,13 +91,13 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
             throw new IOException("Can not write to " + path);
         }
 
-        Boolean fileStatus = IoUtils.checkFileExists(file, options);
+        Boolean fileStatus = IoUtils.checkFileExists(file, linkOptions);
         if (fileStatus == null) {
             throw new AccessDeniedException("Receive file existence status cannot be determined: " + file);
         }
 
         if (fileStatus) {
-            if (Files.isDirectory(file, options)) {
+            if (Files.isDirectory(file, linkOptions)) {
                 throw new IOException("File is a directory: " + file);
             }
 
@@ -102,7 +110,7 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
             log.trace("resolveTargetStream(" + name + "): " + file);
         }
 
-        return Files.newOutputStream(file);
+        return opener.openWrite(session, file, options);
     }
 
     @Override

@@ -33,11 +33,10 @@ import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.future.AuthFuture;
-import org.apache.sshd.client.scp.ScpClient;
+import org.apache.sshd.client.scp.ScpClientCreator;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.common.future.KeyExchangeFuture;
-import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
@@ -69,7 +68,9 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ClientSession extends Session, ClientAuthenticationManager {
+public interface ClientSession
+            extends Session, ScpClientCreator,
+                    ClientAuthenticationManager {
     enum ClientSessionEvent {
         TIMEOUT,
         CLOSED,
@@ -156,40 +157,6 @@ public interface ClientSession extends Session, ClientAuthenticationManager {
      * @throws IOException If failed to create the requested channel
      */
     ChannelDirectTcpip createDirectTcpipChannel(SshdSocketAddress local, SshdSocketAddress remote) throws IOException;
-
-    /**
-     * Create an SCP client from this session.
-     *
-     * @return An {@link ScpClient} instance. <B>Note:</B> uses the currently
-     * registered {@link ScpTransferEventListener} if any
-     * @see #setScpTransferEventListener(ScpTransferEventListener)
-     */
-    ScpClient createScpClient();
-
-    /**
-     * Create an SCP client from this session.
-     *
-     * @param listener A {@link ScpTransferEventListener} that can be used
-     *                 to receive information about the SCP operations - may be {@code null}
-     *                 to indicate no more events are required. <B>Note:</B> this listener
-     *                 is used <U>instead</U> of any listener set via {@link #setScpTransferEventListener(ScpTransferEventListener)}
-     * @return An {@link ScpClient} instance
-     */
-    ScpClient createScpClient(ScpTransferEventListener listener);
-
-    /**
-     * @return The last {@link ScpTransferEventListener} set via
-     * {@link #setScpTransferEventListener(ScpTransferEventListener)}
-     */
-    ScpTransferEventListener getScpTransferEventListener();
-
-    /**
-     * @param listener A default {@link ScpTransferEventListener} that can be used
-     *                 to receive information about the SCP operations - may be {@code null}
-     *                 to indicate no more events are required
-     * @see #createScpClient(ScpTransferEventListener)
-     */
-    void setScpTransferEventListener(ScpTransferEventListener listener);
 
     /**
      * Create an SFTP client from this session.

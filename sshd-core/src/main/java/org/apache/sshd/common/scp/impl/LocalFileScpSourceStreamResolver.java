@@ -17,11 +17,12 @@
  * under the License.
  */
 
-package org.apache.sshd.common.scp;
+package org.apache.sshd.common.scp.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -29,6 +30,10 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
 import java.util.Set;
 
+import org.apache.sshd.common.scp.ScpFileOpener;
+import org.apache.sshd.common.scp.ScpSourceStreamResolver;
+import org.apache.sshd.common.scp.ScpTimestamp;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -37,14 +42,16 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class LocalFileScpSourceStreamResolver extends AbstractLoggingBean implements ScpSourceStreamResolver {
-    private final Path path;
-    private final Path name;
-    private final Set<PosixFilePermission> perms;
-    private final long size;
-    private final ScpTimestamp time;
+    protected final Path path;
+    protected final ScpFileOpener opener;
+    protected final Path name;
+    protected final Set<PosixFilePermission> perms;
+    protected final long size;
+    protected final ScpTimestamp time;
 
-    public LocalFileScpSourceStreamResolver(Path path) throws IOException {
+    public LocalFileScpSourceStreamResolver(Path path, ScpFileOpener opener) throws IOException {
         this.path = ValidateUtils.checkNotNull(path, "No path specified");
+        this.opener = (opener == null) ? DefaultScpFileOpener.INSTANCE : opener;
         this.name = path.getFileName();
         this.perms = IoUtils.getPermissions(path);
 
@@ -79,8 +86,8 @@ public class LocalFileScpSourceStreamResolver extends AbstractLoggingBean implem
     }
 
     @Override
-    public InputStream resolveSourceStream() throws IOException {
-        return Files.newInputStream(getEventListenerFilePath());
+    public InputStream resolveSourceStream(Session session, OpenOption... options) throws IOException {
+        return opener.openRead(session, getEventListenerFilePath(), options);
     }
 
     @Override

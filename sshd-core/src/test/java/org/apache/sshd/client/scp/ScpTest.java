@@ -26,6 +26,7 @@ import java.io.OutputStream;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermission;
@@ -36,6 +37,7 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
@@ -45,8 +47,11 @@ import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.scp.ScpException;
+import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
+import org.apache.sshd.common.scp.impl.DefaultScpFileOpener;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -728,6 +733,95 @@ public class ScpTest extends BaseTestSupport {
         }
     }
 
+    @Test   // see SSHD-649
+    public void testScpFileOpener() throws Exception {
+        class TrackingFileOpener extends DefaultScpFileOpener {
+            private final AtomicInteger readCount = new AtomicInteger(0);
+            private final AtomicInteger writeCount = new AtomicInteger(0);
+
+            TrackingFileOpener() {
+                super();
+            }
+
+            public AtomicInteger getReadCount() {
+                return readCount;
+            }
+
+            public AtomicInteger getWriteCount() {
+                return writeCount;
+            }
+
+            @Override
+            public InputStream openRead(Session session, Path file, OpenOption... options) throws IOException {
+                int count = readCount.incrementAndGet();
+                outputDebugMessage("openRead(%s)[%s] count=%d", session, file, count);
+                return super.openRead(session, file, options);
+            }
+
+            @Override
+            public OutputStream openWrite(Session session, Path file, OpenOption... options) throws IOException {
+                int count = writeCount.incrementAndGet();
+                outputDebugMessage("openWrite(%s)[%s] count=%d", session, file, count);
+                return super.openWrite(session, file, options);
+            }
+        }
+
+        ScpCommandFactory factory = (ScpCommandFactory) sshd.getCommandFactory();
+        TrackingFileOpener serverOpener = new TrackingFileOpener();
+        factory.setFileOpener(serverOpener);
+
+        try (SshClient client = setupTestClient()) {
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                TrackingFileOpener clientOpener = new TrackingFileOpener();
+                ScpClient scp = session.createScpClient(clientOpener);
+
+                Path targetPath = detectTargetFolder();
+                Path parentPath = targetPath.getParent();
+                Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
+                Utils.deleteRecursive(scpRoot);
+
+                Path remoteDir = assertHierarchyTargetFolderExists(scpRoot);
+                Path localFile = remoteDir.resolve("data.txt");
+                byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
+                Files.write(localFile, data);
+
+                Path remoteFile = remoteDir.resolve("upload.txt");
+                String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteFile);
+                outputDebugMessage("Upload data to %s", remotePath);
+                scp.upload(localFile, remotePath);
+                assertFileLength(remoteFile, data.length, TimeUnit.SECONDS.toMillis(5L));
+
+                AtomicInteger serverRead = serverOpener.getReadCount();
+                assertEquals("Mismatched server upload open read count", 0, serverRead.get());
+
+                AtomicInteger serverWrite = serverOpener.getWriteCount();
+                assertEquals("Mismatched server upload write count", 1, serverWrite.getAndSet(0));
+
+                AtomicInteger clientRead = clientOpener.getReadCount();
+                assertEquals("Mismatched client upload read count", 1, clientRead.getAndSet(0));
+
+                AtomicInteger clientWrite = clientOpener.getWriteCount();
+                assertEquals("Mismatched client upload write count", 0, clientWrite.get());
+
+                Files.delete(localFile);
+                scp.download(remotePath, localFile);
+                assertFileLength(localFile, data.length, TimeUnit.SECONDS.toMillis(5L));
+
+                assertEquals("Mismatched server download open read count", 1, serverRead.getAndSet(0));
+                assertEquals("Mismatched server download write count", 0, serverWrite.get());
+                assertEquals("Mismatched client download read count", 0, clientRead.get());
+                assertEquals("Mismatched client download write count", 1, clientWrite.getAndSet(0));
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
     @Test   // see SSHD-628
     public void testScpExitStatusPropagation() throws Exception {
         final int TEST_EXIT_VALUE = 7365;
@@ -735,8 +829,8 @@ public class ScpTest extends BaseTestSupport {
             private ExitCallback delegate;
 
             public InternalScpCommand(String command, ExecutorService executorService, boolean shutdownOnExit,
-                    int sendSize, int receiveSize, ScpTransferEventListener eventListener) {
-                super(command, executorService, shutdownOnExit, sendSize, receiveSize, eventListener);
+                    int sendSize, int receiveSize, ScpFileOpener opener, ScpTransferEventListener eventListener) {
+                super(command, executorService, shutdownOnExit, sendSize, receiveSize, opener, eventListener);
             }
 
             @Override
@@ -770,7 +864,10 @@ public class ScpTest extends BaseTestSupport {
             @Override
             public Command createCommand(String command) {
                 ValidateUtils.checkTrue(command.startsWith(ScpHelper.SCP_COMMAND_PREFIX), "Bad SCP command: %s", command);
-                return new InternalScpCommand(command, getExecutorService(), isShutdownOnExit(), getSendBufferSize(), getReceiveBufferSize(), ScpTransferEventListener.EMPTY);
+                return new InternalScpCommand(command,
+                        getExecutorService(), isShutdownOnExit(),
+                        getSendBufferSize(), getReceiveBufferSize(),
+                        DefaultScpFileOpener.INSTANCE, ScpTransferEventListener.EMPTY);
             }
         });
 

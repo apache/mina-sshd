@@ -29,8 +29,12 @@ import java.util.concurrent.Future;
 
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.scp.ScpException;
+import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
+import org.apache.sshd.common.scp.impl.DefaultScpFileOpener;
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.common.util.threads.ThreadUtils;
@@ -50,9 +54,14 @@ import org.apache.sshd.server.session.ServerSessionHolder;
  */
 public class ScpCommand
         extends AbstractLoggingBean
-        implements Command, Runnable, FileSystemAware, SessionAware, ServerSessionHolder {
+        implements Command, Runnable, FileSystemAware, SessionAware,
+                   SessionHolder<Session>, ServerSessionHolder {
 
-    protected String name;
+    protected final String name;
+    protected final int sendBufferSize;
+    protected final int receiveBufferSize;
+    protected final ScpFileOpener opener;
+
     protected boolean optR;
     protected boolean optT;
     protected boolean optF;
@@ -68,8 +77,6 @@ public class ScpCommand
     protected ExecutorService executors;
     protected boolean shutdownExecutor;
     protected Future<?> pendingFuture;
-    protected int sendBufferSize;
-    protected int receiveBufferSize;
     protected ScpTransferEventListener listener;
     protected ServerSession serverSession;
 
@@ -83,12 +90,16 @@ public class ScpCommand
      *                        service, which will be shutdown regardless
      * @param sendSize        Size (in bytes) of buffer to use when sending files
      * @param receiveSize     Size (in bytes) of buffer to use when receiving files
+     * @param fileOpener      The {@link ScpFileOpener} - if {@code null} then {@link DefaultScpFileOpener} is used
      * @param eventListener   An {@link ScpTransferEventListener} - may be {@code null}
      * @see ThreadUtils#newSingleThreadExecutor(String)
      * @see ScpHelper#MIN_SEND_BUFFER_SIZE
      * @see ScpHelper#MIN_RECEIVE_BUFFER_SIZE
      */
-    public ScpCommand(String command, ExecutorService executorService, boolean shutdownOnExit, int sendSize, int receiveSize, ScpTransferEventListener eventListener) {
+    public ScpCommand(String command,
+            ExecutorService executorService, boolean shutdownOnExit,
+            int sendSize, int receiveSize,
+            ScpFileOpener fileOpener, ScpTransferEventListener eventListener) {
         name = command;
 
         if (executorService == null) {
@@ -114,6 +125,7 @@ public class ScpCommand
         }
         receiveBufferSize = receiveSize;
 
+        opener = (fileOpener == null) ? DefaultScpFileOpener.INSTANCE : fileOpener;
         listener = (eventListener == null) ? ScpTransferEventListener.EMPTY : eventListener;
 
         if (log.isDebugEnabled()) {
@@ -166,6 +178,11 @@ public class ScpCommand
         if (!optF && !optT) {
             error = new IOException("Either -f or -t option should be set for " + command);
         }
+    }
+
+    @Override
+    public Session getSession() {
+        return getServerSession();
     }
 
     @Override
@@ -252,7 +269,7 @@ public class ScpCommand
     public void run() {
         int exitValue = ScpHelper.OK;
         String exitMessage = null;
-        ScpHelper helper = new ScpHelper(getServerSession(), in, out, fileSystem, listener);
+        ScpHelper helper = new ScpHelper(getServerSession(), in, out, fileSystem, opener, listener);
         try {
             if (optT) {
                 helper.receive(helper.resolveLocalPath(path), optR, optD, optP, receiveBufferSize);
@@ -312,6 +329,6 @@ public class ScpCommand
 
     @Override
     public String toString() {
-        return name;
+        return getClass().getSimpleName() + "(" + getSession() + ") " + name;
     }
 }

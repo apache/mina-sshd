@@ -32,6 +32,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -45,6 +46,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.file.util.MockPath;
 import org.apache.sshd.common.scp.ScpTransferEventListener.FileOperation;
+import org.apache.sshd.common.scp.impl.DefaultScpFileOpener;
+import org.apache.sshd.common.scp.impl.LocalFileScpSourceStreamResolver;
+import org.apache.sshd.common.scp.impl.LocalFileScpTargetStreamResolver;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
@@ -92,24 +96,27 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     public static final int S_IWOTH = 0000002;
     public static final int S_IXOTH = 0000001;
 
-    protected final FileSystem fileSystem;
     protected final InputStream in;
     protected final OutputStream out;
+    protected final FileSystem fileSystem;
+    protected final ScpFileOpener opener;
     protected final ScpTransferEventListener listener;
 
-    private final Session session;
+    private final Session sessionInstance;
 
-    public ScpHelper(Session session, InputStream in, OutputStream out, FileSystem fileSystem, ScpTransferEventListener eventListener) {
-        this.session = ValidateUtils.checkNotNull(session, "No session");
+    public ScpHelper(Session session, InputStream in, OutputStream out,
+            FileSystem fileSystem, ScpFileOpener opener, ScpTransferEventListener eventListener) {
+        this.sessionInstance = ValidateUtils.checkNotNull(session, "No session");
         this.in = ValidateUtils.checkNotNull(in, "No input stream");
         this.out = ValidateUtils.checkNotNull(out, "No output stream");
         this.fileSystem = fileSystem;
+        this.opener = (opener == null) ? DefaultScpFileOpener.INSTANCE : opener;
         this.listener = (eventListener == null) ? ScpTransferEventListener.EMPTY : eventListener;
     }
 
     @Override
     public Session getSession() {
-        return session;
+        return sessionInstance;
     }
 
     public void receiveFileStream(final OutputStream local, final int bufferSize) throws IOException {
@@ -124,7 +131,8 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                 receiveStream(line, new ScpTargetStreamResolver() {
                     @SuppressWarnings("synthetic-access")
                     @Override
-                    public OutputStream resolveTargetStream(String name, long length, Set<PosixFilePermission> perms) throws IOException {
+                    public OutputStream resolveTargetStream(Session session, String name, long length,
+                            Set<PosixFilePermission> perms, OpenOption... options) throws IOException {
                         if (log.isDebugEnabled()) {
                             log.debug("resolveTargetStream({}) name={}, perms={}, len={} - started local stream download",
                                       ScpHelper.this, name, perms, length);
@@ -331,7 +339,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                       this, header, path, preserve, time, bufferSize);
         }
 
-        receiveStream(header, new LocalFileScpTargetStreamResolver(path), time, preserve, bufferSize);
+        receiveStream(header, new LocalFileScpTargetStreamResolver(path, opener), time, preserve, bufferSize);
     }
 
     public void receiveStream(String header, ScpTargetStreamResolver resolver, ScpTimestamp time, boolean preserve, int bufferSize) throws IOException {
@@ -370,7 +378,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
 
         try (
                 InputStream is = new LimitInputStream(this.in, length);
-                OutputStream os = resolver.resolveTargetStream(name, length, perms)
+                OutputStream os = resolver.resolveTargetStream(getSession(), name, length, perms)
         ) {
             ack();
 
@@ -551,7 +559,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             log.debug("sendFile({})[preserve={},buffer-size={}] Sending file {}", this, preserve, bufferSize, path);
         }
 
-        sendStream(new LocalFileScpSourceStreamResolver(path), preserve, bufferSize);
+        sendStream(new LocalFileScpSourceStreamResolver(path, opener), preserve, bufferSize);
     }
 
     public void sendStream(ScpSourceStreamResolver resolver, boolean preserve, int bufferSize) throws IOException {
@@ -615,7 +623,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         }
         validateAckReplyCode(cmd, resolver, readyCode, false);
 
-        try (InputStream in = resolver.resolveSourceStream()) {
+        try (InputStream in = resolver.resolveSourceStream(getSession())) {
             Path path = resolver.getEventListenerFilePath();
             try {
                 listener.startFileEvent(FileOperation.SEND, path, fileSize, perms);

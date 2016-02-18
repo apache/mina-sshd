@@ -20,12 +20,14 @@ package org.apache.sshd.client.scp;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
 
 import org.apache.sshd.common.scp.ScpSourceStreamResolver;
 import org.apache.sshd.common.scp.ScpTimestamp;
+import org.apache.sshd.common.session.Session;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -75,7 +77,7 @@ public class DefaultScpStreamResolver implements ScpSourceStreamResolver {
     }
 
     @Override
-    public InputStream resolveSourceStream() throws IOException {
+    public InputStream resolveSourceStream(Session session, OpenOption... options) throws IOException {
         return local;
     }
 

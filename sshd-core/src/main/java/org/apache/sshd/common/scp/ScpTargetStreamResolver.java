@@ -21,9 +21,12 @@ package org.apache.sshd.common.scp;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Set;
+
+import org.apache.sshd.common.session.Session;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -33,13 +36,16 @@ public interface ScpTargetStreamResolver {
      * Called when receiving a file in order to obtain an output stream
      * for the incoming data
      *
-     * @param name   File name as received from remote site
-     * @param length Number of bytes expected to receive
-     * @param perms  The {@link Set} of {@link PosixFilePermission} expected
+     * @param session The associated {@link Session}
+     * @param name    File name as received from remote site
+     * @param length  Number of bytes expected to receive
+     * @param perms   The {@link Set} of {@link PosixFilePermission} expected
+     * @param options The {@link OpenOption}s to use - may be {@code null}/empty
      * @return The {@link OutputStream} to write the incoming data
      * @throws IOException If failed to create the stream
      */
-    OutputStream resolveTargetStream(String name, long length, Set<PosixFilePermission> perms) throws IOException;
+    OutputStream resolveTargetStream(Session session, String name, long length,
+            Set<PosixFilePermission> perms, OpenOption... options) throws IOException;
 
     /**
      * @return The {@link Path} to use when invoking the {@link ScpTransferEventListener}

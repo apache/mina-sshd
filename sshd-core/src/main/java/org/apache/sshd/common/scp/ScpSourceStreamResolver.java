@@ -21,9 +21,12 @@ package org.apache.sshd.common.scp;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
+
+import org.apache.sshd.common.session.Session;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -61,8 +64,10 @@ public interface ScpSourceStreamResolver {
     long getSize() throws IOException;
 
     /**
+     * @param session The {@link Session} through which file is transmitted
+     * @param options The {@link OpenOption}s may be {@code null}/empty
      * @return The {@link InputStream} containing the data to be uploaded
      * @throws IOException If failed to create the stream
      */
-    InputStream resolveSourceStream() throws IOException;
+    InputStream resolveSourceStream(Session session, OpenOption... options) throws IOException;
 }

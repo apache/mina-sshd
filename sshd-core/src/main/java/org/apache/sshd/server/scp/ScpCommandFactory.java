@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 
+import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.util.EventListenerUtils;
@@ -47,6 +48,11 @@ public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorSer
 
         public Builder() {
             super();
+        }
+
+        public Builder withFileOpener(ScpFileOpener opener) {
+            factory.setFileOpener(opener);
+            return this;
         }
 
         public Builder withDelegate(CommandFactory delegate) {
@@ -97,6 +103,7 @@ public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorSer
     private CommandFactory delegate;
     private ExecutorService executors;
     private boolean shutdownExecutor;
+    private ScpFileOpener fileOpener;
     private int sendBufferSize = ScpHelper.MIN_SEND_BUFFER_SIZE;
     private int receiveBufferSize = ScpHelper.MIN_RECEIVE_BUFFER_SIZE;
     private Collection<ScpTransferEventListener> listeners = new CopyOnWriteArraySet<>();
@@ -104,6 +111,18 @@ public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorSer
 
     public ScpCommandFactory() {
         listenerProxy = EventListenerUtils.proxyWrapper(ScpTransferEventListener.class, getClass().getClassLoader(), listeners);
+    }
+
+    public ScpFileOpener getFileOpener() {
+        return fileOpener;
+    }
+
+    /**
+     * @param fileOpener The {@link ScpFileOpener} to use - if {@code null}.
+     * the a default opener is used
+     */
+    public void setFileOpener(ScpFileOpener fileOpener) {
+        this.fileOpener = fileOpener;
     }
 
     public CommandFactory getDelegateCommandFactory() {
@@ -226,7 +245,10 @@ public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorSer
     @Override
     public Command createCommand(String command) {
         if (command.startsWith(ScpHelper.SCP_COMMAND_PREFIX)) {
-            return new ScpCommand(command, getExecutorService(), isShutdownOnExit(), getSendBufferSize(), getReceiveBufferSize(), listenerProxy);
+            return new ScpCommand(command,
+                    getExecutorService(), isShutdownOnExit(),
+                    getSendBufferSize(), getReceiveBufferSize(),
+                    getFileOpener(), listenerProxy);
         }
 
         CommandFactory factory = getDelegateCommandFactory();

@@ -50,6 +50,7 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.forward.TcpipForwarder;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.ConnectionService;
@@ -68,6 +69,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     private PasswordIdentityProvider passwordIdentityProvider;
     private List<NamedFactory<UserAuth>> userAuthFactories;
     private ScpTransferEventListener scpListener;
+    private ScpFileOpener scpOpener;
     private SocketAddress connectAddress;
 
     protected AbstractClientSession(ClientFactoryManager factoryManager, IoSession ioSession) {
@@ -245,6 +247,16 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     @Override
+    public ScpFileOpener getScpFileOpener() {
+        return scpOpener;
+    }
+
+    @Override
+    public void setScpFileOpener(ScpFileOpener opener) {
+        scpOpener = opener;
+    }
+
+    @Override
     public ScpTransferEventListener getScpTransferEventListener() {
         return scpListener;
     }
@@ -254,16 +266,25 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         scpListener = listener;
     }
 
-    @Override
+    @Override   // TODO make this a default method in JDK-8
     public ScpClient createScpClient() {
-        return createScpClient(getScpTransferEventListener());
+        return createScpClient(getScpFileOpener(), getScpTransferEventListener());
+    }
+
+    @Override   // TODO make this a default method in JDK-8
+    public ScpClient createScpClient(ScpTransferEventListener listener) {
+        return createScpClient(getScpFileOpener(), listener);
+    }
+
+    @Override   // TODO make this a default method in JDK-8
+    public ScpClient createScpClient(ScpFileOpener opener) {
+        return createScpClient(opener, getScpTransferEventListener());
     }
 
     @Override
-    public ScpClient createScpClient(ScpTransferEventListener listener) {
-        return new DefaultScpClient(this, listener);
+    public ScpClient createScpClient(ScpFileOpener opener, ScpTransferEventListener listener) {
+        return new DefaultScpClient(this, opener, listener);
     }
-
     @Override   // TODO make this a default method in JDK-8
     public SftpClient createSftpClient() throws IOException {
         return createSftpClient(SftpVersionSelector.CURRENT);
