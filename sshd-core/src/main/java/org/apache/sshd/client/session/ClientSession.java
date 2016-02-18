@@ -20,7 +20,6 @@ package org.apache.sshd.client.session;
 
 import java.io.IOException;
 import java.net.SocketAddress;
-import java.nio.file.FileSystem;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -34,8 +33,7 @@ import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.scp.ScpClientCreator;
-import org.apache.sshd.client.subsystem.sftp.SftpClient;
-import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
+import org.apache.sshd.client.subsystem.sftp.SftpClientCreator;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
@@ -69,7 +67,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ClientSession
-            extends Session, ScpClientCreator,
+            extends Session, ScpClientCreator, SftpClientCreator,
                     ClientAuthenticationManager {
     enum ClientSessionEvent {
         TIMEOUT,
@@ -157,49 +155,6 @@ public interface ClientSession
      * @throws IOException If failed to create the requested channel
      */
     ChannelDirectTcpip createDirectTcpipChannel(SshdSocketAddress local, SshdSocketAddress remote) throws IOException;
-
-    /**
-     * Create an SFTP client from this session.
-     *
-     * @return The created {@link SftpClient}
-     * @throws IOException if failed to create the client
-     */
-    SftpClient createSftpClient() throws IOException;
-
-    /**
-     * Creates an SFTP client using the specified version
-     *
-     * @param version The version to use - <B>Note:</B> if the specified
-     *                version is not supported by the server then an exception
-     *                will occur
-     * @return The created {@link SftpClient}
-     * @throws IOException If failed to create the client or use the specified version
-     */
-    SftpClient createSftpClient(int version) throws IOException;
-
-    /**
-     * Creates an SFTP client while allowing the selection of a specific version
-     *
-     * @param selector The {@link SftpVersionSelector} to use - <B>Note:</B>
-     *                 if the server does not support versions re-negotiation then the
-     *                 selector will be presented with only one &quot;choice&quot; - the
-     *                 current version
-     * @return The created {@link SftpClient}
-     * @throws IOException If failed to create the client or re-negotiate
-     */
-    SftpClient createSftpClient(SftpVersionSelector selector) throws IOException;
-
-    FileSystem createSftpFileSystem() throws IOException;
-
-    FileSystem createSftpFileSystem(int version) throws IOException;
-
-    FileSystem createSftpFileSystem(SftpVersionSelector selector) throws IOException;
-
-    FileSystem createSftpFileSystem(int readBufferSize, int writeBufferSize) throws IOException;
-
-    FileSystem createSftpFileSystem(int version, int readBufferSize, int writeBufferSize) throws IOException;
-
-    FileSystem createSftpFileSystem(SftpVersionSelector selector, int readBufferSize, int writeBufferSize) throws IOException;
 
     /**
      * Start forwarding the given local address on the client to the given address on the server.

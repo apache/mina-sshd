@@ -20,6 +20,7 @@ package org.apache.sshd.common.subsystem.sftp;
 
 import java.lang.reflect.Field;
 import java.util.Map;
+
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Predicate;
 import org.apache.sshd.common.util.logging.LoggingUtils;
@@ -157,6 +158,13 @@ public final class SftpConstants {
     public static final int SSH_FXF_READ_LOCK = 0x00000040;
     public static final int SSH_FXF_WRITE_LOCK = 0x00000080;
     public static final int SSH_FXF_DELETE_LOCK = 0x00000100;
+    public static final int SSH_FXF_BLOCK_ADVISORY = 0x00000200;
+    public static final int SSH_FXF_NOFOLLOW = 0x00000400;
+    public static final int SSH_FXF_DELETE_ON_CLOSE = 0x00000800;
+    public static final int SSH_FXF_ACCESS_AUDIT_ALARM_INFO = 0x00001000;
+    public static final int SSH_FXF_ACCESS_BACKUP = 0x00002000;
+    public static final int SSH_FXF_BACKUP_STREAM = 0x00004000;
+    public static final int SSH_FXF_OVERRIDE_OWNER = 0x00008000;
 
     public static final int SSH_FXP_RENAME_OVERWRITE = 0x00000001;
     public static final int SSH_FXP_RENAME_ATOMIC = 0x00000002;

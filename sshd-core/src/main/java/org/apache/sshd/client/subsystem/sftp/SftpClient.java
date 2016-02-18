@@ -432,6 +432,9 @@ public interface SftpClient extends SubsystemClient {
     String SFTP_CHANNEL_OPEN_TIMEOUT = "sftp-channel-open-timeout";
     long DEFAULT_CHANNEL_OPEN_TIMEOUT = DEFAULT_WAIT_TIMEOUT;
 
+    /**
+     * @return The negotiated SFTP protocol version
+     */
     int getVersion();
 
     /**
@@ -476,8 +479,18 @@ public interface SftpClient extends SubsystemClient {
      */
     CloseableHandle open(String path, Collection<OpenMode> options) throws IOException;
 
+    /**
+     * Close the handle obtained from one of the {@code open} methods
+     *
+     * @param handle The {@code Handle} to close
+     * @throws IOException If failed to execute
+     */
     void close(Handle handle) throws IOException;
 
+    /**
+     * @param path The remote path to remove
+     * @throws IOException If failed to execute
+     */
     void remove(String path) throws IOException;
 
     void rename(String oldPath, String newPath) throws IOException;
@@ -535,12 +548,41 @@ public interface SftpClient extends SubsystemClient {
 
     void write(Handle handle, long fileOffset, byte[] src) throws IOException;
 
+    /**
+     * Write data to (open) file handle
+     *
+     * @param handle     The file {@link Handle}
+     * @param fileOffset Zero-based offset to write in file
+     * @param src        Data buffer
+     * @param srcOffset  Offset of valid data in buffer
+     * @param len        Number of bytes to write
+     * @throws IOException If failed to write the data
+     */
     void write(Handle handle, long fileOffset, byte[] src, int srcOffset, int len) throws IOException;
 
+    /**
+     * Create remote directory
+     *
+     * @param path Remote directory path
+     * @throws IOException If failed to execute
+     */
     void mkdir(String path) throws IOException;
 
+    /**
+     * Remove remote directory
+     *
+     * @param path Remote directory path
+     * @throws IOException If failed to execute
+     */
     void rmdir(String path) throws IOException;
 
+    /**
+     * Obtain a handle for a directory
+     *
+     * @param path Remote directory path
+     * @return The associated directory {@link Handle}
+     * @throws IOException If failed to execute
+     */
     CloseableHandle openDir(String path) throws IOException;
 
     /**
@@ -568,26 +610,92 @@ public interface SftpClient extends SubsystemClient {
      */
     List<DirEntry> readDir(Handle handle, AtomicReference<Boolean> eolIndicator) throws IOException;
 
+    /**
+     * The effective &quot;normalized&quot; remote path
+     *
+     * @param path The requested path - may be relative, and/or contain
+     * dots - e.g., &quot;.&quot;, &quot;..&quot;, &quot;./foo&quot;, &quot;../bar&quot;
+     *
+     * @return The effective &quot;normalized&quot; remote path
+     * @throws IOException If failed to execute
+     */
     String canonicalPath(String path) throws IOException;
 
+    /**
+     * Retrieve remote path meta-data - follow symbolic links if encountered
+     *
+     * @param path The remote path
+     * @return The associated {@link Attributes}
+     * @throws IOException If failed to execute
+     */
     Attributes stat(String path) throws IOException;
 
+    /**
+     * Retrieve remote path meta-data - do <B>not</B> follow symbolic links
+     *
+     * @param path The remote path
+     * @return The associated {@link Attributes}
+     * @throws IOException If failed to execute
+     */
     Attributes lstat(String path) throws IOException;
 
+    /**
+     * Retrieve file/directory handle meta-data
+     *
+     * @param handle The {@link Handle} obtained via one of the {@code open} calls
+     * @return The associated {@link Attributes}
+     * @throws IOException If failed to execute
+     */
     Attributes stat(Handle handle) throws IOException;
 
+    /**
+     * Update remote node meta-data
+     *
+     * @param path The remote path
+     * @param attributes The {@link Attributes} to update
+     * @throws IOException If failed to execute
+     */
     void setStat(String path, Attributes attributes) throws IOException;
 
+    /**
+     * Update remote node meta-data
+     *
+     * @param handle The {@link Handle} obtained via one of the {@code open} calls
+     * @param attributes The {@link Attributes} to update
+     * @throws IOException If failed to execute
+     */
     void setStat(Handle handle, Attributes attributes) throws IOException;
 
+    /**
+     * Retrieve target of a link
+     *
+     * @param path Remote path that represents a link
+     * @return The link target
+     * @throws IOException If failed to execute
+     */
     String readLink(String path) throws IOException;
 
+    /**
+     * Create symbolic link
+     *
+     * @param linkPath   The link location
+     * @param targetPath The referenced target by the link
+     * @throws IOException If failed to execute
+     */
     void symLink(String linkPath, String targetPath) throws IOException;
 
+    /**
+     * Create a link
+     *
+     * @param linkPath   The link location
+     * @param targetPath The referenced target by the link
+     * @param symbolic   If {@code true} then make this a symbolic link, otherwise a hard one
+     * @throws IOException If failed to execute
+     */
     void link(String linkPath, String targetPath, boolean symbolic) throws IOException;
 
+    // see SSH_FXP_BLOCK / SSH_FXP_UNBLOCK for byte range locks
     void lock(Handle handle, long offset, long length, int mask) throws IOException;
-
     void unlock(Handle handle, long offset, long length) throws IOException;
 
     //
@@ -613,6 +721,15 @@ public interface SftpClient extends SubsystemClient {
 
     InputStream read(String path, Collection<OpenMode> mode) throws IOException;
 
+    /**
+     * Read a remote file's data via an input stream
+     *
+     * @param path       The remote file path
+     * @param bufferSize The internal read buffer size
+     * @param mode       The remote file {@link OpenMode}s
+     * @return An {@link InputStream} for reading the remote file data
+     * @throws IOException If failed to execute
+     */
     InputStream read(String path, int bufferSize, Collection<OpenMode> mode) throws IOException;
 
     OutputStream write(String path) throws IOException;
@@ -625,6 +742,15 @@ public interface SftpClient extends SubsystemClient {
 
     OutputStream write(String path, Collection<OpenMode> mode) throws IOException;
 
+    /**
+     * Write to a remote file via an output stream
+     *
+     * @param path       The remote file path
+     * @param bufferSize The internal write buffer size
+     * @param mode       The remote file {@link OpenMode}s
+     * @return An {@link OutputStream} for writing the data
+     * @throws IOException If failed to execute
+     */
     OutputStream write(String path, int bufferSize, Collection<OpenMode> mode) throws IOException;
 
     /**
