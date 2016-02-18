@@ -133,7 +133,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
                     if (kp != null) {
                         keyPairHolder.set(kp);
                     }
-                } catch(Throwable t) {
+                } catch (Throwable t) {
                     log.warn("loadKeys({}) Failed ({}) to resolve: {}",
                             keyPath, t.getClass().getSimpleName(), t.getMessage());
                     if (log.isDebugEnabled()) {

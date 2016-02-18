@@ -484,17 +484,15 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         }
         hostKeyProvider.setAlgorithm(hostKeyType);
 
-        {
-            List<KeyPair> keys = ValidateUtils.checkNotNullAndNotEmpty(hostKeyProvider.loadKeys(),
-                    "Failed to load keys from %s", hostKeyFile);
-            KeyPair kp = keys.get(0);
-            PublicKey pubKey = kp.getPublic();
-            String keyAlgorithm = pubKey.getAlgorithm();
-            // force re-generation of host key if not same algorithm
-            if (!Objects.equals(keyAlgorithm, hostKeyProvider.getAlgorithm())) {
-                Files.deleteIfExists(hostKeyFile);
-                hostKeyProvider.clearLoadedKeys();
-            }
+        List<KeyPair> keys = ValidateUtils.checkNotNullAndNotEmpty(hostKeyProvider.loadKeys(),
+                "Failed to load keys from %s", hostKeyFile);
+        KeyPair kp = keys.get(0);
+        PublicKey pubKey = kp.getPublic();
+        String keyAlgorithm = pubKey.getAlgorithm();
+        // force re-generation of host key if not same algorithm
+        if (!Objects.equals(keyAlgorithm, hostKeyProvider.getAlgorithm())) {
+            Files.deleteIfExists(hostKeyFile);
+            hostKeyProvider.clearLoadedKeys();
         }
         sshd.setKeyPairProvider(hostKeyProvider);
 
