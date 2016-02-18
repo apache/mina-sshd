@@ -23,12 +23,17 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Closeable;
@@ -54,6 +59,7 @@ import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.forward.ForwardingFilter;
+import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.session.ServerConnectionServiceFactory;
@@ -398,6 +404,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         int port = 8000;
         String provider;
         boolean error = false;
+        String hostKeyType = AbstractGeneratorHostKeyProvider.DEFAULT_ALGORITHM;
         Map<String, String> options = new LinkedHashMap<>();
 
         int numArgs = GenericUtils.length(args);
@@ -409,6 +416,12 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                     break;
                 }
                 port = Integer.parseInt(args[++i]);
+            } else if ("-key-type".equals(argName)) {
+                if (i + 1 >= numArgs) {
+                    System.err.println("option requires an argument: " + argName);
+                    break;
+                }
+                hostKeyType = args[++i].toUpperCase();
             } else if ("-io".equals(argName)) {
                 if (i + 1 >= numArgs) {
                     System.err.println("option requires an argument: " + argName);
@@ -448,7 +461,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             }
         }
         if (error) {
-            System.err.println("usage: sshd [-p port] [-io mina|nio2] [-o option=value]");
+            System.err.println("usage: sshd [-p port] [-io mina|nio2] [-key-type RSA|DSA|EC] [-o option=value]");
             System.exit(-1);
         }
 
@@ -460,11 +473,30 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         props.putAll(options);
         sshd.setPort(port);
 
+        AbstractGeneratorHostKeyProvider hostKeyProvider;
+        Path hostKeyFile;
         if (SecurityUtils.isBouncyCastleRegistered()) {
-            sshd.setKeyPairProvider(SecurityUtils.createGeneratorHostKeyProvider(new File("key.pem").toPath()));
+            hostKeyFile = new File("key.pem").toPath();
+            hostKeyProvider = SecurityUtils.createGeneratorHostKeyProvider(hostKeyFile);
         } else {
-            sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(new File("key.ser")));
+            hostKeyFile = new File("key.ser").toPath();
+            hostKeyProvider = new SimpleGeneratorHostKeyProvider(hostKeyFile);
         }
+        hostKeyProvider.setAlgorithm(hostKeyType);
+
+        {
+            List<KeyPair> keys = ValidateUtils.checkNotNullAndNotEmpty(hostKeyProvider.loadKeys(),
+                    "Failed to load keys from %s", hostKeyFile);
+            KeyPair kp = keys.get(0);
+            PublicKey pubKey = kp.getPublic();
+            String keyAlgorithm = pubKey.getAlgorithm();
+            // force re-generation of host key if not same algorithm
+            if (!Objects.equals(keyAlgorithm, hostKeyProvider.getAlgorithm())) {
+                Files.deleteIfExists(hostKeyFile);
+                hostKeyProvider.clearLoadedKeys();
+            }
+        }
+        sshd.setKeyPairProvider(hostKeyProvider);
 
         sshd.setShellFactory(InteractiveProcessShellFactory.INSTANCE);
         sshd.setPasswordAuthenticator(new PasswordAuthenticator() {

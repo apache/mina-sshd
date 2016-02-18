@@ -26,9 +26,7 @@ package org.apache.sshd.server;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SshServerMain {
-
     public static void main(String[] args) throws Exception {
         SshServer.main(args);
     }
-
 }

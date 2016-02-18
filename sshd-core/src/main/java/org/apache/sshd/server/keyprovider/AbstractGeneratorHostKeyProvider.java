@@ -29,8 +29,11 @@ import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.PublicKey;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
@@ -49,11 +52,12 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
     public static final String DEFAULT_ALGORITHM = "DSA";
     public static final boolean DEFAULT_ALLOWED_TO_OVERWRITE = true;
 
+    private final AtomicReference<KeyPair> keyPairHolder = new AtomicReference<>();
+
     private Path path;
     private String algorithm = DEFAULT_ALGORITHM;
     private int keySize;
     private AlgorithmParameterSpec keySpec;
-    private KeyPair keyPair;
     private boolean overwriteAllowed = DEFAULT_ALLOWED_TO_OVERWRITE;
 
     protected AbstractGeneratorHostKeyProvider() {
@@ -104,57 +108,109 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
         this.overwriteAllowed = overwriteAllowed;
     }
 
-    @Override
-    public synchronized Iterable<KeyPair> loadKeys() {
+    public void clearLoadedKeys() {
+        KeyPair kp;
+        synchronized (keyPairHolder) {
+            kp = keyPairHolder.getAndSet(null);
+        }
+
+        if ((kp != null) & log.isDebugEnabled()) {
+            PublicKey key = kp.getPublic();
+            log.debug("clearLoadedKeys({}) removed key={}-{}",
+                      getPath(), KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+        }
+    }
+
+    @Override   // co-variant return
+    public synchronized List<KeyPair> loadKeys() {
         Path keyPath = getPath();
-
-        if (keyPair == null) {
-            if (keyPath != null) {
-                LinkOption[] options = IoUtils.getLinkOptions(false);
-                if (Files.exists(keyPath, options) && Files.isRegularFile(keyPath, options)) {
-                    try {
-                        keyPair = readKeyPair(keyPath, IoUtils.EMPTY_OPEN_OPTIONS);
-                    } catch (Throwable e) {
-                        log.warn("Failed ({}) to load from {}: {}",
-                                 e.getClass().getSimpleName(), keyPath, e.getMessage());
-                        if (log.isDebugEnabled()) {
-                            log.debug("loadKeys(" + keyPath + ") failure details", e);
-                        }
-                    }
-                }
-            }
-        }
-
-        if (keyPair == null) {
-            String alg = getAlgorithm();
-            try {
-                keyPair = generateKeyPair(alg);
-            } catch (Throwable e) {
-                log.warn("loadKeys({})[{}] Failed ({}) to generate {} key-pair: {}",
-                         keyPath, alg, e.getClass().getSimpleName(), alg, e.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.debug("loadKeys(" + keyPath + ")[" + alg + "] key-pair generation failure details", e);
-                }
-            }
-
-            if ((keyPair != null) && (keyPath != null)) {
+        KeyPair kp;
+        synchronized (keyPairHolder) {
+            kp = keyPairHolder.get();
+            if (kp == null) {
                 try {
-                    writeKeyPair(keyPair, keyPath);
-                } catch (Throwable e) {
-                    log.warn("loadKeys({})[{}] Failed ({}) to write {} key: {}",
-                             alg, keyPath, e.getClass().getSimpleName(), alg, e.getMessage());
+                    kp = resolveKeyPair(keyPath);
+                    if (kp != null) {
+                        keyPairHolder.set(kp);
+                    }
+                } catch(Throwable t) {
+                    log.warn("loadKeys({}) Failed ({}) to resolve: {}",
+                            keyPath, t.getClass().getSimpleName(), t.getMessage());
                     if (log.isDebugEnabled()) {
-                        log.debug("loadKeys(" + keyPath + ")[" + alg + "] writefailure details", e);
+                        log.debug("loadKeys(" + keyPath + ") resolution failure details", t);
                     }
                 }
             }
         }
 
-        if (keyPair == null) {
+        if (kp == null) {
             return Collections.emptyList();
         } else {
-            return Collections.singleton(keyPair);
+            return Collections.singletonList(kp);
         }
+    }
+
+    protected KeyPair resolveKeyPair(Path keyPath) throws IOException, GeneralSecurityException {
+        if (keyPath != null) {
+            LinkOption[] options = IoUtils.getLinkOptions(false);
+            if (Files.exists(keyPath, options) && Files.isRegularFile(keyPath, options)) {
+                try {
+                    KeyPair kp = readKeyPair(keyPath, IoUtils.EMPTY_OPEN_OPTIONS);
+                    if (kp != null) {
+                        if (log.isDebugEnabled()) {
+                            PublicKey key = kp.getPublic();
+                            log.debug("resolveKeyPair({}) loaded key={}-{}",
+                                      keyPath, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+                        }
+                        return kp;
+                    }
+                } catch (Throwable e) {
+                    log.warn("resolveKeyPair({}) Failed ({}) to load: {}",
+                            keyPath, e.getClass().getSimpleName(), e.getMessage());
+                    if (log.isDebugEnabled()) {
+                        log.debug("resolveKeyPair(" + keyPath + ") load failure details", e);
+                    }
+                }
+            }
+        }
+
+        // either no file specified or no key in file
+        String alg = getAlgorithm();
+        KeyPair kp;
+        try {
+            kp = generateKeyPair(alg);
+            if (kp == null) {
+                return null;
+            }
+
+            if (log.isDebugEnabled()) {
+                PublicKey key = kp.getPublic();
+                log.debug("resolveKeyPair({}) generated {} key={}-{}",
+                          keyPath, alg, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+            }
+        } catch (Throwable e) {
+            log.warn("resolveKeyPair({})[{}] Failed ({}) to generate {} key-pair: {}",
+                     keyPath, alg, e.getClass().getSimpleName(), alg, e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("resolveKeyPair(" + keyPath + ")[" + alg + "] key-pair generation failure details", e);
+            }
+
+            return null;
+        }
+
+        if (keyPath != null) {
+            try {
+                writeKeyPair(kp, keyPath);
+            } catch (Throwable e) {
+                log.warn("resolveKeyPair({})[{}] Failed ({}) to write {} key: {}",
+                         alg, keyPath, e.getClass().getSimpleName(), alg, e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("resolveKeyPair(" + keyPath + ")[" + alg + "] write failure details", e);
+                }
+            }
+        }
+
+        return kp;
     }
 
     protected KeyPair readKeyPair(Path keyPath, OpenOption... options) throws IOException, GeneralSecurityException {
@@ -183,7 +239,6 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
     }
 
     protected abstract void doWriteKeyPair(String resourceKey, KeyPair kp, OutputStream outputStream) throws IOException, GeneralSecurityException;
-
 
     protected KeyPair generateKeyPair(String algorithm) throws GeneralSecurityException {
         KeyPairGenerator generator = SecurityUtils.getKeyPairGenerator(algorithm);
