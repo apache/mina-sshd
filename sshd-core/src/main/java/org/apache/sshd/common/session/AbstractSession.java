@@ -20,6 +20,7 @@ package org.apache.sshd.common.session;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -2197,6 +2198,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[" + getUsername() + "@" + getIoSession().getRemoteAddress() + "]";
+        IoSession ioSession = getIoSession();
+        SocketAddress peerAddress = (ioSession == null) ? null : ioSession.getRemoteAddress();
+        return getClass().getSimpleName() + "[" + getUsername() + "@" + peerAddress + "]";
     }
 }
