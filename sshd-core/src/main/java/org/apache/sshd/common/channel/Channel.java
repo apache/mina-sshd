@@ -21,6 +21,7 @@ package org.apache.sshd.common.channel;
 import java.io.IOException;
 
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.session.ConnectionService;
@@ -33,7 +34,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Channel extends ChannelListenerManager, PropertyResolver, Closeable {
+public interface Channel extends ChannelListenerManager, PropertyResolver, AttributeStore, Closeable {
     // Known types of channels
     String CHANNEL_EXEC = "exec";
     String CHANNEL_SHELL = "shell";

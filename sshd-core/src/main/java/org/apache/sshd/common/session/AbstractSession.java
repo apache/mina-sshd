@@ -39,6 +39,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
@@ -173,7 +174,6 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected final Object encodeLock = new Object();
     protected final Object decodeLock = new Object();
     protected final Object requestLock = new Object();
-    protected final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
 
     // Session timeout measurements
     protected long authTimeoutStart = System.currentTimeMillis();
@@ -212,6 +212,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     private final FactoryManager factoryManager;
     private final Map<String, Object> properties = new ConcurrentHashMap<>();
     private final AtomicReference<Object> requestResult = new AtomicReference<>();
+    private final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
 
     /**
      * Create a new session.
@@ -1797,29 +1798,29 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
     }
 
-    /**
-     * Returns the value of the user-defined attribute of this session.
-     *
-     * @param key the key of the attribute; must not be null.
-     * @return <tt>null</tt> if there is no attribute with the specified key
-     */
     @Override
     @SuppressWarnings("unchecked")
     public <T> T getAttribute(AttributeKey<T> key) {
-        return (T) attributes.get(key);
+        return (T) attributes.get(ValidateUtils.checkNotNull(key, "No key"));
     }
 
-    /**
-     * Sets a user-defined attribute.
-     *
-     * @param key   the key of the attribute; must not be null.
-     * @param value the value of the attribute; must not be null.
-     * @return The old value of the attribute.  <tt>null</tt> if it is new.
-     */
     @Override
     @SuppressWarnings("unchecked")
-    public <T, E extends T> T setAttribute(AttributeKey<T> key, E value) {
-        return (T) attributes.put(key, value);
+    public <T> T setAttribute(AttributeKey<T> key, T value) {
+        return (T) attributes.put(
+                ValidateUtils.checkNotNull(key, "No key"),
+                ValidateUtils.checkNotNull(value, "No value"));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T removeAttribute(AttributeKey<T> key) {
+        return (T) attributes.remove(ValidateUtils.checkNotNull(key, "No key"));
+    }
+
+    @Override
+    public <T> T resolveAttribute(AttributeKey<T> key) {
+        return AttributeStore.Utils.resolveAttribute(this, key);
     }
 
     @Override

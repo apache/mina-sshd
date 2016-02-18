@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolver;
@@ -99,6 +100,7 @@ public abstract class AbstractChannel
      */
     private final Map<String, Date> pendingRequests = new ConcurrentHashMap<>();
     private final Map<String, Object> properties = new ConcurrentHashMap<>();
+    private final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
 
     protected AbstractChannel(boolean client) {
         this("", client);
@@ -753,6 +755,31 @@ public abstract class AbstractChannel
     @Override
     public Map<String, Object> getProperties() {
         return properties;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T getAttribute(AttributeKey<T> key) {
+        return (T) attributes.get(ValidateUtils.checkNotNull(key, "No key"));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T setAttribute(AttributeKey<T> key, T value) {
+        return (T) attributes.put(
+                ValidateUtils.checkNotNull(key, "No key"),
+                ValidateUtils.checkNotNull(value, "No value"));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T removeAttribute(AttributeKey<T> key) {
+        return (T) attributes.remove(ValidateUtils.checkNotNull(key, "No key"));
+    }
+
+    @Override
+    public <T> T resolveAttribute(AttributeKey<T> key) {
+        return AttributeStore.Utils.resolveAttribute(this, key);
     }
 
     protected void configureWindow() {

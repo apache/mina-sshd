@@ -21,6 +21,7 @@ package org.apache.sshd.common.session;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManagerHolder;
 import org.apache.sshd.common.PropertyResolver;
@@ -50,6 +51,7 @@ public interface Session
                 ChannelListenerManager,
                 FactoryManagerHolder,
                 PropertyResolver,
+                AttributeStore,
                 Closeable,
                 MutableUserHolder {
 
@@ -67,26 +69,6 @@ public interface Session
         AuthTimeout,
         IdleTimeout;
     }
-
-    /**
-     * Returns the value of the user-defined attribute of this session.
-     *
-     * @param <T> The generic attribute type
-     * @param key The key of the attribute; must not be {@code null}.
-     * @return <tt>null</tt> if there is no attribute with the specified key
-     */
-    <T> T getAttribute(AttributeKey<T> key);
-
-    /**
-     * Sets a user-defined attribute.
-     *
-     * @param <T>   The generic attribute type
-     * @param <E>   The generic value type
-     * @param key   The key of the attribute; must not be {@code null}.
-     * @param value The value of the attribute; must not be {@code null}.
-     * @return The old value of the attribute.  {@code null} if it is new.
-     */
-    <T, E extends T> T setAttribute(AttributeKey<T> key, E value);
 
     /**
      * Retrieve the client version for this session.
@@ -244,36 +226,8 @@ public interface Session
     IoSession getIoSession();
 
     /**
-     * <P>
-     * Type safe key for storage within the user attributes of {@link org.apache.sshd.common.session.AbstractSession}.
-     * Typically it is used as a static variable that is shared between the producer
-     * and the consumer. To further restrict access the setting or getting it from
-     * the Session you can add static get and set methods, e.g:
-     * </P>
-     *
-     * <pre>
-     * private static final AttributeKey&lt;MyValue&gt; MY_KEY = new AttributeKey&lt;MyValue&gt;();
-     *
-     * public static MyValue getMyValue(Session s) {
-     *   return s.getAttribute(MY_KEY);
-     * }
-     *
-     * private void setMyValue(Session s, MyValue value) {
-     *   s.setAttribute(MY_KEY, value);
-     * }
-     * </pre>
-     *
-     * @param <T> type of value stored in the attribute.
-     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+     * Re-start idle timeout timer
      */
-    // CHECKSTYLE:OFF
-    class AttributeKey<T> {
-        public AttributeKey() {
-            super();
-        }
-    }
-    // CHECKSTYLE:ON
-
     void resetIdleTimeout();
 
     /**
@@ -294,9 +248,12 @@ public interface Session
     long getIdleTimeout();
 
     boolean isAuthenticated();
-
     void setAuthenticated() throws IOException;
 
+    /**
+     * @return The established session identifier - {@code null} if
+     * not yet established
+     */
     byte[] getSessionId();
 
     KeyExchange getKex();

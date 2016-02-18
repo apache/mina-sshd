@@ -75,6 +75,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     protected final ChannelListener channelListenerProxy;
 
     private final Map<String, Object> properties = new ConcurrentHashMap<>();
+    private final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
     private PropertyResolver parentResolver = SyspropsMapWrapper.SYSPROPS_RESOLVER;
 
     protected AbstractFactoryManager() {
@@ -113,6 +114,31 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     @Override
     public Map<String, Object> getProperties() {
         return properties;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T getAttribute(AttributeKey<T> key) {
+        return (T) attributes.get(ValidateUtils.checkNotNull(key, "No key"));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T setAttribute(AttributeKey<T> key, T value) {
+        return (T) attributes.put(
+                ValidateUtils.checkNotNull(key, "No key"),
+                ValidateUtils.checkNotNull(value, "No value"));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T removeAttribute(AttributeKey<T> key) {
+        return (T) attributes.remove(ValidateUtils.checkNotNull(key, "No key"));
+    }
+
+    @Override
+    public <T> T resolveAttribute(AttributeKey<T> key) {
+        return AttributeStore.Utils.resolveAttribute(this, key);
     }
 
     @Override

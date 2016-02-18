@@ -41,7 +41,12 @@ import org.apache.sshd.server.forward.ForwardingFilter;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface FactoryManager extends KexFactoryManager, SessionListenerManager, ChannelListenerManager, PropertyResolver {
+public interface FactoryManager
+        extends KexFactoryManager,
+                SessionListenerManager,
+                ChannelListenerManager,
+                AttributeStore,
+                PropertyResolver {
 
     /**
      * Key used to retrieve the value of the channel window size in the
