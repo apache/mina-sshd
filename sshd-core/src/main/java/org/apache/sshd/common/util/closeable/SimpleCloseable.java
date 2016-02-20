@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -44,6 +45,16 @@ public class SimpleCloseable extends IoBaseCloseable {
     @Override
     public boolean isClosing() {
         return closing.get();
+    }
+
+    @Override
+    public void addCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+        future.addListener(listener);
+    }
+
+    @Override
+    public void removeCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+        future.removeListener(listener);
     }
 
     @Override

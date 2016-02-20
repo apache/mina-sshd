@@ -25,12 +25,15 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.IoWriteFutureImpl;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.DefaultCloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -167,12 +170,37 @@ public class AbstractSessionTest extends BaseTestSupport {
         assertEquals("Mismatched number of ignore messages", Byte.SIZE, numIgnores);
     }
 
+    @Test   // see SSHD-652
+    public void testCloseFutureListenerRegistration() throws Exception {
+        final AtomicInteger closeCount = new AtomicInteger();
+        session.addCloseFutureListener(new SshFutureListener<CloseFuture>() {
+            @Override
+            public void operationComplete(CloseFuture future) {
+                assertTrue("Future not marted as closed", future.isClosed());
+                assertEquals("Unexpected multiple call to callback", 1, closeCount.incrementAndGet());
+            }
+        });
+        session.close();
+        assertEquals("Close listener not called", 1, closeCount.get());
+    }
+
     public static class MyIoSession implements IoSession {
         private final Queue<Buffer> outgoing = new LinkedBlockingQueue<>();
         private final AtomicBoolean open = new AtomicBoolean(true);
+        private final CloseFuture closeFuture;
 
         public MyIoSession() {
-            super();
+            closeFuture = new DefaultCloseFuture(open);
+        }
+
+        @Override
+        public void addCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+            closeFuture.addListener(listener);
+        }
+
+        @Override
+        public void removeCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+            closeFuture.addListener(listener);
         }
 
         public Queue<Buffer> getOutgoingMessages() {
@@ -242,9 +270,10 @@ public class AbstractSessionTest extends BaseTestSupport {
         public CloseFuture close(boolean immediately) {
             if (open.getAndSet(false)) {
                 outgoing.clear();
+                closeFuture.setClosed();
             }
 
-            return null;
+            return closeFuture;
         }
 
         @Override

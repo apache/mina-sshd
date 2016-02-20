@@ -455,6 +455,16 @@ public abstract class AbstractChannel
         }
 
         @Override
+        public void addCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+            gracefulFuture.addListener(listener);
+        }
+
+        @Override
+        public void removeCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+            gracefulFuture.removeListener(listener);
+        }
+
+        @Override
         public boolean isClosing() {
             return closing.get();
         }

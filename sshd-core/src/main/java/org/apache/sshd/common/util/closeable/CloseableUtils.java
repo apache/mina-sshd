@@ -26,7 +26,6 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.DefaultCloseFuture;
 
 /**
  * Utility class to help with {@link Closeable}s.
@@ -71,11 +70,5 @@ public final class CloseableUtils {
                 throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");
             }
         }
-    }
-
-    public static CloseFuture closed() {
-        CloseFuture future = new DefaultCloseFuture(null);
-        future.setClosed();
-        return future;
     }
 }

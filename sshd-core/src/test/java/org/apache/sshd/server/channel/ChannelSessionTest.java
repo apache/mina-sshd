@@ -21,10 +21,13 @@ package org.apache.sshd.server.channel;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -64,5 +67,27 @@ public class ChannelSessionTest extends BaseTestSupport {
             channelSession.handleWindowAdjust(buffer);
             assertTrue("Expanded ?", expanded.get());
         }
+    }
+
+    @Test   // see SSHD-652
+    public void testCloseFutureListenerRegistration() throws Exception {
+        final AtomicInteger closeCount = new AtomicInteger();
+        try (ChannelSession session = new ChannelSession() {
+            {
+                Window wRemote = getRemoteWindow();
+                wRemote.init(PropertyResolverUtils.toPropertyResolver(Collections.<String,Object>emptyMap()));
+            }
+        }) {
+            session.addCloseFutureListener(new SshFutureListener<CloseFuture>() {
+                @Override
+                public void operationComplete(CloseFuture future) {
+                    assertTrue("Future not marted as closed", future.isClosed());
+                    assertEquals("Unexpected multiple call to callback", 1, closeCount.incrementAndGet());
+                }
+            });
+            session.close();
+        }
+
+        assertEquals("Close listener not called", 1, closeCount.get());
     }
 }

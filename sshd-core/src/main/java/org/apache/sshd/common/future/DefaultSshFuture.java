@@ -119,21 +119,20 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
         ValidateUtils.checkNotNull(listener, "Missing listener argument");
         boolean notifyNow = false;
         synchronized (lock) {
+            // if already have a result don't register the listener and invoke it directly
             if (result != null) {
                 notifyNow = true;
-            } else {
-                if (listeners == null) {
-                    listeners = listener;
-                } else if (listeners instanceof SshFutureListener) {
-                    listeners = new Object[]{listeners, listener};
-                } else {
-                    Object[] ol = (Object[]) listeners;
-                    int l = ol.length;
-                    Object[] nl = new Object[l + 1];
-                    System.arraycopy(ol, 0, nl, 0, l);
-                    nl[l] = listener;
-                    listeners = nl;
-                }
+            } else if (listeners == null) {
+                listeners = listener;   // 1st listener ?
+            } else if (listeners instanceof SshFutureListener) {
+                listeners = new Object[]{listeners, listener};
+            } else {    // increase array of registered listeners
+                Object[] ol = (Object[]) listeners;
+                int l = ol.length;
+                Object[] nl = new Object[l + 1];
+                System.arraycopy(ol, 0, nl, 0, l);
+                nl[l] = listener;
+                listeners = nl;
             }
         }
 
@@ -148,18 +147,22 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
         ValidateUtils.checkNotNull(listener, "No listener provided");
 
         synchronized (lock) {
-            if (result == null) {
-                if (listeners != null) {
-                    if (listeners == listener) {
-                        listeners = null;
-                    } else {
-                        int l = Array.getLength(listeners);
-                        for (int i = 0; i < l; i++) {
-                            if (Array.get(listeners, i) == listener) {
-                                Array.set(listeners, i, null);
-                                break;
-                            }
-                        }
+            if (result != null) {
+                return asT();   // the train has already left the station...
+            }
+
+            if (listeners == null) {
+                return asT();   // no registered instances anyway
+            }
+
+            if (listeners == listener) {
+                listeners = null;   // the one and only
+            } else if (!(listeners instanceof SshFutureListener))  {
+                int l = Array.getLength(listeners);
+                for (int i = 0; i < l; i++) {
+                    if (Array.get(listeners, i) == listener) {
+                        Array.set(listeners, i, null);
+                        break;
                     }
                 }
             }
@@ -169,9 +172,12 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
     }
 
     protected void notifyListeners() {
-        // There won't be any visibility problem or concurrent modification
-        // because 'ready' flag will be checked against both addListener and
-        // removeListener calls.
+        /*
+         * There won't be any visibility problem or concurrent modification
+         * because result value is checked in both addListener and
+         * removeListener calls under lock. If the result is already set then
+         * both methods will not modify the internal listeners
+         */
         if (listeners != null) {
             if (listeners instanceof SshFutureListener) {
                 notifyListener(asListener(listeners));

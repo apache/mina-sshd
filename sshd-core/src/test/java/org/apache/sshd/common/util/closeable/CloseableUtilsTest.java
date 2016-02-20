@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
@@ -53,6 +54,16 @@ public class CloseableUtilsTest extends BaseTestSupport {
             }
 
             @Override
+            public void addCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+                fail("Unexpected call to addCloseFutureListener");
+            }
+
+            @Override
+            public void removeCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+                fail("Unexpected call to removeCloseFutureListener");
+            }
+
+            @Override
             public boolean isClosed() {
                 return true;
             }
@@ -72,6 +83,16 @@ public class CloseableUtilsTest extends BaseTestSupport {
             public CloseFuture close(boolean immediately) {
                 fail("Unexpected call to close(" + immediately + ")");
                 return null;
+            }
+
+            @Override
+            public void addCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+                fail("Unexpected call to addCloseFutureListener");
+            }
+
+            @Override
+            public void removeCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+                fail("Unexpected call to removeCloseFutureListener");
             }
 
             @Override
@@ -97,6 +118,16 @@ public class CloseableUtilsTest extends BaseTestSupport {
                 assertTrue("Closure is not immediate", immediately);
                 assertEquals("Multiple close immediate calls", 1, callsCount.incrementAndGet());
                 return future;
+            }
+
+            @Override
+            public void addCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+                fail("Unexpected call to addCloseFutureListener");
+            }
+
+            @Override
+            public void removeCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+                fail("Unexpected call to removeCloseFutureListener");
             }
 
             @Override

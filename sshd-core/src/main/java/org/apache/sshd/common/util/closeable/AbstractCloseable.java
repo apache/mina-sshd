@@ -40,10 +40,12 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
      * Lock object for this session state
      */
     protected final Object lock = new Object();
+
     /**
      * State of this object
      */
     protected final AtomicReference<AbstractCloseable.State> state = new AtomicReference<>(State.Opened);
+
     /**
      * A future that will be set 'closed' when the object is actually closed
      */
@@ -55,6 +57,16 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
 
     protected AbstractCloseable(String discriminator) {
         super(discriminator);
+    }
+
+    @Override
+    public void addCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+        closeFuture.addListener(listener);
+    }
+
+    @Override
+    public void removeCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+        closeFuture.removeListener(listener);
     }
 
     @Override

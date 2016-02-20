@@ -25,7 +25,9 @@ import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
@@ -90,6 +92,9 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
     protected Closeable getInnerCloseable() {
         return new IoBaseCloseable() {
             @SuppressWarnings("synthetic-access")
+            private final DefaultCloseFuture future = new DefaultCloseFuture(lock);
+
+            @SuppressWarnings("synthetic-access")
             @Override
             public boolean isClosing() {
                 return session.isClosing();
@@ -101,10 +106,19 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
                 return !session.isConnected();
             }
 
+            @Override
+            public void addCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+                future.addListener(listener);
+            }
+
+            @Override
+            public void removeCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+                future.removeListener(listener);
+            }
+
             @SuppressWarnings("synthetic-access")
             @Override
             public org.apache.sshd.common.future.CloseFuture close(boolean immediately) {
-                final DefaultCloseFuture future = new DefaultCloseFuture(lock);
                 session.close(false).addListener(new IoFutureListener<IoFuture>() {
                     @Override
                     public void operationComplete(IoFuture f) {

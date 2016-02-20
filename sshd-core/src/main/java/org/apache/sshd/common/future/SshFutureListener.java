@@ -38,5 +38,4 @@ public interface SshFutureListener<T extends SshFuture> extends EventListener {
      *               callback.
      */
     void operationComplete(T future);
-
 }

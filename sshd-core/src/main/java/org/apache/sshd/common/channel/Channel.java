@@ -34,7 +34,11 @@ import org.apache.sshd.common.util.buffer.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Channel extends ChannelListenerManager, PropertyResolver, AttributeStore, Closeable {
+public interface Channel
+        extends ChannelListenerManager,
+                PropertyResolver,
+                AttributeStore,
+                Closeable {
     // Known types of channels
     String CHANNEL_EXEC = "exec";
     String CHANNEL_SHELL = "shell";

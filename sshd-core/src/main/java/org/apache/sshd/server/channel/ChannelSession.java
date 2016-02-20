@@ -123,6 +123,10 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     public class CommandCloseable extends IoBaseCloseable {
+        public CommandCloseable() {
+            super();
+        }
+
         @Override
         public boolean isClosed() {
             return commandExitFuture.isClosed();
@@ -131,6 +135,16 @@ public class ChannelSession extends AbstractServerChannel {
         @Override
         public boolean isClosing() {
             return isClosed();
+        }
+
+        @Override
+        public void addCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+            commandExitFuture.addListener(listener);
+        }
+
+        @Override
+        public void removeCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+            commandExitFuture.removeListener(listener);
         }
 
         @Override
