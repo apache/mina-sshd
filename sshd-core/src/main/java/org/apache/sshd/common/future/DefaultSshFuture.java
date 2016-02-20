@@ -104,6 +104,25 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
         notifyListeners();
     }
 
+    public int getNumRegisteredListeners() {
+        synchronized (lock) {
+            if (listeners == null) {
+                return 0;
+            } else if (listeners instanceof SshFutureListener) {
+                return 1;
+            } else {
+                int l = Array.getLength(listeners);
+                int count = 0;
+                for (int i = 0; i < l; i++) {
+                    if (Array.get(listeners, i) != null) {
+                        count++;
+                    }
+                }
+                return count;
+            }
+        }
+    }
+
     /**
      * @return The result of the asynchronous operation - or {@code null}
      * if none set.
