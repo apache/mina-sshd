@@ -33,6 +33,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+
 /**
  * Utility class for thread pools.
  *
@@ -133,15 +135,15 @@ public final class ThreadUtils {
 
     public static ExecutorService newFixedThreadPool(String poolName, int nThreads) {
         return new ThreadPoolExecutor(nThreads, nThreads,
-                0L, TimeUnit.MILLISECONDS,
+                0L, TimeUnit.MILLISECONDS, // TODO make this configurable
                 new LinkedBlockingQueue<Runnable>(),
                 new SshdThreadFactory(poolName),
                 new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
     public static ExecutorService newCachedThreadPool(String poolName) {
-        return new ThreadPoolExecutor(0, Integer.MAX_VALUE,
-                60L, TimeUnit.SECONDS,
+        return new ThreadPoolExecutor(0, Integer.MAX_VALUE, // TODO make this configurable
+                60L, TimeUnit.SECONDS, // TODO make this configurable
                 new SynchronousQueue<Runnable>(),
                 new SshdThreadFactory(poolName),
                 new ThreadPoolExecutor.CallerRunsPolicy());
@@ -155,17 +157,15 @@ public final class ThreadUtils {
         return newFixedThreadPool(poolName, 1);
     }
 
-    public static class SshdThreadFactory implements ThreadFactory {
-
+    public static class SshdThreadFactory extends AbstractLoggingBean implements ThreadFactory {
         private final ThreadGroup group;
         private final AtomicInteger threadNumber = new AtomicInteger(1);
         private final String namePrefix;
 
         public SshdThreadFactory(String name) {
             SecurityManager s = System.getSecurityManager();
-            ThreadGroup parentGroup = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
+            group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
             String effectiveName = name.replace(' ', '-');
-            group = new ThreadGroup(parentGroup, "sshd-" + effectiveName + "-group");
             namePrefix = "sshd-" + effectiveName + "-thread-";
         }
 
@@ -178,9 +178,10 @@ public final class ThreadUtils {
             if (t.getPriority() != Thread.NORM_PRIORITY) {
                 t.setPriority(Thread.NORM_PRIORITY);
             }
+            if (log.isTraceEnabled()) {
+                log.trace("newThread({})[{}] runnable={}", group, t.getName(), r);
+            }
             return t;
         }
-
     }
-
 }
