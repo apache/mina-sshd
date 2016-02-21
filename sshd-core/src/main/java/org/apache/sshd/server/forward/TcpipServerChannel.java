@@ -52,7 +52,6 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.channel.AbstractServerChannel;
-import org.apache.sshd.server.channel.ServerChannel;
 
 /**
  * TODO Add javadoc
@@ -348,35 +347,14 @@ public class TcpipServerChannel extends AbstractServerChannel {
     @Override
     protected void doWriteData(byte[] data, int off, final int len) throws IOException {
         // Make sure we copy the data as the incoming buffer may be reused
-        Buffer buf = ByteArrayBuffer.getCompactClone(data, off, len);
-        final ServerChannel channel = this;
+        final Buffer buf = ByteArrayBuffer.getCompactClone(data, off, len);
         ioSession.write(buf).addListener(new SshFutureListener<IoWriteFuture>() {
             @Override
-            @SuppressWarnings("synthetic-access")
             public void operationComplete(IoWriteFuture future) {
-                Session session = getSession();
                 if (future.isWritten()) {
-                    try {
-                        Window wLocal = getLocalWindow();
-                        wLocal.consumeAndCheck(len);
-                    } catch (IOException e) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("doWriteData({}) failed ({}) to consume len={}: {}",
-                                      channel, e.getClass().getSimpleName(), len, e.getMessage());
-                        }
-                        session.exceptionCaught(e);
-                    }
+                    handleWriteDataSuccess(SshConstants.SSH_MSG_CHANNEL_DATA, buf.array(), 0, len);
                 } else {
-                    Throwable t = future.getException();
-                    if (log.isDebugEnabled()) {
-                        log.debug("doWriteData({}) failed ({}) to write len={}: {}",
-                                  channel, t.getClass().getSimpleName(), len, t.getMessage());
-                    }
-
-                    if (log.isTraceEnabled()) {
-                        log.trace("doWriteData(" + channel + ") len=" + len + " write failure details", t);
-                    }
-                    session.exceptionCaught(t);
+                    handleWriteDataFailure(SshConstants.SSH_MSG_CHANNEL_DATA, buf.array(), 0, len, future.getException());
                 }
             }
         });
@@ -385,5 +363,36 @@ public class TcpipServerChannel extends AbstractServerChannel {
     @Override
     protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
         throw new UnsupportedOperationException(type + "Tcpip channel does not support extended data");
+    }
+
+    protected void handleWriteDataSuccess(byte cmd, byte[] data, int off, int len) {
+        Session session = getSession();
+        try {
+            Window wLocal = getLocalWindow();
+            wLocal.consumeAndCheck(len);
+        } catch (Throwable e) {
+            if (log.isDebugEnabled()) {
+                log.debug("handleWriteDataSuccess({})[{}] failed ({}) to consume len={}: {}",
+                          this, SshConstants.getCommandMessageName(cmd & 0xFF),
+                          e.getClass().getSimpleName(), len, e.getMessage());
+            }
+            session.exceptionCaught(e);
+        }
+    }
+
+    protected void handleWriteDataFailure(byte cmd, byte[] data, int off, int len, Throwable t) {
+        Session session = getSession();
+        if (log.isDebugEnabled()) {
+            log.debug("handleWriteDataFailure({})[{}] failed ({}) to write len={}: {}",
+                      this, SshConstants.getCommandMessageName(cmd & 0xFF),
+                      t.getClass().getSimpleName(), len, t.getMessage());
+        }
+
+        if (log.isTraceEnabled()) {
+            log.trace("doWriteData(" + this + ")[" + SshConstants.getCommandMessageName(cmd & 0xFF) + "]"
+                    + " len=" + len + " write failure details", t);
+        }
+
+        session.exceptionCaught(t);
     }
 }
