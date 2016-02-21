@@ -58,7 +58,7 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
 
 /**
- * TODO Add javadoc
+ * Provides common client/server channel functionality
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -75,8 +75,6 @@ public abstract class AbstractChannel
         Opened, CloseSent, CloseReceived, Closed
     }
 
-    protected ExecutorService executor;
-    protected boolean shutdownExecutor;
     protected ConnectionService service;
     protected final AtomicBoolean initialized = new AtomicBoolean(false);
     protected final AtomicBoolean eofReceived = new AtomicBoolean(false);
@@ -93,6 +91,8 @@ public abstract class AbstractChannel
     private int id = -1;
     private int recipient = -1;
     private Session sessionInstance;
+    private ExecutorService executor;
+    private boolean shutdownExecutor;
 
     private final Window localWindow;
     private final Window remoteWindow;
@@ -379,7 +379,7 @@ public abstract class AbstractChannel
             log.warn("notifyStateChanged({})[{}] {} while signal channel state change: {}",
                      this, hint, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
-                log.debug("notifyStateChanged(" + this + ")[" + hint + "] channel closed signalling failure details", e);
+                log.debug("notifyStateChanged(" + this + ")[" + hint + "] channel state signalling failure details", e);
             }
         }
 
