@@ -31,13 +31,12 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 
 /**
- * An IoOutputStream capable of queuing write requests
+ * An {@link IoOutputStream} capable of queuing write requests
  */
 public class BufferedIoOutputStream extends AbstractInnerCloseable implements IoOutputStream {
-
-    private final IoOutputStream out;
-    private final Queue<IoWriteFutureImpl> writes = new ConcurrentLinkedQueue<IoWriteFutureImpl>();
-    private final AtomicReference<IoWriteFutureImpl> currentWrite = new AtomicReference<IoWriteFutureImpl>();
+    protected final IoOutputStream out;
+    protected final Queue<IoWriteFutureImpl> writes = new ConcurrentLinkedQueue<IoWriteFutureImpl>();
+    protected final AtomicReference<IoWriteFutureImpl> currentWrite = new AtomicReference<IoWriteFutureImpl>();
 
     public BufferedIoOutputStream(IoOutputStream out) {
         this.out = out;
@@ -45,7 +44,7 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
 
     @Override
     public IoWriteFuture write(Buffer buffer) {
-        final IoWriteFutureImpl future = new IoWriteFutureImpl(buffer);
+        IoWriteFutureImpl future = new IoWriteFutureImpl(buffer);
         if (isClosing()) {
             future.setValue(new IOException("Closed"));
         } else {
@@ -55,7 +54,7 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
         return future;
     }
 
-    private void startWriting() {
+    protected void startWriting() {
         final IoWriteFutureImpl future = writes.peek();
         if (future != null) {
             if (currentWrite.compareAndSet(null, future)) {
@@ -70,7 +69,6 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
                         finishWrite();
                     }
 
-                    @SuppressWarnings("synthetic-access")
                     private void finishWrite() {
                         writes.remove(future);
                         currentWrite.compareAndSet(future, null);
@@ -91,6 +89,6 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
 
     @Override
     public String toString() {
-        return "BufferedIoOutputStream[" + out + "]";
+        return getClass().getSimpleName() + "[" + out + "]";
     }
 }
