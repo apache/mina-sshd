@@ -27,6 +27,7 @@ import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -125,9 +126,11 @@ public class UserAuthPassword extends AbstractUserAuth {
      * @param session The target {@link ClientSession}
      * @param oldPassword The previous password
      * @param newPassword The new password
+     * @return An {@link IoWriteFuture} that can be used to wait and check
+     * on the success/failure of the request packet being sent
      * @throws IOException If failed to send the message.
      */
-    protected void sendPassword(Buffer buffer, ClientSession session, String oldPassword, String newPassword) throws IOException {
+    protected IoWriteFuture sendPassword(Buffer buffer, ClientSession session, String oldPassword, String newPassword) throws IOException {
         String username = session.getUsername();
         String service = getService();
         String name = getName();
@@ -150,6 +153,6 @@ public class UserAuthPassword extends AbstractUserAuth {
         if (modified) {
             buffer.putString(newPassword);
         }
-        session.writePacket(buffer);
+        return session.writePacket(buffer);
     }
 }

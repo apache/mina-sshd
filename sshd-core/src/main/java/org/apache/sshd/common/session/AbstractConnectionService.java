@@ -45,6 +45,8 @@ import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.forward.TcpipForwarder;
 import org.apache.sshd.common.forward.TcpipForwarderFactory;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.io.AbstractIoWriteFuture;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -555,7 +557,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
         });
     }
 
-    protected void sendChannelOpenFailure(Buffer buffer, int sender, int reasonCode, String message, String lang) throws IOException {
+    protected IoWriteFuture sendChannelOpenFailure(Buffer buffer, int sender, int reasonCode, String message, String lang) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("sendChannelOpenFailure({}) sender={}, reason={}, lang={}, message='{}'",
                       this, sender, SshConstants.getOpenErrorCodeName(reasonCode), lang, message);
@@ -568,7 +570,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
         buf.putInt(reasonCode);
         buf.putString(message);
         buf.putString(lang);
-        session.writePacket(buf);
+        return session.writePacket(buf);
     }
 
     /**
@@ -624,13 +626,17 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
         sendGlobalResponse(buffer, req, RequestHandler.Result.Unsupported, wantReply);
     }
 
-    protected void sendGlobalResponse(Buffer buffer, String req, RequestHandler.Result result, boolean wantReply) throws IOException {
+    protected IoWriteFuture sendGlobalResponse(Buffer buffer, String req, RequestHandler.Result result, boolean wantReply) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("sendGlobalResponse({})[{}] result={}, want-reply={}", this, req, result, wantReply);
         }
 
         if (RequestHandler.Result.Replied.equals(result) || (!wantReply)) {
-            return;
+            return new AbstractIoWriteFuture(null) {
+                {
+                    setValue(Boolean.TRUE);
+                }
+            };
         }
 
         byte cmd = RequestHandler.Result.ReplySuccess.equals(result)
@@ -638,7 +644,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
                  : SshConstants.SSH_MSG_REQUEST_FAILURE;
         Session session = getSession();
         Buffer rsp = session.createBuffer(cmd, 2);
-        session.writePacket(rsp);
+        return session.writePacket(rsp);
     }
 
     protected void requestSuccess(Buffer buffer) throws Exception {

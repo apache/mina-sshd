@@ -54,6 +54,7 @@ import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -332,32 +333,31 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     @Override
-    protected void sendResponse(Buffer buffer, String req, Result result, boolean wantReply) throws IOException {
-        super.sendResponse(buffer, req, result, wantReply);
-
+    protected IoWriteFuture sendResponse(Buffer buffer, String req, Result result, boolean wantReply) throws IOException {
+        IoWriteFuture future = super.sendResponse(buffer, req, result, wantReply);
         if (!RequestHandler.Result.ReplySuccess.equals(result)) {
-            return;
+            return future;
         }
 
         if (commandInstance == null) {
             if (log.isDebugEnabled()) {
                 log.debug("sendResponse({}) request={} no pending command", this, req);
             }
-            return; // no pending command to activate
+            return future; // no pending command to activate
         }
 
         if (!Objects.equals(this.type, req)) {
             if (log.isDebugEnabled()) {
                 log.debug("sendResponse({}) request={} mismatched channel type: {}", this, req, this.type);
             }
-            return; // request does not match the current channel type
+            return future; // request does not match the current channel type
         }
 
         if (commandStarted.getAndSet(true)) {
             if (log.isDebugEnabled()) {
                 log.debug("sendResponse({}) request={} pending command already started", this, req);
             }
-            return;
+            return future;
         }
 
         // TODO - consider if (Channel.CHANNEL_SHELL.equals(req) || Channel.CHANNEL_EXEC.equals(req) || Channel.CHANNEL_SUBSYSTEM.equals(req)) {
@@ -365,6 +365,7 @@ public class ChannelSession extends AbstractServerChannel {
             log.debug("sendResponse({}) request={} activate command", this, req);
         }
         commandInstance.start(getEnvironment());
+        return future;
     }
 
     protected RequestHandler.Result handleEnv(Buffer buffer, boolean wantReply) throws IOException {

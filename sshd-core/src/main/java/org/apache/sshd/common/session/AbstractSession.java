@@ -517,7 +517,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             Pair<String, String> result = comparePreferredKexProposalOption(option);
             if (result != null) {
                 if (log.isDebugEnabled()) {
-                    log.debug("handleKexMessage({})[{}] 1st follow KEX packet {} option mismatch: client={}, server={}",
+                    log.debug("handleFirstKexPacketFollows({})[{}] 1st follow KEX packet {} option mismatch: client={}, server={}",
                               this, SshConstants.getCommandMessageName(cmd), option, result.getFirst(), result.getSecond());
                 }
                 return false;
@@ -574,6 +574,10 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         if (log.isDebugEnabled()) {
             log.debug("handleUnimplented({}) SSH_MSG_UNIMPLEMENTED #{}", this, seqNo);
         }
+
+        if (log.isTraceEnabled()) {
+            log.trace("handleUnimplemented({}) data: {}", this, buffer.toHex());
+        }
     }
 
     protected void handleDebug(Buffer buffer) throws Exception {
@@ -611,7 +615,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         validateKexState(SshConstants.SSH_MSG_SERVICE_REQUEST, KexState.DONE);
         try {
             startService(serviceName);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             if (log.isDebugEnabled()) {
                 log.debug("handleServiceRequest({}) Service {} rejected: {} = {}",
                           this, serviceName, e.getClass().getSimpleName(), e.getMessage());
@@ -847,15 +851,6 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         throw new IllegalStateException("Attempted to access unknown service " + clazz.getSimpleName());
     }
 
-    /**
-     * Encode and send the given buffer.
-     * The buffer has to have 5 bytes free at the beginning to allow the encoding to take place.
-     * Also, the write position of the buffer has to be set to the position of the last byte to write.
-     *
-     * @param buffer the buffer to encode and send
-     * @return a future that can be used to check when the packet has actually been sent
-     * @throws IOException if an error occurred when encoding sending the packet
-     */
     @Override
     public IoWriteFuture writePacket(Buffer buffer) throws IOException {
         // While exchanging key, queue high level packets
@@ -981,12 +976,16 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     @Override
-    public Buffer request(Buffer buffer, long timeout, TimeUnit unit) throws IOException {
+    public Buffer request(String request, Buffer buffer, long timeout, TimeUnit unit) throws IOException {
         ValidateUtils.checkTrue(timeout > 0L, "Non-positive timeout requested: %d", timeout);
 
         long maxWaitMillis = TimeUnit.MILLISECONDS.convert(timeout, unit);
         if (maxWaitMillis <= 0L) {
-            throw new IllegalArgumentException("Requested timeout below 1 msec: " + timeout + " " + unit);
+            throw new IllegalArgumentException("Requested timeout for " + request + " below 1 msec: " + timeout + " " + unit);
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("request({}) request={}, timeout={} {}", this, request, timeout, unit);
         }
 
         Object result;
@@ -1011,16 +1010,21 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                     result = requestResult.getAndSet(null);
                 }
             } catch (InterruptedException e) {
-                throw (InterruptedIOException) new InterruptedIOException("Interrupted while waiting for request result").initCause(e);
+                throw (InterruptedIOException) new InterruptedIOException("Interrupted while waiting for request=" + request + " result").initCause(e);
             }
         }
 
         if (!isOpen()) {
-            throw new IOException("Session is closed or closing");
+            throw new IOException("Session is closed or closing while awaiting reply for request=" + request);
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("request({}) request={}, timeout={} {}, result received={}",
+                      this, request, timeout, unit, result != null);
         }
 
         if (result == null) {
-            throw new SocketTimeoutException("No response received after " + timeout + " " + unit);
+            throw new SocketTimeoutException("No response received after " + timeout + " " + unit + " for request=" + request);
         }
 
         if (result instanceof Buffer) {
@@ -1286,10 +1290,10 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @param ident our identification to send
      */
     protected void sendIdentification(String ident) {
+        byte[] data = (ident + "\r\n").getBytes(StandardCharsets.UTF_8);
         if (log.isDebugEnabled()) {
             log.debug("sendIdentification({}): {}", this, ident);
         }
-        byte[] data = (ident + "\r\n").getBytes(StandardCharsets.UTF_8);
         ioSession.write(new ByteArrayBuffer(data));
     }
 
@@ -1318,8 +1322,15 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @return the remote identification or {@code null} if more data is needed
      */
     protected String doReadIdentification(Buffer buffer, boolean server) {
-        byte[] data = new byte[256];
-        for (;;) {
+        int maxIdentSize = PropertyResolverUtils.getIntProperty(this,
+                FactoryManager.MAX_IDENTIFICATION_SIZE, FactoryManager.DEFAULT_MAX_IDENTIFICATION_SIZE);
+        /*
+         * see https://tools.ietf.org/html/rfc4253 section 4.2
+         *
+         *      The maximum length of the string is 255 characters,
+         *      including the Carriage Return and Line Feed.
+         */
+        for (byte[] data = new byte[256];;) {
             int rpos = buffer.rpos();
             int pos = 0;
             boolean needLf = false;
@@ -1345,12 +1356,13 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 }
                 data[pos++] = b;
             }
-            String str = new String(data, 0, pos);
+
+            String str = new String(data, 0, pos, StandardCharsets.UTF_8);
             if (server || str.startsWith("SSH-")) {
                 return str;
             }
-            if (buffer.rpos() > (16 * 1024)) {
-                throw new IllegalStateException("Incorrect identification: too many header lines");
+            if (buffer.rpos() > maxIdentSize) {
+                throw new IllegalStateException("Incorrect identification: too many header lines - size > " + maxIdentSize);
             }
         }
     }
@@ -1407,13 +1419,14 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             random.fill(buffer.array(), p, SshConstants.MSG_KEX_COOKIE_SIZE);
         }
         if (log.isTraceEnabled()) {
-            log.trace("sendKexInit(" + toString() + ") cookie=" + BufferUtils.toHex(buffer.array(), p, SshConstants.MSG_KEX_COOKIE_SIZE, ':'));
+            log.trace("sendKexInit({}) cookie={}",
+                      this, BufferUtils.toHex(buffer.array(), p, SshConstants.MSG_KEX_COOKIE_SIZE, ':'));
         }
 
         for (KexProposalOption paramType : KexProposalOption.VALUES) {
             String s = proposal.get(paramType);
             if (log.isTraceEnabled()) {
-                log.trace("sendKexInit(" + toString() + ")[" + paramType.getDescription() + "] " + s);
+                log.trace("sendKexInit(}|)[{}] {}", this, paramType.getDescription(), s);
             }
             buffer.putString(GenericUtils.trimToEmpty(s));
         }
@@ -1446,7 +1459,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         buffer.rpos(cookieStartPos + SshConstants.MSG_KEX_COOKIE_SIZE);
         size += SshConstants.MSG_KEX_COOKIE_SIZE;
         if (log.isTraceEnabled()) {
-            log.trace("receiveKexInit(" + toString() + ") cookie=" + BufferUtils.toHex(d, cookieStartPos, SshConstants.MSG_KEX_COOKIE_SIZE, ':'));
+            log.trace("receiveKexInit({}) cookie={}",
+                      this, BufferUtils.toHex(d, cookieStartPos, SshConstants.MSG_KEX_COOKIE_SIZE, ':'));
         }
 
         // Read proposal
@@ -1454,7 +1468,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             int lastPos = buffer.rpos();
             String value = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("receiveKexInit(" + toString() + ")[" + paramType.getDescription() + "] " + value);
+                log.trace("receiveKexInit({})[{}] {}", this, paramType.getDescription(), value);
             }
             int curPos = buffer.rpos();
             int readLen = curPos - lastPos;
@@ -1464,13 +1478,13 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
         firstKexPacketFollows = buffer.getBoolean();
         if (log.isTraceEnabled()) {
-            log.trace("receiveKexInit(" + toString() + ") first kex packet follows: " + firstKexPacketFollows);
+            log.trace("receiveKexInit({}) first kex packet follows: {}", this, firstKexPacketFollows);
         }
 
         long reserved = buffer.getUInt();
         if (reserved != 0) {
             if (log.isTraceEnabled()) {
-                log.trace("receiveKexInit(" + toString() + ") non-zero reserved value: " + reserved);
+                log.trace("receiveKexInit({}) non-zero reserved value: {}", this, reserved);
             }
         }
 
@@ -1483,14 +1497,16 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     /**
      * Send a message to put new keys into use.
      *
+     * @return An {@link IoWriteFuture} that can be used to wait and
+     * check the result of sending the packet
      * @throws IOException if an error occurs sending the message
      */
-    protected void sendNewKeys() throws IOException {
+    protected IoWriteFuture sendNewKeys() throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("sendNewKeys({}) Send SSH_MSG_NEWKEYS", this);
         }
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_NEWKEYS, Byte.SIZE);
-        writePacket(buffer);
+        return writePacket(buffer);
     }
 
     /**
@@ -1517,11 +1533,12 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         buffer.putRawBytes(h);
         buffer.putByte((byte) 0x41);
         buffer.putRawBytes(sessionId);
+
         int pos = buffer.available();
         byte[] buf = buffer.array();
         hash.update(buf, 0, pos);
-        byte[] iv_c2s = hash.digest();
 
+        byte[] iv_c2s = hash.digest();
         int j = pos - sessionId.length - 1;
 
         buf[j]++;
@@ -1664,6 +1681,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         buffer.putInt(reason);
         buffer.putString(msg);
         buffer.putString("");   // TODO configure language...
+
         // Write the packet with a timeout to ensure a timely close of the session
         // in case the consumer does not read packets anymore.
         long disconnectTimeoutMs = PropertyResolverUtils.getLongProperty(this, FactoryManager.DISCONNECT_TIMEOUT, FactoryManager.DEFAULT_DISCONNECT_TIMEOUT);
@@ -1699,12 +1717,25 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * sequence id of the unsupported packet: this number is assumed to
      * be the last packet received.
      *
+     * @return An {@link IoWriteFuture} that can be used to wait for packet write completion
+     * @throws IOException if an error occurred sending the packet
+     * @see #sendNotImplemented(long)
+     */
+    protected IoWriteFuture notImplemented() throws IOException {
+        return sendNotImplemented(seqi - 1);
+    }
+
+    /**
+     * Sends a {@code SSH_MSG_UNIMPLEMENTED} message
+     *
+     * @param seqNoValue The referenced sequence number
+     * @return An {@link IoWriteFuture} that can be used to wait for packet write completion
      * @throws IOException if an error occurred sending the packet
      */
-    protected void notImplemented() throws IOException {
+    protected IoWriteFuture sendNotImplemented(long seqNoValue) throws IOException {
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_UNIMPLEMENTED, Byte.SIZE);
-        buffer.putInt(seqi - 1);
-        writePacket(buffer);
+        buffer.putInt(seqNoValue);
+        return writePacket(buffer);
     }
 
     /**
@@ -1743,14 +1774,14 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 // OK if could not negotiate languages
                 if (KexProposalOption.S2CLANG.equals(paramType) || KexProposalOption.C2SLANG.equals(paramType)) {
                     if (log.isTraceEnabled()) {
-                        log.trace(message);
+                        log.trace("negotiate({}) {}", this, message);
                     }
                 } else {
                     throw new IllegalStateException(message);
                 }
             } else {
                 if (log.isTraceEnabled()) {
-                    log.trace("Kex: negotiate(" + paramType.getDescription() + ") guess=" + value
+                    log.trace("negotiate(" + this + ")[" + paramType.getDescription() + "] guess=" + value
                             + " (client: " + clientParamValue + " / server: " + serverParamValue + ")");
                 }
             }

@@ -174,7 +174,6 @@ public class UserAuthGSS extends AbstractUserAuth {
 
                 if (NumberUtils.length(out) > 0) {
                     Buffer b = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE, out.length + Integer.SIZE);
-
                     b.putBytes(out);
                     session.writePacket(b);
                     return null;

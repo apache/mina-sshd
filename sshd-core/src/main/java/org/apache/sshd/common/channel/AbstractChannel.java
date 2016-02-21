@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.channel;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,6 +42,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
@@ -313,13 +315,17 @@ public abstract class AbstractChannel
         return RequestHandler.Result.Unsupported;
     }
 
-    protected void sendResponse(Buffer buffer, String req, RequestHandler.Result result, boolean wantReply) throws IOException {
+    protected IoWriteFuture sendResponse(Buffer buffer, String req, RequestHandler.Result result, boolean wantReply) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("sendResponse({}) request={} result={}, want-reply={}", this, req, result, wantReply);
         }
 
         if (RequestHandler.Result.Replied.equals(result) || (!wantReply)) {
-            return;
+            return new AbstractIoWriteFuture(null) {
+                {
+                    setValue(Boolean.TRUE);
+                }
+            };
         }
 
         byte cmd = RequestHandler.Result.ReplySuccess.equals(result)
@@ -328,7 +334,7 @@ public abstract class AbstractChannel
         Session session = getSession();
         Buffer rsp = session.createBuffer(cmd, Integer.SIZE / Byte.SIZE);
         rsp.putInt(recipient);
-        session.writePacket(rsp);
+        return session.writePacket(rsp);
     }
 
     @Override
@@ -616,12 +622,19 @@ public abstract class AbstractChannel
         super.doCloseImmediately();
     }
 
-    protected void writePacket(Buffer buffer) throws IOException {
+    protected IoWriteFuture writePacket(Buffer buffer) throws IOException {
         if (!isClosing()) {
             Session s = getSession();
-            s.writePacket(buffer);
+            return s.writePacket(buffer);
         } else {
-            log.debug("writePacket({}) Discarding output packet because channel is being closed", this);
+            if (log.isDebugEnabled()) {
+                log.debug("writePacket({}) Discarding output packet because channel is being closed", this);
+            }
+            return new AbstractIoWriteFuture(null) {
+                {
+                    setValue(new EOFException("Channel is being closed"));
+                }
+            };
         }
     }
 

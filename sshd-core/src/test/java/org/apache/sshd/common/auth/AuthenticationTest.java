@@ -49,6 +49,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
@@ -226,14 +227,14 @@ public class AuthenticationTest extends BaseTestSupport {
                     public org.apache.sshd.client.auth.password.UserAuthPassword create() {
                         return new org.apache.sshd.client.auth.password.UserAuthPassword() {
                             @Override
-                            protected void sendPassword(Buffer buffer, ClientSession session, String oldPassword, String newPassword) throws IOException {
+                            protected IoWriteFuture sendPassword(Buffer buffer, ClientSession session, String oldPassword, String newPassword) throws IOException {
                                 int count = sentCount.incrementAndGet();
                                 // 1st one is the original one (which is denied by the server)
                                 // 2nd one is the updated one retrieved from the user interaction
                                 if (count == 2) {
-                                    super.sendPassword(buffer, session, getClass().getName(), newPassword);
+                                    return super.sendPassword(buffer, session, getClass().getName(), newPassword);
                                 } else {
-                                    super.sendPassword(buffer, session, oldPassword, newPassword);
+                                    return super.sendPassword(buffer, session, oldPassword, newPassword);
                                 }
                             }
                         };

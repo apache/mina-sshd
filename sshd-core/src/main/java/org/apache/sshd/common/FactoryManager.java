@@ -216,6 +216,17 @@ public interface FactoryManager
     String DEFAULT_VERSION = "SSHD-UNKNOWN";
 
     /**
+     * Maximum allowed size of the initial identification text sent during
+     * the handshake
+     */
+    String MAX_IDENTIFICATION_SIZE = "max-identification-size";
+
+    /**
+     * Default value for {@link #MAX_IDENTIFICATION_SIZE} if none set
+     */
+    int DEFAULT_MAX_IDENTIFICATION_SIZE = 16 * 1024;
+
+    /**
      * Key re-exchange will be automatically performed after the session
      * has sent or received the given amount of bytes. If non-positive,
      * then disabled. The default value is {@link #DEFAULT_REKEY_BYTES_LIMIT}

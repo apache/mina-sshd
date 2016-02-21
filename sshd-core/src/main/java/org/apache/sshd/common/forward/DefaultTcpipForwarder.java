@@ -188,7 +188,7 @@ public class DefaultTcpipForwarder
         buffer.putInt(remotePort);
 
         long timeout = PropertyResolverUtils.getLongProperty(session, FORWARD_REQUEST_TIMEOUT, DEFAULT_FORWARD_REQUEST_TIMEOUT);
-        Buffer result = session.request(buffer, timeout, TimeUnit.MILLISECONDS);
+        Buffer result = session.request("tcpip-forward", buffer, timeout, TimeUnit.MILLISECONDS);
         if (result == null) {
             throw new SshException("Tcpip forwarding request denied by server");
         }

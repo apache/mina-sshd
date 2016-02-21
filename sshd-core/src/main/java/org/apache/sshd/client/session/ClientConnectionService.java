@@ -28,6 +28,8 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.io.AbstractIoWriteFuture;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.AbstractConnectionService;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.x11.X11ForwardSupport;
@@ -74,18 +76,30 @@ public class ClientConnectionService extends AbstractConnectionService<AbstractC
         }
     }
 
-    protected void sendHeartBeat() {
+    /**
+     * Sends a heartbeat message
+     * @return The {@link IoWriteFuture} that can be used to wait for the
+     * message write completion
+     */
+    protected IoWriteFuture sendHeartBeat() {
         ClientSession session = getClientSession();
         String request = PropertyResolverUtils.getStringProperty(session, ClientFactoryManager.HEARTBEAT_REQUEST, ClientFactoryManager.DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING);
         try {
             Buffer buf = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST, request.length() + Byte.SIZE);
             buf.putString(request);
             buf.putBoolean(false);
-            session.writePacket(buf);
+            return session.writePacket(buf);
         } catch (IOException e) {
             if (log.isDebugEnabled()) {
                 log.debug("Error (" + e.getClass().getSimpleName() + ") sending keepalive message=" + request + ": " + e.getMessage());
             }
+
+            final Throwable t = e;
+            return new AbstractIoWriteFuture(null) {
+                {
+                    setValue(t);
+                }
+            };
         }
     }
 
