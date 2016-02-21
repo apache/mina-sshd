@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
@@ -116,7 +117,19 @@ public class ClientIdentityFileWatcher extends ModifiableFileWatcher implements 
         String location = path.toString();
         ClientIdentityLoader idLoader = ValidateUtils.checkNotNull(getClientIdentityLoader(), "No client identity loader");
         if (idLoader.isValidLocation(location)) {
-            return idLoader.loadClientIdentity(location, ValidateUtils.checkNotNull(getFilePasswordProvider(), "No file password provider"));
+            KeyPair kp = idLoader.loadClientIdentity(location, ValidateUtils.checkNotNull(getFilePasswordProvider(), "No file password provider"));
+            if (log.isTraceEnabled()) {
+                PublicKey key = (kp == null) ? null : kp.getPublic();
+                if (key != null) {
+                    log.trace("reloadClientIdentity({}) loaded {}-{}",
+                              location, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+
+                } else {
+                    log.trace("reloadClientIdentity({}) no key loaded", location);
+                }
+            }
+
+            return kp;
         }
 
         if (log.isDebugEnabled()) {

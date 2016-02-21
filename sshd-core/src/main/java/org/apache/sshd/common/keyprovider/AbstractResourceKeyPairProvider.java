@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -33,6 +34,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -62,6 +64,13 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
         this.passwordFinder = passwordFinder;
     }
 
+    /**
+     * Checks which of the new resources we already loaded and can keep the
+     * associated key pair
+     *
+     * @param resources The collection of new resources - can be {@code null}/empty
+     * in which case the cache is cleared
+     */
     protected void resetCacheMap(Collection<?> resources) {
         // if have any cached pairs then see what we can keep from previous load
         Collection<String> toDelete = Collections.emptySet();
@@ -121,16 +130,24 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
         synchronized (cacheMap) {
             // check if lucky enough to have already loaded this file
             kp = cacheMap.get(resourceKey);
-            if (kp != null) {
-                return kp;
+        }
+
+        if (kp != null) {
+            if (log.isTraceEnabled()) {
+                PublicKey key = kp.getPublic();
+                log.trace("doLoadKey({}) use cached key {}-{}",
+                          resourceKey, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
             }
+            return kp;
         }
 
         kp = doLoadKey(resourceKey, resource, getPasswordFinder());
         if (kp != null) {
+            boolean reusedKey;
             synchronized (cacheMap) {
-                // if somebody else beat us to it, use the cached key
-                if (cacheMap.containsKey(resourceKey)) {
+                // if somebody else beat us to it, use the cached key - just in case file contents changed
+                reusedKey = cacheMap.containsKey(resourceKey);
+                if (reusedKey) {
                     kp = cacheMap.get(resourceKey);
                 } else {
                     cacheMap.put(resourceKey, kp);
@@ -138,7 +155,14 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("doLoadKey(" + resourceKey + ") loaded " + kp.getPublic() + " / " + kp.getPrivate());
+                PublicKey key = kp.getPublic();
+                log.debug("doLoadKey({}) {} {}-{}",
+                          resourceKey, reusedKey ? "re-loaded" : "loaded",
+                          KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+            }
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("doLoadKey({}) no key loaded", resourceKey);
             }
         }
 
@@ -155,12 +179,12 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
 
     protected abstract KeyPair doLoadKey(String resourceKey, InputStream inputStream, FilePasswordProvider provider) throws IOException, GeneralSecurityException;
 
-    private class KeyPairIterator implements Iterator<KeyPair> {
+    protected class KeyPairIterator implements Iterator<KeyPair> {
         private final Iterator<? extends R> iterator;
         private KeyPair nextKeyPair;
         private boolean nextKeyPairSet;
 
-        KeyPairIterator(Collection<? extends R> resources) {
+        protected KeyPairIterator(Collection<? extends R> resources) {
             iterator = resources.iterator();
         }
 
@@ -191,9 +215,9 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
                 R r = iterator.next();
                 try {
                     nextKeyPair = doLoadKey(r);
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     log.warn("Failed (" + e.getClass().getSimpleName() + ")"
-                            + " to load key resource=" + r + ": " + e.getMessage());
+                           + " to load key resource=" + r + ": " + e.getMessage());
                     if (log.isDebugEnabled()) {
                         log.debug("Key resource=" + r + " load failure details", e);
                     }
