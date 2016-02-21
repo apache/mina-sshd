@@ -500,28 +500,12 @@ public abstract class AbstractChannel
                 try {
                     long timeout = PropertyResolverUtils.getLongProperty(channel, FactoryManager.CHANNEL_CLOSE_TIMEOUT, FactoryManager.DEFAULT_CHANNEL_CLOSE_TIMEOUT);
                     s.writePacket(buffer, timeout, TimeUnit.MILLISECONDS).addListener(new SshFutureListener<IoWriteFuture>() {
-                        @SuppressWarnings("synthetic-access")
                         @Override
                         public void operationComplete(IoWriteFuture future) {
                             if (future.isWritten()) {
-                                if (log.isDebugEnabled()) {
-                                    log.debug("close({})[immediately={}] SSH_MSG_CHANNEL_CLOSE written on channel", channel, immediately);
-                                }
-                                if (gracefulState.compareAndSet(GracefulState.Opened, GracefulState.CloseSent)) {
-                                    // Waiting for CLOSE message to come back from the remote side
-                                } else if (gracefulState.compareAndSet(GracefulState.CloseReceived, GracefulState.Closed)) {
-                                    gracefulFuture.setClosed();
-                                }
+                                handleClosePacketWritten(channel, immediately);
                             } else {
-                                Throwable t = future.getException();
-                                if (log.isDebugEnabled()) {
-                                    log.debug("close({})[immediately={}] failed ({}) to write SSH_MSG_CHANNEL_CLOSE on channel: {}",
-                                              channel, immediately, t.getClass().getSimpleName(), t.getMessage());
-                                }
-                                if (log.isTraceEnabled()) {
-                                    log.trace("close(" + channel + ") SSH_MSG_CHANNEL_CLOSE failure details", t);
-                                }
-                                channel.close(true);
+                                handleClosePacketWriteFailure(channel, immediately, future.getException());
                             }
                         }
                     });
@@ -548,6 +532,35 @@ public abstract class AbstractChannel
             }
 
             return gracefulFuture;
+        }
+
+        protected void handleClosePacketWritten(Channel channel, boolean immediately) {
+            if (log.isDebugEnabled()) {
+                log.debug("handleClosePacketWritten({})[immediately={}] SSH_MSG_CHANNEL_CLOSE written on channel",
+                          channel, immediately);
+            }
+
+            if (gracefulState.compareAndSet(GracefulState.Opened, GracefulState.CloseSent)) {
+                // Waiting for CLOSE message to come back from the remote side
+            } else if (gracefulState.compareAndSet(GracefulState.CloseReceived, GracefulState.Closed)) {
+                gracefulFuture.setClosed();
+            }
+        }
+
+        protected void handleClosePacketWriteFailure(Channel channel, boolean immediately, Throwable t) {
+            if (log.isDebugEnabled()) {
+                log.debug("handleClosePacketWriteFailure({})[immediately={}] failed ({}) to write SSH_MSG_CHANNEL_CLOSE on channel: {}",
+                          this, immediately, t.getClass().getSimpleName(), t.getMessage());
+            }
+            if (log.isTraceEnabled()) {
+                log.trace("handleClosePacketWriteFailure(" + channel + ") SSH_MSG_CHANNEL_CLOSE failure details", t);
+            }
+            channel.close(true);
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "[" + AbstractChannel.this + "]";
         }
     }
 
