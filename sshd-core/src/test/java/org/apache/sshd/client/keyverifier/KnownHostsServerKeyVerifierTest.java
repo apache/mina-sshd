@@ -244,11 +244,12 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         final AtomicInteger acceptCount = new AtomicInteger(0);
         ServerKeyVerifier verifier = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, createKnownHostsCopy()) {
             @Override
-            protected boolean acceptModifiedServerKey(
-                    ClientSession clientSession, SocketAddress remoteAddress, HostEntryPair match, PublicKey actual) {
+            public boolean acceptModifiedServerKey(
+                    ClientSession clientSession, SocketAddress remoteAddress,
+                    KnownHostEntry entry, PublicKey expected, PublicKey actual) throws Exception {
                 acceptCount.incrementAndGet();
                 assertSame("Mismatched actual key for " + remoteAddress, modifiedKey, actual);
-                return super.acceptModifiedServerKey(clientSession, remoteAddress, match, actual);
+                return super.acceptModifiedServerKey(clientSession, remoteAddress, entry, expected, actual);
             }
         };
 
@@ -270,8 +271,9 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         Path path = createKnownHostsCopy();
         ServerKeyVerifier verifier = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, path) {
             @Override
-            protected boolean acceptModifiedServerKey(
-                    ClientSession clientSession, SocketAddress remoteAddress, HostEntryPair match, PublicKey actual) {
+            public boolean acceptModifiedServerKey(
+                    ClientSession clientSession, SocketAddress remoteAddress,
+                    KnownHostEntry entry, PublicKey expected, PublicKey actual) throws Exception {
                 assertSame("Mismatched actual key for " + remoteAddress, modifiedKey, actual);
                 return true;
             }

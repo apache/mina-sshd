@@ -37,6 +37,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,6 +48,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
@@ -68,10 +70,14 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
+import org.apache.sshd.client.config.hosts.KnownHostEntry;
 import org.apache.sshd.client.config.keys.ClientIdentityLoader;
 import org.apache.sshd.client.config.keys.DefaultClientIdentitiesWatcher;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
+import org.apache.sshd.client.keyverifier.DefaultKnownHostsServerKeyVerifier;
+import org.apache.sshd.client.keyverifier.KnownHostsServerKeyVerifier;
+import org.apache.sshd.client.keyverifier.ModifiedServerKeyAcceptor;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.AbstractClientSession;
 import org.apache.sshd.client.session.ClientConnectionServiceFactory;
@@ -879,6 +885,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 }
             }
 
+            setupServerKeyVerifier(client, options, stdin, stdout, stderr);
+
             Map<String, Object> props = client.getProperties();
             props.putAll(options);
 
@@ -936,6 +944,62 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             client.close();
             throw e;
         }
+    }
+
+    public static ServerKeyVerifier setupServerKeyVerifier(ClientAuthenticationManager manager, Map<String, ?> options,
+            final BufferedReader stdin, final PrintStream stdout, final PrintStream stderr) {
+        ServerKeyVerifier current = manager.getServerKeyVerifier();
+        if (current == null) {
+            current = ClientBuilder.DEFAULT_SERVER_KEY_VERIFIER;
+            manager.setServerKeyVerifier(current);
+        }
+
+        String strictValue = Objects.toString(options.remove(KnownHostsServerKeyVerifier.STRICT_CHECKING_OPTION), "true");
+        if (!SshConfigFileReader.parseBooleanValue(strictValue)) {
+            return current;
+        }
+
+        final ModifiedServerKeyAcceptor acceptor = new ModifiedServerKeyAcceptor() {
+            @Override
+            public boolean acceptModifiedServerKey(ClientSession clientSession, SocketAddress remoteAddress,
+                    KnownHostEntry entry, PublicKey expected, PublicKey actual) throws Exception {
+                stderr.append("Mismatched keys presented by ").append(Objects.toString(remoteAddress))
+                      .append(" for entry=").println(entry);
+                stderr.append('\t').append("Expected=").append(KeyUtils.getKeyType(expected))
+                      .append('-').println(KeyUtils.getFingerPrint(expected));
+                stderr.append('\t').append("Actual=").append(KeyUtils.getKeyType(actual))
+                      .append('-').println(KeyUtils.getFingerPrint(actual));
+                stderr.flush(); // just making sure
+
+                stdout.append("Accept key and update known hosts: y/[N]");
+                stdout.flush(); // just making sure
+
+                String ans = GenericUtils.trimToEmpty(stdin.readLine());
+                return (GenericUtils.length(ans) > 0) && (Character.toLowerCase(ans.charAt(0)) == 'y');
+            }
+        };
+
+        String filePath = Objects.toString(options.remove(KnownHostsServerKeyVerifier.KNOWN_HOSTS_FILE_OPTION), null);
+        if (GenericUtils.isEmpty(filePath)) {
+            current = new DefaultKnownHostsServerKeyVerifier(current) {
+                @Override
+                public boolean acceptModifiedServerKey(ClientSession clientSession, SocketAddress remoteAddress,
+                        KnownHostEntry entry, PublicKey expected, PublicKey actual) throws Exception {
+                    return acceptor.acceptModifiedServerKey(clientSession, remoteAddress, entry, expected, actual);
+                }
+            };
+        } else {    // if user specifies a different location than default be lenient
+            current = new DefaultKnownHostsServerKeyVerifier(current, false, Paths.get(filePath)) {
+                @Override
+                public boolean acceptModifiedServerKey(ClientSession clientSession, SocketAddress remoteAddress,
+                        KnownHostEntry entry, PublicKey expected, PublicKey actual) throws Exception {
+                    return acceptor.acceptModifiedServerKey(clientSession, remoteAddress, entry, expected, actual);
+                }
+            };
+        }
+
+        manager.setServerKeyVerifier(current);
+        return current;
     }
 
     public static Level resolveLoggingVerbosity(String ... args) {

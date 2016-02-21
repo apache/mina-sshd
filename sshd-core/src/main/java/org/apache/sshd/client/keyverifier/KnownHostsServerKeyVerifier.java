@@ -60,7 +60,21 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class KnownHostsServerKeyVerifier extends ModifiableFileWatcher implements ServerKeyVerifier {
+public class KnownHostsServerKeyVerifier
+        extends ModifiableFileWatcher
+        implements ServerKeyVerifier, ModifiedServerKeyAcceptor {
+
+    /**
+     * Standard option used to indicate whether to use strict host key checking or not.
+     * Values may be &quot;yes/no&quot;, &quot;true/false&quot; or &quot;on/off&quot;
+     */
+    public static final String STRICT_CHECKING_OPTION = "StrictHostKeyChecking";
+
+    /**
+     * Standard option used to indicate alternative known hosts file location
+     */
+    public static final String KNOWN_HOSTS_FILE_OPTION = "UserKnownHostsFile";
+
     /**
      * Represents an entry in the internal verifier's cach
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -233,7 +247,17 @@ public class KnownHostsServerKeyVerifier extends ModifiableFileWatcher implement
             return acceptKnownHostEntry(clientSession, remoteAddress, serverKey, entry);
         }
 
-        if (!acceptModifiedServerKey(clientSession, remoteAddress, match, serverKey)) {
+        try {
+            if (!acceptModifiedServerKey(clientSession, remoteAddress, entry, expected, serverKey)) {
+                return false;
+            }
+        } catch (Throwable t) {
+            log.warn("acceptKnownHostEntries({})[{}] failed ({}) to accept modified server key: {}",
+                     clientSession, remoteAddress, t.getClass().getSimpleName(), t.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("acceptKnownHostEntries(" + clientSession + ")[" + remoteAddress + "]"
+                        + " modified server key acceptance failure details", t);
+            }
             return false;
         }
 
@@ -249,7 +273,7 @@ public class KnownHostsServerKeyVerifier extends ModifiableFileWatcher implement
 
     /**
      * Invoked if a matching host entry was found, but the key did not match and
-     * {@link #acceptModifiedServerKey(ClientSession, SocketAddress, HostEntryPair, PublicKey)}
+     * {@link #acceptModifiedServerKey(ClientSession, SocketAddress, KnownHostEntry, PublicKey, PublicKey)}
      * returned {@code true}. By default it locates the line to be updated and updates only
      * its key data, marking the file for reload on next verification just to be
      * on the safe side.
@@ -697,24 +721,14 @@ public class KnownHostsServerKeyVerifier extends ModifiableFileWatcher implement
         return candidates;
     }
 
-    /**
-     * Invoked when a matching known host key was found but it does not match
-     * the presented one.
-     *
-     * @param clientSession The {@link ClientSession}
-     * @param remoteAddress The remote host address
-     * @param match The original {@link HostEntryPair} whose key did not match
-     * @param actual The presented server {@link PublicKey}
-     * @return {@code true} if accept the server key anyway - default={@code false}
-     */
-    protected boolean acceptModifiedServerKey(
-            ClientSession clientSession, SocketAddress remoteAddress, HostEntryPair match, PublicKey actual) {
-        KnownHostEntry entry = match.getHostEntry();
-        PublicKey expected = match.getServerKey();
+    @Override
+    public boolean acceptModifiedServerKey(ClientSession clientSession, SocketAddress remoteAddress,
+            KnownHostEntry entry, PublicKey expected, PublicKey actual)
+                    throws Exception {
         log.warn("acceptModifiedServerKey({}) mismatched keys presented by {} for entry={}: expected={}-{}, actual={}-{}",
-                 clientSession, remoteAddress, entry,
-                 KeyUtils.getKeyType(expected), KeyUtils.getFingerPrint(expected),
-                 KeyUtils.getKeyType(actual), KeyUtils.getFingerPrint(actual));
+                clientSession, remoteAddress, entry,
+                KeyUtils.getKeyType(expected), KeyUtils.getFingerPrint(expected),
+                KeyUtils.getKeyType(actual), KeyUtils.getFingerPrint(actual));
         return false;
     }
 }

@@ -50,14 +50,14 @@ public interface Closeable extends Channel {
      * resource is already closed, the listener will be invoked immediately
      * and not registered for future notification
      *
-     * @param listener The notification {@link #SshFutureListener} - never {@code null}
+     * @param listener The notification {@link SshFutureListener} - never {@code null}
      */
     void addCloseFutureListener(SshFutureListener<CloseFuture> listener);
 
     /**
      * Remove a pre-registered close event listener
      *
-     * @param listener The register {@link #SshFutureListener} - never {@code null}.
+     * @param listener The register {@link SshFutureListener} - never {@code null}.
      * Ignored if not registered or resource already closed
      */
     void removeCloseFutureListener(SshFutureListener<CloseFuture> listener);
