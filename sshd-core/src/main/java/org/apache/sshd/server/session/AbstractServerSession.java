@@ -23,7 +23,7 @@ import java.util.List;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.session.impl.AbstractSession;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.auth.UserAuth;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;

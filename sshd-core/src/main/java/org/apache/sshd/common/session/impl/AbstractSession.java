@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.session;
+package org.apache.sshd.common.session.impl;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -30,6 +30,7 @@ import java.util.EnumMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -71,6 +72,10 @@ import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.mac.MacInformation;
 import org.apache.sshd.common.random.Random;
+import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionListener;
+import org.apache.sshd.common.session.SessionWorkBuffer;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
@@ -214,6 +219,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     private final Map<String, Object> properties = new ConcurrentHashMap<>();
     private final AtomicReference<Object> requestResult = new AtomicReference<>();
     private final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
+    private ReservedSessionMessagesHandler reservedSessionMessagesHandler;
 
     /**
      * Create a new session.
@@ -226,6 +232,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         super(ValidateUtils.checkNotNull(factoryManager, "No factory manager provided"));
         this.isServer = isServer;
         this.factoryManager = factoryManager;
+        this.reservedSessionMessagesHandler = factoryManager.getReservedSessionMessagesHandler();
         this.ioSession = ioSession;
         this.decoderBuffer = new SessionWorkBuffer(this);
 
@@ -552,18 +559,17 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
     }
 
-    protected void handleIgnore(Buffer buffer) throws Exception {
-        handleIgnore(buffer.getBytes(), buffer);
+    @Override
+    public IoWriteFuture sendIgnoreMessage(byte... data) throws IOException {
+        data = (data == null) ? GenericUtils.EMPTY_BYTE_ARRAY : data;
+        Buffer buffer = createBuffer(SshConstants.SSH_MSG_IGNORE, data.length + Byte.SIZE);
+        buffer.putBytes(data);
+        return writePacket(buffer);
     }
 
-    protected void handleIgnore(byte[] data, Buffer buffer) throws Exception {
-        if (log.isDebugEnabled()) {
-            log.debug("handleIgnore({}) SSH_MSG_IGNORE", this);
-        }
-
-        if (log.isTraceEnabled()) {
-            log.trace("handleIgnore({}) data: {}", this, BufferUtils.toHex(data));
-        }
+    protected void handleIgnore(Buffer buffer) throws Exception {
+        ReservedSessionMessagesHandler handler = resolveReservedSessionMessagesHandler();
+        handler.handleIgnoreMessage(this, buffer);
     }
 
     protected void handleUnimplemented(Buffer buffer) throws Exception {
@@ -580,15 +586,27 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
     }
 
-    protected void handleDebug(Buffer buffer) throws Exception {
-        handleDebug(buffer.getBoolean(), buffer.getString(), buffer.getString(), buffer);
+    @Override
+    public IoWriteFuture sendDebugMessage(boolean display, Object msg, String lang) throws IOException {
+        String text = Objects.toString(msg);
+        lang = (lang == null) ? "" : lang;
+
+        Buffer buffer = createBuffer(SshConstants.SSH_MSG_DEBUG,
+                text.length() + lang.length() + Integer.SIZE /* a few extras */);
+        buffer.putBoolean(display);
+        buffer.putString(text);
+        buffer.putString(lang);
+        return writePacket(buffer);
     }
 
-    protected void handleDebug(boolean display, String msg, String lang, Buffer buffer) throws Exception {
-        if (log.isDebugEnabled()) {
-            log.debug("handleDebug({}) SSH_MSG_DEBUG (display={}) [lang={}] '{}'",
-                      this, display, lang, msg);
-        }
+    protected void handleDebug(Buffer buffer) throws Exception {
+        ReservedSessionMessagesHandler handler = resolveReservedSessionMessagesHandler();
+        handler.handleDebugMessage(this, buffer);
+    }
+
+    protected ReservedSessionMessagesHandler resolveReservedSessionMessagesHandler() {
+        ReservedSessionMessagesHandler handler = getReservedSessionMessagesHandler();
+        return (handler == null) ? ReservedSessionMessagesHandlerAdapter.DEFAULT : handler;
     }
 
     protected void handleDisconnect(Buffer buffer) throws Exception  {
@@ -1870,6 +1888,16 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     @Override
+    public ReservedSessionMessagesHandler getReservedSessionMessagesHandler() {
+        return reservedSessionMessagesHandler;
+    }
+
+    @Override
+    public void setReservedSessionMessagesHandler(ReservedSessionMessagesHandler handler) {
+        reservedSessionMessagesHandler = handler;
+    }
+
+    @Override
     public void addSessionListener(SessionListener listener) {
         ValidateUtils.checkNotNull(listener, "addSessionListener(%s) null instance", this);
         // avoid race conditions on notifications while session is being closed
@@ -2135,8 +2163,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     /**
-     * Checks whether the session has timed out (both auth and idle timeouts are checked). If the session has
-     * timed out, a DISCONNECT message will be sent.
+     * Checks whether the session has timed out (both auth and idle timeouts are checked).
+     * If the session has timed out, a DISCONNECT message will be sent.
      *
      * @throws IOException If failed to check
      * @see #checkAuthenticationTimeout(long, long)

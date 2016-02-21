@@ -16,18 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.session;
+package org.apache.sshd.common.session.impl;
 
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * Task that iterates over all currently open {@link AbstractSession}s and checks each of them for timeouts. If
  * the {@link AbstractSession} has timed out (either auth or idle timeout), the session will be disconnected.
  *
- * @see org.apache.sshd.common.session.AbstractSession#checkForTimeouts()
+ * @see org.apache.sshd.common.session.impl.AbstractSession#checkForTimeouts()
  */
 public class SessionTimeoutListener extends AbstractLoggingBean implements SessionListener, Runnable {
     private final Set<AbstractSession> sessions = new CopyOnWriteArraySet<AbstractSession>();

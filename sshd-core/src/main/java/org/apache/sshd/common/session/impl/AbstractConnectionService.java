@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.session;
+package org.apache.sshd.common.session.impl;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -47,6 +47,8 @@ import org.apache.sshd.common.forward.TcpipForwarderFactory;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.ValidateUtils;

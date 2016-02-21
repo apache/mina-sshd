@@ -16,32 +16,31 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.global;
+
+package org.apache.sshd.common.session.impl;
 
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.session.impl.AbstractConnectionServiceRequestHandler;
+import org.apache.sshd.common.session.ConnectionServiceRequestHandler;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * Handler for &quot;no-more-sessions@xxx&quot; global request.
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH protocol section 2.2</A>
  */
-public class NoMoreSessionsHandler extends AbstractConnectionServiceRequestHandler {
-    public static final NoMoreSessionsHandler INSTANCE = new NoMoreSessionsHandler();
+public abstract class AbstractConnectionServiceRequestHandler
+        extends AbstractLoggingBean
+        implements ConnectionServiceRequestHandler {
 
-    public NoMoreSessionsHandler() {
+    protected AbstractConnectionServiceRequestHandler() {
         super();
     }
 
     @Override
     public Result process(ConnectionService connectionService, String request, boolean wantReply, Buffer buffer) throws Exception {
-        if (request.startsWith("no-more-sessions@")) {
-            connectionService.setAllowMoreSessions(false);
-            return Result.ReplyFailure;
-        } else {
-            return super.process(connectionService, request, wantReply, buffer);
+        if (log.isDebugEnabled()) {
+            log.debug("process({}) request={}, want-reply={}", connectionService, request, wantReply);
         }
+
+        return Result.Unsupported;
     }
 }

@@ -19,26 +19,17 @@
 
 package org.apache.sshd.common.session;
 
-import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.logging.AbstractLoggingBean;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractConnectionServiceRequestHandler
-        extends AbstractLoggingBean
-        implements ConnectionServiceRequestHandler {
+public interface ReservedSessionMessagesManager {
+    /**
+     * @return The currently registered {@link ReservedSessionMessagesHandler} - may be {@code null}
+     */
+    ReservedSessionMessagesHandler getReservedSessionMessagesHandler();
 
-    protected AbstractConnectionServiceRequestHandler() {
-        super();
-    }
-
-    @Override
-    public Result process(ConnectionService connectionService, String request, boolean wantReply, Buffer buffer) throws Exception {
-        if (log.isDebugEnabled()) {
-            log.debug("process({}) request={}, want-reply={}", connectionService, request, wantReply);
-        }
-
-        return Result.Unsupported;
-    }
+    /**
+     * @param handler The {@link ReservedSessionMessagesHandler} to use - may be {@code null}
+     */
+    void setReservedSessionMessagesHandler(ReservedSessionMessagesHandler handler);
 }

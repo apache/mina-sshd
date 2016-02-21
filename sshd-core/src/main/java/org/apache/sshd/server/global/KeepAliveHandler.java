@@ -18,8 +18,8 @@
  */
 package org.apache.sshd.server.global;
 
-import org.apache.sshd.common.session.AbstractConnectionServiceRequestHandler;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.impl.AbstractConnectionServiceRequestHandler;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**

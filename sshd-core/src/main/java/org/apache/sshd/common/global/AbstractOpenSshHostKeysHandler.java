@@ -25,9 +25,9 @@ import java.util.Collection;
 import java.util.LinkedList;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.session.AbstractConnectionServiceRequestHandler;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.impl.AbstractConnectionServiceRequestHandler;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.keys.BufferPublicKeyParser;

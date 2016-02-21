@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
+package org.apache.sshd.common.impl;
 
 import java.util.Collection;
 import java.util.List;
@@ -28,6 +28,14 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.agent.SshAgentFactory;
+import org.apache.sshd.common.AttributeStore;
+import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.PropertyResolver;
+import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.ServiceFactory;
+import org.apache.sshd.common.SyspropsMapWrapper;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.RequestHandler;
@@ -39,10 +47,11 @@ import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoServiceFactoryFactory;
 import org.apache.sshd.common.kex.AbstractKexFactoryManager;
 import org.apache.sshd.common.random.Random;
-import org.apache.sshd.common.session.AbstractSessionFactory;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
 import org.apache.sshd.common.session.SessionListener;
-import org.apache.sshd.common.session.SessionTimeoutListener;
+import org.apache.sshd.common.session.impl.AbstractSessionFactory;
+import org.apache.sshd.common.session.impl.SessionTimeoutListener;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.threads.ThreadUtils;
@@ -77,6 +86,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     private final Map<String, Object> properties = new ConcurrentHashMap<>();
     private final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
     private PropertyResolver parentResolver = SyspropsMapWrapper.SYSPROPS_RESOLVER;
+    private ReservedSessionMessagesHandler reservedSessionMessagesHandler;
 
     protected AbstractFactoryManager() {
         ClassLoader loader = getClass().getClassLoader();
@@ -247,6 +257,16 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
 
     public void setGlobalRequestHandlers(List<RequestHandler<ConnectionService>> globalRequestHandlers) {
         this.globalRequestHandlers = globalRequestHandlers;
+    }
+
+    @Override
+    public ReservedSessionMessagesHandler getReservedSessionMessagesHandler() {
+        return reservedSessionMessagesHandler;
+    }
+
+    @Override
+    public void setReservedSessionMessagesHandler(ReservedSessionMessagesHandler handler) {
+        reservedSessionMessagesHandler = handler;
     }
 
     @Override

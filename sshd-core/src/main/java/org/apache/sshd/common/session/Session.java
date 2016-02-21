@@ -48,6 +48,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 public interface Session
         extends KexFactoryManager,
                 SessionListenerManager,
+                ReservedSessionMessagesManager,
                 ChannelListenerManager,
                 FactoryManagerHolder,
                 PropertyResolver,
@@ -154,12 +155,35 @@ public interface Session
     Buffer prepareBuffer(byte cmd, Buffer buffer);
 
     /**
+     * Sends an {@code SSH_MSG_DEBUG} to the peer session
+     *
+     * @param display {@code true} if OK to display the message at the peer as-is
+     * @param msg The message object whose {@code toString()} value to be used - if
+     * {@code null} then the &quot;null&quot; string is sent
+     * @param lang The language - {@code null}/empty if some pre-agreed default is used
+     * @return An {@code IoWriteFuture} that can be used to check when the packet has actually been sent
+     * @throws IOException if an error occurred when encoding sending the packet
+     * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-11.3">RFC 4253 - section 11.3</A>
+     */
+    IoWriteFuture sendDebugMessage(boolean display, Object msg, String lang) throws IOException;
+
+    /**
+     * Sends an {@code SSH_MSG_IGNORE} to the peer session
+     *
+     * @param data The message data
+     * @return An {@code IoWriteFuture} that can be used to check when the packet has actually been sent
+     * @throws IOException if an error occurred when encoding sending the packet
+     * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-11.2">RFC 4253 - section 11.2</A>
+     */
+    IoWriteFuture sendIgnoreMessage(byte ... data) throws IOException;
+
+    /**
      * Encode and send the given buffer.
      * The buffer has to have 5 bytes free at the beginning to allow the encoding to take place.
      * Also, the write position of the buffer has to be set to the position of the last byte to write.
      *
      * @param buffer the buffer to encode and send
-     * @return a future that can be used to check when the packet has actually been sent
+     * @return An {@code IoWriteFuture} that can be used to check when the packet has actually been sent
      * @throws IOException if an error occurred when encoding sending the packet
      */
     IoWriteFuture writePacket(Buffer buffer) throws IOException;

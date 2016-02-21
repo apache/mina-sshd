@@ -30,7 +30,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.session.AbstractConnectionService;
+import org.apache.sshd.common.session.impl.AbstractConnectionService;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 

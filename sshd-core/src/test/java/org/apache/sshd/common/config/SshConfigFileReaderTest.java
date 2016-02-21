@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
-import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
@@ -37,6 +36,7 @@ import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.compression.CompressionFactory;
+import org.apache.sshd.common.impl.AbstractFactoryManager;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.mac.Mac;

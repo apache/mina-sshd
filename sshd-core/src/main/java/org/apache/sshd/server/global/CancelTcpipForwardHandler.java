@@ -20,9 +20,9 @@ package org.apache.sshd.server.global;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.forward.TcpipForwarder;
-import org.apache.sshd.common.session.AbstractConnectionServiceRequestHandler;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.impl.AbstractConnectionServiceRequestHandler;
 import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;

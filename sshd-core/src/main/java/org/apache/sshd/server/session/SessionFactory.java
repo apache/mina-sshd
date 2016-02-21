@@ -19,7 +19,7 @@
 package org.apache.sshd.server.session;
 
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.session.AbstractSessionFactory;
+import org.apache.sshd.common.session.impl.AbstractSessionFactory;
 import org.apache.sshd.server.ServerFactoryManager;
 
 /**

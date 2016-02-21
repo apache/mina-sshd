@@ -32,6 +32,7 @@ import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.ReservedSessionMessagesManager;
 import org.apache.sshd.common.session.SessionListenerManager;
 import org.apache.sshd.server.forward.ForwardingFilter;
 
@@ -44,6 +45,7 @@ import org.apache.sshd.server.forward.ForwardingFilter;
 public interface FactoryManager
         extends KexFactoryManager,
                 SessionListenerManager,
+                ReservedSessionMessagesManager,
                 ChannelListenerManager,
                 AttributeStore,
                 PropertyResolver {
