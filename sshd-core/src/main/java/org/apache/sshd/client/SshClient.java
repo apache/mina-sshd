@@ -1205,7 +1205,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     } else {
                         ClientChannel channel;
                         if (GenericUtils.isEmpty(command)) {
-                            channel = session.createChannel(Channel.CHANNEL_SHELL);
+                            channel = session.createShellChannel();
                             ((ChannelShell) channel).setAgentForwarding(agentForward);
                             channel.setIn(new NoCloseInputStream(System.in));
                         } else {
@@ -1214,14 +1214,15 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                                 w.append(cmd).append(' ');
                             }
 
-                            channel = session.createChannel(Channel.CHANNEL_EXEC, w.toString().trim());
+                            channel = session.createExecChannel(w.toString().trim());
                         }
 
-                        try {
-                            channel.setOut(new NoCloseOutputStream(System.out));
-                            channel.setErr(new NoCloseOutputStream(System.err));
+                        try (OutputStream channelOut = new NoCloseOutputStream(System.out);
+                             OutputStream channelErr =  new NoCloseOutputStream(System.err)) {
+                            channel.setOut(channelOut);
+                            channel.setErr(channelErr);
                             channel.open().await(); // TODO use verify and a configurable timeout
-                            channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 0);
+                            channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 0L);
                         } finally {
                             channel.close();
                         }
