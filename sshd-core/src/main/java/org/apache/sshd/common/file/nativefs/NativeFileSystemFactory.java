@@ -19,12 +19,17 @@
 
 package org.apache.sshd.common.file.nativefs;
 
-import java.io.File;
+import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.NotDirectoryException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -33,9 +38,12 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public class NativeFileSystemFactory extends AbstractLoggingBean implements FileSystemFactory {
+    public static final String DEFAULT_USERS_HOME = "/home";
+
     public static final NativeFileSystemFactory INSTANCE = new NativeFileSystemFactory();
 
     private boolean createHome;
+    private String usersHomeDir = DEFAULT_USERS_HOME;
 
     public NativeFileSystemFactory() {
         this(false);
@@ -46,9 +54,26 @@ public class NativeFileSystemFactory extends AbstractLoggingBean implements File
     }
 
     /**
+     * @return The root location where users home is to be created - never {@code null}/empty.
+     */
+    public String getUsersHomeDir() {
+        return usersHomeDir;
+    }
+
+    /**
+     * Set the root location where users home is to be created
+     *
+     * @param usersHomeDir The root location where users home is to be created - never {@code null}/empty.
+     * @see #isCreateHome()
+     */
+    public void setUsersHomeDir(String usersHomeDir) {
+        this.usersHomeDir = ValidateUtils.checkNotNullAndNotEmpty(usersHomeDir, "No users home dir");
+    }
+
+    /**
      * Should the home directories be created automatically
      *
-     * @return true if the file system will create the home directory if not available
+     * @return {@code true} if the file system will create the home directory if not available
      */
     public boolean isCreateHome() {
         return createHome;
@@ -57,31 +82,31 @@ public class NativeFileSystemFactory extends AbstractLoggingBean implements File
     /**
      * Set if the home directories be created automatically
      *
-     * @param createHome true if the file system will create the home directory if not available
+     * @param createHome {@code true} if the file system should create the home directory
+     * automatically if not available
+     * @see #getUsersHomeDir()
      */
     public void setCreateHome(boolean createHome) {
         this.createHome = createHome;
     }
 
     @Override
-    public FileSystem createFileSystem(Session session) {
+    public FileSystem createFileSystem(Session session) throws IOException {
         String userName = session.getUsername();
         // create home if does not exist
-        if (createHome) {
-            String homeDirStr = "/home/" + userName;
-            File homeDir = new File(homeDirStr);
-            if (homeDir.isFile()) {
-                log.warn("Not a directory :: " + homeDirStr);
-//                    throw new FtpException("Not a directory :: " + homeDirStr);
-            }
-            if ((!homeDir.exists()) && (!homeDir.mkdirs())) {
-                log.warn("Cannot create user home :: " + homeDirStr);
-//                    throw new FtpException("Cannot create user home :: "
-//                            + homeDirStr);
+        if (isCreateHome()) {
+            String homeRoot = getUsersHomeDir();
+            Path homeDir = Paths.get(homeRoot, userName).normalize().toAbsolutePath();
+            if (Files.exists(homeDir)) {
+                if (!Files.isDirectory(homeDir)) {
+                    throw new NotDirectoryException(homeDir.toString());
+                }
+            } else {
+                Path p = Files.createDirectories(homeDir);
+                log.info("createFileSystem({}) created {}", session, p);
             }
         }
 
         return FileSystems.getDefault();
     }
-
 }

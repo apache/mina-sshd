@@ -36,7 +36,7 @@ public interface FileSystemFactory {
      *
      * @param session The session created for the user
      * @return The current {@link FileSystem} for the provided session
-     * @throws java.io.IOException when the filesystem can not be created
+     * @throws IOException if the filesystem can not be created
      */
     FileSystem createFileSystem(Session session) throws IOException;
 
