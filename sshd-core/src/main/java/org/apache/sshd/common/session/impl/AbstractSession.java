@@ -1342,13 +1342,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected String doReadIdentification(Buffer buffer, boolean server) {
         int maxIdentSize = PropertyResolverUtils.getIntProperty(this,
                 FactoryManager.MAX_IDENTIFICATION_SIZE, FactoryManager.DEFAULT_MAX_IDENTIFICATION_SIZE);
-        /*
-         * see https://tools.ietf.org/html/rfc4253 section 4.2
-         *
-         *      The maximum length of the string is 255 characters,
-         *      including the Carriage Return and Line Feed.
-         */
-        for (byte[] data = new byte[256];;) {
+        for (byte[] data = new byte[MAX_VERSION_LINE_LENGTH];;) {
             int rpos = buffer.rpos();
             int pos = 0;
             boolean needLf = false;

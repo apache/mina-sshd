@@ -58,9 +58,21 @@ public interface Session
 
     /**
      * Default prefix expected for the client / server identification string
+     * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>
      */
     String DEFAULT_SSH_VERSION_PREFIX = "SSH-2.0-";
 
+    /**
+     * Maximum number of characters for any single line sent as part
+     * of the initial handshake - according to
+     * <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>:</BR>
+     *
+     * <P><CODE>
+     *      The maximum length of the string is 255 characters,
+     *      including the Carriage Return and Line Feed.
+     * </CODE></P>
+     */
+    int MAX_VERSION_LINE_LENGTH = 256;
 
     /**
      * Timeout status.

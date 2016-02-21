@@ -38,7 +38,7 @@ import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
-import org.apache.sshd.common.session.impl.AbstractSession;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -113,24 +113,25 @@ public class AbstractSessionTest extends BaseTestSupport {
 
     @Test(expected = IllegalStateException.class)
     public void testReadIdentLongLine() {
-        Buffer buf = new ByteArrayBuffer(("SSH-2.0-software" +
-                "01234567890123456789012345678901234567890123456789" +
-                "01234567890123456789012345678901234567890123456789" +
-                "01234567890123456789012345678901234567890123456789" +
-                "01234567890123456789012345678901234567890123456789" +
-                "01234567890123456789012345678901234567890123456789" +
-                "01234567890123456789012345678901234567890123456789").getBytes(StandardCharsets.UTF_8));
+        StringBuilder sb = new StringBuilder(Session.MAX_VERSION_LINE_LENGTH + Integer.SIZE);
+        sb.append("SSH-2.0-software");
+        do {
+            sb.append("01234567890123456789012345678901234567890123456789");
+        } while (sb.length() < Session.MAX_VERSION_LINE_LENGTH);
+
+        Buffer buf = new ByteArrayBuffer(sb.toString().getBytes(StandardCharsets.UTF_8));
         String ident = session.doReadIdentification(buf);
         fail("Unexpected success: " + ident);
     }
 
     @Test(expected = IllegalStateException.class)
     public void testReadIdentLongHeader() {
-        StringBuilder sb = new StringBuilder(32768);
-        for (int i = 0; i < 500; i++) {
+        StringBuilder sb = new StringBuilder(FactoryManager.DEFAULT_MAX_IDENTIFICATION_SIZE + Integer.SIZE);
+        do {
             sb.append("01234567890123456789012345678901234567890123456789\r\n");
-        }
+        } while (sb.length() < FactoryManager.DEFAULT_MAX_IDENTIFICATION_SIZE);
         sb.append("SSH-2.0-software\r\n");
+
         Buffer buf = new ByteArrayBuffer(sb.toString().getBytes(StandardCharsets.UTF_8));
         String ident = session.doReadIdentification(buf);
         fail("Unexpected success: " + ident);
