@@ -32,6 +32,7 @@ import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
@@ -83,11 +84,6 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
         return session.getId();
     }
 
-    public WriteFuture write(byte[] data, int offset, int len) {
-        IoBuffer buffer = IoBuffer.wrap(data, offset, len);
-        return session.write(buffer);
-    }
-
     @Override
     protected Closeable getInnerCloseable() {
         return new IoBaseCloseable() {
@@ -130,14 +126,30 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
         };
     }
 
-    @Override
+    // NOTE !!! data buffer may NOT be re-used when method returns - at least until IoWriteFuture is signalled
+    public IoWriteFuture write(byte[] data) {
+        return write(data, 0, NumberUtils.length(data));
+    }
+
+    // NOTE !!! data buffer may NOT be re-used when method returns - at least until IoWriteFuture is signalled
+    public IoWriteFuture write(byte[] data, int offset, int len) {
+        return write(IoBuffer.wrap(data, offset, len));
+    }
+
+    @Override // NOTE !!! data buffer may NOT be re-used when method returns - at least until IoWriteFuture is signalled
     public IoWriteFuture write(Buffer buffer) {
+        return write(MinaSupport.asIoBuffer(buffer));
+    }
+
+    // NOTE !!! data buffer may NOT be re-used when method returns - at least until IoWriteFuture is signalled
+    public IoWriteFuture write(IoBuffer buffer) {
         final Future future = new Future(null);
-        session.write(MinaSupport.asIoBuffer(buffer)).addListener(new IoFutureListener<WriteFuture>() {
+        session.write(buffer).addListener(new IoFutureListener<WriteFuture>() {
             @Override
             public void operationComplete(WriteFuture cf) {
-                if (cf.getException() != null) {
-                    future.setException(cf.getException());
+                Throwable t = cf.getException();
+                if (t != null) {
+                    future.setException(t);
                 } else {
                     future.setWritten();
                 }
@@ -146,8 +158,8 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
         return future;
     }
 
-    private static class Future extends AbstractIoWriteFuture {
-        Future(Object lock) {
+    public static class Future extends AbstractIoWriteFuture {
+        public Future(Object lock) {
             super(lock);
         }
 
