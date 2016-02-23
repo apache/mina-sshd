@@ -50,7 +50,7 @@ import org.apache.sshd.common.scp.ScpException;
 import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
-import org.apache.sshd.common.scp.impl.DefaultScpFileOpener;
+import org.apache.sshd.common.scp.helpers.DefaultScpFileOpener;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;

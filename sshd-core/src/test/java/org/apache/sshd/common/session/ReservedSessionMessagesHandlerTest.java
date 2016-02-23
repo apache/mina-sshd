@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.session.impl.ReservedSessionMessagesHandlerAdapter;
+import org.apache.sshd.common.session.helpers.ReservedSessionMessagesHandlerAdapter;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.threads.ThreadUtils;

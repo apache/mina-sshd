@@ -50,7 +50,7 @@ import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.SessionListener;
-import org.apache.sshd.common.session.impl.AbstractConnectionService;
+import org.apache.sshd.common.session.helpers.AbstractConnectionService;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;

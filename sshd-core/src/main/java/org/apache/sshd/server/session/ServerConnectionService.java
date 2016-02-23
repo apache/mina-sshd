@@ -19,7 +19,7 @@
 package org.apache.sshd.server.session;
 
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.session.impl.AbstractConnectionService;
+import org.apache.sshd.common.session.helpers.AbstractConnectionService;
 
 /**
  * Server side <code>ssh-connection</code> service.

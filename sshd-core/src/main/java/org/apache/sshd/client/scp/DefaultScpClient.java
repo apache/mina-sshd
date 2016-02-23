@@ -47,7 +47,7 @@ import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpLocation;
 import org.apache.sshd.common.scp.ScpTimestamp;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
-import org.apache.sshd.common.scp.impl.DefaultScpFileOpener;
+import org.apache.sshd.common.scp.helpers.DefaultScpFileOpener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;

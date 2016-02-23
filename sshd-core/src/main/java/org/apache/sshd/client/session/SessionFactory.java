@@ -20,7 +20,7 @@ package org.apache.sshd.client.session;
 
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.session.impl.AbstractSessionFactory;
+import org.apache.sshd.common.session.helpers.AbstractSessionFactory;
 
 /**
  * A factory of client sessions.
