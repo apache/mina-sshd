@@ -255,7 +255,7 @@ public class DefaultScpClient extends AbstractScpClient {
             if (session == null) {
                 stderr.println("usage: scp [" + SCP_PORT_OPTION + " port] [-i identity]"
                          + " [-v[v][v]] [-E logoutput] [-r] [-p] [-q] [-o option=value]"
-                         + " [-c cipherlist] [-w password] <source> <target>");
+                         + " [-c cipherlist] [-m maclist] [-w password] <source> <target>");
                 stderr.println();
                 stderr.println("Where <source> or <target> are either 'user@host:file' or a local file path");
                 stderr.println("NOTE: exactly ONE of the source or target must be remote and the other one local");

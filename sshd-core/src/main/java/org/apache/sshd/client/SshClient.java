@@ -107,6 +107,8 @@ import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.mac.BuiltinMacs;
+import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
@@ -777,6 +779,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
              || "-l".equals(argName)
              || "-w".equals(argName)
              || "-c".equals(argName)
+             || "-m".equals(argName)
              || "-E".equals(argName);
     }
 
@@ -793,6 +796,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         List<File> identities = new ArrayList<>();
         Map<String, String> options = new LinkedHashMap<>();
         List<NamedFactory<Cipher>> ciphers = null;
+        List<NamedFactory<Mac>> macs = null;
         int numArgs = GenericUtils.length(args);
         for (int i = 0; (!error) && (i < numArgs); i++) {
             String argName = args[i];
@@ -826,6 +830,12 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             } else if ("-c".equals(argName)) {
                 ciphers = setupCiphers(argName, argVal, ciphers, stderr);
                 if (GenericUtils.isEmpty(ciphers)) {
+                    error = true;
+                    break;
+                }
+            } else if ("-m".equals(argName)) {
+                macs = setupMacs(argName, argVal, macs, stderr);
+                if (GenericUtils.isEmpty(macs)) {
                     error = true;
                     break;
                 }
@@ -869,6 +879,20 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             error = showError(stderr, "Hostname not specified");
         }
 
+        if ((!error) && GenericUtils.isEmpty(ciphers)) {
+            ciphers = setupCiphers(options, stderr);
+            if (ciphers == null) {
+                error = true;
+            }
+        }
+
+        if ((!error) && GenericUtils.isEmpty(macs)) {
+            macs = setupMacs(options, stderr);
+            if (macs == null) {
+                error = true;
+            }
+        }
+
         if (login == null) {
             login = OsUtils.getCurrentUser();
         }
@@ -885,6 +909,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         try {
             if (GenericUtils.size(ciphers) > 0) {
                 client.setCipherFactories(ciphers);
+            }
+
+            if (GenericUtils.size(macs) > 0) {
+                client.setMacFactories(macs);
             }
 
             try {
@@ -1088,7 +1116,42 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return stderr;
     }
 
-    // returns null/empty if error - e.g., re-specified or no supported cipher found
+    public static List<NamedFactory<Mac>> setupMacs(Map<String, ?> options, PrintStream stderr) {
+        String argVal = PropertyResolverUtils.getString(options, SshConfigFileReader.MACS_CONFIG_PROP);
+        return GenericUtils.isEmpty(argVal)
+             ? Collections.<NamedFactory<Mac>>emptyList()
+             : setupMacs(SshConfigFileReader.MACS_CONFIG_PROP, argVal, null, stderr);
+    }
+
+    public static List<NamedFactory<Mac>> setupMacs(String argName, String argVal, List<NamedFactory<Mac>> current, PrintStream stderr) {
+        if (GenericUtils.size(current) > 0) {
+            showError(stderr, argName + " option value re-specified: " + NamedResource.Utils.getNames(current));
+            return null;
+        }
+
+        BuiltinMacs.ParseResult result = BuiltinMacs.parseMacsList(argVal);
+        Collection<? extends NamedFactory<Mac>> available = result.getParsedFactories();
+        if (GenericUtils.isEmpty(available)) {
+            showError(stderr, "No known MACs in " + argVal);
+            return null;
+        }
+
+        Collection<String> unsupported = result.getUnsupportedFactories();
+        if (GenericUtils.size(unsupported) > 0) {
+            stderr.append("Ignored unsupported MACs: ").println(GenericUtils.join(unsupported, ','));
+        }
+
+        return new ArrayList<>(available);
+    }
+
+    public static List<NamedFactory<Cipher>> setupCiphers(Map<String, ?> options, PrintStream stderr) {
+        String argVal = PropertyResolverUtils.getString(options, SshConfigFileReader.CIPHERS_CONFIG_PROP);
+        return GenericUtils.isEmpty(argVal)
+             ? Collections.<NamedFactory<Cipher>>emptyList()
+             : setupCiphers(SshConfigFileReader.CIPHERS_CONFIG_PROP, argVal, null, stderr);
+    }
+
+    // returns null - e.g., re-specified or no supported cipher found
     public static List<NamedFactory<Cipher>> setupCiphers(String argName, String argVal, List<NamedFactory<Cipher>> current, PrintStream stderr) {
         if (GenericUtils.size(current) > 0) {
             showError(stderr, argName + " option value re-specified: " + NamedResource.Utils.getNames(current));
@@ -1237,7 +1300,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             if (error) {
                 System.err.println("usage: ssh [-A|-a] [-v[v][v]] [-E logoutputfile] [-D socksPort]"
                         + " [-l login] [" + SSH_CLIENT_PORT_OPTION + " port] [-o option=value]"
-                        + " [-w password] [-c cipherslist] hostname/user@host [command]");
+                        + " [-w password] [-c cipherslist] [-m maclist]"
+                        + " hostname/user@host [command]");
                 System.exit(-1);
                 return;
             }
