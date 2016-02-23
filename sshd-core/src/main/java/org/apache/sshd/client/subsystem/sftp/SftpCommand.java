@@ -36,6 +36,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.logging.Level;
 
@@ -46,6 +47,8 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatExtensionInfo;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatPathExtension;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
@@ -64,6 +67,11 @@ import org.apache.sshd.common.util.io.NoCloseInputStream;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SftpCommand implements Channel {
+    /**
+     * Command line option used to indicate a non-default port number
+     */
+    public static final String SFTP_PORT_OPTION = "-P";
+
     private final SftpClient client;
     private final Map<String, CommandExecutor> commandsMap;
     private String cwdRemote;
@@ -78,6 +86,7 @@ public class SftpCommand implements Channel {
                 new ExitCommandExecutor(),
                 new PwdCommandExecutor(),
                 new InfoCommandExecutor(),
+                new SessionCommandExecutor(),
                 new VersionCommandExecutor(),
                 new CdCommandExecutor(),
                 new LcdCommandExecutor(),
@@ -93,7 +102,8 @@ public class SftpCommand implements Channel {
                 new PutCommandExecutor(),
                 new HelpCommandExecutor()
         )) {
-            map.put(e.getName(), e);
+            String name = e.getName();
+            ValidateUtils.checkTrue(map.put(name, e) == null, "Multiple commands named '%s'", name);
         }
         commandsMap = Collections.unmodifiableMap(map);
         cwdLocal = System.getProperty("user.dir");
@@ -230,6 +240,11 @@ public class SftpCommand implements Channel {
 
     //////////////////////////////////////////////////////////////////////////
 
+    public static <A extends Appendable> A appendInfoValue(A sb, CharSequence name, Object value) throws IOException {
+        sb.append('\t').append(name).append(": ").append(Objects.toString(value));
+        return sb;
+    }
+
     public static void main(String[] args) throws Exception {
         PrintStream stdout = System.out;
         PrintStream stderr = System.err;
@@ -241,9 +256,11 @@ public class SftpCommand implements Channel {
                 SshClient.setupLogging(level, stdout, stderr, logStream);
             }
 
-            ClientSession session = (logStream == null) ? null : SshClient.setupClientSession("-P", stdin, stdout, stderr, args);
+            ClientSession session = (logStream == null) ? null : SshClient.setupClientSession(SFTP_PORT_OPTION, stdin, stdout, stderr, args);
             if (session == null) {
-                System.err.println("usage: sftp [-v[v][v]] [-E logoutput] [-i identity] [-l login] [-P port] [-o option=value] [-w password] hostname/user@host");
+                System.err.println("usage: sftp [-v[v][v]] [-E logoutput] [-i identity]"
+                        + " [-l login] [" + SFTP_PORT_OPTION + " port] [-o option=value]"
+                        + " [-w password] [-c cipherlist] hostname/user@host");
                 System.exit(-1);
                 return;
             }
@@ -291,6 +308,32 @@ public class SftpCommand implements Channel {
             ValidateUtils.checkTrue(GenericUtils.isEmpty(args), "Unexpected arguments: %s", args);
             stdout.append('\t').append("Remote: ").println(getCurrentRemoteDirectory());
             stdout.append('\t').append("Local: ").println(getCurrentLocalDirectory());
+            return false;
+        }
+    }
+
+    private class SessionCommandExecutor implements CommandExecutor {
+        @Override
+        public String getName() {
+            return "session";
+        }
+
+        @Override
+        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+            ValidateUtils.checkTrue(GenericUtils.isEmpty(args), "Unexpected arguments: %s", args);
+            SftpClient sftp = getClient();
+            ClientSession session = sftp.getSession();
+            appendInfoValue(stdout, "Session ID", BufferUtils.toHex(session.getSessionId())).println();
+            appendInfoValue(stdout, "Connect address", session.getConnectAddress()).println();
+
+            IoSession ioSession = session.getIoSession();
+            appendInfoValue(stdout, "Local address", ioSession.getLocalAddress()).println();
+            appendInfoValue(stdout, "Remote address", ioSession.getRemoteAddress()).println();
+
+            for (KexProposalOption option : KexProposalOption.VALUES) {
+                appendInfoValue(stdout, option.getDescription(), session.getNegotiatedKexParameter(option)).println();
+            }
+
             return false;
         }
     }

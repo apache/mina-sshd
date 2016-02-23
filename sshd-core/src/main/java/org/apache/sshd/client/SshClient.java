@@ -91,9 +91,12 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -173,6 +176,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             return new SshClient();
         }
     };
+
+    /**
+     * Command line option used to indicate non-default target port
+     */
+    public static final String SSH_CLIENT_PORT_OPTION = "-p";
 
     /**
      * Default user authentication preferences if not set
@@ -768,6 +776,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
              || "-o".equals(argName)
              || "-l".equals(argName)
              || "-w".equals(argName)
+             || "-c".equals(argName)
              || "-E".equals(argName);
     }
 
@@ -783,6 +792,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         boolean error = false;
         List<File> identities = new ArrayList<>();
         Map<String, String> options = new LinkedHashMap<>();
+        List<NamedFactory<Cipher>> ciphers = null;
         int numArgs = GenericUtils.length(args);
         for (int i = 0; (!error) && (i < numArgs); i++) {
             String argName = args[i];
@@ -813,6 +823,12 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     break;
                 }
                 password = argVal;
+            } else if ("-c".equals(argName)) {
+                ciphers = setupCiphers(argName, argVal, ciphers, stderr);
+                if (GenericUtils.isEmpty(ciphers)) {
+                    error = true;
+                    break;
+                }
             } else if ("-i".equals(argName)) {
                 identities.add(new File(argVal));
             } else if ("-o".equals(argName)) {
@@ -866,67 +882,23 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         SshClient client = SshClient.setUpDefaultClient();
-        client.setFilePasswordProvider(new FilePasswordProvider() {
-            @Override
-            public String getPassword(String file) throws IOException {
-                stdout.print("Enter password for private key file=" + file + ": ");
-                return stdin.readLine();
-            }
-        });
-
         try {
-            if (GenericUtils.size(identities) > 0) {
-                try {
-                    AbstractFileKeyPairProvider provider = SecurityUtils.createFileKeyPairProvider();
-                    provider.setFiles(identities);
-                    client.setKeyPairProvider(provider);
-                } catch (Throwable t) {
-                    error = showError(stderr, t.getClass().getSimpleName() + " while loading user keys: " + t.getMessage());
-                }
+            if (GenericUtils.size(ciphers) > 0) {
+                client.setCipherFactories(ciphers);
+            }
+
+            try {
+                setupSessionIdentities(client, identities, stdin, stdout, stderr);
+            } catch (Throwable t) {
+                error = showError(stderr, t.getClass().getSimpleName() + " while loading user keys: " + t.getMessage());
             }
 
             setupServerKeyVerifier(client, options, stdin, stdout, stderr);
+            setupSessionUserInteraction(client, stdin, stdout, stderr);
 
             Map<String, Object> props = client.getProperties();
             props.putAll(options);
-
             client.start();
-            client.setUserInteraction(new UserInteraction() {
-                @Override
-                public boolean isInteractionAllowed(ClientSession session) {
-                    return true;
-                }
-
-                @Override
-                public void welcome(ClientSession clientSession, String banner, String lang) {
-                    stdout.println(banner);
-                }
-
-                @Override
-                public String[] interactive(ClientSession clientSession, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
-                    int numPropmts = GenericUtils.length(prompt);
-                    String[] answers = new String[numPropmts];
-                    try {
-                        for (int i = 0; i < numPropmts; i++) {
-                            stdout.append(prompt[i]).print(" ");
-                            answers[i] = stdin.readLine();
-                        }
-                    } catch (IOException e) {
-                        // ignored
-                    }
-                    return answers;
-                }
-
-                @Override
-                public String getUpdatedPassword(ClientSession clientSession, String prompt, String lang) {
-                    stdout.append(prompt).print(" ");
-                    try {
-                        return stdin.readLine();
-                    } catch (IOException e) {
-                        return null;
-                    }
-                }
-            });
 
             // TODO use a configurable wait time
             ClientSession session = client.connect(login, host, port).verify().getSession();
@@ -944,6 +916,70 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             client.close();
             throw e;
         }
+    }
+
+    public static AbstractFileKeyPairProvider setupSessionIdentities(ClientFactoryManager client, Collection<File> identities,
+            final BufferedReader stdin, final PrintStream stdout, final PrintStream stderr)
+                throws Throwable {
+        client.setFilePasswordProvider(new FilePasswordProvider() {
+            @Override
+            public String getPassword(String file) throws IOException {
+                stdout.print("Enter password for private key file=" + file + ": ");
+                return stdin.readLine();
+            }
+        });
+
+        if (GenericUtils.isEmpty(identities)) {
+            return null;
+        }
+
+        AbstractFileKeyPairProvider provider = SecurityUtils.createFileKeyPairProvider();
+        provider.setFiles(identities);
+        client.setKeyPairProvider(provider);
+        return provider;
+    }
+
+    public static UserInteraction setupSessionUserInteraction(ClientAuthenticationManager client,
+            final BufferedReader stdin, final PrintStream stdout, final PrintStream stderr) {
+        UserInteraction ui = new UserInteraction() {
+            @Override
+            public boolean isInteractionAllowed(ClientSession session) {
+                return true;
+            }
+
+            @Override
+            public void welcome(ClientSession clientSession, String banner, String lang) {
+                stdout.println(banner);
+            }
+
+            @Override
+            public String[] interactive(ClientSession clientSession, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                int numPropmts = GenericUtils.length(prompt);
+                String[] answers = new String[numPropmts];
+                try {
+                    for (int i = 0; i < numPropmts; i++) {
+                        stdout.append(prompt[i]).print(" ");
+                        answers[i] = stdin.readLine();
+                    }
+                } catch (IOException e) {
+                    stderr.append(e.getClass().getSimpleName()).append(" while read prompts: ").println(e.getMessage());
+                }
+                return answers;
+            }
+
+            @Override
+            public String getUpdatedPassword(ClientSession clientSession, String prompt, String lang) {
+                stdout.append(prompt).print(" ");
+                try {
+                    return stdin.readLine();
+                } catch (IOException e) {
+                    stderr.append(e.getClass().getSimpleName()).append(" while read password: ").println(e.getMessage());
+                    return null;
+                }
+            }
+        };
+        client.setUserInteraction(ui);
+        return ui;
     }
 
     public static ServerKeyVerifier setupServerKeyVerifier(ClientAuthenticationManager manager, Map<String, ?> options,
@@ -1050,6 +1086,28 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         return stderr;
+    }
+
+    // returns null/empty if error - e.g., re-specified or no supported cipher found
+    public static List<NamedFactory<Cipher>> setupCiphers(String argName, String argVal, List<NamedFactory<Cipher>> current, PrintStream stderr) {
+        if (GenericUtils.size(current) > 0) {
+            showError(stderr, argName + " option value re-specified: " + NamedResource.Utils.getNames(current));
+            return null;
+        }
+
+        BuiltinCiphers.ParseResult result = BuiltinCiphers.parseCiphersList(argVal);
+        Collection<? extends NamedFactory<Cipher>> available = result.getParsedFactories();
+        if (GenericUtils.isEmpty(available)) {
+            showError(stderr, "No known ciphers in " + argVal);
+            return null;
+        }
+
+        Collection<String> unsupported = result.getUnsupportedFactories();
+        if (GenericUtils.size(unsupported) > 0) {
+            stderr.append("Ignored unsupported ciphers: ").println(GenericUtils.join(unsupported, ','));
+        }
+
+        return new ArrayList<>(available);
     }
 
     public static Handler setupLogging(Level level, final PrintStream stdout, final PrintStream stderr, final OutputStream outputStream) {
@@ -1170,14 +1228,16 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             if (!error) {
                 setupLogging(level, stdout, stderr, logStream);
 
-                session = setupClientSession("-p", stdin, stdout, stderr, args);
+                session = setupClientSession(SSH_CLIENT_PORT_OPTION, stdin, stdout, stderr, args);
                 if (session == null) {
                     error = true;
                 }
             }
 
             if (error) {
-                System.err.println("usage: ssh [-A|-a] [-v[v][v]] [-E logoutput] [-D socksPort] [-l login] [-p port] [-o option=value] [-w password] hostname/user@host [command]");
+                System.err.println("usage: ssh [-A|-a] [-v[v][v]] [-E logoutputfile] [-D socksPort]"
+                        + " [-l login] [" + SSH_CLIENT_PORT_OPTION + " port] [-o option=value]"
+                        + " [-w password] [-c cipherslist] hostname/user@host [command]");
                 System.exit(-1);
                 return;
             }

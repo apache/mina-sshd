@@ -56,6 +56,10 @@ import org.apache.sshd.common.util.io.NoCloseInputStream;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DefaultScpClient extends AbstractScpClient {
+    /**
+     * Command line option used to indicate a non-default port
+     */
+    public static final String SCP_PORT_OPTION = "-P";
 
     protected final ClientSession clientSession;
     protected final ScpFileOpener opener;
@@ -183,7 +187,7 @@ public class DefaultScpClient extends AbstractScpClient {
         for (int index = 0; (index < numArgs) && (!error); index++) {
             String argName = args[index];
             // handled by 'setupClientSession'
-            if (SshClient.isArgumentedOption("-P", argName)) {
+            if (SshClient.isArgumentedOption(SCP_PORT_OPTION, argName)) {
                 if ((index + 1) >= numArgs) {
                     error = showError(stderr, "option requires an argument: " + argName);
                     break;
@@ -247,9 +251,11 @@ public class DefaultScpClient extends AbstractScpClient {
             }
 
             ClientSession session = (logStream == null) || GenericUtils.isEmpty(args)
-                    ? null : SshClient.setupClientSession("-P", stdin, stdout, stderr, args);
+                    ? null : SshClient.setupClientSession(SCP_PORT_OPTION, stdin, stdout, stderr, args);
             if (session == null) {
-                stderr.println("usage: scp [-P port] [-i identity] [-v[v][v]] [-E logoutput] [-r] [-p] [-q] [-o option=value] [-w password] <source> <target>");
+                stderr.println("usage: scp [" + SCP_PORT_OPTION + " port] [-i identity]"
+                         + " [-v[v][v]] [-E logoutput] [-r] [-p] [-q] [-o option=value]"
+                         + " [-c cipherlist] [-w password] <source> <target>");
                 stderr.println();
                 stderr.println("Where <source> or <target> are either 'user@host:file' or a local file path");
                 stderr.println("NOTE: exactly ONE of the source or target must be remote and the other one local");
