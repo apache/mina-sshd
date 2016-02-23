@@ -97,6 +97,9 @@ import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
+import org.apache.sshd.common.compression.BuiltinCompressions;
+import org.apache.sshd.common.compression.Compression;
+import org.apache.sshd.common.config.CompressionConfigValue;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -785,8 +788,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     // NOTE: ClientSession#getFactoryManager is the SshClient
     public static ClientSession setupClientSession(
-            String portOption, final BufferedReader stdin, final PrintStream stdout, final PrintStream stderr, String... args)
-            throws Exception {
+            String portOption, BufferedReader stdin, PrintStream stdout, PrintStream stderr, String... args)
+                    throws Exception {
 
         int port = -1;
         String host = null;
@@ -797,6 +800,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         Map<String, String> options = new LinkedHashMap<>();
         List<NamedFactory<Cipher>> ciphers = null;
         List<NamedFactory<Mac>> macs = null;
+        List<NamedFactory<Compression>> compressions = null;
         int numArgs = GenericUtils.length(args);
         for (int i = 0; (!error) && (i < numArgs); i++) {
             String argName = args[i];
@@ -841,6 +845,16 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 }
             } else if ("-i".equals(argName)) {
                 identities.add(new File(argVal));
+            } else if ("-C".equals(argName)) {
+                compressions = setupCompressions(argName,
+                        GenericUtils.join(
+                                Arrays.asList(
+                                        BuiltinCompressions.Constants.ZLIB, BuiltinCompressions.Constants.DELAYED_ZLIB), ','),
+                        compressions, stderr);
+                if (GenericUtils.isEmpty(compressions)) {
+                    error = true;
+                    break;
+                }
             } else if ("-o".equals(argName)) {
                 String opt = argVal;
                 int idx = opt.indexOf('=');
@@ -879,54 +893,25 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             error = showError(stderr, "Hostname not specified");
         }
 
-        if ((!error) && GenericUtils.isEmpty(ciphers)) {
-            ciphers = setupCiphers(options, stderr);
-            if (ciphers == null) {
-                error = true;
-            }
-        }
-
-        if ((!error) && GenericUtils.isEmpty(macs)) {
-            macs = setupMacs(options, stderr);
-            if (macs == null) {
-                error = true;
-            }
-        }
-
-        if (login == null) {
-            login = OsUtils.getCurrentUser();
-        }
-
-        if (port <= 0) {
-            port = SshConfigFileReader.DEFAULT_PORT;
-        }
-
         if (error) {
             return null;
         }
 
-        SshClient client = SshClient.setUpDefaultClient();
+        SshClient client = setupClient(options, ciphers, macs, compressions, identities, stdin, stdout, stderr);
+        if (client == null) {
+            return null;
+        }
+
         try {
-            if (GenericUtils.size(ciphers) > 0) {
-                client.setCipherFactories(ciphers);
-            }
-
-            if (GenericUtils.size(macs) > 0) {
-                client.setMacFactories(macs);
-            }
-
-            try {
-                setupSessionIdentities(client, identities, stdin, stdout, stderr);
-            } catch (Throwable t) {
-                error = showError(stderr, t.getClass().getSimpleName() + " while loading user keys: " + t.getMessage());
-            }
-
-            setupServerKeyVerifier(client, options, stdin, stdout, stderr);
-            setupSessionUserInteraction(client, stdin, stdout, stderr);
-
-            Map<String, Object> props = client.getProperties();
-            props.putAll(options);
             client.start();
+
+            if (login == null) {
+                login = OsUtils.getCurrentUser();
+            }
+
+            if (port <= 0) {
+                port = SshConfigFileReader.DEFAULT_PORT;
+            }
 
             // TODO use a configurable wait time
             ClientSession session = client.connect(login, host, port).verify().getSession();
@@ -943,6 +928,68 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         } catch (Exception e) {
             client.close();
             throw e;
+        }
+    }
+
+    // returns null if error encountered
+    public static SshClient setupClient(
+            Map<String, ?> options,
+            List<NamedFactory<Cipher>> ciphers,
+            List<NamedFactory<Mac>> macs,
+            List<NamedFactory<Compression>> compressions,
+            Collection<File> identities,
+            BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        if (GenericUtils.isEmpty(ciphers)) {
+            ciphers = setupCiphers(options, stderr);
+            if (ciphers == null) {
+                return null;
+            }
+        }
+
+        if (GenericUtils.isEmpty(macs)) {
+            macs = setupMacs(options, stderr);
+            if (macs == null) {
+                return null;
+            }
+        }
+
+        if (GenericUtils.isEmpty(compressions)) {
+            compressions = setupCompressions(options, stderr);
+            if (compressions == null) {
+                return null;
+            }
+        }
+
+        SshClient client = SshClient.setUpDefaultClient();
+        try {
+            if (GenericUtils.size(ciphers) > 0) {
+                client.setCipherFactories(ciphers);
+            }
+
+            if (GenericUtils.size(macs) > 0) {
+                client.setMacFactories(macs);
+            }
+
+            if (GenericUtils.size(compressions) > 0) {
+                client.setCompressionFactories(compressions);
+            }
+
+            try {
+                setupSessionIdentities(client, identities, stdin, stdout, stderr);
+            } catch (Throwable t) { // show but do not fail the setup - maybe a password can be used
+                showError(stderr, t.getClass().getSimpleName() + " while loading user keys: " + t.getMessage());
+            }
+
+            setupServerKeyVerifier(client, options, stdin, stdout, stderr);
+            setupSessionUserInteraction(client, stdin, stdout, stderr);
+
+            Map<String, Object> props = client.getProperties();
+            props.putAll(options);
+            return client;
+        } catch (Throwable t) {
+            showError(stderr, "Failed (" + t.getClass().getSimpleName() + ") to setup client: " + t.getMessage());
+            client.close();
+            return null;
         }
     }
 
@@ -1114,6 +1161,43 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         return stderr;
+    }
+
+    public static List<NamedFactory<Compression>> setupCompressions(Map<String, ?> options, PrintStream stderr) {
+        String argVal = PropertyResolverUtils.getString(options, SshConfigFileReader.COMPRESSION_PROP);
+        if (GenericUtils.isEmpty(argVal)) {
+            return Collections.<NamedFactory<Compression>>emptyList();
+        }
+
+        NamedFactory<Compression> value = CompressionConfigValue.fromName(argVal);
+        if (value == null) {
+            showError(stderr, "Unknown compression configuration value: " + argVal);
+            return null;
+        }
+
+        return Collections.singletonList(value);
+    }
+
+    public static List<NamedFactory<Compression>> setupCompressions(
+            String argName, String argVal, List<NamedFactory<Compression>> current, PrintStream stderr) {
+        if (GenericUtils.size(current) > 0) {
+            showError(stderr, argName + " option value re-specified: " + NamedResource.Utils.getNames(current));
+            return null;
+        }
+
+        BuiltinCompressions.ParseResult result = BuiltinCompressions.parseCompressionsList(argVal);
+        Collection<? extends NamedFactory<Compression>> available = result.getParsedFactories();
+        if (GenericUtils.isEmpty(available)) {
+            showError(stderr, "No known compressions in " + argVal);
+            return null;
+        }
+
+        Collection<String> unsupported = result.getUnsupportedFactories();
+        if (GenericUtils.size(unsupported) > 0) {
+            stderr.append("Ignored unsupported compressions: ").println(GenericUtils.join(unsupported, ','));
+        }
+
+        return new ArrayList<>(available);
     }
 
     public static List<NamedFactory<Mac>> setupMacs(Map<String, ?> options, PrintStream stderr) {
@@ -1300,7 +1384,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             if (error) {
                 System.err.println("usage: ssh [-A|-a] [-v[v][v]] [-E logoutputfile] [-D socksPort]"
                         + " [-l login] [" + SSH_CLIENT_PORT_OPTION + " port] [-o option=value]"
-                        + " [-w password] [-c cipherslist] [-m maclist]"
+                        + " [-w password] [-c cipherslist] [-m maclist] [-C]"
                         + " hostname/user@host [command]");
                 System.exit(-1);
                 return;

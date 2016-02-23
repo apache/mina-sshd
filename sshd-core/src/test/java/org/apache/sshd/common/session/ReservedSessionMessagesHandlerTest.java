@@ -112,7 +112,7 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
                                     testReservedSessionMessagesHandler(session, handler);
                                     outputDebugMessage("Release test signal for %s", session);
                                     signal.release();
-                                } catch(Throwable t) {
+                                } catch (Throwable t) {
                                     outputDebugMessage("Failed (%s) to run test: %s", t.getClass().getSimpleName(), t.getMessage());
                                     session.exceptionCaught(t);
                                 }

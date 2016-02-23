@@ -195,7 +195,8 @@ public class DefaultScpClient extends AbstractScpClient {
 
                 effective.add(argName);
                 effective.add(args[++index]);
-            } else if ("-r".equals(argName) || "-p".equals(argName) || "-q".equals(argName)
+            } else if ("-r".equals(argName) || "-p".equals(argName)
+                    || "-q".equals(argName) || "-C".equals(argName)
                     || "-v".equals(argName) || "-vv".equals(argName) || "-vvv".equals(argName)) {
                 effective.add(argName);
             } else if (argName.charAt(0) == '-') {
@@ -255,7 +256,7 @@ public class DefaultScpClient extends AbstractScpClient {
             if (session == null) {
                 stderr.println("usage: scp [" + SCP_PORT_OPTION + " port] [-i identity]"
                          + " [-v[v][v]] [-E logoutput] [-r] [-p] [-q] [-o option=value]"
-                         + " [-c cipherlist] [-m maclist] [-w password] <source> <target>");
+                         + " [-c cipherlist] [-m maclist] [-w password] [-C] <source> <target>");
                 stderr.println();
                 stderr.println("Where <source> or <target> are either 'user@host:file' or a local file path");
                 stderr.println("NOTE: exactly ONE of the source or target must be remote and the other one local");

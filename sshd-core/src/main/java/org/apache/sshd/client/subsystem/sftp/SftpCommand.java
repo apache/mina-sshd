@@ -260,7 +260,7 @@ public class SftpCommand implements Channel {
             if (session == null) {
                 System.err.println("usage: sftp [-v[v][v]] [-E logoutput] [-i identity]"
                         + " [-l login] [" + SFTP_PORT_OPTION + " port] [-o option=value]"
-                        + " [-w password] [-c cipherlist]  [-m maclist] hostname/user@host");
+                        + " [-w password] [-c cipherlist]  [-m maclist] [-C] hostname/user@host");
                 System.exit(-1);
                 return;
             }
