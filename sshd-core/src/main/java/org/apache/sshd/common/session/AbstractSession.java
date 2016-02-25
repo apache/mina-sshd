@@ -46,6 +46,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -165,8 +166,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected Compression inCompression;
     protected long seqi;
     protected long seqo;
-    protected Buffer decoderBuffer = new ByteArrayBuffer();
-    protected Buffer uncompressBuffer;
+    protected SessionWorkBuffer uncompressBuffer;
+    protected final SessionWorkBuffer decoderBuffer;
     protected int decoderState;
     protected int decoderLength;
     protected final Object encodeLock = new Object();
@@ -224,6 +225,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         this.isServer = isServer;
         this.factoryManager = factoryManager;
         this.ioSession = ioSession;
+        this.decoderBuffer = new SessionWorkBuffer(this);
 
         Factory<Random> factory = ValidateUtils.checkNotNull(factoryManager.getRandomFactory(), "No random factory for %s", ioSession);
         random = ValidateUtils.checkNotNull(factory.create(), "No randomizer instance for %s", ioSession);
@@ -277,7 +279,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @param session   the session to attach
      */
     public static void attachSession(IoSession ioSession, AbstractSession session) {
-        ioSession.setAttribute(SESSION, session);
+        ValidateUtils.checkNotNull(ioSession, "No I/O session").setAttribute(SESSION, ValidateUtils.checkNotNull(session, "No SSH session"));
     }
 
     @Override
@@ -412,11 +414,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * Abstract method for processing incoming decoded packets.
      * The given buffer will hold the decoded packet, starting from
      * the command byte at the read position.
-     * Packets must be processed within this call or be copied because
-     * the given buffer is meant to be changed and updated when this
-     * method returns.
      *
-     * @param buffer the buffer containing the packet
+     * @param buffer The {@link Buffer} containing the packet - it may be
+     * re-used to generate the response once request has been decoded
      * @throws Exception if an exception occurs while handling this packet.
      * @see #doHandleMessage(Buffer)
      */
@@ -425,7 +425,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             synchronized (lock) {
                 doHandleMessage(buffer);
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             DefaultKeyExchangeFuture kexFuture = kexFutureHolder.get();
             // if have any ongoing KEX notify it about the failure
             if (kexFuture != null) {
@@ -437,7 +437,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 }
             }
 
-            throw e;
+            if (e instanceof Exception) {
+                throw (Exception) e;
+            } else {
+                throw new RuntimeSshException(e);
+            }
         }
     }
 
@@ -622,7 +626,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             log.debug("handleServiceRequest({}) Accepted service {}", this, serviceName);
         }
 
-        Buffer response = prepareBuffer(SshConstants.SSH_MSG_SERVICE_ACCEPT, BufferUtils.clear(buffer));
+        Buffer response = createBuffer(SshConstants.SSH_MSG_SERVICE_ACCEPT, Byte.SIZE + GenericUtils.length(serviceName));
         response.putString(serviceName);
         writePacket(response);
     }
@@ -782,11 +786,20 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         SessionListener listener = getSessionListenerProxy();
         try {
             listener.sessionClosed(this);
-        } catch (RuntimeException t) {
+        } catch (Throwable t) {
             Throwable e = GenericUtils.peelException(t);
             log.warn("preClose({}) {} while signal session closed: {}", this, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("preClose(" + this + ") signal session closed exception details", e);
+            }
+
+            if (log.isTraceEnabled()) {
+                Throwable[] suppressed = e.getSuppressed();
+                if (GenericUtils.length(suppressed) > 0) {
+                    for (Throwable s : suppressed) {
+                        log.trace("preClose(" + this + ") suppressed session closed signalling", s);
+                    }
+                }
             }
         } finally {
             // clear the listeners since we are closing the session (quicker GC)
@@ -892,6 +905,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 log.debug("doWritePacket({}) append SSH_MSG_IGNORE message", this);
             }
         }
+
+        int curPos = buffer.rpos();
+        byte[] data = buffer.array();
+        int cmd = data[curPos] & 0xFF;  // usually the 1st byte is the command
+        buffer = validateTargetBuffer(cmd, buffer);
 
         // Synchronize all write requests as needed by the encoding algorithm
         // and also queue the write request in this synchronized block to ensure
@@ -1007,7 +1025,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         // they actually send exactly this amount.
         //
         int bsize = outCipherSize;
-        len += 5;
+        len += SshConstants.SSH_PACKET_HEADER_LEN;
         int pad = (-len) & (bsize - 1);
         if (pad < bsize) {
             pad += bsize;
@@ -1022,10 +1040,26 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     @Override
     public Buffer prepareBuffer(byte cmd, Buffer buffer) {
-        ValidateUtils.checkNotNull(buffer, "No buffer to prepare");
-        buffer.rpos(5);
-        buffer.wpos(5);
+        buffer = validateTargetBuffer(cmd & 0xFF, buffer);
+        buffer.rpos(SshConstants.SSH_PACKET_HEADER_LEN);
+        buffer.wpos(SshConstants.SSH_PACKET_HEADER_LEN);
         buffer.putByte(cmd);
+        return buffer;
+    }
+
+    /**
+     * Makes sure that the buffer used for output is not {@code null} or one
+     * of the session's internal ones used for decoding and uncompressing
+     *
+     * @param cmd The most likely command this buffer refers to (not guaranteed to be correct)
+     * @param buffer The buffer to be examined
+     * @return The validated target instance - default same as input
+     * @throws IllegalArgumentException if any of the conditions is violated
+     */
+    protected <B extends Buffer> B validateTargetBuffer(int cmd, B buffer) {
+        ValidateUtils.checkNotNull(buffer, "No target buffer to examine for command=%d", cmd);
+        ValidateUtils.checkTrue(buffer != decoderBuffer, "Not allowed to use the internal decoder buffer for command=%d", cmd);
+        ValidateUtils.checkTrue(buffer != uncompressBuffer, "Not allowed to use the internal uncompress buffer for command=%d", cmd);
         return buffer;
     }
 
@@ -1039,21 +1073,27 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected void encode(Buffer buffer) throws IOException {
         try {
             // Check that the packet has some free space for the header
-            if (buffer.rpos() < 5) {
-                log.warn("Performance cost: when sending a packet, ensure that "
-                        + "5 bytes are available in front of the buffer");
+            int curPos = buffer.rpos();
+            if (curPos < SshConstants.SSH_PACKET_HEADER_LEN) {
+                byte[] data = buffer.array();
+                int cmd = data[curPos] & 0xFF;  // usually the 1st byte is an SSH opcode
+                log.warn("encode({}) command={} performance cost: available buffer packet header length ({}) below min. required ({})",
+                         this, SshConstants.getCommandMessageName(cmd), curPos, SshConstants.SSH_PACKET_HEADER_LEN);
                 Buffer nb = new ByteArrayBuffer(buffer.available() + Long.SIZE, false);
-                nb.wpos(5);
+                nb.wpos(SshConstants.SSH_PACKET_HEADER_LEN);
                 nb.putBuffer(buffer);
                 buffer = nb;
+                curPos = buffer.rpos();
             }
+
             // Grab the length of the packet (excluding the 5 header bytes)
             int len = buffer.available();
-            int off = buffer.rpos() - 5;
+            int off = curPos - SshConstants.SSH_PACKET_HEADER_LEN;
             // Debug log the packet
             if (log.isTraceEnabled()) {
-                log.trace("encode({}) Sending packet #{}: {}", this, Long.valueOf(seqo), buffer.printHex());
+                log.trace("encode({}) packet #{}: {}", this, seqo, buffer.printHex());
             }
+
             // Compress the packet if needed
             if ((outCompression != null) && outCompression.isCompressionExecuted() && (authed || (!outCompression.isDelayed()))) {
                 outCompression.compress(buffer);
@@ -1063,7 +1103,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             // Compute padding length
             int bsize = outCipherSize;
             int oldLen = len;
-            len += 5;
+            len += SshConstants.SSH_PACKET_HEADER_LEN;
             int pad = (-len) & (bsize - 1);
             if (pad < bsize) {
                 pad += bsize;
@@ -1074,7 +1114,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             buffer.putInt(len);
             buffer.putByte((byte) pad);
             // Fill padding
-            buffer.wpos(off + oldLen + 5 + pad);
+            buffer.wpos(off + oldLen + SshConstants.SSH_PACKET_HEADER_LEN + pad);
             random.fill(buffer.array(), buffer.wpos() - pad, pad);
             // Compute mac
             if (outMac != null) {
@@ -1130,8 +1170,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                     // Read packet length
                     decoderLength = decoderBuffer.getInt();
                     // Check packet length validity
-                    if ((decoderLength < 5) || (decoderLength > (256 * 1024))) {
-                        log.warn("decode({}) Error decoding packet(invalid length) {}", this, decoderBuffer.printHex());
+                    if ((decoderLength < SshConstants.SSH_PACKET_HEADER_LEN) || (decoderLength > (256 * 1024))) {
+                        log.warn("decode({}) Error decoding packet(invalid length): {}", this, decoderLength);
                         throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                                 "Invalid packet length: " + decoderLength);
                     }
@@ -1174,33 +1214,33 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                     seqi = (seqi + 1) & 0xffffffffL;
                     // Get padding
                     int pad = decoderBuffer.getUByte();
-                    Buffer buf;
+                    Buffer packet;
                     int wpos = decoderBuffer.wpos();
                     // Decompress if needed
                     if ((inCompression != null) && inCompression.isCompressionExecuted() && (authed || (!inCompression.isDelayed()))) {
                         if (uncompressBuffer == null) {
-                            uncompressBuffer = new ByteArrayBuffer();
+                            uncompressBuffer = new SessionWorkBuffer(this);
                         } else {
-                            uncompressBuffer.clear();
+                            uncompressBuffer.forceClear();
                         }
 
                         decoderBuffer.wpos(decoderBuffer.rpos() + decoderLength - 1 - pad);
                         inCompression.uncompress(decoderBuffer, uncompressBuffer);
-                        buf = uncompressBuffer;
+                        packet = uncompressBuffer;
                     } else {
                         decoderBuffer.wpos(decoderLength + 4 - pad);
-                        buf = decoderBuffer;
+                        packet = decoderBuffer;
                     }
 
                     if (log.isTraceEnabled()) {
-                        log.trace("decode({}) Received packet #{}: {}", this, seqi, buf.printHex());
+                        log.trace("decode({}) packet #{}: {}", this, seqi, packet.printHex());
                     }
 
                     // Update stats
                     inPacketsCount.incrementAndGet();
-                    inBytesCount.addAndGet(buf.available());
+                    inBytesCount.addAndGet(packet.available());
                     // Process decoded packet
-                    handleMessage(buf);
+                    handleMessage(packet);
                     // Set ready to handle next packet
                     decoderBuffer.rpos(decoderLength + 4 + macSize);
                     decoderBuffer.wpos(wpos);
@@ -1714,8 +1754,10 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     protected void requestSuccess(Buffer buffer) throws Exception {
+        // use a copy of the original data in case it is re-used on return
+        Buffer resultBuf = ByteArrayBuffer.getCompactClone(buffer.array(), buffer.rpos(), buffer.available());
         synchronized (requestResult) {
-            requestResult.set(new ByteArrayBuffer(buffer.getCompactData()));
+            requestResult.set(resultBuf);
             resetIdleTimeout();
             requestResult.notify();
         }
@@ -1830,7 +1872,18 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     protected void sendSessionEvent(SessionListener.Event event) throws IOException {
         SessionListener listener = getSessionListenerProxy();
-        listener.sessionEvent(this, event);
+        try {
+            listener.sessionEvent(this, event);
+        } catch (Throwable e) {
+            Throwable t = GenericUtils.peelException(e);
+            if (t instanceof IOException) {
+                throw (IOException) t;
+            } else if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            } else {
+                throw new IOException("Failed (" + t.getClass().getSimpleName() + ") to send session event: " + t.getMessage(), t);
+            }
+        }
     }
 
     @Override

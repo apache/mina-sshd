@@ -21,6 +21,7 @@ package org.apache.sshd.common.util.buffer;
 
 import java.nio.charset.Charset;
 
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -30,7 +31,7 @@ import org.apache.sshd.common.util.ValidateUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public final class ByteArrayBuffer extends Buffer {
+public class ByteArrayBuffer extends Buffer {
     public static final int DEFAULT_SIZE = 256;
     public static final int MAX_LEN = 65536;
 
@@ -194,5 +195,21 @@ public final class ByteArrayBuffer extends Buffer {
     @Override
     protected int size() {
         return data.length;
+    }
+
+    /**
+     * @param data The original data buffer
+     * @param off The valid data offset
+     * @param len The valid data length
+     * @return A buffer with a <U>copy</U> of the original data, positioned to
+     * start at offset zero, regardless of the original offset
+     */
+    public static ByteArrayBuffer getCompactClone(byte[] data, int off, int len) {
+        byte[] cloned = (len > 0) ? new byte[len] : GenericUtils.EMPTY_BYTE_ARRAY;
+        if (len > 0) {
+            System.arraycopy(data, off, cloned, 0, len);
+        }
+
+        return new ByteArrayBuffer(cloned, true);
     }
 }

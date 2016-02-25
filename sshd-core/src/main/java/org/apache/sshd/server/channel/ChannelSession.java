@@ -22,9 +22,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TimerTask;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
@@ -33,12 +35,15 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.channel.RequestHandler;
+import org.apache.sshd.common.channel.RequestHandler.Result;
+import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.future.CloseFuture;
@@ -78,9 +83,10 @@ public class ChannelSession extends AbstractServerChannel {
     protected ChannelAsyncOutputStream asyncErr;
     protected OutputStream out;
     protected OutputStream err;
-    protected Command command;
+    protected Command commandInstance;
     protected ChannelDataReceiver receiver;
     protected Buffer tempBuffer;
+    protected final AtomicBoolean commandStarted = new AtomicBoolean(false);
     protected final StandardEnvironment env = new StandardEnvironment();
     protected final CloseFuture commandExitFuture = new DefaultCloseFuture(lock);
 
@@ -117,7 +123,7 @@ public class ChannelSession extends AbstractServerChannel {
 
         @Override
         public CloseFuture close(boolean immediately) {
-            if (immediately || command == null) {
+            if (immediately || (commandInstance == null)) {
                 commandExitFuture.setClosed();
             } else if (!commandExitFuture.isClosed()) {
                 IOException e = IoUtils.closeQuietly(receiver);
@@ -159,21 +165,21 @@ public class ChannelSession extends AbstractServerChannel {
 
     @Override
     protected void doCloseImmediately() {
-        if (command != null) {
+        if (commandInstance != null) {
             try {
-                command.destroy();
-            } catch (Exception e) {
+                commandInstance.destroy();
+            } catch (Throwable e) {
                 log.warn("doCloseImmediately({}) failed ({}) to destroy command: {}",
                          this, e.getClass().getSimpleName(), e.getMessage());
                 if (log.isDebugEnabled()) {
                     log.debug("doCloseImmediately(" + this + ") command destruction failure details", e);
                 }
             } finally {
-                command = null;
+                commandInstance = null;
             }
         }
 
-        IOException e = IoUtils.closeQuietly(remoteWindow, out, err, receiver);
+        IOException e = IoUtils.closeQuietly(getRemoteWindow(), out, err, receiver);
         if (e != null) {
             if (log.isDebugEnabled()) {
                 log.debug("doCloseImmediately({}) failed ({}) to close resources: {}",
@@ -203,6 +209,10 @@ public class ChannelSession extends AbstractServerChannel {
                 log.debug("handleEof({}) failed ({}) to close receiver: {}",
                           this, e.getClass().getSimpleName(), e.getMessage());
             }
+
+            if (log.isTraceEnabled()) {
+                log.trace("handleEof(" + this + ") receiver close failure details", e);
+            }
         }
     }
 
@@ -215,7 +225,8 @@ public class ChannelSession extends AbstractServerChannel {
         if (receiver != null) {
             int r = receiver.data(this, data, off, len);
             if (r > 0) {
-                localWindow.consumeAndCheck(r);
+                Window wLocal = getLocalWindow();
+                wLocal.consumeAndCheck(r);
             }
         } else {
             if (tempBuffer == null) {
@@ -245,7 +256,7 @@ public class ChannelSession extends AbstractServerChannel {
                 return handleBreak(buffer, wantReply);
             case Channel.CHANNEL_SHELL:
                 if (this.type == null) {
-                    RequestHandler.Result r = handleShell(buffer, wantReply);
+                    RequestHandler.Result r = handleShell(requestType, buffer, wantReply);
                     if (RequestHandler.Result.ReplySuccess.equals(r) || RequestHandler.Result.Replied.equals(r)) {
                         this.type = requestType;
                     }
@@ -259,7 +270,7 @@ public class ChannelSession extends AbstractServerChannel {
                 }
             case Channel.CHANNEL_EXEC:
                 if (this.type == null) {
-                    RequestHandler.Result r = handleExec(buffer, wantReply);
+                    RequestHandler.Result r = handleExec(requestType, buffer, wantReply);
                     if (RequestHandler.Result.ReplySuccess.equals(r) || RequestHandler.Result.Replied.equals(r)) {
                         this.type = requestType;
                     }
@@ -273,7 +284,7 @@ public class ChannelSession extends AbstractServerChannel {
                 }
             case Channel.CHANNEL_SUBSYSTEM:
                 if (this.type == null) {
-                    RequestHandler.Result r = handleSubsystem(buffer, wantReply);
+                    RequestHandler.Result r = handleSubsystem(requestType, buffer, wantReply);
                     if (RequestHandler.Result.ReplySuccess.equals(r) || RequestHandler.Result.Replied.equals(r)) {
                         this.type = requestType;
                     }
@@ -292,6 +303,42 @@ public class ChannelSession extends AbstractServerChannel {
             default:
                 return super.handleInternalRequest(requestType, wantReply, buffer);
         }
+    }
+
+    @Override
+    protected void sendResponse(Buffer buffer, String req, Result result, boolean wantReply) throws IOException {
+        super.sendResponse(buffer, req, result, wantReply);
+
+        if (!RequestHandler.Result.ReplySuccess.equals(result)) {
+            return;
+        }
+
+        if (commandInstance == null) {
+            if (log.isDebugEnabled()) {
+                log.debug("sendResponse({}) request={} no pending command", this, req);
+            }
+            return; // no pending command to activate
+        }
+
+        if (!Objects.equals(this.type, req)) {
+            if (log.isDebugEnabled()) {
+                log.debug("sendResponse({}) request={} mismatched channel type: {}", this, req, this.type);
+            }
+            return; // request does not match the current channel type
+        }
+
+        if (commandStarted.getAndSet(true)) {
+            if (log.isDebugEnabled()) {
+                log.debug("sendResponse({}) request={} pending command already started", this, req);
+            }
+            return;
+        }
+
+        // TODO - consider if (Channel.CHANNEL_SHELL.equals(req) || Channel.CHANNEL_EXEC.equals(req) || Channel.CHANNEL_SUBSYSTEM.equals(req)) {
+        if (log.isDebugEnabled()) {
+            log.debug("sendResponse({}) request={} activate command", this, req);
+        }
+        commandInstance.start(getEnvironment());
     }
 
     protected RequestHandler.Result handleEnv(Buffer buffer, boolean wantReply) throws IOException {
@@ -388,7 +435,7 @@ public class ChannelSession extends AbstractServerChannel {
         return RequestHandler.Result.ReplySuccess;
     }
 
-    protected RequestHandler.Result handleShell(Buffer buffer, boolean wantReply) throws IOException {
+    protected RequestHandler.Result handleShell(String request, Buffer buffer, boolean wantReply) throws IOException {
         // If we're already closing, ignore incoming data
         if (isClosing()) {
             if (log.isDebugEnabled()) {
@@ -406,20 +453,28 @@ public class ChannelSession extends AbstractServerChannel {
             return RequestHandler.Result.ReplyFailure;
         }
 
-        command = factory.create();
-        if (command == null) {
+        try {
+            commandInstance = factory.create();
+        } catch (RuntimeException | Error e) {
+            log.warn("handleShell({}) Failed ({}) to create shell: {}",
+                     this, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("handleShell(" + this + ") shell creation failure details", e);
+            }
+            return RequestHandler.Result.ReplyFailure;
+        }
+
+        if (commandInstance == null) {
             if (log.isDebugEnabled()) {
                 log.debug("handleShell({}) - no shell command", this);
             }
             return RequestHandler.Result.ReplyFailure;
         }
 
-        prepareCommand();
-        command.start(getEnvironment());
-        return RequestHandler.Result.ReplySuccess;
+        return prepareChannelCommand(request, commandInstance);
     }
 
-    protected RequestHandler.Result handleExec(Buffer buffer, boolean wantReply) throws IOException {
+    protected RequestHandler.Result handleExec(String request, Buffer buffer, boolean wantReply) throws IOException {
         // If we're already closing, ignore incoming data
         if (isClosing()) {
             return RequestHandler.Result.ReplyFailure;
@@ -438,20 +493,26 @@ public class ChannelSession extends AbstractServerChannel {
         }
 
         try {
-            command = factory.createCommand(commandLine);
-        } catch (RuntimeException e) {
+            commandInstance = factory.createCommand(commandLine);
+        } catch (RuntimeException | Error e) {
             log.warn("handleExec({}) Failed ({}) to create command for {}: {}",
                      this, e.getClass().getSimpleName(), commandLine, e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("handleExec(" + this + ") command=" + commandLine + " creation failure details", e);
+            }
+
             return RequestHandler.Result.ReplyFailure;
         }
 
-        prepareCommand();
-        // Launch command
-        command.start(getEnvironment());
-        return RequestHandler.Result.ReplySuccess;
+        if (commandInstance == null) {
+            log.warn("handleExec({}) Unsupported command: {}", this, commandLine);
+            return RequestHandler.Result.ReplyFailure;
+        }
+
+        return prepareChannelCommand(request, commandInstance);
     }
 
-    protected RequestHandler.Result handleSubsystem(Buffer buffer, boolean wantReply) throws IOException {
+    protected RequestHandler.Result handleSubsystem(String request, Buffer buffer, boolean wantReply) throws IOException {
         String subsystem = buffer.getString();
         if (log.isDebugEnabled()) {
             log.debug("handleSubsystem({})[want-reply={}] sybsystem={}",
@@ -465,15 +526,42 @@ public class ChannelSession extends AbstractServerChannel {
             return RequestHandler.Result.ReplyFailure;
         }
 
-        command = NamedFactory.Utils.create(factories, subsystem);
-        if (command == null) {
+        try {
+            commandInstance = NamedFactory.Utils.create(factories, subsystem);
+        } catch (RuntimeException | Error e) {
+            log.warn("handleSubsystem({}) Failed ({}) to create command for subsystem={}: {}",
+                      this, e.getClass().getSimpleName(), subsystem, e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("handleSubsystem(" + this + ") subsystem=" + subsystem + " creation failure details", e);
+            }
+            return RequestHandler.Result.ReplyFailure;
+        }
+
+        if (commandInstance == null) {
             log.warn("handleSubsystem({}) Unsupported subsystem: {}", this, subsystem);
             return RequestHandler.Result.ReplyFailure;
         }
 
-        prepareCommand();
-        // Launch command
-        command.start(getEnvironment());
+        return prepareChannelCommand(request, commandInstance);
+    }
+
+    protected RequestHandler.Result prepareChannelCommand(String request, Command cmd) throws IOException {
+        Command command = prepareCommand(request, cmd);
+        if (command == null) {
+            log.warn("prepareChannelCommand({})[{}] no command prepared", this, request);
+            return RequestHandler.Result.ReplyFailure;
+        }
+
+        if (command != cmd) {
+            if (log.isDebugEnabled()) {
+                log.debug("prepareChannelCommand({})[{}] replaced original command", this, request);
+            }
+            commandInstance = command;
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("prepareChannelCommand({})[{}] prepared command", this, request);
+        }
         return RequestHandler.Result.ReplySuccess;
     }
 
@@ -491,7 +579,23 @@ public class ChannelSession extends AbstractServerChannel {
         this.receiver = receiver;
     }
 
-    protected void prepareCommand() throws IOException {
+    /**
+     * Called by {@link #prepareChannelCommand(String, Command)} in order to set
+     * up the command's streams, session, file-system, exit callback, etc..
+     *
+     * @param requestType The request that caused the command to be created
+     * @param command The created {@link Command} - may be {@code null}
+     * @return The updated command instance - if {@code null} then the request that
+     * initially caused the creation of the command is failed and the original command
+     * (if any) destroyed (eventually). <B>Note:</B> if a different command instance
+     * than the input one is returned, then it is up to the implementor to take care
+     * of the wrapping or destruction of the original command instance.
+     * @throws IOException If failed to prepare the command
+     */
+    protected Command prepareCommand(String requestType, Command command) throws IOException {
+        if (command == null) {
+            return null;
+        }
         // Add the user
         Session session = getSession();
         addEnvVariable(Environment.ENV_USER, session.getUsername());
@@ -515,13 +619,13 @@ public class ChannelSession extends AbstractServerChannel {
             ((AsyncCommand) command).setIoOutputStream(asyncOut);
             ((AsyncCommand) command).setIoErrorStream(asyncErr);
         } else {
-            out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
-            err = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA);
+            Window wRemote = getRemoteWindow();
+            out = new ChannelOutputStream(this, wRemote, log, SshConstants.SSH_MSG_CHANNEL_DATA);
+            err = new ChannelOutputStream(this, wRemote, log, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA);
             if (log.isTraceEnabled()) {
                 // Wrap in logging filters
-                String channelId = toString();
-                out = new LoggingFilterOutputStream(out, "OUT(" + channelId + ")", log);
-                err = new LoggingFilterOutputStream(err, "ERR(" + channelId + ")", log);
+                out = new LoggingFilterOutputStream(out, "OUT(" + this + ")", log);
+                err = new LoggingFilterOutputStream(err, "ERR(" + this + ")", log);
             }
             command.setOutputStream(out);
             command.setErrorStream(err);
@@ -534,7 +638,7 @@ public class ChannelSession extends AbstractServerChannel {
                 setDataReceiver(recv);
                 ((AsyncCommand) command).setIoInputStream(recv.getIn());
             } else {
-                PipeDataReceiver recv = new PipeDataReceiver(this, localWindow);
+                PipeDataReceiver recv = new PipeDataReceiver(this, getLocalWindow());
                 setDataReceiver(recv);
                 command.setInputStream(recv.getIn());
             }
@@ -564,6 +668,8 @@ public class ChannelSession extends AbstractServerChannel {
                 }
             }
         });
+
+        return command;
     }
 
     protected int getPtyModeValue(PtyMode mode) {
@@ -576,11 +682,20 @@ public class ChannelSession extends AbstractServerChannel {
         FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No session factory manager");
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
         SshAgentFactory factory = manager.getAgentFactory();
-        if ((factory == null) || (filter == null) || (!filter.canForwardAgent(session))) {
-            if (log.isDebugEnabled()) {
-                log.debug("handleAgentForwarding(" + this + ")[haveFactory=" + (factory != null) + ",haveFilter=" + (filter != null) + "] filtered out");
+        try {
+            if ((factory == null) || (filter == null) || (!filter.canForwardAgent(session))) {
+                if (log.isDebugEnabled()) {
+                    log.debug("handleAgentForwarding(" + this + ")[haveFactory=" + (factory != null) + ",haveFilter=" + (filter != null) + "] filtered out");
+                }
+                return RequestHandler.Result.ReplyFailure;
             }
-            return RequestHandler.Result.ReplyFailure;
+        } catch (Error e) {
+            log.warn("handleAgentForwarding({}) failed ({}) to consult forwarding filter: {}",
+                     this, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("handleAgentForwarding(" + this + ") filter consultation failure details", e);
+            }
+            throw new RuntimeSshException(e);
         }
 
         String authSocket = service.initAgentForward();
@@ -595,14 +710,23 @@ public class ChannelSession extends AbstractServerChannel {
         String authCookie = buffer.getString();
         int screenId = buffer.getInt();
 
-        FactoryManager manager = session.getFactoryManager();
+        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
-        if ((filter == null) || (!filter.canForwardX11(session))) {
-            if (log.isDebugEnabled()) {
-                log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={}, filter={}: filtered",
-                          this, singleConnection, authProtocol, authCookie, screenId, filter);
+        try {
+            if ((filter == null) || (!filter.canForwardX11(session))) {
+                if (log.isDebugEnabled()) {
+                    log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={}, filter={}: filtered",
+                              this, singleConnection, authProtocol, authCookie, screenId, filter);
+                }
+                return RequestHandler.Result.ReplyFailure;
             }
-            return RequestHandler.Result.ReplyFailure;
+        } catch (Error e) {
+            log.warn("handleX11Forwarding({}) failed ({}) to consult forwarding filter: {}",
+                     this, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("handleX11Forwarding(" + this + ") filter consultation failure details", e);
+            }
+            throw new RuntimeSshException(e);
         }
 
         String display = service.createX11Display(singleConnection, authProtocol, authCookie, screenId);

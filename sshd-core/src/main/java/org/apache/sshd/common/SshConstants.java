@@ -121,6 +121,7 @@ public final class SshConstants {
 
     // Some more constants
     public static final int SSH_EXTENDED_DATA_STDERR = 1;   // see RFC4254 section 5.2
+    public static final int SSH_PACKET_HEADER_LEN = 5;  // 32-bit length + 8-bit pad length
 
     private SshConstants() {
         throw new UnsupportedOperationException("No instance allowed");

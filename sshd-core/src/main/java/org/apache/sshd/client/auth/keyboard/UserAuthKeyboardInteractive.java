@@ -32,7 +32,6 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
  * Manages a &quot;keyboard-interactive&quot; exchange according to
@@ -188,7 +187,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                      session, service, num, rep.length);
         }
 
-        buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE, BufferUtils.clear(buffer));
+        buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE, rep.length * Long.SIZE + Byte.SIZE);
         buffer.putInt(rep.length);
         for (int index = 0; index < rep.length; index++) {
             String r = rep[index];

@@ -28,7 +28,6 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
  * Implements the &quot;password&quot; authentication mechanism
@@ -122,7 +121,10 @@ public class UserAuthPassword extends AbstractUserAuth {
                       session, service, name, modified);
         }
 
-        buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, BufferUtils.clear(buffer));
+        buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
+                GenericUtils.length(username) + GenericUtils.length(service)
+              + GenericUtils.length(name) + GenericUtils.length(oldPassword)
+              + (modified ? GenericUtils.length(newPassword) : 0) + Long.SIZE);
         buffer.putString(username);
         buffer.putString(service);
         buffer.putString(name);

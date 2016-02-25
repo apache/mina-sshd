@@ -33,7 +33,6 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 import org.apache.sshd.server.ServerAuthenticationManager;
 import org.apache.sshd.server.ServerFactoryManager;
@@ -258,7 +257,8 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 String lang = PropertyResolverUtils.getStringProperty(session,
                                         ServerFactoryManager.WELCOME_BANNER_LANGUAGE,
                                         ServerFactoryManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
-                buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_BANNER, welcomeBanner.length() + lang.length() + Long.SIZE);
+                buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_BANNER,
+                        welcomeBanner.length() + GenericUtils.length(lang) + Long.SIZE);
                 buffer.putString(welcomeBanner);
                 buffer.putString(lang);
 
@@ -277,7 +277,6 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             session.resetIdleTimeout();
             log.info("Session {}@{} authenticated", username, session.getIoSession().getRemoteAddress());
         } else {
-            buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_FAILURE, BufferUtils.clear(buffer));
             StringBuilder sb = new StringBuilder();
             for (List<String> l : authMethods) {
                 if (GenericUtils.size(l) > 0) {
@@ -292,6 +291,8 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             if (log.isDebugEnabled()) {
                 log.debug("handleAuthenticationSuccess({}@{}) remaining methods={}", username, session, remaining);
             }
+
+            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_FAILURE, remaining.length() + Byte.SIZE);
             buffer.putString(remaining);
             buffer.putBoolean(true);    // partial success ...
             session.writePacket(buffer);
@@ -312,7 +313,6 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                       username, session, SshConstants.getCommandMessageName(cmd));
         }
 
-        buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_FAILURE, BufferUtils.clear(buffer));
         StringBuilder sb = new StringBuilder((authMethods.size() + 1) * Byte.SIZE);
         for (List<String> l : authMethods) {
             if (GenericUtils.size(l) > 0) {
@@ -330,6 +330,8 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         if (log.isDebugEnabled()) {
             log.debug("handleAuthenticationFailure({}@{}) remaining methods: {}", username, session, remaining);
         }
+
+        buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_FAILURE, remaining.length() + Byte.SIZE);
         buffer.putString(remaining);
         buffer.putBoolean(false);   // no partial success ...
         session.writePacket(buffer);

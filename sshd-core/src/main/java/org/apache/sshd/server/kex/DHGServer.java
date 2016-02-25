@@ -139,10 +139,8 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         if (log.isDebugEnabled()) {
             log.debug("next({})[{}] Send SSH_MSG_KEXDH_REPLY", this, session);
         }
-        buffer.clear();
-        buffer.rpos(5);
-        buffer.wpos(5);
-        buffer.putByte(SshConstants.SSH_MSG_KEXDH_REPLY);
+
+        buffer = session.prepareBuffer(SshConstants.SSH_MSG_KEXDH_REPLY, BufferUtils.clear(buffer));
         buffer.putBytes(k_s);
         buffer.putBytes(f);
         buffer.putBytes(sigH);

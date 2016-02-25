@@ -36,7 +36,6 @@ import org.apache.sshd.common.signature.SignatureFactoriesManager;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.buffer.keys.BufferPublicKeyParser;
 
@@ -96,7 +95,7 @@ public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler imple
         }
 
         // generate the required signatures
-        buffer = session.prepareBuffer(SshConstants.SSH_MSG_REQUEST_SUCCESS, BufferUtils.clear(buffer));
+        buffer = session.createBuffer(SshConstants.SSH_MSG_REQUEST_SUCCESS);
 
         Buffer buf = new ByteArrayBuffer();
         byte[] sessionId = session.getSessionId();

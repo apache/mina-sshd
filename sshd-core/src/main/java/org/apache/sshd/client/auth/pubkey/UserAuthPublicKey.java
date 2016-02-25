@@ -31,8 +31,8 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
@@ -122,7 +122,10 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         }
 
         String username = session.getUsername();
-        buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, BufferUtils.clear(buffer));
+        buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
+                GenericUtils.length(username) + GenericUtils.length(service)
+              + GenericUtils.length(name) + GenericUtils.length(algo)
+              + ByteArrayBuffer.DEFAULT_SIZE + Long.SIZE);
         buffer.putString(username);
         buffer.putString(service);
         buffer.putString(name);

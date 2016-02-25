@@ -26,7 +26,6 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.server.auth.AbstractUserAuth;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -75,7 +74,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             }
 
             // Prompt for password
-            buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST, BufferUtils.clear(buffer));
+            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST);
             challenge.append(buffer);
             session.writePacket(buffer);
             return null;

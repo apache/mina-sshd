@@ -45,7 +45,6 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 import org.apache.sshd.server.channel.OpenChannelException;
 import org.apache.sshd.server.x11.X11ForwardSupport;
@@ -459,8 +458,9 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
                       this, sender, SshConstants.getOpenErrorCodeName(reasonCode), lang, message);
         }
 
-        final Session session = getSession();
-        Buffer buf = session.prepareBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, BufferUtils.clear(buffer));
+        Session session = getSession();
+        Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE,
+                Long.SIZE + GenericUtils.length(message) + GenericUtils.length(lang));
         buf.putInt(sender);
         buf.putInt(reasonCode);
         buf.putString(message);
@@ -534,9 +534,8 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
                  ? SshConstants.SSH_MSG_REQUEST_SUCCESS
                  : SshConstants.SSH_MSG_REQUEST_FAILURE;
         Session session = getSession();
-        buffer = session.prepareBuffer(cmd, BufferUtils.clear(buffer));
-        buffer.putByte(cmd);
-        session.writePacket(buffer);
+        Buffer rsp = session.createBuffer(cmd, 2);
+        session.writePacket(rsp);
     }
 
     protected void requestSuccess(Buffer buffer) throws Exception {
