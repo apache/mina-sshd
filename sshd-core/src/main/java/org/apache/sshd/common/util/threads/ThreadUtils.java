@@ -163,9 +163,8 @@ public final class ThreadUtils {
 
         public SshdThreadFactory(String name) {
             SecurityManager s = System.getSecurityManager();
-            ThreadGroup parentGroup = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
+            group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
             String effectiveName = name.replace(' ', '-');
-            group = new ThreadGroup(parentGroup, "sshd-" + effectiveName + "-group");
             namePrefix = "sshd-" + effectiveName + "-thread-";
         }
 
