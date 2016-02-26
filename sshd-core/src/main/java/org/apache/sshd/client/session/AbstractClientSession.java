@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.file.FileSystem;
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -497,8 +498,14 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     protected void checkKeys() throws SshException {
         ServerKeyVerifier serverKeyVerifier = ValidateUtils.checkNotNull(getServerKeyVerifier(), "No server key verifier");
         SocketAddress remoteAddress = ioSession.getRemoteAddress();
+        PublicKey serverKey = kex.getServerKey();
+        boolean verified = serverKeyVerifier.verifyServerKey(this, remoteAddress, serverKey);
+        if (log.isDebugEnabled()) {
+            log.debug("checkKeys({}) key={}-{}, verified={}",
+                      this, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey), verified);
+        }
 
-        if (!serverKeyVerifier.verifyServerKey(this, remoteAddress, kex.getServerKey())) {
+        if (!verified) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_HOST_KEY_NOT_VERIFIABLE, "Server key did not validate");
         }
     }
