@@ -61,9 +61,9 @@ public class DefaultScpClient extends AbstractScpClient {
      */
     public static final String SCP_PORT_OPTION = "-P";
 
-    protected final ClientSession clientSession;
     protected final ScpFileOpener opener;
     protected final ScpTransferEventListener listener;
+    private final ClientSession clientSession;
 
     public DefaultScpClient(ClientSession clientSession, ScpFileOpener fileOpener, ScpTransferEventListener eventListener) {
         this.clientSession = ValidateUtils.checkNotNull(clientSession, "No client session");

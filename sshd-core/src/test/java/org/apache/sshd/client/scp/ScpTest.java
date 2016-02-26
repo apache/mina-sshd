@@ -767,7 +767,7 @@ public class ScpTest extends BaseTestSupport {
 
         ScpCommandFactory factory = (ScpCommandFactory) sshd.getCommandFactory();
         TrackingFileOpener serverOpener = new TrackingFileOpener();
-        factory.setFileOpener(serverOpener);
+        factory.setScpFileOpener(serverOpener);
 
         try (SshClient client = setupTestClient()) {
             client.start();

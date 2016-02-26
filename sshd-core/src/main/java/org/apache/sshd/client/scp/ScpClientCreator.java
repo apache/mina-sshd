@@ -20,12 +20,13 @@
 package org.apache.sshd.client.scp;
 
 import org.apache.sshd.common.scp.ScpFileOpener;
+import org.apache.sshd.common.scp.ScpFileOpenerHolder;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ScpClientCreator {
+public interface ScpClientCreator extends ScpFileOpenerHolder {
     /**
      * Create an SCP client from this session.
      *
@@ -72,20 +73,6 @@ public interface ScpClientCreator {
      * @return An {@link ScpClient} instance
      */
     ScpClient createScpClient(ScpFileOpener opener, ScpTransferEventListener listener);
-
-    /**
-     * @return The last {@link ScpFileOpener} set via call
-     * to {@link #setScpFileOpener(ScpFileOpener)}
-     */
-    ScpFileOpener getScpFileOpener();
-
-    /**
-     * @param opener The default {@link ScpFileOpener} to use - if {@code null}
-     * then a default opener is used
-     * @see #createScpClient(ScpFileOpener)
-     * @see #createScpClient(ScpFileOpener, ScpTransferEventListener)
-     */
-    void setScpFileOpener(ScpFileOpener opener);
 
     /**
      * @return The last {@link ScpTransferEventListener} set via

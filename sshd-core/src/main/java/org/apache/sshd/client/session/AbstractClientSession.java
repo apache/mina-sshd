@@ -197,7 +197,9 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         identities.add(kp);
 
         if (log.isDebugEnabled()) {
-            log.debug("addPublicKeyIdentity({}) {}", this, KeyUtils.getFingerPrint(kp.getPublic()));
+            PublicKey key = kp.getPublic();
+            log.debug("addPublicKeyIdentity({}) {}-{}",
+                      this, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
         }
     }
 
@@ -302,7 +304,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     public ScpFileOpener getScpFileOpener() {
-        return scpOpener;
+        return resolveEffectiveProvider(ScpFileOpener.class, scpOpener, getFactoryManager().getScpFileOpener());
     }
 
     @Override
@@ -355,6 +357,14 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         try {
             client.negotiateVersion(selector);
         } catch (IOException | RuntimeException e) {
+            if (log.isDebugEnabled()) {
+                log.debug("createSftpClient({}) failed ({}) to negotiate version: {}",
+                          this, e.getClass().getSimpleName(), e.getMessage());
+            }
+            if (log.isTraceEnabled()) {
+                log.trace("createSftpClient(" + this + ") version negotiation failure details", e);
+            }
+
             client.close();
             throw e;
         }

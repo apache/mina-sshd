@@ -23,6 +23,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.scp.ScpFileOpener;
+import org.apache.sshd.common.scp.ScpFileOpenerHolder;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.util.EventListenerUtils;
@@ -39,7 +40,7 @@ import org.apache.sshd.server.CommandFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see ScpCommand
  */
-public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorServiceConfigurer {
+public class ScpCommandFactory implements ScpFileOpenerHolder, CommandFactory, Cloneable, ExecutorServiceConfigurer {
     /**
      * A useful {@link ObjectBuilder} for {@link ScpCommandFactory}
      */
@@ -51,7 +52,7 @@ public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorSer
         }
 
         public Builder withFileOpener(ScpFileOpener opener) {
-            factory.setFileOpener(opener);
+            factory.setScpFileOpener(opener);
             return this;
         }
 
@@ -113,15 +114,13 @@ public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorSer
         listenerProxy = EventListenerUtils.proxyWrapper(ScpTransferEventListener.class, getClass().getClassLoader(), listeners);
     }
 
-    public ScpFileOpener getFileOpener() {
+    @Override
+    public ScpFileOpener getScpFileOpener() {
         return fileOpener;
     }
 
-    /**
-     * @param fileOpener The {@link ScpFileOpener} to use - if {@code null}.
-     * the a default opener is used
-     */
-    public void setFileOpener(ScpFileOpener fileOpener) {
+    @Override
+    public void setScpFileOpener(ScpFileOpener fileOpener) {
         this.fileOpener = fileOpener;
     }
 
@@ -161,11 +160,6 @@ public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorSer
         return shutdownExecutor;
     }
 
-    /**
-     * @param shutdown If {@code true} the {@link ExecutorService#shutdownNow()}
-     *                 will be called when command terminates - unless it is the ad-hoc
-     *                 service, which will be shutdown regardless
-     */
     @Override
     public void setShutdownOnExit(boolean shutdown) {
         shutdownExecutor = shutdown;
@@ -248,7 +242,7 @@ public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorSer
             return new ScpCommand(command,
                     getExecutorService(), isShutdownOnExit(),
                     getSendBufferSize(), getReceiveBufferSize(),
-                    getFileOpener(), listenerProxy);
+                    getScpFileOpener(), listenerProxy);
         }
 
         CommandFactory factory = getDelegateCommandFactory();

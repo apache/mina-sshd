@@ -113,6 +113,7 @@ import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.mac.Mac;
+import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
@@ -215,6 +216,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     private ClientIdentityLoader clientIdentityLoader;
     private FilePasswordProvider filePasswordProvider;
     private PasswordIdentityProvider passwordIdentityProvider;
+    private ScpFileOpener scpOpener;
+
     private final List<Object> identities = new CopyOnWriteArrayList<>();
     private final AuthenticationIdentitiesProvider identitiesProvider;
 
@@ -238,6 +241,16 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     @Override
     public void setClientProxyConnector(ClientProxyConnector proxyConnector) {
         this.proxyConnector = proxyConnector;
+    }
+
+    @Override
+    public ScpFileOpener getScpFileOpener() {
+        return scpOpener;
+    }
+
+    @Override
+    public void setScpFileOpener(ScpFileOpener opener) {
+        scpOpener = opener;
     }
 
     @Override

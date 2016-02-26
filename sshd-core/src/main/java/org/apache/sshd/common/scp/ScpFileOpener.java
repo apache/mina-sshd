@@ -47,7 +47,7 @@ public interface ScpFileOpener {
     InputStream openRead(Session session, Path file, OpenOption... options) throws IOException;
 
     /**
-     * Create an input stream to read from a file
+     * Create an output stream to write to a file
      *
      * @param session The {@link Session} requesting the access
      * @param file The requested local file {@link Path}
