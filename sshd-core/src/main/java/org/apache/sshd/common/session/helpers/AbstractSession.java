@@ -1380,27 +1380,45 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                     buffer.rpos(rpos);
                     return null;
                 }
+
                 byte b = buffer.getByte();
+                /*
+                 * According to RFC 4253 section 4.2:
+                 *
+                 *      "The null character MUST NOT be sent"
+                 */
+                if (b == 0) {
+                    throw new IllegalStateException("Incorrect identification (null characters not allowed) - after " + new String(data, 0, pos, StandardCharsets.UTF_8));
+                }
                 if (b == '\r') {
                     needLf = true;
                     continue;
                 }
+
                 if (b == '\n') {
                     break;
                 }
+
                 if (needLf) {
-                    throw new IllegalStateException("Incorrect identification: bad line ending");
+                    throw new IllegalStateException("Incorrect identification (bad line ending): " + new String(data, 0, pos, StandardCharsets.UTF_8));
                 }
+
                 if (pos >= data.length) {
-                    throw new IllegalStateException("Incorrect identification: line too long");
+                    throw new IllegalStateException("Incorrect identification (line too long): " + new String(data, 0, pos, StandardCharsets.UTF_8));
                 }
+
                 data[pos++] = b;
             }
 
             String str = new String(data, 0, pos, StandardCharsets.UTF_8);
+            if (log.isDebugEnabled()) {
+                log.debug("doReadIdentification({}) line='{}'", this, str);
+            }
+
             if (server || str.startsWith("SSH-")) {
                 return str;
             }
+
             if (buffer.rpos() > maxIdentSize) {
                 throw new IllegalStateException("Incorrect identification: too many header lines - size > " + maxIdentSize);
             }
@@ -1435,8 +1453,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         proposal.put(KexProposalOption.S2CCOMP, compressions);
         proposal.put(KexProposalOption.C2SCOMP, compressions);
 
-        proposal.put(KexProposalOption.S2CLANG, "");
-        proposal.put(KexProposalOption.C2SLANG, "");
+        proposal.put(KexProposalOption.S2CLANG, "");    // TODO allow configuration
+        proposal.put(KexProposalOption.C2SLANG, "");    // TODO allow configuration
         return proposal;
     }
 
@@ -1445,7 +1463,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * This packet contains random data along with our proposal.
      *
      * @param proposal our proposal for key exchange negotiation
-     * @return the sent packet which must be kept for later use
+     * @return the sent packet data which must be kept for later use
+     * when deriving the session keys
      * @throws IOException if an error occurred sending the packet
      */
     protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws IOException {
