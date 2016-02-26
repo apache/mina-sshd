@@ -27,7 +27,6 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
-import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
@@ -56,11 +55,6 @@ import org.apache.sshd.server.forward.RejectAllForwardingFilter;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder<T, S>> implements ObjectBuilder<T> {
-
-    // Compression is not enabled by default
-    public static final List<NamedFactory<Compression>> DEFAULT_COMPRESSION_FACTORIES =
-            Collections.unmodifiableList(Arrays.<NamedFactory<Compression>>asList(BuiltinCompressions.none));
-
     public static final FileSystemFactory DEFAULT_FILE_SYSTEM_FACTORY = NativeFileSystemFactory.INSTANCE;
 
     public static final ForwardingFilter DEFAULT_FORWARDING_FILTER = RejectAllForwardingFilter.INSTANCE;
@@ -162,10 +156,6 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
 
         if (cipherFactories == null) {
             cipherFactories = setUpDefaultCiphers(false);
-        }
-
-        if (compressionFactories == null) {
-            compressionFactories = DEFAULT_COMPRESSION_FACTORIES;
         }
 
         if (macFactories == null) {

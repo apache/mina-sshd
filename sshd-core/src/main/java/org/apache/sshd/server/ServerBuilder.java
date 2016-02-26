@@ -27,6 +27,8 @@ import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.RequestHandler;
+import org.apache.sshd.common.compression.BuiltinCompressions;
+import org.apache.sshd.common.compression.CompressionFactory;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.ConnectionService;
@@ -81,6 +83,9 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
 
     public static final PublickeyAuthenticator DEFAULT_PUBLIC_KEY_AUTHENTICATOR = DefaultAuthorizedKeysAuthenticator.INSTANCE;
     public static final KeyboardInteractiveAuthenticator DEFAULT_INTERACTIVE_AUTHENTICATOR = DefaultKeyboardInteractiveAuthenticator.INSTANCE;
+    public static final List<CompressionFactory> DEFAULT_COMPRESSION_FACTORIES =
+            Collections.unmodifiableList(Arrays.<CompressionFactory>asList(
+                    BuiltinCompressions.none, BuiltinCompressions.zlib, BuiltinCompressions.delayedZlib));
 
     protected PublickeyAuthenticator pubkeyAuthenticator;
     protected KeyboardInteractiveAuthenticator interactiveAuthenticator;
@@ -102,6 +107,10 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
     @Override
     protected ServerBuilder fillWithDefaultValues() {
         super.fillWithDefaultValues();
+
+        if (compressionFactories == null) {
+            compressionFactories = NamedFactory.Utils.setUpBuiltinFactories(false, DEFAULT_COMPRESSION_FACTORIES);
+        }
 
         if (keyExchangeFactories == null) {
             keyExchangeFactories = setUpDefaultKeyExchanges(false);

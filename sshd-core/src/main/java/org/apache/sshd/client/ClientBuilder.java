@@ -35,6 +35,8 @@ import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.RequestHandler;
+import org.apache.sshd.common.compression.BuiltinCompressions;
+import org.apache.sshd.common.compression.CompressionFactory;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
@@ -59,6 +61,10 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
                 }
             }
         };
+
+    // Compression is not enabled by default for the client
+    public static final List<CompressionFactory> DEFAULT_COMPRESSION_FACTORIES =
+            Collections.unmodifiableList(Arrays.<CompressionFactory>asList(BuiltinCompressions.none));
 
     public static final List<NamedFactory<Channel>> DEFAULT_CHANNEL_FACTORIES =
             Collections.unmodifiableList(Arrays.<NamedFactory<Channel>>asList(ForwardedTcpipFactory.INSTANCE));
@@ -103,6 +109,10 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
     @Override
     protected ClientBuilder fillWithDefaultValues() {
         super.fillWithDefaultValues();
+
+        if (compressionFactories == null) {
+            compressionFactories = NamedFactory.Utils.setUpBuiltinFactories(false, DEFAULT_COMPRESSION_FACTORIES);
+        }
 
         if (keyExchangeFactories == null) {
             keyExchangeFactories = setUpDefaultKeyExchanges(false);

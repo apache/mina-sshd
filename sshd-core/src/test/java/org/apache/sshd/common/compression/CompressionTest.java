@@ -22,12 +22,18 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 
 import com.jcraft.jsch.JSch;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JSchLogger;
@@ -51,6 +57,9 @@ import org.junit.runners.Parameterized.Parameters;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class CompressionTest extends BaseTestSupport {
+    private static final Collection<KexProposalOption> COMPRESSION_OPTIONS =
+            Collections.unmodifiableSet(EnumSet.of(KexProposalOption.C2SCOMP, KexProposalOption.S2CCOMP));
+
     private final CompressionFactory factory;
     private SshServer sshd;
 
@@ -72,6 +81,34 @@ public class CompressionTest extends BaseTestSupport {
     public void setUp() throws Exception {
         sshd = setupTestServer();
         sshd.setCompressionFactories(Arrays.<NamedFactory<org.apache.sshd.common.compression.Compression>>asList(factory));
+        sshd.addSessionListener(new SessionListener() {
+            @Override
+            public void sessionException(Session session, Throwable t) {
+                // ignored
+            }
+
+            @Override
+            @SuppressWarnings("synthetic-access")
+            public void sessionEvent(Session session, Event event) {
+                if (Event.KeyEstablished.equals(event)) {
+                    String expected = factory.getName();
+                    for (KexProposalOption option : COMPRESSION_OPTIONS) {
+                        String actual = session.getNegotiatedKexParameter(KexProposalOption.C2SCOMP);
+                        assertEquals("Mismatched value for " + option, expected, actual);
+                    }
+                }
+            }
+
+            @Override
+            public void sessionCreated(Session session) {
+                // ignored
+            }
+
+            @Override
+            public void sessionClosed(Session session) {
+                // ignored
+            }
+        });
         sshd.start();
 
         String name = factory.getName();
