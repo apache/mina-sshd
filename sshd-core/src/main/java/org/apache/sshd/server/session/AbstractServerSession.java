@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.auth.UserAuth;
@@ -110,6 +111,11 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     @Override
     public void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories) {
         this.userAuthFactories = userAuthFactories; // OK if null/empty - inherit from parent
+    }
+
+    protected IoWriteFuture sendServerIdentification() {
+        serverVersion = resolveIdentificationString(ServerFactoryManager.SERVER_IDENTIFICATION);
+        return sendIdentification(serverVersion);
     }
 
     @Override

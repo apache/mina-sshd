@@ -1303,16 +1303,35 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     /**
+     * Resolves the identification to send to the peer session by consulting
+     * the associated {@link FactoryManager}. If a value is set, then it is
+     * <U>appended</U> to the standard {@link #DEFAULT_SSH_VERSION_PREFIX}.
+     * Otherwise a default value is returned consisting of the prefix and
+     * the core artifact name + version in <U>uppercase</U> - e.g.,'
+     * &quot;SSH-2.0-SSHD-CORE-1.2.3.4&quot;
+     *
+     * @param configPropName The property used to query the factory manager
+     * @return The resolved identification value
+     */
+    protected String resolveIdentificationString(String configPropName) {
+        FactoryManager manager = getFactoryManager();
+        String ident = PropertyResolverUtils.getString(manager, configPropName);
+        return DEFAULT_SSH_VERSION_PREFIX + (GenericUtils.isEmpty(ident) ? manager.getVersion() : ident);
+    }
+
+    /**
      * Send our identification.
      *
      * @param ident our identification to send
+     * @return {@link IoWriteFuture} that can be used to wait for notification
+     * that identification has been send
      */
-    protected void sendIdentification(String ident) {
+    protected IoWriteFuture sendIdentification(String ident) {
         byte[] data = (ident + "\r\n").getBytes(StandardCharsets.UTF_8);
         if (log.isDebugEnabled()) {
             log.debug("sendIdentification({}): {}", this, ident);
         }
-        ioSession.write(new ByteArrayBuffer(data));
+        return ioSession.write(new ByteArrayBuffer(data));
     }
 
     /**

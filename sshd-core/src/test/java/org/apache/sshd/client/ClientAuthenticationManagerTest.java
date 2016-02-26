@@ -35,6 +35,7 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.random.JceRandomFactory;
 import org.apache.sshd.common.random.Random;
@@ -194,8 +195,8 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
     private ClientSession createMockClientSession(ClientFactoryManager client) throws Exception {
         return new ClientSessionImpl(client, Mockito.mock(IoSession.class)) {
             @Override
-            protected void sendClientIdentification() {
-                // ignored
+            protected IoWriteFuture sendClientIdentification() {
+                return null;
             }
 
             @Override

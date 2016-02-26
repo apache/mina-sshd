@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.ClientAuthenticationManager;
+import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.channel.ChannelExec;
@@ -51,7 +52,6 @@ import org.apache.sshd.client.session.ClientConnectionServiceFactory;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.auth.UserAuthMethodFactory;
 import org.apache.sshd.common.channel.Channel;
@@ -74,14 +74,11 @@ import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.keyboard.PromptEntry;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
-import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerSessionImpl;
-import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.EchoShell;
 import org.apache.sshd.util.test.EchoShellFactory;
-import org.apache.sshd.util.test.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -837,14 +834,65 @@ public class ServerTest extends BaseTestSupport {
                 throw new UnsupportedOperationException("Unexpected updated password request");
             }
         });
-        client.start();
 
+        client.start();
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
             AuthFuture auth = session.auth();
             assertTrue("Failed to complete authentication on time", auth.await(17L, TimeUnit.SECONDS));
             assertFalse("Unexpected authentication success", auth.isSuccess());
             assertEquals("Mismatched interactive server challenge calls", ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS, serverCount.get());
             assertEquals("Mismatched interactive client challenge calls", ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS, clientCount.get());
+        } finally {
+            client.stop();
+        }
+    }
+
+    @Test
+    public void testIdentificationStringsOverrides() throws Exception {
+        String clientIdent = getCurrentTestName() + "-client";
+        PropertyResolverUtils.updateProperty(client, ClientFactoryManager.CLIENT_IDENTIFICATION, clientIdent);
+        final String expClientIdent = Session.DEFAULT_SSH_VERSION_PREFIX + clientIdent;
+
+        String serverIdent = getCurrentTestName() + "-server";
+        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.SERVER_IDENTIFICATION, serverIdent);
+        final String expServerIdent = Session.DEFAULT_SSH_VERSION_PREFIX + serverIdent;
+
+        SessionListener listener = new SessionListener() {
+            @Override
+            public void sessionException(Session session, Throwable t) {
+                // ignored
+            }
+
+            @Override
+            public void sessionEvent(Session session, Event event) {
+                if (Event.KexCompleted.equals(event)) {
+                    assertEquals("Mismatched client listener identification", expClientIdent, session.getClientVersion());
+                    assertEquals("Mismatched server listener identification", expServerIdent, session.getServerVersion());
+                }
+            }
+
+            @Override
+            public void sessionCreated(Session session) {
+                // ignored
+            }
+
+            @Override
+            public void sessionClosed(Session session) {
+                // ignored
+            }
+        };
+
+        sshd.addSessionListener(listener);
+        sshd.start();
+
+        client.addSessionListener(listener);
+        client.start();
+
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(9L, TimeUnit.SECONDS);
+            assertEquals("Mismatched client identification", expClientIdent, session.getClientVersion());
+            assertEquals("Mismatched server identification", expServerIdent, session.getServerVersion());
         } finally {
             client.stop();
         }
@@ -973,15 +1021,5 @@ public class ServerTest extends BaseTestSupport {
                 }
             }
         }
-    }
-
-    public static void main(String[] args) throws Exception {
-        SshServer sshd = Utils.setupTestServer(ServerTest.class);
-        PropertyResolverUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, TimeUnit.SECONDS.toMillis(10L));
-        sshd.setPort(8001);
-        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
-        sshd.setCommandFactory(new ScpCommandFactory());
-        sshd.start();
-        Thread.sleep(100000);
     }
 }

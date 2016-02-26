@@ -50,6 +50,7 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.forward.TcpipForwarder;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.ConnectionService;
@@ -185,6 +186,11 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         } else {
             return null;
         }
+    }
+
+    protected IoWriteFuture sendClientIdentification() {
+        clientVersion = resolveIdentificationString(ClientFactoryManager.CLIENT_IDENTIFICATION);
+        return sendIdentification(clientVersion);
     }
 
     @Override

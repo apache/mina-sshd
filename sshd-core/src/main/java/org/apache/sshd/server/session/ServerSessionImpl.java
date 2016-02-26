@@ -24,9 +24,9 @@ import java.security.KeyPair;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
@@ -95,17 +95,6 @@ public class ServerSessionImpl extends AbstractServerSession {
     protected void serviceAccept() throws IOException {
         // TODO: can services be initiated by the server-side ?
         disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Unsupported packet: SSH_MSG_SERVICE_ACCEPT");
-    }
-
-    protected void sendServerIdentification() {
-        FactoryManager manager = getFactoryManager();
-        String ident = PropertyResolverUtils.getString(manager, ServerFactoryManager.SERVER_IDENTIFICATION);
-        if (GenericUtils.isEmpty(ident)) {
-            serverVersion = DEFAULT_SSH_VERSION_PREFIX + manager.getVersion();
-        } else {
-            serverVersion = DEFAULT_SSH_VERSION_PREFIX + ident;
-        }
-        sendIdentification(serverVersion);
     }
 
     @Override

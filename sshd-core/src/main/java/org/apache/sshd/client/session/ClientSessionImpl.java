@@ -35,7 +35,6 @@ import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
@@ -352,12 +351,6 @@ public class ClientSessionImpl extends AbstractClientSession {
         }
 
         return true;
-    }
-
-    protected void sendClientIdentification() {
-        FactoryManager manager = getFactoryManager();
-        clientVersion = DEFAULT_SSH_VERSION_PREFIX + manager.getVersion();
-        sendIdentification(clientVersion);
     }
 
     @Override
