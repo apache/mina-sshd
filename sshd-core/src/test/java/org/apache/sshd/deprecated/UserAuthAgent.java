@@ -35,6 +35,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 /**
  * Authentication delegating to an SSH agent
  */
+// CHECKSTYLE:OFF
 public class UserAuthAgent extends AbstractUserAuth {
 
     private final SshAgent agent;
@@ -126,3 +127,4 @@ public class UserAuthAgent extends AbstractUserAuth {
         }
     }
 }
+// CHECKSTYLE:ON

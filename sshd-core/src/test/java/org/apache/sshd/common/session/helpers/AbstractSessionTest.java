@@ -39,7 +39,6 @@ import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -90,7 +89,7 @@ public class AbstractSessionTest extends BaseTestSupport {
 
     @Test
     public void testReadIdentWithHeaders() {
-        Buffer buf = new ByteArrayBuffer(("a header line\r\nSSH-2.0-software\r\n").getBytes(StandardCharsets.UTF_8));
+        Buffer buf = new ByteArrayBuffer("a header line\r\nSSH-2.0-software\r\n".getBytes(StandardCharsets.UTF_8));
         String ident = session.doReadIdentification(buf);
         assertEquals("SSH-2.0-software", ident);
     }
@@ -107,7 +106,7 @@ public class AbstractSessionTest extends BaseTestSupport {
 
     @Test(expected = IllegalStateException.class)
     public void testReadIdentBadLineEnding() {
-        Buffer buf = new ByteArrayBuffer(("SSH-2.0-software\ra").getBytes(StandardCharsets.UTF_8));
+        Buffer buf = new ByteArrayBuffer("SSH-2.0-software\ra".getBytes(StandardCharsets.UTF_8));
         String ident = session.doReadIdentification(buf);
         fail("Unexpected success: " + ident);
     }

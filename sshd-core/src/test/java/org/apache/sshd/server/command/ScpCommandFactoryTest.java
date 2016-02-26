@@ -60,7 +60,8 @@ public class ScpCommandFactoryTest extends BaseTestSupport {
     public void testBuilderCorrectlyInitializesFactory() {
         CommandFactory delegate = dummyFactory();
         ExecutorService service = dummyExecutor();
-        int receiveSize = Short.MAX_VALUE, sendSize = receiveSize + Long.SIZE;
+        int receiveSize = Short.MAX_VALUE;
+        int sendSize = receiveSize + Long.SIZE;
         ScpCommandFactory factory = new ScpCommandFactory.Builder()
                 .withDelegate(delegate)
                 .withExecutorService(service)

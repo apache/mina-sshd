@@ -26,9 +26,6 @@ import java.security.PublicKey;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
-import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;

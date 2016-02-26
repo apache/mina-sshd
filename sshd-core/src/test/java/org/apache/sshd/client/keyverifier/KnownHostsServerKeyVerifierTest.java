@@ -62,7 +62,7 @@ import org.mockito.Mockito;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
     private static final String HASHED_HOST = "192.168.1.61";
-    private static final Map<String, PublicKey> hostsKeys = new TreeMap<String, PublicKey>(String.CASE_INSENSITIVE_ORDER);
+    private static final Map<String, PublicKey> HOST_KEYS = new TreeMap<String, PublicKey>(String.CASE_INSENSITIVE_ORDER);
     private static Map<String, KnownHostEntry> hostsEntries;
     private static Path entriesFile;
 
@@ -83,7 +83,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             KnownHostEntry entry = ke.getValue();
             AuthorizedKeyEntry authEntry = ValidateUtils.checkNotNull(entry.getKeyEntry(), "No key extracted from %s", entry);
             PublicKey key = authEntry.resolvePublicKey(PublicKeyEntryResolver.FAILING);
-            assertNull("Multiple keys for host=" + host, hostsKeys.put(host, key));
+            assertNull("Multiple keys for host=" + host, HOST_KEYS.put(host, key));
         }
     }
 
@@ -113,7 +113,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
         };
 
-        for (Map.Entry<String, PublicKey> ke : hostsKeys.entrySet()) {
+        for (Map.Entry<String, PublicKey> ke : HOST_KEYS.entrySet()) {
             String host = ke.getKey();
             PublicKey serverKey = ke.getValue();
             KnownHostEntry entry = hostsEntries.get(host);
@@ -151,7 +151,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         };
 
         int verificationCount = 0;
-        for (Map.Entry<String, PublicKey> ke : hostsKeys.entrySet()) {
+        for (Map.Entry<String, PublicKey> ke : HOST_KEYS.entrySet()) {
             String host = ke.getKey();
             PublicKey serverKey = ke.getValue();
             KnownHostEntry entry = hostsEntries.get(host);
@@ -205,7 +205,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
         ClientSession session = Mockito.mock(ClientSession.class);
         Mockito.when(session.getFactoryManager()).thenReturn(manager);
-        for (Map.Entry<String, PublicKey> ke : hostsKeys.entrySet()) {
+        for (Map.Entry<String, PublicKey> ke : HOST_KEYS.entrySet()) {
             String host = ke.getKey();
             PublicKey serverKey = ke.getValue();
             KnownHostEntry entry = hostsEntries.get(host);
@@ -225,7 +225,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         verifier.setLoadedHostsEntries(keys);
 
         // make sure can still validate the original hosts
-        for (Map.Entry<String, PublicKey> ke : hostsKeys.entrySet()) {
+        for (Map.Entry<String, PublicKey> ke : HOST_KEYS.entrySet()) {
             String host = ke.getKey();
             PublicKey serverKey = ke.getValue();
             KnownHostEntry entry = hostsEntries.get(host);

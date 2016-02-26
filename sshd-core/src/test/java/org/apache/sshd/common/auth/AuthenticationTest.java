@@ -388,7 +388,7 @@ public class AuthenticationTest extends BaseTestSupport {
         challenge.setInteractionInstruction(anchor.getPackage().getName());
         challenge.setLanguageTag(Locale.getDefault().getLanguage());
 
-        final Map<String,String> rspMap = new TreeMap<String,String>(String.CASE_INSENSITIVE_ORDER) {
+        final Map<String, String> rspMap = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER) {
             private static final long serialVersionUID = 1L;    // we're not serializing it
 
             {
@@ -417,7 +417,7 @@ public class AuthenticationTest extends BaseTestSupport {
                 assertEquals("Mismatched number of responses", GenericUtils.size(rspMap), GenericUtils.size(responses));
 
                 int index = 0;
-                for (Map.Entry<String,String> re : rspMap.entrySet()) {
+                for (Map.Entry<String, String> re : rspMap.entrySet()) {
                     String prompt = re.getKey();
                     String expected = re.getValue();
                     String actual = responses.get(index);
@@ -728,31 +728,33 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test   // see SSHD-620
     public void testHostBasedAuthentication() throws Exception {
-        final String CLIENT_USERNAME = getClass().getSimpleName();
-        final String CLIENT_HOSTNAME = SshdSocketAddress.toAddressString(SshdSocketAddress.getFirstExternalNetwork4Address());
-        final KeyPair CLIENT_HOSTKEY = Utils.generateKeyPair("RSA", 1024);
+        final String hostClienUser = getClass().getSimpleName();
+        final String hostClientName = SshdSocketAddress.toAddressString(SshdSocketAddress.getFirstExternalNetwork4Address());
+        final KeyPair hostClientKey = Utils.generateKeyPair("RSA", 1024);
         final AtomicInteger invocationCount = new AtomicInteger(0);
         sshd.setHostBasedAuthenticator(new HostBasedAuthenticator() {
             @Override
             public boolean authenticate(ServerSession session, String username,
                     PublicKey clientHostKey, String clientHostName, String clientUsername, List<X509Certificate> certificates) {
                 invocationCount.incrementAndGet();
-                return CLIENT_USERNAME.equals(clientUsername)
-                    && CLIENT_HOSTNAME.equals(clientHostName)
-                    && KeyUtils.compareKeys(CLIENT_HOSTKEY.getPublic(), clientHostKey);
+                return hostClienUser.equals(clientUsername)
+                    && hostClientName.equals(clientHostName)
+                    && KeyUtils.compareKeys(hostClientKey.getPublic(), clientHostKey);
             }
         });
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
         sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
-        sshd.setUserAuthFactories(Collections.<NamedFactory<org.apache.sshd.server.auth.UserAuth>>singletonList(org.apache.sshd.server.auth.hostbased.UserAuthHostBasedFactory.INSTANCE));
+        sshd.setUserAuthFactories(
+                Collections.<NamedFactory<org.apache.sshd.server.auth.UserAuth>>singletonList(
+                        org.apache.sshd.server.auth.hostbased.UserAuthHostBasedFactory.INSTANCE));
 
         try (SshClient client = setupTestClient()) {
             org.apache.sshd.client.auth.hostbased.UserAuthHostBasedFactory factory =
                     new org.apache.sshd.client.auth.hostbased.UserAuthHostBasedFactory();
             // TODO factory.setClientHostname(CLIENT_HOSTNAME);
-            factory.setClientUsername(CLIENT_USERNAME);
-            factory.setClientHostKeys(HostKeyIdentityProvider.Utils.wrap(CLIENT_HOSTKEY));
+            factory.setClientUsername(hostClienUser);
+            factory.setClientHostKeys(HostKeyIdentityProvider.Utils.wrap(hostClientKey));
 
             client.setUserAuthFactories(Collections.<NamedFactory<org.apache.sshd.client.auth.UserAuth>>singletonList(factory));
             client.start();

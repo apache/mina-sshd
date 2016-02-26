@@ -71,13 +71,12 @@ public class AuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
         List<String> keyLines = loadDefaultSupportedKeys();
         assertHierarchyTargetFolderExists(file.getParent());
 
-        while(keyLines.size() > 0) {
+        while (keyLines.size() > 0) {
             try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
                 w.append(PublicKeyEntry.COMMENT_CHAR)
-                 .append(' ').append(getCurrentTestName())
-                 .append(' ').append(String.valueOf(keyLines.size())).append(" remaining keys")
-                 .append(IoUtils.EOL)
-                 ;
+                    .append(' ').append(getCurrentTestName())
+                    .append(' ').append(String.valueOf(keyLines.size())).append(" remaining keys")
+                    .append(IoUtils.EOL);
                 for (String l : keyLines) {
                     w.append(l).append(IoUtils.EOL);
                 }

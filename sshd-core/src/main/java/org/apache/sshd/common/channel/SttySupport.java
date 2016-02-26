@@ -278,7 +278,7 @@ public final class SttySupport {
         int count = 0;
         while (true) {
             int c = in.read();
-            if (c == (-1)) {
+            if (c == -1) {
                 return count;
             }
 

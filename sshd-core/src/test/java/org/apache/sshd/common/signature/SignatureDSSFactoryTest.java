@@ -42,13 +42,13 @@ public class SignatureDSSFactoryTest extends AbstractSignatureFactoryTestSupport
     private static final List<NamedFactory<Signature>> FACTORIES =
             Collections.unmodifiableList(Collections.<NamedFactory<Signature>>singletonList(BuiltinSignatures.dsa));
 
+    public SignatureDSSFactoryTest(int keySize) {
+        super(KeyPairProvider.SSH_DSS, keySize);
+    }
+
     @Parameters(name = "keySize={0}")
     public static Collection<Object[]> parameters() {
         return parameterize(DSS_SIZES);
-    }
-
-    public SignatureDSSFactoryTest(int keySize) {
-        super(KeyPairProvider.SSH_DSS, keySize);
     }
 
     @Test

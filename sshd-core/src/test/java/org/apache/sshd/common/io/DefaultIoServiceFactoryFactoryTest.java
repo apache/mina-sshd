@@ -46,7 +46,8 @@ public class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
             String name = f.getName();
             IoServiceFactoryFactory factoryInstance =
                     DefaultIoServiceFactoryFactory.newInstance(IoServiceFactoryFactory.class, name);
-            Class<?> expected = f.getFactoryClass(), actual = factoryInstance.getClass();
+            Class<?> expected = f.getFactoryClass();
+            Class<?> actual = factoryInstance.getClass();
             assertSame(name, expected, actual);
         }
     }

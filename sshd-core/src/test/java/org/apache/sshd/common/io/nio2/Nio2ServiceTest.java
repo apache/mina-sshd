@@ -41,7 +41,7 @@ public class Nio2ServiceTest extends BaseTestSupport {
 
     @Test   // see SSHD-554
     public void testSetSocketOptions() throws Exception {
-        try(SshServer sshd = setupTestServer()) {
+        try (SshServer sshd = setupTestServer()) {
             PropertyResolverUtils.updateProperty(sshd, FactoryManager.SOCKET_KEEPALIVE, true);
             PropertyResolverUtils.updateProperty(sshd, FactoryManager.SOCKET_LINGER, 5);
             PropertyResolverUtils.updateProperty(sshd, FactoryManager.SOCKET_RCVBUF, 1024);
@@ -53,7 +53,7 @@ public class Nio2ServiceTest extends BaseTestSupport {
 
             int port = sshd.getPort();
             long startTime = System.nanoTime();
-            try(Socket s = new Socket(TEST_LOCALHOST, port)) {
+            try (Socket s = new Socket(TEST_LOCALHOST, port)) {
                 long endTime = System.nanoTime();
                 long duration = endTime - startTime;
                 assertTrue("Connect duration is too high: " + duration, duration <= TimeUnit.SECONDS.toNanos(15L));

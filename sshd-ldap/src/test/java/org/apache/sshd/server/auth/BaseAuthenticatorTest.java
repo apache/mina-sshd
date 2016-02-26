@@ -61,7 +61,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BaseAuthenticatorTest extends BaseTestSupport {
     public static final int PORT = Integer.parseInt(System.getProperty("org.apache.sshd.test.ldap.port", "11389"));
-    public static String BASE_DN_TEST = "ou=People,dc=sshd,dc=apache,dc=org";
+    public static final String BASE_DN_TEST = "ou=People,dc=sshd,dc=apache,dc=org";
 
     protected BaseAuthenticatorTest() {
         super();
@@ -94,6 +94,7 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
     // see http://javlog.cacek.cz/2014/09/speed-up-apacheds-ldap-server.html
     // see https://cwiki.apache.org/confluence/display/DIRxSRVx11/4.1.+Embedding+ApacheDS+into+an+application
     // see http://stackoverflow.com/questions/1560230/running-apache-ds-embedded-in-my-application
+    @SuppressWarnings("checkstyle:avoidnestedblocks")
     public static Pair<LdapServer, DirectoryService> startApacheDs(Class<?> anchor) throws Exception {
         Logger log = LoggerFactory.getLogger(anchor);
         File targetFolder = ValidateUtils.checkNotNull(Utils.detectTargetFolder(anchor), "Failed to detect target folder");

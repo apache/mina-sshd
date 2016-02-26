@@ -71,6 +71,12 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
                             Integer.valueOf(Byte.SIZE * IoUtils.DEFAULT_COPY_SIZE)
                     ));
 
+    private final int size;
+
+    public AbstractMD5HashExtensionTest(int size) throws IOException {
+        this.size = size;
+    }
+
     @Parameters(name = "dataSize={0}")
     public static Collection<Object[]> parameters() {
         return parameterize(DATA_SIZES);
@@ -79,12 +85,6 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
     @BeforeClass
     public static void checkMD5Supported() {
         Assume.assumeTrue("MD5 not supported", BuiltinDigests.md5.isSupported());
-    }
-
-    private final int size;
-
-    public AbstractMD5HashExtensionTest(int size) throws IOException {
-        this.size = size;
     }
 
     @Before
@@ -113,6 +113,7 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
         }
     }
 
+    @SuppressWarnings("checkstyle:nestedtrydepth")
     private void testMD5HashExtension(byte[] data) throws Exception {
         Digest digest = BuiltinDigests.md5.create();
         digest.init();

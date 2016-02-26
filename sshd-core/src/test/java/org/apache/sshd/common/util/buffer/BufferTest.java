@@ -21,8 +21,6 @@ package org.apache.sshd.common.util.buffer;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 
-import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -39,12 +37,12 @@ public class BufferTest extends BaseTestSupport {
         long expected = 1234567890123456789L;
 
         try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
-             try (DataOutputStream ds = new DataOutputStream(stream)) {
-                 ds.writeLong(expected);
-             }
+            try (DataOutputStream ds = new DataOutputStream(stream)) {
+                ds.writeLong(expected);
+            }
 
-             Buffer buffer = new ByteArrayBuffer(stream.toByteArray());
-             assertEquals("Mismatched recovered value", expected, buffer.getLong());
+            Buffer buffer = new ByteArrayBuffer(stream.toByteArray());
+            assertEquals("Mismatched recovered value", expected, buffer.getLong());
         }
     }
 }

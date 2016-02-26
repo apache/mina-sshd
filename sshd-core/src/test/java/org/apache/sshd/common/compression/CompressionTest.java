@@ -24,6 +24,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
+import com.jcraft.jsch.JSch;
+
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.server.SshServer;
@@ -41,8 +43,6 @@ import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import com.jcraft.jsch.JSch;
-
 /**
  * Test compression algorithms.
  *
@@ -51,16 +51,16 @@ import com.jcraft.jsch.JSch;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class CompressionTest extends BaseTestSupport {
-    @Parameters(name = "factory={0}")
-    public static List<Object[]> parameters() {
-        return parameterize(BuiltinCompressions.VALUES);
-    }
-
     private final CompressionFactory factory;
     private SshServer sshd;
 
     public CompressionTest(CompressionFactory factory) {
         this.factory = factory;
+    }
+
+    @Parameters(name = "factory={0}")
+    public static List<Object[]> parameters() {
+        return parameterize(BuiltinCompressions.VALUES);
     }
 
     @BeforeClass
@@ -105,8 +105,8 @@ public class CompressionTest extends BaseTestSupport {
             try (OutputStream os = c.getOutputStream();
                  InputStream is = c.getInputStream()) {
 
-                String STR = "this is my command\n";
-                byte[] bytes = STR.getBytes(StandardCharsets.UTF_8);
+                String testCommand = "this is my command\n";
+                byte[] bytes = testCommand.getBytes(StandardCharsets.UTF_8);
                 byte[] data = new byte[bytes.length + Long.SIZE];
                 for (int i = 1; i <= 10; i++) {
                     os.write(bytes);
@@ -114,7 +114,7 @@ public class CompressionTest extends BaseTestSupport {
 
                     int len = is.read(data);
                     String str = new String(data, 0, len, StandardCharsets.UTF_8);
-                    assertEquals("Mismatched read data at iteration #" + i, STR, str);
+                    assertEquals("Mismatched read data at iteration #" + i, testCommand, str);
                 }
             } finally {
                 c.disconnect();

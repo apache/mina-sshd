@@ -69,7 +69,7 @@ public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
 
     @Test
     public void testSessionClosedWhenClientClosed() throws Exception {
-        try(SftpClient sftp = login()) {
+        try (SftpClient sftp = login()) {
             assertTrue("SFTP not open", sftp.isOpen());
 
             Session session = sftp.getClientSession();
@@ -91,7 +91,7 @@ public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
         String clientFileName = clientFile.getFileName().toString();
         String remoteFilePath = remoteFileDir + "/" + clientFileName;
 
-        try(SftpClient sftp = login()) {
+        try (SftpClient sftp = login()) {
             sftp.mkdir(remoteFileDir);
 
             byte[] written = (getClass().getSimpleName() + "#" + getCurrentTestName() + IoUtils.EOL).getBytes(StandardCharsets.UTF_8);
@@ -112,7 +112,7 @@ public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
                 assertNotNull("No dir entries", dirEntries);
 
                 boolean matchFound = false;
-                for (Iterator<SftpClient.DirEntry> it = dirEntries.iterator(); it.hasNext(); ) {
+                for (Iterator<SftpClient.DirEntry> it = dirEntries.iterator(); it.hasNext();) {
                     SftpClient.DirEntry entry = it.next();
                     String name = entry.getFilename();
                     if (clientFileName.equals(name)) {

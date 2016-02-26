@@ -22,6 +22,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 
+import com.jcraft.jsch.JSch;
+
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.git.transport.GitSshdSessionFactory;
 import org.apache.sshd.server.Command;
@@ -38,8 +40,6 @@ import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-
-import com.jcraft.jsch.JSch;
 
 /**
  */
@@ -59,7 +59,7 @@ public class GitPackCommandTest extends BaseTestSupport {
         Path targetParent = detectTargetFolder().getParent();
         Path gitRootDir = getTempTargetRelativeFile(getClass().getSimpleName());
 
-        try(SshServer sshd = setupTestServer()) {
+        try (SshServer sshd = setupTestServer()) {
             Path serverRootDir = gitRootDir.resolve("server");
             sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
             sshd.setCommandFactory(new GitPackCommandFactory(Utils.resolveRelativeRemotePath(targetParent, serverRootDir)));

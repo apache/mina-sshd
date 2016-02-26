@@ -36,8 +36,8 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.io.IoInputStream;
@@ -297,7 +297,7 @@ public class WindowTest extends BaseTestSupport {
     }
 
     private static void waitForWindowNotEquals(Window w1, Window w2, String n1, String n2, long maxWait) throws InterruptedException {
-        for (long waited = 0L, maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(maxWait); waited < maxWaitNanos; ) {
+        for (long waited = 0L, maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(maxWait); waited < maxWaitNanos;) {
             if (w1.getSize() != w2.getSize()) {
                 return;
             }
@@ -314,7 +314,7 @@ public class WindowTest extends BaseTestSupport {
     }
 
     private static void waitForWindowEquals(Window w1, Window w2, String n1, String n2, long maxWait) throws InterruptedException {
-        for (long waited = 0L, maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(maxWait); waited < maxWaitNanos; ) {
+        for (long waited = 0L, maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(maxWait); waited < maxWaitNanos;) {
             if (w1.getSize() == w2.getSize()) {
                 return;
             }
@@ -339,12 +339,12 @@ public class WindowTest extends BaseTestSupport {
 
     public static class TestEchoShell extends EchoShell {
 
-        public static final CountDownLatch latch = new CountDownLatch(1);
+        public static final CountDownLatch LATCH = new CountDownLatch(1);
 
         @Override
         public void destroy() {
-            if (latch != null) {
-                latch.countDown();
+            if (LATCH != null) {
+                LATCH.countDown();
             }
             super.destroy();
         }

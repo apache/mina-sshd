@@ -62,13 +62,15 @@ import org.apache.sshd.util.test.Utils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SshFsMounter {
+public final class SshFsMounter {
     public static class MounterCommand extends AbstractLoggingBean implements Command, SessionAware, Runnable {
-        private final String command, cmdName;
+        private final String command;
+        private final String cmdName;
         private final List<String> args;
         private String username;
         private InputStream stdin;
-        private PrintStream stdout, stderr;
+        private PrintStream stdout;
+        private PrintStream stderr;
         private ExitCallback callback;
         private ExecutorService executor;
         private Future<?> future;
@@ -123,7 +125,7 @@ public class SshFsMounter {
             } catch (Exception e) {
                 log.error("run(" + username + ")[" + command + "] " + e.getClass().getSimpleName() + ": " + e.getMessage(), e);
                 stderr.append(e.getClass().getSimpleName()).append(": ").println(e.getMessage());
-                callback.onExit((-1), e.toString());
+                callback.onExit(-1, e.toString());
             }
         }
 
@@ -233,6 +235,12 @@ public class SshFsMounter {
             return new MounterCommand(command);
         }
     }
+
+    private SshFsMounter() {
+        throw new UnsupportedOperationException("No instance");
+    }
+
+    //////////////////////////////////////////////////////////////////////////
 
     public static void main(String[] args) throws Exception {
         int port = SshConfigFileReader.DEFAULT_PORT;

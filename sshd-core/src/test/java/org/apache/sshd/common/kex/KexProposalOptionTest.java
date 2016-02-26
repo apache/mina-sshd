@@ -60,7 +60,7 @@ public class KexProposalOptionTest extends BaseTestSupport {
 
     @Test
     public void testFromProposalIndex() {
-        for (int index : new int[]{(-1), KexProposalOption.VALUES.size()}) {
+        for (int index : new int[]{-1, KexProposalOption.VALUES.size()}) {
             KexProposalOption o = KexProposalOption.fromProposalIndex(index);
             assertNull("Unexpected value for index=" + index, o);
         }
@@ -82,7 +82,8 @@ public class KexProposalOptionTest extends BaseTestSupport {
             KexProposalOption o1 = KexProposalOption.VALUES.get(index - 1);
             KexProposalOption o2 = KexProposalOption.VALUES.get(index);
 
-            int i1 = o1.getProposalIndex(), i2 = o2.getProposalIndex();
+            int i1 = o1.getProposalIndex();
+            int i2 = o2.getProposalIndex();
             assertTrue("Non increasing index for " + o1 + "[" + i1 + "] vs. " + o2 + "[" + i2 + "]", i1 < i2);
         }
     }

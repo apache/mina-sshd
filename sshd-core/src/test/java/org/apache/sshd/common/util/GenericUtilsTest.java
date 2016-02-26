@@ -51,7 +51,8 @@ public class GenericUtilsTest extends BaseTestSupport {
             assertEquals("Mismatched split length for separator=" + sep, expected.size(), GenericUtils.length((Object[]) actual));
 
             for (int index = 0; index < actual.length; index++) {
-                String e = expected.get(index), a = actual[index];
+                String e = expected.get(index);
+                String a = actual[index];
                 if (!e.endsWith(a)) {
                     fail("Mismatched value at index=" + index + " for separator=" + sep + ": expected=" + e + ", actual=" + a);
                 }
@@ -80,7 +81,8 @@ public class GenericUtilsTest extends BaseTestSupport {
         StringBuilder sb = new StringBuilder().append("||").append(getCurrentTestName()).append("||");
         char[] delims = {'\'', '"', '"', '\''};
         for (int index = 0; index < delims.length; index += 2) {
-            char topDelim = delims[index], innerDelim = delims[index + 1];
+            char topDelim = delims[index];
+            char innerDelim = delims[index + 1];
             sb.setCharAt(0, topDelim);
             sb.setCharAt(1, innerDelim);
             sb.setCharAt(sb.length() - 2, innerDelim);
@@ -130,9 +132,9 @@ public class GenericUtilsTest extends BaseTestSupport {
     @Test
     public void testAccumulateExceptionOnExistingCurrent() {
         RuntimeException[] expected = new RuntimeException[]{
-                new IllegalArgumentException(getCurrentTestName()),
-                new ClassCastException(getClass().getName()),
-                new NoSuchElementException(getClass().getPackage().getName())
+            new IllegalArgumentException(getCurrentTestName()),
+            new ClassCastException(getClass().getName()),
+            new NoSuchElementException(getClass().getPackage().getName())
         };
         RuntimeException current = new UnsupportedOperationException("top");
         for (RuntimeException extra : expected) {

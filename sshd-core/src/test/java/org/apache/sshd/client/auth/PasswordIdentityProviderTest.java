@@ -44,9 +44,9 @@ public class PasswordIdentityProviderTest extends BaseTestSupport {
     @Test
     public void testMultiProvider() {
         String[][] values = {
-                { getClass().getSimpleName(), getCurrentTestName() },
-                { new Date(System.currentTimeMillis()).toString() },
-                { getClass().getPackage().getName() }
+            {getClass().getSimpleName(), getCurrentTestName()},
+            {new Date(System.currentTimeMillis()).toString()},
+            {getClass().getPackage().getName()}
         };
         List<String> expected = new ArrayList<>();
         Collection<PasswordIdentityProvider> providers = new LinkedList<>();

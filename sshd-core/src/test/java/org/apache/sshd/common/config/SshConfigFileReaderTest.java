@@ -274,8 +274,10 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
         assertTrue("Unexpected unsupported factories: " + unsupported, GenericUtils.isEmpty(unsupported));
         assertEquals("Mismatched list size", expected.size(), GenericUtils.size(actual));
         for (int index = 0; index < expected.size(); index++) {
-            NamedResource e = expected.get(index), a = actual.get(index);
-            String n1 = e.getName(), n2 = a.getName();
+            NamedResource e = expected.get(index);
+            String n1 = e.getName();
+            NamedResource a = actual.get(index);
+            String n2 = a.getName();
             assertEquals("Mismatched name at index=" + index, n1, n2);
         }
 

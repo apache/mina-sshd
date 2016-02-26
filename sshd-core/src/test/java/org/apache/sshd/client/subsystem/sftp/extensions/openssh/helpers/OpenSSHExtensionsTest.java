@@ -122,19 +122,18 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
 
         final AtomicReference<String> extensionHolder = new AtomicReference<String>(null);
         final OpenSSHStatExtensionInfo expected = new OpenSSHStatExtensionInfo();
-        {
-            expected.f_bavail = Short.MAX_VALUE;
-            expected.f_bfree = Integer.MAX_VALUE;
-            expected.f_blocks = Short.MAX_VALUE;
-            expected.f_bsize = IoUtils.DEFAULT_COPY_SIZE;
-            expected.f_favail = Long.MAX_VALUE;
-            expected.f_ffree = Byte.MAX_VALUE;
-            expected.f_files = 3777347L;
-            expected.f_flag = OpenSSHStatExtensionInfo.SSH_FXE_STATVFS_ST_RDONLY;
-            expected.f_frsize = 7365L;
-            expected.f_fsid = 1L;
-            expected.f_namemax = 256;
-        }
+        expected.f_bavail = Short.MAX_VALUE;
+        expected.f_bfree = Integer.MAX_VALUE;
+        expected.f_blocks = Short.MAX_VALUE;
+        expected.f_bsize = IoUtils.DEFAULT_COPY_SIZE;
+        expected.f_favail = Long.MAX_VALUE;
+        expected.f_ffree = Byte.MAX_VALUE;
+        expected.f_files = 3777347L;
+        expected.f_flag = OpenSSHStatExtensionInfo.SSH_FXE_STATVFS_ST_RDONLY;
+        expected.f_frsize = 7365L;
+        expected.f_fsid = 1L;
+        expected.f_namemax = 256;
+
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory() {
             @Override
             public Command create() {
@@ -185,18 +184,16 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 try (SftpClient sftp = session.createSftpClient()) {
-                    {
-                        OpenSSHStatPathExtension pathStat = assertExtensionCreated(sftp, OpenSSHStatPathExtension.class);
-                        OpenSSHStatExtensionInfo actual = pathStat.stat(srcPath);
-                        String invokedExtension = extensionHolder.getAndSet(null);
-                        assertEquals("Mismatched invoked extension", pathStat.getName(), invokedExtension);
-                        assertOpenSSHStatExtensionInfoEquals(invokedExtension, expected, actual);
-                    }
+                    OpenSSHStatPathExtension pathStat = assertExtensionCreated(sftp, OpenSSHStatPathExtension.class);
+                    OpenSSHStatExtensionInfo actual = pathStat.stat(srcPath);
+                    String invokedExtension = extensionHolder.getAndSet(null);
+                    assertEquals("Mismatched invoked extension", pathStat.getName(), invokedExtension);
+                    assertOpenSSHStatExtensionInfoEquals(invokedExtension, expected, actual);
 
                     try (CloseableHandle handle = sftp.open(srcPath)) {
                         OpenSSHStatHandleExtension handleStat = assertExtensionCreated(sftp, OpenSSHStatHandleExtension.class);
-                        OpenSSHStatExtensionInfo actual = handleStat.stat(handle);
-                        String invokedExtension = extensionHolder.getAndSet(null);
+                        actual = handleStat.stat(handle);
+                        invokedExtension = extensionHolder.getAndSet(null);
                         assertEquals("Mismatched invoked extension", handleStat.getName(), invokedExtension);
                         assertOpenSSHStatExtensionInfoEquals(invokedExtension, expected, actual);
                     }
@@ -213,7 +210,9 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
             if (Modifier.isStatic(mod)) {
                 continue;
             }
-            Object expValue = f.get(expected), actValue = f.get(actual);
+
+            Object expValue = f.get(expected);
+            Object actValue = f.get(actual);
             assertEquals(extension + "[" + name + "]", expValue, actValue);
         }
     }

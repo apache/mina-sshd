@@ -105,18 +105,19 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
                 }
             });
 
-    @Parameters(name = "{0} - dataSize={1}, blockSize={2}")
-    public static Collection<Object[]> parameters() {
-        return PARAMETERS;
-    }
-
     private final String algorithm;
-    private final int dataSize, blockSize;
+    private final int dataSize;
+    private final int blockSize;
 
     public AbstractCheckFileExtensionTest(String algorithm, int dataSize, int blockSize) throws IOException {
         this.algorithm = algorithm;
         this.dataSize = dataSize;
         this.blockSize = blockSize;
+    }
+
+    @Parameters(name = "{0} - dataSize={1}, blockSize={2}")
+    public static Collection<Object[]> parameters() {
+        return PARAMETERS;
     }
 
     @Before
@@ -161,6 +162,7 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
         }
     }
 
+    @SuppressWarnings("checkstyle:nestedtrydepth")
     private void testCheckFileExtension(NamedFactory<? extends Digest> factory, byte[] data, int hashBlockSize, byte[] expectedHash) throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
@@ -231,8 +233,8 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
             byte[] actualHash = values.iterator().next();
             if (!Arrays.equals(expectedHash, actualHash)) {
                 fail("Mismatched hashes for " + name
-                   + ": expected=" + BufferUtils.toHex(':', expectedHash)
-                   + ", actual=" + BufferUtils.toHex(':', expectedHash));
+                    + ": expected=" + BufferUtils.toHex(':', expectedHash)
+                    + ", actual=" + BufferUtils.toHex(':', expectedHash));
             }
         }
     }

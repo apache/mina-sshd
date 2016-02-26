@@ -40,8 +40,10 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SignatureRSATest extends BaseTestSupport {
+    @SuppressWarnings("checkstyle:linelength")
     private static final byte[] TEST_MSG =
             Base64.decodeString("AAAAFPHgK1MeV9zNnok3pwNJhCd8SONqMgAAAAlidWlsZHVzZXIAAAAOc3NoLWNvbm5lY3Rpb24AAAAJcHVibGlja2V5AQAAAAdzc2gtcnNhAAABFQAAAAdzc2gtcnNhAAAAASMAAAEBAMs9HO/NH/Now+6fSnESebaG4wzaYQWA1b/q1TGV1wHNtCg9fGFGVSKs0VxKF4cfVyrSLtgLjnlXQTn+Lm7xiYKGbBbsTQWOqEDaBVBsRbAkxIkpuvr6/EBxwrtDbKmSQYTJZVJSD2bZRYjGsR9gpZXPorOOKFd5EPCMHXsqnhp2hidTGH7cK6RuLk7MNnPISsY0Nbx8/ZvikiPROGcoTZ8bzUv4IaLr3veW6epSeQem8tJqhnrpTHhbLU99zf045M0Gsnk/azjjlBM+qrHZ5FNdC1kowJnLtf2Oy/rUQNpkGJtcBPT8xvreV0wLsn9t3hSxzsc0+VkDNTQRlfU+o3M=");
+    @SuppressWarnings("checkstyle:linelength")
     private static final byte[] TEST_SIGNATURE =
             Base64.decodeString("AAAAB3NzaC1yc2EAAAD/+Ntnf4qfr2J1voDS6I+u3VRjtMn+LdWJsAZfkLDxRkK1rQxP7QAjLdNqpT4CkWHp8dtoTGFlBFt6NieNJCMTA2KSOxJMZKsX7e/lHkh7C+vhQvJ9eLTKWjCxSFUrcM0NvFhmwbRCffwXSHvAKak4wbmofxQMpd+G4jZkNMz5kGpmeICBcNjRLPb7oXzuGr/g4x/3ge5Qaawqrg/gcZr/sKN6SdE8SszgKYO0SB320N4gcUoShVdLYr9uwdJ+kJoobfkUK6Or171JCctP/cu2nM79lDqVnJw/2jOG8OnTc8zRDXAh0RKoR5rOU8cOHm0Ls2MATsFdnyRU5FGUxqZ+");
     private static PublicKey testKey;
@@ -53,6 +55,7 @@ public class SignatureRSATest extends BaseTestSupport {
     @BeforeClass
     public static void initializeTestKey() throws GeneralSecurityException {
         byte[] exp = Base64.decodeString("Iw==");
+        @SuppressWarnings("checkstyle:linelength")
         byte[] mod = Base64.decodeString("AMs9HO/NH/Now+6fSnESebaG4wzaYQWA1b/q1TGV1wHNtCg9fGFGVSKs0VxKF4cfVyrSLtgLjnlXQTn+Lm7xiYKGbBbsTQWOqEDaBVBsRbAkxIkpuvr6/EBxwrtDbKmSQYTJZVJSD2bZRYjGsR9gpZXPorOOKFd5EPCMHXsqnhp2hidTGH7cK6RuLk7MNnPISsY0Nbx8/ZvikiPROGcoTZ8bzUv4IaLr3veW6epSeQem8tJqhnrpTHhbLU99zf045M0Gsnk/azjjlBM+qrHZ5FNdC1kowJnLtf2Oy/rUQNpkGJtcBPT8xvreV0wLsn9t3hSxzsc0+VkDNTQRlfU+o3M=");
         KeyFactory kf = SecurityUtils.getKeyFactory("RSA");
         testKey = kf.generatePublic(new RSAPublicKeySpec(new BigInteger(mod), new BigInteger(exp)));

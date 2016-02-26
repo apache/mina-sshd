@@ -98,6 +98,7 @@ public class AgentTest extends BaseTestSupport {
     }
 
     @Test
+    @SuppressWarnings("checkstyle:nestedtrydepth")
     public void testAgentForwarding() throws Exception {
         // TODO: revisit this test to work without BC
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
@@ -186,7 +187,13 @@ public class AgentTest extends BaseTestSupport {
     }
 
     public static class TestEchoShellFactory extends EchoShellFactory {
+        // CHECKSTYLE:OFF
         public final TestEchoShell shell = new TestEchoShell();
+        // CHECKSTYLE:ON
+
+        public TestEchoShellFactory() {
+            super();
+        }
 
         @Override
         public Command create() {
@@ -195,7 +202,13 @@ public class AgentTest extends BaseTestSupport {
     }
 
     public static class TestEchoShell extends EchoShell {
+        // CHECKSTYLE:OFF
         public boolean started;
+        // CHECKSTYLE:ON
+
+        public TestEchoShell() {
+            super();
+        }
 
         @Override
         public synchronized void start(Environment env) throws IOException {

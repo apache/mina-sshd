@@ -101,7 +101,10 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         });
         client.start();
 
-        try(ClientSession session = client.connect(getClass().getSimpleName(), getClass().getPackage().getName(), getMovedPortNumber(port)).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(
+                getClass().getSimpleName(),
+                getClass().getPackage().getName(),
+                getMovedPortNumber(port)).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             assertEffectiveRemoteAddress(session, entry);
@@ -118,10 +121,15 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
                 positiveEntry.getHostName(),
                 getMovedPortNumber(positiveEntry.getPort()),
                 getClass().getPackage().getName());
-        client.setHostConfigEntryResolver(HostConfigEntry.toHostConfigEntryResolver(Arrays.asList(negativeEntry, positiveEntry)));
+        client.setHostConfigEntryResolver(
+                HostConfigEntry.toHostConfigEntryResolver(
+                        Arrays.asList(negativeEntry, positiveEntry)));
         client.start();
 
-        try(ClientSession session = client.connect(negativeEntry.getUsername(), negativeEntry.getHostName(), negativeEntry.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(
+                negativeEntry.getUsername(),
+                negativeEntry.getHostName(),
+                negativeEntry.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             assertEffectiveRemoteAddress(session, positiveEntry);
@@ -133,12 +141,12 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
     @Test
     public void testPreloadedIdentities() throws Exception {
         final KeyPair identity = Utils.getFirstKeyPair(sshd);
-        final String USER = getCurrentTestName();
+        final String user = getCurrentTestName();
         // make sure authentication is achieved only via the identity public key
         sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
             @Override
             public boolean authenticate(String username, PublicKey key, ServerSession session) {
-                if (USER.equals(username)) {
+                if (user.equals(username)) {
                     return KeyUtils.compareKeys(identity.getPublic(), key);
                 }
 
@@ -147,15 +155,16 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         });
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
 
-        final String IDENTITY = getCurrentTestName();
+        final String clientIdentity = getCurrentTestName();
         client.setClientIdentityLoader(new ClientIdentityLoader() {
             @Override
             public boolean isValidLocation(String location) throws IOException {
-                return IDENTITY.equals(location);
+                return clientIdentity.equals(location);
             }
 
             @Override
-            public KeyPair loadClientIdentity(String location, FilePasswordProvider provider) throws IOException, GeneralSecurityException {
+            public KeyPair loadClientIdentity(String location, FilePasswordProvider provider)
+                    throws IOException, GeneralSecurityException {
                 if (isValidLocation(location)) {
                     return identity;
                 }
@@ -165,9 +174,9 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         });
         PropertyResolverUtils.updateProperty(client, ClientFactoryManager.IGNORE_INVALID_IDENTITIES, false);
 
-        final String HOST = getClass().getSimpleName();
-        final HostConfigEntry entry = new HostConfigEntry(HOST, TEST_LOCALHOST, port, USER);
-        entry.addIdentity(IDENTITY);
+        final String host = getClass().getSimpleName();
+        final HostConfigEntry entry = new HostConfigEntry(host, TEST_LOCALHOST, port, user);
+        entry.addIdentity(clientIdentity);
         client.setHostConfigEntryResolver(new HostConfigEntryResolver() {
             @Override
             public HostConfigEntry resolveEffectiveHost(String host, int portValue, String username) throws IOException {
@@ -176,7 +185,8 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         });
 
         client.start();
-        try(ClientSession session = client.connect(USER, HOST, getMovedPortNumber(port)).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(
+                user, host, getMovedPortNumber(port)).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.auth().verify(5L, TimeUnit.SECONDS);
             assertEffectiveRemoteAddress(session, entry);
         } finally {
@@ -187,14 +197,16 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
     @Test
     public void testUseIdentitiesOnly() throws Exception {
         Path clientIdFile = assertHierarchyTargetFolderExists(getTempTargetRelativeFile(getClass().getSimpleName()));
-        KeyPairProvider clientIdProvider = Utils.createTestHostKeyProvider(clientIdFile.resolve(getCurrentTestName() + ".pem"));
+        KeyPairProvider clientIdProvider =
+                Utils.createTestHostKeyProvider(clientIdFile.resolve(getCurrentTestName() + ".pem"));
 
         final KeyPair specificIdentity = Utils.getFirstKeyPair(sshd);
         final KeyPair defaultIdentity = Utils.getFirstKeyPair(clientIdProvider);
-        ValidateUtils.checkTrue(!KeyUtils.compareKeyPairs(specificIdentity, defaultIdentity), "client identity not different then entry one");
+        ValidateUtils.checkTrue(!KeyUtils.compareKeyPairs(specificIdentity, defaultIdentity),
+                "client identity not different then entry one");
         client.setKeyPairProvider(clientIdProvider);
 
-        final String USER = getCurrentTestName();
+        final String user = getCurrentTestName();
         final AtomicBoolean defaultClientIdentityAttempted = new AtomicBoolean(false);
         // make sure authentication is achieved only via the identity public key
         sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
@@ -204,7 +216,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
                     defaultClientIdentityAttempted.set(true);
                 }
 
-                if (USER.equals(username)) {
+                if (user.equals(username)) {
                     return KeyUtils.compareKeys(specificIdentity.getPublic(), key);
                 }
 
@@ -213,19 +225,20 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         });
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
 
-        final String IDENTITY = getCurrentTestName();
-        HostConfigEntry entry = new HostConfigEntry(TEST_LOCALHOST, TEST_LOCALHOST, port, USER);
-        entry.addIdentity(IDENTITY);
+        final String clientIdentity = getCurrentTestName();
+        HostConfigEntry entry = new HostConfigEntry(TEST_LOCALHOST, TEST_LOCALHOST, port, user);
+        entry.addIdentity(clientIdentity);
         entry.setIdentitiesOnly(true);
 
         client.setClientIdentityLoader(new ClientIdentityLoader() {
             @Override
             public boolean isValidLocation(String location) throws IOException {
-                return IDENTITY.equals(location);
+                return clientIdentity.equals(location);
             }
 
             @Override
-            public KeyPair loadClientIdentity(String location, FilePasswordProvider provider) throws IOException, GeneralSecurityException {
+            public KeyPair loadClientIdentity(String location, FilePasswordProvider provider)
+                    throws IOException, GeneralSecurityException {
                 if (isValidLocation(location)) {
                     return specificIdentity;
                 }
@@ -245,7 +258,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         client.setKeyPairProvider(provider);
 
         client.start();
-        try(ClientSession session = client.connect(entry).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(entry).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertSame("Unexpected session key pairs provider", provider, session.getKeyPairProvider());
             session.auth().verify(5L, TimeUnit.SECONDS);
             assertFalse("Unexpected default client identity attempted", defaultClientIdentityAttempted.get());

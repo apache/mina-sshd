@@ -39,7 +39,7 @@ public class TransformerTest extends BaseTestSupport {
     @Test
     public void testToString() {
         assertNull("Invalid null result", Transformer.TOSTRING.transform(null));
-        for (Object o : new Object[] { "", getClass(), new Date() }) {
+        for (Object o : new Object[] {"", getClass(), new Date()}) {
             String expected = o.toString();
             String actual = Transformer.TOSTRING.transform(o);
             assertEquals("Mismatched result for type=" + o.getClass().getSimpleName(), expected, actual);
@@ -59,15 +59,15 @@ public class TransformerTest extends BaseTestSupport {
 
     @Test
     public void testSingletonIdentityInstance() {
-        Transformer<Date,Date> dateTransformer = Transformer.Utils.identity();
-        Transformer<String,String> stringTransformer = Transformer.Utils.identity();
+        Transformer<Date, Date> dateTransformer = Transformer.Utils.identity();
+        Transformer<String, String> stringTransformer = Transformer.Utils.identity();
         assertSame("Mismatched identity instance", dateTransformer, stringTransformer);
     }
 
     @Test
     public void testIdentity() {
-        Transformer<Object,Object> identity = Transformer.Utils.identity();
-        for (Object expected : new Object[] { null, getClass(), getCurrentTestName() }) {
+        Transformer<Object, Object> identity = Transformer.Utils.identity();
+        for (Object expected : new Object[]{null, getClass(), getCurrentTestName()}) {
             Object actual = identity.transform(expected);
             assertSame("Mismatched identity result", expected, actual);
         }

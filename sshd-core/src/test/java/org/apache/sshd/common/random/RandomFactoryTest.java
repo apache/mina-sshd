@@ -40,6 +40,12 @@ import org.junit.runners.Parameterized.Parameters;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class RandomFactoryTest extends BaseTestSupport {
+    private final RandomFactory factory;
+
+    public RandomFactoryTest(RandomFactory factory) {
+        this.factory = factory;
+    }
+
     @Parameters(name = "type={0}")
     public static Collection<Object[]> parameters() {
         Collection<RandomFactory> testCases = new LinkedList<>();
@@ -51,12 +57,6 @@ public class RandomFactoryTest extends BaseTestSupport {
         }
 
         return parameterize(testCases);
-    }
-
-    private final RandomFactory factory;
-
-    public RandomFactoryTest(RandomFactory factory) {
-        this.factory = factory;
     }
 
     @Test

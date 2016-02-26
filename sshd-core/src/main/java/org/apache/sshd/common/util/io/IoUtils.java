@@ -368,7 +368,7 @@ public final class IoUtils {
     public static int read(InputStream input, byte[] buffer, int offset, int length) throws IOException {
         for (int remaining = length, curOffset = offset; remaining > 0;) {
             int count = input.read(buffer, curOffset, remaining);
-            if (count == (-1)) { // EOF before achieved required length
+            if (count == -1) { // EOF before achieved required length
                 return curOffset - offset;
             }
 

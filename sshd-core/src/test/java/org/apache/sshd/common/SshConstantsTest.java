@@ -54,7 +54,7 @@ public class SshConstantsTest extends BaseTestSupport {
 
     @Test
     public void testAmbiguousOpcodes() throws Exception {
-        int[] knownAmbiguities = { 30, 31, 60 };
+        int[] knownAmbiguities = {30, 31, 60};
         Collection<Integer> opcodes = SshConstants.getAmbiguousOpcodes();
         assertTrue("Not enough ambiguities found", GenericUtils.size(opcodes) >= knownAmbiguities.length);
 

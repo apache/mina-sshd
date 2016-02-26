@@ -32,6 +32,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @author <a href="mailto:j.kapitza@schwarze-allianz.de">Jens Kapitza</a>
  */
+// CHECKSTYLE:OFF
 public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
     private final String password;
@@ -117,5 +118,5 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             }
         }
     }
-
 }
+// CHECKSTYLE:ON

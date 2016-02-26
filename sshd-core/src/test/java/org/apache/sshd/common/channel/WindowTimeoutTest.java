@@ -86,7 +86,7 @@ public class WindowTimeoutTest extends BaseTestSupport {
 
     @Test
     public void testWindowWaitForSpaceTimeout() throws Exception {
-        try(Window window = channel.getLocalWindow()) {
+        try (Window window = channel.getLocalWindow()) {
             window.init(FactoryManager.DEFAULT_WINDOW_SIZE, FactoryManager.DEFAULT_MAX_PACKET_SIZE, null);
             window.consume(window.getSize());
             assertEquals("Window not empty", 0, window.getSize());
@@ -115,12 +115,11 @@ public class WindowTimeoutTest extends BaseTestSupport {
 
     @Test
     public void testWindowWaitAndConsumeTimeout() throws Exception {
-        try(Window window = channel.getLocalWindow()) {
+        try (Window window = channel.getLocalWindow()) {
             window.init(FactoryManager.DEFAULT_WINDOW_SIZE, FactoryManager.DEFAULT_MAX_PACKET_SIZE, null);
 
             long waitStart = System.nanoTime();
-            try
-            {
+            try {
                 window.waitAndConsume(2 * window.getSize(), MAX_WAIT_TIME);
                 fail("Unexpected timed wait success");
             } catch (SocketTimeoutException e) {

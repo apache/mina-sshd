@@ -19,15 +19,17 @@
 
 package org.apache.sshd.client.scp;
 
-import org.apache.sshd.client.scp.DefaultScpClient;
-
 /**
- * Just a test class used to invoke {@link DefaultScpClient#main(String[])} in
+ * Just a test class used to invoke {@link org.apache.sshd.client.scp.DefaultScpClient#main(String[])} in
  * order to have logging - which is in {@code test} scope
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ScpCommandMain {
+public final class ScpCommandMain {
+    private ScpCommandMain() {
+        throw new UnsupportedOperationException("No instance");
+    }
+
     public static void main(String[] args) throws Exception {
         DefaultScpClient.main(args);
     }

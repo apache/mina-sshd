@@ -30,6 +30,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+// CHECKSTYLE:OFF
 public class UserAuthPassword extends AbstractUserAuth {
     private final String password;
 
@@ -76,3 +77,4 @@ public class UserAuthPassword extends AbstractUserAuth {
     }
 
 }
+// CHECKSTYLE:ON

@@ -59,7 +59,7 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
 /**
- * TODO Add javadoc
+ * Helper used as base class for all test classes
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -68,6 +68,9 @@ public abstract class BaseTestSupport extends Assert {
     // can be used to override the 'localhost' with an address other than 127.0.0.1 in case it is required
     public static final String TEST_LOCALHOST = System.getProperty("org.apache.sshd.test.localhost", SshdSocketAddress.LOCALHOST_IP);
     public static final boolean OUTPUT_DEBUG_MESSAGES = Boolean.parseBoolean(System.getProperty("org.apache.sshd.test.outputDebugMessages", "false"));
+    public static final String MAIN_SUBFOLDER = "main";
+    public static final String TEST_SUBFOLDER = "test";
+    public static final String RESOURCES_SUBFOLDER = "resources";
 
     // useful test sizes for keys
     @SuppressWarnings("boxing")
@@ -97,7 +100,7 @@ public abstract class BaseTestSupport extends Assert {
     };
 
     @Rule
-    public final TestName TEST_NAME_HOLDER = new TestName();
+    public final TestName testNameHilder = new TestName();
     private Path targetFolder;
     private Path tempFolder;
 
@@ -106,7 +109,7 @@ public abstract class BaseTestSupport extends Assert {
     }
 
     public final String getCurrentTestName() {
-        return TEST_NAME_HOLDER.getMethodName();
+        return testNameHilder.getMethodName();
     }
 
     protected SshServer setupTestServer() {
@@ -154,7 +157,7 @@ public abstract class BaseTestSupport extends Assert {
      * associated with the project - never {@code null}
      */
     protected Path getTempTargetFolder() {
-        synchronized(TEMP_SUBFOLDER_NAME) {
+        synchronized (TEMP_SUBFOLDER_NAME) {
             if (tempFolder == null) {
                 tempFolder = ValidateUtils.checkNotNull(detectTargetFolder(), "No target folder detected").resolve(TEMP_SUBFOLDER_NAME);
             }
@@ -209,9 +212,6 @@ public abstract class BaseTestSupport extends Assert {
         Path parent = target.getParent();
         return parent.resolve("src");
     }
-
-    public static final String MAIN_SUBFOLDER = "main", TEST_SUBFOLDER = "test";
-    public static final String RESOURCES_SUBFOLDER = "resources";
 
     protected Path getClassResourcesFolder(String resType /* test or main */) {
         return getClassResourcesFolder(resType, getClass());
@@ -300,7 +300,8 @@ public abstract class BaseTestSupport extends Assert {
         for (int index = 0; expected.hasNext(); index++) {
             assertTrue(message + "[next actual index=" + index + "]", actual.hasNext());
 
-            T expValue = expected.next(), actValue = actual.next();
+            T expValue = expected.next();
+            T actValue = actual.next();
             assertEquals(message + "[iterator index=" + index + "]", expValue, actValue);
         }
 
@@ -338,11 +339,13 @@ public abstract class BaseTestSupport extends Assert {
     }
 
     public static <E> void assertListEquals(String message, List<? extends E> expected, List<? extends E> actual) {
-        int expSize = GenericUtils.size(expected), actSize = GenericUtils.size(actual);
+        int expSize = GenericUtils.size(expected);
+        int actSize = GenericUtils.size(actual);
         assertEquals(message + "[size]", expSize, actSize);
 
         for (int index = 0; index < expSize; index++) {
-            E expValue = expected.get(index), actValue = actual.get(index);
+            E expValue = expected.get(index);
+            E actValue = actual.get(index);
             assertEquals(message + "[" + index + "]", expValue, actValue);
         }
     }
@@ -366,7 +369,7 @@ public abstract class BaseTestSupport extends Assert {
         assertKeyEquals(message + "[private]", expected.getPrivate(), actual.getPrivate());
     }
 
-    public static final <T extends Key> void assertKeyEquals(String message, T expected, T actual) {
+    public static <T extends Key> void assertKeyEquals(String message, T expected, T actual) {
         if (expected == actual) {
             return;
         }
@@ -387,7 +390,7 @@ public abstract class BaseTestSupport extends Assert {
         assertArrayEquals(message + "[encdoded-data]", expected.getEncoded(), actual.getEncoded());
     }
 
-    public static final void assertRSAPublicKeyEquals(String message, RSAPublicKey expected, RSAPublicKey actual) {
+    public static void assertRSAPublicKeyEquals(String message, RSAPublicKey expected, RSAPublicKey actual) {
         if (expected == actual) {
             return;
         }
@@ -396,7 +399,7 @@ public abstract class BaseTestSupport extends Assert {
         assertEquals(message + "[n]", expected.getModulus(), actual.getModulus());
     }
 
-    public static final void assertDSAPublicKeyEquals(String message, DSAPublicKey expected, DSAPublicKey actual) {
+    public static void assertDSAPublicKeyEquals(String message, DSAPublicKey expected, DSAPublicKey actual) {
         if (expected == actual) {
             return;
         }
@@ -405,7 +408,7 @@ public abstract class BaseTestSupport extends Assert {
         assertDSAParamsEquals(message + "[params]", expected.getParams(), actual.getParams());
     }
 
-    public static final void assertECPublicKeyEquals(String message, ECPublicKey expected, ECPublicKey actual) {
+    public static void assertECPublicKeyEquals(String message, ECPublicKey expected, ECPublicKey actual) {
         if (expected == actual) {
             return;
         }
@@ -414,7 +417,7 @@ public abstract class BaseTestSupport extends Assert {
         assertECParameterSpecEquals(message, expected, actual);
     }
 
-    public static final void assertRSAPrivateKeyEquals(String message, RSAPrivateKey expected, RSAPrivateKey actual) {
+    public static void assertRSAPrivateKeyEquals(String message, RSAPrivateKey expected, RSAPrivateKey actual) {
         if (expected == actual) {
             return;
         }
@@ -423,7 +426,7 @@ public abstract class BaseTestSupport extends Assert {
         assertEquals(message + "[n]", expected.getModulus(), actual.getModulus());
     }
 
-    public static final void assertDSAPrivateKeyEquals(String message, DSAPrivateKey expected, DSAPrivateKey actual) {
+    public static void assertDSAPrivateKeyEquals(String message, DSAPrivateKey expected, DSAPrivateKey actual) {
         if (expected == actual) {
             return;
         }
@@ -432,7 +435,7 @@ public abstract class BaseTestSupport extends Assert {
         assertDSAParamsEquals(message + "[params]", expected.getParams(), actual.getParams());
     }
 
-    public static final void assertDSAParamsEquals(String message, DSAParams expected, DSAParams actual) {
+    public static void assertDSAParamsEquals(String message, DSAParams expected, DSAParams actual) {
         if (expected == actual) {
             return;
         }
@@ -442,7 +445,7 @@ public abstract class BaseTestSupport extends Assert {
         assertEquals(message + "[q]", expected.getQ(), actual.getQ());
     }
 
-    public static final void assertECPrivateKeyEquals(String message, ECPrivateKey expected, ECPrivateKey actual) {
+    public static void assertECPrivateKeyEquals(String message, ECPrivateKey expected, ECPrivateKey actual) {
         if (expected == actual) {
             return;
         }
@@ -451,14 +454,14 @@ public abstract class BaseTestSupport extends Assert {
         assertECParameterSpecEquals(message, expected, actual);
     }
 
-    public static final void assertECParameterSpecEquals(String message, ECKey expected, ECKey actual) {
+    public static void assertECParameterSpecEquals(String message, ECKey expected, ECKey actual) {
         if (expected == actual) {
             return;
         }
         assertECParameterSpecEquals(message, expected.getParams(), actual.getParams());
     }
 
-    public static final void assertECParameterSpecEquals(String message, ECParameterSpec expected, ECParameterSpec actual) {
+    public static void assertECParameterSpecEquals(String message, ECParameterSpec expected, ECParameterSpec actual) {
         if (expected == actual) {
             return;
         }
@@ -469,7 +472,7 @@ public abstract class BaseTestSupport extends Assert {
         assertCurveEquals(message + "[curve]", expected.getCurve(), actual.getCurve());
     }
 
-    public static final void assertCurveEquals(String message, EllipticCurve expected, EllipticCurve actual) {
+    public static void assertCurveEquals(String message, EllipticCurve expected, EllipticCurve actual) {
         if (expected == actual) {
             return;
         }
@@ -480,7 +483,7 @@ public abstract class BaseTestSupport extends Assert {
         assertECFieldEquals(message + "[field]", expected.getField(), actual.getField());
     }
 
-    public static final void assertECFieldEquals(String message, ECField expected, ECField actual) {
+    public static void assertECFieldEquals(String message, ECField expected, ECField actual) {
         if (expected == actual) {
             return;
         }
@@ -488,7 +491,7 @@ public abstract class BaseTestSupport extends Assert {
         assertEquals(message + "[size]", expected.getFieldSize(), actual.getFieldSize());
     }
 
-    public static final void assertECPointEquals(String message, ECPoint expected, ECPoint actual) {
+    public static void assertECPointEquals(String message, ECPoint expected, ECPoint actual) {
         if (expected == actual) {
             return;
         }
@@ -526,7 +529,8 @@ public abstract class BaseTestSupport extends Assert {
 
             long sleepStart = System.nanoTime();
             Thread.sleep(sleepTime);
-            long sleepEnd = System.nanoTime(), nanoSleep = sleepEnd - sleepStart;
+            long sleepEnd = System.nanoTime();
+            long nanoSleep = sleepEnd - sleepStart;
 
             sleepTime = TimeUnit.NANOSECONDS.toMillis(nanoSleep);
             timeout -= sleepTime;

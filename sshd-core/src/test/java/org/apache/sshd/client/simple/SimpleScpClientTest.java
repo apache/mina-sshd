@@ -60,7 +60,7 @@ public class SimpleScpClientTest extends BaseSimpleClientTestSupport {
 
     @Test
     public void testSessionClosedWhenClientClosed() throws Exception {
-        try(CloseableScpClient scp = login()) {
+        try (CloseableScpClient scp = login()) {
             assertTrue("SCP not open", scp.isOpen());
 
             Session session = scp.getClientSession();
@@ -74,7 +74,7 @@ public class SimpleScpClientTest extends BaseSimpleClientTestSupport {
 
     @Test
     public void testScpUploadProxy() throws Exception {
-        try(CloseableScpClient scp = login()) {
+        try (CloseableScpClient scp = login()) {
             Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
             Utils.deleteRecursive(scpRoot);
 
@@ -95,7 +95,7 @@ public class SimpleScpClientTest extends BaseSimpleClientTestSupport {
 
     @Test
     public void testScpDownloadProxy() throws Exception {
-        try(CloseableScpClient scp = login()) {
+        try (CloseableScpClient scp = login()) {
             Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
             Utils.deleteRecursive(scpRoot);
 

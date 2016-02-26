@@ -142,7 +142,7 @@ public class WindowAdjustTest extends BaseTestSupport {
         private final ClientChannel channel;
         private final byte eofSignal;
 
-        public VerifyingOutputStream(ClientChannel channel, final byte eofSignal) {
+        VerifyingOutputStream(ClientChannel channel, final byte eofSignal) {
             this.log = LoggerFactory.getLogger(getClass());
             this.channel = channel;
             this.eofSignal = eofSignal;
@@ -179,7 +179,7 @@ public class WindowAdjustTest extends BaseTestSupport {
     }
 
     public static final class FloodingAsyncCommand extends AbstractLoggingBean implements AsyncCommand {
-        private static final AtomicInteger poolCount = new AtomicInteger(0);
+        private static final AtomicInteger POOL_COUNT = new AtomicInteger(0);
 
         private final AtomicReference<ExecutorService> executorHolder = new AtomicReference<>();
         private final AtomicReference<Future<?>> futureHolder = new AtomicReference<Future<?>>();
@@ -234,7 +234,7 @@ public class WindowAdjustTest extends BaseTestSupport {
         public void start(Environment env) throws IOException {
             log.info("Starting");
 
-            ExecutorService service = ThreadUtils.newSingleThreadExecutor(getClass().getSimpleName() + "-" + poolCount.incrementAndGet());
+            ExecutorService service = ThreadUtils.newSingleThreadExecutor(getClass().getSimpleName() + "-" + POOL_COUNT.incrementAndGet());
             executorHolder.set(service);
 
             futureHolder.set(service.submit(new Runnable() {
@@ -287,7 +287,7 @@ public class WindowAdjustTest extends BaseTestSupport {
             }
         };
 
-        public AsyncInPendingWrapper(IoOutputStream out) {
+        AsyncInPendingWrapper(IoOutputStream out) {
             this.asyncIn = out;
         }
 

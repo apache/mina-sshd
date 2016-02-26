@@ -67,9 +67,9 @@ public class PublickeyAuthenticatorTest extends BaseTestSupport {
         Mockito.when(key.getPublicExponent()).thenReturn(BigInteger.ONE);
 
         ServerSession session = Mockito.mock(ServerSession.class);
-        Object[] invArgs = new Object[] { null /* username */, null /* key */, null /* server session */ };
+        Object[] invArgs = new Object[] {null /* username */, null /* key */, null /* server session */};
         boolean expected = authenticator.isAccepted();
-        boolean[] flags = new boolean[] { false, true };
+        boolean[] flags = new boolean[] {false, true};
         for (boolean useUsername : flags) {
             invArgs[0] = useUsername ? getCurrentTestName() : null;
 

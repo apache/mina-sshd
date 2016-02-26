@@ -36,6 +36,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandlerAdapter;
@@ -46,8 +50,6 @@ import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
-import org.apache.sshd.common.forward.TcpipForwarder;
-import org.apache.sshd.common.forward.TcpipForwarderFactory;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -67,10 +69,6 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.slf4j.LoggerFactory;
-
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
 
 /**
  * Port forwarding tests
@@ -166,7 +164,7 @@ public class PortForwardingTest extends BaseTestSupport {
     }
 
     private void waitForForwardingRequest(String expected, long timeout) throws InterruptedException {
-        for (long remaining = timeout; remaining > 0L; ) {
+        for (long remaining = timeout; remaining > 0L;) {
             long waitStart = System.currentTimeMillis();
             String actual = requestsQ.poll(remaining, TimeUnit.MILLISECONDS);
             long waitEnd = System.currentTimeMillis();
@@ -473,27 +471,25 @@ public class PortForwardingTest extends BaseTestSupport {
                 rudelyDisconnectJschSession(session);
 
                 // 4. Make sure the NIOprocessor is not stuck
-                {
-                    Thread.sleep(TimeUnit.SECONDS.toMillis(1L));
-                    // from here, we need to check all the threads running and find a
-                    // "NioProcessor-"
-                    // that is stuck on a PortForward.dispose
-                    ThreadGroup root = Thread.currentThread().getThreadGroup().getParent();
-                    while (root.getParent() != null) {
-                        root = root.getParent();
-                    }
+                Thread.sleep(TimeUnit.SECONDS.toMillis(1L));
+                // from here, we need to check all the threads running and find a
+                // "NioProcessor-"
+                // that is stuck on a PortForward.dispose
+                ThreadGroup root = Thread.currentThread().getThreadGroup().getParent();
+                while (root.getParent() != null) {
+                    root = root.getParent();
+                }
 
-                    for (int index = 0; ; index++) {
-                        Collection<Thread> pending = findThreads(root, "NioProcessor-");
-                        if (GenericUtils.size(pending) <= 0) {
-                            log.info("Finished after " + index + " iterations");
-                            break;
-                        }
-                        try {
-                            Thread.sleep(TimeUnit.SECONDS.toMillis(1L));
-                        } catch (InterruptedException e) {
-                            // ignored
-                        }
+                for (int index = 0;; index++) {
+                    Collection<Thread> pending = findThreads(root, "NioProcessor-");
+                    if (GenericUtils.size(pending) <= 0) {
+                        log.info("Finished after " + index + " iterations");
+                        break;
+                    }
+                    try {
+                        Thread.sleep(TimeUnit.SECONDS.toMillis(1L));
+                    } catch (InterruptedException e) {
+                        // ignored
                     }
                 }
 
@@ -554,31 +550,29 @@ public class PortForwardingTest extends BaseTestSupport {
     }
 
     private boolean checkThreadForPortForward(Thread thread, String name) {
-        if (thread == null)
+        if (thread == null) {
             return false;
+        }
+
         // does it contain the name we're looking for?
         if (thread.getName().contains(name)) {
             // look at the stack
             StackTraceElement[] stack = thread.getStackTrace();
-            if (stack.length == 0)
+            if (stack.length == 0) {
                 return false;
-            else {
-                // does it have
-                // 'org.apache.sshd.server.session.TcpipForwardSupport.close'?
-                for (int i = 0; i < stack.length; ++i) {
-                    String clazzName = stack[i].getClassName();
-                    String methodName = stack[i].getMethodName();
-                    // log.debug("Class: " + clazzName);
-                    // log.debug("Method: " + methodName);
-                    if (clazzName
-                            .equals("org.apache.sshd.server.session.TcpipForwardSupport")
-                            && (methodName.equals("close") || methodName
-                            .equals("sessionCreated"))) {
-                        log.warn(thread.getName() + " stuck at " + clazzName
-                                + "." + methodName + ": "
-                                + stack[i].getLineNumber());
-                        return true;
-                    }
+            }
+            // does it have 'org.apache.sshd.server.session.TcpipForwardSupport.close'?
+            for (int i = 0; i < stack.length; ++i) {
+                String clazzName = stack[i].getClassName();
+                String methodName = stack[i].getMethodName();
+                // log.debug("Class: " + clazzName);
+                // log.debug("Method: " + methodName);
+                if (clazzName.equals("org.apache.sshd.server.session.TcpipForwardSupport")
+                        && (methodName.equals("close") || methodName.equals("sessionCreated"))) {
+                    log.warn(thread.getName() + " stuck at " + clazzName
+                           + "." + methodName + ": "
+                           + stack[i].getLineNumber());
+                    return true;
                 }
             }
         }

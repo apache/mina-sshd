@@ -36,9 +36,10 @@ public class SftpConstantsTest extends BaseTestSupport {
     @Test
     public void testRenameModesNotMarkedAsOpcodes() {
         for (int cmd : new int[]{
-                SftpConstants.SSH_FXP_RENAME_OVERWRITE,
-                SftpConstants.SSH_FXP_RENAME_ATOMIC,
-                SftpConstants.SSH_FXP_RENAME_NATIVE}) {
+            SftpConstants.SSH_FXP_RENAME_OVERWRITE,
+            SftpConstants.SSH_FXP_RENAME_ATOMIC,
+            SftpConstants.SSH_FXP_RENAME_NATIVE
+        }) {
             String name = SftpConstants.getCommandMessageName(cmd);
             assertFalse("Mismatched name for " + cmd + ": " + name, name.startsWith("SSH_FXP_RENAME_"));
         }

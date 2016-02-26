@@ -53,7 +53,7 @@ public class ChannelSessionTest extends BaseTestSupport {
         try (ChannelSession channelSession = new ChannelSession() {
                 {
                     Window wRemote = getRemoteWindow();
-                    wRemote.init(PropertyResolverUtils.toPropertyResolver(Collections.<String,Object>emptyMap()));
+                    wRemote.init(PropertyResolverUtils.toPropertyResolver(Collections.<String, Object>emptyMap()));
                 }
         }) {
             final AtomicBoolean expanded = new AtomicBoolean(false);
@@ -75,7 +75,7 @@ public class ChannelSessionTest extends BaseTestSupport {
         try (ChannelSession session = new ChannelSession() {
             {
                 Window wRemote = getRemoteWindow();
-                wRemote.init(PropertyResolverUtils.toPropertyResolver(Collections.<String,Object>emptyMap()));
+                wRemote.init(PropertyResolverUtils.toPropertyResolver(Collections.<String, Object>emptyMap()));
             }
         }) {
             session.addCloseFutureListener(new SshFutureListener<CloseFuture>() {

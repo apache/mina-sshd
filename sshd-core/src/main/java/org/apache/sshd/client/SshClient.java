@@ -149,14 +149,14 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  * </P>
  *
  * <pre>
- * try(SshClient client = SshClient.setUpDefaultClient()) {
+ * try (SshClient client = SshClient.setUpDefaultClient()) {
  *      client.start();
  *
- *      try(ClientSession session = client.connect(login, host, port).await().getSession()) {
+ *      try (ClientSession session = client.connect(login, host, port).await().getSession()) {
  *          session.addPasswordIdentity(password);
  *          session.auth().verify(...timeout...);
  *
- *          try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
+ *          try (ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
  *              channel.setIn(new NoCloseInputStream(System.in));
  *              channel.setOut(new NoCloseOutputStream(System.out));
  *              channel.setErr(new NoCloseOutputStream(System.err));

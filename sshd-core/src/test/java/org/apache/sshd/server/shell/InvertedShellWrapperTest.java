@@ -76,7 +76,7 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
         final BogusInvertedShell bogusShell = newShell("out", "err");
         bogusShell.setAlive(false);
 
-        final int DESTROYED_EXIT_VALUE = 7365;
+        final int destroyedExitValue = 7365;
         InvertedShell shell = new InvertedShell() {
             private boolean destroyed;
 
@@ -112,7 +112,7 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
 
             @Override
             public int exitValue() {
-                return destroyed ? DESTROYED_EXIT_VALUE : bogusShell.exitValue();
+                return destroyed ? destroyedExitValue : bogusShell.exitValue();
             }
 
             @Override
@@ -126,22 +126,22 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream();
              ByteArrayOutputStream err = new ByteArrayOutputStream();
              InputStream stdin = new InputStream() {
-                private final byte[] data = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
-                private int readPos;
+                 private final byte[] data = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
+                 private int readPos;
 
-                @Override
-                public int read() throws IOException {
-                    if (readPos >= data.length) {
-                        throw new EOFException("Data exhausted");
-                    }
+                 @Override
+                 public int read() throws IOException {
+                     if (readPos >= data.length) {
+                         throw new EOFException("Data exhausted");
+                     }
 
-                    return data[readPos++];
-                }
+                     return data[readPos++];
+                 }
 
-                @Override
-                public int available() throws IOException {
-                    return data.length;
-                }
+                 @Override
+                 public int available() throws IOException {
+                     return data.length;
+                 }
              }) {
 
             BogusExitCallback exitCallback = new BogusExitCallback();
@@ -159,22 +159,22 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
                 wrapper.destroy();
             }
 
-            assertEquals("Mismatched exit value", DESTROYED_EXIT_VALUE, exitCallback.getExitValue());
+            assertEquals("Mismatched exit value", destroyedExitValue, exitCallback.getExitValue());
             assertEquals("Mismatched exit message", EOFException.class.getSimpleName(), exitCallback.getExitMessage());
         }
     }
 
     @Test // see SSHD-576
     public void testShellDiesBeforeAllDataExhausted() throws Exception {
-        final String IN_CONTENT = "shellInput";
-        final String OUT_CONTENT = "shellOutput";
-        final String ERR_CONTENT = "shellError";
-        try (final InputStream stdin = newDelayedInputStream(Long.SIZE, IN_CONTENT);
+        final String inputContent = "shellInput";
+        final String outputContent = "shellOutput";
+        final String errorContent = "shellError";
+        try (final InputStream stdin = newDelayedInputStream(Long.SIZE, inputContent);
              final ByteArrayOutputStream shellIn = new ByteArrayOutputStream(Byte.MAX_VALUE);
-             final InputStream shellOut = newDelayedInputStream(Byte.SIZE, OUT_CONTENT);
-             ByteArrayOutputStream stdout = new ByteArrayOutputStream(OUT_CONTENT.length() + Byte.SIZE);
-             final InputStream shellErr = newDelayedInputStream(Short.SIZE, ERR_CONTENT);
-             ByteArrayOutputStream stderr = new ByteArrayOutputStream(ERR_CONTENT.length() + Byte.SIZE)) {
+             final InputStream shellOut = newDelayedInputStream(Byte.SIZE, outputContent);
+             ByteArrayOutputStream stdout = new ByteArrayOutputStream(outputContent.length() + Byte.SIZE);
+             final InputStream shellErr = newDelayedInputStream(Short.SIZE, errorContent);
+             ByteArrayOutputStream stderr = new ByteArrayOutputStream(errorContent.length() + Byte.SIZE)) {
 
             InvertedShell shell = new InvertedShell() {
                 @Override
@@ -233,9 +233,9 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
                 wrapper.destroy();
             }
 
-            assertEquals("Mismatched STDIN value", IN_CONTENT, shellIn.toString(StandardCharsets.UTF_8.name()));
-            assertEquals("Mismatched STDOUT value", OUT_CONTENT, stdout.toString(StandardCharsets.UTF_8.name()));
-            assertEquals("Mismatched STDERR value", ERR_CONTENT, stderr.toString(StandardCharsets.UTF_8.name()));
+            assertEquals("Mismatched STDIN value", inputContent, shellIn.toString(StandardCharsets.UTF_8.name()));
+            assertEquals("Mismatched STDOUT value", outputContent, stdout.toString(StandardCharsets.UTF_8.name()));
+            assertEquals("Mismatched STDERR value", errorContent, stderr.toString(StandardCharsets.UTF_8.name()));
         }
     }
 
@@ -245,7 +245,7 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
 
     private static InputStream newDelayedInputStream(final int callsCount, byte ... data) {
         return new ByteArrayInputStream(data) {
-            private int delayCount = 0;
+            private int delayCount;
 
             @Override
             public synchronized int read() {

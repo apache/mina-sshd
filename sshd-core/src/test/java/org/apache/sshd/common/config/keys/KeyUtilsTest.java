@@ -232,6 +232,7 @@ public class KeyUtilsTest extends BaseTestSupport {
         }
     }
 
+    @SuppressWarnings("checkstyle:avoidnestedblocks")
     private static void testKeyPairCloning(String keyType, int keySize, KeyPair kp) throws GeneralSecurityException {
         String prefix = keyType + "[" + keySize + "]";
         outputDebugMessage("testKeyPairCloning(%s)", prefix);
@@ -241,16 +242,19 @@ public class KeyUtilsTest extends BaseTestSupport {
         assertTrue(prefix + ": Cloned pair not equals", KeyUtils.compareKeyPairs(kp, cloned));
 
         {
-            PublicKey k1 = kp.getPublic(), k2 = cloned.getPublic();
+            PublicKey k1 = kp.getPublic();
+            PublicKey k2 = cloned.getPublic();
             assertNotSame(prefix + ": Public key not cloned", k1, k2);
             assertTrue(prefix + ": Cloned public key not equals", KeyUtils.compareKeys(k1, k2));
 
-            String f1 = KeyUtils.getFingerPrint(k1), f2 = KeyUtils.getFingerPrint(k2);
+            String f1 = KeyUtils.getFingerPrint(k1);
+            String f2 = KeyUtils.getFingerPrint(k2);
             assertEquals(prefix + ": Mismatched fingerprints", f1, f2);
         }
 
         {
-            PrivateKey k1 = kp.getPrivate(), k2 = cloned.getPrivate();
+            PrivateKey k1 = kp.getPrivate();
+            PrivateKey k2 = cloned.getPrivate();
             assertNotSame(prefix + ": Private key not cloned", k1, k2);
             assertTrue(prefix + ": Cloned private key not equals", KeyUtils.compareKeys(k1, k2));
         }

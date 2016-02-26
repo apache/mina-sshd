@@ -72,7 +72,8 @@ public class KeyPairProviderTest extends BaseTestSupport {
 
         for (Map.Entry<String, KeyPair> pairEntry : pairsMap.entrySet()) {
             String keyType = pairEntry.getKey();
-            KeyPair expected = pairEntry.getValue(), actual = provider.loadKey(keyType);
+            KeyPair expected = pairEntry.getValue();
+            KeyPair actual = provider.loadKey(keyType);
             assertSame(keyType, expected, actual);
         }
     }

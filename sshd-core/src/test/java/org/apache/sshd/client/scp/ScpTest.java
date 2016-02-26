@@ -39,6 +39,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.Factory;
@@ -71,10 +75,6 @@ import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
 
 import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.ConnectionInfo;
@@ -118,8 +118,7 @@ public class ScpTest extends BaseTestSupport {
                     .append('[').append(op).append(']')
                     .append(' ').append(isFile ? "File" : "Directory").append('=').append(path)
                     .append(' ').append("length=").append(length)
-                    .append(' ').append("perms=").append(perms)
-            ;
+                    .append(' ').append("perms=").append(perms);
             if (t != null) {
                 sb.append(' ').append("ERROR=").append(t.getClass().getSimpleName()).append(": ").append(t.getMessage());
             }
@@ -824,11 +823,11 @@ public class ScpTest extends BaseTestSupport {
 
     @Test   // see SSHD-628
     public void testScpExitStatusPropagation() throws Exception {
-        final int TEST_EXIT_VALUE = 7365;
+        final int testExitValue = 7365;
         class InternalScpCommand extends ScpCommand implements ExitCallback {
             private ExitCallback delegate;
 
-            public InternalScpCommand(String command, ExecutorService executorService, boolean shutdownOnExit,
+            InternalScpCommand(String command, ExecutorService executorService, boolean shutdownOnExit,
                     int sendSize, int receiveSize, ScpFileOpener opener, ScpTransferEventListener eventListener) {
                 super(command, executorService, shutdownOnExit, sendSize, receiveSize, opener, eventListener);
             }
@@ -836,7 +835,7 @@ public class ScpTest extends BaseTestSupport {
             @Override
             protected void writeCommandResponseMessage(String command, int exitValue, String exitMessage) throws IOException {
                 outputDebugMessage("writeCommandResponseMessage(%s) status=%d", command, exitValue);
-                super.writeCommandResponseMessage(command, TEST_EXIT_VALUE, exitMessage);
+                super.writeCommandResponseMessage(command, testExitValue, exitMessage);
             }
 
             @Override
@@ -854,7 +853,7 @@ public class ScpTest extends BaseTestSupport {
             public void onExit(int exitValue, String exitMessage) {
                 outputDebugMessage("onExit(%s) status=%d", this, exitValue);
                 if (exitValue == ScpHelper.OK) {
-                    delegate.onExit(TEST_EXIT_VALUE, exitMessage);
+                    delegate.onExit(testExitValue, exitMessage);
                 } else {
                     delegate.onExit(exitValue, exitMessage);
                 }
@@ -895,7 +894,7 @@ public class ScpTest extends BaseTestSupport {
                 } catch (ScpException e) {
                     Integer exitCode = e.getExitStatus();
                     assertNotNull("No upload exit status", exitCode);
-                    assertEquals("Mismatched upload exit status", TEST_EXIT_VALUE, exitCode.intValue());
+                    assertEquals("Mismatched upload exit status", testExitValue, exitCode.intValue());
                 }
 
                 if (Files.deleteIfExists(remoteFile)) {
@@ -912,7 +911,7 @@ public class ScpTest extends BaseTestSupport {
                 } catch (ScpException e) {
                     Integer exitCode = e.getExitStatus();
                     assertNotNull("No download exit status", exitCode);
-                    assertEquals("Mismatched download exit status", TEST_EXIT_VALUE, exitCode.intValue());
+                    assertEquals("Mismatched download exit status", testExitValue, exitCode.intValue());
                 }
             } finally {
                 client.stop();
@@ -930,11 +929,9 @@ public class ScpTest extends BaseTestSupport {
         if (!modSuccess) {
             System.err.append("Failed to set last modified time of ").append(file.getAbsolutePath())
                       .append(" to ").append(String.valueOf(expectedMillis))
-                      .append(" - ").println(new Date(expectedMillis))
-                      ;
+                      .append(" - ").println(new Date(expectedMillis));
             System.err.append("\t\t").append("Current value: ").append(String.valueOf(actualMillis))
-                      .append(" - ").println(new Date(actualMillis))
-                      ;
+                      .append(" - ").println(new Date(actualMillis));
             return;
         }
 
@@ -1031,8 +1028,8 @@ public class ScpTest extends BaseTestSupport {
                     info.clientToServerMACAlgorithm, info.serverToClientMACAlgorithm);
             assertTrue("Failed to authenticate", conn.authenticateWithPassword(getCurrentTestName(), getCurrentTestName()));
 
-            final SCPClient scp_client = new SCPClient(conn);
-            try (OutputStream output = scp_client.put(fileName, expected.length, remotePath, mode)) {
+            SCPClient scpClient = new SCPClient(conn);
+            try (OutputStream output = scpClient.put(fileName, expected.length, remotePath, mode)) {
                 output.write(expected);
             }
 
@@ -1041,11 +1038,11 @@ public class ScpTest extends BaseTestSupport {
             assertArrayEquals("Mismatched remote put data", expected, remoteData);
 
             Arrays.fill(remoteData, (byte) 0);  // make sure we start with a clean slate
-            try (InputStream input = scp_client.get(remotePath + "/" + fileName)) {
+            try (InputStream input = scpClient.get(remotePath + "/" + fileName)) {
                 int readLen = input.read(remoteData);
                 assertEquals("Mismatched remote get data size", expected.length, readLen);
                 // make sure we reached EOF
-                assertEquals("Unexpected extra data after read expected size", (-1), input.read());
+                assertEquals("Unexpected extra data after read expected size", -1, input.read());
             }
 
             assertArrayEquals("Mismatched remote get data", expected, remoteData);
@@ -1230,7 +1227,7 @@ public class ScpTest extends BaseTestSupport {
     private static String readLine(InputStream in) throws IOException {
         OutputStream baos = new ByteArrayOutputStream();
         try {
-            for (; ; ) {
+            for (;;) {
                 int c = in.read();
                 if (c == '\n') {
                     return baos.toString();

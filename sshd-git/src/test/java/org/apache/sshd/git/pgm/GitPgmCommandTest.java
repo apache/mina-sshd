@@ -59,7 +59,7 @@ public class GitPgmCommandTest extends BaseTestSupport {
         // TODO: because it's quite limited for now
         //
 
-        try(SshServer sshd = setupTestServer()) {
+        try (SshServer sshd = setupTestServer()) {
             sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
             sshd.setCommandFactory(new GitPgmCommandFactory(Utils.resolveRelativeRemotePath(targetParent, serverDir)));
             sshd.start();
@@ -68,10 +68,10 @@ public class GitPgmCommandTest extends BaseTestSupport {
             try {
                 Utils.deleteRecursive(serverDir);
 
-                try(SshClient client = setupTestClient()) {
+                try (SshClient client = setupTestClient()) {
                     client.start();
 
-                    try(ClientSession session = client.connect(getCurrentTestName(), SshdSocketAddress.LOCALHOST_IP, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                    try (ClientSession session = client.connect(getCurrentTestName(), SshdSocketAddress.LOCALHOST_IP, port).verify(7L, TimeUnit.SECONDS).getSession()) {
                         session.addPasswordIdentity(getCurrentTestName());
                         session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -95,7 +95,7 @@ public class GitPgmCommandTest extends BaseTestSupport {
     }
 
     private void execute(ClientSession session, String command) throws Exception {
-        try(ChannelExec channel = session.createExecChannel(command)) {
+        try (ChannelExec channel = session.createExecChannel(command)) {
             channel.setOut(System.out);
             channel.setErr(System.err);
             channel.open().verify(11L, TimeUnit.SECONDS);

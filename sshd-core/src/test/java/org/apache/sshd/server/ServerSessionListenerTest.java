@@ -131,7 +131,8 @@ public class ServerSessionListenerTest extends BaseTestSupport {
         int curCount = 0;
         for (int retryCount = 0; retryCount < Byte.SIZE; retryCount++) {
             synchronized (eventsMap) {
-                if ((curCount = eventsMap.size()) >= 3) {
+                curCount = eventsMap.size();
+                if (curCount >= 3) {
                     return;
                 }
             }

@@ -36,6 +36,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+// CHECKSTYLE:OFF
 public class UserAuthPublicKey extends AbstractUserAuth {
     private final KeyPair key;
 
@@ -111,3 +112,4 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         }
     }
 }
+// CHECKSTYLE:ON

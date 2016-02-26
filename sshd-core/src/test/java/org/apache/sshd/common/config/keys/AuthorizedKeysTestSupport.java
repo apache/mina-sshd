@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.sshd.common.cipher.ECCurves;
-import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -62,10 +61,9 @@ public abstract class AuthorizedKeysTestSupport extends BaseTestSupport {
 
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8, options)) {
             w.append(PublicKeyEntry.COMMENT_CHAR)
-             .append(' ').append(getCurrentTestName())
-             .append(' ').append(String.valueOf(keyLines.size())).append(" remaining keys")
-             .append(IoUtils.EOL)
-             ;
+                .append(' ').append(getCurrentTestName())
+                .append(' ').append(String.valueOf(keyLines.size())).append(" remaining keys")
+                .append(IoUtils.EOL);
             for (String l : keyLines) {
                 w.append(l).append(IoUtils.EOL);
             }

@@ -53,7 +53,7 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     @Test
-    public void testbasicPathParsing() {
+    public void testBasicPathParsing() {
         assertPathEquals("/", "/");
         assertPathEquals("/foo", "/foo");
         assertPathEquals("/foo", "/", "foo");
@@ -108,7 +108,7 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     @Test
-    public void testAbsolutePath_singleName() {
+    public void testAbsolutePathSingleName() {
         new PathTester(fileSystem, "/foo")
                 .root("/")
                 .names("foo")
@@ -179,7 +179,7 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     @Test
-    public void testResolve_givenEmptyPath() {
+    public void testResolveGivenEmptyPath() {
         assertResolvedPathEquals("/foo", parsePath("/foo"), "");
         assertResolvedPathEquals("foo", parsePath("foo"), "");
     }
@@ -287,8 +287,8 @@ public class BasePathTest extends BaseTestSupport {
         assertPathEquals("/foo/bar/baz", parsePath("///foo/bar/baz"));
     }
 
-    private void assertResolvedPathEquals(String expected, Path path, String firstResolvePath,
-                                          String... moreResolvePaths) {
+    private void assertResolvedPathEquals(
+            String expected, Path path, String firstResolvePath, String... moreResolvePaths) {
         Path resolved = path.resolve(firstResolvePath);
         for (String additionalPath : moreResolvePaths) {
             resolved = resolved.resolve(additionalPath);
@@ -329,7 +329,7 @@ public class BasePathTest extends BaseTestSupport {
 
     private static class TestFileSystem extends BaseFileSystem<TestPath> {
 
-        public TestFileSystem(FileSystemProvider fileSystemProvider) {
+        TestFileSystem(FileSystemProvider fileSystemProvider) {
             super(fileSystemProvider);
         }
 
@@ -361,7 +361,7 @@ public class BasePathTest extends BaseTestSupport {
 
     private static class TestPath extends BasePath<TestPath, TestFileSystem> {
 
-        public TestPath(TestFileSystem fileSystem, String root, ImmutableList<String> names) {
+        TestPath(TestFileSystem fileSystem, String root, ImmutableList<String> names) {
             super(fileSystem, root, names);
         }
 
@@ -466,8 +466,7 @@ public class BasePathTest extends BaseTestSupport {
             }
 
             if (parent != null) {
-                String parentName = names.size() == 1 ? root :
-                        string.substring(0, string.lastIndexOf('/'));
+                String parentName = names.size() == 1 ? root : string.substring(0, string.lastIndexOf('/'));
                 new PathTester(fileSystem, parentName)
                         .root(root)
                         .names(names.subList(0, names.size() - 1))

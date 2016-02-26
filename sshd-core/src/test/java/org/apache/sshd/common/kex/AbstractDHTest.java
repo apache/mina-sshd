@@ -54,7 +54,8 @@ public class AbstractDHTest extends BaseTestSupport {
             data[index] = (byte) index;
 
             byte[] stripped = AbstractDH.stripLeadingZeroes(data);
-            String ds = Arrays.toString(data), ss = Arrays.toString(stripped);
+            String ds = Arrays.toString(data);
+            String ss = Arrays.toString(stripped);
             assertEquals("Mismatched stripped (" + ss + ") length for " + ds, data.length - index, stripped.length);
             for (int i = index, j = 0; j < stripped.length; i++, j++) {
                 if (data[i] != stripped[j]) {

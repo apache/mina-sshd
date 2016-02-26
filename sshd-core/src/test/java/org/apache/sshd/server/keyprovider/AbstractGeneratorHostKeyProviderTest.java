@@ -54,7 +54,7 @@ public class AbstractGeneratorHostKeyProviderTest extends BaseTestSupport {
         assertEquals("Mismatched load write count", 0, provider.getWriteCount());
     }
 
-    private static class TestProvider extends AbstractGeneratorHostKeyProvider {
+    private static final class TestProvider extends AbstractGeneratorHostKeyProvider {
         private final AtomicInteger writes = new AtomicInteger(0);
 
         private TestProvider(File file) {

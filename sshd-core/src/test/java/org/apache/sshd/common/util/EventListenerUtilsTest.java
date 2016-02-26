@@ -58,13 +58,13 @@ public class EventListenerUtilsTest extends BaseTestSupport {
         }
     }
 
-    private static interface ProxyListener extends EventListener {
+    interface ProxyListener extends EventListener {
         void callMeWithString(String s);
 
         void callMeWithNumber(Number n);
     }
 
-    private static class ProxyListenerImpl implements ProxyListener {
+    static class ProxyListenerImpl implements ProxyListener {
         private String strValue;
         private Number numValue;
 

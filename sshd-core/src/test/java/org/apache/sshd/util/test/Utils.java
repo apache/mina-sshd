@@ -66,13 +66,58 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 
-public class Utils {
-    // uses a cached instance to avoid re-creating the keys as it is a time-consuming effort
-    private static final AtomicReference<KeyPairProvider> keyPairProviderHolder = new AtomicReference<KeyPairProvider>();
+public final class Utils {
+    /**
+     * URL/URI scheme that refers to a file
+     */
+    public static final String FILE_URL_SCHEME = "file";
+    /**
+     * Prefix used in URL(s) that reference a file resource
+     */
+    public static final String FILE_URL_PREFIX = FILE_URL_SCHEME + ":";
+
+    /**
+     * Separator used in URL(s) that reference a resource inside a JAR
+     * to denote the sub-path inside the JAR
+     */
+    public static final char RESOURCE_SUBPATH_SEPARATOR = '!';
+
+    /**
+     * Suffix of JAR files
+     */
+    public static final String JAR_FILE_SUFFIX = ".jar";
+
+    /**
+     * URL/URI scheme that refers to a JAR
+     */
+    public static final String JAR_URL_SCHEME = "jar";
+
+    /**
+     * Prefix used in URL(s) that reference a resource inside a JAR
+     */
+    public static final String JAR_URL_PREFIX = JAR_URL_SCHEME + ":";
+
+    /**
+     * Suffix of compile Java class files
+     */
+    public static final String CLASS_FILE_SUFFIX = ".class";
+
+    public static final List<String> TARGET_FOLDER_NAMES =    // NOTE: order is important
+            Collections.unmodifiableList(
+                    Arrays.asList("target" /* Maven */, "build" /* Gradle */));
+
     public static final String DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM = "RSA";
+    // uses a cached instance to avoid re-creating the keys as it is a time-consuming effort
+    private static final AtomicReference<KeyPairProvider> KEYPAIR_PROVIDER_HOLDER = new AtomicReference<KeyPairProvider>();
+    // uses a cached instance to avoid re-creating the keys as it is a time-consuming effort
+    private static final Map<String, AbstractFileKeyPairProvider> PROVIDERS_MAP = new ConcurrentHashMap<String, AbstractFileKeyPairProvider>();
+
+    private Utils() {
+        throw new UnsupportedOperationException("No instance");
+    }
 
     public static KeyPairProvider createTestHostKeyProvider(Class<?> anchor) {
-        KeyPairProvider provider = keyPairProviderHolder.get();
+        KeyPairProvider provider = KEYPAIR_PROVIDER_HOLDER.get();
         if (provider != null) {
             return provider;
         }
@@ -81,7 +126,7 @@ public class Utils {
         File file = new File(targetFolder, "hostkey." + DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM.toLowerCase());
         provider = createTestHostKeyProvider(file);
 
-        KeyPairProvider prev = keyPairProviderHolder.getAndSet(provider);
+        KeyPairProvider prev = KEYPAIR_PROVIDER_HOLDER.getAndSet(provider);
         if (prev != null) { // check if somebody else beat us to it
             return prev;
         } else {
@@ -127,13 +172,10 @@ public class Utils {
         return gen.generateKeyPair();
     }
 
-    // uses a cached instance to avoid re-creating the keys as it is a time-consuming effort
-    private static final Map<String, AbstractFileKeyPairProvider> providersMap = new ConcurrentHashMap<String, AbstractFileKeyPairProvider>();
-
     public static AbstractFileKeyPairProvider createTestKeyPairProvider(String resource) {
         File file = getFile(resource);
         String filePath = file.getAbsolutePath();
-        AbstractFileKeyPairProvider provider = providersMap.get(filePath);
+        AbstractFileKeyPairProvider provider = PROVIDERS_MAP.get(filePath);
         if (provider != null) {
             return provider;
         }
@@ -142,7 +184,7 @@ public class Utils {
         provider.setFiles(Collections.singletonList(file));
         provider = validateKeyPairProvider(provider);
 
-        AbstractFileKeyPairProvider prev = providersMap.put(filePath, provider);
+        AbstractFileKeyPairProvider prev = PROVIDERS_MAP.put(filePath, provider);
         if (prev != null) { // check if somebody else beat us to it
             return prev;
         } else {
@@ -303,7 +345,7 @@ public class Utils {
      * @return The &quot;target&quot; <U>folder</U> - {@code null} if not found
      * @see #detectTargetFolder(File)
      */
-    public static final File detectTargetFolder(Class<?> anchor) {
+    public static File detectTargetFolder(Class<?> anchor) {
         return detectTargetFolder(getClassContainerLocationFile(anchor));
     }
 
@@ -317,7 +359,7 @@ public class Utils {
      * @see #getClassContainerLocationURI(Class)
      * @see #toFileSource(URI)
      */
-    public static final File getClassContainerLocationFile(Class<?> clazz)
+    public static File getClassContainerLocationFile(Class<?> clazz)
             throws IllegalArgumentException {
         try {
             URI uri = getClassContainerLocationURI(clazz);
@@ -335,7 +377,7 @@ public class Utils {
      * @throws URISyntaxException if location is not a valid URI
      * @see #getClassContainerLocationURL(Class)
      */
-    public static final URI getClassContainerLocationURI(Class<?> clazz) throws URISyntaxException {
+    public static URI getClassContainerLocationURI(Class<?> clazz) throws URISyntaxException {
         URL url = getClassContainerLocationURL(clazz);
         return (url == null) ? null : url.toURI();
     }
@@ -346,12 +388,13 @@ public class Utils {
      * - e.g., the root folder, the containing JAR, etc.. Returns
      * {@code null} if location could not be resolved
      */
-    public static final URL getClassContainerLocationURL(Class<?> clazz) {
+    public static URL getClassContainerLocationURL(Class<?> clazz) {
         ProtectionDomain pd = clazz.getProtectionDomain();
         CodeSource cs = (pd == null) ? null : pd.getCodeSource();
         URL url = (cs == null) ? null : cs.getLocation();
         if (url == null) {
-            if ((url = getClassBytesURL(clazz)) == null) {
+            url = getClassBytesURL(clazz);
+            if (url == null) {
                 return null;
             }
 
@@ -398,15 +441,6 @@ public class Utils {
     }
 
     /**
-     * URL/URI scheme that refers to a file
-     */
-    public static final String FILE_URL_SCHEME = "file";
-    /**
-     * Prefix used in URL(s) that reference a file resource
-     */
-    public static final String FILE_URL_PREFIX = FILE_URL_SCHEME + ":";
-
-    /**
      * Converts a {@link URI} that may refer to an internal resource to
      * a {@link File} representing is &quot;source&quot; container (e.g.,
      * if it is a resource in a JAR, then the result is the JAR's path)
@@ -442,7 +476,7 @@ public class Utils {
      * any sub-resource are stripped
      * @see #getURLSource(String)
      */
-    public static final String getURLSource(URI uri) {
+    public static String getURLSource(URI uri) {
         return getURLSource((uri == null) ? null : uri.toString());
     }
 
@@ -452,15 +486,9 @@ public class Utils {
      * any sub-resource are stripped
      * @see #getURLSource(String)
      */
-    public static final String getURLSource(URL url) {
+    public static String getURLSource(URL url) {
         return getURLSource((url == null) ? null : url.toExternalForm());
     }
-
-    /**
-     * Separator used in URL(s) that reference a resource inside a JAR
-     * to denote the sub-path inside the JAR
-     */
-    public static final char RESOURCE_SUBPATH_SEPARATOR = '!';
 
     /**
      * @param externalForm The {@link URL#toExternalForm()} string - ignored if
@@ -468,7 +496,7 @@ public class Utils {
      * @return The URL(s) source path where {@link #JAR_URL_PREFIX} and
      * any sub-resource are stripped
      */
-    public static final String getURLSource(String externalForm) {
+    public static String getURLSource(String externalForm) {
         String url = externalForm;
         if (GenericUtils.isEmpty(url)) {
             return url;
@@ -493,7 +521,7 @@ public class Utils {
      * is not '/' itself
      * @see #adjustURLPathValue(String)
      */
-    public static final String adjustURLPathValue(URL url) {
+    public static String adjustURLPathValue(URL url) {
         return adjustURLPathValue((url == null) ? null : url.getPath());
     }
 
@@ -502,7 +530,7 @@ public class Utils {
      * @return The path after stripping any trailing '/' provided the path
      * is not '/' itself
      */
-    public static final String adjustURLPathValue(final String path) {
+    public static String adjustURLPathValue(final String path) {
         final int pathLen = (path == null) ? 0 : path.length();
         if ((pathLen <= 1) || (path.charAt(pathLen - 1) != '/')) {
             return path;
@@ -511,20 +539,7 @@ public class Utils {
         return path.substring(0, pathLen - 1);
     }
 
-    /**
-     * Suffix of JAR files
-     */
-    public static final String JAR_FILE_SUFFIX = ".jar";
-    /**
-     * URL/URI scheme that refers to a JAR
-     */
-    public static final String JAR_URL_SCHEME = "jar";
-    /**
-     * Prefix used in URL(s) that reference a resource inside a JAR
-     */
-    public static final String JAR_URL_PREFIX = JAR_URL_SCHEME + ":";
-
-    public static final String stripJarURLPrefix(String externalForm) {
+    public static String stripJarURLPrefix(String externalForm) {
         String url = externalForm;
         if (GenericUtils.isEmpty(url)) {
             return url;
@@ -538,21 +553,17 @@ public class Utils {
     }
 
     /**
-     * Suffix of compile Java class files
-     */
-    public static final String CLASS_FILE_SUFFIX = ".class";
-
-    /**
      * @param clazz The request {@link Class}
      * @return A {@link URL} to the location of the <code>.class</code> file
      * - {@code null} if location could not be resolved
      */
-    public static final URL getClassBytesURL(Class<?> clazz) {
+    public static URL getClassBytesURL(Class<?> clazz) {
         String className = clazz.getName();
         int sepPos = className.indexOf('$');
         // if this is an internal class, then need to use its parent as well
         if (sepPos > 0) {
-            if ((sepPos = className.lastIndexOf('.')) > 0) {
+            sepPos = className.lastIndexOf('.');
+            if (sepPos > 0) {
                 className = className.substring(sepPos + 1);
             }
         } else {
@@ -562,7 +573,7 @@ public class Utils {
         return clazz.getResource(className + CLASS_FILE_SUFFIX);
     }
 
-    public static final String getClassBytesResourceName(Class<?> clazz) {
+    public static String getClassBytesResourceName(Class<?> clazz) {
         return getClassBytesResourceName((clazz == null) ? null : clazz.getName());
     }
 
@@ -570,21 +581,16 @@ public class Utils {
      * @param name The fully qualified class name - ignored if {@code null}/empty
      * @return The relative path of the class file byte-code resource
      */
-    public static final String getClassBytesResourceName(String name) {
+    public static String getClassBytesResourceName(String name) {
         if (GenericUtils.isEmpty(name)) {
             return name;
         } else {
             return new StringBuilder(name.length() + CLASS_FILE_SUFFIX.length())
                     .append(name.replace('.', '/'))
                     .append(CLASS_FILE_SUFFIX)
-                    .toString()
-                    ;
+                    .toString();
         }
     }
-
-    public static final List<String> TARGET_FOLDER_NAMES =    // NOTE: order is important
-            Collections.unmodifiableList(
-                    Arrays.asList("target" /* Maven */, "build" /* Gradle */));
 
     /**
      * @param anchorFile An anchor {@link File} we want to use
@@ -592,7 +598,7 @@ public class Utils {
      *                   lookup up the hierarchy
      * @return The &quot;target&quot; <U>folder</U> - {@code null} if not found
      */
-    public static final File detectTargetFolder(File anchorFile) {
+    public static File detectTargetFolder(File anchorFile) {
         for (File file = anchorFile; file != null; file = file.getParentFile()) {
             if (!file.isDirectory()) {
                 continue;
@@ -607,12 +613,12 @@ public class Utils {
         return null;
     }
 
-    public static final String resolveRelativeRemotePath(Path root, Path file) {
+    public static String resolveRelativeRemotePath(Path root, Path file) {
         Path relPath = root.relativize(file);
         return relPath.toString().replace(File.separatorChar, '/');
     }
 
-    public static final SshClient setupTestClient(Class<?> anchor) {
+    public static SshClient setupTestClient(Class<?> anchor) {
         SshClient client = SshClient.setUpDefaultClient();
         client.setServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE);
         client.setHostConfigEntryResolver(HostConfigEntryResolver.EMPTY);
@@ -620,7 +626,7 @@ public class Utils {
         return client;
     }
 
-    public static final SshServer setupTestServer(Class<?> anchor) {
+    public static SshServer setupTestServer(Class<?> anchor) {
         SshServer sshd = SshServer.setUpDefaultServer();
         sshd.setKeyPairProvider(createTestHostKeyProvider(anchor));
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);

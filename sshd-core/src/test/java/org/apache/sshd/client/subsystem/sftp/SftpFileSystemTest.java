@@ -369,12 +369,10 @@ public class SftpFileSystemTest extends BaseTestSupport {
         assertHierarchyTargetFolderExists(file1.getParent());
 
         String expected = "Hello world: " + getCurrentTestName();
-        {
-            outputDebugMessage("Write initial data to %s", file1);
-            Files.write(file1, expected.getBytes(StandardCharsets.UTF_8));
-            String buf = new String(Files.readAllBytes(file1), StandardCharsets.UTF_8);
-            assertEquals("Mismatched read test data", expected, buf);
-        }
+        outputDebugMessage("Write initial data to %s", file1);
+        Files.write(file1, expected.getBytes(StandardCharsets.UTF_8));
+        String buf = new String(Files.readAllBytes(file1), StandardCharsets.UTF_8);
+        assertEquals("Mismatched read test data", expected, buf);
 
         if (version >= SftpConstants.SFTP_V4) {
             outputDebugMessage("getFileAttributeView(%s)", file1);

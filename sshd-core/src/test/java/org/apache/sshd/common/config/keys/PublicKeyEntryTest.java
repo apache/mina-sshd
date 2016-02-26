@@ -46,7 +46,7 @@ public class PublicKeyEntryTest extends BaseTestSupport {
                         GenericUtils.join(
                                 Arrays.asList(getCurrentTestName(), "AAAA", getClass().getSimpleName()), ' '));
         for (PublicKeyEntryResolver resolver : new PublicKeyEntryResolver[]{
-                null, PublicKeyEntryResolver.FAILING, PublicKeyEntryResolver.IGNORING}) {
+            null, PublicKeyEntryResolver.FAILING, PublicKeyEntryResolver.IGNORING}) {
             try {
                 PublicKey key = entry.resolvePublicKey(resolver);
                 assertSame("Mismatched successful resolver", PublicKeyEntryResolver.IGNORING, resolver);

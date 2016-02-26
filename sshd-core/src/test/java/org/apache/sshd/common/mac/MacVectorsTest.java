@@ -141,25 +141,29 @@ public class MacVectorsTest extends BaseTestSupport {
                     ///////////////// Test Cases for HMAC-SHA-2 ///////////////////////
                     // see https://tools.ietf.org/html/rfc4231
                     new VectorTestData(repeat("0b", 20), false, "Hi There",
-                       Arrays.asList(   // test case 1
+                       // test case 1
+                       Arrays.asList(
                            new Pair<>(BuiltinMacs.Constants.HMAC_SHA2_256,
                                       "b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7"),
                            new Pair<>(BuiltinMacs.Constants.HMAC_SHA2_512,
                                       "87aa7cdea5ef619d4ff0b4241a1d6cb02379f4e2ce4ec2787ad0b30545e17cdedaa833b7d6b8a702038b274eaea3f4e4be9d914eeb61f1702e696c203a126854"))),
                     new VectorTestData("Jefe", "what do ya want for nothing?",
-                        Arrays.asList(   // test case 2
+                        // test case 2
+                        Arrays.asList(
                             new Pair<>(BuiltinMacs.Constants.HMAC_SHA2_256,
                                        "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"),
                             new Pair<>(BuiltinMacs.Constants.HMAC_SHA2_512,
                                        "164b7a7bfcf819e2e395fbe73b56e0a387bd64222e831fd610270cd7ea2505549758bf75c05a994a6d034f65f8f0e6fdcaeab1a34d4a6b4b636e070a38bce737"))),
                     new VectorTestData(repeat("aa", 20), false, repeat("dd", 50), false,
-                        Arrays.asList(   // test case 3
+                        // test case 3
+                        Arrays.asList(
                             new Pair<>(BuiltinMacs.Constants.HMAC_SHA2_256,
                                        "773ea91e36800e46854db8ebd09181a72959098b3ef8c122d9635514ced565fe"),
                             new Pair<>(BuiltinMacs.Constants.HMAC_SHA2_512,
                                        "fa73b0089d56a284efb0f0756c890be9b1b5dbdd8ee81a3655f83e33b2279d39bf3e848279a722c806b485a47e67c807b946a337bee8942674278859e13292fb"))),
                     new VectorTestData("0102030405060708090a0b0c0d0e0f10111213141516171819", false, repeat("cd", 50), false,
-                        Arrays.asList(   // test case 4
+                        // test case 4
+                        Arrays.asList(
                             new Pair<>(BuiltinMacs.Constants.HMAC_SHA2_256,
                                        "82558a389a443c0ea4cc819899f2083a85f0faa3e578f8077a2e3ff46729665b"),
                             new Pair<>(BuiltinMacs.Constants.HMAC_SHA2_512,
@@ -196,7 +200,7 @@ public class MacVectorsTest extends BaseTestSupport {
                     */
 
                     // mark end
-                    new VectorTestData("", false, "", false, Collections.<Pair<String,String>>emptyList())))) {
+                    new VectorTestData("", false, "", false, Collections.<Pair<String, String>>emptyList())))) {
             for (Pair<String, String> tc : vector.getResults()) {
                 ret.add(new Object[]{vector, tc.getFirst(), tc.getSecond()});
             }

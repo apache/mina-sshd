@@ -47,17 +47,17 @@ public class SelectorUtilsTest extends BaseTestSupport {
     }
 
     private void testApplySlashifyRules(char slash) {
-        for (String expected : new String[] {
-                null, "", getCurrentTestName(),
-                getClass().getSimpleName() + String.valueOf(slash) + getCurrentTestName(),
-                String.valueOf(slash)  + getClass().getSimpleName(),
-                String.valueOf(slash)  + getClass().getSimpleName() + String.valueOf(slash)  + getCurrentTestName()
-            }) {
+        for (String expected : new String[]{
+            null, "", getCurrentTestName(),
+            getClass().getSimpleName() + String.valueOf(slash) + getCurrentTestName(),
+            String.valueOf(slash)  + getClass().getSimpleName(),
+            String.valueOf(slash)  + getClass().getSimpleName() + String.valueOf(slash)  + getCurrentTestName()
+        }) {
             String actual = SelectorUtils.applySlashifyRules(expected, slash);
             assertSame("Mismatched results for '" + expected + "'", expected, actual);
         }
 
-        String[] comps = { getClass().getSimpleName(),  getCurrentTestName() };
+        String[] comps = {getClass().getSimpleName(),  getCurrentTestName()};
         Random rnd = new Random(System.nanoTime());
         StringBuilder sb = new StringBuilder(Byte.MAX_VALUE);
         for (int index = 0; index < Long.SIZE; index++) {
@@ -115,14 +115,13 @@ public class SelectorUtilsTest extends BaseTestSupport {
     public void testTranslateToFileSystemPath() {
         String path = getClass().getPackage().getName().replace('.', File.separatorChar)
                     + File.separator + getClass().getSimpleName()
-                    + File.separator + getCurrentTestName()
-                    ;
-        for (String expected : new String[] { null, "", path }) {
+                    + File.separator + getCurrentTestName();
+        for (String expected : new String[] {null, "", path}) {
             String actual = SelectorUtils.translateToFileSystemPath(expected, File.separator, File.separator);
             assertSame("Mismatched instance for translated result", expected, actual);
         }
 
-        for (String fsSeparator : new String[] { String.valueOf('.'), "##" }) {
+        for (String fsSeparator : new String[] {String.valueOf('.'), "##"}) {
             String expected = path.replace(File.separator, fsSeparator);
             String actual = SelectorUtils.translateToFileSystemPath(path, File.separator, fsSeparator);
             assertEquals("Mismatched translation result for separator='" + fsSeparator + "'", expected, actual);
@@ -136,7 +135,7 @@ public class SelectorUtilsTest extends BaseTestSupport {
     public void testAbsoluteWindowsPathTranslation() {
         Assume.assumeTrue("Not tested on Windows", OsUtils.isWin32());
         String expected = detectTargetFolder().toString();
-        for (String prefix : new String[]{ "", "/" }) {
+        for (String prefix : new String[]{"", "/"}) {
             String actual = SelectorUtils.translateToLocalPath(prefix + expected.replace('/', File.separatorChar));
             assertEquals("Mismatched result for prefix='" + prefix + "'", expected, actual);
         }

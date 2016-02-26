@@ -79,7 +79,7 @@ public class BuiltinDHFactoriesTest extends BaseTestSupport {
             Collections.shuffle(unknown, rnd);
 
             List<String> weavedList = new ArrayList<String>(builtin.size() + unknown.size());
-            for (int bIndex = 0, uIndex = 0; (bIndex < builtin.size()) || (uIndex < unknown.size()); ) {
+            for (int bIndex = 0, uIndex = 0; (bIndex < builtin.size()) || (uIndex < unknown.size());) {
                 boolean useBuiltin = false;
                 if (bIndex < builtin.size()) {
                     useBuiltin = (uIndex < unknown.size()) ? rnd.nextBoolean() : true;

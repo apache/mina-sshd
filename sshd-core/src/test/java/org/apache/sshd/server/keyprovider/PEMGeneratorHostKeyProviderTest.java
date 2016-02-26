@@ -60,21 +60,21 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTestSupport {
     }
 
     @Test
-    public void testEC_NISTP256() throws IOException {
+    public void testECnistp256() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         Assume.assumeTrue("ECC not supported", SecurityUtils.hasEcc());
         testPEMGeneratorHostKeyProvider("EC", KeyPairProvider.ECDSA_SHA2_NISTP256, -1, new ECGenParameterSpec("prime256v1"));
     }
 
     @Test
-    public void testEC_NISTP384() throws IOException {
+    public void testECnistp384() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         Assume.assumeTrue("ECC not supported", SecurityUtils.hasEcc());
         testPEMGeneratorHostKeyProvider("EC", KeyPairProvider.ECDSA_SHA2_NISTP384, -1, new ECGenParameterSpec("P-384"));
     }
 
     @Test
-    public void testEC_NISTP521() throws IOException {
+    public void testECnistp521() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         Assume.assumeTrue("ECC not supported", SecurityUtils.hasEcc());
         testPEMGeneratorHostKeyProvider("EC", KeyPairProvider.ECDSA_SHA2_NISTP521, -1, new ECGenParameterSpec("P-521"));
@@ -86,7 +86,8 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTestSupport {
         assertTrue("Key file not generated: " + path, Files.exists(path, IoUtils.EMPTY_LINK_OPTIONS));
 
         KeyPair kpRead = invokePEMGeneratorHostKeyProvider(path, algorithm, keyType, keySize, keySpec);
-        PublicKey pubWrite = kpWrite.getPublic(), pubRead = kpRead.getPublic();
+        PublicKey pubWrite = kpWrite.getPublic();
+        PublicKey pubRead = kpRead.getPublic();
         if (pubWrite instanceof ECPublicKey) {
             // The algorithm is reported as ECDSA instead of EC
             assertECPublicKeyEquals("Mismatched EC public key", ECPublicKey.class.cast(pubWrite), ECPublicKey.class.cast(pubRead));

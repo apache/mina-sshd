@@ -46,8 +46,8 @@ import org.mockito.Mockito;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
-    private static final AtomicReference<Pair<LdapServer, DirectoryService>> ldapContextHolder = new AtomicReference<>();
-    private static final Map<String, PublicKey> keysMap = new HashMap<>();
+    private static final AtomicReference<Pair<LdapServer, DirectoryService>> LDAP_CONTEX_HOLDER = new AtomicReference<>();
+    private static final Map<String, PublicKey> KEYS_MAP = new HashMap<>();
     // we use this instead of the default since the default requires some extra LDIF manipulation which we don't need
     private static final String TEST_ATTR_NAME = "description";
 
@@ -57,27 +57,27 @@ public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
 
     @BeforeClass
     public static void startApacheDs() throws Exception {
-        ldapContextHolder.set(startApacheDs(LdapPublickeyAuthenticatorTest.class));
+        LDAP_CONTEX_HOLDER.set(startApacheDs(LdapPublickeyAuthenticatorTest.class));
         Map<String, String> credentials =
-                populateUsers(ldapContextHolder.get().getSecond(), LdapPublickeyAuthenticatorTest.class, TEST_ATTR_NAME);
+                populateUsers(LDAP_CONTEX_HOLDER.get().getSecond(), LdapPublickeyAuthenticatorTest.class, TEST_ATTR_NAME);
         assertFalse("No keys retrieved", GenericUtils.isEmpty(credentials));
 
         for (Map.Entry<String, String> ce : credentials.entrySet()) {
             String username = ce.getKey();
             AuthorizedKeyEntry entry = AuthorizedKeyEntry.parseAuthorizedKeyEntry(ce.getValue());
             PublicKey key = ValidateUtils.checkNotNull(entry, "No key extracted").resolvePublicKey(PublicKeyEntryResolver.FAILING);
-            keysMap.put(username, key);
+            KEYS_MAP.put(username, key);
         }
     }
 
     @AfterClass
     public static void stopApacheDs() throws Exception {
-        stopApacheDs(ldapContextHolder.getAndSet(null));
+        stopApacheDs(LDAP_CONTEX_HOLDER.getAndSet(null));
     }
 
     @Test
     public void testPublicKeyComparison() throws Exception {
-        Pair<LdapServer, DirectoryService> ldapContext = ldapContextHolder.get();
+        Pair<LdapServer, DirectoryService> ldapContext = LDAP_CONTEX_HOLDER.get();
         LdapPublickeyAuthenticator auth = new LdapPublickeyAuthenticator();
         auth.setHost(getHost(ldapContext));
         auth.setPort(getPort(ldapContext));
@@ -87,7 +87,7 @@ public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
 
         ServerSession session = Mockito.mock(ServerSession.class);
         outputDebugMessage("%s: %s", getCurrentTestName(), auth);
-        for (Map.Entry<String, PublicKey> ke : keysMap.entrySet()) {
+        for (Map.Entry<String, PublicKey> ke : KEYS_MAP.entrySet()) {
             String username = ke.getKey();
             PublicKey key = ke.getValue();
             outputDebugMessage("Authenticate: user=%s, key-type=%s, fingerprint=%s",

@@ -98,7 +98,8 @@ public class BuiltinIdentitiesTest extends BaseTestSupport {
                 continue;
             }
 
-            String name = f.getName(), value = (String) f.get(null);
+            String name = f.getName();
+            String value = (String) f.get(null);
             BuiltinIdentities id = BuiltinIdentities.fromName(value);
             assertNotNull("No match found for field " + name + "=" + value, id);
         }

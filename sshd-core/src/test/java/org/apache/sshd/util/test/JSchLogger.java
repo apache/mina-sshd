@@ -20,17 +20,13 @@ package org.apache.sshd.util.test;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Logger;
+
 import org.slf4j.LoggerFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class JSchLogger implements Logger {
-
-    public static void init() {
-        JSch.setLogger(new JSchLogger());
-    }
-
     private final org.slf4j.Logger log = LoggerFactory.getLogger(JSch.class);
 
     public JSchLogger() {
@@ -71,5 +67,9 @@ public class JSchLogger implements Logger {
             default:
                 log.error("[LEVEL=" + level + "]: " + message);
         }
+    }
+
+    public static void init() {
+        JSch.setLogger(new JSchLogger());
     }
 }

@@ -38,9 +38,9 @@ public class BogusInvertedShell implements InvertedShell, ServerSessionHolder {
 
     // for test assertions
     private ServerSession session;
-    private boolean started = false;
+    private boolean started;
     private boolean alive = true;
-    private Map<String, String> env = null;
+    private Map<String, String> env;
 
     public BogusInvertedShell(OutputStream in, InputStream out, InputStream err) {
         this.in = in;

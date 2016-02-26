@@ -19,11 +19,12 @@
 
 package org.apache.sshd.common.cipher;
 
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
+
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.Cipher.Mode;
@@ -71,8 +72,10 @@ public abstract class BaseCipherTest extends BaseTestSupport {
     protected void testEncryptDecrypt(NamedFactory<Cipher> factory) throws Exception {
         String facName = factory.getName();
         Cipher enc = factory.create();
-        int keySize = enc.getBlockSize(), ivSize = enc.getIVSize();
-        byte[] key = new byte[keySize], iv = new byte[ivSize];
+        int keySize = enc.getBlockSize();
+        int ivSize = enc.getIVSize();
+        byte[] key = new byte[keySize];
+        byte[] iv = new byte[ivSize];
         enc.init(Mode.Encrypt, key, iv);
 
         byte[] expected = facName.getBytes(StandardCharsets.UTF_8);

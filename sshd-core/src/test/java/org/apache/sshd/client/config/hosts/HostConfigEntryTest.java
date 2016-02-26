@@ -93,7 +93,7 @@ public class HostConfigEntryTest extends BaseTestSupport {
                 getCurrentTestName(),
                 getClass().getSimpleName() + "-" + getCurrentTestName(),
                 getClass().getSimpleName() + "." + getCurrentTestName(),
-            }) {
+        }) {
             sb.setLength(0); // start from scratch
             sb.append(host).append(domain);
 
@@ -120,7 +120,7 @@ public class HostConfigEntryTest extends BaseTestSupport {
     public void testHostSingleCharPatternMatching() {
         String value = getCurrentTestName();
         StringBuilder sb = new StringBuilder(value);
-        for (boolean restoreOriginal : new boolean[] { true, false }) {
+        for (boolean restoreOriginal : new boolean[] {true, false}) {
             for (int index = 0; index < value.length(); index++) {
                 sb.setCharAt(index, HostPatternsHolder.SINGLE_CHAR_PATTERN);
                 testCaseInsensitivePatternMatching(value, HostPatternsHolder.toPattern(sb.toString()).getFirst(), true);
@@ -170,14 +170,15 @@ public class HostConfigEntryTest extends BaseTestSupport {
             assertTrue("Valid character not recognized: " + String.valueOf(ch), HostPatternsHolder.isValidPatternChar(ch));
         }
 
-        for (char ch : new char[] { '-', '_', '.', HostPatternsHolder.SINGLE_CHAR_PATTERN, HostPatternsHolder.WILDCARD_PATTERN }) {
+        for (char ch : new char[] {'-', '_', '.', HostPatternsHolder.SINGLE_CHAR_PATTERN, HostPatternsHolder.WILDCARD_PATTERN}) {
             assertTrue("Valid character not recognized: " + String.valueOf(ch), HostPatternsHolder.isValidPatternChar(ch));
         }
 
         for (char ch : new char[] {
-                    '(', ')', '{', '}', '[', ']', '@',
-                    '#', '$', '^', '&', '%', '~', '<', '>',
-                    ',', '/', '\\', '\'', '"', ':', ';' }) {
+            '(', ')', '{', '}', '[', ']', '@',
+            '#', '$', '^', '&', '%', '~', '<', '>',
+            ',', '/', '\\', '\'', '"', ':', ';'
+        }) {
             assertFalse("Unexpected valid character: " + String.valueOf(ch), HostPatternsHolder.isValidPatternChar(ch));
         }
 
@@ -188,23 +189,27 @@ public class HostConfigEntryTest extends BaseTestSupport {
 
     @Test
     public void testResolvePort() {
-        final int ORIGINAL_PORT = Short.MAX_VALUE;
-        final int ENTRY_PORT = 7365;
-        assertEquals("Mismatched entry port preference", ENTRY_PORT, HostConfigEntry.resolvePort(ORIGINAL_PORT, ENTRY_PORT));
+        final int originalPort = Short.MAX_VALUE;
+        final int preferredPort = 7365;
+        assertEquals("Mismatched entry port preference",
+                preferredPort, HostConfigEntry.resolvePort(originalPort, preferredPort));
 
-        for (int entryPort : new int[] { -1, 0 }) {
-            assertEquals("Non-preferred original port for entry port=" + entryPort, ORIGINAL_PORT, HostConfigEntry.resolvePort(ORIGINAL_PORT, entryPort));
+        for (int entryPort : new int[] {-1, 0}) {
+            assertEquals("Non-preferred original port for entry port=" + entryPort,
+                    originalPort, HostConfigEntry.resolvePort(originalPort, entryPort));
         }
     }
 
     @Test
     public void testResolveUsername() {
-        final String ORIGINAL_USER = getCurrentTestName();
-        final String ENTRY_USER = getClass().getSimpleName();
-        assertSame("Mismatched entry user preference", ENTRY_USER, HostConfigEntry.resolveUsername(ORIGINAL_USER, ENTRY_USER));
+        final String originalUser = getCurrentTestName();
+        final String preferredUser = getClass().getSimpleName();
+        assertSame("Mismatched entry user preference",
+                preferredUser, HostConfigEntry.resolveUsername(originalUser, preferredUser));
 
-        for (String entryUser : new String[] { null, "" }) {
-            assertSame("Non-preferred original user for entry user='" + entryUser + "'", ORIGINAL_USER, HostConfigEntry.resolveUsername(ORIGINAL_USER, entryUser));
+        for (String entryUser : new String[] {null, ""}) {
+            assertSame("Non-preferred original user for entry user='" + entryUser + "'",
+                    originalUser, HostConfigEntry.resolveUsername(originalUser, entryUser));
         }
     }
 
@@ -241,20 +246,20 @@ public class HostConfigEntryTest extends BaseTestSupport {
 
     @Test
     public void testResolveIdentityFilePath() throws Exception {
-        final String HOST = getClass().getSimpleName();
-        final int PORT = 7365;
-        final String USER = getCurrentTestName();
+        final String hostValue = getClass().getSimpleName();
+        final int portValue = 7365;
+        final String userValue = getCurrentTestName();
 
         Exception err = null;
         for (String pattern : new String[] {
-                "~/.ssh/%h.key",
-                "%d/.ssh/%h.key",
-                "/home/%u/.ssh/id_rsa_%p",
-                "/home/%u/.ssh/id_%r_rsa",
-                "/home/%u/.ssh/%h/%l.key"
+            "~/.ssh/%h.key",
+            "%d/.ssh/%h.key",
+            "/home/%u/.ssh/id_rsa_%p",
+            "/home/%u/.ssh/id_%r_rsa",
+            "/home/%u/.ssh/%h/%l.key"
         }) {
             try {
-                String result = HostConfigEntry.resolveIdentityFilePath(pattern, HOST, PORT, USER);
+                String result = HostConfigEntry.resolveIdentityFilePath(pattern, hostValue, portValue, userValue);
                 System.out.append('\t').append(pattern).append(" => ").println(result);
             } catch (Exception e) {
                 System.err.append("Failed (").append(e.getClass().getSimpleName())
@@ -271,11 +276,11 @@ public class HostConfigEntryTest extends BaseTestSupport {
 
     @Test
     public void testFindBestMatch() {
-        final String HOST = getCurrentTestName();
-        HostConfigEntry expected = new HostConfigEntry(HOST, HOST, 7365, HOST);
+        final String hostValue = getCurrentTestName();
+        HostConfigEntry expected = new HostConfigEntry(hostValue, hostValue, 7365, hostValue);
         List<HostConfigEntry> matches = new ArrayList<>();
         matches.add(new HostConfigEntry(HostPatternsHolder.ALL_HOSTS_PATTERN, getClass().getSimpleName(), Short.MAX_VALUE, getClass().getSimpleName()));
-        matches.add(new HostConfigEntry(HOST + String.valueOf(HostPatternsHolder.WILDCARD_PATTERN), getClass().getSimpleName(), Byte.MAX_VALUE, getClass().getSimpleName()));
+        matches.add(new HostConfigEntry(hostValue + String.valueOf(HostPatternsHolder.WILDCARD_PATTERN), getClass().getSimpleName(), Byte.MAX_VALUE, getClass().getSimpleName()));
         matches.add(expected);
 
         for (int index = 0; index < matches.size(); index++) {

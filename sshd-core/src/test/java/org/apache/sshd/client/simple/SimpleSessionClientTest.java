@@ -55,7 +55,7 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
         sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
         client.start();
 
-        try(ClientSession session = simple.sessionLogin(TEST_LOCALHOST, port, getCurrentTestName(), getCurrentTestName())) {
+        try (ClientSession session = simple.sessionLogin(TEST_LOCALHOST, port, getCurrentTestName(), getCurrentTestName())) {
             assertEquals("Mismatched session username", getCurrentTestName(), session.getUsername());
         }
     }
@@ -79,7 +79,7 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
         client.start();
 
-        try(ClientSession session = simple.sessionLogin(TEST_LOCALHOST, port, getCurrentTestName(), identity)) {
+        try (ClientSession session = simple.sessionLogin(TEST_LOCALHOST, port, getCurrentTestName(), identity)) {
             assertEquals("Mismatched session username", getCurrentTestName(), session.getUsername());
             assertTrue("User identity not queried", identityQueried.get());
         }
@@ -115,7 +115,7 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
         client.start();
 
         long nanoStart = System.nanoTime();
-        try(ClientSession session = simple.sessionLogin(TEST_LOCALHOST, port, getCurrentTestName(), getCurrentTestName())) {
+        try (ClientSession session = simple.sessionLogin(TEST_LOCALHOST, port, getCurrentTestName(), getCurrentTestName())) {
             fail("Unexpected connection success");
         } catch (IOException e) {
             long nanoEnd = System.nanoTime();
@@ -145,7 +145,7 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
         client.start();
 
         long nanoStart = System.nanoTime();
-        try(ClientSession session = simple.sessionLogin(TEST_LOCALHOST, port, getCurrentTestName(), getCurrentTestName())) {
+        try (ClientSession session = simple.sessionLogin(TEST_LOCALHOST, port, getCurrentTestName(), getCurrentTestName())) {
             fail("Unexpected connection success");
         } catch (IOException e) {
             long nanoEnd = System.nanoTime();

@@ -56,7 +56,7 @@ import org.junit.runners.MethodSorters;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SecurityUtilsTest extends BaseTestSupport {
     private static final String DEFAULT_PASSWORD = "super secret passphrase";
-    private static final FilePasswordProvider passwordProvider = new FilePasswordProvider() {
+    private static final FilePasswordProvider TEST_PASSWORD_PROVIDER = new FilePasswordProvider() {
         @Override
         public String getPassword(String file) throws IOException {
             return DEFAULT_PASSWORD;
@@ -77,7 +77,8 @@ public class SecurityUtilsTest extends BaseTestSupport {
     public void testLoadEncryptedAESPrivateKey() {
         Assume.assumeTrue("Bouncycastle not registered", SecurityUtils.isBouncyCastleRegistered());
         for (BuiltinCiphers c : new BuiltinCiphers[]{
-                BuiltinCiphers.aes128cbc, BuiltinCiphers.aes192cbc, BuiltinCiphers.aes256cbc}) {
+            BuiltinCiphers.aes128cbc, BuiltinCiphers.aes192cbc, BuiltinCiphers.aes256cbc
+        }) {
             if (!c.isSupported()) {
                 System.out.println("Skip unsupported encryption scheme: " + c.getName());
                 continue;
@@ -152,8 +153,9 @@ public class SecurityUtilsTest extends BaseTestSupport {
         return testLoadPrivateKey(file.toString(), provider, pubType, prvType);
     }
 
-    private static KeyPair testLoadPrivateKey(String resourceKey, AbstractResourceKeyPairProvider<?> provider, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
-        provider.setPasswordFinder(passwordProvider);
+    private static KeyPair testLoadPrivateKey(String resourceKey, AbstractResourceKeyPairProvider<?> provider,
+            Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
+        provider.setPasswordFinder(TEST_PASSWORD_PROVIDER);
         Iterable<KeyPair> iterator = provider.loadKeys();
         List<KeyPair> pairs = new ArrayList<KeyPair>();
         for (KeyPair kp : iterator) {

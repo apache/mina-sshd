@@ -40,7 +40,7 @@ import org.mockito.Mockito;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class LdapPasswordAuthenticatorTest extends BaseAuthenticatorTest {
-    private static final AtomicReference<Pair<LdapServer, DirectoryService>> ldapContextHolder = new AtomicReference<>();
+    private static final AtomicReference<Pair<LdapServer, DirectoryService>> LDAP_CONTEX_HOLDER = new AtomicReference<>();
     private static Map<String, String> usersMap;
 
     public LdapPasswordAuthenticatorTest() {
@@ -49,19 +49,19 @@ public class LdapPasswordAuthenticatorTest extends BaseAuthenticatorTest {
 
     @BeforeClass
     public static void startApacheDs() throws Exception {
-        ldapContextHolder.set(startApacheDs(LdapPasswordAuthenticatorTest.class));
-        usersMap = populateUsers(ldapContextHolder.get().getSecond(), LdapPasswordAuthenticatorTest.class, LdapPasswordAuthenticator.DEFAULT_PASSWORD_ATTR_NAME);
+        LDAP_CONTEX_HOLDER.set(startApacheDs(LdapPasswordAuthenticatorTest.class));
+        usersMap = populateUsers(LDAP_CONTEX_HOLDER.get().getSecond(), LdapPasswordAuthenticatorTest.class, LdapPasswordAuthenticator.DEFAULT_PASSWORD_ATTR_NAME);
         assertFalse("No users retrieved", GenericUtils.isEmpty(usersMap));
     }
 
     @AfterClass
     public static void stopApacheDs() throws Exception {
-        stopApacheDs(ldapContextHolder.getAndSet(null));
+        stopApacheDs(LDAP_CONTEX_HOLDER.getAndSet(null));
     }
 
     @Test   // the user's password is compared with the LDAP stored one
     public void testPasswordComparison() throws Exception {
-        Pair<LdapServer, DirectoryService> ldapContext = ldapContextHolder.get();
+        Pair<LdapServer, DirectoryService> ldapContext = LDAP_CONTEX_HOLDER.get();
         LdapPasswordAuthenticator auth = new LdapPasswordAuthenticator();
         auth.setHost(getHost(ldapContext));
         auth.setPort(getPort(ldapContext));

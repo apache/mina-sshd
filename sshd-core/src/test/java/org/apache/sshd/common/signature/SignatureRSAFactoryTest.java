@@ -42,13 +42,13 @@ public class SignatureRSAFactoryTest extends AbstractSignatureFactoryTestSupport
     private static final List<NamedFactory<Signature>> FACTORIES =
             Collections.unmodifiableList(Collections.<NamedFactory<Signature>>singletonList(BuiltinSignatures.rsa));
 
+    public SignatureRSAFactoryTest(int keySize) {
+        super(KeyPairProvider.SSH_RSA, keySize);
+    }
+
     @Parameters(name = "keySize={0}")
     public static Collection<Object[]> parameters() {
         return parameterize(RSA_SIZES);
-    }
-
-    public SignatureRSAFactoryTest(int keySize) {
-        super(KeyPairProvider.SSH_RSA, keySize);
     }
 
     @Test

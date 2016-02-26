@@ -52,7 +52,7 @@ public class SftpUniversalOwnerAndGroupTest extends BaseTestSupport {
 
     @Test
     public void testFromName() {
-        for (String name : new String[]{ null, "", getCurrentTestName() }) {
+        for (String name : new String[]{null, "", getCurrentTestName()}) {
             assertNull("Unexpected value for '" + name + "'", SftpUniversalOwnerAndGroup.fromName(name));
         }
 

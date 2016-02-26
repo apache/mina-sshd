@@ -71,13 +71,13 @@ public class DefaultSshFutureTest extends BaseTestSupport {
             }
         };
 
-        final int NUM_LISTENERS = Byte.SIZE;
-        for (int index = 0; index < NUM_LISTENERS; index++) {
+        final int numListeners = Byte.SIZE;
+        for (int index = 0; index < numListeners; index++) {
             future.addListener(listener);
         }
 
         future.setValue(expected);
-        assertEquals("Mismatched listeners invocation count", NUM_LISTENERS, listenerCount.get());
+        assertEquals("Mismatched listeners invocation count", numListeners, listenerCount.get());
     }
 
     @Test

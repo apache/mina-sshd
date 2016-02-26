@@ -35,9 +35,9 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
@@ -120,6 +120,7 @@ public class LoadTest extends BaseTestSupport {
         }
     }
 
+    @SuppressWarnings("checkstyle:nestedtrydepth")
     protected void runClient(String msg) throws Exception {
         try (SshClient client = setupTestClient()) {
             PropertyResolverUtils.updateProperty(client, FactoryManager.MAX_PACKET_SIZE, 1024 * 16);

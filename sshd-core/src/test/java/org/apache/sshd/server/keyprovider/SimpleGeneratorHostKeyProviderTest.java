@@ -56,19 +56,19 @@ public class SimpleGeneratorHostKeyProviderTest extends BaseTestSupport {
     }
 
     @Test
-    public void testEC_NISTP256() throws IOException {
+    public void testECnistp256() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         testSimpleGeneratorHostKeyProvider("EC", KeyPairProvider.ECDSA_SHA2_NISTP256, -1, new ECGenParameterSpec("prime256v1"));
     }
 
     @Test
-    public void testEC_NISTP384() throws IOException {
+    public void testECnistp384() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         testSimpleGeneratorHostKeyProvider("EC", KeyPairProvider.ECDSA_SHA2_NISTP384, -1, new ECGenParameterSpec("P-384"));
     }
 
     @Test
-    public void testEC_NISTP521() throws IOException {
+    public void testECnistp521() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         testSimpleGeneratorHostKeyProvider("EC", KeyPairProvider.ECDSA_SHA2_NISTP521, -1, new ECGenParameterSpec("P-521"));
     }

@@ -68,18 +68,19 @@ public class TtyFilterOutputStreamTest extends BaseTestSupport {
         final AtomicInteger crCount = new AtomicInteger(0);
         final AtomicInteger lfCount = new AtomicInteger(0);
         try (OutputStream output = new OutputStream() {
-                    @Override
-                    public void write(int b) throws IOException {
-                        if (b == '\r') {
-                            crCount.incrementAndGet();
-                        } else if (b == '\n') {
-                            lfCount.incrementAndGet();
-                        }
+                @Override
+                public void write(int b) throws IOException {
+                    if (b == '\r') {
+                        crCount.incrementAndGet();
+                    } else if (b == '\n') {
+                        lfCount.incrementAndGet();
                     }
-                };
-              TtyFilterOutputStream ttyOut = new TtyFilterOutputStream(
-                      output, null, PtyMode.ECHO.equals(mode) ? Collections.<PtyMode>emptySet(): EnumSet.of(mode));
-              Writer writer = new OutputStreamWriter(ttyOut, StandardCharsets.UTF_8)) {
+                }
+            };
+            TtyFilterOutputStream ttyOut = new TtyFilterOutputStream(
+                    output, null, PtyMode.ECHO.equals(mode) ? Collections.<PtyMode>emptySet() : EnumSet.of(mode));
+            Writer writer = new OutputStreamWriter(ttyOut, StandardCharsets.UTF_8)) {
+
             for (String l : lines) {
                 writer.append(l).append("\r\n");
             }

@@ -27,6 +27,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import com.jcraft.jsch.JSch;
+
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.channel.Channel;
@@ -45,8 +47,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-
-import com.jcraft.jsch.JSch;
 
 /**
  * Test Cipher algorithms.
@@ -88,16 +88,6 @@ public class CipherTest extends BaseTestSupport {
 
     private static final String CRYPT_NAMES = NamedResource.Utils.getNames(TEST_CIPHERS);
 
-    @Parameters(name = "cipher={0}, load={2}")
-    public static Collection<Object[]> parameters() {
-        return PARAMETERS;
-    }
-
-    @BeforeClass
-    public static void jschInit() {
-        JSchLogger.init();
-    }
-
     private final Random random = Utils.getRandomizerInstance();
     private final BuiltinCiphers builtInCipher;
     private final Class<? extends com.jcraft.jsch.Cipher> jschCipher;
@@ -107,6 +97,16 @@ public class CipherTest extends BaseTestSupport {
         this.builtInCipher = builtInCipher;
         this.jschCipher = jschCipher;
         this.loadTestRounds = loadTestRounds;
+    }
+
+    @Parameters(name = "cipher={0}, load={2}")
+    public static Collection<Object[]> parameters() {
+        return PARAMETERS;
+    }
+
+    @BeforeClass
+    public static void jschInit() {
+        JSchLogger.init();
     }
 
     @Test
@@ -185,10 +185,10 @@ public class CipherTest extends BaseTestSupport {
     static boolean checkCipher(String cipher) {
         try {
             Class<?> c = Class.forName(cipher);
-            com.jcraft.jsch.Cipher _c = (com.jcraft.jsch.Cipher) (c.newInstance());
-            _c.init(com.jcraft.jsch.Cipher.ENCRYPT_MODE,
-                    new byte[_c.getBlockSize()],
-                    new byte[_c.getIVSize()]);
+            com.jcraft.jsch.Cipher jschCipher = (com.jcraft.jsch.Cipher) (c.newInstance());
+            jschCipher.init(com.jcraft.jsch.Cipher.ENCRYPT_MODE,
+                    new byte[jschCipher.getBlockSize()],
+                    new byte[jschCipher.getIVSize()]);
             return true;
         } catch (Exception e) {
             System.err.println("checkCipher(" + cipher + ") " + e.getClass().getSimpleName() + ": " + e.getMessage());

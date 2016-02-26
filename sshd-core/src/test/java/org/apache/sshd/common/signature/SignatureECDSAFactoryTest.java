@@ -51,13 +51,13 @@ public class SignatureECDSAFactoryTest extends AbstractSignatureFactoryTestSuppo
                             BuiltinSignatures.nistp521
                     ));
 
+    public SignatureECDSAFactoryTest(ECCurves curve) {
+        super(curve.getName(), curve.getKeySize());
+    }
+
     @Parameters(name = "keySize={0}")
     public static Collection<Object[]> parameters() {
         return parameterize(ECCurves.VALUES);
-    }
-
-    public SignatureECDSAFactoryTest(ECCurves curve) {
-        super(curve.getName(), curve.getKeySize());
     }
 
     @Test

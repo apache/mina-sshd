@@ -49,6 +49,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSch;
+
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
@@ -102,14 +105,12 @@ import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.JSch;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SftpTest extends AbstractSftpClientTestSupport {
+    private static final Map<String, OptionalFeature> EXPECTED_EXTENSIONS = SftpSubsystem.DEFAULT_SUPPORTED_CLIENT_EXTENSIONS;
 
     private com.jcraft.jsch.Session session;
 
@@ -219,16 +220,17 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     int maxAllowed = actual.length / 4;
                     // allow less than actual
                     PropertyResolverUtils.updateProperty(sshd, SftpSubsystem.MAX_PACKET_LENGTH_PROP, maxAllowed);
-                    try(CloseableHandle handle = sftp.open(file, OpenMode.Read)) {
+                    try (CloseableHandle handle = sftp.open(file, OpenMode.Read)) {
                         int readLen = sftp.read(handle, 0L, actual);
                         assertEquals("Mismatched read len", maxAllowed, readLen);
 
                         for (int index = 0; index < readLen; index++) {
-                            byte expByte = expected[index], actByte = actual[index];
+                            byte expByte = expected[index];
+                            byte actByte = actual[index];
                             if (expByte != actByte) {
                                 fail("Mismatched values at index=" + index
-                                   + ": expected=0x" + Integer.toHexString(expByte & 0xFF)
-                                   + ", actual=0x" + Integer.toHexString(actByte & 0xFF));
+                                    + ": expected=0x" + Integer.toHexString(expByte & 0xFF)
+                                    + ", actual=0x" + Integer.toHexString(actByte & 0xFF));
                             }
                         }
                     }
@@ -425,7 +427,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
                     try (SftpClient.CloseableHandle h = sftp.open(file /* no mode == read */)) {
                         // NOTE: on Windows files are always readable
-                        // see https://svn.apache.org/repos/asf/harmony/enhanced/java/branches/java6/classlib/modules/luni/src/test/api/windows/org/apache/harmony/luni/tests/java/io/WinFileTest.java
+                        // see https://svn.apache.org/repos/asf/harmony/enhanced/java/branches/java6/classlib/modules/
+                        //      luni/src/test/api/windows/org/apache/harmony/luni/tests/java/io/WinFileTest.java
                         assertTrue("Empty read should have failed on " + file, isWindows);
                     } catch (IOException e) {
                         if (isWindows) {
@@ -448,8 +451,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
                     // NOTE: on Windows files are always readable
                     int perms = sftp.stat(file).getPermissions();
-                    int permsMask = SftpConstants.S_IWUSR | (isWindows ? 0 : SftpConstants.S_IRUSR);
-                    assertEquals("Mismatched permissions for " + file + ": 0x" + Integer.toHexString(perms), 0, (perms & permsMask));
+                    int readMask = isWindows ? 0 : SftpConstants.S_IRUSR;
+                    int permsMask = SftpConstants.S_IWUSR | readMask;
+                    assertEquals("Mismatched permissions for " + file + ": 0x" + Integer.toHexString(perms), 0, perms & permsMask);
 
                     javaFile.setWritable(true, false);
 
@@ -500,6 +504,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     }
 
     @Test
+    @SuppressWarnings({"checkstyle:anoninnerlength", "checkstyle:methodlength"})
     public void testClient() throws Exception {
         List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();
         assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
@@ -520,6 +525,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         final AtomicInteger removedCount = new AtomicInteger(0);
         final AtomicInteger modifyingCount = new AtomicInteger(0);
         final AtomicInteger modifiedCount = new AtomicInteger(0);
+
         factory.addSftpEventListener(new SftpEventListener() {
             private final Logger log = LoggerFactory.getLogger(SftpEventListener.class);
 
@@ -822,9 +828,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         Path target = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
         String remotePath = Utils.resolveRelativeRemotePath(targetPath.getParent(), target);
 
-        final int NUM_ITERATIONS = 10;
-        StringBuilder sb = new StringBuilder(d.length() * NUM_ITERATIONS * NUM_ITERATIONS);
-        for (int j = 1; j <= NUM_ITERATIONS; j++) {
+        final int numIterations = 10;
+        StringBuilder sb = new StringBuilder(d.length() * numIterations * numIterations);
+        for (int j = 1; j <= numIterations; j++) {
             if (sb.length() > 0) {
                 sb.setLength(0);
             }
@@ -888,8 +894,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             File dir = baseDir.getParentFile();
             Collection<String> expNames = OsUtils.isUNIX()
                                         ? new LinkedList<String>()
-                                        : new TreeSet<String>(String.CASE_INSENSITIVE_ORDER)
-                                        ;
+                                        : new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
             String[] names = dir.list();
             if (GenericUtils.length(names) > 0) {
                 for (String n : names) {
@@ -984,9 +989,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 try (SftpClient sftp = session.createSftpClient()) {
                     Map<String, byte[]> extensions = sftp.getServerExtensions();
                     for (String name : new String[]{
-                            SftpConstants.EXT_NEWLINE, SftpConstants.EXT_VERSIONS,
-                            SftpConstants.EXT_VENDOR_ID, SftpConstants.EXT_ACL_SUPPORTED,
-                            SftpConstants.EXT_SUPPORTED, SftpConstants.EXT_SUPPORTED2
+                        SftpConstants.EXT_NEWLINE, SftpConstants.EXT_VERSIONS,
+                        SftpConstants.EXT_VENDOR_ID, SftpConstants.EXT_ACL_SUPPORTED,
+                        SftpConstants.EXT_SUPPORTED, SftpConstants.EXT_SUPPORTED2
                     }) {
                         assertTrue("Missing extension=" + name, extensions.containsKey(name));
                     }
@@ -1048,7 +1053,6 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         }
     }
 
-    private static Map<String, OptionalFeature> EXPECTED_EXTENSIONS = SftpSubsystem.DEFAULT_SUPPORTED_CLIENT_EXTENSIONS;
     private static void assertSupportedExtensions(String extName, Collection<String> extensionNames) {
         assertEquals(extName + "[count]", EXPECTED_EXTENSIONS.size(), GenericUtils.size(extensionNames));
 
@@ -1180,8 +1184,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             List<SftpClient.DirEntry> dirEntries = sftp.readDir(h);
             assertNotNull("No dir entries", dirEntries);
 
-            boolean dotFiltered = false, dotdotFiltered = false;
-            for (Iterator<SftpClient.DirEntry> it = dirEntries.iterator(); it.hasNext(); ) {
+            boolean dotFiltered = false;
+            boolean dotdotFiltered = false;
+            for (Iterator<SftpClient.DirEntry> it = dirEntries.iterator(); it.hasNext();) {
                 SftpClient.DirEntry entry = it.next();
                 String name = entry.getFilename();
                 if (".".equals(name) && (!dotFiltered)) {
@@ -1201,7 +1206,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
         sftp.remove(file);
 
-        final int SIZE_FACTOR = Short.SIZE;
+        final int sizeFactor = Short.SIZE;
         byte[] workBuf = new byte[IoUtils.DEFAULT_COPY_SIZE * Short.SIZE];
         Factory<? extends Random> factory = manager.getRandomFactory();
         Random random = factory.create();
@@ -1212,7 +1217,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         }
 
         // force several internal read cycles to satisfy the full read
-        try (InputStream is = sftp.read(file, workBuf.length / SIZE_FACTOR)) {
+        try (InputStream is = sftp.read(file, workBuf.length / sizeFactor)) {
             int readLen = is.read(workBuf);
             assertEquals("Mismatched read data length", workBuf.length, readLen);
 
@@ -1227,7 +1232,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         assertTrue("Test directory not reported as such", attributes.isDirectory());
 
         int nb = 0;
-        boolean dotFiltered = false, dotdotFiltered = false;
+        boolean dotFiltered = false;
+        boolean dotdotFiltered = false;
         for (SftpClient.DirEntry entry : sftp.readDir(dir)) {
             assertNotNull("Unexpected null entry", entry);
             String name = entry.getFilename();
@@ -1286,10 +1292,10 @@ public class SftpTest extends AbstractSftpClientTestSupport {
          * (see http://epaul.github.io/jsch-documentation/simple.javadoc/com/jcraft/jsch/ChannelSftp.html#current-directory)
          *
          *
-         * 		This sftp client has the concept of a current local directory and
-         * 		a current remote directory. These are not inherent to the protocol,
-         *  	but are used implicitly for all path-based commands sent to the server
-         *  	for the remote directory) or accessing the local file system (for the local directory).
+         *         This sftp client has the concept of a current local directory and
+         *         a current remote directory. These are not inherent to the protocol,
+         *      but are used implicitly for all path-based commands sent to the server
+         *      for the remote directory) or accessing the local file system (for the local directory).
          *
          *  Therefore we are using "absolute" remote files for this test
          */
@@ -1301,9 +1307,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         ChannelSftp c = (ChannelSftp) session.openChannel(SftpConstants.SFTP_SUBSYSTEM_NAME);
         c.connect();
         try {
-        	try (InputStream dataStream = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8))) {
-        		c.put(dataStream, remSrcPath);
-        	}
+            try (InputStream dataStream = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8))) {
+                c.put(dataStream, remSrcPath);
+            }
             assertTrue("Source file not created: " + sourcePath, Files.exists(sourcePath));
             assertEquals("Mismatched stored data in " + remSrcPath, data, readFile(remSrcPath));
 

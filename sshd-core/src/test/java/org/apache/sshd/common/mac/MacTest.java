@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 
+import com.jcraft.jsch.JSch;
+
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.util.GenericUtils;
@@ -48,8 +50,6 @@ import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import com.jcraft.jsch.JSch;
-
 import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.ConnectionInfo;
 
@@ -61,7 +61,7 @@ import ch.ethz.ssh2.ConnectionInfo;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class MacTest extends BaseTestSupport {
-    private static final Collection<String> ganymedMacs =
+    private static final Collection<String> GANYMEDE_MACS =
             Collections.unmodifiableSet(new TreeSet<String>(String.CASE_INSENSITIVE_ORDER) {
                 private static final long serialVersionUID = 1L;    // we're not serializing it
 
@@ -74,6 +74,16 @@ public class MacTest extends BaseTestSupport {
                     }
                 }
             });
+
+    private final MacFactory factory;
+    private final String jschMacClass;
+    private SshServer sshd;
+    private int port;
+
+    public MacTest(MacFactory factory, String jschMacClass) {
+        this.factory = factory;
+        this.jschMacClass = jschMacClass;
+    }
 
     @Parameters(name = "factory={0}")
     public static Collection<Object[]> parameters() {
@@ -112,16 +122,6 @@ public class MacTest extends BaseTestSupport {
     @BeforeClass
     public static void jschnit() {
         JSchLogger.init();
-    }
-
-    private final MacFactory factory;
-    private final String jschMacClass;
-    private SshServer sshd;
-    private int port;
-
-    public MacTest(MacFactory factory, String jschMacClass) {
-        this.factory = factory;
-        this.jschMacClass = jschMacClass;
     }
 
     @Before
@@ -175,7 +175,7 @@ public class MacTest extends BaseTestSupport {
     @Test
     public void testWithGanymede() throws Exception {
         String macName = factory.getName();
-        Assume.assumeTrue("Factory not supported: " + macName, ganymedMacs.contains(macName));
+        Assume.assumeTrue("Factory not supported: " + macName, GANYMEDE_MACS.contains(macName));
 
         ch.ethz.ssh2.log.Logger.enabled = true;
         Connection conn = new Connection(TEST_LOCALHOST, port);

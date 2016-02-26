@@ -65,8 +65,8 @@ public enum KexProposalOption {
         new Comparator<KexProposalOption>() {
             @Override
             public int compare(KexProposalOption o1, KexProposalOption o2) {
-                int i1 = (o1 == null) ? (-1) : o1.getProposalIndex();
-                int i2 = (o2 == null) ? (-1) : o2.getProposalIndex();
+                int i1 = (o1 == null) ? -1 : o1.getProposalIndex();
+                int i2 = (o2 == null) ? -1 : o2.getProposalIndex();
                 return Integer.compare(i1, i2);
             }
         };

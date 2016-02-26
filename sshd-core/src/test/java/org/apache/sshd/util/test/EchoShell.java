@@ -99,7 +99,7 @@ public class EchoShell implements Command, Runnable {
     public void run() {
         BufferedReader r = new BufferedReader(new InputStreamReader(in));
         try {
-            for (; ; ) {
+            for (;;) {
                 String s = r.readLine();
                 if (s == null) {
                     return;

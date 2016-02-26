@@ -52,15 +52,16 @@ public class SftpVersionSelectorTest extends BaseTestSupport {
         for (int expected = SftpSubsystem.LOWER_SFTP_IMPL; expected <= SftpSubsystem.HIGHER_SFTP_IMPL; expected++) {
             for (int index = 0; index < available.size(); index++) {
                 Collections.shuffle(available, rnd);
-                assertEquals("Mismatched suffling selected for current=" + expected + ", available=" + available, expected, SftpVersionSelector.CURRENT.selectVersion(expected, available));
+                assertEquals("Mismatched suffling selected for current=" + expected + ", available=" + available,
+                        expected, SftpVersionSelector.CURRENT.selectVersion(expected, available));
             }
         }
     }
 
     @Test
     public void testFixedVersionSelector() {
-        final int FIXED_VALUE = 7365;
-        testVersionSelector(SftpVersionSelector.Utils.fixedVersionSelector(FIXED_VALUE), FIXED_VALUE);
+        final int fixedValue = 7365;
+        testVersionSelector(SftpVersionSelector.Utils.fixedVersionSelector(fixedValue), fixedValue);
     }
 
     @Test
@@ -87,7 +88,9 @@ public class SftpVersionSelectorTest extends BaseTestSupport {
                     int version = unavailable.get(0);
                     int actual = selector.selectVersion(version, unavailable);
                     fail("Unexpected selected version (" + actual + ")"
-                       + " for current= " + version + ", available=" + unavailable + ", preferred=" + preferred);
+                            + " for current= " + version
+                            + ", available=" + unavailable
+                            + ", preferred=" + preferred);
                 } catch (IllegalStateException e) {
                     // expected
                 }

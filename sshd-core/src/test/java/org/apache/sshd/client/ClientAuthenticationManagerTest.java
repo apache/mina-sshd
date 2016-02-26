@@ -105,12 +105,12 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
         setter.invoke(session, sessionProvider);
         assertSame(baseName + ": mismatched session override provider", sessionProvider, getter.invoke(session));
 
-        setter.invoke(session, new Object[] { null });
+        setter.invoke(session, new Object[]{null});
         assertSame(baseName + ": mismatched nullified session provider", clientProvider, getter.invoke(session));
     }
 
     private <M extends ClientAuthenticationManager> M testClientAuthenticationManager(M manager) {
-        {
+        if (manager != null) {
             String expected = getCurrentTestName();
             assertNull("Unexpected initial password identity", manager.removePasswordIdentity(expected));
             manager.addPasswordIdentity(expected);
@@ -120,7 +120,7 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
             assertNull("Password identity not removed", manager.removePasswordIdentity(expected));
         }
 
-        {
+        if (manager != null) {
             KeyPair expected = new KeyPair(Mockito.mock(PublicKey.class), Mockito.mock(PrivateKey.class));
             assertNull("Unexpected initial pubket identity", manager.removePublicKeyIdentity(expected));
             manager.addPublicKeyIdentity(expected);

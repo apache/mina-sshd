@@ -59,7 +59,7 @@ public class KeyUtilsFingerprintGenerationTest extends BaseTestSupport {
     @Parameters(name = "key={0}, digestFactory={1}, expected={2}")
     public static Collection<Object[]> parameters() throws IOException, GeneralSecurityException {
         @SuppressWarnings("cast")
-        List<Pair<String, List<Pair<DigestFactory, String>>>> KEY_ENTRIES = Collections.unmodifiableList(Arrays.asList(
+        List<Pair<String, List<Pair<DigestFactory, String>>>> keyEntries = Collections.unmodifiableList(Arrays.asList(
             new Pair<>(
                 // CHECKSTYLE:OFF
                 "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAxr3N5fkt966xJINl0hH7Q6lLDRR1D0yMjcXCE5roE9VFut2ctGFuo90TCOxkPOMnwzwConeyScVF4ConZeWsxbG9VtRh61IeZ6R5P5ZTvE9xPdZBgIEWvU1bRfrrOfSMihqF98pODspE6NoTtND2eglwSGwxcYFmpdTAmu+8qgxgGxlEaaCjqwdiNPZhygrH81Mv2ruolNeZkn4Bj+wFFmZTD/waN1pQaMf+SO1+kEYIYFNl5+8JRGuUcr8MhHHJB+gwqMTF2BSBVITJzZUiQR0TMtkK6Vbs7yt1F9hhzDzAFDwhV+rsfNQaOHpl3zP07qH+/99A0XG1CVcEdHqVMw== lgoldstein@LGOLDSTEIN-WIN7",
@@ -108,7 +108,7 @@ public class KeyUtilsFingerprintGenerationTest extends BaseTestSupport {
         ));
 
         List<Object[]> ret = new ArrayList<>();
-        for (Pair<String, List<Pair<DigestFactory, String>>> kentry : KEY_ENTRIES) {
+        for (Pair<String, List<Pair<DigestFactory, String>>> kentry : keyEntries) {
             String keyValue = kentry.getFirst();
             try {
                 PublicKey key = PublicKeyEntry.parsePublicKeyEntry(keyValue).resolvePublicKey(PublicKeyEntryResolver.FAILING);

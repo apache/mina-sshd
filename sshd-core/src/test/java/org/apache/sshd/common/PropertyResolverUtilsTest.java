@@ -42,16 +42,16 @@ public class PropertyResolverUtilsTest extends BaseTestSupport {
 
     @Test
     public void testResolveAndUpdateClosestPropertyValue() {
-        final String NAME = getCurrentTestName();
-        final String ROOT_VALUE = getClass().getPackage().getName();
+        final String propName = getCurrentTestName();
+        final String rootValue = getClass().getPackage().getName();
         Session resolver = createMockSession();
         FactoryManager root = ValidateUtils.checkNotNull(resolver.getFactoryManager(), "No manager");
-        assertNull("Unexpected root previous value", PropertyResolverUtils.updateProperty(root, NAME, ROOT_VALUE));
-        assertSame("Mismatched root value", ROOT_VALUE, PropertyResolverUtils.getString(resolver, NAME));
+        assertNull("Unexpected root previous value", PropertyResolverUtils.updateProperty(root, propName, rootValue));
+        assertSame("Mismatched root value", rootValue, PropertyResolverUtils.getString(resolver, propName));
 
-        final String NODE_VALUE = getClass().getSimpleName();
-        assertNull("Unexpected node previous value", PropertyResolverUtils.updateProperty(resolver, NAME, NODE_VALUE));
-        assertSame("Mismatched node value", NODE_VALUE, PropertyResolverUtils.getString(resolver, NAME));
+        final String nodeValue = getClass().getSimpleName();
+        assertNull("Unexpected node previous value", PropertyResolverUtils.updateProperty(resolver, propName, nodeValue));
+        assertSame("Mismatched node value", nodeValue, PropertyResolverUtils.getString(resolver, propName));
     }
 
     @Test
@@ -60,34 +60,34 @@ public class PropertyResolverUtilsTest extends BaseTestSupport {
         Map<String, ?> props = resolver.getProperties();
         assertTrue("Unexpected initial resolver values: " + props, GenericUtils.isEmpty(props));
 
-        final String NAME = getCurrentTestName();
-        assertNull("Unexpected initial resolved value", PropertyResolverUtils.getObject(resolver, NAME));
+        final String propName = getCurrentTestName();
+        assertNull("Unexpected initial resolved value", PropertyResolverUtils.getObject(resolver, propName));
 
-        final String PROPKEY = SyspropsMapWrapper.getMappedSyspropKey(NAME);
-        assertNull("Unexpected property value for " + PROPKEY, System.getProperty(PROPKEY));
+        final String propKey = SyspropsMapWrapper.getMappedSyspropKey(propName);
+        assertNull("Unexpected property value for " + propKey, System.getProperty(propKey));
 
         try {
             long expected = System.currentTimeMillis();
-            System.setProperty(PROPKEY, Long.toString(expected));
-            testLongProperty(resolver, NAME, expected);
+            System.setProperty(propKey, Long.toString(expected));
+            testLongProperty(resolver, propName, expected);
         } finally {
-            System.clearProperty(PROPKEY);
+            System.clearProperty(propKey);
         }
 
         try {
             int expected = 3777347;
-            System.setProperty(PROPKEY, Integer.toString(expected));
-            testIntegerProperty(resolver, NAME, expected);
+            System.setProperty(propKey, Integer.toString(expected));
+            testIntegerProperty(resolver, propName, expected);
         } finally {
-            System.clearProperty(PROPKEY);
+            System.clearProperty(propKey);
         }
 
         for (final boolean expected : new boolean[]{false, true}) {
             try {
-                System.setProperty(PROPKEY, Boolean.toString(expected));
-                testBooleanProperty(resolver, NAME, expected);
+                System.setProperty(propKey, Boolean.toString(expected));
+                testBooleanProperty(resolver, propName, expected);
             } finally {
-                System.clearProperty(PROPKEY);
+                System.clearProperty(propKey);
             }
         }
     }
@@ -107,6 +107,7 @@ public class PropertyResolverUtilsTest extends BaseTestSupport {
         testLongProperty(session, name, expected);
     }
 
+    @SuppressWarnings("checkstyle:avoidnestedblocks")
     private void testLongProperty(PropertyResolver resolver, String name, long expected) {
         Map<String, ?> props = resolver.getProperties();
         Object value = props.get(name);
@@ -145,6 +146,7 @@ public class PropertyResolverUtilsTest extends BaseTestSupport {
         testIntegerProperty(session, name, expected);
     }
 
+    @SuppressWarnings("checkstyle:avoidnestedblocks")
     private void testIntegerProperty(PropertyResolver resolver, String name, int expected) {
         Map<String, ?> props = resolver.getProperties();
         Object value = props.get(name);
@@ -180,6 +182,7 @@ public class PropertyResolverUtilsTest extends BaseTestSupport {
         }
     }
 
+    @SuppressWarnings("checkstyle:avoidnestedblocks")
     private void testBooleanProperty(PropertyResolver resolver, String name, boolean expected) {
         Map<String, ?> props = resolver.getProperties();
         Object value = props.get(name);

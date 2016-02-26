@@ -241,7 +241,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testPropertyResolutionHierarchy() throws Exception {
-        final String SESSION_PROP_NAME = getCurrentTestName() + "-session";
+        final String sessionPropName = getCurrentTestName() + "-session";
         final AtomicReference<Object> sessionConfigValueHolder = new AtomicReference<>(null);
         client.addSessionListener(new SessionListener() {
             @Override
@@ -265,12 +265,12 @@ public class ClientTest extends BaseTestSupport {
             }
 
             private void updateSessionConfigProperty(Session session, Object value) {
-                PropertyResolverUtils.updateProperty(session, SESSION_PROP_NAME, value);
+                PropertyResolverUtils.updateProperty(session, sessionPropName, value);
                 sessionConfigValueHolder.set(value);
             }
         });
 
-        final String CHANNEL_PROP_NAME = getCurrentTestName() + "-channel";
+        final String channelPropName = getCurrentTestName() + "-channel";
         final AtomicReference<Object> channelConfigValueHolder = new AtomicReference<>(null);
         client.addChannelListener(new ChannelListener() {
             @Override
@@ -299,24 +299,24 @@ public class ClientTest extends BaseTestSupport {
             }
 
             private void updateChannelConfigProperty(Channel channel, Object value) {
-                PropertyResolverUtils.updateProperty(channel, CHANNEL_PROP_NAME, value);
+                PropertyResolverUtils.updateProperty(channel, channelPropName, value);
                 channelConfigValueHolder.set(value);
             }
         });
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
-            assertSame("Session established", sessionConfigValueHolder.get(), PropertyResolverUtils.getObject(session, SESSION_PROP_NAME));
+            assertSame("Session established", sessionConfigValueHolder.get(), PropertyResolverUtils.getObject(session, sessionPropName));
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
-            assertSame("Session authenticated", sessionConfigValueHolder.get(), PropertyResolverUtils.getObject(session, SESSION_PROP_NAME));
+            assertSame("Session authenticated", sessionConfigValueHolder.get(), PropertyResolverUtils.getObject(session, sessionPropName));
 
             try (ChannelExec channel = session.createExecChannel(getCurrentTestName());
                  OutputStream stdout = new NoCloseOutputStream(System.out);
                  OutputStream stderr = new NoCloseOutputStream(System.err)) {
-                assertSame("Channel created", channelConfigValueHolder.get(), PropertyResolverUtils.getObject(channel, CHANNEL_PROP_NAME));
-                assertNull("Direct channel created session prop", PropertyResolverUtils.getObject(channel.getProperties(), SESSION_PROP_NAME));
-                assertSame("Indirect channel created session prop", sessionConfigValueHolder.get(), PropertyResolverUtils.getObject(channel, SESSION_PROP_NAME));
+                assertSame("Channel created", channelConfigValueHolder.get(), PropertyResolverUtils.getObject(channel, channelPropName));
+                assertNull("Direct channel created session prop", PropertyResolverUtils.getObject(channel.getProperties(), sessionPropName));
+                assertSame("Indirect channel created session prop", sessionConfigValueHolder.get(), PropertyResolverUtils.getObject(channel, sessionPropName));
 
                 channel.setOut(stdout);
                 channel.setErr(stderr);
@@ -389,7 +389,7 @@ public class ClientTest extends BaseTestSupport {
                     out.reset();
                     err.reset();
 
-                    try(ChannelShell channel = session.createShellChannel()) {
+                    try (ChannelShell channel = session.createShellChannel()) {
                         channel.setIn(inPipe);
                         channel.setOut(out);
                         channel.setErr(err);
@@ -497,7 +497,7 @@ public class ClientTest extends BaseTestSupport {
     private <C extends Closeable> void testClientListener(AtomicReference<Channel> channelHolder, Class<C> channelType, Factory<? extends C> factory) throws Exception {
         assertNull(channelType.getSimpleName() + ": Unexpected currently active channel", channelHolder.get());
 
-        try(C instance = factory.create()) {
+        try (C instance = factory.create()) {
             Channel expectedChannel;
             if (instance instanceof Channel) {
                 expectedChannel = (Channel) instance;
@@ -532,71 +532,68 @@ public class ClientTest extends BaseTestSupport {
             final int nbMessages = 1000;
 
             try (final ByteArrayOutputStream baosOut = new ByteArrayOutputStream();
-                 final ByteArrayOutputStream baosErr = new ByteArrayOutputStream()) {
-                 final AtomicInteger writes = new AtomicInteger(nbMessages);
+                final ByteArrayOutputStream baosErr = new ByteArrayOutputStream()) {
+                final AtomicInteger writes = new AtomicInteger(nbMessages);
 
-                channel.getAsyncIn().write(new ByteArrayBuffer(message))
-                       .addListener(new SshFutureListener<IoWriteFuture>() {
-                                @Override
-                                public void operationComplete(IoWriteFuture future) {
-                                    try {
-                                        if (future.isWritten()) {
-                                            if (writes.decrementAndGet() > 0) {
-                                                channel.getAsyncIn().write(new ByteArrayBuffer(message)).addListener(this);
-                                            } else {
-                                                channel.getAsyncIn().close(false);
-                                            }
-                                        } else {
-                                            throw new SshException("Error writing", future.getException());
-                                        }
-                                    } catch (IOException e) {
-                                        if (!channel.isClosing()) {
-                                            e.printStackTrace();
-                                            channel.close(true);
-                                        }
-                                    }
+                channel.getAsyncIn().write(new ByteArrayBuffer(message)).addListener(new SshFutureListener<IoWriteFuture>() {
+                    @Override
+                    public void operationComplete(IoWriteFuture future) {
+                        try {
+                            if (future.isWritten()) {
+                                if (writes.decrementAndGet() > 0) {
+                                    channel.getAsyncIn().write(new ByteArrayBuffer(message)).addListener(this);
+                                } else {
+                                    channel.getAsyncIn().close(false);
                                 }
-                            });
-                channel.getAsyncOut().read(new ByteArrayBuffer())
-                       .addListener(new SshFutureListener<IoReadFuture>() {
-                                @Override
-                                public void operationComplete(IoReadFuture future) {
-                                    try {
-                                        future.verify(5L, TimeUnit.SECONDS);
+                            } else {
+                                throw new SshException("Error writing", future.getException());
+                            }
+                        } catch (IOException e) {
+                            if (!channel.isClosing()) {
+                                e.printStackTrace();
+                                channel.close(true);
+                            }
+                        }
+                    }
+                });
+                channel.getAsyncOut().read(new ByteArrayBuffer()).addListener(new SshFutureListener<IoReadFuture>() {
+                    @Override
+                    public void operationComplete(IoReadFuture future) {
+                        try {
+                            future.verify(5L, TimeUnit.SECONDS);
 
-                                        Buffer buffer = future.getBuffer();
-                                        baosOut.write(buffer.array(), buffer.rpos(), buffer.available());
-                                        buffer.rpos(buffer.rpos() + buffer.available());
-                                        buffer.compact();
-                                        channel.getAsyncOut().read(buffer).addListener(this);
-                                    } catch (IOException e) {
-                                        if (!channel.isClosing()) {
-                                            e.printStackTrace();
-                                            channel.close(true);
-                                        }
-                                    }
-                                }
-                            });
-                channel.getAsyncErr().read(new ByteArrayBuffer())
-                       .addListener(new SshFutureListener<IoReadFuture>() {
-                                @Override
-                                public void operationComplete(IoReadFuture future) {
-                                    try {
-                                        future.verify(5L, TimeUnit.SECONDS);
+                            Buffer buffer = future.getBuffer();
+                            baosOut.write(buffer.array(), buffer.rpos(), buffer.available());
+                            buffer.rpos(buffer.rpos() + buffer.available());
+                            buffer.compact();
+                            channel.getAsyncOut().read(buffer).addListener(this);
+                        } catch (IOException e) {
+                            if (!channel.isClosing()) {
+                                e.printStackTrace();
+                                channel.close(true);
+                            }
+                        }
+                    }
+                });
+                channel.getAsyncErr().read(new ByteArrayBuffer()).addListener(new SshFutureListener<IoReadFuture>() {
+                    @Override
+                    public void operationComplete(IoReadFuture future) {
+                        try {
+                            future.verify(5L, TimeUnit.SECONDS);
 
-                                        Buffer buffer = future.getBuffer();
-                                        baosErr.write(buffer.array(), buffer.rpos(), buffer.available());
-                                        buffer.rpos(buffer.rpos() + buffer.available());
-                                        buffer.compact();
-                                        channel.getAsyncErr().read(buffer).addListener(this);
-                                    } catch (IOException e) {
-                                        if (!channel.isClosing()) {
-                                            e.printStackTrace();
-                                            channel.close(true);
-                                        }
-                                    }
-                                }
-                            });
+                            Buffer buffer = future.getBuffer();
+                            baosErr.write(buffer.array(), buffer.rpos(), buffer.available());
+                            buffer.rpos(buffer.rpos() + buffer.available());
+                            buffer.compact();
+                            channel.getAsyncErr().read(buffer).addListener(this);
+                        } catch (IOException e) {
+                            if (!channel.isClosing()) {
+                                e.printStackTrace();
+                                channel.close(true);
+                            }
+                        }
+                    }
+                });
 
                 Collection<ClientChannelEvent> result =
                         channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
@@ -1093,7 +1090,7 @@ public class ClientTest extends BaseTestSupport {
         final Transformer<String, String> stripper = new Transformer<String, String>() {
             @Override
             public String transform(String input) {
-                int pos = GenericUtils.isEmpty(input) ? (-1) : input.lastIndexOf(':');
+                int pos = GenericUtils.isEmpty(input) ? -1 : input.lastIndexOf(':');
                 if (pos < 0) {
                     return input;
                 } else {
@@ -1171,7 +1168,7 @@ public class ClientTest extends BaseTestSupport {
         final AtomicInteger count = new AtomicInteger();
         final AtomicReference<ClientSession> interactionSessionHolder = new AtomicReference<>(null);
         client.setUserInteraction(new UserInteraction() {
-            private final String[] BAD_RESPONSE = { "bad" };
+            private final String[] badResponse = {"bad"};
 
             @Override
             public boolean isInteractionAllowed(ClientSession session) {
@@ -1187,7 +1184,7 @@ public class ClientTest extends BaseTestSupport {
             public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
                 validateSession("interactive", session);
                 count.incrementAndGet();
-                return BAD_RESPONSE;
+                return badResponse;
             }
 
             @Override
@@ -1203,8 +1200,8 @@ public class ClientTest extends BaseTestSupport {
             }
         });
 
-        final int MAX_PROMPTS = 3;
-        PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PASSWORD_PROMPTS, MAX_PROMPTS);
+        final int maxPrompts = 3;
+        PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PASSWORD_PROMPTS, maxPrompts);
 
         client.start();
 
@@ -1214,7 +1211,7 @@ public class ClientTest extends BaseTestSupport {
             AuthFuture future = session.auth();
             assertTrue("Failed to complete authentication on time", future.await(15L, TimeUnit.SECONDS));
             assertTrue("Unexpected authentication success", future.isFailure());
-            assertEquals("Mismatched authentication retry count", MAX_PROMPTS, count.get());
+            assertEquals("Mismatched authentication retry count", maxPrompts, count.get());
         } finally {
             client.stop();
         }
@@ -1225,8 +1222,8 @@ public class ClientTest extends BaseTestSupport {
     @Test
     public void testDefaultKeyboardInteractiveInSessionUserInteractive() throws Exception {
         final AtomicInteger count = new AtomicInteger();
-        final int MAX_PROMPTS = 3;
-        PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PASSWORD_PROMPTS, MAX_PROMPTS);
+        final int maxPrompts = 3;
+        PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PASSWORD_PROMPTS, maxPrompts);
 
         client.setUserAuthFactories(Collections.<NamedFactory<UserAuth>>singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
@@ -1272,8 +1269,8 @@ public class ClientTest extends BaseTestSupport {
     @Test
     public void testKeyboardInteractiveInSessionUserInteractiveFailure() throws Exception {
         final AtomicInteger count = new AtomicInteger();
-        final int MAX_PROMPTS = 3;
-        PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PASSWORD_PROMPTS, MAX_PROMPTS);
+        final int maxPrompts = 3;
+        PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PASSWORD_PROMPTS, maxPrompts);
         client.setUserAuthFactories(Collections.<NamedFactory<UserAuth>>singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
@@ -1306,7 +1303,7 @@ public class ClientTest extends BaseTestSupport {
             AuthFuture future = session.auth();
             assertTrue("Authentication not completed in time", future.await(11L, TimeUnit.SECONDS));
             assertTrue("Authentication not, marked as failure", future.isFailure());
-            assertEquals("Mismatched authentication retry count", MAX_PROMPTS, count.get());
+            assertEquals("Mismatched authentication retry count", maxPrompts, count.get());
         } finally {
             client.stop();
         }
@@ -1418,7 +1415,7 @@ public class ClientTest extends BaseTestSupport {
      */
     @Test
     public void testChannelListenersPropagation() throws Exception {
-        Map<String,TestChannelListener> clientListeners = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, TestChannelListener> clientListeners = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         addChannelListener(clientListeners, client, new TestChannelListener(client.getClass().getSimpleName()));
 
         // required since we do not use an SFTP subsystem
@@ -1447,7 +1444,7 @@ public class ClientTest extends BaseTestSupport {
         assertListenerSizes("ClientStop", clientListeners, 0, 1);
     }
 
-    private static void assertListenerSizes(String phase, Map<String,? extends TestChannelListener> listeners, int activeSize, int openSize) {
+    private static void assertListenerSizes(String phase, Map<String, ? extends TestChannelListener> listeners, int activeSize, int openSize) {
         assertListenerSizes(phase, listeners.values(), activeSize, openSize);
     }
 
@@ -1469,7 +1466,7 @@ public class ClientTest extends BaseTestSupport {
         }
     }
 
-    private static <L extends ChannelListener & NamedResource> void addChannelListener(Map<String,L> listeners, ChannelListenerManager manager, L listener) {
+    private static <L extends ChannelListener & NamedResource> void addChannelListener(Map<String, L> listeners, ChannelListenerManager manager, L listener) {
         String name = listener.getName();
         assertNull("Duplicate listener named " + name, listeners.put(name, listener));
         manager.addChannelListener(listener);
@@ -1513,7 +1510,13 @@ public class ClientTest extends BaseTestSupport {
     }
 
     public static class TestEchoShell extends EchoShell {
+        // CHECKSTYLE:OFF
         public static CountDownLatch latch;
+        // CHECKSTYLE:ON
+
+        public TestEchoShell() {
+            super();
+        }
 
         @Override
         public void destroy() {
@@ -1542,9 +1545,5 @@ public class ClientTest extends BaseTestSupport {
         public String toString() {
             return getName();
         }
-    }
-
-    public static void main(String[] args) throws Exception {
-        SshClient.main(args);
     }
 }

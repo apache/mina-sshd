@@ -53,13 +53,13 @@ public class BufferUtilsTest extends BaseTestSupport {
     @Test
     public void testGetCompactClone() {
         byte[] expected = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
-        final int OFFSET = Byte.SIZE / 2;
-        byte[] data = new byte[expected.length + 2 * OFFSET];
+        final int testOffset = Byte.SIZE / 2;
+        byte[] data = new byte[expected.length + 2 * testOffset];
         Random rnd = new Random(System.nanoTime());
         rnd.nextBytes(data);
-        System.arraycopy(expected, 0, data, OFFSET, expected.length);
+        System.arraycopy(expected, 0, data, testOffset, expected.length);
 
-        Buffer buf = ByteArrayBuffer.getCompactClone(data, OFFSET, expected.length);
+        Buffer buf = ByteArrayBuffer.getCompactClone(data, testOffset, expected.length);
         assertEquals("Mismatched cloned buffer read position", 0, buf.rpos());
         assertEquals("Mismatched cloned buffer available size", expected.length, buf.available());
 

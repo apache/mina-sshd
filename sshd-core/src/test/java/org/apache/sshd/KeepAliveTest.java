@@ -51,12 +51,16 @@ import org.junit.runners.MethodSorters;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class KeepAliveTest extends BaseTestSupport {
 
-    private SshServer sshd;
-    private int port;
-
     private static final long HEARTBEAT = TimeUnit.SECONDS.toMillis(2L);
     private static final long TIMEOUT = 2L * HEARTBEAT;
     private static final long WAIT = 2L * TIMEOUT;
+
+    private SshServer sshd;
+    private int port;
+
+    public KeepAliveTest() {
+        super();
+    }
 
     @Before
     public void setUp() throws Exception {
@@ -153,8 +157,9 @@ public class KeepAliveTest extends BaseTestSupport {
     }
 
     public static class TestEchoShell extends EchoShell {
-
+        // CHECKSTYLE:OFF
         public static CountDownLatch latch;
+        // CHECKSTYLE:ON
 
         @Override
         public void destroy() {

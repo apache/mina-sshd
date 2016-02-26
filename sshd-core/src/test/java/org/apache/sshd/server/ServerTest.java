@@ -57,6 +57,7 @@ import org.apache.sshd.common.auth.UserAuthMethodFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.TestChannelListener;
+import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.channel.WindowClosedException;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.kex.KexProposalOption;
@@ -124,8 +125,8 @@ public class ServerTest extends BaseTestSupport {
      */
     @Test
     public void testFailAuthenticationWithWaitFor() throws Exception {
-        final int MAX_AUTH_REQUESTS = 10;
-        PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.MAX_AUTH_REQUESTS, MAX_AUTH_REQUESTS);
+        final int maxAllowedAuths = 10;
+        PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.MAX_AUTH_REQUESTS, maxAllowedAuths);
 
         sshd.start();
         client.setServiceFactories(Arrays.asList(
@@ -146,7 +147,7 @@ public class ServerTest extends BaseTestSupport {
                 res = s.waitFor(mask, TimeUnit.SECONDS.toMillis(5L));
                 assertFalse("Timeout signalled", res.contains(ClientSession.ClientSessionEvent.TIMEOUT));
             }
-            assertTrue("Number trials (" + nbTrials + ") below min.=" + MAX_AUTH_REQUESTS, nbTrials > MAX_AUTH_REQUESTS);
+            assertTrue("Number trials (" + nbTrials + ") below min.=" + maxAllowedAuths, nbTrials > maxAllowedAuths);
         } finally {
             client.stop();
         }
@@ -154,8 +155,8 @@ public class ServerTest extends BaseTestSupport {
 
     @Test
     public void testFailAuthenticationWithFuture() throws Exception {
-        final int MAX_AUTH_REQUESTS = 10;
-        PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.MAX_AUTH_REQUESTS, MAX_AUTH_REQUESTS);
+        final int maxAllowedAuths = 10;
+        PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.MAX_AUTH_REQUESTS, maxAllowedAuths);
 
         sshd.start();
 
@@ -179,7 +180,7 @@ public class ServerTest extends BaseTestSupport {
 
             Throwable t = authFuture.getException();
             assertNotNull("Missing auth future exception", t);
-            assertTrue("Number trials (" + nbTrials + ") below min.=" + MAX_AUTH_REQUESTS, nbTrials > MAX_AUTH_REQUESTS);
+            assertTrue("Number trials (" + nbTrials + ") below min.=" + maxAllowedAuths, nbTrials > maxAllowedAuths);
         } finally {
             client.stop();
         }
@@ -187,13 +188,13 @@ public class ServerTest extends BaseTestSupport {
 
     @Test
     public void testAuthenticationTimeout() throws Exception {
-        final long AUTH_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
-        PropertyResolverUtils.updateProperty(sshd, FactoryManager.AUTH_TIMEOUT, AUTH_TIMEOUT);
+        final long testAuthTimeout = TimeUnit.SECONDS.toMillis(5L);
+        PropertyResolverUtils.updateProperty(sshd, FactoryManager.AUTH_TIMEOUT, testAuthTimeout);
 
         sshd.start();
         client.start();
         try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
-            Collection<ClientSession.ClientSessionEvent> res = s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 2L * AUTH_TIMEOUT);
+            Collection<ClientSession.ClientSessionEvent> res = s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 2L * testAuthTimeout);
             assertTrue("Session should be closed: " + res,
                        res.containsAll(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH)));
         } finally {
@@ -205,8 +206,8 @@ public class ServerTest extends BaseTestSupport {
     public void testIdleTimeout() throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
         TestEchoShell.latch = new CountDownLatch(1);
-        final long IDLE_TIMEOUT = 2500;
-        PropertyResolverUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, IDLE_TIMEOUT);
+        final long testIdleTimeout = 2500L;
+        PropertyResolverUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, testIdleTimeout);
 
         sshd.addSessionListener(new SessionListener() {
             @Override
@@ -250,7 +251,7 @@ public class ServerTest extends BaseTestSupport {
             assertTrue("No open server side channels", GenericUtils.size(channelListener.getOpenChannels()) > 0);
 
             Collection<ClientSession.ClientSessionEvent> res =
-                    s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 2L * IDLE_TIMEOUT);
+                    s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 2L * testIdleTimeout);
             assertTrue("Session should be closed and authenticated: " + res,
                        res.containsAll(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.AUTHED)));
         } finally {
@@ -274,11 +275,11 @@ public class ServerTest extends BaseTestSupport {
 
         sshd.setCommandFactory(new StreamCommand.Factory());
 
-        final long IDLE_TIMEOUT_VALUE = TimeUnit.SECONDS.toMillis(5L);
-        PropertyResolverUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, IDLE_TIMEOUT_VALUE);
+        final long idleTimeoutValue = TimeUnit.SECONDS.toMillis(5L);
+        PropertyResolverUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, idleTimeoutValue);
 
-        final long DISCONNECT_TIMEOUT_VALUE = TimeUnit.SECONDS.toMillis(2L);
-        PropertyResolverUtils.updateProperty(sshd, FactoryManager.DISCONNECT_TIMEOUT, DISCONNECT_TIMEOUT_VALUE);
+        final long disconnectTimeoutValue = TimeUnit.SECONDS.toMillis(2L);
+        PropertyResolverUtils.updateProperty(sshd, FactoryManager.DISCONNECT_TIMEOUT, disconnectTimeoutValue);
 
         sshd.addSessionListener(new SessionListener() {
             @Override
@@ -327,24 +328,27 @@ public class ServerTest extends BaseTestSupport {
                 Collection<? extends Channel> channels = service.getChannels();
 
                 try (Channel channel = channels.iterator().next()) {
-                    final long MAX_TIMEOUT_VALUE = IDLE_TIMEOUT_VALUE + DISCONNECT_TIMEOUT_VALUE + TimeUnit.SECONDS.toMillis(3L);
-                    for (long totalNanoTime = 0L; channel.getRemoteWindow().getSize() > 0; ) {
+                    final long maxTimeoutValue = idleTimeoutValue + disconnectTimeoutValue + TimeUnit.SECONDS.toMillis(3L);
+                    final long maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(maxTimeoutValue);
+                    Window wRemote = channel.getRemoteWindow();
+                    for (long totalNanoTime = 0L; wRemote.getSize() > 0;) {
                         long nanoStart = System.nanoTime();
                         Thread.sleep(1L);
                         long nanoEnd = System.nanoTime();
                         long nanoDuration = nanoEnd - nanoStart;
 
                         totalNanoTime += nanoDuration;
-                        assertTrue("Waiting for too long on remote window size to reach zero", totalNanoTime < TimeUnit.MILLISECONDS.toNanos(MAX_TIMEOUT_VALUE));
+                        assertTrue("Waiting for too long on remote window size to reach zero", totalNanoTime < maxWaitNanos);
                     }
 
                     LoggerFactory.getLogger(getClass()).info("Waiting for session idle timeouts");
 
                     long t0 = System.currentTimeMillis();
-                    latch.await(1, TimeUnit.MINUTES);
-                    long t1 = System.currentTimeMillis(), diff = t1 - t0;
-                    assertTrue("Wait time too low: " + diff, diff > IDLE_TIMEOUT_VALUE);
-                    assertTrue("Wait time too high: " + diff, diff < MAX_TIMEOUT_VALUE);
+                    latch.await(1L, TimeUnit.MINUTES);
+                    long t1 = System.currentTimeMillis();
+                    long diff = t1 - t0;
+                    assertTrue("Wait time too low: " + diff, diff > idleTimeoutValue);
+                    assertTrue("Wait time too high: " + diff, diff < maxTimeoutValue);
                 }
             }
         } finally {
@@ -381,7 +385,9 @@ public class ServerTest extends BaseTestSupport {
             @Override
             public void sessionEvent(Session session, Event event) {
                 if (Event.KeyEstablished.equals(event)) {
-                    for (KexProposalOption option : new KexProposalOption[]{ KexProposalOption.S2CLANG, KexProposalOption.C2SLANG}) {
+                    for (KexProposalOption option : new KexProposalOption[]{
+                        KexProposalOption.S2CLANG, KexProposalOption.C2SLANG
+                    }) {
                         assertNull("Unexpected negotiated language for " + option, session.getNegotiatedKexParameter(option));
                     }
 
@@ -734,7 +740,9 @@ public class ServerTest extends BaseTestSupport {
         Map<String, String> vars = cmdEnv.getEnv();
         assertTrue("Mismatched vars count", GenericUtils.size(vars) >= GenericUtils.size(expected));
         for (Map.Entry<String, String> ee : expected.entrySet()) {
-            String key = ee.getKey(), expValue = ee.getValue(), actValue = vars.get(key);
+            String key = ee.getKey();
+            String expValue = ee.getValue();
+            String actValue = vars.get(key);
             assertEquals("Mismatched value for " + key, expValue, actValue);
         }
     }
@@ -759,7 +767,8 @@ public class ServerTest extends BaseTestSupport {
         });
         sshd.start();
 
-        String authMethods = GenericUtils.join( // order is important
+        // order is important
+        String authMethods = GenericUtils.join(
                 Arrays.asList(UserAuthMethodFactory.KB_INTERACTIVE, UserAuthMethodFactory.PUBLIC_KEY, UserAuthMethodFactory.PUBLIC_KEY), ',');
         PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PREFERRED_AUTHS, authMethods);
 
@@ -800,11 +809,12 @@ public class ServerTest extends BaseTestSupport {
         });
         sshd.start();
 
-        String authMethods = GenericUtils.join( // order is important
+        // order is important
+        String authMethods = GenericUtils.join(
                 Arrays.asList(UserAuthMethodFactory.KB_INTERACTIVE, UserAuthMethodFactory.PUBLIC_KEY, UserAuthMethodFactory.PUBLIC_KEY), ',');
         PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PREFERRED_AUTHS, authMethods);
         final AtomicInteger clientCount = new AtomicInteger(0);
-        final String[] replies = { getCurrentTestName() };
+        final String[] replies = {getCurrentTestName()};
         client.setUserInteraction(new UserInteraction() {
             @Override
             public void welcome(ClientSession session, String banner, String lang) {
@@ -868,8 +878,9 @@ public class ServerTest extends BaseTestSupport {
     }
 
     public static class TestEchoShell extends EchoShell {
-
+        // CHECKSTYLE:OFF
         public static CountDownLatch latch;
+        // CHECKSTYLE:ON
 
         public TestEchoShell() {
             super();
@@ -885,6 +896,9 @@ public class ServerTest extends BaseTestSupport {
     }
 
     public static class StreamCommand implements Command, Runnable {
+        // CHECKSTYLE:OFF
+        public static CountDownLatch latch;
+        // CHECKSTYLE:ON
 
         public static class Factory implements CommandFactory {
             @Override
@@ -892,8 +906,6 @@ public class ServerTest extends BaseTestSupport {
                 return new StreamCommand(name);
             }
         }
-
-        public static CountDownLatch latch;
 
         private final String name;
         private OutputStream out;

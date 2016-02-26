@@ -25,7 +25,11 @@ package org.apache.sshd.client;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SshClientMain {
+public final class SshClientMain {
+    private SshClientMain() {
+        throw new UnsupportedOperationException("No instance");
+    }
+
     public static void main(String[] args) throws Exception {
         SshClient.main(args);
     }

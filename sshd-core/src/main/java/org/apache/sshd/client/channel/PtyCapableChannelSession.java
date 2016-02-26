@@ -41,14 +41,14 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  * ignored).</P>
  * <P>A typical code snippet would be:</P>
  * <PRE>
- * try(client = SshClient.setUpDefaultClient()) {
+ * try (client = SshClient.setUpDefaultClient()) {
  *      client.start();
  *
- *      try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+ *      try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
  *          s.addPasswordIdentity(getCurrentTestName());
  *          s.auth().verify(5L, TimeUnit.SECONDS);
  *
- *          try(ChannelExec shell = s.createExecChannel("my super duper command")) {
+ *          try (ChannelExec shell = s.createExecChannel("my super duper command")) {
  *              shell.setEnv("var1", "val1");
  *              shell.setEnv("var2", "val2");
  *              ...etc...

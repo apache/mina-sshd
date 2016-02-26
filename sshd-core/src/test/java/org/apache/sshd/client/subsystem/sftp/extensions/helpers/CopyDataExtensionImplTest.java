@@ -89,12 +89,9 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
                             }
                     ));
 
-    @Parameters(name = "size={0}, readOffset={1}, readLength={2}, writeOffset={3}")
-    public static Collection<Object[]> parameters() {
-        return PARAMETERS;
-    }
-
-    private int size, srcOffset, length;
+    private int size;
+    private int srcOffset;
+    private int  length;
     private long dstOffset;
 
     public CopyDataExtensionImplTest(int size, int srcOffset, int length, long dstOffset) throws IOException {
@@ -102,6 +99,11 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
         this.srcOffset = srcOffset;
         this.length = length;
         this.dstOffset = dstOffset;
+    }
+
+    @Parameters(name = "size={0}, readOffset={1}, readLength={2}, writeOffset={3}")
+    public static Collection<Object[]> parameters() {
+        return PARAMETERS;
     }
 
     @Before
@@ -183,7 +185,8 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
             }
         }
 
-        int available = data.length, required = readOffset + readLength;
+        int available = data.length;
+        int required = readOffset + readLength;
         if (required > available) {
             required = available;
         }

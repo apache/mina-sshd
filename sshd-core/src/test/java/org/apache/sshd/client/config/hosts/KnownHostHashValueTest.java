@@ -49,7 +49,7 @@ public class KnownHostHashValueTest extends BaseTestSupport {
     @Parameters(name = "host={0}, hash={1}")
     public static Collection<Object[]> parameters() {
         return Arrays.<Object[]>asList(
-                (Object[]) new String[]{ "192.168.1.61", "|1|F1E1KeoE/eEWhi10WpGv4OdiO6Y=|3988QV0VE8wmZL7suNrYQLITLCg=" });
+                (Object[]) new String[]{"192.168.1.61", "|1|F1E1KeoE/eEWhi10WpGv4OdiO6Y=|3988QV0VE8wmZL7suNrYQLITLCg="});
     }
 
     @Test

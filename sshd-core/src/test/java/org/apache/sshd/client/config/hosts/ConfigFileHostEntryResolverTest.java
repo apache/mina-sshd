@@ -65,19 +65,39 @@ public class ConfigFileHostEntryResolverTest extends BaseTestSupport {
                 resolver, expected, expected);
         testConfigFileReload("Wildcard", path, reloadCount,
                 Arrays.asList(
-                        new HostConfigEntry(HostPatternsHolder.ALL_HOSTS_PATTERN, getClass().getSimpleName(), 1234, getClass().getSimpleName()),
-                        new HostConfigEntry(expected.getHost() + String.valueOf(HostPatternsHolder.WILDCARD_PATTERN), expected.getHost(), expected.getPort(), expected.getUsername())),
+                        new HostConfigEntry(
+                                HostPatternsHolder.ALL_HOSTS_PATTERN,
+                                getClass().getSimpleName(),
+                                1234,
+                                getClass().getSimpleName()),
+                        new HostConfigEntry(
+                                expected.getHost() + String.valueOf(HostPatternsHolder.WILDCARD_PATTERN),
+                                expected.getHost(),
+                                expected.getPort(),
+                                expected.getUsername())),
                 resolver, expected, expected);
         testConfigFileReload("Specific", path, reloadCount,
                 Arrays.asList(
-                        new HostConfigEntry(HostPatternsHolder.ALL_HOSTS_PATTERN, getClass().getSimpleName(), 1234, getClass().getSimpleName()),
-                        new HostConfigEntry(getClass().getSimpleName() + String.valueOf(HostPatternsHolder.WILDCARD_PATTERN), getClass().getSimpleName(), 1234, getClass().getSimpleName()),
+                        new HostConfigEntry(
+                                HostPatternsHolder.ALL_HOSTS_PATTERN,
+                                getClass().getSimpleName(),
+                                1234,
+                                getClass().getSimpleName()),
+                        new HostConfigEntry(
+                                getClass().getSimpleName() + String.valueOf(HostPatternsHolder.WILDCARD_PATTERN),
+                                getClass().getSimpleName(),
+                                1234,
+                                getClass().getSimpleName()),
                         expected),
                 resolver, expected, expected);
     }
 
     private static void testConfigFileReload(
-            String phase, Path path, AtomicInteger reloadCount, Collection<? extends HostConfigEntry> entries, HostConfigEntryResolver resolver, HostConfigEntry query, HostConfigEntry expected)
+            String phase, Path path, AtomicInteger reloadCount,
+            Collection<? extends HostConfigEntry> entries,
+            HostConfigEntryResolver resolver,
+            HostConfigEntry query,
+            HostConfigEntry expected)
                     throws IOException {
         if (entries == null) {
             if (Files.exists(path)) {
@@ -90,7 +110,8 @@ public class ConfigFileHostEntryResolverTest extends BaseTestSupport {
         reloadCount.set(0);
 
         for (int index = 1; index < Byte.SIZE; index++) {
-            HostConfigEntry actual = resolver.resolveEffectiveHost(query.getHostName(), query.getPort(), query.getUsername());
+            HostConfigEntry actual =
+                    resolver.resolveEffectiveHost(query.getHostName(), query.getPort(), query.getUsername());
 
             if (entries == null) {
                 assertEquals(phase + "[" + index + "]: mismatched reload count", 0, reloadCount.get());
@@ -103,9 +124,12 @@ public class ConfigFileHostEntryResolverTest extends BaseTestSupport {
             } else {
                 assertNotNull(phase + "[" + index + "]: No result for " + query, actual);
                 assertNotSame(phase + "[" + index + "]: No cloned result for " + query, expected, actual);
-                assertEquals(phase + "[" + index + "]: Mismatched host for " + query, expected.getHostName(), actual.getHostName());
-                assertEquals(phase + "[" + index + "]: Mismatched port for " + query, expected.getPort(), actual.getPort());
-                assertEquals(phase + "[" + index + "]: Mismatched user for " + query, expected.getUsername(), actual.getUsername());
+                assertEquals(phase + "[" + index + "]: Mismatched host for " + query,
+                        expected.getHostName(), actual.getHostName());
+                assertEquals(phase + "[" + index + "]: Mismatched port for " + query,
+                        expected.getPort(), actual.getPort());
+                assertEquals(phase + "[" + index + "]: Mismatched user for " + query,
+                        expected.getUsername(), actual.getUsername());
             }
         }
     }

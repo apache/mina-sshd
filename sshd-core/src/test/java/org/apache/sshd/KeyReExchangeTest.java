@@ -36,6 +36,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.jcraft.jsch.JSch;
+
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
@@ -66,8 +68,6 @@ import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-
-import com.jcraft.jsch.JSch;
 
 /**
  * Test key exchange algorithms.
@@ -149,7 +149,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
             final AtomicBoolean successfulInit = new AtomicBoolean(true);
             final AtomicBoolean successfulNext = new AtomicBoolean(true);
             final ClassLoader loader = getClass().getClassLoader();
-            final Class<?>[] interfaces = { KeyExchange.class };
+            final Class<?>[] interfaces = {KeyExchange.class};
             for (final NamedFactory<KeyExchange> factory : client.getKeyExchangeFactories()) {
                 kexFactories.add(new NamedFactory<KeyExchange>() {
                     @Override
@@ -266,7 +266,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                      InputStream inPipe = new PipedInputStream(pipedIn);
                      OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
                      ByteArrayOutputStream out = new ByteArrayOutputStream() {
-                         private long writeCount = 0L;
+                         private long writeCount;
 
                          @Override
                          public void write(int b) {
@@ -334,8 +334,8 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
     @Test
     public void testReExchangeFromServerBySize() throws Exception {
-        final long LIMIT = 10 * 1024L;
-        setUp(LIMIT, 0L, 0L);
+        final long bytesLImit = 10 * 1024L;
+        setUp(bytesLImit, 0L, 0L);
 
         try (SshClient client = setupTestClient()) {
             client.start();
@@ -344,7 +344,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession();
                  ByteArrayOutputStream sent = new ByteArrayOutputStream();
                  ByteArrayOutputStream out = new ByteArrayOutputStream() {
-                     private long writeCount = 0L;
+                     private long writeCount;
 
                      @Override
                      public void write(int b) {
@@ -416,7 +416,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     });
 
                     byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
-                    for (long sentSize = 0L; sentSize < (LIMIT + Byte.MAX_VALUE + data.length); sentSize += data.length) {
+                    for (long sentSize = 0L; sentSize < (bytesLImit + Byte.MAX_VALUE + data.length); sentSize += data.length) {
                         teeOut.write(data);
                         teeOut.flush();
                         // no need to wait until the limit is reached if a re-key occurred
@@ -451,8 +451,8 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
     @Test
     public void testReExchangeFromServerByTime() throws Exception {
-        final long TIME = TimeUnit.SECONDS.toMillis(2L);
-        setUp(0L, TIME, 0L);
+        final long timeLimit = TimeUnit.SECONDS.toMillis(2L);
+        setUp(0L, timeLimit, 0L);
 
         try (SshClient client = setupTestClient()) {
             client.start();
@@ -461,7 +461,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession();
                  ByteArrayOutputStream sent = new ByteArrayOutputStream();
                  ByteArrayOutputStream out = new ByteArrayOutputStream() {
-                     private long writeCount = 0L;
+                     private long writeCount;
 
                      @Override
                      public void write(int b) {
@@ -533,10 +533,10 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     });
 
                     byte[] data = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
-                    final long MAX_WAIT_NANOS = TimeUnit.MILLISECONDS.toNanos(3L * TIME);
-                    final long MIN_WAIT = 10L;
-                    final long MIN_WAIT_NANOS = TimeUnit.MILLISECONDS.toNanos(MIN_WAIT);
-                    for (long timePassed = 0L, sentSize = 0L; timePassed < MAX_WAIT_NANOS; timePassed++) {
+                    final long maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(3L * timeLimit);
+                    final long minWaitValue = 10L;
+                    final long minWaitNanos = TimeUnit.MILLISECONDS.toNanos(minWaitValue);
+                    for (long timePassed = 0L, sentSize = 0L; timePassed < maxWaitNanos; timePassed++) {
                         long nanoStart = System.nanoTime();
                         teeOut.write(data);
                         teeOut.write('\n');
@@ -555,8 +555,8 @@ public class KeyReExchangeTest extends BaseTestSupport {
                             break;
                         }
 
-                        if ((timePassed < MAX_WAIT_NANOS) && (nanoDuration < MIN_WAIT_NANOS)) {
-                            Thread.sleep(MIN_WAIT);
+                        if ((timePassed < maxWaitNanos) && (nanoDuration < minWaitNanos)) {
+                            Thread.sleep(minWaitValue);
                         }
                     }
 
@@ -586,8 +586,8 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
     @Test   // see SSHD-601
     public void testReExchangeFromServerByPackets() throws Exception {
-        final int PACKETS = 135;
-        setUp(0L, 0L, PACKETS);
+        final int packetsLimit = 135;
+        setUp(0L, 0L, packetsLimit);
 
         try (SshClient client = setupTestClient()) {
             client.start();
@@ -596,7 +596,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession();
                  ByteArrayOutputStream sent = new ByteArrayOutputStream();
                  ByteArrayOutputStream out = new ByteArrayOutputStream() {
-                     private long writeCount = 0L;
+                     private long writeCount;
 
                      @Override
                      public void write(int b) {
@@ -634,12 +634,12 @@ public class KeyReExchangeTest extends BaseTestSupport {
                      OutputStream teeOut = new TeeOutputStream(sentTracker, pipedIn);
                      OutputStream stderr = new NullOutputStream();
                      OutputStream stdout = new OutputCountTrackingOutputStream(out) {
-                        @Override
-                        protected long updateWriteCount(long delta) {
-                            long result = super.updateWriteCount(delta);
-                            outputDebugMessage("OUT write count=%d", result);
-                            return result;
-                        }
+                         @Override
+                         protected long updateWriteCount(long delta) {
+                             long result = super.updateWriteCount(delta);
+                             outputDebugMessage("OUT write count=%d", result);
+                             return result;
+                         }
                      };
                      InputStream inPipe = new PipedInputStream(pipedIn)) {
 
@@ -678,14 +678,14 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     });
 
                     byte[] data = (getClass().getName() + "#" + getCurrentTestName() + "\n").getBytes(StandardCharsets.UTF_8);
-                    for (int index = 0; index < (PACKETS * 2); index++) {
+                    for (int index = 0; index < (packetsLimit * 2); index++) {
                         teeOut.write(data);
                         teeOut.flush();
 
                         // no need to wait until the packets limit is reached if a re-key occurred
                         if (exchanges.get() > 0) {
                             outputDebugMessage("Stop sending after %d packets and %d bytes - exchanges=%s",
-                                               (index + 1), (index + 1L) * data.length, exchanges);
+                                               index + 11L, (index + 1L) * data.length, exchanges);
                             break;
                         }
                     }

@@ -134,7 +134,7 @@ public class BuiltinClientIdentitiesWatcherTest extends BaseTestSupport {
             options = new OpenOption[]{StandardOpenOption.WRITE, StandardOpenOption.APPEND};
         }
 
-        try(OutputStream out = Files.newOutputStream(idFile, options)) {
+        try (OutputStream out = Files.newOutputStream(idFile, options)) {
             out.write(new Date(System.currentTimeMillis()).toString().getBytes(StandardCharsets.UTF_8));
             out.write('\n');
         }

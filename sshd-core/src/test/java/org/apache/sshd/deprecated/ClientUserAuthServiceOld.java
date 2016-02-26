@@ -38,6 +38,7 @@ import org.apache.sshd.deprecated.UserAuth.Result;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+// CHECKSTYLE:OFF
 public class ClientUserAuthServiceOld extends AbstractCloseable implements Service {
 
     public static class Factory implements ServiceFactory {
@@ -205,3 +206,4 @@ public class ClientUserAuthServiceOld extends AbstractCloseable implements Servi
     }
 
 }
+// CHECKSTYLE:ON
