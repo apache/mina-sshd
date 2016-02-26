@@ -92,6 +92,7 @@ import org.apache.sshd.common.subsystem.sftp.extensions.AclSupportedParser;
 import org.apache.sshd.common.subsystem.sftp.extensions.SpaceAvailableExtensionInfo;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.AbstractOpenSSHExtensionParser.OpenSSHExtension;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionParser;
+import org.apache.sshd.common.subsystem.sftp.extensions.openssh.HardLinkExtensionParser;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
@@ -213,7 +214,8 @@ public class SftpSubsystem
     public static final List<OpenSSHExtension> DEFAULT_OPEN_SSH_EXTENSIONS =
             Collections.unmodifiableList(
                     Arrays.asList(
-                            new OpenSSHExtension(FsyncExtensionParser.NAME, "1")
+                            new OpenSSHExtension(FsyncExtensionParser.NAME, "1"),
+                            new OpenSSHExtension(HardLinkExtensionParser.NAME, "1")
                     ));
 
     public static final List<String> DEFAULT_OPEN_SSH_EXTENSIONS_NAMES =
@@ -599,6 +601,9 @@ public class SftpSubsystem
             case SftpConstants.EXT_SPACE_AVAILABLE:
                 doSpaceAvailable(buffer, id);
                 break;
+            case HardLinkExtensionParser.NAME:
+                doHardLink(buffer, id);
+                break;
             default:
                 if (log.isDebugEnabled()) {
                     log.debug("executeExtendedCommand({}) received unsupported SSH_FXP_EXTENDED({})", getServerSession(), extension);
@@ -606,6 +611,29 @@ public class SftpSubsystem
                 sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_EXTENDED(" + extension + ") is unsupported or not implemented");
                 break;
         }
+    }
+
+    protected void doHardLink(Buffer buffer, int id) throws IOException {
+        String srcFile = buffer.getString();
+        String dstFile = buffer.getString();
+
+        try {
+            doHardLink(id, srcFile, dstFile);
+        } catch (IOException | RuntimeException e) {
+            sendStatus(BufferUtils.clear(buffer), id, e);
+            return;
+        }
+
+        sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
+    }
+
+    protected void doHardLink(int id, String srcFile, String dstFile) throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("doHardLink({})[id={}] SSH_FXP_EXTENDED[{}] (src={}, dst={})",
+                      getServerSession(), id, HardLinkExtensionParser.NAME, srcFile, dstFile);
+        }
+
+        createLink(id, srcFile, dstFile, false);
     }
 
     protected void doSpaceAvailable(Buffer buffer, int id) throws IOException {
@@ -1256,26 +1284,26 @@ public class SftpSubsystem
         createLink(id, targetPath, linkPath, true);
     }
 
-    protected void createLink(int id, String targetPath, String linkPath, boolean symLink) throws IOException {
+    protected void createLink(int id, String existingPath, String linkPath, boolean symLink) throws IOException {
         Path link = resolveFile(linkPath);
-        Path target = fileSystem.getPath(targetPath);
+        Path existing = fileSystem.getPath(existingPath);
         if (log.isDebugEnabled()) {
-            log.debug("createLink({})[id={}], linkpath={}[{}], targetpath={}[{}], symlink={})",
-                      getServerSession(), id, linkPath, link, targetPath, target, symLink);
+            log.debug("createLink({})[id={}], existing={}[{}], link={}[{}], symlink={})",
+                      getServerSession(), id, linkPath, link, existingPath, existing, symLink);
         }
 
         SftpEventListener listener = getSftpEventListenerProxy();
         ServerSession session = getServerSession();
-        listener.linking(session, link, target, symLink);
+        listener.linking(session, link, existing, symLink);
         try {
             if (symLink) {
-                Files.createSymbolicLink(link, target);
+                Files.createSymbolicLink(link, existing);
             } else {
-                Files.createLink(link, target);
+                Files.createLink(link, existing);
             }
-            listener.linked(session, link, target, symLink, null);
+            listener.linked(session, link, existing, symLink, null);
         } catch (IOException | RuntimeException e) {
-            listener.linked(session, link, target, symLink, e);
+            listener.linked(session, link, existing, symLink, e);
             throw e;
         }
     }
