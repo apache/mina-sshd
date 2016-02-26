@@ -19,11 +19,9 @@
 package org.apache.sshd.client.session;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -31,31 +29,22 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.sshd.client.ClientFactoryManager;
-import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
-import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.cipher.BuiltinCiphers;
-import org.apache.sshd.common.cipher.CipherNone;
-import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
-import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
-import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.SessionListener;
-import org.apache.sshd.common.session.helpers.AbstractConnectionService;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
- * TODO Add javadoc
+ * The default implementation of a {@link ClientSession}
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -73,10 +62,10 @@ public class ClientSessionImpl extends AbstractClientSession {
     private Service nextService;
     private ServiceFactory nextServiceFactory;
 
-    public ClientSessionImpl(ClientFactoryManager client, IoSession session) throws Exception {
-        super(client, session);
+    public ClientSessionImpl(ClientFactoryManager client, IoSession ioSession) throws Exception {
+        super(client, ioSession);
         if (log.isDebugEnabled()) {
-            log.debug("Client session created: {}", session);
+            log.debug("Client session created: {}", ioSession);
         }
         // Need to set the initial service early as calling code likes to start trying to
         // manipulate it before the connection has even been established.  For instance, to
@@ -103,6 +92,13 @@ public class ClientSessionImpl extends AbstractClientSession {
             listener.sessionCreated(this);
         } catch (Throwable t) {
             Throwable e = GenericUtils.peelException(t);
+            if (log.isDebugEnabled()) {
+                log.debug("Failed ({}) to announce session={} created: {}",
+                          e.getClass().getSimpleName(), ioSession, e.getMessage());
+            }
+            if (log.isTraceEnabled()) {
+                log.trace("Session=" + ioSession + " creation failure details", e);
+            }
             if (e instanceof Exception) {
                 throw (Exception) e;
             } else {
@@ -191,80 +187,34 @@ public class ClientSessionImpl extends AbstractClientSession {
     }
 
     @Override
-    public KeyExchangeFuture switchToNoneCipher() throws IOException {
-        if (!(currentService instanceof AbstractConnectionService<?>)
-                || !GenericUtils.isEmpty(((AbstractConnectionService<?>) currentService).getChannels())) {
-            throw new IllegalStateException("The switch to the none cipher must be done immediately after authentication");
+    protected void sendSessionEvent(SessionListener.Event event) throws IOException {
+        if (SessionListener.Event.KeyEstablished.equals(event)) {
+            sendInitialServiceRequest();
         }
-
-        if (kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
-            DefaultKeyExchangeFuture kexFuture = new DefaultKeyExchangeFuture(null);
-            DefaultKeyExchangeFuture prev = kexFutureHolder.getAndSet(kexFuture);
-            if (prev != null) {
-                synchronized (prev) {
-                    Object value = prev.getValue();
-                    if (value == null) {
-                        prev.setValue(new SshException("Switch to none cipher while previous KEX is ongoing"));
-                    }
-                }
-            }
-
-            String c2sEncServer;
-            String s2cEncServer;
-            synchronized (serverProposal) {
-                c2sEncServer = serverProposal.get(KexProposalOption.C2SENC);
-                s2cEncServer = serverProposal.get(KexProposalOption.S2CENC);
-            }
-            boolean c2sEncServerNone = BuiltinCiphers.Constants.isNoneCipherIncluded(c2sEncServer);
-            boolean s2cEncServerNone = BuiltinCiphers.Constants.isNoneCipherIncluded(s2cEncServer);
-
-            String c2sEncClient;
-            String s2cEncClient;
-            synchronized (clientProposal) {
-                c2sEncClient = clientProposal.get(KexProposalOption.C2SENC);
-                s2cEncClient = clientProposal.get(KexProposalOption.S2CENC);
-            }
-
-            boolean c2sEncClientNone = BuiltinCiphers.Constants.isNoneCipherIncluded(c2sEncClient);
-            boolean s2cEncClientNone = BuiltinCiphers.Constants.isNoneCipherIncluded(s2cEncClient);
-
-            if ((!c2sEncServerNone) || (!s2cEncServerNone)) {
-                kexFuture.setValue(new SshException("Server does not support none cipher"));
-            } else if ((!c2sEncClientNone) || (!s2cEncClientNone)) {
-                kexFuture.setValue(new SshException("Client does not support none cipher"));
-            } else {
-                log.info("switchToNoneCipher({}) switching", this);
-
-                Map<KexProposalOption, String> proposal = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
-                synchronized (clientProposal) {
-                    proposal.putAll(clientProposal);
-                }
-
-                proposal.put(KexProposalOption.C2SENC, BuiltinCiphers.Constants.NONE);
-                proposal.put(KexProposalOption.S2CENC, BuiltinCiphers.Constants.NONE);
-
-                byte[] seed = sendKexInit(proposal);
-                setKexSeed(seed);
-            }
-
-            return ValidateUtils.checkNotNull(kexFutureHolder.get(), "No current KEX future");
-        } else {
-            throw new SshException("In flight key exchange");
+        synchronized (lock) {
+            lock.notifyAll();
         }
+        super.sendSessionEvent(event);
     }
 
-    @Override
-    public ChannelShell createShellChannel() throws IOException {
-        if ((inCipher instanceof CipherNone) || (outCipher instanceof CipherNone)) {
-            throw new IllegalStateException("Interactive channels are not supported with none cipher");
+    protected void sendInitialServiceRequest() throws IOException {
+        if (initialServiceRequestSent) {
+            return;
         }
-        ChannelShell channel = new ChannelShell();
-        ConnectionService service = getConnectionService();
-        int id = service.registerChannel(channel);
+        initialServiceRequestSent = true;
+        String serviceName = currentServiceFactory.getName();
         if (log.isDebugEnabled()) {
-            log.debug("createShellChannel({}) created id={}", this, id);
+            log.debug("sendInitialServiceRequest({}) Send SSH_MSG_SERVICE_REQUEST for {}", this, serviceName);
         }
-        return channel;
+
+        Buffer request = createBuffer(SshConstants.SSH_MSG_SERVICE_REQUEST, serviceName.length() + Byte.SIZE);
+        request.putString(serviceName);
+        writePacket(request);
+        // Assuming that MINA-SSHD only implements "explicit server authentication" it is permissible
+        // for the client's service to start sending data before the service-accept has been received.
+        // If "implicit authentication" were to ever be supported, then this would need to be
+        // called after service-accept comes back.  See SSH-TRANSPORT.
+        currentService.start();
     }
 
     @Override
@@ -332,83 +282,6 @@ public class ClientSessionImpl extends AbstractClientSession {
                 }
             }
         }
-    }
-
-    @Override
-    protected boolean readIdentification(Buffer buffer) throws IOException {
-        serverVersion = doReadIdentification(buffer, false);
-        if (serverVersion == null) {
-            return false;
-        }
-
-        if (log.isDebugEnabled()) {
-            log.debug("readIdentification({}) Server version string: {}", this, serverVersion);
-        }
-
-        if (!(serverVersion.startsWith(DEFAULT_SSH_VERSION_PREFIX) || serverVersion.startsWith("SSH-1.99-"))) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED,
-                    "Unsupported protocol version: " + serverVersion);
-        }
-
-        return true;
-    }
-
-    @Override
-    protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws IOException {
-        mergeProposals(clientProposal, proposal);
-        return super.sendKexInit(proposal);
-    }
-
-    @Override
-    protected void setKexSeed(byte... seed) {
-        i_c = ValidateUtils.checkNotNullAndNotEmpty(seed, "No KEX seed");
-    }
-
-    @Override
-    protected void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed) throws IOException {
-        mergeProposals(serverProposal, proposal);
-        i_s = seed;
-    }
-
-    @Override
-    protected void checkKeys() throws SshException {
-        ServerKeyVerifier serverKeyVerifier = ValidateUtils.checkNotNull(getServerKeyVerifier(), "No server key verifier");
-        SocketAddress remoteAddress = ioSession.getRemoteAddress();
-
-        if (!serverKeyVerifier.verifyServerKey(this, remoteAddress, kex.getServerKey())) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_HOST_KEY_NOT_VERIFIABLE, "Server key did not validate");
-        }
-    }
-
-    @Override
-    protected void sendSessionEvent(SessionListener.Event event) throws IOException {
-        if (SessionListener.Event.KeyEstablished.equals(event)) {
-            sendInitialServiceRequest();
-        }
-        synchronized (lock) {
-            lock.notifyAll();
-        }
-        super.sendSessionEvent(event);
-    }
-
-    protected void sendInitialServiceRequest() throws IOException {
-        if (initialServiceRequestSent) {
-            return;
-        }
-        initialServiceRequestSent = true;
-        String serviceName = currentServiceFactory.getName();
-        if (log.isDebugEnabled()) {
-            log.debug("sendInitialServiceRequest({}) Send SSH_MSG_SERVICE_REQUEST for {}", this, serviceName);
-        }
-
-        Buffer request = createBuffer(SshConstants.SSH_MSG_SERVICE_REQUEST, serviceName.length() + Byte.SIZE);
-        request.putString(serviceName);
-        writePacket(request);
-        // Assuming that MINA-SSHD only implements "explicit server authentication" it is permissible
-        // for the client's service to start sending data before the service-accept has been received.
-        // If "implicit authentication" were to ever be supported, then this would need to be
-        // called after service-accept comes back.  See SSH-TRANSPORT.
-        currentService.start();
     }
 
     @Override

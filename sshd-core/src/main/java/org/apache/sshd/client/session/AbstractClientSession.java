@@ -23,7 +23,9 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.file.FileSystem;
 import java.security.KeyPair;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.sshd.client.ClientFactoryManager;
@@ -33,6 +35,7 @@ import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.channel.ChannelExec;
+import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
@@ -46,20 +49,32 @@ import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.cipher.CipherNone;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.forward.TcpipForwarder;
+import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
+import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.helpers.AbstractConnectionService;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
+ * Provides default implementations of {@link ClientSession} related methods
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractClientSession extends AbstractSession implements ClientSession {
@@ -393,5 +408,129 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     @Override
     public void startService(String name) throws Exception {
         throw new IllegalStateException("Starting services is not supported on the client side: " + name);
+    }
+
+
+    @Override
+    public ChannelShell createShellChannel() throws IOException {
+        if ((inCipher instanceof CipherNone) || (outCipher instanceof CipherNone)) {
+            throw new IllegalStateException("Interactive channels are not supported with none cipher");
+        }
+        ChannelShell channel = new ChannelShell();
+        ConnectionService service = getConnectionService();
+        int id = service.registerChannel(channel);
+        if (log.isDebugEnabled()) {
+            log.debug("createShellChannel({}) created id={}", this, id);
+        }
+        return channel;
+    }
+
+    @Override
+    protected boolean readIdentification(Buffer buffer) throws IOException {
+        serverVersion = doReadIdentification(buffer, false);
+        if (serverVersion == null) {
+            return false;
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("readIdentification({}) Server version string: {}", this, serverVersion);
+        }
+
+        if (!(serverVersion.startsWith(DEFAULT_SSH_VERSION_PREFIX) || serverVersion.startsWith("SSH-1.99-"))) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED,
+                    "Unsupported protocol version: " + serverVersion);
+        }
+
+        return true;
+    }
+
+    @Override
+    protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws IOException {
+        mergeProposals(clientProposal, proposal);
+        return super.sendKexInit(proposal);
+    }
+
+    @Override
+    protected void setKexSeed(byte... seed) {
+        i_c = ValidateUtils.checkNotNullAndNotEmpty(seed, "No KEX seed");
+    }
+
+    @Override
+    protected void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed) throws IOException {
+        mergeProposals(serverProposal, proposal);
+        i_s = seed;
+    }
+
+    @Override
+    protected void checkKeys() throws SshException {
+        ServerKeyVerifier serverKeyVerifier = ValidateUtils.checkNotNull(getServerKeyVerifier(), "No server key verifier");
+        SocketAddress remoteAddress = ioSession.getRemoteAddress();
+
+        if (!serverKeyVerifier.verifyServerKey(this, remoteAddress, kex.getServerKey())) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_HOST_KEY_NOT_VERIFIABLE, "Server key did not validate");
+        }
+    }
+
+    @Override
+    public KeyExchangeFuture switchToNoneCipher() throws IOException {
+        if (!(currentService instanceof AbstractConnectionService<?>)
+                || !GenericUtils.isEmpty(((AbstractConnectionService<?>) currentService).getChannels())) {
+            throw new IllegalStateException("The switch to the none cipher must be done immediately after authentication");
+        }
+
+        if (kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
+            DefaultKeyExchangeFuture kexFuture = new DefaultKeyExchangeFuture(null);
+            DefaultKeyExchangeFuture prev = kexFutureHolder.getAndSet(kexFuture);
+            if (prev != null) {
+                synchronized (prev) {
+                    Object value = prev.getValue();
+                    if (value == null) {
+                        prev.setValue(new SshException("Switch to none cipher while previous KEX is ongoing"));
+                    }
+                }
+            }
+
+            String c2sEncServer;
+            String s2cEncServer;
+            synchronized (serverProposal) {
+                c2sEncServer = serverProposal.get(KexProposalOption.C2SENC);
+                s2cEncServer = serverProposal.get(KexProposalOption.S2CENC);
+            }
+            boolean c2sEncServerNone = BuiltinCiphers.Constants.isNoneCipherIncluded(c2sEncServer);
+            boolean s2cEncServerNone = BuiltinCiphers.Constants.isNoneCipherIncluded(s2cEncServer);
+
+            String c2sEncClient;
+            String s2cEncClient;
+            synchronized (clientProposal) {
+                c2sEncClient = clientProposal.get(KexProposalOption.C2SENC);
+                s2cEncClient = clientProposal.get(KexProposalOption.S2CENC);
+            }
+
+            boolean c2sEncClientNone = BuiltinCiphers.Constants.isNoneCipherIncluded(c2sEncClient);
+            boolean s2cEncClientNone = BuiltinCiphers.Constants.isNoneCipherIncluded(s2cEncClient);
+
+            if ((!c2sEncServerNone) || (!s2cEncServerNone)) {
+                kexFuture.setValue(new SshException("Server does not support none cipher"));
+            } else if ((!c2sEncClientNone) || (!s2cEncClientNone)) {
+                kexFuture.setValue(new SshException("Client does not support none cipher"));
+            } else {
+                log.info("switchToNoneCipher({}) switching", this);
+
+                Map<KexProposalOption, String> proposal = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
+                synchronized (clientProposal) {
+                    proposal.putAll(clientProposal);
+                }
+
+                proposal.put(KexProposalOption.C2SENC, BuiltinCiphers.Constants.NONE);
+                proposal.put(KexProposalOption.S2CENC, BuiltinCiphers.Constants.NONE);
+
+                byte[] seed = sendKexInit(proposal);
+                setKexSeed(seed);
+            }
+
+            return ValidateUtils.checkNotNull(kexFutureHolder.get(), "No current KEX future");
+        } else {
+            throw new SshException("In flight key exchange");
+        }
     }
 }

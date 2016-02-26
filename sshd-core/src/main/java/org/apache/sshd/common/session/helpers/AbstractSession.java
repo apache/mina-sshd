@@ -1976,6 +1976,13 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             listener.sessionEvent(this, event);
         } catch (Throwable e) {
             Throwable t = GenericUtils.peelException(e);
+            if (log.isDebugEnabled()) {
+                log.debug("sendSessionEvent({})[{}] failed ({}) to inform listeners: {}",
+                           this, event, t.getClass().getSimpleName(), t.getMessage());
+            }
+            if (log.isTraceEnabled()) {
+                log.trace("sendSessionEvent(" + this + ")[" + event + "] listener inform details", t);
+            }
             if (t instanceof IOException) {
                 throw (IOException) t;
             } else if (t instanceof RuntimeException) {
