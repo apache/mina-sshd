@@ -137,14 +137,14 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected final SessionListener sessionListenerProxy;
 
     /**
-     * Channel events listener
+     * Channel events listener container
      */
     protected final Collection<ChannelListener> channelListeners = new CopyOnWriteArraySet<>();
     protected final ChannelListener channelListenerProxy;
 
-    //
-    // Key exchange support
-    //
+    /*
+     * Key exchange support
+     */
     protected byte[] sessionId;
     protected String serverVersion;
     protected String clientVersion;
@@ -159,9 +159,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected final AtomicReference<KexState> kexState = new AtomicReference<>(KexState.UNKNOWN);
     protected final AtomicReference<DefaultKeyExchangeFuture> kexFutureHolder = new AtomicReference<>(null);
 
-    //
-    // SSH packets encoding / decoding support
-    //
+    /*
+     * SSH packets encoding / decoding support
+     */
     protected Cipher outCipher;
     protected Cipher inCipher;
     protected int outCipherSize = 8;
@@ -186,9 +186,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected long idleTimeoutStart = System.currentTimeMillis();
     protected final AtomicReference<TimeoutStatus> timeoutStatus = new AtomicReference<>(TimeoutStatus.NoTimeout);
 
-    //
-    // Rekeying
-    //
+    /*
+     * Rekeying
+     */
     protected final AtomicLong inPacketsCount = new AtomicLong(0L);
     protected final AtomicLong outPacketsCount = new AtomicLong(0L);
     protected final AtomicLong inBytesCount = new AtomicLong(0L);
@@ -216,8 +216,20 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * The factory manager used to retrieve factories of Ciphers, Macs and other objects
      */
     private final FactoryManager factoryManager;
+
+    /**
+     * The session specific properties
+     */
     private final Map<String, Object> properties = new ConcurrentHashMap<>();
+
+    /**
+     * Used to wait for global requests result synchronous wait
+     */
     private final AtomicReference<Object> requestResult = new AtomicReference<>();
+
+    /**
+     * Session specific attributes
+     */
     private final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
     private ReservedSessionMessagesHandler reservedSessionMessagesHandler;
 
@@ -232,7 +244,6 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         super(ValidateUtils.checkNotNull(factoryManager, "No factory manager provided"));
         this.isServer = isServer;
         this.factoryManager = factoryManager;
-        this.reservedSessionMessagesHandler = factoryManager.getReservedSessionMessagesHandler();
         this.ioSession = ioSession;
         this.decoderBuffer = new SessionWorkBuffer(this);
 
@@ -252,11 +263,12 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     /**
      * Retrieve the session from the MINA session.
-     * If the session has not been attached, an IllegalStateException
+     * If the session has not been attached, an {@link IllegalStateException}
      * will be thrown
      *
      * @param ioSession the MINA session
      * @return the session attached to the MINA session
+     * @see #getSession(IoSession, boolean)
      */
     public static AbstractSession getSession(IoSession ioSession) {
         return getSession(ioSession, false);
@@ -264,7 +276,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     /**
      * Retrieve the session from the MINA session.
-     * If the session has not been attached and allowNull is <code>false</code>,
+     * If the session has not been attached and <tt>allowNull</tt> is <code>false</code>,
      * an {@link IllegalStateException} will be thrown, else a {@code null} will
      * be returned
      *
@@ -317,6 +329,12 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         return ioSession;
     }
 
+    /**
+     * @param knownAddress Any externally set peer address - e.g., due to some
+     * proxy mechanism meta-data
+     * @return The external address if not {@code null} otherwise, the {@code IoSession}
+     * peer address
+     */
     protected SocketAddress resolvePeerAddress(SocketAddress knownAddress) {
         if (knownAddress != null) {
             return knownAddress;
@@ -716,7 +734,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         synchronized (pendingPackets) {
             if (!pendingPackets.isEmpty()) {
                 if (log.isDebugEnabled()) {
-                    log.debug("handleNewKeys({}) Dequeing pending packets", this);
+                    log.debug("handleNewKeys({}) Dequeing {} pending packets", this, pendingPackets.size());
                 }
                 synchronized (encodeLock) {
                     PendingWriteFuture future;
@@ -727,6 +745,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             }
             kexState.set(KexState.DONE);
         }
+
         synchronized (lock) {
             lock.notifyAll();
         }
@@ -897,6 +916,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 }
             }
         }
+
         try {
             return doWritePacket(buffer);
         } finally {
@@ -1022,6 +1042,10 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
                 synchronized (requestResult) {
                     while (isOpen() && (maxWaitMillis > 0L) && (requestResult.get() == null)) {
+                        if (log.isTraceEnabled()) {
+                            log.trace("request({})[{}] remaining wait={}", this, request, maxWaitMillis);
+                        }
+
                         long waitStart = System.nanoTime();
                         requestResult.wait(maxWaitMillis);
                         long waitEnd = System.nanoTime();
@@ -1415,6 +1439,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 log.debug("doReadIdentification({}) line='{}'", this, str);
             }
 
+            // if this is a server then only one line is expected
             if (server || str.startsWith("SSH-")) {
                 return str;
             }
@@ -1501,7 +1526,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * Receive the remote key exchange init message.
      * The packet data is returned for later use.
      *
-     * @param buffer   the buffer containing the key exchange init packet
+     * @param buffer   the {@link Buffer} containing the key exchange init packet
      * @param proposal the remote proposal to fill
      * @return the packet data
      */
@@ -1674,10 +1699,12 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             inCompression = s2ccomp;
         }
         outCipherSize = outCipher.getIVSize();
+        // TODO add support for configurable compression level
         outCompression.init(Compression.Type.Deflater, -1);
 
         inCipherSize = inCipher.getIVSize();
         inMacResult = new byte[inMac.getBlockSize()];
+        // TODO add support for configurable compression level
         inCompression.init(Compression.Type.Inflater, -1);
 
         // see https://tools.ietf.org/html/rfc4344#section-3.2
@@ -1772,9 +1799,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     /**
-     * Send an unimplemented packet.  This packet should contain the
-     * sequence id of the unsupported packet: this number is assumed to
-     * be the last packet received.
+     * Send a {@code SSH_MSG_UNIMPLEMENTED} packet.  This packet should
+     * contain the sequence id of the unsupported packet: this number
+     * is assumed to be the last packet received.
      *
      * @return An {@link IoWriteFuture} that can be used to wait for packet write completion
      * @throws IOException if an error occurred sending the packet
@@ -1871,6 +1898,12 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         return guess;
     }
 
+    /**
+     * Indicates the reception of a {@code SSH_MSG_REQUEST_SUCCESS} message
+     *
+     * @param buffer The {@link Buffer} containing the message data
+     * @throws Exception If failed to handle the message
+     */
     protected void requestSuccess(Buffer buffer) throws Exception {
         // use a copy of the original data in case it is re-used on return
         Buffer resultBuf = ByteArrayBuffer.getCompactClone(buffer.array(), buffer.rpos(), buffer.available());
@@ -1881,6 +1914,12 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
     }
 
+    /**
+     * Indicates the reception of a {@code SSH_MSG_REQUEST_FAILURE} message
+     *
+     * @param buffer The {@link Buffer} containing the message data
+     * @throws Exception If failed to handle the message
+     */
     protected void requestFailure(Buffer buffer) throws Exception {
         synchronized (requestResult) {
             requestResult.set(GenericUtils.NULL);
@@ -1930,7 +1969,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     @Override
     public ReservedSessionMessagesHandler getReservedSessionMessagesHandler() {
-        return reservedSessionMessagesHandler;
+        return resolveEffectiveProvider(ReservedSessionMessagesHandler.class,
+                reservedSessionMessagesHandler, getFactoryManager().getReservedSessionMessagesHandler());
     }
 
     @Override
@@ -1998,6 +2038,12 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         return channelListenerProxy;
     }
 
+    /**
+     * Sends a session event to all currently registered session listeners
+     *
+     * @param event The event to send
+     * @throws IOException If any of the registered listeners threw an exception.
+     */
     protected void sendSessionEvent(SessionListener.Event event) throws IOException {
         SessionListener listener = getSessionListenerProxy();
         try {
@@ -2027,25 +2073,40 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         return ValidateUtils.checkNotNull(kexFutureHolder.get(), "No current KEX future on state=%s", kexState.get());
     }
 
-    protected void checkRekey() throws IOException {
-        if (isRekeyRequired()) {
-            requestNewKeysExchange();
-        }
+    /**
+     * Checks if a re-keying is required and if so initiates it
+     *
+     * @return A {@link KeyExchangeFuture} to wait for the initiated exchange
+     * or {@code null} if no need to re-key or an exchange is already in progress
+     * @throws IOException If failed to send the request
+     * @see #isRekeyRequired()
+     * @see #requestNewKeysExchange()
+     */
+    protected KeyExchangeFuture checkRekey() throws IOException {
+        return isRekeyRequired() ? requestNewKeysExchange() : null;
     }
 
-    protected void requestNewKeysExchange() throws IOException {
+    /**
+     * Initiates a new keys exchange if one not already in progress
+     *
+     * @return A {@link KeyExchangeFuture} to wait for the initiated exchange
+     * or {@code null} if an exchange is already in progress
+     * @throws IOException If failed to send the request
+     */
+    protected KeyExchangeFuture requestNewKeysExchange() throws IOException {
         if (!kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
             if (log.isDebugEnabled()) {
                 log.debug("requestNewKeysExchange({}) KEX state not DONE: {}", this, kexState.get());
             }
 
-            return;
+            return null;
         }
 
         log.info("requestNewKeysExchange({}) Initiating key re-exchange", this);
         sendKexInit();
 
-        DefaultKeyExchangeFuture kexFuture = kexFutureHolder.getAndSet(new DefaultKeyExchangeFuture(null));
+        DefaultKeyExchangeFuture newFuture = new DefaultKeyExchangeFuture(null);
+        DefaultKeyExchangeFuture kexFuture = kexFutureHolder.getAndSet(newFuture);
         if (kexFuture != null) {
             synchronized (kexFuture) {
                 Object value = kexFuture.getValue();
@@ -2054,6 +2115,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 }
             }
         }
+
+        return newFuture;
     }
 
     protected boolean isRekeyRequired() {
@@ -2175,6 +2238,12 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      */
     protected abstract String resolveAvailableSignaturesProposal(FactoryManager manager);
 
+    /**
+     * Indicates the the key exchange is completed and the exchanged keys
+     * can now be verified - e.g., client can verify the server's key
+     *
+     * @throws IOException If validation failed
+     */
     protected abstract void checkKeys() throws IOException;
 
     protected void receiveKexInit(Buffer buffer) throws IOException {
@@ -2188,7 +2257,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     // returns the proposal argument
     protected Map<KexProposalOption, String> mergeProposals(Map<KexProposalOption, String> current, Map<KexProposalOption, String> proposal) {
         if (current == proposal) {
-            return proposal; // debug breakpoint
+            return proposal; // nothing to merge
         }
 
         synchronized (current) {
@@ -2204,10 +2273,6 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
 
         return proposal;
-    }
-
-    protected void serviceAccept() throws IOException {
-        // nothing
     }
 
     /**
