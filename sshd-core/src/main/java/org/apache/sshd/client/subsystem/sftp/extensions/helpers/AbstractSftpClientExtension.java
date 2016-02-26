@@ -183,8 +183,8 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isDebugEnabled()) {
-                log.debug("checkStatus({}}[id={}] - status: {} [{}] {}",
-                        getName(), id, substatus, lang, msg);
+                log.debug("checkExtendedReplyBuffer({}}[id={}] - status: {} [{}] {}",
+                          getName(), id, substatus, lang, msg);
             }
 
             if (substatus != SftpConstants.SSH_FX_OK) {

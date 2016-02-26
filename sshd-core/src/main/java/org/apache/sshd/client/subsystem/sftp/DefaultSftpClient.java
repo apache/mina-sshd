@@ -368,19 +368,23 @@ public class DefaultSftpClient extends AbstractSftpClient {
                           getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
             }
 
-            throwStatusException(id, substatus, msg, lang);
+            throwStatusException(SftpConstants.SSH_FXP_INIT, id, substatus, msg, lang);
         } else {
             handleUnexpectedPacket(SftpConstants.SSH_FXP_VERSION, id, type, length, buffer);
         }
     }
 
     /**
-     * @param selector The {@link SftpVersionSelector} to use
+     * @param selector The {@link SftpVersionSelector} to use - ignored if {@code null}
      * @return The selected version (may be same as current)
      * @throws IOException If failed to negotiate
      */
     public int negotiateVersion(SftpVersionSelector selector) throws IOException {
         int current = getVersion();
+        if (selector == null) {
+            return current;
+        }
+
         Set<Integer> available = GenericUtils.asSortedSet(Collections.singleton(current));
         Map<String, ?> parsed = getParsedServerExtensions();
         Collection<String> extensions = ParserUtils.supportedExtensions(parsed);
@@ -414,7 +418,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
                 + (Integer.SIZE / Byte.SIZE) + verVal.length(), false);
         buffer.putString(SftpConstants.EXT_VERSION_SELECT);
         buffer.putString(verVal);
-        checkStatus(SftpConstants.SSH_FXP_EXTENDED, buffer);
+        checkCommandStatus(SftpConstants.SSH_FXP_EXTENDED, buffer);
         versionHolder.set(selected);
         return selected;
     }

@@ -50,8 +50,8 @@ public abstract class AbstractCheckFileExtension extends AbstractSftpClientExten
 
         if (log.isDebugEnabled()) {
             log.debug("doGetHash({})[{}] - offset={}, length={}, block-size={}",
-                    getName(), (target instanceof CharSequence) ? target : BufferUtils.toHex(BufferUtils.EMPTY_HEX_SEPARATOR, (byte[]) target),
-                    offset, length, blockSize);
+                      getName(), (target instanceof CharSequence) ? target : BufferUtils.toHex(BufferUtils.EMPTY_HEX_SEPARATOR, (byte[]) target),
+                      offset, length, blockSize);
         }
 
         buffer = checkExtendedReplyBuffer(receive(sendExtendedCommand(buffer)));
@@ -73,5 +73,4 @@ public abstract class AbstractCheckFileExtension extends AbstractSftpClientExten
 
         return new Pair<String, Collection<byte[]>>(algo, hashes);
     }
-
 }

@@ -191,29 +191,31 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
     }
 
     /**
-     * Sends the specified command, waits for the response and then invokes {@link #checkStatus(Buffer)}
+     * Sends the specified command, waits for the response and then invokes {@link #checkResponseStatus(int, Buffer)}
      * @param cmd The command to send
      * @param request The request {@link Buffer}
      * @throws IOException If failed to send, receive or check the returned status
      * @see #send(int, Buffer)
      * @see #receive(int)
-     * @see #checkStatus(Buffer)
+     * @see #checkResponseStatus(int, Buffer)
      */
-    protected void checkStatus(int cmd, Buffer request) throws IOException {
+    protected void checkCommandStatus(int cmd, Buffer request) throws IOException {
         int reqId = send(cmd, request);
         Buffer response = receive(reqId);
-        checkStatus(response);
+        checkResponseStatus(cmd, response);
     }
 
     /**
      * Checks if the incoming response is an {@code SSH_FXP_STATUS} one,
      * and if so whether the substatus is {@code SSH_FX_OK}.
+     *
+     * @param cmd The sent command opcode
      * @param buffer The received response {@link Buffer}
      * @throws IOException If response does not carry a status or carries
      * a bad status code
-     * @see #checkStatus(int, int, String, String)
+     * @see #checkResponseStatus(int, int, int, String, String)
      */
-    protected void checkStatus(Buffer buffer) throws IOException {
+    protected void checkResponseStatus(int cmd, Buffer buffer) throws IOException {
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
@@ -221,32 +223,34 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
-            checkStatus(id, substatus, msg, lang);
+            checkResponseStatus(cmd, id, substatus, msg, lang);
         } else {
             handleUnexpectedPacket(SftpConstants.SSH_FXP_STATUS, id, type, length, buffer);
         }
     }
 
     /**
+     * @param cmd The sent command opcode
      * @param id The request id
      * @param substatus The sub-status value
      * @param msg The message
      * @param lang The language
      * @throws IOException if the sub-status is not {@code SSH_FX_OK}
-     * @see #throwStatusException(int, int, String, String)
+     * @see #throwStatusException(int, int, int, String, String)
      */
-    protected void checkStatus(int id, int substatus, String msg, String lang) throws IOException {
+    protected void checkResponseStatus(int cmd, int id, int substatus, String msg, String lang) throws IOException {
         if (log.isTraceEnabled()) {
-            log.trace("checkStatus({})[id={}] status={} lang={} msg={}",
-                      getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
+            log.trace("checkStatus({})[id={}]  cmd={} status={} lang={} msg={}",
+                      getClientChannel(), id, SftpConstants.getCommandMessageName(cmd),
+                      SftpConstants.getStatusName(substatus), lang, msg);
         }
 
         if (substatus != SftpConstants.SSH_FX_OK) {
-            throwStatusException(id, substatus, msg, lang);
+            throwStatusException(cmd, id, substatus, msg, lang);
         }
     }
 
-    protected void throwStatusException(int id, int substatus, String msg, String lang) throws IOException {
+    protected void throwStatusException(int cmd, int id, int substatus, String msg, String lang) throws IOException {
         throw new SftpException(substatus, msg);
     }
 
@@ -257,15 +261,15 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
      * @throws IOException If failed to send/receive or process the response
      * @see #send(int, Buffer)
      * @see #receive(int)
-     * @see #checkHandle(Buffer)
+     * @see #checkHandleResponse(int, Buffer)
      */
     protected byte[] checkHandle(int cmd, Buffer request) throws IOException {
         int reqId = send(cmd, request);
         Buffer response = receive(reqId);
-        return checkHandle(response);
+        return checkHandleResponse(cmd, response);
     }
 
-    protected byte[] checkHandle(Buffer buffer) throws IOException {
+    protected byte[] checkHandleResponse(int cmd, Buffer buffer) throws IOException {
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
@@ -278,10 +282,11 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkHandle({})[id={}] - status: {} [{}] {}",
-                          getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
+                log.trace("checkHandleResponse({})[id={}] {} - status: {} [{}] {}",
+                          getClientChannel(), id, SftpConstants.getCommandMessageName(cmd),
+                          SftpConstants.getStatusName(substatus), lang, msg);
             }
-            throwStatusException(id, substatus, msg, lang);
+            throwStatusException(cmd, id, substatus, msg, lang);
         }
 
         return handleUnexpectedHandlePacket(id, type, length, buffer);
@@ -300,15 +305,15 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
      * @throws IOException If failed to send/receive or process the response
      * @see #send(int, Buffer)
      * @see #receive(int)
-     * @see #checkAttributes(Buffer)
+     * @see #checkAttributesResponse(int, Buffer)
      */
     protected Attributes checkAttributes(int cmd, Buffer request) throws IOException {
         int reqId = send(cmd, request);
         Buffer response = receive(reqId);
-        return checkAttributes(response);
+        return checkAttributesResponse(cmd, response);
     }
 
-    protected Attributes checkAttributes(Buffer buffer) throws IOException {
+    protected Attributes checkAttributesResponse(int cmd, Buffer buffer) throws IOException {
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
@@ -321,10 +326,11 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkAttributes()[id={}] - status: {} [{}] {}",
-                          getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
+                log.trace("checkAttributes()[id={}] {} - status: {} [{}] {}",
+                          getClientChannel(), id, SftpConstants.getCommandMessageName(cmd),
+                          SftpConstants.getStatusName(substatus), lang, msg);
             }
-            throwStatusException(id, substatus, msg, lang);
+            throwStatusException(cmd, id, substatus, msg, lang);
         }
 
         return handleUnexpectedAttributesPacket(id, type, length, buffer);
@@ -346,15 +352,15 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
      * @throws IOException If failed to send/receive or process the response
      * @see #send(int, Buffer)
      * @see #receive(int)
-     * @see #checkOneName(Buffer)
+     * @see #checkOneNameResponse(int, Buffer)
      */
     protected String checkOneName(int cmd, Buffer request) throws IOException {
         int reqId = send(cmd, request);
         Buffer response = receive(reqId);
-        return checkOneName(response);
+        return checkOneNameResponse(cmd, response);
     }
 
-    protected String checkOneName(Buffer buffer) throws IOException {
+    protected String checkOneNameResponse(int cmd, Buffer buffer) throws IOException {
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
@@ -374,8 +380,9 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             Boolean indicator = SftpHelper.getEndOfListIndicatorValue(buffer, version);
             // TODO decide what to do if not-null and not TRUE
             if (log.isTraceEnabled()) {
-                log.trace("checkOneName({})[id={}] ({})[{}] eol={}: {}",
-                          getClientChannel(), id, name, longName, indicator, attrs);
+                log.trace("checkOneName({})[id={}] {} ({})[{}] eol={}: {}",
+                          getClientChannel(), id, SftpConstants.getCommandMessageName(cmd),
+                          name, longName, indicator, attrs);
             }
             return name;
         }
@@ -385,11 +392,12 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkOneName({})[id={}] - status: {} [{}] {}",
-                          getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
+                log.trace("checkOneName({})[id={}] {} status: {} [{}] {}",
+                          getClientChannel(), id, SftpConstants.getCommandMessageName(cmd),
+                          SftpConstants.getStatusName(substatus), lang, msg);
             }
 
-            throwStatusException(id, substatus, msg, lang);
+            throwStatusException(cmd, id, substatus, msg, lang);
         }
 
         return handleUnknownOneNamePacket(id, type, length, buffer);
@@ -714,7 +722,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         byte[] id = ValidateUtils.checkNotNull(handle, "No handle").getIdentifier();
         Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* some extra fields */, false);
         buffer.putBytes(id);
-        checkStatus(SftpConstants.SSH_FXP_CLOSE, buffer);
+        checkCommandStatus(SftpConstants.SSH_FXP_CLOSE, buffer);
     }
 
     @Override
@@ -729,7 +737,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
         buffer.putString(path);
-        checkStatus(SftpConstants.SSH_FXP_REMOVE, buffer);
+        checkCommandStatus(SftpConstants.SSH_FXP_REMOVE, buffer);
     }
 
     @Override
@@ -768,7 +776,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             throw new UnsupportedOperationException("rename(" + oldPath + " => " + newPath + ")"
                     + " - copy options can not be used with this SFTP version: " + options);
         }
-        checkStatus(SftpConstants.SSH_FXP_RENAME, buffer);
+        checkCommandStatus(SftpConstants.SSH_FXP_RENAME, buffer);
     }
 
     @Override   // TODO make this a default method in Java 8
@@ -810,10 +818,10 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         }
         int reqId = send(cmd, request);
         Buffer response = receive(reqId);
-        return checkData(response, dstOffset, dst, eofSignalled);
+        return checkDataResponse(cmd, response, dstOffset, dst, eofSignalled);
     }
 
-    protected int checkData(Buffer buffer, int dstoff, byte[] dst, AtomicReference<Boolean> eofSignalled) throws IOException {
+    protected int checkDataResponse(int cmd, Buffer buffer, int dstoff, byte[] dst, AtomicReference<Boolean> eofSignalled) throws IOException {
         if (eofSignalled != null) {
             eofSignalled.set(null);
         }
@@ -826,8 +834,9 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             buffer.getRawBytes(dst, dstoff, len);
             Boolean indicator = SftpHelper.getEndOfFileIndicatorValue(buffer, getVersion());
             if (log.isTraceEnabled()) {
-                log.trace("checkData({}][id={}] offset={}, len={}, EOF={}",
-                          getClientChannel(), id, dstoff, len, indicator);
+                log.trace("checkDataResponse({}][id={}] {} offset={}, len={}, EOF={}",
+                          getClientChannel(), SftpConstants.getCommandMessageName(cmd),
+                          id, dstoff, len, indicator);
             }
             if (eofSignalled != null) {
                 eofSignalled.set(indicator);
@@ -841,15 +850,16 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkData({})[id={}] - status: {} [{}] {}",
-                          getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
+                log.trace("checkDataResponse({})[id={}] {} status: {} [{}] {}",
+                          getClientChannel(), id, SftpConstants.getCommandMessageName(cmd),
+                          SftpConstants.getStatusName(substatus), lang, msg);
             }
 
             if (substatus == SftpConstants.SSH_FX_EOF) {
                 return -1;
             }
 
-            throwStatusException(id, substatus, msg, lang);
+            throwStatusException(cmd, id, substatus, msg, lang);
         }
 
         return handleUnknownDataPacket(id, type, length, buffer);
@@ -886,7 +896,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         buffer.putBytes(id);
         buffer.putLong(fileOffset);
         buffer.putBytes(src, srcOffset, len);
-        checkStatus(SftpConstants.SSH_FXP_WRITE, buffer);
+        checkCommandStatus(SftpConstants.SSH_FXP_WRITE, buffer);
     }
 
     @Override
@@ -908,7 +918,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             buffer.putByte((byte) 0);
         }
 
-        checkStatus(SftpConstants.SSH_FXP_MKDIR, buffer);
+        checkCommandStatus(SftpConstants.SSH_FXP_MKDIR, buffer);
     }
 
     @Override
@@ -923,7 +933,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
         buffer.putString(path);
-        checkStatus(SftpConstants.SSH_FXP_RMDIR, buffer);
+        checkCommandStatus(SftpConstants.SSH_FXP_RMDIR, buffer);
     }
 
     @Override
@@ -960,10 +970,10 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         byte[] id = handle.getIdentifier();
         Buffer buffer = new ByteArrayBuffer(id.length + Byte.SIZE /* some extra fields */, false);
         buffer.putBytes(id);
-        return checkDir(receive(send(SftpConstants.SSH_FXP_READDIR, buffer)), eolIndicator);
+        return checkDirResponse(SftpConstants.SSH_FXP_READDIR, receive(send(SftpConstants.SSH_FXP_READDIR, buffer)), eolIndicator);
     }
 
-    protected List<DirEntry> checkDir(Buffer buffer, AtomicReference<Boolean> eolIndicator) throws IOException {
+    protected List<DirEntry> checkDirResponse(int cmd, Buffer buffer, AtomicReference<Boolean> eolIndicator) throws IOException {
         if (eolIndicator != null) {
             eolIndicator.set(null);    // assume unknown
         }
@@ -975,7 +985,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             int version = getVersion();
             ClientChannel channel = getClientChannel();
             if (log.isDebugEnabled()) {
-                log.debug("checkDir({}}[id={}] reading {} entries", channel, id, len);
+                log.debug("checkDirResponse({}}[id={}] reading {} entries", channel, id, len);
             }
             List<DirEntry> entries = new ArrayList<DirEntry>(len);
             for (int i = 0; i < len; i++) {
@@ -983,7 +993,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
                 String longName = (version == SftpConstants.SFTP_V3) ? buffer.getString() : null;
                 Attributes attrs = readAttributes(buffer);
                 if (log.isTraceEnabled()) {
-                    log.trace("checkDir({})[id={}][{}] ({})[{}]: {}",
+                    log.trace("checkDirResponse({})[id={}][{}] ({})[{}]: {}",
                               channel, id, i, name, longName, attrs);
                 }
 
@@ -996,7 +1006,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("checkDir({}}[id={}] read count={}, eol={}", channel, entries.size(), indicator);
+                log.debug("checkDirResponse({}}[id={}] read count={}, eol={}", channel, entries.size(), indicator);
             }
             return entries;
         }
@@ -1006,7 +1016,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkDir({})[id={}] - status: {} [{}] {}",
+                log.trace("checkDirResponse({})[id={}] - status: {} [{}] {}",
                           getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
             }
 
@@ -1014,7 +1024,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
                 return null;
             }
 
-            throwStatusException(id, substatus, msg, lang);
+            throwStatusException(cmd, id, substatus, msg, lang);
         }
 
         return handleUnknownDirListingPacket(id, type, length, buffer);
@@ -1109,7 +1119,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         Buffer buffer = new ByteArrayBuffer();
         buffer.putString(path);
         writeAttributes(buffer, attributes);
-        checkStatus(SftpConstants.SSH_FXP_SETSTAT, buffer);
+        checkCommandStatus(SftpConstants.SSH_FXP_SETSTAT, buffer);
     }
 
     @Override
@@ -1125,7 +1135,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         Buffer buffer = new ByteArrayBuffer(id.length + (2 * Long.SIZE) /* some extras */, false);
         buffer.putBytes(id);
         writeAttributes(buffer, attributes);
-        checkStatus(SftpConstants.SSH_FXP_FSETSTAT, buffer);
+        checkCommandStatus(SftpConstants.SSH_FXP_FSETSTAT, buffer);
     }
 
     @Override
@@ -1157,12 +1167,12 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             }
             buffer.putString(targetPath);
             buffer.putString(linkPath);
-            checkStatus(SftpConstants.SSH_FXP_SYMLINK, buffer);
+            checkCommandStatus(SftpConstants.SSH_FXP_SYMLINK, buffer);
         } else {
             buffer.putString(targetPath);
             buffer.putString(linkPath);
             buffer.putBoolean(symbolic);
-            checkStatus(SftpConstants.SSH_FXP_LINK, buffer);
+            checkCommandStatus(SftpConstants.SSH_FXP_LINK, buffer);
         }
     }
 
@@ -1183,7 +1193,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         buffer.putLong(offset);
         buffer.putLong(length);
         buffer.putInt(mask);
-        checkStatus(SftpConstants.SSH_FXP_BLOCK, buffer);
+        checkCommandStatus(SftpConstants.SSH_FXP_BLOCK, buffer);
     }
 
     @Override
@@ -1201,7 +1211,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         buffer.putBytes(id);
         buffer.putLong(offset);
         buffer.putLong(length);
-        checkStatus(SftpConstants.SSH_FXP_UNBLOCK, buffer);
+        checkCommandStatus(SftpConstants.SSH_FXP_UNBLOCK, buffer);
     }
 
     @Override

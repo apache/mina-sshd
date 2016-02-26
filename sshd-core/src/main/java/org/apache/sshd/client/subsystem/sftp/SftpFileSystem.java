@@ -77,7 +77,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
         super(provider);
         this.id = id;
         this.clientSession = ValidateUtils.checkNotNull(session, "No client session");
-        this.selector = ValidateUtils.checkNotNull(selector, "No SFTP version selector provided");
+        this.selector = selector;
         this.stores = Collections.unmodifiableList(Collections.<FileStore>singletonList(new SftpFileStore(id, this)));
         this.pool = new LinkedBlockingQueue<>(PropertyResolverUtils.getIntProperty(session, POOL_SIZE_PROP, DEFAULT_POOL_SIZE));
         try (SftpClient client = getClient()) {

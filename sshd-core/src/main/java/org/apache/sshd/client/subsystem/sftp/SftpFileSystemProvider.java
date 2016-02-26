@@ -146,7 +146,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     public SftpFileSystemProvider(SshClient client, SftpVersionSelector selector) {
         this.log = LoggerFactory.getLogger(getClass());
-        this.selector = ValidateUtils.checkNotNull(selector, "No SFTP version selector provided");
+        this.selector = selector;
         if (client == null) {
             // TODO: make this configurable using system properties
             client = SshClient.setUpDefaultClient();
