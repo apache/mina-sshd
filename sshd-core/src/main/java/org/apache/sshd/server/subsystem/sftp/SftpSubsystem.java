@@ -602,7 +602,7 @@ public class SftpSubsystem
                 doSpaceAvailable(buffer, id);
                 break;
             case HardLinkExtensionParser.NAME:
-                doHardLink(buffer, id);
+                doOpenSSHHardLink(buffer, id);
                 break;
             default:
                 if (log.isDebugEnabled()) {
@@ -613,12 +613,13 @@ public class SftpSubsystem
         }
     }
 
-    protected void doHardLink(Buffer buffer, int id) throws IOException {
+    // see https://github.com/openssh/openssh-portable/blob/master/PROTOCOL section 10
+    protected void doOpenSSHHardLink(Buffer buffer, int id) throws IOException {
         String srcFile = buffer.getString();
         String dstFile = buffer.getString();
 
         try {
-            doHardLink(id, srcFile, dstFile);
+            doOpenSSHHardLink(id, srcFile, dstFile);
         } catch (IOException | RuntimeException e) {
             sendStatus(BufferUtils.clear(buffer), id, e);
             return;
@@ -627,9 +628,9 @@ public class SftpSubsystem
         sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
-    protected void doHardLink(int id, String srcFile, String dstFile) throws IOException {
+    protected void doOpenSSHHardLink(int id, String srcFile, String dstFile) throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("doHardLink({})[id={}] SSH_FXP_EXTENDED[{}] (src={}, dst={})",
+            log.debug("doOpenSSHHardLink({})[id={}] SSH_FXP_EXTENDED[{}] (src={}, dst={})",
                       getServerSession(), id, HardLinkExtensionParser.NAME, srcFile, dstFile);
         }
 
