@@ -186,9 +186,10 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     }
 
     @Override
-    protected void serviceAccept() throws IOException {
+    protected void handleServiceAccept(String serviceName, Buffer buffer) throws Exception {
+        super.handleServiceAccept(serviceName, buffer);
         // TODO: can services be initiated by the server-side ?
-        disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Unsupported packet: SSH_MSG_SERVICE_ACCEPT");
+        disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Unsupported packet: SSH_MSG_SERVICE_ACCEPT for " + serviceName);
     }
 
     @Override
@@ -302,7 +303,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         clientVersion = doReadIdentification(buffer, true);
         if (GenericUtils.isEmpty(clientVersion)) {
             buffer.rpos(rpos);  // restore original buffer position
-            return false;
+            return false;   // more data required
         }
 
         if (log.isDebugEnabled()) {
