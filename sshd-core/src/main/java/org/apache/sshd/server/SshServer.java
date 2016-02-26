@@ -63,6 +63,7 @@ import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.session.ServerConnectionServiceFactory;
+import org.apache.sshd.server.session.ServerProxyAcceptor;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerUserAuthServiceFactory;
 import org.apache.sshd.server.session.SessionFactory;
@@ -116,6 +117,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected IoAcceptor acceptor;
     protected String host;
     protected int port;
+
+    private ServerProxyAcceptor proxyAcceptor;
     private Factory<Command> shellFactory;
     private SessionFactory sessionFactory;
     private CommandFactory commandFactory;
@@ -177,6 +180,16 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     public void setSessionFactory(SessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
+    }
+
+    @Override
+    public ServerProxyAcceptor getServerProxyAcceptor() {
+        return proxyAcceptor;
+    }
+
+    @Override
+    public void setServerProxyAcceptor(ServerProxyAcceptor proxyAcceptor) {
+        this.proxyAcceptor = proxyAcceptor;
     }
 
     @Override

@@ -68,7 +68,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  */
 public interface ClientSession
             extends Session, ScpClientCreator, SftpClientCreator,
-                    ClientAuthenticationManager {
+            ClientProxyConnectorHolder, ClientAuthenticationManager {
     enum ClientSessionEvent {
         TIMEOUT,
         CLOSED,

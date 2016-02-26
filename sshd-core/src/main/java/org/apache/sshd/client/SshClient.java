@@ -81,6 +81,7 @@ import org.apache.sshd.client.keyverifier.ModifiedServerKeyAcceptor;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.AbstractClientSession;
 import org.apache.sshd.client.session.ClientConnectionServiceFactory;
+import org.apache.sshd.client.session.ClientProxyConnector;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionCreator;
 import org.apache.sshd.client.session.ClientUserAuthServiceFactory;
@@ -208,6 +209,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     protected UserInteraction userInteraction;
     protected List<NamedFactory<UserAuth>> userAuthFactories;
 
+    private ClientProxyConnector proxyConnector;
     private ServerKeyVerifier serverKeyVerifier;
     private HostConfigEntryResolver hostConfigEntryResolver;
     private ClientIdentityLoader clientIdentityLoader;
@@ -226,6 +228,16 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     public void setSessionFactory(SessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
+    }
+
+    @Override
+    public ClientProxyConnector getClientProxyConnector() {
+        return proxyConnector;
+    }
+
+    @Override
+    public void setClientProxyConnector(ClientProxyConnector proxyConnector) {
+        this.proxyConnector = proxyConnector;
     }
 
     @Override

@@ -19,6 +19,7 @@
 
 package org.apache.sshd.server.session;
 
+import java.net.SocketAddress;
 import java.security.KeyPair;
 
 import org.apache.sshd.common.session.Session;
@@ -28,12 +29,24 @@ import org.apache.sshd.server.ServerFactoryManager;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ServerSession extends Session, ServerAuthenticationManager {
+public interface ServerSession
+        extends Session,
+                ServerProxyAcceptorHolder,
+                ServerAuthenticationManager {
+
     /**
      * @return The {@link ServerFactoryManager} for this session
      */
     @Override
     ServerFactoryManager getFactoryManager();
+
+    /**
+     * @return The {@link SocketAddress} of the remote client. If no proxy wrapping
+     * was used then this is the same as the {@code IoSession#getRemoteAddress()}.
+     * Otherwise, it indicates the real client's address that was somehow transmitted
+     * via the proxy meta-data
+     */
+    SocketAddress getClientAddress();
 
     /**
      * @return The {@link KeyPair} representing the current session's used keys

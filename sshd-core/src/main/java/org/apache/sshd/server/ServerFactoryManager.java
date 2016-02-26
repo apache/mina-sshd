@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.server.session.ServerProxyAcceptorHolder;
 
 /**
  * The <code>ServerFactoryManager</code> enable the retrieval of additional
@@ -31,7 +32,11 @@ import org.apache.sshd.common.NamedFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ServerFactoryManager extends FactoryManager, ServerAuthenticationManager {
+public interface ServerFactoryManager
+        extends FactoryManager,
+                ServerProxyAcceptorHolder,
+                ServerAuthenticationManager {
+
     /**
      * Key used to retrieve the value of the maximum concurrent open session count per username.
      * If not set, then unlimited

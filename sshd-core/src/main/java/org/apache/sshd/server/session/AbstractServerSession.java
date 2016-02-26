@@ -20,6 +20,7 @@
 package org.apache.sshd.server.session;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.util.Collection;
@@ -60,6 +61,8 @@ import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractServerSession extends AbstractSession implements ServerSession {
+    private ServerProxyAcceptor proxyAcceptor;
+    private SocketAddress clientAddress;
     private PasswordAuthenticator passwordAuthenticator;
     private PublickeyAuthenticator publickeyAuthenticator;
     private KeyboardInteractiveAuthenticator interactiveAuthenticator;
@@ -74,6 +77,25 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     @Override
     public ServerFactoryManager getFactoryManager() {
         return (ServerFactoryManager) super.getFactoryManager();
+    }
+
+    @Override
+    public ServerProxyAcceptor getServerProxyAcceptor() {
+        return resolveEffectiveProvider(ServerProxyAcceptor.class, proxyAcceptor, getFactoryManager().getServerProxyAcceptor());
+    }
+
+    @Override
+    public void setServerProxyAcceptor(ServerProxyAcceptor proxyAcceptor) {
+        this.proxyAcceptor = proxyAcceptor;
+    }
+
+    @Override
+    public SocketAddress getClientAddress() {
+        return resolvePeerAddress(clientAddress);
+    }
+
+    public void setClientAddress(SocketAddress clientAddress) {
+        this.clientAddress = clientAddress;
     }
 
     @Override
@@ -253,8 +275,32 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
     @Override
     protected boolean readIdentification(Buffer buffer) throws IOException {
+        ServerProxyAcceptor acceptor = getServerProxyAcceptor();
+        int rpos = buffer.rpos();
+        if (acceptor != null) {
+            try {
+                boolean completed = acceptor.acceptServerProxyMetadata(this, buffer);
+                if (!completed) {
+                    return false;   // more data required
+                }
+            } catch (Throwable t) {
+                log.warn("readIdentification({}) failed ({}) to accept proxy metadata: {}",
+                         this, t.getClass().getSimpleName(), t.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("readIdentification(" + this + ") proxy metadata acceptance failure details", t);
+                }
+
+                if (t instanceof IOException) {
+                    throw (IOException) t;
+                } else {
+                    throw new SshException(t);
+                }
+            }
+        }
+
         clientVersion = doReadIdentification(buffer, true);
         if (GenericUtils.isEmpty(clientVersion)) {
+            buffer.rpos(rpos);  // restore original buffer position
             return false;
         }
 

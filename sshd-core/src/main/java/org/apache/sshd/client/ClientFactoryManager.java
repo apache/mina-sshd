@@ -20,6 +20,7 @@ package org.apache.sshd.client;
 
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.config.keys.ClientIdentityLoader;
+import org.apache.sshd.client.session.ClientProxyConnectorHolder;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 
@@ -29,7 +30,10 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ClientFactoryManager extends FactoryManager, ClientAuthenticationManager {
+public interface ClientFactoryManager
+        extends FactoryManager,
+                ClientProxyConnectorHolder,
+                ClientAuthenticationManager {
 
     /**
      * Key used to retrieve the value of the client identification string.

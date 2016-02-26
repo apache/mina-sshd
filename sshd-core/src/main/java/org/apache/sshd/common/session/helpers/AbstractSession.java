@@ -317,6 +317,15 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         return ioSession;
     }
 
+    protected SocketAddress resolvePeerAddress(SocketAddress knownAddress) {
+        if (knownAddress != null) {
+            return knownAddress;
+        }
+
+        IoSession s = getIoSession();
+        return (s == null) ? null : s.getRemoteAddress();
+    }
+
     @Override
     public FactoryManager getFactoryManager() {
         return factoryManager;
@@ -1340,7 +1349,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * {@link #doReadIdentification(Buffer, boolean)} and
      * store the result in the needed property.
      *
-     * @param buffer the buffer containing the remote identification
+     * @param buffer The {@link Buffer} containing the remote identification
      * @return <code>true</code> if the identification has been fully read or
      * <code>false</code> if more data is needed
      * @throws IOException if an error occurs such as a bad protocol version

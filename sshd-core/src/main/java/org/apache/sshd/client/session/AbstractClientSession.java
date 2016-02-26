@@ -49,6 +49,7 @@ import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
@@ -87,6 +88,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     private ScpTransferEventListener scpListener;
     private ScpFileOpener scpOpener;
     private SocketAddress connectAddress;
+    private ClientProxyConnector proxyConnector;
 
     protected AbstractClientSession(ClientFactoryManager factoryManager, IoSession ioSession) {
         super(false, factoryManager, ioSession);
@@ -100,7 +102,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     public SocketAddress getConnectAddress() {
-        return connectAddress;
+        return resolvePeerAddress(connectAddress);
     }
 
     public void setConnectAddress(SocketAddress connectAddress) {
@@ -150,6 +152,16 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     @Override
     public void setPasswordIdentityProvider(PasswordIdentityProvider provider) {
         passwordIdentityProvider = provider;
+    }
+
+    @Override
+    public ClientProxyConnector getClientProxyConnector() {
+        return resolveEffectiveProvider(ClientProxyConnector.class, proxyConnector, getFactoryManager().getClientProxyConnector());
+    }
+
+    @Override
+    public void setClientProxyConnector(ClientProxyConnector proxyConnector) {
+        this.proxyConnector = proxyConnector;
     }
 
     @Override
@@ -203,8 +215,28 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         }
     }
 
-    protected IoWriteFuture sendClientIdentification() {
+    protected IoWriteFuture sendClientIdentification() throws Exception {
         clientVersion = resolveIdentificationString(ClientFactoryManager.CLIENT_IDENTIFICATION);
+
+        ClientProxyConnector proxyConnector = getClientProxyConnector();
+        if (proxyConnector != null) {
+            try {
+                proxyConnector.sendClientProxyMetadata(this);
+            } catch (Throwable t) {
+                log.warn("sendClientIdentification({}) failed ({}) to send proxy metadata: {}",
+                         this, t.getClass().getSimpleName(), t.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("sendClientIdentification(" + this + ") proxy metadata send failure details", t);
+                }
+
+                if (t instanceof Exception) {
+                    throw (Exception) t;
+                } else {
+                    throw new RuntimeSshException(t);
+                }
+            }
+        }
+
         return sendIdentification(clientVersion);
     }
 
