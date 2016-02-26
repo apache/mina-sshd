@@ -118,6 +118,7 @@ public class KnownHostsServerKeyVerifier
     private final ServerKeyVerifier delegate;
     private final AtomicReference<Collection<HostEntryPair>> keysHolder =
             new AtomicReference<Collection<HostEntryPair>>(Collections.<HostEntryPair>emptyList());
+    private ModifiedServerKeyAcceptor modKeyAcceptor;
 
     public KnownHostsServerKeyVerifier(ServerKeyVerifier delegate, Path file) {
         this(delegate, file, IoUtils.EMPTY_LINK_OPTIONS);
@@ -130,6 +131,24 @@ public class KnownHostsServerKeyVerifier
 
     public ServerKeyVerifier getDelegateVerifier() {
         return delegate;
+    }
+
+    /**
+     * @return The delegate {@link ModifiedServerKeyAcceptor} to consult
+     * if a server presents a modified key. If {@code null} then assumed
+     * to reject such a modification
+     */
+    public ModifiedServerKeyAcceptor getModifiedServerKeyAcceptor() {
+        return modKeyAcceptor;
+    }
+
+    /**
+     * @param acceptor The delegate {@link ModifiedServerKeyAcceptor} to
+     * consult if a server presents a modified key. If {@code null} then
+     * assumed to reject such a modification
+     */
+    public void setModifiedServerKeyAcceptor(ModifiedServerKeyAcceptor acceptor) {
+        modKeyAcceptor = acceptor;
     }
 
     @Override
@@ -725,6 +744,11 @@ public class KnownHostsServerKeyVerifier
     public boolean acceptModifiedServerKey(ClientSession clientSession, SocketAddress remoteAddress,
             KnownHostEntry entry, PublicKey expected, PublicKey actual)
                     throws Exception {
+        ModifiedServerKeyAcceptor acceptor = getModifiedServerKeyAcceptor();
+        if (acceptor != null) {
+            return acceptor.acceptModifiedServerKey(clientSession, remoteAddress, entry, expected, actual);
+        }
+
         log.warn("acceptModifiedServerKey({}) mismatched keys presented by {} for entry={}: expected={}-{}, actual={}-{}",
                 clientSession, remoteAddress, entry,
                 KeyUtils.getKeyType(expected), KeyUtils.getFingerPrint(expected),

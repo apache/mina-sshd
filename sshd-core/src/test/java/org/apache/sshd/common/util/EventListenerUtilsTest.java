@@ -38,7 +38,6 @@ public class EventListenerUtilsTest extends BaseTestSupport {
     }
 
     @Test
-    @SuppressWarnings("synthetic-access")
     public void testProxyWrapper() {
         List<ProxyListenerImpl> impls = new ArrayList<ProxyListenerImpl>();
         for (int index = 0; index < Byte.SIZE; index++) {

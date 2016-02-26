@@ -1070,7 +1070,14 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             return current;
         }
 
-        final ModifiedServerKeyAcceptor acceptor = new ModifiedServerKeyAcceptor() {
+        String filePath = Objects.toString(options.remove(KnownHostsServerKeyVerifier.KNOWN_HOSTS_FILE_OPTION), null);
+        if (GenericUtils.isEmpty(filePath)) {
+            current = new DefaultKnownHostsServerKeyVerifier(current);
+        } else {    // if user specifies a different location than default be lenient
+            current = new DefaultKnownHostsServerKeyVerifier(current, false, Paths.get(filePath));
+        }
+
+        ((KnownHostsServerKeyVerifier) current).setModifiedServerKeyAcceptor(new ModifiedServerKeyAcceptor() {
             @Override
             public boolean acceptModifiedServerKey(ClientSession clientSession, SocketAddress remoteAddress,
                     KnownHostEntry entry, PublicKey expected, PublicKey actual) throws Exception {
@@ -1088,26 +1095,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 String ans = GenericUtils.trimToEmpty(stdin.readLine());
                 return (GenericUtils.length(ans) > 0) && (Character.toLowerCase(ans.charAt(0)) == 'y');
             }
-        };
-
-        String filePath = Objects.toString(options.remove(KnownHostsServerKeyVerifier.KNOWN_HOSTS_FILE_OPTION), null);
-        if (GenericUtils.isEmpty(filePath)) {
-            current = new DefaultKnownHostsServerKeyVerifier(current) {
-                @Override
-                public boolean acceptModifiedServerKey(ClientSession clientSession, SocketAddress remoteAddress,
-                        KnownHostEntry entry, PublicKey expected, PublicKey actual) throws Exception {
-                    return acceptor.acceptModifiedServerKey(clientSession, remoteAddress, entry, expected, actual);
-                }
-            };
-        } else {    // if user specifies a different location than default be lenient
-            current = new DefaultKnownHostsServerKeyVerifier(current, false, Paths.get(filePath)) {
-                @Override
-                public boolean acceptModifiedServerKey(ClientSession clientSession, SocketAddress remoteAddress,
-                        KnownHostEntry entry, PublicKey expected, PublicKey actual) throws Exception {
-                    return acceptor.acceptModifiedServerKey(clientSession, remoteAddress, entry, expected, actual);
-                }
-            };
-        }
+        });
 
         manager.setServerKeyVerifier(current);
         return current;
