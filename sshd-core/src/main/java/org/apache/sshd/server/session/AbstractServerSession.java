@@ -281,6 +281,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             try {
                 boolean completed = acceptor.acceptServerProxyMetadata(this, buffer);
                 if (!completed) {
+                    buffer.rpos(rpos);  // restore original buffer position
                     return false;   // more data required
                 }
             } catch (Throwable t) {
