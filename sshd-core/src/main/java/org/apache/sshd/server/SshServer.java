@@ -40,6 +40,8 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.ServiceFactory;
+import org.apache.sshd.common.compression.BuiltinCompressions;
+import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoServiceFactory;
@@ -481,6 +483,11 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         System.err.println("Starting SSHD on port " + port);
 
         SshServer sshd = SshServer.setUpDefaultServer();
+        // setup our server with all possible compressions
+        sshd.setCompressionFactories(
+                Arrays.<NamedFactory<Compression>>asList(
+                        BuiltinCompressions.none, BuiltinCompressions.zlib, BuiltinCompressions.delayedZlib));
+
         Map<String, Object> props = sshd.getProperties();
         PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.WELCOME_BANNER, "Welcome to SSHD\n");
         props.putAll(options);
