@@ -194,7 +194,9 @@ public class DefaultSftpClient extends AbstractSftpClient {
     protected boolean receive(Buffer incoming) throws IOException {
         int rpos = incoming.rpos();
         int wpos = incoming.wpos();
-        clientSession.resetIdleTimeout();
+        ClientSession session = getClientSession();
+        session.resetIdleTimeout();
+
         if ((wpos - rpos) > 4) {
             int length = incoming.getInt();
             if (length < 5) {
@@ -220,11 +222,21 @@ public class DefaultSftpClient extends AbstractSftpClient {
      * @throws IOException if failed to process the buffer
      */
     protected void process(Buffer incoming) throws IOException {
+        // create a copy of the buffer in case it is being re-used
         Buffer buffer = new ByteArrayBuffer(incoming.available() + Long.SIZE, false);
         buffer.putBuffer(incoming);
-        buffer.rpos(5);
-        int id = buffer.getInt();
-        buffer.rpos(0);
+
+        int rpos = buffer.rpos();
+        int length = buffer.getInt();
+        int type = buffer.getUByte();
+        Integer id = buffer.getInt();
+        buffer.rpos(rpos);
+
+        if (log.isTraceEnabled()) {
+            log.trace("process({}) id={}, type={}, len={}",
+                      getClientChannel(), id, SftpConstants.getCommandMessageName(type), length);
+        }
+
         synchronized (messages) {
             messages.put(id, buffer);
             messages.notifyAll();
@@ -241,7 +253,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         }
 
         OutputStream dos = channel.getInvertedIn();
-        BufferUtils.writeInt(dos, 1 /* cmd */ + (Integer.SIZE / Byte.SIZE) /* id */ + buffer.available(), workBuf);
+        BufferUtils.writeInt(dos, 1 /* cmd */ + (Integer.SIZE / Byte.SIZE) /* id */ + len, workBuf);
         dos.write(cmd & 0xFF);
         BufferUtils.writeInt(dos, id, workBuf);
         dos.write(buffer.array(), buffer.rpos(), len);
@@ -257,10 +269,12 @@ public class DefaultSftpClient extends AbstractSftpClient {
                 if (isClosing() || (!isOpen())) {
                     throw new SshException("Channel is being closed");
                 }
+
                 Buffer buffer = messages.remove(reqId);
                 if (buffer != null) {
                     return buffer;
                 }
+
                 try {
                     messages.wait();
                 } catch (InterruptedException e) {
@@ -306,6 +320,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         dos.flush();
 
         Buffer buffer;
+        Integer reqId;
         synchronized (messages) {
             /*
              * We need to use a timeout since if the remote server does not support
@@ -341,22 +356,34 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
             Collection<Integer> ids = messages.keySet();
             Iterator<Integer> iter = ids.iterator();
-            Integer reqId = iter.next();
+            reqId = iter.next();
             buffer = messages.remove(reqId);
         }
 
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
+        if (log.isTraceEnabled()) {
+            log.trace("init({}) id={} type={} len={}",
+                      getClientChannel(), id, SftpConstants.getCommandMessageName(type), length);
+        }
+
         if (type == SftpConstants.SSH_FXP_VERSION) {
             if (id < SftpConstants.SFTP_V3) {
                 throw new SshException("Unsupported sftp version " + id);
             }
             versionHolder.set(id);
 
+            if (log.isTraceEnabled()) {
+                log.trace("init({}) version={}", getClientChannel(), versionHolder);
+            }
+
             while (buffer.available() > 0) {
                 String name = buffer.getString();
                 byte[] data = buffer.getBytes();
+                if (log.isTraceEnabled()) {
+                    log.trace("init({}) added extension=", getClientChannel(), name);
+                }
                 extensions.put(name, data);
             }
         } else if (type == SftpConstants.SSH_FXP_STATUS) {
@@ -370,7 +397,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
             throwStatusException(SftpConstants.SSH_FXP_INIT, id, substatus, msg, lang);
         } else {
-            handleUnexpectedPacket(SftpConstants.SSH_FXP_VERSION, id, type, length, buffer);
+            handleUnexpectedPacket(SftpConstants.SSH_FXP_INIT, SftpConstants.SSH_FXP_VERSION, id, type, length, buffer);
         }
     }
 
@@ -415,7 +442,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
         String verVal = String.valueOf(selected);
         Buffer buffer = new ByteArrayBuffer((Integer.SIZE / Byte.SIZE) + SftpConstants.EXT_VERSION_SELECT.length()     // extension name
-                + (Integer.SIZE / Byte.SIZE) + verVal.length(), false);
+                + (Integer.SIZE / Byte.SIZE) + verVal.length() + Byte.SIZE, false);
         buffer.putString(SftpConstants.EXT_VERSION_SELECT);
         buffer.putString(verVal);
         checkCommandStatus(SftpConstants.SSH_FXP_EXTENDED, buffer);
