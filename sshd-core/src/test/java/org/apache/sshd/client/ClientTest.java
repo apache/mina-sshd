@@ -1176,6 +1176,11 @@ public class ClientTest extends BaseTestSupport {
             }
 
             @Override
+            public void serverVersionInfo(ClientSession session, List<String> lines) {
+                validateSession("serverVersionInfo", session);
+            }
+
+            @Override
             public void welcome(ClientSession session, String banner, String lang) {
                 validateSession("welcome", session);
             }
@@ -1237,6 +1242,11 @@ public class ClientTest extends BaseTestSupport {
                 }
 
                 @Override
+                public void serverVersionInfo(ClientSession clientSession, List<String> lines) {
+                    assertSame("Mismatched server version info session", session, clientSession);
+                }
+
+                @Override
                 public void welcome(ClientSession clientSession, String banner, String lang) {
                     assertSame("Mismatched welcome session", session, clientSession);
                 }
@@ -1280,6 +1290,11 @@ public class ClientTest extends BaseTestSupport {
                 @Override
                 public boolean isInteractionAllowed(ClientSession session) {
                     return true;
+                }
+
+                @Override
+                public void serverVersionInfo(ClientSession clientSession, List<String> lines) {
+                    assertSame("Mismatched server version info session", session, clientSession);
                 }
 
                 @Override

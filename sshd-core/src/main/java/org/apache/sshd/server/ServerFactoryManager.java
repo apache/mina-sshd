@@ -44,6 +44,20 @@ public interface ServerFactoryManager
     String MAX_CONCURRENT_SESSIONS = "max-concurrent-sessions";
 
     /**
+     * Key used to retrieve any extra lines to be sent during
+     * initial protocol handshake <U>before</U> the identification.
+     * The configured string value should use {@link #SERVER_EXTRA_IDENT_LINES_SEPARATOR}
+     * character to denote line breaks
+     */
+    String SERVER_EXTRA_IDENTIFICATION_LINES = "server-extra-identification-lines";
+
+    /**
+     * Separator used in the {@link #SERVER_EXTRA_IDENTIFICATION_LINES} configuration
+     * string to indicate new line break
+     */
+    char SERVER_EXTRA_IDENT_LINES_SEPARATOR = '|';
+
+    /**
      * Key used to retrieve the value of the server identification string.
      * If set, then it is <U>appended</U> to the (standard) &quot;SSH-2.0-&quot;
      * prefix. Otherwise a default is sent that consists of &quot;SSH-2.0-&quot;

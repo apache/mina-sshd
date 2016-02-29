@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.client.auth.keyboard;
 
+import java.util.List;
+
 import org.apache.sshd.client.session.ClientSession;
 
 /**
@@ -36,6 +38,11 @@ public interface UserInteraction {
         @Override
         public boolean isInteractionAllowed(ClientSession session) {
             return false;
+        }
+
+        @Override
+        public void serverVersionInfo(ClientSession session, List<String> lines) {
+            // ignored
         }
 
         @Override
@@ -65,6 +72,17 @@ public interface UserInteraction {
      * @return {@code true} if user interaction allowed for this session
      */
     boolean isInteractionAllowed(ClientSession session);
+
+    /**
+     * Called if the server sent any extra information beyond the standard
+     * version line
+     *
+     * @param session The {@link ClientSession} through which this information
+     * was received
+     * @param lines The sent extra lines - <U>without</U> the server version
+     * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>
+     */
+    void serverVersionInfo(ClientSession session, List<String> lines);
 
     /**
      * Displays the welcome banner to the user.

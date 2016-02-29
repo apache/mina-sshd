@@ -23,6 +23,7 @@ import java.io.InterruptedIOException;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -1362,7 +1363,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected IoWriteFuture sendIdentification(String ident) {
         byte[] data = (ident + "\r\n").getBytes(StandardCharsets.UTF_8);
         if (log.isDebugEnabled()) {
-            log.debug("sendIdentification({}): {}", this, ident);
+            log.debug("sendIdentification({}): {}", this, ident.replace('\r', '|').replace('\n', '|'));
         }
         return ioSession.write(new ByteArrayBuffer(data));
     }
@@ -1389,11 +1390,14 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @param buffer the buffer containing the identification string
      * @param server {@code true} if it is called by the server session,
      * {@code false} if by the client session
-     * @return the remote identification or {@code null} if more data is needed
+     * @return A {@link List} of all received remote identification lines until
+     * the version line was read or {@code null} if more data is needed.
+     * The identification line is the <U>last</U> one in the list
      */
-    protected String doReadIdentification(Buffer buffer, boolean server) {
+    protected List<String> doReadIdentification(Buffer buffer, boolean server) {
         int maxIdentSize = PropertyResolverUtils.getIntProperty(this,
                 FactoryManager.MAX_IDENTIFICATION_SIZE, FactoryManager.DEFAULT_MAX_IDENTIFICATION_SIZE);
+        List<String> ident = null;
         for (byte[] data = new byte[MAX_VERSION_LINE_LENGTH];;) {
             int rpos = buffer.rpos();
             int pos = 0;
@@ -1439,9 +1443,14 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 log.debug("doReadIdentification({}) line='{}'", this, str);
             }
 
+            if (ident == null) {
+                ident = new ArrayList<>();
+            }
+            ident.add(str);
+
             // if this is a server then only one line is expected
             if (server || str.startsWith("SSH-")) {
-                return str;
+                return ident;
             }
 
             if (buffer.rpos() > maxIdentSize) {

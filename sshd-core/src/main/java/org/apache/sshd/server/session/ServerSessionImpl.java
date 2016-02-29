@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.server.session;
 
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.SessionListener;
@@ -57,6 +58,8 @@ public class ServerSessionImpl extends AbstractServerSession {
             }
         }
 
-        sendServerIdentification();
+        String headerConfig = PropertyResolverUtils.getString(this, ServerFactoryManager.SERVER_EXTRA_IDENTIFICATION_LINES);
+        String[] headers = GenericUtils.split(headerConfig, ServerFactoryManager.SERVER_EXTRA_IDENT_LINES_SEPARATOR);
+        sendServerIdentification(headers);
     }
 }

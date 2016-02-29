@@ -819,6 +819,11 @@ public class ServerTest extends BaseTestSupport {
             }
 
             @Override
+            public void serverVersionInfo(ClientSession clientSession, List<String> lines) {
+                // ignored
+            }
+
+            @Override
             public boolean isInteractionAllowed(ClientSession session) {
                 return true;
             }
@@ -896,6 +901,60 @@ public class ServerTest extends BaseTestSupport {
         } finally {
             client.stop();
         }
+    }
+
+    @Test   // see SSHD-659
+    public void testMultiLineServerIdentification() throws Exception {
+        List<String> expected = Arrays.asList(
+                getClass().getPackage().getName(),
+                getClass().getSimpleName(),
+                getCurrentTestName());
+        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.SERVER_EXTRA_IDENTIFICATION_LINES,
+                GenericUtils.join(expected, ServerFactoryManager.SERVER_EXTRA_IDENT_LINES_SEPARATOR));
+        sshd.start();
+
+        final AtomicReference<List<String>> actualHolder = new AtomicReference<>();
+        final Semaphore signal = new Semaphore(0);
+        client.setUserInteraction(new UserInteraction() {
+            @Override
+            public void welcome(ClientSession session, String banner, String lang) {
+                // ignored
+            }
+
+            @Override
+            public void serverVersionInfo(ClientSession session, List<String> lines) {
+                assertNull("Unexpected extra call", actualHolder.getAndSet(lines));
+                signal.release();
+            }
+
+            @Override
+            public boolean isInteractionAllowed(ClientSession session) {
+                return true;
+            }
+
+            @Override
+            public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                return null;
+            }
+
+            @Override
+            public String getUpdatedPassword(ClientSession session, String prompt, String lang) {
+                return null;
+            }
+        });
+        client.start();
+
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(777L, TimeUnit.SECONDS).getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(999L, TimeUnit.SECONDS);
+            assertTrue("No signal received in time", signal.tryAcquire(1111L, TimeUnit.SECONDS));
+        } finally {
+            client.stop();
+        }
+
+        List<String> actual = actualHolder.get();
+        assertNotNull("Information not signalled", actual);
+        assertListEquals("Server information", expected, actual);
     }
 
     private ClientSession createTestClientSession(SshServer server) throws Exception {

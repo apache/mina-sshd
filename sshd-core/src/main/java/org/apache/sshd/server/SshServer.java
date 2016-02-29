@@ -18,13 +18,17 @@
  */
 package org.apache.sshd.server;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.ArrayList;
@@ -40,6 +44,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.ServiceFactory;
+import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoServiceFactory;
@@ -482,8 +487,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
         SshServer sshd = SshServer.setUpDefaultServer();
         Map<String, Object> props = sshd.getProperties();
-        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.WELCOME_BANNER, "Welcome to SSHD\n");
         props.putAll(options);
+        setupServerBanner(sshd, options);
         sshd.setPort(port);
 
         AbstractGeneratorHostKeyProvider hostKeyProvider;
@@ -529,4 +534,32 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
         Thread.sleep(Long.MAX_VALUE);
     }
+
+    public static String setupServerBanner(ServerFactoryManager server, Map<String, ?> options) throws IOException {
+        String filePath = GenericUtils.isEmpty(options) ? null : Objects.toString(options.remove(SshConfigFileReader.BANNER_CONFIG_PROP), null);
+        if (GenericUtils.length(filePath) > 0) {
+            if ("none".equals(filePath)) {
+                return null;
+            }
+
+            Path path = Paths.get(filePath);
+            long fileSize = Files.size(path);
+            ValidateUtils.checkTrue(fileSize > 0L, "No banner contents in file=%s", filePath);
+
+            StringBuilder sb = new StringBuilder((int) fileSize + Long.SIZE);
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8))) {
+                for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
+                    sb.append(line).append('\n');
+                }
+            }
+
+            PropertyResolverUtils.updateProperty(server, ServerFactoryManager.WELCOME_BANNER, sb.toString());
+        } else {
+            PropertyResolverUtils.updateProperty(server, ServerFactoryManager.WELCOME_BANNER, "Welcome to SSHD\n");
+        }
+
+        return PropertyResolverUtils.getString(server, ServerFactoryManager.WELCOME_BANNER);
+
+    }
+
 }

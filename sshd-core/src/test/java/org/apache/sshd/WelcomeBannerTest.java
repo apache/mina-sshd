@@ -18,6 +18,7 @@
  */
 package org.apache.sshd;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -70,6 +71,11 @@ public class WelcomeBannerTest extends BaseTestSupport {
                 @Override
                 public boolean isInteractionAllowed(ClientSession session) {
                     return true;
+                }
+
+                @Override
+                public void serverVersionInfo(ClientSession session, List<String> lines) {
+                    validateSession("serverVersionInfo", session);
                 }
 
                 @Override

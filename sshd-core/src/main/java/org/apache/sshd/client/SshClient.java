@@ -1048,6 +1048,13 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             }
 
             @Override
+            public void serverVersionInfo(ClientSession session, List<String> lines) {
+                for (String l : lines) {
+                    stdout.append('\t').println(l);
+                }
+            }
+
+            @Override
             public void welcome(ClientSession clientSession, String banner, String lang) {
                 stdout.println(banner);
             }

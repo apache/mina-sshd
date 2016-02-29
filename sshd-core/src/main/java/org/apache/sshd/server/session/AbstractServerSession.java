@@ -158,9 +158,23 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         this.userAuthFactories = userAuthFactories; // OK if null/empty - inherit from parent
     }
 
-    protected IoWriteFuture sendServerIdentification() {
+    /**
+     * Sends the server identification + any extra header lines
+     *
+     * @param headerLines Extra header lines to be prepended to the actual
+     * identification string - ignored if {@code null}/empty
+     * @return An {@link IoWriteFuture} that can be used to be notified of
+     * identification data being written successfully or failing
+     * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>
+     */
+    protected IoWriteFuture sendServerIdentification(String ... headerLines) {
         serverVersion = resolveIdentificationString(ServerFactoryManager.SERVER_IDENTIFICATION);
-        return sendIdentification(serverVersion);
+
+        String ident = serverVersion;
+        if (GenericUtils.length(headerLines) > 0) {
+            ident = GenericUtils.join(headerLines, "\r\n") + "\r\n" + serverVersion;
+        }
+        return sendIdentification(ident);
     }
 
     @Override
@@ -300,7 +314,9 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             }
         }
 
-        clientVersion = doReadIdentification(buffer, true);
+        List<String> ident = doReadIdentification(buffer, true);
+        int numLines = GenericUtils.size(ident);
+        clientVersion = (numLines <= 0) ? null : ident.remove(numLines - 1);
         if (GenericUtils.isEmpty(clientVersion)) {
             buffer.rpos(rpos);  // restore original buffer position
             return false;   // more data required
@@ -310,20 +326,33 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             log.debug("readIdentification({}) client version string: {}", this, clientVersion);
         }
 
-        if (!clientVersion.startsWith(DEFAULT_SSH_VERSION_PREFIX)) {
-            String msg = "Unsupported protocol version: " + clientVersion;
-            ioSession.write(new ByteArrayBuffer((msg + "\n").getBytes(StandardCharsets.UTF_8)))
+        String errorMessage = null;
+        if ((errorMessage == null) && (!clientVersion.startsWith(DEFAULT_SSH_VERSION_PREFIX))) {
+            errorMessage = "Unsupported protocol version: " + clientVersion;
+        }
+
+        /*
+         * NOTE: because of the way that "doReadIdentification" works we are
+         * assured that there are no extra lines beyond the version one, but
+         * we check this nevertheless
+         */
+        if ((errorMessage == null) && (numLines > 1)) {
+            errorMessage = "Unexpected extra " + (numLines - 1) + " lines from client=" + clientVersion;
+        }
+
+        if (GenericUtils.length(errorMessage) > 0) {
+            ioSession.write(new ByteArrayBuffer((errorMessage + "\n").getBytes(StandardCharsets.UTF_8)))
                      .addListener(new SshFutureListener<IoWriteFuture>() {
                          @Override
                          public void operationComplete(IoWriteFuture future) {
                              close(true);
                          }
                      });
-            throw new SshException(msg);
-        } else {
-            kexState.set(KexState.INIT);
-            sendKexInit();
+            throw new SshException(errorMessage);
         }
+
+        kexState.set(KexState.INIT);
+        sendKexInit();
         return true;
     }
 

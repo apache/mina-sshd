@@ -453,12 +453,12 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         throw new IllegalStateException("Starting services is not supported on the client side: " + name);
     }
 
-
     @Override
     public ChannelShell createShellChannel() throws IOException {
         if ((inCipher instanceof CipherNone) || (outCipher instanceof CipherNone)) {
             throw new IllegalStateException("Interactive channels are not supported with none cipher");
         }
+
         ChannelShell channel = new ChannelShell();
         ConnectionService service = getConnectionService();
         int id = service.registerChannel(channel);
@@ -470,7 +470,9 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     protected boolean readIdentification(Buffer buffer) throws IOException {
-        serverVersion = doReadIdentification(buffer, false);
+        List<String> ident = doReadIdentification(buffer, false);
+        int numLines = GenericUtils.size(ident);
+        serverVersion = (numLines <= 0) ? null : ident.remove(numLines - 1);
         if (serverVersion == null) {
             return false;
         }
@@ -484,7 +486,29 @@ public abstract class AbstractClientSession extends AbstractSession implements C
                     "Unsupported protocol version: " + serverVersion);
         }
 
+        signalExtraServerVersionInfo(ident);
         return true;
+    }
+
+    protected void signalExtraServerVersionInfo(List<String> lines) throws IOException {
+        if (GenericUtils.isEmpty(lines)) {
+            return;
+        }
+
+        UserInteraction ui = getUserInteraction();
+        try {
+            if ((ui != null) && ui.isInteractionAllowed(this)) {
+                ui.serverVersionInfo(this, lines);
+            }
+        } catch (Error e) {
+            log.warn("signalExtraServerVersionInfo({}) failed ({}) to consult interaction: {}",
+                     this, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("signalExtraServerVersionInfo(" + this + ") interaction consultation failure details", e);
+            }
+
+            throw new RuntimeSshException(e);
+        }
     }
 
     @Override

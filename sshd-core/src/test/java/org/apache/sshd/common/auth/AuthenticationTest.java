@@ -202,6 +202,11 @@ public class AuthenticationTest extends BaseTestSupport {
                 }
 
                 @Override
+                public void serverVersionInfo(ClientSession session, List<String> lines) {
+                    // ignored
+                }
+
+                @Override
                 public void welcome(ClientSession session, String banner, String lang) {
                     // ignored
                 }
@@ -438,6 +443,11 @@ public class AuthenticationTest extends BaseTestSupport {
                 }
 
                 @Override
+                public void serverVersionInfo(ClientSession session, List<String> lines) {
+                    // ignored
+                }
+
+                @Override
                 public void welcome(ClientSession session, String banner, String lang) {
                     // ignored
                 }
@@ -507,6 +517,11 @@ public class AuthenticationTest extends BaseTestSupport {
                 @Override
                 public boolean isInteractionAllowed(ClientSession session) {
                     return true;
+                }
+
+                @Override
+                public void serverVersionInfo(ClientSession session, List<String> lines) {
+                    // ignored
                 }
 
                 @Override
@@ -841,6 +856,11 @@ public class AuthenticationTest extends BaseTestSupport {
         s.setUserInteraction(new UserInteraction() {
             @Override
             public void welcome(ClientSession session, String banner, String lang) {
+                // ignored
+            }
+
+            @Override
+            public void serverVersionInfo(ClientSession session, List<String> lines) {
                 // ignored
             }
 
