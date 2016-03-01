@@ -126,6 +126,15 @@ public class AbstractSessionTest extends BaseTestSupport {
     }
 
     @Test(expected = IllegalStateException.class)
+    public void testReadIdentWithNullChar() {
+        StringBuilder sb = new StringBuilder(Session.MAX_VERSION_LINE_LENGTH + Integer.SIZE);
+        sb.append("SSH-2.0").append('\0').append("-software\r\n");
+        Buffer buf = new ByteArrayBuffer(sb.toString().getBytes(StandardCharsets.UTF_8));
+        String ident = readIdentification(session, buf);
+        fail("Unexpected success: " + ident);
+    }
+
+    @Test(expected = IllegalStateException.class)
     public void testReadIdentLongHeader() {
         StringBuilder sb = new StringBuilder(FactoryManager.DEFAULT_MAX_IDENTIFICATION_SIZE + Integer.SIZE);
         do {
