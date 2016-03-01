@@ -944,10 +944,10 @@ public class ServerTest extends BaseTestSupport {
         });
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(777L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(999L, TimeUnit.SECONDS);
-            assertTrue("No signal received in time", signal.tryAcquire(1111L, TimeUnit.SECONDS));
+            session.auth().verify(9L, TimeUnit.SECONDS);
+            assertTrue("No signal received in time", signal.tryAcquire(11L, TimeUnit.SECONDS));
         } finally {
             client.stop();
         }
