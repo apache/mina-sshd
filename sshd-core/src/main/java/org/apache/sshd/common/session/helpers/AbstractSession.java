@@ -1415,8 +1415,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                  *      "The null character MUST NOT be sent"
                  */
                 if (b == 0) {
-                    throw new IllegalStateException("Incorrect identification (null characters not allowed) - after "
-                            + new String(buffer.array(), rpos, buffer.rpos(), StandardCharsets.UTF_8));
+                    throw new IllegalStateException("Incorrect identification (null characters not allowed) - "
+                            + " at line " + (GenericUtils.size(ident) + 1) + " character #" + (pos + 1)
+                            + " after '" + new String(data, 0, pos, StandardCharsets.UTF_8) + "'");
                 }
                 if (b == '\r') {
                     needLf = true;
@@ -1428,12 +1429,15 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 }
 
                 if (needLf) {
-                    throw new IllegalStateException("Incorrect identification (bad line ending): "
-                            + new String(buffer.array(), rpos, buffer.rpos(), StandardCharsets.UTF_8));
+                    throw new IllegalStateException("Incorrect identification (bad line ending) "
+                            + " at line " + (GenericUtils.size(ident) + 1)
+                            + ": " + new String(data, 0, pos, StandardCharsets.UTF_8));
                 }
 
                 if (pos >= data.length) {
-                    throw new IllegalStateException("Incorrect identification (line too long): " + new String(data, 0, pos, StandardCharsets.UTF_8));
+                    throw new IllegalStateException("Incorrect identification (line too long): "
+                            + " at line " + (GenericUtils.size(ident) + 1)
+                            + ": " + new String(data, 0, pos, StandardCharsets.UTF_8));
                 }
 
                 data[pos++] = b;
