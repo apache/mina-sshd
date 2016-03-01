@@ -53,6 +53,7 @@ import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -106,7 +107,7 @@ public final class Utils {
             Collections.unmodifiableList(
                     Arrays.asList("target" /* Maven */, "build" /* Gradle */));
 
-    public static final String DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM = "RSA";
+    public static final String DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM = KeyUtils.RSA_ALGORITHM;
     // uses a cached instance to avoid re-creating the keys as it is a time-consuming effort
     private static final AtomicReference<KeyPairProvider> KEYPAIR_PROVIDER_HOLDER = new AtomicReference<KeyPairProvider>();
     // uses a cached instance to avoid re-creating the keys as it is a time-consuming effort
@@ -159,7 +160,7 @@ public final class Utils {
 
     public static KeyPair generateKeyPair(String algorithm, int keySize) throws GeneralSecurityException {
         KeyPairGenerator gen = SecurityUtils.getKeyPairGenerator(algorithm);
-        if ("EC".equalsIgnoreCase(algorithm)) {
+        if (KeyUtils.EC_ALGORITHM.equalsIgnoreCase(algorithm)) {
             ECCurves curve = ECCurves.fromCurveSize(keySize);
             if (curve == null) {
                 throw new InvalidKeySpecException("Unknown curve for key size=" + keySize);

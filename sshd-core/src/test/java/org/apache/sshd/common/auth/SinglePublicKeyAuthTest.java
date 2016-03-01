@@ -61,7 +61,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
 
     public SinglePublicKeyAuthTest() {
         SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
-        provider.setAlgorithm("RSA");
+        provider.setAlgorithm(KeyUtils.RSA_ALGORITHM);
         pairRsaBad = provider.loadKey(KeyPairProvider.SSH_RSA);
     }
 

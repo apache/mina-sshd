@@ -79,6 +79,7 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.ChannelListenerManager;
 import org.apache.sshd.common.channel.TestChannelListener;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoReadFuture;
@@ -984,7 +985,7 @@ public class ClientTest extends BaseTestSupport {
     @Test
     public void testPublicKeyAuthNewWithFailureOnFirstIdentity() throws Exception {
         SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
-        provider.setAlgorithm("RSA");
+        provider.setAlgorithm(KeyUtils.RSA_ALGORITHM);
 
         final KeyPair pair = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
         sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {

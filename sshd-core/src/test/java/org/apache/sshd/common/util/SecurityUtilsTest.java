@@ -191,7 +191,7 @@ public class SecurityUtilsTest extends BaseTestSupport {
         Assume.assumeFalse(SecurityUtils.REGISTER_BOUNCY_CASTLE_PROP + " property is " + propValue, Boolean.parseBoolean(propValue));
         assertFalse("Unexpected registration of provider", SecurityUtils.isBouncyCastleRegistered());
 
-        KeyPairGenerator kpg = SecurityUtils.getKeyPairGenerator("RSA");
+        KeyPairGenerator kpg = SecurityUtils.getKeyPairGenerator(KeyUtils.RSA_ALGORITHM);
         Provider provider = kpg.getProvider();
         assertNotEquals("Unexpected used provider", SecurityUtils.BOUNCY_CASTLE, provider.getName());
     }

@@ -24,6 +24,7 @@ import java.security.GeneralSecurityException;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.RSAPublicKeySpec;
 
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -43,6 +44,6 @@ public class RSABufferPublicKeyParser extends AbstractBufferPublicKeyParser<RSAP
         ValidateUtils.checkTrue(isKeyTypeSupported(keyType), "Unsupported key type: %s", keyType);
         BigInteger e = buffer.getMPInt();
         BigInteger n = buffer.getMPInt();
-        return generatePublicKey("RSA", new RSAPublicKeySpec(n, e));
+        return generatePublicKey(KeyUtils.RSA_ALGORITHM, new RSAPublicKeySpec(n, e));
     }
 }

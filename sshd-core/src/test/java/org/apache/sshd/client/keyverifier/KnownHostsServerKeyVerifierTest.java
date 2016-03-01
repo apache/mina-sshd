@@ -41,6 +41,7 @@ import org.apache.sshd.client.keyverifier.KnownHostsServerKeyVerifier.HostEntryP
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.mac.Mac;
@@ -239,7 +240,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
     @Test
     public void testRejectModifiedServerKey() throws Exception {
-        KeyPair kp = Utils.generateKeyPair("RSA", 1024);
+        KeyPair kp = Utils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
         final PublicKey modifiedKey = kp.getPublic();
         final AtomicInteger acceptCount = new AtomicInteger(0);
         ServerKeyVerifier verifier = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, createKnownHostsCopy()) {
@@ -266,7 +267,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
     @Test
     public void testAcceptModifiedServerKeyUpdatesFile() throws Exception {
-        KeyPair kp = Utils.generateKeyPair("RSA", 1024);
+        KeyPair kp = Utils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
         final PublicKey modifiedKey = kp.getPublic();
         Path path = createKnownHostsCopy();
         ServerKeyVerifier verifier = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, path) {

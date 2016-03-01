@@ -26,10 +26,12 @@ import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.ECPublicKeySpec;
+
 import javax.crypto.KeyAgreement;
 
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.ECDSAPublicKeyEntryDecoder;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -61,7 +63,7 @@ public class ECDH extends AbstractDH {
     }
 
     public ECDH(ECParameterSpec paramSpec) throws Exception {
-        myKpairGen = SecurityUtils.getKeyPairGenerator("EC");
+        myKpairGen = SecurityUtils.getKeyPairGenerator(KeyUtils.EC_ALGORITHM);
         myKeyAgree = SecurityUtils.getKeyAgreement("ECDH");
         params = paramSpec;
     }
@@ -82,7 +84,7 @@ public class ECDH extends AbstractDH {
     @Override
     protected byte[] calculateK() throws Exception {
         ValidateUtils.checkNotNull(params, "No ECParameterSpec(s)");
-        KeyFactory myKeyFac = SecurityUtils.getKeyFactory("EC");
+        KeyFactory myKeyFac = SecurityUtils.getKeyFactory(KeyUtils.EC_ALGORITHM);
         ECPublicKeySpec keySpec = new ECPublicKeySpec(f, params);
         PublicKey yourPubKey = myKeyFac.generatePublic(keySpec);
         myKeyAgree.doPhase(yourPubKey, true);

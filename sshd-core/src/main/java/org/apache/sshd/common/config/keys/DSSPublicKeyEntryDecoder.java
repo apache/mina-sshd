@@ -107,11 +107,11 @@ public class DSSPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<DSAP
 
     @Override
     public KeyPairGenerator getKeyPairGenerator() throws GeneralSecurityException {
-        return SecurityUtils.getKeyPairGenerator("DSA");
+        return SecurityUtils.getKeyPairGenerator(KeyUtils.DSS_ALGORITHM);
     }
 
     @Override
     public KeyFactory getKeyFactoryInstance() throws GeneralSecurityException {
-        return SecurityUtils.getKeyFactory("DSA");
+        return SecurityUtils.getKeyFactory(KeyUtils.DSS_ALGORITHM);
     }
 }

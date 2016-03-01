@@ -54,6 +54,7 @@ import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.ECDSAPublicKeyEntryDecoder;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
@@ -348,7 +349,7 @@ public abstract class Buffer implements Readable {
                 BigInteger p = getMPInt();
                 BigInteger dP = d.remainder(p.subtract(BigInteger.valueOf(1)));
                 BigInteger dQ = d.remainder(q.subtract(BigInteger.valueOf(1)));
-                KeyFactory keyFactory = SecurityUtils.getKeyFactory("RSA");
+                KeyFactory keyFactory = SecurityUtils.getKeyFactory(KeyUtils.RSA_ALGORITHM);
                 pub = keyFactory.generatePublic(new RSAPublicKeySpec(n, e));
                 prv = keyFactory.generatePrivate(new RSAPrivateCrtKeySpec(n, e, d, p, q, dP, dQ, qInv));
             } else if (KeyPairProvider.SSH_DSS.equals(keyAlg)) {
@@ -357,7 +358,7 @@ public abstract class Buffer implements Readable {
                 BigInteger g = getMPInt();
                 BigInteger y = getMPInt();
                 BigInteger x = getMPInt();
-                KeyFactory keyFactory = SecurityUtils.getKeyFactory("DSA");
+                KeyFactory keyFactory = SecurityUtils.getKeyFactory(KeyUtils.DSS_ALGORITHM);
                 pub = keyFactory.generatePublic(new DSAPublicKeySpec(y, p, q, g));
                 prv = keyFactory.generatePrivate(new DSAPrivateKeySpec(x, p, q, g));
             } else {
@@ -399,7 +400,7 @@ public abstract class Buffer implements Readable {
                     e);
         }
 
-        KeyFactory keyFactory = SecurityUtils.getKeyFactory("EC");
+        KeyFactory keyFactory = SecurityUtils.getKeyFactory(KeyUtils.EC_ALGORITHM);
         PublicKey pubKey = keyFactory.generatePublic(new ECPublicKeySpec(group, spec));
         PrivateKey privKey = keyFactory.generatePrivate(new ECPrivateKeySpec(exponent, spec));
         return new KeyPair(pubKey, privKey);

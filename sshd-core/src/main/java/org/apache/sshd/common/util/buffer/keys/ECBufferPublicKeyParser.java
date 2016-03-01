@@ -29,6 +29,7 @@ import java.security.spec.InvalidKeySpecException;
 
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.ECDSAPublicKeyEntryDecoder;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -76,6 +77,6 @@ public class ECBufferPublicKeyParser extends AbstractBufferPublicKeyParser<ECPub
                     e);
         }
 
-        return generatePublicKey("EC", new ECPublicKeySpec(w, spec));
+        return generatePublicKey(KeyUtils.EC_ALGORITHM, new ECPublicKeySpec(w, spec));
     }
 }

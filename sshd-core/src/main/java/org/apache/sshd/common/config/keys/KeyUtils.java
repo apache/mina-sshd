@@ -76,6 +76,20 @@ import org.apache.sshd.common.util.io.IoUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class KeyUtils {
+    /**
+     * Name of algorithm for RSA keys to be used when calling security provider
+     */
+    public static final String RSA_ALGORITHM = "RSA";
+
+    /**
+     * Name of algorithm for DSS keys to be used when calling security provider
+     */
+    public static final String DSS_ALGORITHM = "DSA";
+
+    /**
+     * Name of algorithm for EC keys to be used when calling security provider
+     */
+    public static final String EC_ALGORITHM = "EC";
 
     /**
      * The {@link Set} of {@link PosixFilePermission} <U>not</U> allowed if strict

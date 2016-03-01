@@ -105,11 +105,11 @@ public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder<RSAPublic
 
     @Override
     public KeyPairGenerator getKeyPairGenerator() throws GeneralSecurityException {
-        return SecurityUtils.getKeyPairGenerator("RSA");
+        return SecurityUtils.getKeyPairGenerator(KeyUtils.RSA_ALGORITHM);
     }
 
     @Override
     public KeyFactory getKeyFactoryInstance() throws GeneralSecurityException {
-        return SecurityUtils.getKeyFactory("RSA");
+        return SecurityUtils.getKeyFactory(KeyUtils.RSA_ALGORITHM);
     }
 }

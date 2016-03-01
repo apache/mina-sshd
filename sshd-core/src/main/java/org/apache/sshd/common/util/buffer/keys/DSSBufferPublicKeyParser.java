@@ -24,6 +24,7 @@ import java.security.GeneralSecurityException;
 import java.security.interfaces.DSAPublicKey;
 import java.security.spec.DSAPublicKeySpec;
 
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -45,7 +46,7 @@ public class DSSBufferPublicKeyParser extends AbstractBufferPublicKeyParser<DSAP
         BigInteger q = buffer.getMPInt();
         BigInteger g = buffer.getMPInt();
         BigInteger y = buffer.getMPInt();
-        return generatePublicKey("DSA", new DSAPublicKeySpec(y, p, q, g));
 
+        return generatePublicKey(KeyUtils.DSS_ALGORITHM, new DSAPublicKeySpec(y, p, q, g));
     }
 }

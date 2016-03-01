@@ -45,7 +45,7 @@ import org.apache.sshd.common.util.SecurityUtils;
 public enum BuiltinIdentities implements Identity {
     RSA(Constants.RSA, RSAPublicKey.class, RSAPrivateKey.class),
     DSA(Constants.DSA, DSAPublicKey.class, DSAPrivateKey.class),
-    ECDSA(Constants.ECDSA, "EC", ECPublicKey.class, ECPrivateKey.class) {
+    ECDSA(Constants.ECDSA, KeyUtils.EC_ALGORITHM, ECPublicKey.class, ECPrivateKey.class) {
         @Override
         public boolean isSupported() {
             return SecurityUtils.hasEcc();
@@ -192,8 +192,8 @@ public enum BuiltinIdentities implements Identity {
      * Contains the names of the identities
      */
     public static final class Constants {
-        public static final String RSA = "RSA";
-        public static final String DSA = "DSA";
+        public static final String RSA = KeyUtils.RSA_ALGORITHM;
+        public static final String DSA = KeyUtils.DSS_ALGORITHM;
         public static final String ECDSA = "ECDSA";
     }
 }

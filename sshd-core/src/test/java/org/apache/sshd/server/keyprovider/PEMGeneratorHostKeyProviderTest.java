@@ -27,6 +27,7 @@ import java.security.interfaces.ECPublicKey;
 import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.ECGenParameterSpec;
 
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -50,34 +51,34 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTestSupport {
     @Test
     public void testDSA() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
-        testPEMGeneratorHostKeyProvider("DSA", KeyPairProvider.SSH_DSS, 512, null);
+        testPEMGeneratorHostKeyProvider(KeyUtils.DSS_ALGORITHM, KeyPairProvider.SSH_DSS, 512, null);
     }
 
     @Test
     public void testRSA() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
-        testPEMGeneratorHostKeyProvider("RSA", KeyPairProvider.SSH_RSA, 512, null);
+        testPEMGeneratorHostKeyProvider(KeyUtils.RSA_ALGORITHM, KeyPairProvider.SSH_RSA, 512, null);
     }
 
     @Test
     public void testECnistp256() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         Assume.assumeTrue("ECC not supported", SecurityUtils.hasEcc());
-        testPEMGeneratorHostKeyProvider("EC", KeyPairProvider.ECDSA_SHA2_NISTP256, -1, new ECGenParameterSpec("prime256v1"));
+        testPEMGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP256, -1, new ECGenParameterSpec("prime256v1"));
     }
 
     @Test
     public void testECnistp384() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         Assume.assumeTrue("ECC not supported", SecurityUtils.hasEcc());
-        testPEMGeneratorHostKeyProvider("EC", KeyPairProvider.ECDSA_SHA2_NISTP384, -1, new ECGenParameterSpec("P-384"));
+        testPEMGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP384, -1, new ECGenParameterSpec("P-384"));
     }
 
     @Test
     public void testECnistp521() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         Assume.assumeTrue("ECC not supported", SecurityUtils.hasEcc());
-        testPEMGeneratorHostKeyProvider("EC", KeyPairProvider.ECDSA_SHA2_NISTP521, -1, new ECGenParameterSpec("P-521"));
+        testPEMGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP521, -1, new ECGenParameterSpec("P-521"));
     }
 
     private Path testPEMGeneratorHostKeyProvider(String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec) throws IOException {

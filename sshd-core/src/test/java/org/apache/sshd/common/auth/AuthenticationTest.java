@@ -633,14 +633,14 @@ public class AuthenticationTest extends BaseTestSupport {
     @Test   // see SSHD-618
     public void testPublicKeyAuthDifferentThanKex() throws Exception {
         final KeyPairProvider serverKeys = KeyPairProvider.Utils.wrap(
-                    Utils.generateKeyPair("RSA", 1024),
-                    Utils.generateKeyPair("DSA", 512),
-                    Utils.generateKeyPair("EC", 256));
+                    Utils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024),
+                    Utils.generateKeyPair(KeyUtils.DSS_ALGORITHM, 512),
+                    Utils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256));
         sshd.setKeyPairProvider(serverKeys);
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
 
-        final KeyPair clientIdentity = Utils.generateKeyPair("EC", 256);
+        final KeyPair clientIdentity = Utils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256);
         sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
             @Override
             public boolean authenticate(String username, PublicKey key, ServerSession session) {
@@ -702,7 +702,7 @@ public class AuthenticationTest extends BaseTestSupport {
                                     super.sendPublicKeyResponse(session, username, KeyPairProvider.SSH_DSS, key, keyBlob, offset, blobLen, buffer);
                                 } else if (count == 2) {
                                     // send another key
-                                    KeyPair otherPair = org.apache.sshd.util.test.Utils.generateKeyPair("RSA", 1024);
+                                    KeyPair otherPair = org.apache.sshd.util.test.Utils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
                                     PublicKey otherKey = otherPair.getPublic();
                                     Buffer buf = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_PK_OK, blobLen + alg.length() + Long.SIZE);
                                     buf.putString(alg);
@@ -718,7 +718,7 @@ public class AuthenticationTest extends BaseTestSupport {
         }));
 
         try (SshClient client = setupTestClient()) {
-            KeyPair clientIdentity = Utils.generateKeyPair("RSA", 1024);
+            KeyPair clientIdentity = Utils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
             client.start();
 
             try {
@@ -745,7 +745,7 @@ public class AuthenticationTest extends BaseTestSupport {
     public void testHostBasedAuthentication() throws Exception {
         final String hostClienUser = getClass().getSimpleName();
         final String hostClientName = SshdSocketAddress.toAddressString(SshdSocketAddress.getFirstExternalNetwork4Address());
-        final KeyPair hostClientKey = Utils.generateKeyPair("RSA", 1024);
+        final KeyPair hostClientKey = Utils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
         final AtomicInteger invocationCount = new AtomicInteger(0);
         sshd.setHostBasedAuthenticator(new HostBasedAuthenticator() {
             @Override
@@ -814,7 +814,7 @@ public class AuthenticationTest extends BaseTestSupport {
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
 
         try (SshClient client = setupTestClient()) {
-            KeyPair kp = Utils.generateKeyPair("RSA", 1024);
+            KeyPair kp = Utils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
             client.start();
             try {
                 for (int index = 1; index < 3; index++) {

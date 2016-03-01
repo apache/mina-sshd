@@ -26,6 +26,7 @@ import java.security.PublicKey;
 import java.security.spec.RSAPublicKeySpec;
 
 import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.Base64;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -57,7 +58,7 @@ public class SignatureRSATest extends BaseTestSupport {
         byte[] exp = Base64.decodeString("Iw==");
         @SuppressWarnings("checkstyle:linelength")
         byte[] mod = Base64.decodeString("AMs9HO/NH/Now+6fSnESebaG4wzaYQWA1b/q1TGV1wHNtCg9fGFGVSKs0VxKF4cfVyrSLtgLjnlXQTn+Lm7xiYKGbBbsTQWOqEDaBVBsRbAkxIkpuvr6/EBxwrtDbKmSQYTJZVJSD2bZRYjGsR9gpZXPorOOKFd5EPCMHXsqnhp2hidTGH7cK6RuLk7MNnPISsY0Nbx8/ZvikiPROGcoTZ8bzUv4IaLr3veW6epSeQem8tJqhnrpTHhbLU99zf045M0Gsnk/azjjlBM+qrHZ5FNdC1kowJnLtf2Oy/rUQNpkGJtcBPT8xvreV0wLsn9t3hSxzsc0+VkDNTQRlfU+o3M=");
-        KeyFactory kf = SecurityUtils.getKeyFactory("RSA");
+        KeyFactory kf = SecurityUtils.getKeyFactory(KeyUtils.RSA_ALGORITHM);
         testKey = kf.generatePublic(new RSAPublicKeySpec(new BigInteger(mod), new BigInteger(exp)));
     }
 

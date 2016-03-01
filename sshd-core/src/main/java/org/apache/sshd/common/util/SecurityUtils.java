@@ -44,6 +44,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.DHParameterSpec;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.AbstractClassLoadableResourceKeyPairProvider;
 import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
 import org.apache.sshd.common.random.AbstractRandom;
@@ -129,7 +130,7 @@ public final class SecurityUtils {
             String propValue = System.getProperty(ECC_SUPPORTED_PROP);
             if (GenericUtils.isEmpty(propValue)) {
                 try {
-                    getKeyPairGenerator("EC");
+                    getKeyPairGenerator(KeyUtils.EC_ALGORITHM);
                     hasEcc = Boolean.TRUE;
                 } catch (Throwable t) {
                     hasEcc = Boolean.FALSE;

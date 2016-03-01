@@ -156,7 +156,7 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
     @Override
     public KeyFactory getKeyFactoryInstance() throws GeneralSecurityException {
         if (SecurityUtils.hasEcc()) {
-            return SecurityUtils.getKeyFactory("EC");
+            return SecurityUtils.getKeyFactory(KeyUtils.EC_ALGORITHM);
         } else {
             throw new NoSuchProviderException("ECC not supported");
         }
@@ -177,7 +177,7 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
     @Override
     public KeyPairGenerator getKeyPairGenerator() throws GeneralSecurityException {
         if (SecurityUtils.hasEcc()) {
-            return SecurityUtils.getKeyPairGenerator("EC");
+            return SecurityUtils.getKeyPairGenerator(KeyUtils.EC_ALGORITHM);
         } else {
             throw new NoSuchProviderException("ECC not supported");
         }
