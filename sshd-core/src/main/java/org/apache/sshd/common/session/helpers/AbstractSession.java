@@ -1398,11 +1398,10 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         int maxIdentSize = PropertyResolverUtils.getIntProperty(this,
                 FactoryManager.MAX_IDENTIFICATION_SIZE, FactoryManager.DEFAULT_MAX_IDENTIFICATION_SIZE);
         List<String> ident = null;
+        int rpos = buffer.rpos();
         for (byte[] data = new byte[MAX_VERSION_LINE_LENGTH];;) {
-            int rpos = buffer.rpos();
-            int pos = 0;
-            boolean needLf = false;
-            for (;;) {
+            int pos = 0;    // start accumulating line from scratch
+            for (boolean needLf = false;;) {
                 if (buffer.available() == 0) {
                     // Need more data, so undo reading and return null
                     buffer.rpos(rpos);
@@ -1416,7 +1415,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                  *      "The null character MUST NOT be sent"
                  */
                 if (b == 0) {
-                    throw new IllegalStateException("Incorrect identification (null characters not allowed) - after " + new String(data, 0, pos, StandardCharsets.UTF_8));
+                    throw new IllegalStateException("Incorrect identification (null characters not allowed) - after "
+                            + new String(buffer.array(), rpos, buffer.rpos(), StandardCharsets.UTF_8));
                 }
                 if (b == '\r') {
                     needLf = true;
@@ -1428,7 +1428,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 }
 
                 if (needLf) {
-                    throw new IllegalStateException("Incorrect identification (bad line ending): " + new String(data, 0, pos, StandardCharsets.UTF_8));
+                    throw new IllegalStateException("Incorrect identification (bad line ending): "
+                            + new String(buffer.array(), rpos, buffer.rpos(), StandardCharsets.UTF_8));
                 }
 
                 if (pos >= data.length) {
@@ -1448,13 +1449,13 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             }
             ident.add(str);
 
-            // if this is a server then only one line is expected
+            // if this is a server then only one line is expected from the client
             if (server || str.startsWith("SSH-")) {
                 return ident;
             }
 
             if (buffer.rpos() > maxIdentSize) {
-                throw new IllegalStateException("Incorrect identification: too many header lines - size > " + maxIdentSize);
+                throw new IllegalStateException("Incorrect identification (too many header lines): size > " + maxIdentSize);
             }
         }
     }
