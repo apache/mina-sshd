@@ -271,7 +271,16 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     }
 
     @Test   // see SSHD-605
-    public void testCannotEscapeUserRoot() throws Exception {
+    public void testCannotEscapeUserAbsoluteRoot() throws Exception {
+        testCannotEscapeRoot(true);
+    }
+
+    @Test   // see SSHD-605
+    public void testCannotEscapeUserRelativeRoot() throws Exception {
+        testCannotEscapeRoot(false);
+    }
+
+    private void testCannotEscapeRoot(boolean useAbsolutePath) throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         assertHierarchyTargetFolderExists(lclSftp);
@@ -284,24 +293,28 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
-                String escapePath = targetPath.toString();
-                if (OsUtils.isWin32()) {
-                    escapePath = "/" + escapePath.replace(File.separatorChar, '/');
+                String escapePath;
+                if (useAbsolutePath) {
+                    escapePath = targetPath.toString();
+                    if (OsUtils.isWin32()) {
+                        escapePath = "/" + escapePath.replace(File.separatorChar, '/');
+                    }
+                } else {
+                    Path parent = lclSftp.getParent();
+                    Path forbidden = Files.createDirectories(parent.resolve("forbidden"));
+                    escapePath = "../" + forbidden.getFileName();
                 }
 
                 try (SftpClient sftp = session.createSftpClient()) {
                     SftpClient.Attributes attrs = sftp.stat(escapePath);
                     fail("Unexpected escape success for path=" + escapePath + ": " + attrs);
                 } catch (SftpException e) {
-                    if (OsUtils.isWin32()) {
-                        assertEquals("Mismatched status for " + escapePath,
-                                     SftpConstants.getStatusName(SftpConstants.SSH_FX_INVALID_FILENAME),
-                                     SftpConstants.getStatusName(e.getStatus()));
-                    } else {
-                        assertEquals("Mismatched status for " + escapePath,
-                                     SftpConstants.getStatusName(SftpConstants.SSH_FX_NO_SUCH_FILE),
-                                     SftpConstants.getStatusName(e.getStatus()));
-                    }
+                    int expected = OsUtils.isWin32() || (!useAbsolutePath)
+                            ? SftpConstants.SSH_FX_INVALID_FILENAME
+                            : SftpConstants.SSH_FX_NO_SUCH_FILE;
+                    assertEquals("Mismatched status for " + escapePath,
+                                 SftpConstants.getStatusName(expected),
+                                 SftpConstants.getStatusName(e.getStatus()));
                 }
             } finally {
                 client.stop();

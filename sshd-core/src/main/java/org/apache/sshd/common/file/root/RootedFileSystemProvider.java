@@ -453,6 +453,8 @@ public class RootedFileSystemProvider extends FileSystemProvider {
         }
 
         Path resolved = root.resolve(subPath);
+        resolved = resolved.normalize();
+        resolved = resolved.toAbsolutePath();
         if (log.isTraceEnabled()) {
             log.trace("resolveLocalPath({}): {}", absPath, resolved);
         }
