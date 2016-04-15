@@ -2,6 +2,7 @@ package org.apache.sshd.common.file.root;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 
 
@@ -10,7 +11,9 @@ import org.apache.sshd.util.test.BaseTestSupport;
  */
 public class AssertableFile extends BaseTestSupport {
 
-  public AssertableFile() { super(); }
+  public AssertableFile() {
+    super();
+  }
 
   public static Boolean notExists(Path p) {
     Boolean cond = !Files.exists(p);
@@ -36,14 +39,14 @@ public class AssertableFile extends BaseTestSupport {
     return cond;
   }
 
-  public static Boolean isNonEmpty(byte [] bytes) {
-    Boolean cond = bytes != null && bytes.length > 0;
+  public static Boolean isNonEmpty(byte[] bytes) {
+    Boolean cond = !NumberUtils.isEmpty(bytes);
     assertTrue("bytes are non empty", cond);
     return cond;
   }
 
-  public static Boolean isRootedAt(Path root, Path check) {
-    Boolean cond = check.toAbsolutePath().normalize()
+  public static boolean isRootedAt(Path root, Path check) {
+    boolean cond = check.toAbsolutePath().normalize()
         .startsWith(root.toAbsolutePath().normalize());
     assertTrue(check + " is subpath of parent " + root, cond);
     return cond;

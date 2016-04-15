@@ -40,13 +40,9 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
   @BeforeClass
   public static void onlyOnce() throws IOException {
-    try {
-      rootSandbox = FileHelper.createTestSandbox();
-      fileSystem = (RootedFileSystem) new RootedFileSystemProvider()
-          .newFileSystem(rootSandbox, Collections.EMPTY_MAP);
-    } catch (IOException e) {
-      fail("Could not create test sandbox: " + e.getMessage());
-    }
+    rootSandbox = FileHelper.createTestSandbox();
+    fileSystem = (RootedFileSystem) new RootedFileSystemProvider()
+        .newFileSystem(rootSandbox, Collections.<String, Object>emptyMap());
   }
 
   @Test
@@ -66,7 +62,8 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
   @Test(expected = InvalidPathException.class)
   public void testMkdirInvalid() throws IOException {
-    FileHelper.createDirectory(fileSystem.getPath("../" + getCurrentTestName()));
+    Path parent = FileHelper.createDirectory(fileSystem.getPath("../" + getCurrentTestName()));
+    fail(String.format("Unexpected success in creating directory %s", parent.toString()));
   }
 
   /* rmdir */
@@ -79,7 +76,8 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
   @Test(expected = InvalidPathException.class)
   public void testRmdirInvalid() throws IOException {
-    FileHelper.deleteDirectory(fileSystem.getPath("../" + getCurrentTestName()));
+    Path deleted = FileHelper.deleteDirectory(fileSystem.getPath("../" + getCurrentTestName()));
+    fail(String.format("Unexpected success in removing directory %s", deleted.toString()));
   }
 
   /* chdir */
@@ -88,15 +86,18 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     Path created = FileHelper.createDirectory(fileSystem.getPath(getCurrentTestName()));
     Path createdFile = FileHelper.createFile(created.resolve(getCurrentTestName()));
     boolean hasFile = false;
-    for (Path p : FileHelper.readDirectory(created)) {
-      hasFile |= FileHelper.isSameFile(createdFile, fileSystem.getPath(created.getFileName() + "/" + p.getFileName()));
+    try(DirectoryStream<Path> ds = FileHelper.readDirectory(created)) {
+      for (Path p : ds) {
+        hasFile |= FileHelper.isSameFile(createdFile, fileSystem.getPath(created.getFileName() + "/" + p.getFileName()));
+      }
     }
     assertTrue(createdFile + " found in ch directory", hasFile);
   }
 
   @Test(expected = InvalidPathException.class)
   public void testChdirInvalid() throws IOException {
-    FileHelper.createDirectory(fileSystem.getPath("../" + getCurrentTestName()));
+    Path chdir = FileHelper.createDirectory(fileSystem.getPath("../" + getCurrentTestName()));
+    fail(String.format("Unexpected success in changing directory %s", chdir.toString()));
   }
 
   /* write */
@@ -108,7 +109,8 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
   @Test(expected = InvalidPathException.class)
   public void testWriteFileInvalid() throws IOException {
-    FileHelper.createFile(fileSystem.getPath("../" + getCurrentTestName()));
+    Path written = FileHelper.createFile(fileSystem.getPath("../" + getCurrentTestName()));
+    fail(String.format("Unexpected success in writing file %s", written.toString()));
   }
 
   /* read */
@@ -120,7 +122,9 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
   @Test(expected = InvalidPathException.class)
   public void testReadFileInvalid() throws IOException {
-    FileHelper.readFile(fileSystem.getPath("../" + getCurrentTestName()));
+    Path read = fileSystem.getPath("../" + getCurrentTestName());
+    FileHelper.readFile(read);
+    fail(String.format("Unexpected success in reading file %s", read.toString()));
   }
 
   /* rm */
@@ -133,7 +137,8 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
   @Test(expected = InvalidPathException.class)
   public void testDeleteFileInvalid() throws IOException {
-    FileHelper.deleteFile(fileSystem.getPath("../" + getCurrentTestName()));
+    Path deleted = FileHelper.deleteFile(fileSystem.getPath("../" + getCurrentTestName()));
+    fail(String.format("Unexpected success in deleting file %s", deleted.toString()));
   }
 
   /* cp */
@@ -148,7 +153,8 @@ public class RootedFileSystemProviderTest extends AssertableFile {
   @Test(expected = InvalidPathException.class)
   public void testCopyFileInvalid() throws IOException {
     Path created = FileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
-    FileHelper.copyFile(created, fileSystem.getPath("../" + getCurrentTestName()));
+    Path copy = FileHelper.copyFile(created, fileSystem.getPath("../" + getCurrentTestName()));
+    fail(String.format("Unexpected success in copying file to %s", copy.toString()));
   }
 
   /* mv */
@@ -163,7 +169,8 @@ public class RootedFileSystemProviderTest extends AssertableFile {
   @Test(expected = InvalidPathException.class)
   public void testMoveFileInvalid() throws IOException {
     Path created = FileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
-    FileHelper.moveFile(created, fileSystem.getPath("../" + getCurrentTestName()));
+    Path moved = FileHelper.moveFile(created, fileSystem.getPath("../" + getCurrentTestName()));
+    fail(String.format("Unexpected success in moving file to %s", moved.toString()));
   }
 
   /* link */
@@ -178,7 +185,8 @@ public class RootedFileSystemProviderTest extends AssertableFile {
   @Test(expected = InvalidPathException.class)
   public void testCreateLinkInvalid() throws IOException {
     Path existing = FileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
-    FileHelper.createLink(fileSystem.getPath("../" + getCurrentTestName() + "link"), existing);
+    Path link = FileHelper.createLink(fileSystem.getPath("../" + getCurrentTestName() + "link"), existing);
+    fail(String.format("Unexpected success in linking file %s", link.toString()));
   }
 
   /* Private helper */
@@ -203,14 +211,14 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     }
 
     public static Path createFile(Path source) throws InvalidPathException, IOException {
-      FileChannel fc = fileSystem.provider().newFileChannel(source, new TreeSet<OpenOption>(
-          Arrays.asList(StandardOpenOption.CREATE, StandardOpenOption.WRITE)));
-      byte [] randomBytes = new byte[1000];
-      new Random().nextBytes(randomBytes);
-      fc.write(ByteBuffer.wrap(randomBytes));
-      fc.close();
-      source.toFile().deleteOnExit();
-      return source;
+      try(FileChannel fc = fileSystem.provider().newFileChannel(source,
+          new TreeSet<OpenOption>(Arrays.asList(StandardOpenOption.CREATE, StandardOpenOption.WRITE)))) {
+        byte [] randomBytes = new byte[1000];
+        new Random().nextBytes(randomBytes);
+        fc.write(ByteBuffer.wrap(randomBytes));
+        source.toFile().deleteOnExit();
+        return source;
+      }
     }
 
     public static Path createLink(Path link, Path existing) throws IOException {
@@ -234,13 +242,13 @@ public class RootedFileSystemProviderTest extends AssertableFile {
       return source;
     }
 
-    public static byte [] readFile(Path source) throws IOException {
-      FileChannel fc = fileSystem.provider().newFileChannel(source, new TreeSet<OpenOption>(
-          Arrays.asList(StandardOpenOption.READ)
-      ));
-      byte [] readBytes = new byte[(int) source.toFile().length()];
-      fc.read(ByteBuffer.wrap(readBytes));
-      return readBytes;
+    public static byte[] readFile(Path source) throws IOException {
+      try(FileChannel fc = fileSystem.provider().newFileChannel(source, new TreeSet<OpenOption>(
+          Arrays.asList(StandardOpenOption.READ)))) {
+        byte [] readBytes = new byte[(int) source.toFile().length()];
+        fc.read(ByteBuffer.wrap(readBytes));
+        return readBytes;
+      }
     }
 
     public static Path copyFile(Path source, Path destination) throws InvalidPathException, IOException {
