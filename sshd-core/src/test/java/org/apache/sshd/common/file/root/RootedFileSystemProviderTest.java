@@ -66,7 +66,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
     @Test
     public void testRoot() {
-        assertTrue(isFile(fileSystem.getRoot()) && isDir(fileSystem.getRoot()) && isReadable(fileSystem.getRoot())
+        assertTrue(exists(fileSystem.getRoot()) && isDir(fileSystem.getRoot()) && isReadable(fileSystem.getRoot())
                 && isRootedAt(rootSandbox, fileSystem.getRoot()));
     }
 
@@ -74,7 +74,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     @Test
     public void testMkdir() throws IOException {
         Path created = FileHelper.createDirectory(fileSystem.getPath(getCurrentTestName()));
-        assertTrue(isFile(created) && isDir(created) && isReadable(created));
+        assertTrue(exists(created) && isDir(created) && isReadable(created));
     }
 
     @Test(expected = InvalidPathException.class)
@@ -122,7 +122,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     @Test
     public void testWriteFile() throws IOException {
         Path created = FileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
-        assertTrue(isFile(created) && isReadable(created));
+        assertTrue(exists(created) && isReadable(created));
     }
 
     @Test(expected = InvalidPathException.class)
@@ -165,7 +165,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         Path created = FileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
         Path destination = fileSystem.getPath(getCurrentTestName() + "dest");
         FileHelper.copyFile(created, destination);
-        assertTrue(isFile(destination) && isReadable(destination));
+        assertTrue(exists(destination) && isReadable(destination));
     }
 
     @Test(expected = InvalidPathException.class)
@@ -181,7 +181,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         Path created = FileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
         Path destination = fileSystem.getPath(getCurrentTestName() + "dest");
         FileHelper.moveFile(created, destination);
-        assertTrue(notExists(created) && isFile(destination) && isReadable(destination));
+        assertTrue(notExists(created) && exists(destination) && isReadable(destination));
     }
 
     @Test(expected = InvalidPathException.class)
@@ -197,7 +197,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         Path existing = FileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
         Path link = fileSystem.getPath(getCurrentTestName() + "link");
         FileHelper.createLink(link, existing);
-        assertTrue(isFile(link) && isReadable(link));
+        assertTrue(exists(link) && isReadable(link));
     }
 
     @Test(expected = InvalidPathException.class)

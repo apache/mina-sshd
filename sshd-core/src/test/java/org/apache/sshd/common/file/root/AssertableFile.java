@@ -40,7 +40,7 @@ public abstract class AssertableFile extends BaseTestSupport {
         return cond;
     }
 
-    public static boolean isFile(Path p) {
+    public static boolean exists(Path p) {
         boolean cond = Files.exists(p);
         assertTrue(p + " exists", cond);
         return cond;
