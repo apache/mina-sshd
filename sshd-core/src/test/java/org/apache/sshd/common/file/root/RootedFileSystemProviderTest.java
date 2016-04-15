@@ -34,6 +34,8 @@ import java.util.Collections;
 import java.util.Random;
 import java.util.TreeSet;
 
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.util.test.Utils;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -59,7 +61,9 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
     @BeforeClass
     public static void onlyOnce() throws IOException {
-        rootSandbox = FileHelper.createTestSandbox();
+        Path targetFolder = ValidateUtils.checkNotNull(
+                Utils.detectTargetFolder(RootedFileSystemProviderTest.class), "Failed to detect target folder").toPath();
+        rootSandbox = FileHelper.createTestSandbox(targetFolder.resolve(TEMP_SUBFOLDER_NAME));
         fileSystem = (RootedFileSystem) new RootedFileSystemProvider().newFileSystem(rootSandbox,
                 Collections.<String, Object> emptyMap());
     }
@@ -223,12 +227,13 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         /**
          * Create a randomized test sandbox on each test execution
          *
+         * @param tempDir location to create the sandbox
          * @return the created sandbox Path
          * @throws IOException
          *             on failure to create
          */
-        public static Path createTestSandbox() throws IOException {
-            Path created = Files.createTempDirectory("testRoot");
+        public static Path createTestSandbox(Path tempDir) throws IOException {
+            Path created = Files.createDirectories(tempDir.resolve(RootedFileSystemProviderTest.class.getSimpleName()));
             created.toFile().deleteOnExit();
             return created;
         }
