@@ -22,12 +22,12 @@ import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.LinkOption;
 import java.nio.file.spi.FileSystemProvider;
+import java.util.List;
 
 import org.apache.sshd.common.file.util.BasePath;
-import org.apache.sshd.common.file.util.ImmutableList;
 
 public class SftpPath extends BasePath<SftpPath, SftpFileSystem> {
-    public SftpPath(SftpFileSystem fileSystem, String root, ImmutableList<String> names) {
+    public SftpPath(SftpFileSystem fileSystem, String root, List<String> names) {
         super(fileSystem, root, names);
     }
 

@@ -23,11 +23,11 @@ import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.nio.file.attribute.UserPrincipalLookupService;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.sshd.common.file.util.BaseFileSystem;
-import org.apache.sshd.common.file.util.ImmutableList;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -85,7 +85,7 @@ public class RootedFileSystem extends BaseFileSystem<RootedPath> {
     }
 
     @Override
-    protected RootedPath create(String root, ImmutableList<String> names) {
+    protected RootedPath create(String root, List<String> names) {
         return new RootedPath(this, root, names);
     }
 

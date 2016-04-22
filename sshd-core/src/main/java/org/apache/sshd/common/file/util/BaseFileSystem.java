@@ -28,6 +28,7 @@ import java.nio.file.spi.FileSystemProvider;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -246,13 +247,12 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
     }
 
     protected T create(String root, String... names) {
-        return create(root, new ImmutableList<>(names));
+        return create(root, GenericUtils.unmodifiableList(names));
     }
 
     protected T create(String root, Collection<String> names) {
-        return create(root, new ImmutableList<>(names.toArray(new String[names.size()])));
+        return create(root, GenericUtils.unmodifiableList(names));
     }
 
-    protected abstract T create(String root, ImmutableList<String> names);
-
+    protected abstract T create(String root, List<String> names);
 }

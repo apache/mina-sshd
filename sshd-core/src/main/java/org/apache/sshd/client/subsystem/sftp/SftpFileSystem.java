@@ -44,7 +44,6 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.file.util.BaseFileSystem;
-import org.apache.sshd.common.file.util.ImmutableList;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -142,7 +141,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
     }
 
     @Override
-    protected SftpPath create(String root, ImmutableList<String> names) {
+    protected SftpPath create(String root, List<String> names) {
         return new SftpPath(this, root, names);
     }
 

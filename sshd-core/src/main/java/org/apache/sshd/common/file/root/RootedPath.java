@@ -24,15 +24,15 @@ import java.nio.file.FileSystem;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.spi.FileSystemProvider;
+import java.util.List;
 
 import org.apache.sshd.common.file.util.BasePath;
-import org.apache.sshd.common.file.util.ImmutableList;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class RootedPath extends BasePath<RootedPath, RootedFileSystem> {
-    public RootedPath(RootedFileSystem fileSystem, String root, ImmutableList<String> names) {
+    public RootedPath(RootedFileSystem fileSystem, String root, List<String> names) {
         super(fileSystem, root, names);
     }
 

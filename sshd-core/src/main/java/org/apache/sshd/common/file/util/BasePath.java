@@ -43,12 +43,12 @@ import org.apache.sshd.common.util.ValidateUtils;
 public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSystem<T>> implements Path {
 
     protected final String root;
-    protected final ImmutableList<String> names;
+    protected final List<String> names;
     private final FS fileSystem;
     private String strValue;
     private int hashValue;
 
-    public BasePath(FS fileSystem, String root, ImmutableList<String> names) {
+    public BasePath(FS fileSystem, String root, List<String> names) {
         this.fileSystem = ValidateUtils.checkNotNull(fileSystem, "No file system provided");
         this.root = root;
         this.names = names;
@@ -60,14 +60,14 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
     }
 
     protected T create(String root, String... names) {
-        return create(root, new ImmutableList<>(names));
+        return create(root, GenericUtils.unmodifiableList(names));
     }
 
     protected T create(String root, Collection<String> names) {
-        return create(root, new ImmutableList<>(names.toArray(new String[names.size()])));
+        return create(root, GenericUtils.unmodifiableList(names));
     }
 
-    protected T create(String root, ImmutableList<String> names) {
+    protected T create(String root, List<String> names) {
         return fileSystem.create(root, names);
     }
 

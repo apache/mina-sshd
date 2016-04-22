@@ -28,9 +28,11 @@ import java.nio.file.spi.FileSystemProvider;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -334,7 +336,7 @@ public class BasePathTest extends BaseTestSupport {
         }
 
         @Override
-        protected TestPath create(String root, ImmutableList<String> names) {
+        protected TestPath create(String root, List<String> names) {
             return new TestPath(this, root, names);
         }
 
@@ -361,12 +363,12 @@ public class BasePathTest extends BaseTestSupport {
 
     private static class TestPath extends BasePath<TestPath, TestFileSystem> {
 
-        TestPath(TestFileSystem fileSystem, String root, ImmutableList<String> names) {
+        TestPath(TestFileSystem fileSystem, String root, List<String> names) {
             super(fileSystem, root, names);
         }
 
         @Override
-        protected TestPath create(String root, ImmutableList<String> names) {
+        protected TestPath create(String root, List<String> names) {
             return new TestPath(getFileSystem(), root, names);
         }
 
@@ -386,7 +388,7 @@ public class BasePathTest extends BaseTestSupport {
         private final FileSystem fileSystem;
         private final String string;
         private String root;
-        private ImmutableList<String> names = new ImmutableList<>(new String[0]);
+        private List<String> names = Collections.<String>emptyList();
 
         public PathTester(FileSystem fileSystem, String string) {
             this.fileSystem = fileSystem;
@@ -399,7 +401,7 @@ public class BasePathTest extends BaseTestSupport {
         }
 
         public PathTester names(Collection<String> names) {
-            this.names = new ImmutableList<>(names.toArray(new String[names.size()]));
+            this.names = GenericUtils.unmodifiableList(names);
             return this;
         }
 

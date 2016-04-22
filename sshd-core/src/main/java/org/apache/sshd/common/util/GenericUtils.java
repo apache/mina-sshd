@@ -284,6 +284,19 @@ public final class GenericUtils {
     }
 
     @SafeVarargs
+    public static <T> List<T> unmodifiableList(T ... values) {
+        return unmodifiableList(asList(values));
+    }
+
+    public static <T> List<T> unmodifiableList(Collection<? extends T> values) {
+        if (isEmpty(values)) {
+            return Collections.emptyList();
+        } else {
+            return Collections.unmodifiableList(new ArrayList<T>(values));
+        }
+    }
+
+    @SafeVarargs
     public static <T> List<T> asList(T ... values) {
         int len = length(values);
         if (len <= 0) {
