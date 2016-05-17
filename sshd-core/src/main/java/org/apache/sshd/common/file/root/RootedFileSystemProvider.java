@@ -184,7 +184,7 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
         Path r = unroot(path);
         FileSystemProvider p = provider(r);
-        return p.newByteChannel(path, options, attrs);
+        return p.newByteChannel(r, options, attrs);
     }
 
     @Override

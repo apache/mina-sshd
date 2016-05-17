@@ -21,8 +21,10 @@ package org.apache.sshd.common.file.root;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channel;
 import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.OpenOption;
@@ -209,6 +211,16 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         Path existing = FileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
         Path link = FileHelper.createLink(fileSystem.getPath("../" + getCurrentTestName() + "link"), existing);
         fail(String.format("Unexpected success in linking file %s", link.toString()));
+    }
+    @Test
+    public void testNewByteChannelProviderMismatchException() throws IOException {
+        RootedFileSystemProvider provider = new RootedFileSystemProvider();
+        Path tempFolder = assertHierarchyTargetFolderExists(getTempTargetFolder());
+        Path file = Files.createTempFile(tempFolder, getCurrentTestName(), ".txt");
+        try (FileSystem fs = provider.newFileSystem(tempFolder, Collections.<String, Object>emptyMap());
+             Channel channel = provider.newByteChannel(fs.getPath(file.getFileName().toString()), Collections.<OpenOption>emptySet())) {
+            assertTrue("Channel not open", channel.isOpen());
+        }
     }
 
     /* Private helper */
