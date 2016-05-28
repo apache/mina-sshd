@@ -28,6 +28,9 @@ import java.security.PrivilegedAction;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class Nio2CompletionHandler<V, A> implements CompletionHandler<V, A> {
+    protected Nio2CompletionHandler() {
+        super();
+    }
 
     @Override
     public void completed(final V result, final A attachment) {
@@ -54,5 +57,4 @@ public abstract class Nio2CompletionHandler<V, A> implements CompletionHandler<V
     protected abstract void onCompleted(V result, A attachment);
 
     protected abstract void onFailed(Throwable exc, A attachment);
-
 }

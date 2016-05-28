@@ -21,6 +21,9 @@ package org.apache.sshd.common.util.threads;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -170,8 +173,26 @@ public final class ThreadUtils {
         }
 
         @Override
-        public Thread newThread(Runnable r) {
-            Thread t = new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0);
+        public Thread newThread(final Runnable r) {
+            Thread t;
+            try {
+                // see SSHD-668
+                t = AccessController.doPrivileged(new PrivilegedExceptionAction<Thread>() {
+                    @SuppressWarnings("synthetic-access")
+                    @Override
+                    public Thread run() {
+                        return new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0);
+                    }
+                });
+            } catch (PrivilegedActionException e) {
+                Exception err = e.getException();
+                if (err instanceof RuntimeException) {
+                    throw (RuntimeException) err;
+                } else {
+                    throw new RuntimeException(err);
+                }
+            }
+
             if (!t.isDaemon()) {
                 t.setDaemon(true);
             }
