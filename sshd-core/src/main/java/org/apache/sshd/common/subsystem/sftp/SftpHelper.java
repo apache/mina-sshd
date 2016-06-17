@@ -468,6 +468,16 @@ public final class SftpHelper {
         }
     }
 
+    public static String resolveStatusMessage(Throwable t) {
+        if (t == null) {
+            return "";
+        } else if (t instanceof SftpException) {
+            return t.toString();
+        } else {
+            return "Internal " + t.getClass().getSimpleName() + ": " + t.getMessage();
+        }
+    }
+
     public static Map<String, Object> readAttrs(Buffer buffer, int version) {
         Map<String, Object> attrs = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
         int flags = buffer.getInt();
@@ -483,12 +493,16 @@ public final class SftpHelper {
                 case SftpConstants.SSH_FILEXFER_TYPE_SYMLINK:
                     attrs.put("isSymbolicLink", Boolean.TRUE);
                     break;
-                case SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN:
+                case SftpConstants.SSH_FILEXFER_TYPE_SOCKET:
+                case SftpConstants.SSH_FILEXFER_TYPE_CHAR_DEVICE:
+                case SftpConstants.SSH_FILEXFER_TYPE_BLOCK_DEVICE:
+                case SftpConstants.SSH_FILEXFER_TYPE_FIFO:
                     attrs.put("isOther", Boolean.TRUE);
                     break;
                 default:    // ignored
             }
         }
+
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_SIZE) != 0) {
             attrs.put("size", buffer.getLong());
         }

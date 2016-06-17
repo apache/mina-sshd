@@ -19,6 +19,7 @@
 
 package org.apache.sshd.server.subsystem.sftp;
 
+import java.io.IOException;
 import java.nio.file.CopyOption;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -56,8 +57,10 @@ public interface SftpEventListener extends EventListener {
      * @param session      The {@link ServerSession} through which the request was handled
      * @param remoteHandle The (opaque) assigned handle for the file / directory
      * @param localHandle  The associated file / directory {@link Handle}
+     * @throws IOException If failed to handle the call
      */
-    void open(ServerSession session, String remoteHandle, Handle localHandle);
+    void open(ServerSession session, String remoteHandle, Handle localHandle)
+            throws IOException;
 
     /**
      * Result of reading entries from a directory - <B>Note:</B> it may be a
@@ -69,8 +72,25 @@ public interface SftpEventListener extends EventListener {
      * @param localHandle  The associated {@link DirectoryHandle}
      * @param entries      A {@link Map} of the listed entries - key = short name,
      *                     value = {@link Path} of the sub-entry
+     * @throws IOException If failed to handle the call
      */
-    void read(ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries);
+    void read(ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries)
+            throws IOException;
+
+    /**
+     * Preparing to read from a file
+     *
+     * @param session      The {@link ServerSession} through which the request was handled
+     * @param remoteHandle The (opaque) assigned handle for the file
+     * @param localHandle  The associated {@link FileHandle}
+     * @param offset       Offset in file from which to read
+     * @param data         Buffer holding the read data
+     * @param dataOffset   Offset of read data in buffer
+     * @param dataLen      Requested read length
+     * @throws IOException If failed to handle the call
+     */
+    void reading(ServerSession session, String remoteHandle, FileHandle localHandle,
+            long offset, byte[] data, int dataOffset, int dataLen) throws IOException;
 
     /**
      * Result of reading from a file
@@ -82,13 +102,16 @@ public interface SftpEventListener extends EventListener {
      * @param data         Buffer holding the read data
      * @param dataOffset   Offset of read data in buffer
      * @param dataLen      Requested read length
-     * @param readLen      Actual read length
+     * @param readLen      Actual read length - negative if thrown exception provided
+     * @param thrown       Non-{@code null} if read failed due to this exception
+     * @throws IOException If failed to handle the call
      */
     void read(ServerSession session, String remoteHandle, FileHandle localHandle,
-              long offset, byte[] data, int dataOffset, int dataLen, int readLen);
+              long offset, byte[] data, int dataOffset, int dataLen, int readLen, Throwable thrown)
+                      throws IOException;
 
     /**
-     * Result of writing to a file
+     * Preparing to write to file
      *
      * @param session      The {@link ServerSession} through which the request was handled
      * @param remoteHandle The (opaque) assigned handle for the file
@@ -97,9 +120,28 @@ public interface SftpEventListener extends EventListener {
      * @param data         Buffer holding the written data
      * @param dataOffset   Offset of write data in buffer
      * @param dataLen      Requested write length
+     * @throws IOException If failed to handle the call
      */
-    void write(ServerSession session, String remoteHandle, FileHandle localHandle,
-               long offset, byte[] data, int dataOffset, int dataLen);
+    void writing(ServerSession session, String remoteHandle, FileHandle localHandle,
+               long offset, byte[] data, int dataOffset, int dataLen)
+                       throws IOException;
+
+    /**
+     * Finished to writing to file
+     *
+     * @param session      The {@link ServerSession} through which the request was handled
+     * @param remoteHandle The (opaque) assigned handle for the file
+     * @param localHandle  The associated {@link FileHandle}
+     * @param offset       Offset in file to which to write
+     * @param data         Buffer holding the written data
+     * @param dataOffset   Offset of write data in buffer
+     * @param dataLen      Requested write length
+     * @param thrown       The reason for failing to write - {@code null} if successful
+     * @throws IOException If failed to handle the call
+     */
+    void written(ServerSession session, String remoteHandle, FileHandle localHandle,
+               long offset, byte[] data, int dataOffset, int dataLen, Throwable thrown)
+                       throws IOException;
 
     /**
      * Called <U>prior</U> to blocking a file section
@@ -110,9 +152,11 @@ public interface SftpEventListener extends EventListener {
      * @param offset       Offset in file for locking
      * @param length       Section size for locking
      * @param mask         Lock mask flags - see {@code SSH_FXP_BLOCK} message
+     * @throws IOException If failed to handle the call
      * @see #blocked(ServerSession, String, FileHandle, long, long, int, Throwable)
      */
-    void blocking(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, int mask);
+    void blocking(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, int mask)
+            throws IOException;
 
     /**
      * Called <U>after</U> blocking a file section
@@ -124,8 +168,10 @@ public interface SftpEventListener extends EventListener {
      * @param length       Section size for locking
      * @param mask         Lock mask flags - see {@code SSH_FXP_BLOCK} message
      * @param thrown       If not-{@code null} then the reason for the failure to execute
+     * @throws IOException If failed to handle the call
      */
-    void blocked(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, int mask, Throwable thrown);
+    void blocked(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, int mask, Throwable thrown)
+            throws IOException;
 
     /**
      * Called <U>prior</U> to un-blocking a file section
@@ -135,8 +181,10 @@ public interface SftpEventListener extends EventListener {
      * @param localHandle  The associated {@link FileHandle}
      * @param offset       Offset in file for un-locking
      * @param length       Section size for un-locking
+     * @throws IOException If failed to handle the call
      */
-    void unblocking(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length);
+    void unblocking(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length)
+            throws IOException;
 
     /**
      * Called <U>prior</U> to un-blocking a file section
@@ -146,11 +194,11 @@ public interface SftpEventListener extends EventListener {
      * @param localHandle  The associated {@link FileHandle}
      * @param offset       Offset in file for un-locking
      * @param length       Section size for un-locking
-     * @param result       If successful (i.e., <tt>thrown</tt> is {@code null}, then whether
-     *                     section was un-blocked
      * @param thrown       If not-{@code null} then the reason for the failure to execute
+     * @throws IOException If failed to handle the call
      */
-    void unblocked(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, Boolean result, Throwable thrown);
+    void unblocked(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, Throwable thrown)
+            throws IOException;
 
     /**
      * Specified file / directory has been closed
@@ -167,9 +215,11 @@ public interface SftpEventListener extends EventListener {
      * @param session The {@link ServerSession} through which the request was handled
      * @param path    Directory {@link Path} to be created
      * @param attrs   Requested associated attributes to set
+     * @throws IOException If failed to handle the call
      * @see #created(ServerSession, Path, Map, Throwable)
      */
-    void creating(ServerSession session, Path path, Map<String, ?> attrs);
+    void creating(ServerSession session, Path path, Map<String, ?> attrs)
+            throws IOException;
 
     /**
      * Called <U>after</U> creating a directory
@@ -178,8 +228,10 @@ public interface SftpEventListener extends EventListener {
      * @param path    Directory {@link Path} to be created
      * @param attrs   Requested associated attributes to set
      * @param thrown  If not-{@code null} then the reason for the failure to execute
+     * @throws IOException If failed to handle the call
      */
-    void created(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown);
+    void created(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown)
+            throws IOException;
 
     /**
      * Called <U>prior</U> to renaming a file / directory
@@ -188,9 +240,11 @@ public interface SftpEventListener extends EventListener {
      * @param srcPath The source {@link Path}
      * @param dstPath The target {@link Path}
      * @param opts    The resolved renaming options
+     * @throws IOException If failed to handle the call
      * @see #moved(ServerSession, Path, Path, Collection, Throwable)
      */
-    void moving(ServerSession session, Path srcPath, Path dstPath, Collection<CopyOption> opts);
+    void moving(ServerSession session, Path srcPath, Path dstPath, Collection<CopyOption> opts)
+            throws IOException;
 
     /**
      * Called <U>after</U> renaming a file / directory
@@ -200,17 +254,20 @@ public interface SftpEventListener extends EventListener {
      * @param dstPath The target {@link Path}
      * @param opts    The resolved renaming options
      * @param thrown  If not-{@code null} then the reason for the failure to execute
+     * @throws IOException If failed to handle the call
      */
-    void moved(ServerSession session, Path srcPath, Path dstPath, Collection<CopyOption> opts, Throwable thrown);
+    void moved(ServerSession session, Path srcPath, Path dstPath, Collection<CopyOption> opts, Throwable thrown)
+            throws IOException;
 
     /**
      * Called <U>prior</U> to removing a file / directory
      *
      * @param session The {@link ServerSession} through which the request was handled
      * @param path    The {@link Path} about to be removed
+     * @throws IOException If failed to handle the call
      * @see #removed(ServerSession, Path, Throwable)
      */
-    void removing(ServerSession session, Path path);
+    void removing(ServerSession session, Path path) throws IOException;
 
     /**
      * Called <U>after</U> a file / directory has been removed
@@ -218,8 +275,9 @@ public interface SftpEventListener extends EventListener {
      * @param session The {@link ServerSession} through which the request was handled
      * @param path    The {@link Path} to be removed
      * @param thrown  If not-{@code null} then the reason for the failure to execute
+     * @throws IOException If failed to handle the call
      */
-    void removed(ServerSession session, Path path, Throwable thrown);
+    void removed(ServerSession session, Path path, Throwable thrown) throws IOException;
 
     /**
      * Called <U>prior</U> to creating a link
@@ -228,9 +286,11 @@ public interface SftpEventListener extends EventListener {
      * @param source  The source {@link Path}
      * @param target  The target {@link Path}
      * @param symLink {@code true} = symbolic link
+     * @throws IOException If failed to handle the call
      * @see #linked(ServerSession, Path, Path, boolean, Throwable)
      */
-    void linking(ServerSession session, Path source, Path target, boolean symLink);
+    void linking(ServerSession session, Path source, Path target, boolean symLink)
+            throws IOException;
 
     /**
      * Called <U>after</U> creating a link
@@ -240,8 +300,10 @@ public interface SftpEventListener extends EventListener {
      * @param target  The target {@link Path}
      * @param symLink {@code true} = symbolic link
      * @param thrown  If not-{@code null} then the reason for the failure to execute
+     * @throws IOException If failed to handle the call
      */
-    void linked(ServerSession session, Path source, Path target, boolean symLink, Throwable thrown);
+    void linked(ServerSession session, Path source, Path target, boolean symLink, Throwable thrown)
+            throws IOException;
 
     /**
      * Called <U>prior</U> to modifying the attributes of a file / directory
@@ -250,9 +312,11 @@ public interface SftpEventListener extends EventListener {
      * @param path    The file / directory {@link Path} to be modified
      * @param attrs   The attributes {@link Map} - names and values depend on the
      *                O/S, view, type, etc...
+     * @throws IOException If failed to handle the call
      * @see #modifiedAttributes(ServerSession, Path, Map, Throwable)
      */
-    void modifyingAttributes(ServerSession session, Path path, Map<String, ?> attrs);
+    void modifyingAttributes(ServerSession session, Path path, Map<String, ?> attrs)
+            throws IOException;
 
     /**
      * Called <U>after</U> modifying the attributes of a file / directory
@@ -262,6 +326,8 @@ public interface SftpEventListener extends EventListener {
      * @param attrs   The attributes {@link Map} - names and values depend on the
      *                O/S, view, type, etc...
      * @param thrown  If not-{@code null} then the reason for the failure to execute
+     * @throws IOException If failed to handle the call
      */
-    void modifiedAttributes(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown);
+    void modifiedAttributes(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown)
+            throws IOException;
 }

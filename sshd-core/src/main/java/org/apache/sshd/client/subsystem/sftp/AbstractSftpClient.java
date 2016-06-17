@@ -52,10 +52,11 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractSftpClient extends AbstractSubsystemClient implements SftpClient, RawSftpClient {
+    private final Attributes fileOpenAttributes = new Attributes();
     private final AtomicReference<Map<String, Object>> parsedExtensionsHolder = new AtomicReference<>(null);
 
     protected AbstractSftpClient() {
-        super();
+        fileOpenAttributes.setType(SftpConstants.SSH_FILEXFER_TYPE_REGULAR);
     }
 
     @Override
@@ -700,7 +701,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             }
         }
         buffer.putInt(mode);
-        writeAttributes(buffer, new Attributes());
+        writeAttributes(buffer, fileOpenAttributes);
 
         CloseableHandle handle = new DefaultCloseableHandle(this, path, checkHandle(SftpConstants.SSH_FXP_OPEN, buffer));
         if (log.isTraceEnabled()) {

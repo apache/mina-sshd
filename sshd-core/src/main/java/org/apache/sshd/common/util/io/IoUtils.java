@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.Arrays;
@@ -53,6 +54,7 @@ public final class IoUtils {
     public static final OpenOption[] EMPTY_OPEN_OPTIONS = new OpenOption[0];
     public static final CopyOption[] EMPTY_COPY_OPTIONS = new CopyOption[0];
     public static final LinkOption[] EMPTY_LINK_OPTIONS = new LinkOption[0];
+    public static final FileAttribute<?>[] EMPTY_FILE_ATTRIBUTES = new FileAttribute<?>[0];
 
     public static final List<String> WINDOWS_EXECUTABLE_EXTENSIONS = Collections.unmodifiableList(Arrays.asList(".bat", ".exe", ".cmd"));
 

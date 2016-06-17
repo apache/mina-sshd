@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.scp;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.EventListener;
@@ -69,8 +70,9 @@ public interface ScpTransferEventListener extends EventListener {
      * @param length Size (in bytes) of transfered data
      * @param perms  A {@link Set} of {@link PosixFilePermission}s to be applied
      *               once transfer is complete
+     * @throws IOException If failed to handle the event
      */
-    void startFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms);
+    void startFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms) throws IOException;
 
     /**
      * @param op     The {@link FileOperation}
@@ -80,16 +82,18 @@ public interface ScpTransferEventListener extends EventListener {
      *               once transfer is complete
      * @param thrown The result of the operation attempt - if {@code null} then
      *               reception was successful
+     * @throws IOException If failed to handle the event
      */
-    void endFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown);
+    void endFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown) throws IOException;
 
     /**
      * @param op    The {@link FileOperation}
      * @param file  The <U>local</U> referenced folder {@link Path}
      * @param perms A {@link Set} of {@link PosixFilePermission}s to be applied
      *              once transfer is complete
+     * @throws IOException If failed to handle the event
      */
-    void startFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms);
+    void startFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms) throws IOException;
 
     /**
      * @param op     The {@link FileOperation}
@@ -98,7 +102,7 @@ public interface ScpTransferEventListener extends EventListener {
      *               once transfer is complete
      * @param thrown The result of the operation attempt - if {@code null} then
      *               reception was successful
+     * @throws IOException If failed to handle the event
      */
-    void endFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown);
-
+    void endFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown) throws IOException;
 }

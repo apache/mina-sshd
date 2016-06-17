@@ -99,7 +99,7 @@
         <min.required.maven.version>3.0</min.required.maven.version>
 
         <bouncycastle.version>1.54</bouncycastle.version>
-        <slf4j.version>1.7.16</slf4j.version>
+        <slf4j.version>1.7.21</slf4j.version>
         <spring.version>3.0.6.RELEASE</spring.version>
         <jgit.version>3.4.1.201406201815-r</jgit.version>
         <junit.version>4.12</junit.version>
@@ -627,8 +627,10 @@
                                     </module>
                                     <!--<module name="RedundantThrows" />-->
                                     <module name="PackageDeclaration" />
+                                    <!-- see http://checkstyle.sourceforge.net/config_coding.html#ReturnCount -->
                                     <module name="ReturnCount">
                                         <property name="max" value="15" />
+                                        <property name="maxForVoid" value="15" />
                                     </module>
 
                                     <module name="IllegalType">
@@ -745,7 +747,7 @@
 						<dependency>
 							<groupId>com.puppycrawl.tools</groupId>
 							<artifactId>checkstyle</artifactId>
-							<version>6.15</version>
+							<version>6.19</version>
 							<exclusions>
 								<!-- MCHECKSTYLE-156 -->
 								<exclusion>
@@ -985,6 +987,7 @@
         <module>sshd-core</module>
         <module>sshd-ldap</module>
         <module>sshd-git</module>
+        <module>sshd-contrib</module>
         <module>assembly</module>
     </modules>
 </project>

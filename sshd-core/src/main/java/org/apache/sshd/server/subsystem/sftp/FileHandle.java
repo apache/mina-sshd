@@ -22,18 +22,22 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.SftpException;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 
 
 /**
@@ -50,14 +54,16 @@ public class FileHandle extends Handle {
         super(file);
         this.access = access;
 
-        Set<OpenOption> options = new HashSet<>();
+        Set<StandardOpenOption> options = EnumSet.noneOf(StandardOpenOption.class);
         if (((access & SftpConstants.ACE4_READ_DATA) != 0) || ((access & SftpConstants.ACE4_READ_ATTRIBUTES) != 0)) {
             options.add(StandardOpenOption.READ);
         }
         if (((access & SftpConstants.ACE4_WRITE_DATA) != 0) || ((access & SftpConstants.ACE4_WRITE_ATTRIBUTES) != 0)) {
             options.add(StandardOpenOption.WRITE);
         }
-        switch (flags & SftpConstants.SSH_FXF_ACCESS_DISPOSITION) {
+
+        int accessDisposition = flags & SftpConstants.SSH_FXF_ACCESS_DISPOSITION;
+        switch (accessDisposition) {
             case SftpConstants.SSH_FXF_CREATE_NEW:
                 options.add(StandardOpenOption.CREATE_NEW);
                 break;
@@ -78,26 +84,25 @@ public class FileHandle extends Handle {
         if ((flags & SftpConstants.SSH_FXF_APPEND_DATA) != 0) {
             options.add(StandardOpenOption.APPEND);
         }
-        FileAttribute<?>[] attributes = new FileAttribute<?>[attrs.size()];
-        int index = 0;
-        for (Map.Entry<String, Object> attr : attrs.entrySet()) {
-            final String key = attr.getKey();
-            final Object val = attr.getValue();
-            attributes[index++] = new FileAttribute<Object>() {
-                @Override
-                public String name() {
-                    return key;
-                }
 
-                @Override
-                public Object value() {
-                    return val;
-                }
-            };
+        Collection<FileAttribute<?>> attributes = null;
+        for (Map.Entry<String, Object> attr : attrs.entrySet()) {
+            FileAttribute<?> fileAttr = toFileAttribute(attr.getKey(), attr.getValue());
+            if (fileAttr == null) {
+                continue;
+            }
+            if (attributes == null) {
+                attributes = new LinkedList<>();
+            }
+            attributes.add(fileAttr);
         }
+
+        FileAttribute<?>[] fileAttrs = GenericUtils.isEmpty(attributes)
+                ? IoUtils.EMPTY_FILE_ATTRIBUTES
+                : attributes.toArray(new FileAttribute<?>[attributes.size()]);
         FileChannel channel;
         try {
-            channel = FileChannel.open(file, options, attributes);
+            channel = FileChannel.open(file, options, fileAttrs);
         } catch (UnsupportedOperationException e) {
             channel = FileChannel.open(file, options);
             sftpSubsystem.doSetAttributes(file, attrs);
@@ -171,27 +176,67 @@ public class FileHandle extends Handle {
         FileChannel channel = getFileChannel();
         long size = (length == 0L) ? channel.size() - offset : length;
         FileLock lock = channel.tryLock(offset, size, false);
+        if (lock == null) {
+            throw new SftpException(SftpConstants.SSH_FX_BYTE_RANGE_LOCK_REFUSED,
+                "Overlapping lock held by another program on range [" + offset + "-" + (offset + length));
+        }
+
         synchronized (locks) {
             locks.add(lock);
         }
     }
 
-    public boolean unlock(long offset, long length) throws IOException {
+    public void unlock(long offset, long length) throws IOException {
         FileChannel channel = getFileChannel();
-        long size = (length == 0) ? channel.size() - offset : length;
+        long size = (length == 0L) ? channel.size() - offset : length;
         FileLock lock = null;
         for (Iterator<FileLock> iterator = locks.iterator(); iterator.hasNext();) {
             FileLock l = iterator.next();
-            if (l.position() == offset && l.size() == size) {
+            if ((l.position() == offset) && (l.size() == size)) {
                 iterator.remove();
                 lock = l;
                 break;
             }
         }
-        if (lock != null) {
-            lock.release();
-            return true;
+        if (lock == null) {
+            throw new SftpException(SftpConstants.SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK,
+                    "No mtahcing lock found on range [" + offset + "-" + (offset + length));
         }
-        return false;
+
+        lock.release();
+    }
+
+    public static FileAttribute<?> toFileAttribute(final String key, final Object val) {
+        // Some ignored attributes sent by the SFTP client
+        if ("isOther".equals(key)) {
+            if (((Boolean) val).booleanValue()) {
+                throw new IllegalArgumentException("Not allowed to use " + key + "=" + val);
+            }
+            return null;
+        } else if ("isRegular".equals(key)) {
+            if (!((Boolean) val).booleanValue()) {
+                throw new IllegalArgumentException("Not allowed to use " + key + "=" + val);
+            }
+            return null;
+        }
+
+        return new FileAttribute<Object>() {
+            private final String s = key + "=" + val;
+
+            @Override
+            public String name() {
+                return key;
+            }
+
+            @Override
+            public Object value() {
+                return val;
+            }
+
+            @Override
+            public String toString() {
+                return s;
+            }
+        };
     }
 }

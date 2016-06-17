@@ -19,6 +19,7 @@
 
 package org.apache.sshd.server.subsystem.sftp;
 
+import java.io.IOException;
 import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -63,7 +64,8 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     }
 
     @Override
-    public void read(ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries) {
+    public void read(ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries)
+            throws IOException {
         int numEntries = GenericUtils.size(entries);
         if (log.isDebugEnabled()) {
             log.debug("read(" + session + ")[" + localHandle.getFile() + "] " + numEntries + " entries");
@@ -77,23 +79,47 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     }
 
     @Override
-    public void read(ServerSession session, String remoteHandle, FileHandle localHandle,
-                     long offset, byte[] data, int dataOffset, int dataLen, int readLen) {
+    public void reading(ServerSession session, String remoteHandle, FileHandle localHandle,
+                     long offset, byte[] data, int dataOffset, int dataLen)
+                        throws IOException {
         if (log.isTraceEnabled()) {
-            log.trace("read(" + session + ")[" + localHandle.getFile() + "] offset=" + offset + ", requested=" + dataLen + ", read=" + readLen);
+            log.trace("reading(" + session + ")[" + localHandle.getFile() + "] offset=" + offset + ", requested=" + dataLen);
         }
     }
 
     @Override
-    public void write(ServerSession session, String remoteHandle, FileHandle localHandle,
-                      long offset, byte[] data, int dataOffset, int dataLen) {
+    public void read(ServerSession session, String remoteHandle, FileHandle localHandle,
+                     long offset, byte[] data, int dataOffset, int dataLen, int readLen, Throwable thrown)
+                        throws IOException {
+        if (log.isTraceEnabled()) {
+            log.trace("read(" + session + ")[" + localHandle.getFile() + "] offset=" + offset
+                    + ", requested=" + dataLen + ", read=" + readLen
+                    + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+        }
+    }
+
+    @Override
+    public void writing(ServerSession session, String remoteHandle, FileHandle localHandle,
+                      long offset, byte[] data, int dataOffset, int dataLen)
+                              throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("write(" + session + ")[" + localHandle.getFile() + "] offset=" + offset + ", requested=" + dataLen);
         }
     }
 
     @Override
-    public void blocking(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, int mask) {
+    public void written(ServerSession session, String remoteHandle, FileHandle localHandle,
+                      long offset, byte[] data, int dataOffset, int dataLen, Throwable thrown)
+                              throws IOException {
+        if (log.isTraceEnabled()) {
+            log.trace("written(" + session + ")[" + localHandle.getFile() + "] offset=" + offset + ", requested=" + dataLen
+                    + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+        }
+    }
+
+    @Override
+    public void blocking(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, int mask)
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("blocking(" + session + ")[" + localHandle.getFile() + "]"
                    + " offset=" + offset + ", length=" + length + ", mask=0x" + Integer.toHexString(mask));
@@ -102,7 +128,8 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
 
     @Override
     public void blocked(ServerSession session, String remoteHandle, FileHandle localHandle,
-                        long offset, long length, int mask, Throwable thrown) {
+                        long offset, long length, int mask, Throwable thrown)
+                                throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("blocked(" + session + ")[" + localHandle.getFile() + "]"
                     + " offset=" + offset + ", length=" + length + ", mask=0x" + Integer.toHexString(mask)
@@ -111,7 +138,8 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     }
 
     @Override
-    public void unblocking(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length) {
+    public void unblocking(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length)
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("unblocking(" + session + ")[" + localHandle.getFile() + "] offset=" + offset + ", length=" + length);
         }
@@ -119,10 +147,11 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
 
     @Override
     public void unblocked(ServerSession session, String remoteHandle, FileHandle localHandle,
-                          long offset, long length, Boolean result, Throwable thrown) {
+                          long offset, long length, Throwable thrown)
+                                  throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("unblocked(" + session + ")[" + localHandle.getFile() + "]"
-                    + " offset=" + offset + ", length=" + length + ", result=" + result
+                    + " offset=" + offset + ", length=" + length
                     + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
         }
     }
@@ -136,14 +165,16 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     }
 
     @Override
-    public void creating(ServerSession session, Path path, Map<String, ?> attrs) {
+    public void creating(ServerSession session, Path path, Map<String, ?> attrs)
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("creating(" + session + ") " + (Files.isDirectory(path) ? "directory" : "file") + " " + path);
         }
     }
 
     @Override
-    public void created(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown) {
+    public void created(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown)
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("created(" + session + ") " + (Files.isDirectory(path) ? "directory" : "file") + " " + path
                    + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
@@ -151,14 +182,16 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     }
 
     @Override
-    public void moving(ServerSession session, Path srcPath, Path dstPath, Collection<CopyOption> opts) {
+    public void moving(ServerSession session, Path srcPath, Path dstPath, Collection<CopyOption> opts)
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("moving(" + session + ")[" + opts + "]" + srcPath + " => " + dstPath);
         }
     }
 
     @Override
-    public void moved(ServerSession session, Path srcPath, Path dstPath, Collection<CopyOption> opts, Throwable thrown) {
+    public void moved(ServerSession session, Path srcPath, Path dstPath, Collection<CopyOption> opts, Throwable thrown)
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("moved(" + session + ")[" + opts + "]" + srcPath + " => " + dstPath
                     + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
@@ -166,14 +199,16 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     }
 
     @Override
-    public void removing(ServerSession session, Path path) {
+    public void removing(ServerSession session, Path path)
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("removing(" + session + ") " + path);
         }
     }
 
     @Override
-    public void removed(ServerSession session, Path path, Throwable thrown) {
+    public void removed(ServerSession session, Path path, Throwable thrown)
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("removed(" + session + ") " + path
                   + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
@@ -181,14 +216,16 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     }
 
     @Override
-    public void linking(ServerSession session, Path source, Path target, boolean symLink) {
+    public void linking(ServerSession session, Path source, Path target, boolean symLink)
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("linking(" + session + ")[" + symLink + "]" + source + " => " + target);
         }
     }
 
     @Override
-    public void linked(ServerSession session, Path source, Path target, boolean symLink, Throwable thrown) {
+    public void linked(ServerSession session, Path source, Path target, boolean symLink, Throwable thrown)
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("linked(" + session + ")[" + symLink + "]" + source + " => " + target
                     + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
@@ -196,14 +233,16 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     }
 
     @Override
-    public void modifyingAttributes(ServerSession session, Path path, Map<String, ?> attrs) {
+    public void modifyingAttributes(ServerSession session, Path path, Map<String, ?> attrs)
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("modifyingAttributes(" + session + ") " + path + ": " + attrs);
         }
     }
 
     @Override
-    public void modifiedAttributes(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown) {
+    public void modifiedAttributes(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown)
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("modifiedAttributes(" + session + ") " + path
                   + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));

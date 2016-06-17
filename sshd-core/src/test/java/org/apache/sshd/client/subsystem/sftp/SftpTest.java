@@ -89,7 +89,6 @@ import org.apache.sshd.server.subsystem.sftp.AbstractSftpEventListenerAdapter;
 import org.apache.sshd.server.subsystem.sftp.DirectoryHandle;
 import org.apache.sshd.server.subsystem.sftp.FileHandle;
 import org.apache.sshd.server.subsystem.sftp.Handle;
-import org.apache.sshd.server.subsystem.sftp.SftpEventListener;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.JSchLogger;
@@ -102,8 +101,6 @@ import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -539,9 +536,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         final AtomicInteger modifyingCount = new AtomicInteger(0);
         final AtomicInteger modifiedCount = new AtomicInteger(0);
 
-        factory.addSftpEventListener(new SftpEventListener() {
-            private final Logger log = LoggerFactory.getLogger(SftpEventListener.class);
-
+        factory.addSftpEventListener(new AbstractSftpEventListenerAdapter() {
             @Override
             public void initialized(ServerSession session, int version) {
                 log.info("initialized(" + session + ") version: " + version);
@@ -557,7 +552,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             }
 
             @Override
-            public void write(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, byte[] data, int dataOffset, int dataLen) {
+            public void written(ServerSession session, String remoteHandle, FileHandle localHandle,
+                    long offset, byte[] data, int dataOffset, int dataLen, Throwable thrown) {
                 writeSize.addAndGet(dataLen);
                 if (log.isDebugEnabled()) {
                     log.debug("write(" + session + ")[" + localHandle.getFile() + "] offset=" + offset + ", requested=" + dataLen);
@@ -591,7 +587,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             }
 
             @Override
-            public void read(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, byte[] data, int dataOffset, int dataLen, int readLen) {
+            public void read(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, byte[] data,
+                    int dataOffset, int dataLen, int readLen, Throwable thrown) {
                 readSize.addAndGet(readLen);
                 if (log.isDebugEnabled()) {
                     log.debug("read(" + session + ")[" + localHandle.getFile() + "] offset=" + offset + ", requested=" + dataLen + ", read=" + readLen);
@@ -677,9 +674,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
             @Override
             public void unblocked(ServerSession session, String remoteHandle, FileHandle localHandle,
-                                  long offset, long length, Boolean result, Throwable thrown) {
+                                  long offset, long length, Throwable thrown) {
                 log.info("unblocked(" + session + ")[" + localHandle.getFile() + "]"
-                       + " offset=" + offset + ", length=" + length + ", result=" + result
+                       + " offset=" + offset + ", length=" + length
                        + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
             }
 

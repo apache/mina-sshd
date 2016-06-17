@@ -303,8 +303,8 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         ack();
 
         time = null;
+        listener.startFolderEvent(FileOperation.RECEIVE, path, perms);
         try {
-            listener.startFolderEvent(FileOperation.RECEIVE, path, perms);
             for (;;) {
                 header = readLine();
                 if (log.isDebugEnabled()) {
@@ -330,6 +330,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             listener.endFolderEvent(FileOperation.RECEIVE, path, perms, e);
             throw e;
         }
+        listener.endFolderEvent(FileOperation.RECEIVE, path, perms, null);
     }
 
     public void receiveFile(String header, Path local, ScpTimestamp time, boolean preserve, int bufferSize) throws IOException {
@@ -383,14 +384,14 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             ack();
 
             Path file = resolver.getEventListenerFilePath();
+            listener.startFileEvent(FileOperation.RECEIVE, file, length, perms);
             try {
-                listener.startFileEvent(FileOperation.RECEIVE, file, length, perms);
                 IoUtils.copy(is, os, bufSize);
-                listener.endFileEvent(FileOperation.RECEIVE, file, length, perms, null);
             } catch (IOException | RuntimeException e) {
                 listener.endFileEvent(FileOperation.RECEIVE, file, length, perms, e);
                 throw e;
             }
+            listener.endFileEvent(FileOperation.RECEIVE, file, length, perms, null);
         }
 
         resolver.postProcessReceivedData(name, preserve, perms, time);
@@ -625,14 +626,14 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
 
         try (InputStream in = resolver.resolveSourceStream(getSession())) {
             Path path = resolver.getEventListenerFilePath();
+            listener.startFileEvent(FileOperation.SEND, path, fileSize, perms);
             try {
-                listener.startFileEvent(FileOperation.SEND, path, fileSize, perms);
                 IoUtils.copy(in, out, bufSize);
-                listener.endFileEvent(FileOperation.SEND, path, fileSize, perms, null);
             } catch (IOException | RuntimeException e) {
                 listener.endFileEvent(FileOperation.SEND, path, fileSize, perms, e);
                 throw e;
             }
+            listener.endFileEvent(FileOperation.SEND, path, fileSize, perms, null);
         }
         ack();
 
@@ -728,12 +729,12 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                         sendDir(child, preserve, bufferSize);
                     }
                 }
-
-                listener.endFolderEvent(FileOperation.SEND, path, perms, null);
             } catch (IOException | RuntimeException e) {
                 listener.endFolderEvent(FileOperation.SEND, path, perms, e);
                 throw e;
             }
+
+            listener.endFolderEvent(FileOperation.SEND, path, perms, null);
         }
 
         if (log.isDebugEnabled()) {

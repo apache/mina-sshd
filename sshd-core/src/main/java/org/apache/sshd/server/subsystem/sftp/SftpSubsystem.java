@@ -1197,29 +1197,28 @@ public class SftpSubsystem
         listener.blocking(session, handle, fileHandle, offset, length, mask);
         try {
             fileHandle.lock(offset, length, mask);
-            listener.blocked(session, handle, fileHandle, offset, length, mask, null);
         } catch (IOException | RuntimeException e) {
             listener.blocked(session, handle, fileHandle, offset, length, mask, e);
             throw e;
         }
+        listener.blocked(session, handle, fileHandle, offset, length, mask, null);
     }
 
     protected void doUnblock(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
         long offset = buffer.getLong();
         long length = buffer.getLong();
-        boolean found;
         try {
-            found = doUnblock(id, handle, offset, length);
+            doUnblock(id, handle, offset, length);
         } catch (IOException | RuntimeException e) {
             sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
 
-        sendStatus(BufferUtils.clear(buffer), id, found ? SftpConstants.SSH_FX_OK : SftpConstants.SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
-    protected boolean doUnblock(int id, String handle, long offset, long length) throws IOException {
+    protected void doUnblock(int id, String handle, long offset, long length) throws IOException {
         Handle p = handles.get(handle);
         if (log.isDebugEnabled()) {
             log.debug("doUnblock({})[id={}] SSH_FXP_UNBLOCK (handle={}[{}], offset={}, length={})",
@@ -1231,13 +1230,12 @@ public class SftpSubsystem
         ServerSession session = getServerSession();
         listener.unblocking(session, handle, fileHandle, offset, length);
         try {
-            boolean result = fileHandle.unlock(offset, length);
-            listener.unblocked(session, handle, fileHandle, offset, length, Boolean.valueOf(result), null);
-            return result;
+            fileHandle.unlock(offset, length);
         } catch (IOException | RuntimeException e) {
-            listener.unblocked(session, handle, fileHandle, offset, length, null, e);
+            listener.unblocked(session, handle, fileHandle, offset, length, e);
             throw e;
         }
+        listener.unblocked(session, handle, fileHandle, offset, length, null);
     }
 
     protected void doLink(Buffer buffer, int id) throws IOException {
@@ -1302,11 +1300,11 @@ public class SftpSubsystem
             } else {
                 Files.createLink(link, existing);
             }
-            listener.linked(session, link, existing, symLink, null);
         } catch (IOException | RuntimeException e) {
             listener.linked(session, link, existing, symLink, e);
             throw e;
         }
+        listener.linked(session, link, existing, symLink, null);
     }
 
     protected void doReadLink(Buffer buffer, int id) throws IOException {
@@ -1382,11 +1380,11 @@ public class SftpSubsystem
         listener.moving(session, o, n, opts);
         try {
             Files.move(o, n, GenericUtils.isEmpty(opts) ? IoUtils.EMPTY_COPY_OPTIONS : opts.toArray(new CopyOption[opts.size()]));
-            listener.moved(session, o, n, opts, null);
         } catch (IOException | RuntimeException e) {
             listener.moved(session, o, n, opts, e);
             throw e;
         }
+        listener.moved(session, o, n, opts, null);
     }
 
     // see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-extensions-00#section-7
@@ -1716,11 +1714,11 @@ public class SftpSubsystem
         listener.removing(session, p);
         try {
             Files.delete(p);
-            listener.removed(session, p, null);
         } catch (IOException | RuntimeException e) {
             listener.removed(session, p, e);
             throw e;
         }
+        listener.removed(session, p, null);
     }
 
     protected void doMakeDirectory(Buffer buffer, int id) throws IOException {
@@ -1761,11 +1759,11 @@ public class SftpSubsystem
             try {
                 Files.createDirectory(p);
                 doSetAttributes(p, attrs);
-                listener.created(session, p, attrs, null);
             } catch (IOException | RuntimeException e) {
                 listener.created(session, p, attrs, e);
                 throw e;
             }
+            listener.created(session, p, attrs, null);
         }
     }
 
@@ -2043,14 +2041,19 @@ public class SftpSubsystem
             throw new IllegalStateException("Not enough buffer data for writing to " + fh + ": required=" + length + ", available=" + remaining);
         }
 
-        if (fh.isOpenAppend()) {
-            fh.append(data, doff, length);
-        } else {
-            fh.write(data, doff, length, offset);
-        }
-
         SftpEventListener listener = getSftpEventListenerProxy();
-        listener.write(getServerSession(), handle, fh, offset, data, doff, length);
+        listener.writing(getServerSession(), handle, fh, offset, data, doff, length);
+        try {
+            if (fh.isOpenAppend()) {
+                fh.append(data, doff, length);
+            } else {
+                fh.write(data, doff, length, offset);
+            }
+        } catch (IOException | RuntimeException e) {
+            listener.written(getServerSession(), handle, fh, offset, data, doff, length, e);
+            throw e;
+        }
+        listener.written(getServerSession(), handle, fh, offset, data, doff, length, null);
     }
 
     protected void doRead(Buffer buffer, int id) throws IOException {
@@ -2100,9 +2103,17 @@ public class SftpSubsystem
 
         ValidateUtils.checkTrue(length > 0L, "Invalid read length: %d", length);
         FileHandle fh = validateHandle(handle, h, FileHandle.class);
-        int readLen = fh.read(data, doff, length, offset);
         SftpEventListener listener = getSftpEventListenerProxy();
-        listener.read(getServerSession(), handle, fh, offset, data, doff, length, readLen);
+        ServerSession serverSession = getServerSession();
+        int readLen;
+        listener.reading(serverSession, handle, fh, offset, data, doff, length);
+        try {
+            readLen = fh.read(data, doff, length, offset);
+        } catch (IOException | RuntimeException e) {
+            listener.read(serverSession, handle, fh, offset, data, doff, length, -1, e);
+            throw e;
+        }
+        listener.read(serverSession, handle, fh, offset, data, doff, length, readLen, null);
         return readLen;
     }
 
@@ -2985,11 +2996,11 @@ public class SftpSubsystem
         listener.modifyingAttributes(session, file, attributes);
         try {
             setFileAttributes(file, attributes, IoUtils.getLinkOptions(false));
-            listener.modifiedAttributes(session, file, attributes, null);
         } catch (IOException | RuntimeException e) {
             listener.modifiedAttributes(session, file, attributes, e);
             throw e;
         }
+        listener.modifiedAttributes(session, file, attributes, null);
     }
 
     protected void setFileAttributes(Path file, Map<String, ?> attributes, LinkOption ... options) throws IOException {
@@ -3310,7 +3321,7 @@ public class SftpSubsystem
 
     protected void sendStatus(Buffer buffer, int id, Throwable e) throws IOException {
         int substatus = SftpHelper.resolveSubstatus(e);
-        sendStatus(buffer, id, substatus, e.toString());
+        sendStatus(buffer, id, substatus, SftpHelper.resolveStatusMessage(e));
     }
 
     protected void sendStatus(Buffer buffer, int id, int substatus, String msg) throws IOException {
