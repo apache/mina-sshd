@@ -20,6 +20,7 @@ package org.apache.sshd.util.test;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -50,6 +51,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.SshServer;
 import org.junit.Assert;
@@ -317,6 +319,28 @@ public abstract class BaseTestSupport extends Assert {
         }
 
         return folder;
+    }
+
+    public static void assertFileContentsEquals(String prefix, Path expected, Path actual) throws IOException {
+        long cmpSize = Files.size(expected);
+        assertEquals(prefix + ": Mismatched file size", cmpSize, Files.size(expected));
+
+        try (InputStream expStream = Files.newInputStream(expected);
+             InputStream actStream = Files.newInputStream(actual)) {
+            byte[] expData = new byte[IoUtils.DEFAULT_COPY_SIZE];
+            byte[] actData = new byte[expData.length];
+
+            for (long offset = 0L; offset < cmpSize;) {
+                Arrays.fill(expData, (byte) 0);
+                int expLen = expStream.read(expData);
+                Arrays.fill(actData, (byte) 0);
+                int actLen = actStream.read(actData);
+                assertEquals(prefix + ": Mismatched read size at offset=" + offset, expLen, actLen);
+                assertArrayEquals(prefix + ": Mismatched data at offset=" + offset, expData, actData);
+
+                offset += expLen;
+            }
+        }
     }
 
     public static File assertHierarchyTargetFolderExists(File folder) {
