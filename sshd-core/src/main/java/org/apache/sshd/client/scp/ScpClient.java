@@ -50,6 +50,17 @@ public interface ScpClient extends SessionHolder<ClientSession>, ClientSessionHo
     String SCP_EXEC_CHANNEL_OPEN_TIMEOUT = "scp-exec-channel-open-timeout";
     long DEFAULT_EXEC_CHANNEL_OPEN_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
 
+    /**
+     * Configurable value of the {@link org.apache.sshd.common.FactoryManager}
+     * for controlling the wait timeout for waiting on a channel exit status'
+     * for an SCP command in milliseconds. If not specified, then
+     * {@link #DEFAULT_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT}
+     * value is used. If non-positive, then no wait is performed and the command
+     * is assumed to have completed successfully.
+     */
+    String SCP_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT = "scp-exec-channel-exit-status-timeout";
+    long DEFAULT_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
+
     void download(String remote, String local, Option... options) throws IOException;
 
     void download(String remote, String local, Collection<Option> options) throws IOException;

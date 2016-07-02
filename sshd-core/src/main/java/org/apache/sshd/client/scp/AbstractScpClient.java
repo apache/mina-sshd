@@ -256,7 +256,12 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
      */
     protected void handleCommandExitStatus(String cmd, ClientChannel channel) throws IOException {
         // give a chance for the exit status to be received
-        long timeout = PropertyResolverUtils.getLongProperty(channel, FactoryManager.CHANNEL_CLOSE_TIMEOUT, FactoryManager.DEFAULT_CHANNEL_CLOSE_TIMEOUT);
+        long timeout = PropertyResolverUtils.getLongProperty(channel, SCP_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT, DEFAULT_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT);
+        if (timeout <= 0L) {
+            handleCommandExitStatus(cmd, (Integer) null);
+            return;
+        }
+
         long waitStart = System.nanoTime();
         Collection<ClientChannelEvent> events = channel.waitFor(COMMAND_WAIT_EVENTS, timeout);
         long waitEnd = System.nanoTime();
