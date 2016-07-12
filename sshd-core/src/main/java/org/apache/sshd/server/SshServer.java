@@ -45,6 +45,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.config.SshConfigFileReader;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoServiceFactory;
@@ -423,6 +424,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         String provider;
         boolean error = false;
         String hostKeyType = AbstractGeneratorHostKeyProvider.DEFAULT_ALGORITHM;
+        int hostKeySize = 0;
         Map<String, String> options = new LinkedHashMap<>();
 
         int numArgs = GenericUtils.length(args);
@@ -440,6 +442,13 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                     break;
                 }
                 hostKeyType = args[++i].toUpperCase();
+            } else if ("-key-size".equals(argName)) {
+                if (i + 1 >= numArgs) {
+                    System.err.println("option requires an argument: " + argName);
+                    break;
+                }
+
+                hostKeySize = Integer.parseInt(args[++i]);
             } else if ("-io".equals(argName)) {
                 if (i + 1 >= numArgs) {
                     System.err.println("option requires an argument: " + argName);
@@ -501,14 +510,20 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             hostKeyProvider = new SimpleGeneratorHostKeyProvider(hostKeyFile);
         }
         hostKeyProvider.setAlgorithm(hostKeyType);
+        if (hostKeySize != 0) {
+            hostKeyProvider.setKeySize(hostKeySize);
+        }
 
         List<KeyPair> keys = ValidateUtils.checkNotNullAndNotEmpty(hostKeyProvider.loadKeys(),
                 "Failed to load keys from %s", hostKeyFile);
         KeyPair kp = keys.get(0);
         PublicKey pubKey = kp.getPublic();
         String keyAlgorithm = pubKey.getAlgorithm();
+        if ("ECDSA".equalsIgnoreCase(keyAlgorithm)) {
+            keyAlgorithm = KeyUtils.EC_ALGORITHM;
+        }
         // force re-generation of host key if not same algorithm
-        if (!Objects.equals(keyAlgorithm, hostKeyProvider.getAlgorithm())) {
+        if (!Objects.equals(keyAlgorithm, hostKeyType)) {
             Files.deleteIfExists(hostKeyFile);
             hostKeyProvider.clearLoadedKeys();
         }

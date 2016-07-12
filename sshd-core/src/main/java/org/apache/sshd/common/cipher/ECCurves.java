@@ -24,8 +24,11 @@ import java.security.spec.ECFieldFp;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.EllipticCurve;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -124,6 +127,25 @@ public enum ECCurves implements NamedResource, OptionalFeature {
                 }
             });
 
+    public static final Comparator<ECCurves> BY_KEY_SIZE = new Comparator<ECCurves>() {
+        @Override
+        public int compare(ECCurves o1, ECCurves o2) {
+            int k1 = (o1 == null) ? Integer.MAX_VALUE : o1.getKeySize();
+            int k2 = (o2 == null) ? Integer.MAX_VALUE : o2.getKeySize();
+            return Integer.compare(k1, k2);
+        }
+    };
+
+    public static final List<ECCurves> SORTED_KEY_SIZE =
+            Collections.unmodifiableList(
+                    new ArrayList<ECCurves>(VALUES) {
+                        // Not serializing it
+                        private static final long serialVersionUID = 1L;
+
+                        {
+                            Collections.sort(this, BY_KEY_SIZE);
+                        }
+                    });
     private final String name;
     private final String keyType;
     private final ECParameterSpec params;

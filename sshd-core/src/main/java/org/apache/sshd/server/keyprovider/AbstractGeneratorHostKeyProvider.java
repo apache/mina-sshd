@@ -33,8 +33,10 @@ import java.security.PublicKey;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -151,32 +153,24 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
     }
 
     protected KeyPair resolveKeyPair(Path keyPath) throws IOException, GeneralSecurityException {
+        String alg = getAlgorithm();
+        KeyPair kp;
         if (keyPath != null) {
-            LinkOption[] options = IoUtils.getLinkOptions(false);
-            if (Files.exists(keyPath, options) && Files.isRegularFile(keyPath, options)) {
-                try {
-                    KeyPair kp = readKeyPair(keyPath, IoUtils.EMPTY_OPEN_OPTIONS);
-                    if (kp != null) {
-                        if (log.isDebugEnabled()) {
-                            PublicKey key = kp.getPublic();
-                            log.debug("resolveKeyPair({}) loaded key={}-{}",
-                                      keyPath, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
-                        }
-                        return kp;
-                    }
-                } catch (Throwable e) {
-                    log.warn("resolveKeyPair({}) Failed ({}) to load: {}",
-                            keyPath, e.getClass().getSimpleName(), e.getMessage());
-                    if (log.isDebugEnabled()) {
-                        log.debug("resolveKeyPair(" + keyPath + ") load failure details", e);
-                    }
+            try {
+                kp = loadFromFile(alg, keyPath);
+                if (kp != null) {
+                    return kp;
+                }
+            } catch (Throwable e) {
+                log.warn("resolveKeyPair({}) Failed ({}) to load: {}",
+                        keyPath, e.getClass().getSimpleName(), e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("resolveKeyPair(" + keyPath + ") load failure details", e);
                 }
             }
         }
 
         // either no file specified or no key in file
-        String alg = getAlgorithm();
-        KeyPair kp;
         try {
             kp = generateKeyPair(alg);
             if (kp == null) {
@@ -211,6 +205,39 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
         }
 
         return kp;
+    }
+
+    protected KeyPair loadFromFile(String alg, Path keyPath) throws IOException, GeneralSecurityException {
+        LinkOption[] options = IoUtils.getLinkOptions(false);
+        if ((!Files.exists(keyPath, options)) || (!Files.isRegularFile(keyPath, options))) {
+            return null;
+        }
+
+        KeyPair kp = readKeyPair(keyPath, IoUtils.EMPTY_OPEN_OPTIONS);
+        if (kp == null) {
+            return null;
+        }
+        PublicKey key = kp.getPublic();
+        String keyAlgorithm = key.getAlgorithm();
+        if ("ECDSA".equalsIgnoreCase(keyAlgorithm)) {
+            keyAlgorithm = KeyUtils.EC_ALGORITHM;
+        }
+
+        if (Objects.equals(alg, keyAlgorithm)) {
+            if (log.isDebugEnabled()) {
+                log.debug("resolveKeyPair({}) loaded key={}-{}",
+                          keyPath, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+            }
+            return kp;
+        }
+
+        // Not same algorithm - start again
+        if (log.isDebugEnabled()) {
+            log.debug("resolveKeyPair({}) mismatched loaded key algorithm: expected={}, loaded={}",
+                      keyPath, alg, keyAlgorithm);
+        }
+        Files.deleteIfExists(keyPath);
+        return null;
     }
 
     protected KeyPair readKeyPair(Path keyPath, OpenOption... options) throws IOException, GeneralSecurityException {
@@ -248,6 +275,11 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
         } else if (keySize != 0) {
             generator.initialize(keySize);
             log.info("generateKeyPair(" + algorithm + ") generating host key - size=" + keySize);
+        } else if (KeyUtils.EC_ALGORITHM.equals(algorithm)) {
+            // If left to our own devices choose the biggest key size possible
+            int numCurves = ECCurves.SORTED_KEY_SIZE.size();
+            ECCurves curve = ECCurves.SORTED_KEY_SIZE.get(numCurves - 1);
+            generator.initialize(curve.getParameters());
         }
 
         return generator.generateKeyPair();
