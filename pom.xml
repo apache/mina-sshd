@@ -84,7 +84,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <java.major.version>1</java.major.version>
-        <java.minor.version>7</java.minor.version>
+        <java.minor.version>8</java.minor.version>
         <sniffer.signatures.version>1.0</sniffer.signatures.version>
         <javac.source>${java.major.version}.${java.minor.version}</javac.source>
         <project.build.java.source>${javac.source}</project.build.java.source>
@@ -412,7 +412,7 @@
 				<plugin>
 					<groupId>org.codehaus.mojo</groupId>
 					<artifactId>animal-sniffer-maven-plugin</artifactId>
-					<version>1.14</version>
+					<version>1.15</version>
 					<configuration>
 						<signature>
 							<groupId>org.codehaus.mojo.signature</groupId>

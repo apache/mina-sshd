@@ -25,9 +25,11 @@ import java.util.Arrays;
 import com.jcraft.jsch.JSch;
 
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.git.transport.GitSshdSessionFactory;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.auth.password.AcceptAllPasswordAuthenticator;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JSchLogger;
@@ -36,6 +38,7 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -54,8 +57,17 @@ public class GitPackCommandTest extends BaseTestSupport {
         JSchLogger.init();
     }
 
+    @Override
+    protected SshServer setupTestServer() {
+        SshServer server = super.setupTestServer();
+        server.setPasswordAuthenticator(AcceptAllPasswordAuthenticator.INSTANCE);
+        return server;
+    }
+
     @Test
     public void testGitPack() throws Exception {
+        Assume.assumeFalse("On windows this activates TortoisePlink", OsUtils.isWin32());
+
         Path targetParent = detectTargetFolder().getParent();
         Path gitRootDir = getTempTargetRelativeFile(getClass().getSimpleName());
 
