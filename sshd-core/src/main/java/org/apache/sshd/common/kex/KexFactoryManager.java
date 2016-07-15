@@ -19,14 +19,23 @@
 
 package org.apache.sshd.common.kex;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
+import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.keyprovider.KeyPairProviderHolder;
+import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Holds KEX negotiation stage configuration
@@ -47,7 +56,29 @@ public interface KexFactoryManager extends KeyPairProviderHolder, SignatureFacto
      * @return a list of named <code>Cipher</code> factories, never {@code null}
      */
     List<NamedFactory<Cipher>> getCipherFactories();
+    default String getCipherFactoriesNameList() {
+        return NamedResource.Utils.getNames(getCipherFactories());
+    }
+    default List<String> getCipherFactoriesNames() {
+        return NamedResource.Utils.getNameList(getCipherFactories());
+    }
+
     void setCipherFactories(List<NamedFactory<Cipher>> cipherFactories);
+    default void setCipherFactoriesNameList(String names) {
+        setCipherFactoriesNames(GenericUtils.split(names, ','));
+    }
+    default void setCipherFactoriesNames(String ... names) {
+        setCipherFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.<String>emptyList() : Arrays.asList(names));
+    }
+    default void setCipherFactoriesNames(Collection<String> names) {
+        BuiltinCiphers.ParseResult result = BuiltinCiphers.parseCiphersList(names);
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        List<NamedFactory<Cipher>> factories =
+                (List) ValidateUtils.checkNotNullAndNotEmpty(result.getParsedFactories(), "No supported cipher factories: %s", names);
+        Collection<String> unsupported = result.getUnsupportedFactories();
+        ValidateUtils.checkTrue(GenericUtils.isEmpty(unsupported), "Unsupported cipher factories found: %s", unsupported);
+        setCipherFactories(factories);
+    }
 
     /**
      * Retrieve the list of named factories for <code>Compression</code>.
@@ -55,7 +86,29 @@ public interface KexFactoryManager extends KeyPairProviderHolder, SignatureFacto
      * @return a list of named <code>Compression</code> factories, never {@code null}
      */
     List<NamedFactory<Compression>> getCompressionFactories();
+    default String getCompressionFactoriesNameList() {
+        return NamedResource.Utils.getNames(getCompressionFactories());
+    }
+    default List<String> getCompressionFactoriesNames() {
+        return NamedResource.Utils.getNameList(getCompressionFactories());
+    }
+
     void setCompressionFactories(List<NamedFactory<Compression>> compressionFactories);
+    default void setCompressionFactoriesNameList(String names) {
+        setCompressionFactoriesNames(GenericUtils.split(names, ','));
+    }
+    default void setCompressionFactoriesNames(String ... names) {
+        setCompressionFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.<String>emptyList() : Arrays.asList(names));
+    }
+    default void setCompressionFactoriesNames(Collection<String> names) {
+        BuiltinCompressions.ParseResult result = BuiltinCompressions.parseCompressionsList(names);
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        List<NamedFactory<Compression>> factories =
+                (List) ValidateUtils.checkNotNullAndNotEmpty(result.getParsedFactories(), "No supported compression factories: %s", names);
+        Collection<String> unsupported = result.getUnsupportedFactories();
+        ValidateUtils.checkTrue(GenericUtils.isEmpty(unsupported), "Unsupported compression factories found: %s", unsupported);
+        setCompressionFactories(factories);
+    }
 
     /**
      * Retrieve the list of named factories for <code>Mac</code>.
@@ -63,5 +116,27 @@ public interface KexFactoryManager extends KeyPairProviderHolder, SignatureFacto
      * @return a list of named <code>Mac</code> factories, never {@code null}
      */
     List<NamedFactory<Mac>> getMacFactories();
+    default String getMacFactoriesNameList() {
+        return NamedResource.Utils.getNames(getMacFactories());
+    }
+    default List<String> getMacFactoriesNames() {
+        return NamedResource.Utils.getNameList(getMacFactories());
+    }
+
     void setMacFactories(List<NamedFactory<Mac>> macFactories);
+    default void setMacFactoriesNameList(String names) {
+        setMacFactoriesNames(GenericUtils.split(names, ','));
+    }
+    default void setMacFactoriesNames(String ... names) {
+        setMacFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.<String>emptyList() : Arrays.asList(names));
+    }
+    default void setMacFactoriesNames(Collection<String> names) {
+        BuiltinMacs.ParseResult result = BuiltinMacs.parseMacsList(names);
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        List<NamedFactory<Mac>> factories =
+                (List) ValidateUtils.checkNotNullAndNotEmpty(result.getParsedFactories(), "No supported MAC factories: %s", names);
+        Collection<String> unsupported = result.getUnsupportedFactories();
+        ValidateUtils.checkTrue(GenericUtils.isEmpty(unsupported), "Unsupported MAC factories found: %s", unsupported);
+        setMacFactories(factories);
+    }
 }

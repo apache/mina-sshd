@@ -40,7 +40,7 @@ public class KeyPairIdentity implements PublicKeyIdentity {
 
     public KeyPairIdentity(SignatureFactoriesManager primary, SignatureFactoriesManager secondary, KeyPair pair) {
         this.signatureFactories = ValidateUtils.checkNotNullAndNotEmpty(
-                SignatureFactoriesManager.Utils.resolveSignatureFactories(primary, secondary),
+                SignatureFactoriesManager.resolveSignatureFactories(primary, secondary),
                 "No available signature factories");
         this.pair = ValidateUtils.checkNotNull(pair, "No key pair");
     }

@@ -87,7 +87,7 @@ public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler imple
         ValidateUtils.checkTrue(wantReply, "No reply required for host keys of %s", session);
         Collection<? extends NamedFactory<Signature>> factories =
                 ValidateUtils.checkNotNullAndNotEmpty(
-                        SignatureFactoriesManager.Utils.resolveSignatureFactories(this, session),
+                        SignatureFactoriesManager.resolveSignatureFactories(this, session),
                         "No signature factories available for host keys of session=%s",
                         session);
         if (log.isDebugEnabled()) {

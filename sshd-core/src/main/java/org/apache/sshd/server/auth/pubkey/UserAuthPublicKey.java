@@ -83,7 +83,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         PublicKey key = buffer.getRawPublicKey();
         Collection<NamedFactory<Signature>> factories =
                 ValidateUtils.checkNotNullAndNotEmpty(
-                        SignatureFactoriesManager.Utils.resolveSignatureFactories(this, session),
+                        SignatureFactoriesManager.resolveSignatureFactories(this, session),
                         "No signature factories for session=%s",
                         session);
         if (log.isDebugEnabled()) {
