@@ -21,6 +21,7 @@ package org.apache.sshd.server;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -33,8 +34,10 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,6 +55,8 @@ import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.mina.MinaServiceFactory;
 import org.apache.sshd.common.io.nio2.Nio2ServiceFactory;
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.keyprovider.MappedKeyPairProvider;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -419,12 +424,63 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
           Main class implementation
      *=================================*/
 
+    public static KeyPairProvider setupServerKeys(SshServer sshd, String hostKeyType, int hostKeySize, Collection<String> keyFiles) throws Exception {
+        if (GenericUtils.isEmpty(keyFiles)) {
+            AbstractGeneratorHostKeyProvider hostKeyProvider;
+            Path hostKeyFile;
+            if (SecurityUtils.isBouncyCastleRegistered()) {
+                hostKeyFile = new File("key.pem").toPath();
+                hostKeyProvider = SecurityUtils.createGeneratorHostKeyProvider(hostKeyFile);
+            } else {
+                hostKeyFile = new File("key.ser").toPath();
+                hostKeyProvider = new SimpleGeneratorHostKeyProvider(hostKeyFile);
+            }
+            hostKeyProvider.setAlgorithm(hostKeyType);
+            if (hostKeySize != 0) {
+                hostKeyProvider.setKeySize(hostKeySize);
+            }
+
+            List<KeyPair> keys = ValidateUtils.checkNotNullAndNotEmpty(hostKeyProvider.loadKeys(),
+                    "Failed to load keys from %s", hostKeyFile);
+            KeyPair kp = keys.get(0);
+            PublicKey pubKey = kp.getPublic();
+            String keyAlgorithm = pubKey.getAlgorithm();
+            if ("ECDSA".equalsIgnoreCase(keyAlgorithm)) {
+                keyAlgorithm = KeyUtils.EC_ALGORITHM;
+            }
+            // force re-generation of host key if not same algorithm
+            if (!Objects.equals(keyAlgorithm, hostKeyType)) {
+                Files.deleteIfExists(hostKeyFile);
+                hostKeyProvider.clearLoadedKeys();
+            }
+
+            return hostKeyProvider;
+        } else {
+            List<KeyPair> pairs = new ArrayList<>(keyFiles.size());
+            for (String keyFilePath : keyFiles) {
+                Path path = Paths.get(keyFilePath);
+                try (InputStream inputStream = Files.newInputStream(path)) {
+                    KeyPair kp = SecurityUtils.loadKeyPairIdentity(keyFilePath, inputStream, null);
+                    pairs.add(kp);
+                } catch (Exception e) {
+                    System.err.append("Failed (" + e.getClass().getSimpleName() + ")"
+                                + " to load host key file=" + keyFilePath
+                                + ": " + e.getMessage());
+                    throw e;
+                }
+            }
+
+            return new MappedKeyPairProvider(pairs);
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         int port = 8000;
         String provider;
         boolean error = false;
         String hostKeyType = AbstractGeneratorHostKeyProvider.DEFAULT_ALGORITHM;
         int hostKeySize = 0;
+        Collection<String> keyFiles = null;
         Map<String, String> options = new LinkedHashMap<>();
 
         int numArgs = GenericUtils.length(args);
@@ -433,25 +489,53 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             if ("-p".equals(argName)) {
                 if (i + 1 >= numArgs) {
                     System.err.println("option requires an argument: " + argName);
+                    error = true;
                     break;
                 }
                 port = Integer.parseInt(args[++i]);
             } else if ("-key-type".equals(argName)) {
                 if (i + 1 >= numArgs) {
                     System.err.println("option requires an argument: " + argName);
+                    error = true;
+                    break;
+                }
+
+                if (keyFiles != null) {
+                    System.err.println("option conflicts with -key-file: " + argName);
+                    error = true;
                     break;
                 }
                 hostKeyType = args[++i].toUpperCase();
             } else if ("-key-size".equals(argName)) {
                 if (i + 1 >= numArgs) {
                     System.err.println("option requires an argument: " + argName);
+                    error = true;
+                    break;
+                }
+
+                if (keyFiles != null) {
+                    System.err.println("option conflicts with -key-file: " + argName);
+                    error = true;
                     break;
                 }
 
                 hostKeySize = Integer.parseInt(args[++i]);
+            } else if ("-key-file".equals(argName)) {
+                if (i + 1 >= numArgs) {
+                    System.err.println("option requires an argument: " + argName);
+                    error = true;
+                    break;
+                }
+
+                String keyFilePath = args[++i];
+                if (keyFiles == null) {
+                    keyFiles = new LinkedList<>();
+                }
+                keyFiles.add(keyFilePath);
             } else if ("-io".equals(argName)) {
                 if (i + 1 >= numArgs) {
                     System.err.println("option requires an argument: " + argName);
+                    error = true;
                     break;
                 }
                 provider = args[++i];
@@ -461,6 +545,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                     System.setProperty(IoServiceFactory.class.getName(), Nio2ServiceFactory.class.getName());
                 } else {
                     System.err.println("provider should be mina or nio2: " + argName);
+                    error = true;
                     break;
                 }
             } else if ("-o".equals(argName)) {
@@ -488,7 +573,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             }
         }
         if (error) {
-            System.err.println("usage: sshd [-p port] [-io mina|nio2] [-key-type RSA|DSA|EC] [-o option=value]");
+            System.err.println("usage: sshd [-p port] [-io mina|nio2] [-key-type RSA|DSA|EC] [-key-size NNNN] [-key-file <path>] [-o option=value]");
             System.exit(-1);
         }
 
@@ -500,33 +585,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         setupServerBanner(sshd, options);
         sshd.setPort(port);
 
-        AbstractGeneratorHostKeyProvider hostKeyProvider;
-        Path hostKeyFile;
-        if (SecurityUtils.isBouncyCastleRegistered()) {
-            hostKeyFile = new File("key.pem").toPath();
-            hostKeyProvider = SecurityUtils.createGeneratorHostKeyProvider(hostKeyFile);
-        } else {
-            hostKeyFile = new File("key.ser").toPath();
-            hostKeyProvider = new SimpleGeneratorHostKeyProvider(hostKeyFile);
-        }
-        hostKeyProvider.setAlgorithm(hostKeyType);
-        if (hostKeySize != 0) {
-            hostKeyProvider.setKeySize(hostKeySize);
-        }
-
-        List<KeyPair> keys = ValidateUtils.checkNotNullAndNotEmpty(hostKeyProvider.loadKeys(),
-                "Failed to load keys from %s", hostKeyFile);
-        KeyPair kp = keys.get(0);
-        PublicKey pubKey = kp.getPublic();
-        String keyAlgorithm = pubKey.getAlgorithm();
-        if ("ECDSA".equalsIgnoreCase(keyAlgorithm)) {
-            keyAlgorithm = KeyUtils.EC_ALGORITHM;
-        }
-        // force re-generation of host key if not same algorithm
-        if (!Objects.equals(keyAlgorithm, hostKeyType)) {
-            Files.deleteIfExists(hostKeyFile);
-            hostKeyProvider.clearLoadedKeys();
-        }
+        KeyPairProvider hostKeyProvider = setupServerKeys(sshd, hostKeyType, hostKeySize, keyFiles);
         sshd.setKeyPairProvider(hostKeyProvider);
 
         sshd.setShellFactory(InteractiveProcessShellFactory.INSTANCE);
