@@ -18,104 +18,27 @@
  */
 package org.apache.sshd.util.test;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-
-import org.apache.sshd.server.Command;
-import org.apache.sshd.server.Environment;
-import org.apache.sshd.server.ExitCallback;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class EchoShell implements Command, Runnable {
-
-    private InputStream in;
-    private OutputStream out;
-    private OutputStream err;
-    private ExitCallback callback;
-    private Environment environment;
-    private Thread thread;
-
+public class EchoShell extends CommandExecutionHelper {
     public EchoShell() {
         super();
     }
 
-    public InputStream getIn() {
-        return in;
-    }
-
-    public OutputStream getOut() {
-        return out;
-    }
-
-    public OutputStream getErr() {
-        return err;
-    }
-
-    public Environment getEnvironment() {
-        return environment;
-    }
-
     @Override
-    public void setInputStream(InputStream in) {
-        this.in = in;
-    }
+    protected boolean handleCommandLine(String command) throws Exception {
+        OutputStream out = getOut();
+        out.write((command + "\n").getBytes(StandardCharsets.UTF_8));
+        out.flush();
 
-    @Override
-    public void setOutputStream(OutputStream out) {
-        this.out = out;
-    }
-
-    @Override
-    public void setErrorStream(OutputStream err) {
-        this.err = err;
-    }
-
-    @Override
-    public void setExitCallback(ExitCallback callback) {
-        this.callback = callback;
-    }
-
-    @Override
-    public void start(Environment env) throws IOException {
-        environment = env;
-        thread = new Thread(this, "EchoShell");
-        thread.setDaemon(true);
-        thread.start();
-    }
-
-    @Override
-    public void destroy() {
-        thread.interrupt();
-    }
-
-    @Override
-    public void run() {
-        BufferedReader r = new BufferedReader(new InputStreamReader(in));
-        try {
-            for (;;) {
-                String s = r.readLine();
-                if (s == null) {
-                    return;
-                }
-                out.write((s + "\n").getBytes(StandardCharsets.UTF_8));
-                out.flush();
-                if ("exit".equals(s)) {
-                    return;
-                }
-            }
-        } catch (InterruptedIOException e) {
-            // Ignore
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            callback.onExit(0);
+        if ("exit".equals(command)) {
+            return false;
         }
+
+        return true;
     }
 }

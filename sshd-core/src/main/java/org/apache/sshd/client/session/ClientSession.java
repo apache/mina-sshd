@@ -18,9 +18,18 @@
  */
 package org.apache.sshd.client.session;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.SocketAddress;
+import java.net.SocketTimeoutException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.rmi.RemoteException;
+import java.rmi.ServerException;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -31,11 +40,14 @@ import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.scp.ScpClientCreator;
 import org.apache.sshd.client.subsystem.sftp.SftpClientCreator;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.io.NoCloseOutputStream;
+import org.apache.sshd.common.util.io.NullOutputStream;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
@@ -75,6 +87,9 @@ public interface ClientSession
         WAIT_AUTH,
         AUTHED;
     }
+
+    Set<ClientChannelEvent> REMOTE_COMMAND_WAIT_EVENTS =
+            Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.CLOSED, ClientChannelEvent.EXIT_STATUS));
 
     /**
      * Returns the original address (after having been translated through host
@@ -136,6 +151,79 @@ public interface ClientSession
      * @throws IOException If failed to create the requested channel
      */
     ChannelExec createExecChannel(String command) throws IOException;
+
+    /**
+     * Execute a command that requires no input and returns its output
+     *
+     * @param command The command to execute
+     * @return The command's standard output result (assumed to be in US-ASCII)
+     * @throws IOException If failed to execute the command - including
+     * if <U>anything</U> was written to the standard error or a non-zero exit
+     * status was received. If this happens, then a {@link RemoteException} is
+     * thrown with a cause of {@link ServerException} containing the remote
+     * captured standard error - including CR/LF(s)
+     * @see #executeRemoteCommand(String, OutputStream, Charset)
+     */
+    default String executeRemoteCommand(String command) throws IOException {
+        try (ByteArrayOutputStream stderr = new ByteArrayOutputStream()) {
+            String response = executeRemoteCommand(command, stderr, StandardCharsets.US_ASCII);
+            if (stderr.size() > 0) {
+                byte[] error = stderr.toByteArray();
+                String errorMessage = new String(error, StandardCharsets.US_ASCII);
+                throw new RemoteException("Error reported from remote command='" + command, new ServerException(errorMessage));
+            }
+
+            return response;
+        }
+    }
+
+    /**
+     * Execute a command that requires no input and returns its output
+     *
+     * @param command The command to execute - without a terminating LF
+     * @param stderr Standard error output stream - if {@code null} then
+     * error stream data is ignored. <B>Note:</B> if the stream is not {@code null}
+     * then it will be left <U>open</U> when this method returns or exception
+     * is thrown
+     * @param charset The command {@link Charset} for input/output/error - if
+     * {@code null} then US_ASCII is assumed
+     * @return The command's standard output result
+     * @throws IOException If failed to manage the command channel - <B>Note:</B>
+     * the code does not check if anything was output to the standard error stream,
+     * but does check the reported exit status (if any) for non-zero value. If
+     * non-zero exit status received then a {@link RemoteException} is thrown with'
+     * a {@link ServerException} cause containing the exits value
+     */
+    default String executeRemoteCommand(String command, OutputStream stderr, Charset charset) throws IOException {
+        if (charset == null) {
+            charset = StandardCharsets.US_ASCII;
+        }
+
+        try (ByteArrayOutputStream channelOut = new ByteArrayOutputStream(Byte.MAX_VALUE);
+             OutputStream channelErr = (stderr == null) ? new NullOutputStream() : new NoCloseOutputStream(stderr);
+             ClientChannel channel = createExecChannel(command)) {
+            channel.setOut(channelOut);
+            channel.setErr(channelErr);
+            channel.open().await(); // TODO use verify and a configurable timeout
+
+            OutputStream invertedStream = channel.getInvertedIn();
+            invertedStream.write(command.getBytes(charset));
+            invertedStream.flush();
+
+            // TODO use a configurable timeout
+            Collection<ClientChannelEvent> waitMask = channel.waitFor(REMOTE_COMMAND_WAIT_EVENTS, 0L);
+            if (waitMask.contains(ClientChannelEvent.TIMEOUT)) {
+                throw new SocketTimeoutException("Failed to retrieve command result in time: " + command);
+            }
+
+            Integer exitStatus = channel.getExitStatus();
+            if ((exitStatus != null) && (exitStatus.intValue() != 0)) {
+                throw new RemoteException("Remote command failed (" + exitStatus + "): " + command, new ServerException(exitStatus.toString()));
+            }
+            byte[]  response = channelOut.toByteArray();
+            return new String(response, charset);
+        }
+    }
 
     /**
      * Create a subsystem channel.

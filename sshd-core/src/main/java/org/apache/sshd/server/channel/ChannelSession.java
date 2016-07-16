@@ -677,11 +677,6 @@ public class ChannelSession extends AbstractServerChannel {
         }
         command.setExitCallback(new ExitCallback() {
             @Override
-            public void onExit(int exitValue) {
-                onExit(exitValue, "");
-            }
-
-            @Override
             @SuppressWarnings("synthetic-access")
             public void onExit(int exitValue, String exitMessage) {
                 try {

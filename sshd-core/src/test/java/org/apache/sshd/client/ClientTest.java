@@ -135,14 +135,13 @@ import org.slf4j.LoggerFactory;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ClientTest extends BaseTestSupport {
-
     private SshServer sshd;
     private SshClient client;
     private int port;
     private CountDownLatch authLatch;
     private CountDownLatch channelLatch;
 
-    private final AtomicReference<ClientSession> clientSessionHolder = new AtomicReference<ClientSession>(null);
+    private final AtomicReference<ClientSession> clientSessionHolder = new AtomicReference<>(null);
     @SuppressWarnings("synthetic-access")
     private final SessionListener clientSessionListener = new SessionListener() {
         @Override
@@ -1068,7 +1067,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test   // see SSHD-504
     public void testDefaultKeyboardInteractivePasswordPromptLocationIndependence() throws Exception {
-        final Collection<String> mismatchedPrompts = new LinkedList<String>();
+        final Collection<String> mismatchedPrompts = new LinkedList<>();
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractiveFactory() {
             @Override
             public UserAuthKeyboardInteractive create() {
@@ -1405,7 +1404,7 @@ public class ClientTest extends BaseTestSupport {
             channels.add(session.createChannel(Channel.CHANNEL_EXEC, getCurrentTestName()));
             channels.add(session.createChannel(Channel.CHANNEL_SHELL, getClass().getSimpleName()));
 
-            Set<Integer> ids = new HashSet<Integer>(channels.size());
+            Set<Integer> ids = new HashSet<>(channels.size());
             for (ClientChannel c : channels) {
                 int id = ((AbstractChannel) c).getId();
                 assertTrue("Channel ID repeated: " + id, ids.add(Integer.valueOf(id)));

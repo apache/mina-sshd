@@ -1437,7 +1437,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                             ((ChannelShell) channel).setAgentForwarding(agentForward);
                             channel.setIn(new NoCloseInputStream(System.in));
                         } else {
-                            StringBuilder w = new StringBuilder();
+                            StringBuilder w = new StringBuilder(command.size() * Integer.SIZE);
                             for (String cmd : command) {
                                 w.append(cmd).append(' ');
                             }

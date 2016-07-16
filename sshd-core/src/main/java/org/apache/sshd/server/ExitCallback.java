@@ -28,7 +28,9 @@ public interface ExitCallback {
      *
      * @param exitValue the exit value
      */
-    void onExit(int exitValue);
+    default void onExit(int exitValue) {
+        onExit(exitValue, "");
+    }
 
     /**
      * Informs the SSH client/server that the shell has exited

@@ -26,7 +26,6 @@ import java.util.Set;
 
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
 
@@ -99,9 +98,6 @@ public interface ClientChannel extends Channel {
      * if timeout expired before the expected event was signaled
      */
     Set<ClientChannelEvent> waitFor(Collection<ClientChannelEvent> mask, long timeout);
-
-    @Override
-    CloseFuture close(boolean immediate);
 
     /**
      * @return The signaled exit status via &quot;exit-status&quot; request
