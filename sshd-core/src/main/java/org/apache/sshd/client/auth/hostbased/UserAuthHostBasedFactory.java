@@ -25,12 +25,62 @@ import org.apache.sshd.client.auth.AbstractUserAuthFactory;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthHostBasedFactory extends AbstractUserAuthFactory implements SignatureFactoriesManager {
     public static final String NAME = HOST_BASED;
+    public static final UserAuthHostBasedFactory INSTANCE = new UserAuthHostBasedFactory() {
+        @Override
+        public List<NamedFactory<Signature>> getSignatureFactories() {
+            return null;
+        }
+
+        @Override
+        public void setSignatureFactories(List<NamedFactory<Signature>> factories) {
+            if (!GenericUtils.isEmpty(factories)) {
+                throw new UnsupportedOperationException("Not allowed to change default instance signature factories");
+            }
+        }
+
+        @Override
+        public HostKeyIdentityProvider getClientHostKeys() {
+            return null;
+        }
+
+        @Override
+        public void setClientHostKeys(HostKeyIdentityProvider clientHostKeys) {
+            if (clientHostKeys != null) {
+                throw new UnsupportedOperationException("Not allowed to change default instance client host keys");
+            }
+        }
+
+        @Override
+        public String getClientUsername() {
+            return null;
+        }
+
+        @Override
+        public void setClientUsername(String clientUsername) {
+            if (!GenericUtils.isEmpty(clientUsername)) {
+                throw new UnsupportedOperationException("Not allowed to change default instance client username");
+            }
+        }
+
+        @Override
+        public String getClientHostname() {
+            return null;
+        }
+
+        @Override
+        public void setClientHostname(String clientHostname) {
+            if (!GenericUtils.isEmpty(clientHostname)) {
+                throw new UnsupportedOperationException("Not allowed to change default instance client hostname");
+            }
+        }
+    };
 
     private List<NamedFactory<Signature>> factories;
     private HostKeyIdentityProvider clientHostKeys;

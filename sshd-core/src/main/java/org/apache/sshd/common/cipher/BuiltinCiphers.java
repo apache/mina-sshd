@@ -242,8 +242,7 @@ public enum BuiltinCiphers implements CipherFactory {
     }
 
     /**
-     * @param ciphers A comma-separated list of ciphers' names - ignored
-     *                if {@code null}/empty
+     * @param ciphers A comma-separated list of ciphers' names - ignored if {@code null}/empty
      * @return A {@link ParseResult} containing the successfully parsed
      * factories and the unknown ones. <B>Note:</B> it is up to caller to
      * ensure that the lists do not contain duplicates

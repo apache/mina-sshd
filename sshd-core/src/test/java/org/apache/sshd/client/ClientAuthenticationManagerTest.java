@@ -24,13 +24,20 @@ import java.lang.reflect.Method;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
+import org.apache.sshd.client.auth.BuiltinUserAuthFactories;
+import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
@@ -56,6 +63,99 @@ import org.mockito.Mockito;
 public class ClientAuthenticationManagerTest extends BaseTestSupport {
     public ClientAuthenticationManagerTest() {
         super();
+    }
+
+    @Test
+    public void testDefaultUserAuthFactoriesMethods() {
+        AtomicReference<List<NamedFactory<UserAuth>>> factoriesHolder = new AtomicReference<>();
+        @SuppressWarnings({"checkstyle:anoninnerlength", "checkstyle:methodlength"})
+        ClientAuthenticationManager manager = new ClientAuthenticationManager() {
+            @Override
+            public List<NamedFactory<UserAuth>> getUserAuthFactories() {
+                return factoriesHolder.get();
+            }
+
+            @Override
+            public void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories) {
+                assertNull("Unexpected multiple invocation", factoriesHolder.getAndSet(userAuthFactories));
+            }
+
+            @Override
+            public KeyPairProvider getKeyPairProvider() {
+                return null;
+            }
+
+            @Override
+            public void setKeyPairProvider(KeyPairProvider keyPairProvider) {
+                throw new UnsupportedOperationException("setKeyPairProvider(" + keyPairProvider + ")");
+            }
+
+            @Override
+            public UserInteraction getUserInteraction() {
+                return null;
+            }
+
+            @Override
+            public void setUserInteraction(UserInteraction userInteraction) {
+                throw new UnsupportedOperationException("setUserInteraction(" + userInteraction + ")");
+            }
+
+            @Override
+            public ServerKeyVerifier getServerKeyVerifier() {
+                return null;
+            }
+
+            @Override
+            public void setServerKeyVerifier(ServerKeyVerifier serverKeyVerifier) {
+                throw new UnsupportedOperationException("setServerKeyVerifier(" + serverKeyVerifier + ")");
+            }
+
+            @Override
+            public PasswordIdentityProvider getPasswordIdentityProvider() {
+                return null;
+            }
+
+            @Override
+            public void setPasswordIdentityProvider(PasswordIdentityProvider provider) {
+                throw new UnsupportedOperationException("setPasswordIdentityProvider(" + provider + ")");
+            }
+
+            @Override
+            public AuthenticationIdentitiesProvider getRegisteredIdentities() {
+                return null;
+            }
+
+            @Override
+            public void addPublicKeyIdentity(KeyPair key) {
+                throw new UnsupportedOperationException("addPublicKeyIdentity(" + key + ")");
+            }
+
+            @Override
+            public KeyPair removePublicKeyIdentity(KeyPair kp) {
+                throw new UnsupportedOperationException("removePublicKeyIdentity(" + kp + ")");
+            }
+
+            @Override
+            public void addPasswordIdentity(String password) {
+                throw new UnsupportedOperationException("addPasswordIdentity(" + password + ")");
+            }
+
+            @Override
+            public String removePasswordIdentity(String password) {
+                throw new UnsupportedOperationException("removePasswordIdentity(" + password + ")");
+            }
+        };
+        assertEquals("Mismatched initial factories list", "", manager.getUserAuthFactoriesNameList());
+
+        String expected = NamedResource.Utils.getNames(BuiltinUserAuthFactories.VALUES);
+        manager.setUserAuthFactoriesNameList(expected);
+        assertEquals("Mismatched updated factories names", expected, manager.getUserAuthFactoriesNameList());
+
+        List<NamedFactory<UserAuth>> factories = factoriesHolder.get();
+        assertEquals("Mismatched factories count", BuiltinUserAuthFactories.VALUES.size(), GenericUtils.size(factories));
+        for (BuiltinUserAuthFactories f : BuiltinUserAuthFactories.VALUES) {
+            assertTrue("Missing factory=" + f.name(), factories.contains(f.create()));
+        }
     }
 
     @Test

@@ -20,15 +20,22 @@
 package org.apache.sshd.client;
 
 import java.security.KeyPair;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
+import org.apache.sshd.client.auth.BuiltinUserAuthFactories;
 import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.keyprovider.KeyPairProviderHolder;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Holds information required for the client to perform authentication with the server
@@ -123,5 +130,27 @@ public interface ClientAuthenticationManager extends KeyPairProviderHolder {
      * {@code null}/empty
      */
     List<NamedFactory<UserAuth>> getUserAuthFactories();
+    default String getUserAuthFactoriesNameList() {
+        return NamedResource.Utils.getNames(getUserAuthFactories());
+    }
+    default List<String> getUserAuthFactoriesNames() {
+        return NamedResource.Utils.getNameList(getUserAuthFactories());
+    }
+
     void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories);
+    default void setUserAuthFactoriesNameList(String names) {
+        setUserAuthFactoriesNames(GenericUtils.split(names, ','));
+    }
+    default void setUserAuthFactoriesNames(String ... names) {
+        setUserAuthFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.<String>emptyList() : Arrays.asList(names));
+    }
+    default void setUserAuthFactoriesNames(Collection<String> names) {
+        BuiltinUserAuthFactories.ParseResult result = BuiltinUserAuthFactories.parseFactoriesList(names);
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        List<NamedFactory<UserAuth>> factories =
+                (List) ValidateUtils.checkNotNullAndNotEmpty(result.getParsedFactories(), "No supported cipher factories: %s", names);
+        Collection<String> unsupported = result.getUnsupportedFactories();
+        ValidateUtils.checkTrue(GenericUtils.isEmpty(unsupported), "Unsupported cipher factories found: %s", unsupported);
+        setUserAuthFactories(factories);
+    }
 }
