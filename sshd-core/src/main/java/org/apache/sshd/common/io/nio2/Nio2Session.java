@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -55,7 +56,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     private final Nio2Service service;
     private final IoHandler ioHandler;
     private final AsynchronousSocketChannel socketChannel;
-    private final Map<Object, Object> attributes = new HashMap<Object, Object>();
+    private final Map<Object, Object> attributes = new HashMap<>();
     private final SocketAddress localAddress;
     private final SocketAddress remoteAddress;
     private final FactoryManager manager;
@@ -309,7 +310,8 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
     protected void doReadCycle(ByteBuffer buffer, Nio2CompletionHandler<Integer, Object> completion) {
         AsynchronousSocketChannel socket = getSocket();
-        socket.read(buffer, null, completion);
+        long readTimeout = PropertyResolverUtils.getLongProperty(manager, FactoryManager.NIO2_READ_TIMEOUT, FactoryManager.DEFAULT_NIO2_READ_TIMEOUT);
+        socket.read(buffer, readTimeout, TimeUnit.MILLISECONDS, null, completion);
     }
 
     protected void startWriting() {
@@ -337,7 +339,8 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
     protected void doWriteCycle(ByteBuffer buffer, Nio2CompletionHandler<Integer, Object> completion) {
         AsynchronousSocketChannel socket = getSocket();
-        socket.write(buffer, null, completion);
+        long writeTimeout = PropertyResolverUtils.getLongProperty(manager, FactoryManager.NIO2_MIN_WRITE_TIMEOUT, FactoryManager.DEFAULT_NIO2_MIN_WRITE_TIMEOUT);
+        socket.write(buffer, writeTimeout, TimeUnit.MILLISECONDS, null, completion);
     }
 
     protected Nio2CompletionHandler<Integer, Object> createWriteCycleCompletionHandler(

@@ -125,6 +125,30 @@ public interface FactoryManager
     long DEFAULT_IDLE_TIMEOUT = TimeUnit.MINUTES.toMillis(10L);
 
     /**
+     * Key used to retrieve the value of the socket read timeout
+     * for NIO2 session implementation - in milliseconds.
+     * @see #DEFAULT_NIO2_READ_TIMEOUT
+     */
+    String NIO2_READ_TIMEOUT = "nio2-read-timeout";
+
+    /**
+     * Default value for {@link #NIO2_READ_TIMEOUT} if none set
+     */
+    long DEFAULT_NIO2_READ_TIMEOUT = DEFAULT_IDLE_TIMEOUT + TimeUnit.SECONDS.toMillis(15L);
+
+    /**
+     * Minimum NIO2 write wait timeout for a single outgoing
+     * packet - in milliseconds
+     * @see #DEFAULT_NIO2_MIN_WRITE_TIMEOUT
+     */
+    String NIO2_MIN_WRITE_TIMEOUT = "nio2-min-write-timeout";
+
+    /**
+     * Default value for {@link #NIO2_MIN_WRITE_TIMEOUT} if none set
+     */
+    long DEFAULT_NIO2_MIN_WRITE_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
+
+    /**
      * Key used to retrieve the value of the disconnect timeout which
      * is used when a disconnection is attempted.  If the disconnect
      * message has not been sent before the timeout, the underlying socket

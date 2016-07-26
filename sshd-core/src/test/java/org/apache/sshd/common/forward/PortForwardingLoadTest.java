@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -49,6 +50,7 @@ import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -140,7 +142,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             int forwardedPort = ss.getLocalPort();
             int sinkPort = session.setPortForwardingL(0, TEST_LOCALHOST, forwardedPort);
             final AtomicInteger conCount = new AtomicInteger(0);
-
+            final Semaphore iterationsSignal = new Semaphore(0);
             Thread tAcceptor = new Thread(getCurrentTestName() + "Acceptor") {
                 @SuppressWarnings("synthetic-access")
                 @Override
@@ -178,6 +180,8 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                                     }
                                 }
                             }
+                            log.info("Finished iteration {}", Integer.valueOf(i));
+                            iterationsSignal.release();
                         }
                         log.info("Done");
                     } catch (Exception e) {
@@ -186,7 +190,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                 }
             };
             tAcceptor.start();
-            Thread.sleep(50);
+            Thread.sleep(TimeUnit.SECONDS.toMillis(1L));
 
             byte[] buf = new byte[8192];
             byte[] bytes = payload.getBytes(StandardCharsets.UTF_8);
@@ -195,7 +199,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                 try (Socket s = new Socket(TEST_LOCALHOST, sinkPort);
                      OutputStream sockOut = s.getOutputStream()) {
 
-                    s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
+                    s.setSoTimeout((int) FactoryManager.DEFAULT_NIO2_MIN_WRITE_TIMEOUT);
 
                     sockOut.write(bytes);
                     sockOut.flush();
@@ -215,10 +219,16 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                     log.error("Error in iteration #" + i, e);
                 }
             }
-            session.delPortForwardingL(sinkPort);
+
+            try {
+                assertTrue("Failed to await pending iterations=" + numIterations,
+                           iterationsSignal.tryAcquire(numIterations, numIterations, TimeUnit.SECONDS));
+            } finally {
+                session.delPortForwardingL(sinkPort);
+            }
 
             ss.close();
-            tAcceptor.join(TimeUnit.SECONDS.toMillis(5L));
+            tAcceptor.join(TimeUnit.SECONDS.toMillis(11L));
         } finally {
             session.disconnect();
         }
@@ -266,7 +276,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                 }
             };
             tWriter.start();
-            Thread.sleep(50);
+            Thread.sleep(TimeUnit.SECONDS.toMillis(1L));
             assertTrue("Server not started", started[0]);
 
             final RuntimeException lenOK[] = new RuntimeException[numIterations];
@@ -313,14 +323,15 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                 ok += (lenOK[i] == null) ? 1 : 0;
             }
             log.info("Successful iteration: " + ok + " out of " + numIterations);
-            Thread.sleep(55L);
+            Thread.sleep(TimeUnit.SECONDS.toMillis(1L));
             for (int i = 0; i < numIterations; i++) {
                 assertNull("Bad length at iteration " + i, lenOK[i]);
                 assertNull("Bad data at iteration " + i, dataOK[i]);
             }
+            Thread.sleep(TimeUnit.SECONDS.toMillis(1L));
             session.delPortForwardingR(forwardedPort);
             ss.close();
-            tWriter.join(TimeUnit.SECONDS.toMillis(5L));
+            tWriter.join(TimeUnit.SECONDS.toMillis(11L));
         } finally {
             session.disconnect();
         }
@@ -370,7 +381,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
 
             final CountDownLatch latch = new CountDownLatch(nbThread * nbDownloads * nbLoops);
             final Thread[] threads = new Thread[nbThread];
-            final List<Throwable> errors = new CopyOnWriteArrayList<Throwable>();
+            final List<Throwable> errors = new CopyOnWriteArrayList<>();
             for (int i = 0; i < threads.length; i++) {
                 threads[i] = new Thread(getCurrentTestName() + "[" + i + "]") {
                     @Override
