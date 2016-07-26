@@ -388,23 +388,28 @@ public class ChannelSession extends AbstractServerChannel {
         Environment environment = getEnvironment();
         Map<PtyMode, Integer> ptyModes = environment.getPtyModes();
 
-        for (int i = 0; i < modes.length && (modes[i] != PtyMode.TTY_OP_END);) {
+        for (int i = 0; (i < modes.length) && (modes[i] != PtyMode.TTY_OP_END);) {
             int opcode = modes[i++] & 0x00FF;
-            PtyMode mode = PtyMode.fromInt(opcode);
             /*
-             * According to section 8 of RFC 4254:
+             * According to https://tools.ietf.org/html/rfc4254#section-8:
              *
-             *      "Opcodes 160 to 255 are not yet defined, and cause parsing to stop"
+             *      Opcodes 160 to 255 are not yet defined, and cause parsing to stop
              */
-            if (mode == null) {
-                log.warn("handlePtyReq({}) unknown pty opcode value: {}", this, opcode);
+            if ((opcode >= 160) && (opcode <= 255)) {
+                log.warn("handlePtyReq({}) unknown reserved pty opcode value: {}", this, opcode);
                 break;
             }
+
             int val = ((modes[i++] << 24) & 0xff000000)
                     | ((modes[i++] << 16) & 0x00ff0000)
                     | ((modes[i++] << 8) & 0x0000ff00)
                     | ((modes[i++]) & 0x000000ff);
-            ptyModes.put(mode, val);
+            PtyMode mode = PtyMode.fromInt(opcode);
+            if (mode == null) {
+                log.warn("handlePtyReq({}) unsupported pty opcode value: {}={}", this, opcode, val);
+            } else {
+                ptyModes.put(mode, val);
+            }
         }
 
         if (log.isDebugEnabled()) {

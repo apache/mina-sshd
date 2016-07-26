@@ -163,6 +163,10 @@ public enum PtyMode {
      * Ring bell on input queue full.
      */
     IMAXBEL(41),
+    /**
+     * @see <A HREF="https://tools.ietf.org/html/draft-sgtatham-secsh-iutf8-01">IUTF8 Terminal Mode in Secure Shell</A>
+     */
+    IUTF8(42),
 
     /////////////////////////////// L-flags //////////////////////////////////
 
@@ -293,7 +297,7 @@ public enum PtyMode {
                 private static final long serialVersionUID = 1L;    // we're not serializing it
 
                 {
-                    for (PtyMode c : PtyMode.values()) {
+                    for (PtyMode c : PtyMode.MODES) {
                         put(c.toInt(), c);
                     }
                 }
