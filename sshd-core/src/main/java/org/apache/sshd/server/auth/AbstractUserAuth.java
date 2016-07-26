@@ -24,6 +24,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractUserAuth extends AbstractLoggingBean implements UserAuth {
     private final String name;

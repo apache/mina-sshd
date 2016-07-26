@@ -20,11 +20,16 @@
 package org.apache.sshd.server;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.server.auth.BuiltinUserAuthFactories;
 import org.apache.sshd.server.auth.UserAuth;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 import org.apache.sshd.server.auth.gss.UserAuthGSSFactory;
@@ -60,7 +65,29 @@ public interface ServerAuthenticationManager {
      * @return a list of named <code>UserAuth</code> factories, never {@code null}/empty
      */
     List<NamedFactory<UserAuth>> getUserAuthFactories();
+    default String getUserAuthFactoriesNameList() {
+        return NamedResource.Utils.getNames(getUserAuthFactories());
+    }
+    default List<String> getUserAuthFactoriesNames() {
+        return NamedResource.Utils.getNameList(getUserAuthFactories());
+    }
+
     void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories);
+    default void setUserAuthFactoriesNameList(String names) {
+        setUserAuthFactoriesNames(GenericUtils.split(names, ','));
+    }
+    default void setUserAuthFactoriesNames(String ... names) {
+        setUserAuthFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.<String>emptyList() : Arrays.asList(names));
+    }
+    default void setUserAuthFactoriesNames(Collection<String> names) {
+        BuiltinUserAuthFactories.ParseResult result = BuiltinUserAuthFactories.parseFactoriesList(names);
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        List<NamedFactory<UserAuth>> factories =
+                (List) ValidateUtils.checkNotNullAndNotEmpty(result.getParsedFactories(), "No supported cipher factories: %s", names);
+        Collection<String> unsupported = result.getUnsupportedFactories();
+        ValidateUtils.checkTrue(GenericUtils.isEmpty(unsupported), "Unsupported cipher factories found: %s", unsupported);
+        setUserAuthFactories(factories);
+    }
 
     /**
      * Retrieve the <code>PublickeyAuthenticator</code> to be used by SSH server.

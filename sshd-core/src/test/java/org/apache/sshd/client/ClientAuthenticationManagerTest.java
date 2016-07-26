@@ -68,7 +68,7 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
     @Test
     public void testDefaultUserAuthFactoriesMethods() {
         AtomicReference<List<NamedFactory<UserAuth>>> factoriesHolder = new AtomicReference<>();
-        @SuppressWarnings({"checkstyle:anoninnerlength", "checkstyle:methodlength"})
+        @SuppressWarnings("checkstyle:anoninnerlength")
         ClientAuthenticationManager manager = new ClientAuthenticationManager() {
             @Override
             public List<NamedFactory<UserAuth>> getUserAuthFactories() {
