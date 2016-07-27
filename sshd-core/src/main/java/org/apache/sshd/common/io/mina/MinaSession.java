@@ -115,7 +115,8 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
             @SuppressWarnings("synthetic-access")
             @Override
             public org.apache.sshd.common.future.CloseFuture close(boolean immediately) {
-                session.close(false).addListener(new IoFutureListener<IoFuture>() {
+                org.apache.mina.core.future.CloseFuture cf = immediately ? session.closeNow() : session.closeOnFlush();
+                cf.addListener(new IoFutureListener<IoFuture>() {
                     @Override
                     public void operationComplete(IoFuture f) {
                         future.setValue(Boolean.TRUE);

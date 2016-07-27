@@ -92,7 +92,7 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
 
     @Override
     public void inputClosed(IoSession session) throws Exception {
-        session.close(true);
+        session.closeNow();
     }
 
     @Override
