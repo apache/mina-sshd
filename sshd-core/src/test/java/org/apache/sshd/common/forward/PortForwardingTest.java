@@ -48,6 +48,7 @@ import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.session.forward.ExplicitPortForwardingTracker;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.session.ConnectionService;
@@ -78,7 +79,7 @@ public class PortForwardingTest extends BaseTestSupport {
 
     private final org.slf4j.Logger log = LoggerFactory.getLogger(getClass());
 
-    private final BlockingQueue<String> requestsQ = new LinkedBlockingDeque<String>();
+    private final BlockingQueue<String> requestsQ = new LinkedBlockingDeque<>();
 
     private SshServer sshd;
     private int sshPort;
@@ -208,7 +209,7 @@ public class PortForwardingTest extends BaseTestSupport {
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
-                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
+                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(13L));
 
                 String expected = getCurrentTestName();
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
@@ -245,7 +246,7 @@ public class PortForwardingTest extends BaseTestSupport {
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
-                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
+                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(13L));
 
                 String expected = getCurrentTestName();
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
@@ -275,7 +276,7 @@ public class PortForwardingTest extends BaseTestSupport {
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
-                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
+                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(13L));
 
                 String expected = getCurrentTestName();
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
@@ -294,16 +295,18 @@ public class PortForwardingTest extends BaseTestSupport {
 
     @Test
     public void testRemoteForwardingNativeBigPayload() throws Exception {
-        try (ClientSession session = createNativeSession()) {
-            SshdSocketAddress remote = new SshdSocketAddress("", 0);
-            SshdSocketAddress local = new SshdSocketAddress(TEST_LOCALHOST, echoPort);
-            SshdSocketAddress bound = session.startRemotePortForwarding(remote, local);
+        try (ClientSession session = createNativeSession();
+             ExplicitPortForwardingTracker tracker =
+                     session.createRemotePortForwardingTracker(new SshdSocketAddress(TEST_LOCALHOST, echoPort), new SshdSocketAddress("", 0))) {
+            assertTrue("Tracker not marked as open", tracker.isOpen());
+            assertFalse("Tracker not marked as remote", tracker.isLocalForwarding());
 
+            SshdSocketAddress bound = tracker.getBoundAddress();
             try (Socket s = new Socket(bound.getHostName(), bound.getPort());
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
-                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
+                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(13L));
 
                 String expected = getCurrentTestName();
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
@@ -318,8 +321,9 @@ public class PortForwardingTest extends BaseTestSupport {
                     assertEquals("Mismatched data at iteration #" + i, expected, res);
                 }
             } finally {
-                session.stopRemotePortForwarding(remote);
+                tracker.close();
             }
+            assertFalse("Tracker not marked as closed", tracker.isOpen());
         }
     }
 
@@ -334,7 +338,7 @@ public class PortForwardingTest extends BaseTestSupport {
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
-                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
+                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(13L));
 
                 String expected = getCurrentTestName();
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
@@ -356,16 +360,18 @@ public class PortForwardingTest extends BaseTestSupport {
 
     @Test
     public void testLocalForwardingNative() throws Exception {
-        try (ClientSession session = createNativeSession()) {
-            SshdSocketAddress local = new SshdSocketAddress("", 0);
-            SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, echoPort);
-            SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
+        try (ClientSession session = createNativeSession();
+             ExplicitPortForwardingTracker tracker =
+                 session.createLocalPortForwardingTracker(new SshdSocketAddress("", 0), new SshdSocketAddress(TEST_LOCALHOST, echoPort))) {
+            assertTrue("Tracker not marked as open", tracker.isOpen());
+            assertTrue("Tracker not marked as local", tracker.isLocalForwarding());
 
+            SshdSocketAddress bound = tracker.getBoundAddress();
             try (Socket s = new Socket(bound.getHostName(), bound.getPort());
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
-                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
+                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(13L));
 
                 String expected = getCurrentTestName();
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
@@ -378,8 +384,9 @@ public class PortForwardingTest extends BaseTestSupport {
                 String res = new String(buf, 0, n);
                 assertEquals("Mismatched data", expected, res);
             } finally {
-                session.stopLocalPortForwarding(bound);
+                tracker.close();
             }
+            assertFalse("Tracker not marked as closed", tracker.isOpen());
         }
     }
 
@@ -523,7 +530,7 @@ public class PortForwardingTest extends BaseTestSupport {
         int numThreads = group.activeCount();
         Thread[] threads = new Thread[numThreads * 2];
         numThreads = group.enumerate(threads, false);
-        Set<Thread> ret = new HashSet<Thread>();
+        Set<Thread> ret = new HashSet<>();
 
         // Enumerate each thread in `group'
         for (int i = 0; i < numThreads; ++i) {

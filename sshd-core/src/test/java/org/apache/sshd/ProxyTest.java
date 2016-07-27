@@ -34,6 +34,7 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.session.forward.DynamicPortForwardingTracker;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
@@ -102,9 +103,12 @@ public class ProxyTest extends BaseTestSupport {
             String expected = getCurrentTestName();
             byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
             byte[] buf = new byte[bytes.length + Long.SIZE];
-            SshdSocketAddress dynamic = session.startDynamicPortForwarding(new SshdSocketAddress(TEST_LOCALHOST, 0));
 
-            try {
+            SshdSocketAddress dynamic;
+            try (DynamicPortForwardingTracker tracker = session.createDynamicPortForwardingTracker(new SshdSocketAddress(TEST_LOCALHOST, 0))) {
+                dynamic = tracker.getBoundAddress();
+                assertTrue("Tracker not marked as open", tracker.isOpen());
+
                 for (int i = 0; i < 10; i++) {
                     try (Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(TEST_LOCALHOST, dynamic.getPort())))) {
                         s.connect(new InetSocketAddress(TEST_LOCALHOST, echoPort));
@@ -121,14 +125,15 @@ public class ProxyTest extends BaseTestSupport {
                         }
                     }
                 }
-            } finally {
-                session.stopDynamicPortForwarding(dynamic);
+
+                tracker.close();
+                assertFalse("Tracker not marked as closed", tracker.isOpen());
             }
 
             try {
                 try (Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(TEST_LOCALHOST, dynamic.getPort())))) {
                     s.connect(new InetSocketAddress(TEST_LOCALHOST, echoPort));
-                    s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
+                    s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(11L));
                     s.getOutputStream().write(bytes);
                     fail("Unexpected success to write proxy data");
                 }

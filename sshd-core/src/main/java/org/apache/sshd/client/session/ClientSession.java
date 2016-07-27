@@ -43,7 +43,10 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.scp.ScpClientCreator;
+import org.apache.sshd.client.session.forward.DynamicPortForwardingTracker;
+import org.apache.sshd.client.session.forward.ExplicitPortForwardingTracker;
 import org.apache.sshd.client.subsystem.sftp.SftpClientCreator;
+import org.apache.sshd.common.forward.PortForwardingManager;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
@@ -80,7 +83,8 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  */
 public interface ClientSession
             extends Session, ScpClientCreator, SftpClientCreator,
-            ClientProxyConnectorHolder, ClientAuthenticationManager {
+            ClientProxyConnectorHolder, ClientAuthenticationManager,
+            PortForwardingManager {
     enum ClientSessionEvent {
         TIMEOUT,
         CLOSED,
@@ -245,71 +249,51 @@ public interface ClientSession
     ChannelDirectTcpip createDirectTcpipChannel(SshdSocketAddress local, SshdSocketAddress remote) throws IOException;
 
     /**
-     * Start forwarding the given local address on the client to the given address on the server.
-     *
-     * @param local  The local address
-     * @param remote The remote address
-     * @return The bound {@link SshdSocketAddress}
-     * @throws IOException If failed to create the requested binding
-     */
-    SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException;
-
-    /**
-     * Stop forwarding the given local address.
-     *
-     * @param local  The local address
-     * @throws IOException If failed to cancel the requested binding
-     */
-    void stopLocalPortForwarding(SshdSocketAddress local) throws IOException;
-
-    /**
-     * <P>
-     * Start forwarding tcpip from the given address on the server to the
-     * given address on the client.
-     * </P>
-     * The remote host name is the address to bind to on the server:
-     * <ul>
-     * <li>"" means that connections are to be accepted on all protocol families
-     * supported by the SSH implementation</li>
-     * <li>"0.0.0.0" means to listen on all IPv4 addresses</li>
-     * <li>"::" means to listen on all IPv6 addresses</li>
-     * <li>"localhost" means to listen on all protocol families supported by the SSH
-     * implementation on loopback addresses only, [RFC3330] and RFC3513]</li>
-     * <li>"127.0.0.1" and "::1" indicate listening on the loopback interfaces for
-     * IPv4 and IPv6 respectively</li>
-     * </ul>
-     *
-     * @param local  The local address
-     * @param remote The remote address
-     * @return The bound {@link SshdSocketAddress}
-     * @throws IOException If failed to create the requested binding
-     */
-    SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws IOException;
-
-    /**
-     * Stop forwarding of the given remote address.
-     *
-     * @param remote The remote address
-     * @throws IOException If failed to cancel the requested binding
-     */
-    void stopRemotePortForwarding(SshdSocketAddress remote) throws IOException;
-
-    /**
-     * Start dynamic local port forwarding using a SOCKS proxy.
+     * Starts a local port forwarding and returns a tracker that stops the
+     * forwarding when the {@code close()} method is called. This tracker can
+     * be used in a {@code try-with-resource} block to ensure cleanup of the
+     * set up forwarding.
      *
      * @param local The local address
-     * @return The bound {@link SshdSocketAddress}
-     * @throws IOException If failed to create the requested binding
+     * @param remote The remote address
+     * @return The tracker instance
+     * @throws IOException If failed to set up the requested forwarding
+     * @see #startLocalPortForwarding(SshdSocketAddress, SshdSocketAddress)
      */
-    SshdSocketAddress startDynamicPortForwarding(SshdSocketAddress local) throws IOException;
+    default ExplicitPortForwardingTracker createLocalPortForwardingTracker(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
+        return new ExplicitPortForwardingTracker(this, true, local, remote, startLocalPortForwarding(local, remote));
+    }
 
     /**
-     * Stop a previously started dynamic port forwarding.
+     * Starts a remote port forwarding and returns a tracker that stops the
+     * forwarding when the {@code close()} method is called. This tracker can
+     * be used in a {@code try-with-resource} block to ensure cleanup of the
+     * set up forwarding.
      *
      * @param local The local address
-     * @throws IOException If failed to cancel the requested binding
+     * @param remote The remote address
+     * @return The tracker instance
+     * @throws IOException If failed to set up the requested forwarding
+     * @see #startRemotePortForwarding(SshdSocketAddress, SshdSocketAddress)
      */
-    void stopDynamicPortForwarding(SshdSocketAddress local) throws IOException;
+    default ExplicitPortForwardingTracker createRemotePortForwardingTracker(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
+        return new ExplicitPortForwardingTracker(this, false, local, remote, startRemotePortForwarding(remote, local));
+    }
+
+    /**
+     * Starts a dynamic port forwarding and returns a tracker that stops the
+     * forwarding when the {@code close()} method is called. This tracker can
+     * be used in a {@code try-with-resource} block to ensure cleanup of the
+     * set up forwarding.
+     *
+     * @param local The local address
+     * @return The tracker instance
+     * @throws IOException If failed to set up the requested forwarding
+     * @see #startDynamicPortForwarding(SshdSocketAddress)
+     */
+    default DynamicPortForwardingTracker createDynamicPortForwardingTracker(SshdSocketAddress local) throws IOException {
+        return new DynamicPortForwardingTracker(this, local, startDynamicPortForwarding(local));
+    }
 
     /**
      * Wait for any one of a specific state to be signaled.
