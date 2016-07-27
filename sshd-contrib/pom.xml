@@ -27,6 +27,15 @@
         <version>1.2.1-SNAPSHOT</version>
     </parent>
 
+    <!-- NOTE ::: NOTE ::: NOTE ::: NOTE ::: NOTE ::: NOTE ::: NOTE ::: NOTE :::
+
+         This artifact contains experimental code that may find its way some time
+         in the future to a standard artifact. It is also subject to changes and/or
+         deletion without any prior announcement. Therefore, any code that relies
+         on it should also store a copy of the sources in case the classes it used
+         it are modified or deleted.
+    -->
+
     <artifactId>sshd-contrib</artifactId>
     <name>Apache Mina SSHD :: Contributions</name>
     <packaging>jar</packaging>
