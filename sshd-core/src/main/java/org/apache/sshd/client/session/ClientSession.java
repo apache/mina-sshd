@@ -270,13 +270,13 @@ public interface ClientSession
      * be used in a {@code try-with-resource} block to ensure cleanup of the
      * set up forwarding.
      *
-     * @param local The local address
      * @param remote The remote address
+     * @param local The local address
      * @return The tracker instance
      * @throws IOException If failed to set up the requested forwarding
      * @see #startRemotePortForwarding(SshdSocketAddress, SshdSocketAddress)
      */
-    default ExplicitPortForwardingTracker createRemotePortForwardingTracker(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
+    default ExplicitPortForwardingTracker createRemotePortForwardingTracker(SshdSocketAddress remote, SshdSocketAddress local) throws IOException {
         return new ExplicitPortForwardingTracker(this, false, local, remote, startRemotePortForwarding(remote, local));
     }
 
