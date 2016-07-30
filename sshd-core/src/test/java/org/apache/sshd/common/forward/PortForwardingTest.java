@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.forward;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
@@ -35,6 +36,8 @@ import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
@@ -267,7 +270,7 @@ public class PortForwardingTest extends BaseTestSupport {
 
     @Test
     public void testRemoteForwardingNative() throws Exception {
-        try (ClientSession session = createNativeSession()) {
+        try (ClientSession session = createNativeSession(null)) {
             SshdSocketAddress remote = new SshdSocketAddress("", 0);
             SshdSocketAddress local = new SshdSocketAddress(TEST_LOCALHOST, echoPort);
             SshdSocketAddress bound = session.startRemotePortForwarding(remote, local);
@@ -295,9 +298,76 @@ public class PortForwardingTest extends BaseTestSupport {
 
     @Test
     public void testRemoteForwardingNativeBigPayload() throws Exception {
-        try (ClientSession session = createNativeSession();
+        final AtomicReference<SshdSocketAddress> localAddressHolder = new AtomicReference<>();
+        final AtomicReference<SshdSocketAddress> remoteAddressHolder = new AtomicReference<>();
+        final AtomicReference<SshdSocketAddress> boundAddressHolder = new AtomicReference<>();
+        final AtomicInteger tearDownSignal = new AtomicInteger(0);
+        @SuppressWarnings("checkstyle:anoninnerlength")
+        PortForwardingEventListener listener = new PortForwardingEventListener() {
+            @Override
+            public void tornDownExplicitTunnel(
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, Throwable reason)
+                            throws IOException {
+                assertFalse("Unexpected local tunnel has been torn down: address=" + address, localForwarding);
+                assertEquals("Tear down indication not invoked", 1, tearDownSignal.get());
+            }
+
+            @Override
+            public void tornDownDynamicTunnel(
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, Throwable reason) throws IOException {
+                throw new UnsupportedOperationException("Unexpected dynamic tunnel torn down indication: session=" + session + ", address=" + address);
+            }
+
+            @Override
+            public void tearingDownExplicitTunnel(
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding)
+                            throws IOException {
+                assertFalse("Unexpected local tunnel being torn down: address=" + address, localForwarding);
+                assertEquals("Duplicate tear down signalling", 1, tearDownSignal.incrementAndGet());
+            }
+
+            @Override
+            public void tearingDownDynamicTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress address)
+                    throws IOException {
+                throw new UnsupportedOperationException("Unexpected dynamic tunnel tearing down indication: session=" + session + ", address=" + address);
+            }
+
+            @Override
+            public void establishingExplicitTunnel(
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding)
+                            throws IOException {
+                assertFalse("Unexpected local tunnel being established: local=" + local + ", remote=" + remote, localForwarding);
+                assertNull("Duplicate establishment indication call for local address=" + local, localAddressHolder.getAndSet(local));
+                assertNull("Duplicate establishment indication call for remote address=" + remote, remoteAddressHolder.getAndSet(remote));
+            }
+
+            @Override
+            public void establishingDynamicTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress local)
+                    throws IOException {
+                throw new UnsupportedOperationException("Unexpected dynamic tunnel establishing indication: session=" + session + ", address=" + local);
+            }
+
+            @Override
+            public void establishedExplicitTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress local,
+                    SshdSocketAddress remote, boolean localForwarding, SshdSocketAddress boundAddress, Throwable reason)
+                            throws IOException {
+                assertFalse("Unexpected local tunnel has been established: local=" + local + ", remote=" + remote + ", bound=" + boundAddress, localForwarding);
+                assertSame("Mismatched established tunnel local address", local, localAddressHolder.get());
+                assertSame("Mismatched established tunnel remote address", remote, remoteAddressHolder.get());
+                assertNull("Duplicate establishment indication call for bound address=" + boundAddress, boundAddressHolder.getAndSet(boundAddress));
+            }
+
+            @Override
+            public void establishedDynamicTunnel(
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress local, SshdSocketAddress boundAddress, Throwable reason)
+                            throws IOException {
+                throw new UnsupportedOperationException("Unexpected dynamic tunnel established indication: session=" + session + ", address=" + boundAddress);
+            }
+        };
+
+        try (ClientSession session = createNativeSession(listener);
              ExplicitPortForwardingTracker tracker =
-                     session.createRemotePortForwardingTracker(new SshdSocketAddress(TEST_LOCALHOST, echoPort), new SshdSocketAddress("", 0))) {
+                     session.createRemotePortForwardingTracker(new SshdSocketAddress("", 0), new SshdSocketAddress(TEST_LOCALHOST, echoPort))) {
             assertTrue("Tracker not marked as open", tracker.isOpen());
             assertFalse("Tracker not marked as remote", tracker.isLocalForwarding());
 
@@ -324,7 +394,13 @@ public class PortForwardingTest extends BaseTestSupport {
                 tracker.close();
             }
             assertFalse("Tracker not marked as closed", tracker.isOpen());
+        } finally {
+            client.removePortForwardingEventListener(listener);
         }
+
+        assertNotNull("Local tunnel address not indicated", localAddressHolder.getAndSet(null));
+        assertNotNull("Remote tunnel address not indicated", remoteAddressHolder.getAndSet(null));
+        assertNotNull("Bound tunnel address not indicated", boundAddressHolder.getAndSet(null));
     }
 
     @Test
@@ -360,7 +436,74 @@ public class PortForwardingTest extends BaseTestSupport {
 
     @Test
     public void testLocalForwardingNative() throws Exception {
-        try (ClientSession session = createNativeSession();
+        final AtomicReference<SshdSocketAddress> localAddressHolder = new AtomicReference<>();
+        final AtomicReference<SshdSocketAddress> remoteAddressHolder = new AtomicReference<>();
+        final AtomicReference<SshdSocketAddress> boundAddressHolder = new AtomicReference<>();
+        final AtomicInteger tearDownSignal = new AtomicInteger(0);
+        @SuppressWarnings("checkstyle:anoninnerlength")
+        PortForwardingEventListener listener = new PortForwardingEventListener() {
+            @Override
+            public void tornDownExplicitTunnel(
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, Throwable reason)
+                            throws IOException {
+                assertTrue("Unexpected remote tunnel has been torn down: address=" + address, localForwarding);
+                assertEquals("Tear down indication not invoked", 1, tearDownSignal.get());
+            }
+
+            @Override
+            public void tornDownDynamicTunnel(
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, Throwable reason) throws IOException {
+                throw new UnsupportedOperationException("Unexpected dynamic tunnel torn down indication: session=" + session + ", address=" + address);
+            }
+
+            @Override
+            public void tearingDownExplicitTunnel(
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding)
+                            throws IOException {
+                assertTrue("Unexpected remote tunnel being torn down: address=" + address, localForwarding);
+                assertEquals("Duplicate tear down signalling", 1, tearDownSignal.incrementAndGet());
+            }
+
+            @Override
+            public void tearingDownDynamicTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress address)
+                    throws IOException {
+                throw new UnsupportedOperationException("Unexpected dynamic tunnel tearing down indication: session=" + session + ", address=" + address);
+            }
+
+            @Override
+            public void establishingExplicitTunnel(
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding)
+                            throws IOException {
+                assertTrue("Unexpected remote tunnel being established: local=" + local + ", remote=" + remote, localForwarding);
+                assertNull("Duplicate establishment indication call for local address=" + local, localAddressHolder.getAndSet(local));
+                assertNull("Duplicate establishment indication call for remote address=" + remote, remoteAddressHolder.getAndSet(remote));
+            }
+
+            @Override
+            public void establishingDynamicTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress local)
+                    throws IOException {
+                throw new UnsupportedOperationException("Unexpected dynamic tunnel establishing indication: session=" + session + ", address=" + local);
+            }
+
+            @Override
+            public void establishedExplicitTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress local,
+                    SshdSocketAddress remote, boolean localForwarding, SshdSocketAddress boundAddress, Throwable reason)
+                            throws IOException {
+                assertTrue("Unexpected remote tunnel has been established: local=" + local + ", remote=" + remote + ", bound=" + boundAddress, localForwarding);
+                assertSame("Mismatched established tunnel local address", local, localAddressHolder.get());
+                assertSame("Mismatched established tunnel remote address", remote, remoteAddressHolder.get());
+                assertNull("Duplicate establishment indication call for bound address=" + boundAddress, boundAddressHolder.getAndSet(boundAddress));
+            }
+
+            @Override
+            public void establishedDynamicTunnel(
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress local, SshdSocketAddress boundAddress, Throwable reason)
+                            throws IOException {
+                throw new UnsupportedOperationException("Unexpected dynamic tunnel established indication: session=" + session + ", address=" + boundAddress);
+            }
+        };
+
+        try (ClientSession session = createNativeSession(listener);
              ExplicitPortForwardingTracker tracker =
                  session.createLocalPortForwardingTracker(new SshdSocketAddress("", 0), new SshdSocketAddress(TEST_LOCALHOST, echoPort))) {
             assertTrue("Tracker not marked as open", tracker.isOpen());
@@ -387,12 +530,18 @@ public class PortForwardingTest extends BaseTestSupport {
                 tracker.close();
             }
             assertFalse("Tracker not marked as closed", tracker.isOpen());
+        } finally {
+            client.removePortForwardingEventListener(listener);
         }
+
+        assertNotNull("Local tunnel address not indicated", localAddressHolder.getAndSet(null));
+        assertNotNull("Remote tunnel address not indicated", remoteAddressHolder.getAndSet(null));
+        assertNotNull("Bound tunnel address not indicated", boundAddressHolder.getAndSet(null));
     }
 
     @Test
     public void testLocalForwardingNativeReuse() throws Exception {
-        try (ClientSession session = createNativeSession()) {
+        try (ClientSession session = createNativeSession(null)) {
             SshdSocketAddress local = new SshdSocketAddress("", 0);
             SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, echoPort);
             SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
@@ -406,7 +555,7 @@ public class PortForwardingTest extends BaseTestSupport {
 
     @Test
     public void testLocalForwardingNativeBigPayload() throws Exception {
-        try (ClientSession session = createNativeSession()) {
+        try (ClientSession session = createNativeSession(null)) {
             String expected = getCurrentTestName();
             byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
             byte[] buf = new byte[bytes.length + Long.SIZE];
@@ -436,7 +585,7 @@ public class PortForwardingTest extends BaseTestSupport {
 
     @Test
     public void testForwardingChannel() throws Exception {
-        try (ClientSession session = createNativeSession()) {
+        try (ClientSession session = createNativeSession(null)) {
             SshdSocketAddress local = new SshdSocketAddress("", 0);
             SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, echoPort);
 
@@ -594,11 +743,14 @@ public class PortForwardingTest extends BaseTestSupport {
         return session;
     }
 
-    protected ClientSession createNativeSession() throws Exception {
+    protected ClientSession createNativeSession(PortForwardingEventListener listener) throws Exception {
         client = setupTestClient();
         PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 2048);
         PropertyResolverUtils.updateProperty(client, FactoryManager.MAX_PACKET_SIZE, 256);
         client.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
+        if (listener != null) {
+            client.addPortForwardingEventListener(listener);
+        }
         client.start();
 
         ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshPort).verify(7L, TimeUnit.SECONDS).getSession();

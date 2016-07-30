@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,6 +43,7 @@ import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.OpenChannelException;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.forward.TcpipForwarder;
 import org.apache.sshd.common.forward.TcpipForwarderFactory;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -49,6 +51,7 @@ import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -63,7 +66,9 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
  * @param <S> Type of {@link AbstractSession} being used
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractConnectionService<S extends AbstractSession> extends AbstractInnerCloseable implements ConnectionService {
+public abstract class AbstractConnectionService<S extends AbstractSession>
+                extends AbstractInnerCloseable
+                implements ConnectionService {
     /**
      * Property that can be used to configure max. allowed concurrent active channels
      *
@@ -94,11 +99,34 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
     private final AtomicReference<X11ForwardSupport> x11ForwardHolder = new AtomicReference<>();
     private final AtomicReference<TcpipForwarder> tcpipForwarderHolder = new AtomicReference<>();
     private final AtomicBoolean allowMoreSessions = new AtomicBoolean(true);
+    private final Collection<PortForwardingEventListener> listeners =
+            EventListenerUtils.<PortForwardingEventListener>synchronizedListenersSet();
+    private final PortForwardingEventListener listenerProxy;
 
     private final S sessionInstance;
 
     protected AbstractConnectionService(S session) {
         sessionInstance = ValidateUtils.checkNotNull(session, "No session");
+        listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, getClass().getClassLoader(), listeners);
+    }
+
+    @Override
+    public PortForwardingEventListener getPortForwardingEventListenerProxy() {
+        return listenerProxy;
+    }
+
+    @Override
+    public void addPortForwardingEventListener(PortForwardingEventListener listener) {
+        listeners.add(Objects.requireNonNull(listener, "No listener to add"));
+    }
+
+    @Override
+    public void removePortForwardingEventListener(PortForwardingEventListener listener) {
+        if (listener == null) {
+            return;
+        }
+
+        listeners.remove(listener);
     }
 
     public Collection<Channel> getChannels() {
@@ -140,7 +168,10 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
                 ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
         TcpipForwarderFactory factory =
                 ValidateUtils.checkNotNull(manager.getTcpipForwarderFactory(), "No forwarder factory");
-        return factory.create(this);
+        TcpipForwarder forwarder = factory.create(this);
+        forwarder.addPortForwardingEventListener(getPortForwardingEventListenerProxy());
+        forwarder.addPortForwardingEventListener(session.getPortForwardingEventListenerProxy());
+        return forwarder;
     }
 
     @Override
@@ -184,6 +215,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession> exten
         if (log.isDebugEnabled()) {
             log.debug("getAgentForwardSupport({}) created instance", session);
         }
+
         return agentForward;
     }
 

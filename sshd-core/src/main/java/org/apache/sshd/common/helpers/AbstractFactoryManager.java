@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +40,7 @@ import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.config.VersionProperties;
 import org.apache.sshd.common.file.FileSystemFactory;
+import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.forward.TcpipForwarderFactory;
 import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
@@ -78,10 +78,15 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     protected List<RequestHandler<ConnectionService>> globalRequestHandlers;
     protected SessionTimeoutListener sessionTimeoutListener;
     protected ScheduledFuture<?> timeoutListenerFuture;
-    protected final Collection<SessionListener> sessionListeners = new CopyOnWriteArraySet<>();
+    protected final Collection<SessionListener> sessionListeners =
+            EventListenerUtils.<SessionListener>synchronizedListenersSet();
     protected final SessionListener sessionListenerProxy;
-    protected final Collection<ChannelListener> channelListeners = new CopyOnWriteArraySet<>();
+    protected final Collection<ChannelListener> channelListeners =
+            EventListenerUtils.<ChannelListener>synchronizedListenersSet();
     protected final ChannelListener channelListenerProxy;
+    protected final Collection<PortForwardingEventListener> tunnelListeners =
+            EventListenerUtils.<PortForwardingEventListener>synchronizedListenersSet();
+    protected final PortForwardingEventListener tunnelListenerProxy;
 
     private final Map<String, Object> properties = new ConcurrentHashMap<>();
     private final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
@@ -92,6 +97,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
         ClassLoader loader = getClass().getClassLoader();
         sessionListenerProxy = EventListenerUtils.proxyWrapper(SessionListener.class, loader, sessionListeners);
         channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, loader, channelListeners);
+        tunnelListenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, loader, tunnelListeners);
     }
 
     @Override
@@ -327,6 +333,40 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     @Override
     public ChannelListener getChannelListenerProxy() {
         return channelListenerProxy;
+    }
+
+    @Override
+    public PortForwardingEventListener getPortForwardingEventListenerProxy() {
+        return tunnelListenerProxy;
+    }
+
+    @Override
+    public void addPortForwardingEventListener(PortForwardingEventListener listener) {
+        ValidateUtils.checkNotNull(listener, "addChannelListener(%s) null instance", this);
+        // avoid race conditions on notifications while session is being closed
+        if (!isOpen()) {
+            log.warn("addPortForwardingEventListener({})[{}] ignore registration while session is closing", this, listener);
+            return;
+        }
+
+        if (this.tunnelListeners.add(listener)) {
+            log.trace("addPortForwardingEventListener({})[{}] registered", this, listener);
+        } else {
+            log.trace("addPortForwardingEventListener({})[{}] ignored duplicate", this, listener);
+        }
+    }
+
+    @Override
+    public void removePortForwardingEventListener(PortForwardingEventListener listener) {
+        if (listener == null) {
+            return;
+        }
+
+        if (this.tunnelListeners.remove(listener)) {
+            log.trace("removePortForwardingEventListener({})[{}] removed", this, listener);
+        } else {
+            log.trace("removePortForwardingEventListener({})[{}] not registered", this, listener);
+        }
     }
 
     protected void setupSessionTimeout(final AbstractSessionFactory<?, ?> sessionFactory) {

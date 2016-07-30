@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -60,6 +59,7 @@ import org.apache.sshd.common.cipher.CipherInformation;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.compression.CompressionInformation;
 import org.apache.sshd.common.digest.Digest;
+import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.KeyExchangeFuture;
@@ -134,14 +134,23 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     /**
      * Session listeners container
      */
-    protected final Collection<SessionListener> sessionListeners = new CopyOnWriteArraySet<>();
+    protected final Collection<SessionListener> sessionListeners =
+            EventListenerUtils.<SessionListener>synchronizedListenersSet();
     protected final SessionListener sessionListenerProxy;
 
     /**
      * Channel events listener container
      */
-    protected final Collection<ChannelListener> channelListeners = new CopyOnWriteArraySet<>();
+    protected final Collection<ChannelListener> channelListeners =
+            EventListenerUtils.<ChannelListener>synchronizedListenersSet();
     protected final ChannelListener channelListenerProxy;
+
+    /**
+     * Port forwarding events listener container
+     */
+    protected final Collection<PortForwardingEventListener> tunnelListeners =
+            EventListenerUtils.<PortForwardingEventListener>synchronizedListenersSet();
+    protected final PortForwardingEventListener tunnelListenerProxy;
 
     /*
      * Key exchange support
@@ -256,10 +265,12 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         ClassLoader loader = getClass().getClassLoader();
         sessionListenerProxy = EventListenerUtils.proxyWrapper(SessionListener.class, loader, sessionListeners);
         channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, loader, channelListeners);
+        tunnelListenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, loader, tunnelListeners);
 
         // Delegate the task of further notifications to the session
         addSessionListener(factoryManager.getSessionListenerProxy());
         addChannelListener(factoryManager.getChannelListenerProxy());
+        addPortForwardingEventListener(factoryManager.getPortForwardingEventListenerProxy());
     }
 
     /**
@@ -2052,6 +2063,40 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         return channelListenerProxy;
     }
 
+    @Override
+    public PortForwardingEventListener getPortForwardingEventListenerProxy() {
+        return tunnelListenerProxy;
+    }
+
+    @Override
+    public void addPortForwardingEventListener(PortForwardingEventListener listener) {
+        ValidateUtils.checkNotNull(listener, "addPortForwardingEventListener(%s) null instance", this);
+        // avoid race conditions on notifications while session is being closed
+        if (!isOpen()) {
+            log.warn("addPortForwardingEventListener({})[{}] ignore registration while session is closing", this, listener);
+            return;
+        }
+
+        if (this.tunnelListeners.add(listener)) {
+            log.trace("addPortForwardingEventListener({})[{}] registered", this, listener);
+        } else {
+            log.trace("addPortForwardingEventListener({})[{}] ignored duplicate", this, listener);
+        }
+    }
+
+    @Override
+    public void removePortForwardingEventListener(PortForwardingEventListener listener) {
+        if (listener == null) {
+            return;
+        }
+
+        if (this.tunnelListeners.remove(listener)) {
+            log.trace("removePortForwardingEventListener({})[{}] removed", this, listener);
+        } else {
+            log.trace("removePortForwardingEventListener({})[{}] not registered", this, listener);
+        }
+    }
+
     /**
      * Sends a session event to all currently registered session listeners
      *
@@ -2261,7 +2306,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected abstract void checkKeys() throws IOException;
 
     protected void receiveKexInit(Buffer buffer) throws IOException {
-        Map<KexProposalOption, String> proposal = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
+        Map<KexProposalOption, String> proposal = new EnumMap<>(KexProposalOption.class);
         byte[] seed = receiveKexInit(buffer, proposal);
         receiveKexInit(proposal, seed);
     }
@@ -2336,7 +2381,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected Pair<TimeoutStatus, String> checkAuthenticationTimeout(long now, long authTimeoutMs) {
         long authDiff = now - authTimeoutStart;
         if ((!authed) && (authTimeoutMs > 0L) && (authDiff > authTimeoutMs)) {
-            return new Pair<TimeoutStatus, String>(TimeoutStatus.AuthTimeout, "Session has timed out waiting for authentication after " + authTimeoutMs + " ms.");
+            return new Pair<>(TimeoutStatus.AuthTimeout, "Session has timed out waiting for authentication after " + authTimeoutMs + " ms.");
         } else {
             return null;
         }
@@ -2356,7 +2401,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected Pair<TimeoutStatus, String> checkIdleTimeout(long now, long idleTimeoutMs) {
         long idleDiff = now - idleTimeoutStart;
         if ((idleTimeoutMs > 0L) && (idleDiff > idleTimeoutMs)) {
-            return new Pair<TimeoutStatus, String>(TimeoutStatus.IdleTimeout, "User session has timed out idling after " + idleTimeoutMs + " ms.");
+            return new Pair<>(TimeoutStatus.IdleTimeout, "User session has timed out idling after " + idleTimeoutMs + " ms.");
         } else {
             return null;
         }

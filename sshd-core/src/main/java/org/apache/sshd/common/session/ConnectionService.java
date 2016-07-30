@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
 import org.apache.sshd.common.forward.TcpipForwarder;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 
@@ -31,7 +32,7 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ConnectionService extends Service {
+public interface ConnectionService extends Service, PortForwardingEventListenerManager {
     /**
      * Register a newly created channel with a new unique identifier
      *

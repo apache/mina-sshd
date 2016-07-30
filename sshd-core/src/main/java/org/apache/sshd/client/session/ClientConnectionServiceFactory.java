@@ -22,14 +22,26 @@ import java.io.IOException;
 
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
+import org.apache.sshd.common.forward.PortForwardingEventListener;
+import org.apache.sshd.common.session.AbstractConnectionServiceFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ClientConnectionServiceFactory implements ServiceFactory {
-    public static final ClientConnectionServiceFactory INSTANCE = new ClientConnectionServiceFactory();
+public class ClientConnectionServiceFactory extends AbstractConnectionServiceFactory implements ServiceFactory {
+    public static final ClientConnectionServiceFactory INSTANCE = new ClientConnectionServiceFactory() {
+        @Override
+        public void addPortForwardingEventListener(PortForwardingEventListener listener) {
+            throw new UnsupportedOperationException("addPortForwardingListener(" + listener + ") N/A on default instance");
+        }
+
+        @Override
+        public void removePortForwardingEventListener(PortForwardingEventListener listener) {
+            throw new UnsupportedOperationException("removePortForwardingEventListener(" + listener + ") N/A on default instance");
+        }
+    };
 
     public ClientConnectionServiceFactory() {
         super();
@@ -43,6 +55,8 @@ public class ClientConnectionServiceFactory implements ServiceFactory {
     @Override
     public Service create(Session session) throws IOException {
         ValidateUtils.checkTrue(session instanceof AbstractClientSession, "Not a client sesssion: %s", session);
-        return new ClientConnectionService((AbstractClientSession) session);
+        ClientConnectionService service = new ClientConnectionService((AbstractClientSession) session);
+        service.addPortForwardingEventListener(getPortForwardingEventListenerProxy());
+        return service;
     }
 }

@@ -16,37 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.forward;
+
+package org.apache.sshd.common.session;
 
 import java.util.Collection;
 import java.util.Objects;
 
-import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.forward.PortForwardingEventListener;
+import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
 import org.apache.sshd.common.util.EventListenerUtils;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * The default {@link TcpipForwarderFactory} implementation.
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultTcpipForwarderFactory implements TcpipForwarderFactory, PortForwardingEventListenerManager {
-    public static final DefaultTcpipForwarderFactory INSTANCE = new DefaultTcpipForwarderFactory() {
-        @Override
-        public void addPortForwardingEventListener(PortForwardingEventListener listener) {
-            throw new UnsupportedOperationException("addPortForwardingListener(" + listener + ") N/A on default instance");
-        }
-
-        @Override
-        public void removePortForwardingEventListener(PortForwardingEventListener listener) {
-            throw new UnsupportedOperationException("removePortForwardingEventListener(" + listener + ") N/A on default instance");
-        }
-    };
-
+public abstract class AbstractConnectionServiceFactory extends AbstractLoggingBean implements PortForwardingEventListenerManager {
     private final Collection<PortForwardingEventListener> listeners =
             EventListenerUtils.<PortForwardingEventListener>synchronizedListenersSet();
     private final PortForwardingEventListener listenerProxy;
 
-    public DefaultTcpipForwarderFactory() {
+    protected AbstractConnectionServiceFactory() {
         listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, getClass().getClassLoader(), listeners);
     }
 
@@ -67,12 +56,5 @@ public class DefaultTcpipForwarderFactory implements TcpipForwarderFactory, Port
         }
 
         listeners.remove(listener);
-    }
-
-    @Override
-    public TcpipForwarder create(ConnectionService service) {
-        TcpipForwarder forwarder = new DefaultTcpipForwarder(service);
-        forwarder.addPortForwardingEventListener(getPortForwardingEventListenerProxy());
-        return forwarder;
     }
 }

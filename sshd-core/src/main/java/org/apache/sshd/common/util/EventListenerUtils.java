@@ -22,15 +22,105 @@ package org.apache.sshd.common.util;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.EventListener;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class EventListenerUtils {
+    /**
+     * A special &quot;comparator&quot; whose only purpose is to ensure
+     * there are no same references in a listener's set
+     */
+    @SuppressWarnings("checkstyle:anoninnerlength")
+    public static final Comparator<EventListener> LISTENER_INSTANCE_COMPARATOR =
+        new Comparator<EventListener>() {
+            @Override
+            public int compare(EventListener l1, EventListener l2) {
+                if (l1 == l2) {
+                    return 0;
+                } else if (l1 == null) {
+                    return 1;
+                } else if (l2 == null) {
+                    return -1;
+                }
+
+                Class<?> c1 = l1.getClass();
+                Class<?> c2 = l2.getClass();
+                boolean checkHashCodes = true;
+                if (Proxy.isProxyClass(c1)) {
+                    if (Proxy.isProxyClass(c2)) {
+                        checkHashCodes = false; // cannot call hashCode on a proxy
+                    } else {
+                        return 1;
+                    }
+                } else if (Proxy.isProxyClass(c2)) {
+                    return -1;
+                }
+
+                if (checkHashCodes) {
+                    int nRes = Integer.compare(l1.hashCode(), l2.hashCode());
+                    if (nRes != 0) {
+                        return nRes;
+                    }
+                }
+
+                int nRes = Integer.compare(System.identityHashCode(l1), System.identityHashCode(l2));
+                if (nRes != 0) {
+                    return nRes;
+                }
+
+                if (c1 != c2) {
+                    return c1.getName().compareTo(c2.getName());
+                }
+
+                String s1 = Objects.toString(l1.toString(), "");
+                String s2 = Objects.toString(l2.toString(), "");
+                nRes = s1.compareTo(s2);
+                if (nRes != 0) {
+                    return nRes;
+                }
+                throw new UnsupportedOperationException("Ran out of options to compare instance of " + s1 + " vs. " + s2);
+            }
+    };
+
     private EventListenerUtils() {
         throw new UnsupportedOperationException("No instance");
+    }
+
+    /**
+     * @param <L> Type of {@link EventListener} contained in the set
+     * @param listeners The listeners to pre-add to the create set - ignored
+     * if (@code null}/empty
+     * @return A (synchronized) {@link Set} for containing the listeners ensuring
+     * that if same listener instance is added repeatedly only <U>one</U>
+     * instance is actually contained
+     */
+    public static <L extends EventListener> Set<L> synchronizedListenersSet(Collection<? extends L> listeners) {
+        Set<L> s = EventListenerUtils.<L>synchronizedListenersSet();
+        if (GenericUtils.size(listeners) > 0) {
+            s.addAll(listeners);
+        }
+
+        return s;
+    }
+
+    /**
+     * @param <L> Type of {@link EventListener} contained in the set
+     * @return A (synchronized) {@link Set} for containing the listeners ensuring
+     * that if same listener instance is added repeatedly only <U>one</U>
+     * instance is actually contained
+     * @see #LISTENER_INSTANCE_COMPARATOR
+     */
+    public static <L extends EventListener> Set<L> synchronizedListenersSet() {
+        return Collections.synchronizedSet(new TreeSet<L>(LISTENER_INSTANCE_COMPARATOR));
     }
 
     /**

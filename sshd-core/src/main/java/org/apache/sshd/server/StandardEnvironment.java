@@ -21,11 +21,10 @@ package org.apache.sshd.server;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.sshd.common.channel.PtyMode;
+import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -34,7 +33,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class StandardEnvironment extends AbstractLoggingBean implements Environment {
-    private final Map<Signal, Set<SignalListener>> listeners;
+    private final Map<Signal, Collection<SignalListener>> listeners;
     private final Map<String, String> env;
     private final Map<PtyMode, Integer> ptyModes;
 
@@ -83,7 +82,7 @@ public class StandardEnvironment extends AbstractLoggingBean implements Environm
     public void removeSignalListener(SignalListener listener) {
         ValidateUtils.checkNotNull(listener, "No listener instance");
         for (Signal s : Signal.SIGNALS) {
-            Set<SignalListener> ls = getSignalListeners(s, false);
+            Collection<SignalListener> ls = getSignalListeners(s, false);
             if (ls != null) {
                 ls.remove(listener);
             }
@@ -91,7 +90,7 @@ public class StandardEnvironment extends AbstractLoggingBean implements Environm
     }
 
     public void signal(Signal signal) {
-        Set<SignalListener> ls = getSignalListeners(signal, false);
+        Collection<SignalListener> ls = getSignalListeners(signal, false);
         if (log.isDebugEnabled()) {
             log.debug("signal({}) - listeners={}", signal, ls);
         }
@@ -131,17 +130,17 @@ public class StandardEnvironment extends AbstractLoggingBean implements Environm
      *
      * @param signal The specified {@link Signal}
      * @param create If {@code true} and no current listeners are mapped then
-     *               creates a new {@link Set}
-     * @return The {@link Set} of listeners registered for the signal - may be
+     *               creates a new {@link Collection}
+     * @return The {@link Collection} of listeners registered for the signal - may be
      * {@code null} in case <tt>create</tt> is {@code false}
      */
-    protected Set<SignalListener> getSignalListeners(Signal signal, boolean create) {
-        Set<SignalListener> ls = listeners.get(signal);
+    protected Collection<SignalListener> getSignalListeners(Signal signal, boolean create) {
+        Collection<SignalListener> ls = listeners.get(signal);
         if ((ls == null) && create) {
             synchronized (listeners) {
                 ls = listeners.get(signal);
                 if (ls == null) {
-                    ls = new CopyOnWriteArraySet<>();
+                    ls =  EventListenerUtils.<SignalListener>synchronizedListenersSet();
                     listeners.put(signal, ls);
                 }
             }

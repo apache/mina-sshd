@@ -41,6 +41,7 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
+import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -50,6 +51,7 @@ import org.apache.sshd.common.random.SingletonRandomFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -281,6 +283,52 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
 
             @Override
             public void channelClosed(Channel channel, Throwable reason) {
+                // ignored
+            }
+        });
+        Mockito.when(client.getPortForwardingEventListenerProxy()).thenReturn(new PortForwardingEventListener() {
+            @Override
+            public void tornDownExplicitTunnel(Session session, SshdSocketAddress address, boolean localForwarding,
+                    Throwable reason) throws IOException {
+                // ignored
+            }
+
+            @Override
+            public void tornDownDynamicTunnel(Session session, SshdSocketAddress address, Throwable reason) throws IOException {
+                // ignored
+            }
+
+            @Override
+            public void tearingDownExplicitTunnel(Session session, SshdSocketAddress address, boolean localForwarding)
+                    throws IOException {
+                // ignored
+            }
+
+            @Override
+            public void tearingDownDynamicTunnel(Session session, SshdSocketAddress address) throws IOException {
+                // ignored
+            }
+
+            @Override
+            public void establishingExplicitTunnel(Session session, SshdSocketAddress local, SshdSocketAddress remote,
+                    boolean localForwarding) throws IOException {
+                // ignored
+            }
+
+            @Override
+            public void establishingDynamicTunnel(Session session, SshdSocketAddress local) throws IOException {
+                // ignored
+            }
+
+            @Override
+            public void establishedExplicitTunnel(Session session, SshdSocketAddress local, SshdSocketAddress remote,
+                    boolean localForwarding, SshdSocketAddress boundAddress, Throwable reason) throws IOException {
+                // ignored
+            }
+
+            @Override
+            public void establishedDynamicTunnel(Session session, SshdSocketAddress local, SshdSocketAddress boundAddress,
+                    Throwable reason) throws IOException {
                 // ignored
             }
         });

@@ -27,7 +27,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -79,13 +78,14 @@ public abstract class AbstractChannel
     protected final AtomicBoolean initialized = new AtomicBoolean(false);
     protected final AtomicBoolean eofReceived = new AtomicBoolean(false);
     protected final AtomicBoolean eofSent = new AtomicBoolean(false);
-    protected AtomicReference<GracefulState> gracefulState = new AtomicReference<GracefulState>(GracefulState.Opened);
+    protected AtomicReference<GracefulState> gracefulState = new AtomicReference<>(GracefulState.Opened);
     protected final DefaultCloseFuture gracefulFuture = new DefaultCloseFuture(lock);
-    protected final List<RequestHandler<Channel>> handlers = new ArrayList<RequestHandler<Channel>>();
+    protected final List<RequestHandler<Channel>> handlers = new ArrayList<>();
     /**
      * Channel events listener
      */
-    protected final Collection<ChannelListener> channelListeners = new CopyOnWriteArraySet<>();
+    protected final Collection<ChannelListener> channelListeners =
+            EventListenerUtils.<ChannelListener>synchronizedListenersSet();
     protected final ChannelListener channelListenerProxy;
 
     private int id = -1;

@@ -27,6 +27,7 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListenerManager;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.file.FileSystemFactory;
+import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
 import org.apache.sshd.common.forward.TcpipForwarderFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.kex.KexFactoryManager;
@@ -47,6 +48,7 @@ public interface FactoryManager
                 SessionListenerManager,
                 ReservedSessionMessagesManager,
                 ChannelListenerManager,
+                PortForwardingEventListenerManager,
                 AttributeStore,
                 PropertyResolver {
 

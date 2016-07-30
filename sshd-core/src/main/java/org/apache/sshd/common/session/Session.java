@@ -30,6 +30,7 @@ import org.apache.sshd.common.auth.MutableUserHolder;
 import org.apache.sshd.common.channel.ChannelListenerManager;
 import org.apache.sshd.common.cipher.CipherInformation;
 import org.apache.sshd.common.compression.CompressionInformation;
+import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -50,6 +51,7 @@ public interface Session
                 SessionListenerManager,
                 ReservedSessionMessagesManager,
                 ChannelListenerManager,
+                PortForwardingEventListenerManager,
                 FactoryManagerHolder,
                 PropertyResolver,
                 AttributeStore,

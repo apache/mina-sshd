@@ -33,5 +33,4 @@ public interface TcpipForwarderFactory {
      * @return the {@link TcpipForwarder} that will listen for connections and set up forwarding
      */
     TcpipForwarder create(ConnectionService service);
-
 }

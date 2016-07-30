@@ -18,10 +18,12 @@
  */
 package org.apache.sshd.server;
 
+import java.util.EventListener;
+
 /**
  * Define a listener to receive signals
  */
-public interface SignalListener {
+public interface SignalListener extends EventListener {
 
     /**
      * @param signal The received {@link Signal}

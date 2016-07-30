@@ -68,7 +68,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -239,7 +238,7 @@ public class SftpSubsystem
     public static final String ACL_SUPPORTED_MASK_PROP = "sftp-acl-supported-mask";
     public static final Set<Integer> DEFAULT_ACL_SUPPORTED_MASK =
             Collections.unmodifiableSet(
-                    new HashSet<Integer>(Arrays.asList(
+                    new HashSet<>(Arrays.asList(
                             SftpConstants.SSH_ACL_CAP_ALLOW,
                             SftpConstants.SSH_ACL_CAP_DENY,
                             SftpConstants.SSH_ACL_CAP_AUDIT,
@@ -303,7 +302,8 @@ public class SftpSubsystem
 
     private ServerSession serverSession;
     private final AtomicBoolean closed = new AtomicBoolean(false);
-    private final Collection<SftpEventListener> sftpEventListeners = new CopyOnWriteArraySet<>();
+    private final Collection<SftpEventListener> sftpEventListeners =
+            EventListenerUtils.<SftpEventListener>synchronizedListenersSet();
     private final SftpEventListener sftpEventListenerProxy;
 
     /**
@@ -2297,7 +2297,7 @@ public class SftpSubsystem
 
         Map<String, OptionalFeature> extensions = getSupportedClientExtensions();
         int numExtensions = GenericUtils.size(extensions);
-        List<String> extras = (numExtensions <= 0) ? Collections.<String>emptyList() : new ArrayList<String>(numExtensions);
+        List<String> extras = (numExtensions <= 0) ? Collections.<String>emptyList() : new ArrayList<>(numExtensions);
         if (numExtensions > 0) {
             for (Map.Entry<String, OptionalFeature> ee : extensions.entrySet()) {
                 String name = ee.getKey();
@@ -2354,7 +2354,7 @@ public class SftpSubsystem
         }
 
         String[] names = GenericUtils.split(override, ',');
-        Set<Integer> maskValues = new HashSet<Integer>(names.length);
+        Set<Integer> maskValues = new HashSet<>(names.length);
         for (String n : names) {
             Integer v = ValidateUtils.checkNotNull(
                     AclSupportedParser.AclCapabilities.getAclCapabilityValue(n), "Unknown ACL capability: %s", n);
@@ -3004,7 +3004,7 @@ public class SftpSubsystem
     }
 
     protected void setFileAttributes(Path file, Map<String, ?> attributes, LinkOption ... options) throws IOException {
-        Set<String> unsupported = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+        Set<String> unsupported = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         for (Map.Entry<String, ?> ae : attributes.entrySet()) {
             String attribute = ae.getKey();
             Object value = ae.getValue();

@@ -26,6 +26,8 @@ import java.net.Proxy;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoAcceptor;
@@ -37,6 +39,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.forward.DynamicPortForwardingTracker;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
@@ -99,13 +102,78 @@ public class ProxyTest extends BaseTestSupport {
 
     @Test
     public void testSocksProxy() throws Exception {
-        try (ClientSession session = createNativeSession()) {
+        final AtomicReference<SshdSocketAddress> localAddressHolder = new AtomicReference<>();
+        final AtomicReference<SshdSocketAddress> boundAddressHolder = new AtomicReference<>();
+        final AtomicInteger tearDownSignal = new AtomicInteger(0);
+        @SuppressWarnings("checkstyle:anoninnerlength")
+        PortForwardingEventListener listener = new PortForwardingEventListener() {
+            @Override
+            public void tornDownExplicitTunnel(
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, Throwable reason)
+                            throws IOException {
+                throw new UnsupportedOperationException("Unexpected explicit tunnel torn down indication: session=" + session + ", address=" + address);
+            }
+
+            @Override
+            public void tornDownDynamicTunnel(
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, Throwable reason) throws IOException {
+                assertNotNull("Establishment (local) indication not invoked for address=" + address, localAddressHolder.get());
+                assertNotNull("Establishment (bound) indication not invoked for address=" + address, boundAddressHolder.get());
+                assertEquals("No tear down indication", 1, tearDownSignal.get());
+            }
+
+            @Override
+            public void tearingDownExplicitTunnel(
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding)
+                            throws IOException {
+                throw new UnsupportedOperationException("Unexpected explicit tunnel tear down indication: session=" + session + ", address=" + address);
+            }
+
+            @Override
+            public void tearingDownDynamicTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress address)
+                    throws IOException {
+                assertNotNull("Establishment (local) indication not invoked for address=" + address, localAddressHolder.get());
+                assertNotNull("Establishment (bound) indication not invoked for address=" + address, boundAddressHolder.get());
+                assertEquals("Multiple tearing down indications", 1, tearDownSignal.incrementAndGet());
+            }
+
+            @Override
+            public void establishingExplicitTunnel(
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding)
+                            throws IOException {
+                throw new UnsupportedOperationException("Unexpected explicit tunnel establishment indication: session=" + session + ", address=" + local);
+            }
+
+            @Override
+            public void establishingDynamicTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress local)
+                    throws IOException {
+                assertNull("Multiple calls to establishment indicator", localAddressHolder.getAndSet(local));
+            }
+
+            @Override
+            public void establishedExplicitTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress local,
+                    SshdSocketAddress remote, boolean localForwarding, SshdSocketAddress boundAddress, Throwable reason)
+                            throws IOException {
+                throw new UnsupportedOperationException("Unexpected explicit tunnel established indication: session=" + session + ", address=" + boundAddress);
+            }
+
+            @Override
+            public void establishedDynamicTunnel(
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress local, SshdSocketAddress boundAddress, Throwable reason)
+                            throws IOException {
+                assertSame("Establishment indication not invoked", local, localAddressHolder.get());
+                assertNull("Multiple calls to establishment indicator", boundAddressHolder.getAndSet(boundAddress));
+            }
+        };
+
+        try (ClientSession session = createNativeSession(listener)) {
             String expected = getCurrentTestName();
             byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
             byte[] buf = new byte[bytes.length + Long.SIZE];
 
             SshdSocketAddress dynamic;
-            try (DynamicPortForwardingTracker tracker = session.createDynamicPortForwardingTracker(new SshdSocketAddress(TEST_LOCALHOST, 0))) {
+            try (DynamicPortForwardingTracker tracker =
+                    session.createDynamicPortForwardingTracker(new SshdSocketAddress(TEST_LOCALHOST, 0))) {
                 dynamic = tracker.getBoundAddress();
                 assertTrue("Tracker not marked as open", tracker.isOpen());
 
@@ -128,7 +196,12 @@ public class ProxyTest extends BaseTestSupport {
 
                 tracker.close();
                 assertFalse("Tracker not marked as closed", tracker.isOpen());
+            } finally {
+                client.removePortForwardingEventListener(listener);
             }
+
+            assertNotNull("Local tunnel address not indicated", localAddressHolder.getAndSet(null));
+            assertNotNull("Bound tunnel address not indicated", boundAddressHolder.getAndSet(null));
 
             try {
                 try (Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(TEST_LOCALHOST, dynamic.getPort())))) {
@@ -143,11 +216,14 @@ public class ProxyTest extends BaseTestSupport {
         }
     }
 
-    protected ClientSession createNativeSession() throws Exception {
+    protected ClientSession createNativeSession(PortForwardingEventListener listener) throws Exception {
         client = setupTestClient();
         PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 2048);
         PropertyResolverUtils.updateProperty(client, FactoryManager.MAX_PACKET_SIZE, 256);
         client.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
+        if (listener != null) {
+            client.addPortForwardingEventListener(listener);
+        }
         client.start();
 
         ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshPort).verify(7L, TimeUnit.SECONDS).getSession();

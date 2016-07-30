@@ -24,7 +24,7 @@ import java.io.IOException;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
-public interface TcpipForwarder extends PortForwardingManager, Closeable {
+public interface TcpipForwarder extends PortForwardingManager, PortForwardingEventListenerManager, Closeable {
     /**
      * @param remotePort The remote port
      * @return The local {@link SshdSocketAddress} that the remote port is forwarded to

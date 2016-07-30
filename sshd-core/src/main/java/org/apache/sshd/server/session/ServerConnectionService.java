@@ -26,7 +26,9 @@ import org.apache.sshd.common.session.helpers.AbstractConnectionService;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ServerConnectionService extends AbstractConnectionService<AbstractServerSession> implements ServerSessionHolder {
+public class ServerConnectionService
+        extends AbstractConnectionService<AbstractServerSession>
+        implements ServerSessionHolder {
     protected ServerConnectionService(AbstractServerSession s) throws SshException {
         super(s);
 
