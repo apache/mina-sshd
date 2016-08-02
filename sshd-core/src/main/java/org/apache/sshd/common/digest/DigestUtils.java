@@ -193,8 +193,27 @@ public final class DigestUtils {
      * @param len    The length of data - ignored if non-positive
      * @return The fingerprint - {@code null} if non-positive length
      * @throws Exception If failed to calculate the fingerprint
+     * @see #getRawFingerprint(Digest, byte[], int, int)
      */
     public static String getFingerPrint(Digest d, byte[] buf, int offset, int len) throws Exception {
+        if (len <= 0) {
+            return null;
+        }
+
+        byte[] data = getRawFingerprint(d, buf, offset, len);
+        String algo = d.getAlgorithm();
+        if (BuiltinDigests.md5.getAlgorithm().equals(algo)) {
+            return algo + ":" + BufferUtils.toHex(':', data).toLowerCase();
+        } else {
+            return algo.replace("-", "").toUpperCase() + ":" + Base64.encodeToString(data).replaceAll("=", "");
+        }
+    }
+
+    public static byte[] getRawFingerprint(Digest d, byte... buf) throws Exception {
+        return getRawFingerprint(d, buf, 0, NumberUtils.length(buf));
+    }
+
+    public static byte[] getRawFingerprint(Digest d, byte[] buf, int offset, int len) throws Exception {
         if (len <= 0) {
             return null;
         }
@@ -202,12 +221,6 @@ public final class DigestUtils {
         ValidateUtils.checkNotNull(d, "No digest").init();
         d.update(buf, offset, len);
 
-        byte[] data = d.digest();
-        String algo = d.getAlgorithm();
-        if (BuiltinDigests.md5.getAlgorithm().equals(algo)) {
-            return algo + ":" + BufferUtils.toHex(':', data).toLowerCase();
-        } else {
-            return algo.replace("-", "").toUpperCase() + ":" + Base64.encodeToString(data).replaceAll("=", "");
-        }
+        return d.digest();
     }
 }

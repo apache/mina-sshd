@@ -19,6 +19,7 @@
 package org.apache.sshd.common.config.keys;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -117,10 +118,10 @@ public final class KeyUtils {
     private static final AtomicReference<DigestFactory> DEFAULT_DIGEST_HOLDER = new AtomicReference<>();
 
     private static final Map<String, PublicKeyEntryDecoder<?, ?>> BY_KEY_TYPE_DECODERS_MAP =
-            new TreeMap<String, PublicKeyEntryDecoder<?, ?>>(String.CASE_INSENSITIVE_ORDER);
+            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private static final Map<Class<?>, PublicKeyEntryDecoder<?, ?>> BY_KEY_CLASS_DECODERS_MAP =
-            new HashMap<Class<?>, PublicKeyEntryDecoder<?, ?>>();
+            new HashMap<>();
 
     static {
         registerPublicKeyEntryDecoder(RSAPublicKeyDecoder.INSTANCE);
@@ -188,20 +189,20 @@ public final class KeyUtils {
 
         if (perms.contains(PosixFilePermission.OTHERS_EXECUTE)) {
             PosixFilePermission p = PosixFilePermission.OTHERS_EXECUTE;
-            return new Pair<String, Object>(String.format("Permissions violation (%s)", p), p);
+            return new Pair<>(String.format("Permissions violation (%s)", p), p);
         }
 
         if (OsUtils.isUNIX()) {
             PosixFilePermission p = IoUtils.validateExcludedPermissions(perms, STRICTLY_PROHIBITED_FILE_PERMISSION);
             if (p != null) {
-                return new Pair<String, Object>(String.format("Permissions violation (%s)", p), p);
+                return new Pair<>(String.format("Permissions violation (%s)", p), p);
             }
 
             if (Files.isRegularFile(path, options)) {
                 Path parent = path.getParent();
                 p = IoUtils.validateExcludedPermissions(IoUtils.getPermissions(parent, options), STRICTLY_PROHIBITED_FILE_PERMISSION);
                 if (p != null) {
-                    return new Pair<String, Object>(String.format("Parent permissions violation (%s)", p), p);
+                    return new Pair<>(String.format("Parent permissions violation (%s)", p), p);
                 }
             }
         }
@@ -223,14 +224,14 @@ public final class KeyUtils {
         }
 
         if (!expected.contains(owner)) {
-            return new Pair<String, Object>(String.format("Owner violation (%s)", owner), owner);
+            return new Pair<>(String.format("Owner violation (%s)", owner), owner);
         }
 
         if (OsUtils.isUNIX()) {
             if (Files.isRegularFile(path, options)) {
                 String parentOwner = IoUtils.getFileOwner(path.getParent(), options);
                 if ((!GenericUtils.isEmpty(parentOwner)) && (!expected.contains(parentOwner))) {
-                    return new Pair<String, Object>(String.format("Parent owner violation (%s)", parentOwner), parentOwner);
+                    return new Pair<>(String.format("Parent owner violation (%s)", parentOwner), parentOwner);
                 }
             }
         }
@@ -460,7 +461,7 @@ public final class KeyUtils {
      * @see #getFingerPrint(Digest, PublicKey)
      */
     public static String getFingerPrint(Factory<? extends Digest> f, PublicKey key) {
-        return (key == null) ? null : getFingerPrint(ValidateUtils.checkNotNull(f, "No digest factory").create(), key);
+        return (key == null) ? null : getFingerPrint(Objects.requireNonNull(f, "No digest factory").create(), key);
     }
 
     /**
@@ -482,6 +483,24 @@ public final class KeyUtils {
         } catch (Exception e) {
             return e.getClass().getSimpleName();
         }
+    }
+
+    public static byte[] getRawFingerprint(PublicKey key) throws Exception {
+        return getRawFingerprint(getDefaultFingerPrintFactory(), key);
+    }
+
+    public static byte[] getRawFingerprint(Factory<? extends Digest> f, PublicKey key) throws Exception {
+        return (key == null) ? null : getRawFingerprint(Objects.requireNonNull(f, "No digest factory").create(), key);
+    }
+
+    public static byte[] getRawFingerprint(Digest d, PublicKey key) throws Exception {
+        if (key == null) {
+            return null;
+        }
+
+        Buffer buffer = new ByteArrayBuffer();
+        buffer.putRawPublicKey(key);
+        return DigestUtils.getRawFingerprint(d, buffer.array(), 0, buffer.wpos());
     }
 
     /**
@@ -653,6 +672,31 @@ public final class KeyUtils {
         }
 
         return null;
+    }
+
+    /**
+     * Determines the key size in bits
+     *
+     * @param key The {@link Key} to examine - ignored if {@code null}
+     * @return The key size - non-positive value if cannot determine it
+     */
+    public static int getKeySize(Key key) {
+        if (key instanceof RSAKey) {
+            BigInteger n = ((RSAKey) key).getModulus();
+            return n.bitLength();
+        } else if (key instanceof DSAKey) {
+            DSAParams params = ((DSAKey) key).getParams();
+            BigInteger p = params.getP();
+            return p.bitLength();
+        } else if (key instanceof ECKey) {
+            ECParameterSpec ecSpec = ((ECKey) key).getParams();
+            ECCurves curve = ECCurves.fromCurveParameters(ecSpec);
+            if (curve != null) {
+                return curve.getKeySize();
+            }
+        }
+
+        return -1;
     }
 
     /**
