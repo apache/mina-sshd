@@ -21,14 +21,19 @@ package org.apache.sshd.common.config.keys;
 
 import java.io.IOException;
 import java.io.StreamCorruptedException;
+import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.digest.Digest;
+import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -187,6 +192,65 @@ public class KeyRandomArt {
         } catch (IOException e) {
             return e.getClass().getSimpleName();    // unexpected
         }
+    }
+
+    /**
+     * Creates the combined representation of the random art entries for the provided keys
+     *
+     * @param separator The separator to use between the arts - if empty char
+     * ('\0') then no separation is done
+     * @param provider The {@link KeyIdentityProvider} - ignored if {@code null}
+     * or has no keys to provide
+     * @return The combined representation
+     * @throws Exception If failed to extract or combine the entries
+     * @see #combine(Appendable, char, KeyIdentityProvider)
+     */
+    public static String combine(char separator, KeyIdentityProvider provider) throws Exception {
+        return combine(new StringBuilder(4 * (FLDSIZE_X + 4) * (FLDSIZE_Y + 3)), separator, provider).toString();
+    }
+
+    /**
+     * Appends the combined random art entries for the provided keys
+     *
+     * @param <A> The {@link Appendable} output writer
+     * @param sb The writer
+     * @param separator The separator to use between the arts - if empty char
+     * ('\0') then no separation is done
+     * @param provider The {@link KeyIdentityProvider} - ignored if {@code null}
+     * or has no keys to provide
+     * @return The updated writer instance
+     * @throws Exception If failed to extract or write the entries
+     * @see #generate(KeyIdentityProvider)
+     * @see #combine(Appendable, char, Collection)
+     */
+    public static <A extends Appendable> A combine(A sb, char separator, KeyIdentityProvider provider) throws Exception {
+        return combine(sb, separator, generate(provider));
+    }
+
+    /**
+     * Extracts and generates random art entries for all key in the provider
+     *
+     * @param provider The {@link KeyIdentityProvider} - ignored if {@code null}
+     * or has no keys to provide
+     * @return The extracted {@link KeyRandomArt}s
+     * @throws Exception If failed to extract the entries
+     * @see KeyIdentityProvider#loadKeys()
+     */
+    public static Collection<KeyRandomArt> generate(KeyIdentityProvider provider) throws Exception {
+        Iterable<KeyPair> keys = (provider == null) ? null : provider.loadKeys();
+        Iterator<KeyPair> iter = (keys == null) ? null : keys.iterator();
+        if ((iter == null) || (!iter.hasNext())) {
+            return Collections.emptyList();
+        }
+
+        Collection<KeyRandomArt> arts = new LinkedList<>();
+        do {
+            KeyPair kp = iter.next();
+            KeyRandomArt a = new KeyRandomArt(kp.getPublic());
+            arts.add(a);
+        } while(iter.hasNext());
+
+        return arts;
     }
 
     /**

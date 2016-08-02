@@ -26,6 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.Utils;
@@ -40,7 +41,7 @@ import org.junit.runners.Parameterized.Parameters;
  */
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class KeyRandomArtTest extends BaseTestSupport {
-    private static final Collection<KeyRandomArt> ARTS = new LinkedList<>();
+    private static final Collection<KeyPair> KEYS = new LinkedList<>();
 
     private final String algorithm;
     private final int keySize;
@@ -50,6 +51,7 @@ public class KeyRandomArtTest extends BaseTestSupport {
         this.algorithm = algorithm;
         this.keySize = keySize;
         this.keyPair = Utils.generateKeyPair(algorithm, keySize);
+        KEYS.add(this.keyPair);
     }
 
     @Parameters(name = "algorithm={0}, key-size={1}")
@@ -72,7 +74,13 @@ public class KeyRandomArtTest extends BaseTestSupport {
 
     @AfterClass
     public static void dumpAllArts() throws Exception {
-        KeyRandomArt.combine(System.out, ' ', ARTS);
+        KeyRandomArt.combine(System.out, ' ', new KeyIdentityProvider() {
+            @Override
+            @SuppressWarnings("synthetic-access")
+            public Iterable<KeyPair> loadKeys() {
+                return KEYS;
+            }
+        });
     }
 
     @Test
@@ -95,7 +103,5 @@ public class KeyRandomArtTest extends BaseTestSupport {
 
             assertTrue("Mismatched line length #" + (index + 1) + ": " + l.length(), l.length() >= (KeyRandomArt.FLDSIZE_X + 2));
         }
-
-        ARTS.add(art);
     }
 }

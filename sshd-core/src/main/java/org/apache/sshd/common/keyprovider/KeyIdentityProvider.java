@@ -34,6 +34,7 @@ import org.apache.sshd.common.util.Transformer;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface KeyIdentityProvider {
     /**
      * An &quot;empty&quot; implementation of {@link KeyIdentityProvider} that
@@ -178,7 +179,7 @@ public interface KeyIdentityProvider {
                 return Collections.emptyList();
             }
 
-            Collection<Supplier<Iterable<KeyPair>>> suppliers = new ArrayList<Supplier<Iterable<KeyPair>>>(providers.size());
+            Collection<Supplier<Iterable<KeyPair>>> suppliers = new ArrayList<>(providers.size());
             for (final KeyIdentityProvider p : providers) {
                 if (p == null) {
                     continue;
