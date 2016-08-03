@@ -30,6 +30,7 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.config.keys.KeyRandomArt;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -257,6 +258,11 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
              *      displayed to the client user before authentication is attempted.
              */
             String welcomeBanner = PropertyResolverUtils.getString(session, ServerFactoryManager.WELCOME_BANNER);
+            if ((GenericUtils.length(welcomeBanner) > 0)
+                && ServerFactoryManager.AUTO_WELCOME_BANNER_VALUE.equalsIgnoreCase(welcomeBanner)) {
+                welcomeBanner = KeyRandomArt.combine(' ', session.getKeyPairProvider());
+            }
+
             if (GenericUtils.length(welcomeBanner) > 0) {
                 String lang = PropertyResolverUtils.getStringProperty(session,
                                         ServerFactoryManager.WELCOME_BANNER_LANGUAGE,

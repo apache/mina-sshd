@@ -18,15 +18,12 @@
  */
 package org.apache.sshd.server;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -48,6 +45,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.config.SshConfigFileReader;
+import org.apache.sshd.common.config.keys.KeyRandomArt;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.IoAcceptor;
@@ -582,11 +580,12 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         SshServer sshd = SshServer.setUpDefaultServer();
         Map<String, Object> props = sshd.getProperties();
         props.putAll(options);
-        setupServerBanner(sshd, options);
-        sshd.setPort(port);
 
         KeyPairProvider hostKeyProvider = setupServerKeys(sshd, hostKeyType, hostKeySize, keyFiles);
         sshd.setKeyPairProvider(hostKeyProvider);
+        // Should come AFTER key pair provider setup so auto-welcome can be generated
+        setupServerBanner(sshd, options);
+        sshd.setPort(port);
 
         sshd.setShellFactory(InteractiveProcessShellFactory.INSTANCE);
         sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
@@ -609,31 +608,43 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         Thread.sleep(Long.MAX_VALUE);
     }
 
-    public static String setupServerBanner(ServerFactoryManager server, Map<String, ?> options) throws IOException {
-        String filePath = GenericUtils.isEmpty(options) ? null : Objects.toString(options.remove(SshConfigFileReader.BANNER_CONFIG_PROP), null);
-        if (GenericUtils.length(filePath) > 0) {
-            if ("none".equals(filePath)) {
+    public static String setupServerBanner(ServerFactoryManager server, Map<String, ?> options) throws Exception {
+        String bannerOption = GenericUtils.isEmpty(options)
+                ? null
+                : Objects.toString(options.remove(SshConfigFileReader.BANNER_CONFIG_PROP), null);
+        if (GenericUtils.isEmpty(bannerOption)) {
+            bannerOption = GenericUtils.isEmpty(options)
+                    ? null
+                    : Objects.toString(options.remove(SshConfigFileReader.VISUAL_HOST_KEY), null);
+            if (SshConfigFileReader.parseBooleanValue(bannerOption)) {
+                bannerOption = ServerFactoryManager.AUTO_WELCOME_BANNER_VALUE;
+            }
+        }
+
+        String banner;
+        if (GenericUtils.length(bannerOption) > 0) {
+            if ("none".equals(bannerOption)) {
                 return null;
             }
 
-            Path path = Paths.get(filePath);
-            long fileSize = Files.size(path);
-            ValidateUtils.checkTrue(fileSize > 0L, "No banner contents in file=%s", filePath);
+            if (ServerFactoryManager.AUTO_WELCOME_BANNER_VALUE.equalsIgnoreCase(bannerOption)) {
+                banner = KeyRandomArt.combine(' ', server.getKeyPairProvider());
+            } else {
+                Path path = Paths.get(bannerOption);
+                long fileSize = Files.size(path);
+                ValidateUtils.checkTrue(fileSize > 0L, "No banner contents in file=%s", bannerOption);
 
-            StringBuilder sb = new StringBuilder((int) fileSize + Long.SIZE);
-            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8))) {
-                for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
-                    sb.append(line).append('\n');
-                }
+                List<String> lines = Files.readAllLines(path);
+                banner = GenericUtils.join(lines, '\n');
             }
-
-            PropertyResolverUtils.updateProperty(server, ServerFactoryManager.WELCOME_BANNER, sb.toString());
         } else {
-            PropertyResolverUtils.updateProperty(server, ServerFactoryManager.WELCOME_BANNER, "Welcome to SSHD\n");
+            banner = "Welcome to SSHD\n";
+        }
+
+        if (GenericUtils.length(banner) > 0) {
+            PropertyResolverUtils.updateProperty(server, ServerFactoryManager.WELCOME_BANNER, banner);
         }
 
         return PropertyResolverUtils.getString(server, ServerFactoryManager.WELCOME_BANNER);
-
     }
-
 }

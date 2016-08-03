@@ -79,6 +79,8 @@ public final class SshConfigFileReader {
 
     // Some well known configuration properties names and values
     public static final String BANNER_CONFIG_PROP = "Banner";
+    public static final String VISUAL_HOST_KEY = "VisualHostKey";
+    public static final String DEFAULT_VISUAL_HOST_KEY = "no";
     public static final String COMPRESSION_PROP = "Compression";
     public static final String DEFAULT_COMPRESSION = CompressionConfigValue.NO.getName();
     public static final String ALLOW_TCP_FORWARDING_CONFIG_PROP = "AllowTcpForwarding";

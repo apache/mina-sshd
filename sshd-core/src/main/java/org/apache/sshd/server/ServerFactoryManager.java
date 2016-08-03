@@ -75,6 +75,14 @@ public interface ServerFactoryManager
     String WELCOME_BANNER = "welcome-banner";
 
     /**
+     * Special value that can be set for the {@link #WELCOME_BANNER} property
+     * indicating that the server should generate a banner consisting of the
+     * random art of the server's keys (if any are provided). If no server
+     * keys are available, then no banner will be sent
+     */
+    String AUTO_WELCOME_BANNER_VALUE = "#auto-welcome-banner";
+
+    /**
      * Key used to denote the language code for the welcome banner (if such
      * a banner is configured). If not set, then {@link #DEFAULT_WELCOME_BANNER_LANGUAGE}
      * is used
