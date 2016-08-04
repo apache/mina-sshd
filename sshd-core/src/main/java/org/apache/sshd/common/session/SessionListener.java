@@ -19,6 +19,9 @@
 package org.apache.sshd.common.session;
 
 import java.util.EventListener;
+import java.util.Map;
+
+import org.apache.sshd.common.kex.KexProposalOption;
 
 /**
  * Represents an interface receiving session events.
@@ -26,7 +29,6 @@ import java.util.EventListener;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface SessionListener extends EventListener {
-
     enum Event {
         KeyEstablished, Authenticated, KexCompleted
     }
@@ -36,7 +38,37 @@ public interface SessionListener extends EventListener {
      *
      * @param session The created {@link Session}
      */
-    void sessionCreated(Session session);
+    default void sessionCreated(Session session) {
+        // ignored
+    }
+
+    /**
+     * Signals the start of the negotiation options handling
+     *
+     * @param session The referenced {@link Session}
+     * @param clientProposal The client proposal options (un-modifiable)
+     * @param serverProposal The server proposal options (un-modifiable)
+     */
+    default void sessionNegotiationStart(Session session,
+            Map<KexProposalOption, String> clientProposal, Map<KexProposalOption, String> serverProposal) {
+        // ignored
+    }
+
+    /**
+     * Signals the end of the negotiation options handling
+     *
+     * @param session The referenced {@link Session}
+     * @param clientProposal The client proposal options (un-modifiable)
+     * @param serverProposal The server proposal options (un-modifiable)
+     * @param negotiatedOptions The successfully negotiated options so far
+     * - even if exception occurred (un-modifiable)
+     * @param reason Negotiation end reason - {@code null} if successful
+     */
+    default void sessionNegotiationEnd(Session session,
+            Map<KexProposalOption, String> clientProposal, Map<KexProposalOption, String> serverProposal,
+            Map<KexProposalOption, String> negotiatedOptions, Throwable reason) {
+        // ignored
+    }
 
     /**
      * An event has been triggered
@@ -44,7 +76,9 @@ public interface SessionListener extends EventListener {
      * @param session The referenced {@link Session}
      * @param event The generated {@link Event}
      */
-    void sessionEvent(Session session, Event event);
+    default void sessionEvent(Session session, Event event) {
+        // ignored
+    }
 
     /**
      * An exception was caught and the session will be closed
@@ -55,13 +89,16 @@ public interface SessionListener extends EventListener {
      * @param session The referenced {@link Session}
      * @param t The caught exception
      */
-    void sessionException(Session session, Throwable t);
+    default void sessionException(Session session, Throwable t) {
+        // ignored
+    }
 
     /**
      * A session has been closed
      *
      * @param session The closed {@link Session}
      */
-    void sessionClosed(Session session);
-
+    default void sessionClosed(Session session) {
+        // ignored
+    }
 }

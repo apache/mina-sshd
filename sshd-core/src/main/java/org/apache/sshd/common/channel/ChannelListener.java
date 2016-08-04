@@ -30,6 +30,13 @@ import java.util.EventListener;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ChannelListener extends EventListener {
+    ChannelListener EMPTY = new ChannelListener() {
+        @Override
+        public String toString() {
+            return "EMPTY";
+        }
+    };
+
     /**
      * Called to inform about initial setup of a channel via the
      * {@link Channel#init(org.apache.sshd.common.session.ConnectionService, org.apache.sshd.common.session.Session, int)}
@@ -39,7 +46,9 @@ public interface ChannelListener extends EventListener {
      *
      * @param channel The initialized {@link Channel}
      */
-    void channelInitialized(Channel channel);
+    default void channelInitialized(Channel channel) {
+        // ignored
+    }
 
     /**
      * Called to inform about a channel being successfully opened for a
@@ -48,7 +57,9 @@ public interface ChannelListener extends EventListener {
      *
      * @param channel The newly opened {@link Channel}
      */
-    void channelOpenSuccess(Channel channel);
+    default void channelOpenSuccess(Channel channel) {
+        // ignored
+    }
 
     /**
      * Called to inform about the failure to open a channel
@@ -58,7 +69,9 @@ public interface ChannelListener extends EventListener {
      * {@link #channelOpenSuccess(Channel)} notification throws an exception
      * it will cause this method to be invoked
      */
-    void channelOpenFailure(Channel channel, Throwable reason);
+    default void channelOpenFailure(Channel channel, Throwable reason) {
+        // ignored
+    }
 
     /**
      * Called to inform that the channel state may have changed - e.g.,
@@ -68,7 +81,9 @@ public interface ChannelListener extends EventListener {
      * @param hint A &quot;hint&quot; as to the nature of the state change.
      * it can be a request name or a {@code SSH_MSG_CHANNEL_XXX} command
      */
-    void channelStateChanged(Channel channel, String hint);
+    default void channelStateChanged(Channel channel, String hint) {
+        // ignored
+    }
 
     /**
      * Called to inform about a channel being closed. <B>Note:</B> when the call
@@ -82,5 +97,7 @@ public interface ChannelListener extends EventListener {
      * @param reason The reason why the channel is being closed - if {@code null}
      * then normal closure
      */
-    void channelClosed(Channel channel, Throwable reason);
+    default void channelClosed(Channel channel, Throwable reason) {
+        // ignored
+    }
 }

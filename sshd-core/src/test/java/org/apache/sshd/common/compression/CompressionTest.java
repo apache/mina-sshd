@@ -83,11 +83,6 @@ public class CompressionTest extends BaseTestSupport {
         sshd.setCompressionFactories(Arrays.<NamedFactory<org.apache.sshd.common.compression.Compression>>asList(factory));
         sshd.addSessionListener(new SessionListener() {
             @Override
-            public void sessionException(Session session, Throwable t) {
-                // ignored
-            }
-
-            @Override
             @SuppressWarnings("synthetic-access")
             public void sessionEvent(Session session, Event event) {
                 if (Event.KeyEstablished.equals(event)) {
@@ -97,16 +92,6 @@ public class CompressionTest extends BaseTestSupport {
                         assertEquals("Mismatched value for " + option, expected, actual);
                     }
                 }
-            }
-
-            @Override
-            public void sessionCreated(Session session) {
-                // ignored
-            }
-
-            @Override
-            public void sessionClosed(Session session) {
-                // ignored
             }
         });
         sshd.start();

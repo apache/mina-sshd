@@ -89,27 +89,12 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
     public void testConnectionTimeout() throws Exception {
         client.addSessionListener(new SessionListener() {
             @Override
-            public void sessionEvent(Session session, Event event) {
-                // ignored
-            }
-
-            @Override
             public void sessionCreated(Session session) {
                 try {
                     Thread.sleep(CONNECT_TIMEOUT + 150L);
                 } catch (InterruptedException e) {
                     // ignored
                 }
-            }
-
-            @Override
-            public void sessionException(Session session, Throwable t) {
-                // ignored
-            }
-
-            @Override
-            public void sessionClosed(Session session) {
-                // ignored
             }
         });
         client.start();

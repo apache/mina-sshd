@@ -392,26 +392,11 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     final AtomicInteger exchanges = new AtomicInteger();
                     session.addSessionListener(new SessionListener() {
                         @Override
-                        public void sessionCreated(Session session) {
-                            // ignored
-                        }
-
-                        @Override
                         public void sessionEvent(Session session, Event event) {
                             if (Event.KeyEstablished.equals(event)) {
                                 int count = exchanges.incrementAndGet();
                                 outputDebugMessage("Key established for %s - count=%d", session, count);
                             }
-                        }
-
-                        @Override
-                        public void sessionException(Session session, Throwable t) {
-                            // ignored
-                        }
-
-                        @Override
-                        public void sessionClosed(Session session) {
-                            // ignored
                         }
                     });
 
@@ -509,26 +494,11 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     final AtomicInteger exchanges = new AtomicInteger();
                     session.addSessionListener(new SessionListener() {
                         @Override
-                        public void sessionCreated(Session session) {
-                            // ignored
-                        }
-
-                        @Override
                         public void sessionEvent(Session session, Event event) {
                             if (Event.KeyEstablished.equals(event)) {
                                 int count = exchanges.incrementAndGet();
                                 outputDebugMessage("Key established for %s - count=%d", session, count);
                             }
-                        }
-
-                        @Override
-                        public void sessionException(Session session, Throwable t) {
-                            // ignored
-                        }
-
-                        @Override
-                        public void sessionClosed(Session session) {
-                            // ignored
                         }
                     });
 
@@ -654,26 +624,11 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     final AtomicInteger exchanges = new AtomicInteger();
                     session.addSessionListener(new SessionListener() {
                         @Override
-                        public void sessionCreated(Session session) {
-                            // ignored
-                        }
-
-                        @Override
                         public void sessionEvent(Session session, Event event) {
                             if (Event.KeyEstablished.equals(event)) {
                                 int count = exchanges.incrementAndGet();
                                 outputDebugMessage("Key established for %s - count=%d", session, count);
                             }
-                        }
-
-                        @Override
-                        public void sessionException(Session session, Throwable t) {
-                            // ignored
-                        }
-
-                        @Override
-                        public void sessionClosed(Session session) {
-                            // ignored
                         }
                     });
 

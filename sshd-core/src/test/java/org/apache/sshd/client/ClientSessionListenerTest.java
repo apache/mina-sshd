@@ -95,21 +95,6 @@ public class ClientSessionListenerTest extends BaseTestSupport {
                 session.setCipherFactories(Collections.singletonList((NamedFactory<Cipher>) kexParams.get(KexProposalOption.C2SENC)));
                 session.setMacFactories(Collections.singletonList((NamedFactory<Mac>) kexParams.get(KexProposalOption.C2SMAC)));
             }
-
-            @Override
-            public void sessionEvent(Session session, Event event) {
-                // ignored
-            }
-
-            @Override
-            public void sessionException(Session session, Throwable t) {
-                // ignored
-            }
-
-            @Override
-            public void sessionClosed(Session session) {
-                // ignored
-            }
         });
 
         client.start();
@@ -138,27 +123,12 @@ public class ClientSessionListenerTest extends BaseTestSupport {
 
         client.addSessionListener(new SessionListener() {
             @Override
-            public void sessionCreated(Session session) {
-                // ignored
-            }
-
-            @Override
             public void sessionEvent(Session session, Event event) {
                 if ((!session.isAuthenticated()) && (session instanceof ClientSession) && Event.KexCompleted.equals(event)) {
                     ClientSession clientSession = (ClientSession) session;
                     clientSession.setServerKeyVerifier(verifier);
                     clientSession.setUserInteraction(UserInteraction.NONE);
                 }
-            }
-
-            @Override
-            public void sessionException(Session session, Throwable t) {
-                // ignored
-            }
-
-            @Override
-            public void sessionClosed(Session session) {
-                // ignored
             }
         });
 

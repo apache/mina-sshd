@@ -486,25 +486,10 @@ public class ServerTest extends BaseTestSupport {
         final AtomicInteger serverEventCount = new AtomicInteger(0);
         sshd.addSessionListener(new SessionListener() {
             @Override
-            public void sessionCreated(Session session) {
-                // ignored
-            }
-
-            @Override
             public void sessionEvent(Session session, Event event) {
                 if (event == Event.KexCompleted) {
                     serverEventCount.incrementAndGet();
                 }
-            }
-
-            @Override
-            public void sessionException(Session session, Throwable t) {
-                // ignored
-            }
-
-            @Override
-            public void sessionClosed(Session session) {
-                // ignored
             }
         });
         sshd.start();
@@ -512,25 +497,10 @@ public class ServerTest extends BaseTestSupport {
         final AtomicInteger clientEventCount = new AtomicInteger(0);
         client.addSessionListener(new SessionListener() {
             @Override
-            public void sessionCreated(Session session) {
-                // ignored
-            }
-
-            @Override
             public void sessionEvent(Session session, Event event) {
                 if (event == Event.KexCompleted) {
                     clientEventCount.incrementAndGet();
                 }
-            }
-
-            @Override
-            public void sessionException(Session session, Throwable t) {
-                // ignored
-            }
-
-            @Override
-            public void sessionClosed(Session session) {
-                // ignored
             }
         });
         client.start();
@@ -601,26 +571,6 @@ public class ServerTest extends BaseTestSupport {
                     outputDebugMessage("channelStateChanged(%s): %s", channel, hint);
                     stateChangeHints.add(hint);
                 }
-
-                @Override
-                public void channelOpenSuccess(Channel channel) {
-                    // ignored
-                }
-
-                @Override
-                public void channelOpenFailure(Channel channel, Throwable reason) {
-                    // ignored
-                }
-
-                @Override
-                public void channelInitialized(Channel channel) {
-                    // ignored
-                }
-
-                @Override
-                public void channelClosed(Channel channel, Throwable reason) {
-                    // ignored
-                }
             });
             shell.open().verify(9L, TimeUnit.SECONDS);
 
@@ -642,7 +592,7 @@ public class ServerTest extends BaseTestSupport {
 
     @Test
     public void testEnvironmentVariablesPropagationToServer() throws Exception {
-        final AtomicReference<Environment> envHolder = new AtomicReference<Environment>(null);
+        final AtomicReference<Environment> envHolder = new AtomicReference<>(null);
         sshd.setCommandFactory(new CommandFactory() {
             @Override
             public Command createCommand(final String command) {
@@ -814,16 +764,6 @@ public class ServerTest extends BaseTestSupport {
         final String[] replies = {getCurrentTestName()};
         client.setUserInteraction(new UserInteraction() {
             @Override
-            public void welcome(ClientSession session, String banner, String lang) {
-                // ignored
-            }
-
-            @Override
-            public void serverVersionInfo(ClientSession clientSession, List<String> lines) {
-                // ignored
-            }
-
-            @Override
             public boolean isInteractionAllowed(ClientSession session) {
                 return true;
             }
@@ -916,11 +856,6 @@ public class ServerTest extends BaseTestSupport {
         final AtomicReference<List<String>> actualHolder = new AtomicReference<>();
         final Semaphore signal = new Semaphore(0);
         client.setUserInteraction(new UserInteraction() {
-            @Override
-            public void welcome(ClientSession session, String banner, String lang) {
-                // ignored
-            }
-
             @Override
             public void serverVersionInfo(ClientSession session, List<String> lines) {
                 assertNull("Unexpected extra call", actualHolder.getAndSet(lines));

@@ -109,21 +109,11 @@ public class ServerProxyAcceptorTest extends BaseTestSupport {
         final Semaphore sessionSignal = new Semaphore(0);
         sshd.addSessionListener(new SessionListener() {
             @Override
-            public void sessionException(Session session, Throwable t) {
-               // do nothing
-            }
-
-            @Override
             public void sessionEvent(Session session, Event event) {
                 verifyClientAddress(event.name(), session);
                 if (Event.KeyEstablished.equals(event)) {
                     sessionSignal.release();
                 }
-            }
-
-            @Override
-            public void sessionCreated(Session session) {
-                // do nothing - no proxy yet
             }
 
             @Override

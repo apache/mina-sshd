@@ -29,6 +29,13 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface PortForwardingEventListener extends EventListener {
+    PortForwardingEventListener EMPTY = new PortForwardingEventListener() {
+        @Override
+        public String toString() {
+            return "EMPTY";
+        }
+    };
+
     /**
      * Signals the attempt to establish a local/remote port forwarding
      *
@@ -39,9 +46,11 @@ public interface PortForwardingEventListener extends EventListener {
      * @throws IOException If failed to handle the event - in which case
      * the attempt is aborted and the exception re-thrown to the caller
      */
-    void establishingExplicitTunnel(
+    default void establishingExplicitTunnel(
             Session session, SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding)
-                    throws IOException;
+                    throws IOException {
+                        // ignored
+    }
 
     /**
      * Signals a successful/failed attempt to establish a local/remote port forwarding
@@ -55,10 +64,12 @@ public interface PortForwardingEventListener extends EventListener {
      * @throws IOException If failed to handle the event - in which case
      * the established tunnel is aborted
      */
-    void establishedExplicitTunnel(
+    default void establishedExplicitTunnel(
             Session session, SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding,
             SshdSocketAddress boundAddress, Throwable reason)
-                    throws IOException;
+                    throws IOException {
+                        // ignored
+    }
 
     /**
      * Signals a request to tear down a local/remote port forwarding
@@ -69,7 +80,10 @@ public interface PortForwardingEventListener extends EventListener {
      * @throws IOException If failed to handle the event - in which case
      * the request is aborted
      */
-    void tearingDownExplicitTunnel(Session session, SshdSocketAddress address, boolean localForwarding) throws IOException;
+    default void tearingDownExplicitTunnel(Session session, SshdSocketAddress address, boolean localForwarding)
+            throws IOException {
+                // ignored
+    }
 
     /**
      * Signals a successful/failed request to tear down a local/remote port forwarding
@@ -82,7 +96,10 @@ public interface PortForwardingEventListener extends EventListener {
      * the exception is propagated, but the port forwarding may have
      * been torn down - no rollback
      */
-    void tornDownExplicitTunnel(Session session, SshdSocketAddress address, boolean localForwarding, Throwable reason) throws IOException;
+    default void tornDownExplicitTunnel(Session session, SshdSocketAddress address, boolean localForwarding, Throwable reason)
+            throws IOException {
+                // ignored
+    }
 
     /**
      * Signals the attempt to establish a dynamic port forwarding
@@ -92,7 +109,9 @@ public interface PortForwardingEventListener extends EventListener {
      * @throws IOException If failed to handle the event - in which case
      * the attempt is aborted and the exception re-thrown to the caller
      */
-    void establishingDynamicTunnel(Session session, SshdSocketAddress local) throws IOException;
+    default void establishingDynamicTunnel(Session session, SshdSocketAddress local) throws IOException {
+        // ignored
+    }
 
     /**
      * Signals a successful/failed attempt to establish a dynamic port forwarding
@@ -104,9 +123,11 @@ public interface PortForwardingEventListener extends EventListener {
      * @throws IOException If failed to handle the event - in which case
      * the established tunnel is aborted
      */
-    void establishedDynamicTunnel(
+    default void establishedDynamicTunnel(
             Session session, SshdSocketAddress local, SshdSocketAddress boundAddress, Throwable reason)
-                    throws IOException;
+                    throws IOException {
+                        // ignored
+    }
 
     /**
      * Signals a request to tear down a dynamic forwarding
@@ -116,7 +137,9 @@ public interface PortForwardingEventListener extends EventListener {
      * @throws IOException If failed to handle the event - in which case
      * the request is aborted
      */
-    void tearingDownDynamicTunnel(Session session, SshdSocketAddress address) throws IOException;
+    default void tearingDownDynamicTunnel(Session session, SshdSocketAddress address) throws IOException {
+        // ignored
+    }
 
     /**
      * Signals a successful/failed request to tear down a dynamic port forwarding
@@ -128,6 +151,7 @@ public interface PortForwardingEventListener extends EventListener {
      * the exception is propagated, but the port forwarding may have
      * been torn down - no rollback
      */
-    void tornDownDynamicTunnel(Session session, SshdSocketAddress address, Throwable reason) throws IOException;
-
+    default void tornDownDynamicTunnel(Session session, SshdSocketAddress address, Throwable reason) throws IOException {
+        // ignored
+    }
 }

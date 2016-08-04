@@ -41,16 +41,6 @@ public interface UserInteraction {
         }
 
         @Override
-        public void serverVersionInfo(ClientSession session, List<String> lines) {
-            // ignored
-        }
-
-        @Override
-        public void welcome(ClientSession session, String banner, String lang) {
-            // ignored
-        }
-
-        @Override
         public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
             throw new IllegalStateException("interactive(" + session + ")[" + name + "] unexpected call");
         }
@@ -82,7 +72,9 @@ public interface UserInteraction {
      * @param lines The sent extra lines - <U>without</U> the server version
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>
      */
-    void serverVersionInfo(ClientSession session, List<String> lines);
+    default void serverVersionInfo(ClientSession session, List<String> lines) {
+        // do nothing
+    }
 
     /**
      * Displays the welcome banner to the user.
@@ -91,7 +83,9 @@ public interface UserInteraction {
      * @param banner  The welcome banner
      * @param lang    The banner language code - may be empty
      */
-    void welcome(ClientSession session, String banner, String lang);
+    default void welcome(ClientSession session, String banner, String lang) {
+        // do nothing
+    }
 
     /**
      * Invoked when &quot;keyboard-interactive&quot; authentication mechanism

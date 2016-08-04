@@ -1857,47 +1857,59 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @return The negotiated options {@link Map}
      */
     protected Map<KexProposalOption, String> negotiate() {
+        SessionListener listener = getSessionListenerProxy();
+        Map<KexProposalOption, String> c2sOptions = Collections.unmodifiableMap(clientProposal);
+        Map<KexProposalOption, String> s2cOptions = Collections.unmodifiableMap(serverProposal);
+        listener.sessionNegotiationStart(this, c2sOptions, s2cOptions);
+
         Map<KexProposalOption, String> guess = new EnumMap<>(KexProposalOption.class);
-        for (KexProposalOption paramType : KexProposalOption.VALUES) {
-            String clientParamValue = clientProposal.get(paramType);
-            String serverParamValue = serverProposal.get(paramType);
-            String[] c = GenericUtils.split(clientParamValue, ',');
-            String[] s = GenericUtils.split(serverParamValue, ',');
-            for (String ci : c) {
-                for (String si : s) {
-                    if (ci.equals(si)) {
-                        guess.put(paramType, ci);
+        Map<KexProposalOption, String> negotiatedGuess = Collections.unmodifiableMap(guess);
+        try {
+            for (KexProposalOption paramType : KexProposalOption.VALUES) {
+                String clientParamValue = c2sOptions.get(paramType);
+                String serverParamValue = s2cOptions.get(paramType);
+                String[] c = GenericUtils.split(clientParamValue, ',');
+                String[] s = GenericUtils.split(serverParamValue, ',');
+                for (String ci : c) {
+                    for (String si : s) {
+                        if (ci.equals(si)) {
+                            guess.put(paramType, ci);
+                            break;
+                        }
+                    }
+
+                    String value = guess.get(paramType);
+                    if (value != null) {
                         break;
                     }
                 }
 
+                // check if reached an agreement
                 String value = guess.get(paramType);
-                if (value != null) {
-                    break;
-                }
-            }
-
-            // check if reached an agreement
-            String value = guess.get(paramType);
-            if (value == null) {
-                String message = "Unable to negotiate key exchange for " + paramType.getDescription()
-                        + " (client: " + clientParamValue + " / server: " + serverParamValue + ")";
-                // OK if could not negotiate languages
-                if (KexProposalOption.S2CLANG.equals(paramType) || KexProposalOption.C2SLANG.equals(paramType)) {
-                    if (log.isTraceEnabled()) {
-                        log.trace("negotiate({}) {}", this, message);
+                if (value == null) {
+                    String message = "Unable to negotiate key exchange for " + paramType.getDescription()
+                            + " (client: " + clientParamValue + " / server: " + serverParamValue + ")";
+                    // OK if could not negotiate languages
+                    if (KexProposalOption.S2CLANG.equals(paramType) || KexProposalOption.C2SLANG.equals(paramType)) {
+                        if (log.isTraceEnabled()) {
+                            log.trace("negotiate({}) {}", this, message);
+                        }
+                    } else {
+                        throw new IllegalStateException(message);
                     }
                 } else {
-                    throw new IllegalStateException(message);
-                }
-            } else {
-                if (log.isTraceEnabled()) {
-                    log.trace("negotiate(" + this + ")[" + paramType.getDescription() + "] guess=" + value
-                            + " (client: " + clientParamValue + " / server: " + serverParamValue + ")");
+                    if (log.isTraceEnabled()) {
+                        log.trace("negotiate(" + this + ")[" + paramType.getDescription() + "] guess=" + value
+                                + " (client: " + clientParamValue + " / server: " + serverParamValue + ")");
+                    }
                 }
             }
+        } catch (RuntimeException | Error e) {
+            listener.sessionNegotiationEnd(this, c2sOptions, s2cOptions, negotiatedGuess, e);
+            throw e;
         }
 
+        listener.sessionNegotiationEnd(this, c2sOptions, s2cOptions, negotiatedGuess, null);
         return setNegotiationResult(guess);
     }
 

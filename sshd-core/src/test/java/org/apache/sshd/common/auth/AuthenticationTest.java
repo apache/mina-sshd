@@ -202,16 +202,6 @@ public class AuthenticationTest extends BaseTestSupport {
                 }
 
                 @Override
-                public void serverVersionInfo(ClientSession session, List<String> lines) {
-                    // ignored
-                }
-
-                @Override
-                public void welcome(ClientSession session, String banner, String lang) {
-                    // ignored
-                }
-
-                @Override
                 public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
                     throw new UnsupportedOperationException("Unexpected call");
                 }
@@ -443,16 +433,6 @@ public class AuthenticationTest extends BaseTestSupport {
                 }
 
                 @Override
-                public void serverVersionInfo(ClientSession session, List<String> lines) {
-                    // ignored
-                }
-
-                @Override
-                public void welcome(ClientSession session, String banner, String lang) {
-                    // ignored
-                }
-
-                @Override
                 public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
                     assertEquals("Unexpected multiple calls", 1, interactiveCount.incrementAndGet());
                     assertEquals("Mismatched name", challenge.getInteractionName(), name);
@@ -520,16 +500,6 @@ public class AuthenticationTest extends BaseTestSupport {
                 }
 
                 @Override
-                public void serverVersionInfo(ClientSession session, List<String> lines) {
-                    // ignored
-                }
-
-                @Override
-                public void welcome(ClientSession session, String banner, String lang) {
-                    // ignored
-                }
-
-                @Override
                 public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
                     throw new UnsupportedOperationException("Unexpected call");
                 }
@@ -564,24 +534,9 @@ public class AuthenticationTest extends BaseTestSupport {
             final AtomicInteger invocations = new AtomicInteger(0);
             client.addSessionListener(new SessionListener() {
                 @Override
-                public void sessionCreated(Session session) {
-                    // ignored
-                }
-
-                @Override
                 public void sessionEvent(Session session, Event event) {
                     assertEquals("Mismatched invocations count", 1, invocations.incrementAndGet());
                     throw expected;
-                }
-
-                @Override
-                public void sessionException(Session session, Throwable t) {
-                    // ignored
-                }
-
-                @Override
-                public void sessionClosed(Session session) {
-                    // ignored
                 }
             });
 
@@ -854,16 +809,6 @@ public class AuthenticationTest extends BaseTestSupport {
         s.setUsername(user);
         final String[] response = {pswd};
         s.setUserInteraction(new UserInteraction() {
-            @Override
-            public void welcome(ClientSession session, String banner, String lang) {
-                // ignored
-            }
-
-            @Override
-            public void serverVersionInfo(ClientSession session, List<String> lines) {
-                // ignored
-            }
-
             @Override
             public boolean isInteractionAllowed(ClientSession session) {
                 return true;

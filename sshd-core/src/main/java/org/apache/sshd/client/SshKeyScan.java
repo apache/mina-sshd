@@ -360,6 +360,23 @@ public class SshKeyScan extends AbstractSimplifiedLog
         logSessionEvent(session, "Closed");
     }
 
+    @Override
+    public void sessionNegotiationStart(
+            Session session, Map<KexProposalOption, String> clientProposal, Map<KexProposalOption, String> serverProposal) {
+        logSessionEvent(session, "sessionNegotiationStart");
+    }
+
+    @Override
+    public void sessionNegotiationEnd(Session session, Map<KexProposalOption, String> clientProposal,
+            Map<KexProposalOption, String> serverProposal, Map<KexProposalOption, String> negotiatedOptions,
+            Throwable reason) {
+        if (reason == null) {
+            logSessionEvent(session, "sessionNegotiationStart");
+        } else {
+            logSessionEvent(session, reason);
+        }
+    }
+
     protected void logSessionEvent(Session session, Object event) {
         if (isEnabled(Level.FINEST)) {
             IoSession ioSession = session.getIoSession();

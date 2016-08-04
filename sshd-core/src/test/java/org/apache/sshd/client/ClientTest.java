@@ -259,11 +259,6 @@ public class ClientTest extends BaseTestSupport {
                 updateSessionConfigProperty(session, "sessionClosed");
             }
 
-            @Override
-            public void sessionException(Session session, Throwable t) {
-                // ignored
-            }
-
             private void updateSessionConfigProperty(Session session, Object value) {
                 PropertyResolverUtils.updateProperty(session, sessionPropName, value);
                 sessionConfigValueHolder.set(value);
@@ -291,11 +286,6 @@ public class ClientTest extends BaseTestSupport {
             @Override
             public void channelClosed(Channel channel, Throwable reason) {
                 updateChannelConfigProperty(channel, "channelClosed");
-            }
-
-            @Override
-            public void channelStateChanged(Channel channel, String hint) {
-                // ignored
             }
 
             private void updateChannelConfigProperty(Channel channel, Object value) {

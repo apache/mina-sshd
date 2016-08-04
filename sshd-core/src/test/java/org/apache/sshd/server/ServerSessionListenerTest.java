@@ -88,7 +88,7 @@ public class ServerSessionListenerTest extends BaseTestSupport {
 
     @Test   // see https://issues.apache.org/jira/browse/SSHD-456
     public void testServerStillListensIfSessionListenerThrowsException() throws Exception {
-        final Map<String, SocketAddress> eventsMap = new TreeMap<String, SocketAddress>(String.CASE_INSENSITIVE_ORDER);
+        final Map<String, SocketAddress> eventsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         final Logger log = LoggerFactory.getLogger(getClass());
         sshd.addSessionListener(new SessionListener() {
             @Override
@@ -104,11 +104,6 @@ public class ServerSessionListenerTest extends BaseTestSupport {
             @Override
             public void sessionClosed(Session session) {
                 throwException("SessionClosed", session);
-            }
-
-            @Override
-            public void sessionException(Session session, Throwable t) {
-                // ignored
             }
 
             private void throwException(String phase, Session session) {
@@ -172,21 +167,6 @@ public class ServerSessionListenerTest extends BaseTestSupport {
                 session.setCipherFactories(Collections.singletonList((NamedFactory<Cipher>) kexParams.get(KexProposalOption.S2CENC)));
                 session.setMacFactories(Collections.singletonList((NamedFactory<Mac>) kexParams.get(KexProposalOption.S2CMAC)));
             }
-
-            @Override
-            public void sessionEvent(Session session, Event event) {
-                // ignored
-            }
-
-            @Override
-            public void sessionException(Session session, Throwable t) {
-                // ignored
-            }
-
-            @Override
-            public void sessionClosed(Session session) {
-                // ignored
-            }
         });
 
         client.start();
@@ -223,21 +203,6 @@ public class ServerSessionListenerTest extends BaseTestSupport {
                             Collections.<NamedFactory<UserAuth>>singletonList(
                                     ServerAuthenticationManager.Utils.DEFAULT_USER_AUTH_PASSWORD_FACTORY));
                 }
-            }
-
-            @Override
-            public void sessionEvent(Session session, Event event) {
-                // ignored
-            }
-
-            @Override
-            public void sessionException(Session session, Throwable t) {
-                // ignored
-            }
-
-            @Override
-            public void sessionClosed(Session session) {
-                // ignored
             }
         });
 

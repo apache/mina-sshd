@@ -31,7 +31,6 @@ import java.util.Set;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ScpTransferEventListener extends EventListener {
-
     enum FileOperation {
         SEND,
         RECEIVE
@@ -41,26 +40,9 @@ public interface ScpTransferEventListener extends EventListener {
      * An &quot;empty&quot; implementation to be used instead of {@code null}s
      */
     ScpTransferEventListener EMPTY = new ScpTransferEventListener() {
-        // TODO in JDK 8.0 implement all methods as default with empty body in the interface itself
-
         @Override
-        public void startFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms) {
-            // ignored
-        }
-
-        @Override
-        public void endFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown) {
-            // ignored
-        }
-
-        @Override
-        public void startFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms) {
-            // ignored
-        }
-
-        @Override
-        public void endFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown) {
-            // ignored
+        public String toString() {
+            return "EMPTY";
         }
     };
 
@@ -72,7 +54,9 @@ public interface ScpTransferEventListener extends EventListener {
      *               once transfer is complete
      * @throws IOException If failed to handle the event
      */
-    void startFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms) throws IOException;
+    default void startFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms) throws IOException {
+        // ignored
+    }
 
     /**
      * @param op     The {@link FileOperation}
@@ -84,7 +68,10 @@ public interface ScpTransferEventListener extends EventListener {
      *               reception was successful
      * @throws IOException If failed to handle the event
      */
-    void endFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown) throws IOException;
+    default void endFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown)
+            throws IOException {
+                // ignored
+    }
 
     /**
      * @param op    The {@link FileOperation}
@@ -93,7 +80,9 @@ public interface ScpTransferEventListener extends EventListener {
      *              once transfer is complete
      * @throws IOException If failed to handle the event
      */
-    void startFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms) throws IOException;
+    default void startFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms) throws IOException {
+        // ignored
+    }
 
     /**
      * @param op     The {@link FileOperation}
@@ -104,5 +93,8 @@ public interface ScpTransferEventListener extends EventListener {
      *               reception was successful
      * @throws IOException If failed to handle the event
      */
-    void endFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown) throws IOException;
+    default void endFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown)
+            throws IOException {
+        // ignored
+    }
 }

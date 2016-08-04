@@ -97,11 +97,6 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
             final Semaphore signal = new Semaphore(0);
             sshd.addSessionListener(new SessionListener() {
                 @Override
-                public void sessionException(Session session, Throwable t) {
-                    // ignored
-                }
-
-                @Override
                 public void sessionEvent(final Session session, Event event) {
                     if (Event.Authenticated.equals(event)) {
                         service.execute(new Runnable() {
@@ -119,16 +114,6 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
                             }
                         });
                     }
-                }
-
-                @Override
-                public void sessionCreated(Session session) {
-                    // ignored
-                }
-
-                @Override
-                public void sessionClosed(Session session) {
-                    // ignored
                 }
             });
 
