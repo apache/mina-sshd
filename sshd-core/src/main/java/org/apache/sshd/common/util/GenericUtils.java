@@ -38,6 +38,8 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
@@ -74,16 +76,6 @@ public final class GenericUtils {
     };
 
     public static final String QUOTES = "\"'";
-
-    @SuppressWarnings("rawtypes")
-    private static final Comparator<Comparable> NATURAL_ORDER_COMPARATOR = new Comparator<Comparable>() {
-        // TODO for JDK-8 use Comparator.naturalOrder()
-        @Override
-        @SuppressWarnings("unchecked")
-        public int compare(Comparable c1, Comparable c2) {
-            return c1.compareTo(c2);
-        }
-    };
 
     @SuppressWarnings("rawtypes")
     private static final Factory CASE_INSENSITIVE_MAP_FACTORY = new Factory() {
@@ -306,15 +298,8 @@ public final class GenericUtils {
         }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public static <V extends Comparable<V>> Comparator<V> naturalComparator() {
-        // TODO for JDK-8 use Comparator.naturalOrder()
-        return (Comparator) NATURAL_ORDER_COMPARATOR;
-    }
-
     public static <V extends Comparable<V>> SortedSet<V> asSortedSet(Collection<? extends V> values) {
-        // TODO for JDK-8 use Comparator.naturalOrder()
-        return asSortedSet(GenericUtils.<V>naturalComparator(), values);
+        return asSortedSet(Comparator.<V>naturalOrder(), values);
     }
 
     /**
@@ -337,8 +322,7 @@ public final class GenericUtils {
      * using the provided comparator
      */
     public static <V> SortedSet<V> asSortedSet(Comparator<? super V> comp, Collection<? extends V> values) {
-        // TODO for JDK-8 return Collections.emptySortedSet()
-        SortedSet<V> set = new TreeSet<V>(ValidateUtils.checkNotNull(comp, "No comparator"));
+        SortedSet<V> set = new TreeSet<>(Objects.requireNonNull(comp, "No comparator"));
         if (size(values) > 0) {
             set.addAll(values);
         }
@@ -431,9 +415,9 @@ public final class GenericUtils {
             return Collections.emptyList();
         }
 
-        List<T> matches = new ArrayList<T>(values.size());
+        List<T> matches = new ArrayList<>(values.size());
         for (T v : values) {
-            if (acceptor.evaluate(v)) {
+            if (acceptor.test(v)) {
                 matches.add(v);
             }
         }

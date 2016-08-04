@@ -126,7 +126,6 @@ public enum BuiltinMacs implements MacFactory {
      * according to the factory name (case <U>insensitive</U>)
      */
     public static SortedSet<MacFactory> getRegisteredExtensions() {
-        // TODO for JDK-8 return Collections.emptySortedSet()
         synchronized (EXTENSIONS) {
             return GenericUtils.asSortedSet(NamedResource.BY_NAME_COMPARATOR, EXTENSIONS.values());
         }

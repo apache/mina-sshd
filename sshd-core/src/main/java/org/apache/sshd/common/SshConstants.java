@@ -23,9 +23,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Predicate;
 import org.apache.sshd.common.util.logging.LoggingUtils;
 
 /**
@@ -130,7 +130,7 @@ public final class SshConstants {
     private static class LazyAmbiguousOpcodesHolder {
         private static final Set<Integer> AMBIGUOUS_OPCODES =
             Collections.unmodifiableSet(
-                new HashSet<Integer>(
+                new HashSet<>(
                         LoggingUtils.getAmbiguousMenmonics(SshConstants.class, "SSH_MSG_").values()));
     }
 
@@ -155,7 +155,7 @@ public final class SshConstants {
         private static final Map<Integer, String> MESSAGES_MAP =
                 LoggingUtils.generateMnemonicMap(SshConstants.class, new Predicate<Field>() {
                     @Override
-                    public boolean evaluate(Field f) {
+                    public boolean test(Field f) {
                         String name = f.getName();
                         if (!name.startsWith("SSH_MSG_")) {
                             return false;

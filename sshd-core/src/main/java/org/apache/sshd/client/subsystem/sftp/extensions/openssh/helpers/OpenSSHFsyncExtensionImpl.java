@@ -42,7 +42,7 @@ public class OpenSSHFsyncExtensionImpl extends AbstractSftpClientExtension imple
     @Override
     public void fsync(Handle fileHandle) throws IOException {
         byte[] handle = fileHandle.getIdentifier();
-        Buffer buffer = getCommandBuffer((Integer.SIZE / Byte.SIZE) + NumberUtils.length(handle));
+        Buffer buffer = getCommandBuffer(Integer.BYTES + NumberUtils.length(handle));
         buffer.putBytes(handle);
         sendAndCheckExtendedCommandStatus(buffer);
     }

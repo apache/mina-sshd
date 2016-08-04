@@ -22,7 +22,6 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -80,11 +79,6 @@ public class BaseCipher implements Cipher {
             cipher = null;
             throw new SshException("Unable to initialize cipher " + this, e);
         }
-    }
-
-    @Override
-    public void update(byte[] input) throws Exception {
-        update(input, 0, NumberUtils.length(input));
     }
 
     @Override

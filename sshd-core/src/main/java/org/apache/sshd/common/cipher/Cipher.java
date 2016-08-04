@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.cipher;
 
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -50,7 +51,9 @@ public interface Cipher extends CipherInformation {
      * @throws Exception If failed to execute
      * @see #update(byte[], int, int)
      */
-    void update(byte[] input) throws Exception; // TODO make this a default method in JDK-8
+    default void update(byte[] input) throws Exception {
+        update(input, 0, NumberUtils.length(input));
+    }
 
     /**
      * Performs in-place encryption or decryption on the given data.

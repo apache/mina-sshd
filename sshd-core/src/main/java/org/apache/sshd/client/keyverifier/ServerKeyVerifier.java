@@ -29,6 +29,7 @@ import org.apache.sshd.client.session.ClientSession;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface ServerKeyVerifier {
     /**
      * Verify that the server key provided is really the one of the host.

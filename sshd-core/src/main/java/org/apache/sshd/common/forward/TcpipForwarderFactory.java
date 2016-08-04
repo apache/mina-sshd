@@ -24,6 +24,7 @@ import org.apache.sshd.common.session.ConnectionService;
  * A factory for creating forwarder objects for client port forwarding
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface TcpipForwarderFactory {
 
     /**

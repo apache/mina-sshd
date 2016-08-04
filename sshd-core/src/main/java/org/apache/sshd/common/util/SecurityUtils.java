@@ -299,9 +299,8 @@ public final class SecurityUtils {
 
     /* -------------------------------------------------------------------- */
 
-    // TODO in JDK-8 make this an interface...
-    private static class BouncyCastleInputStreamLoader {
-        public static KeyPair loadKeyPair(String resourceKey, InputStream inputStream, FilePasswordProvider provider)
+    private interface BouncyCastleInputStreamLoader {
+        static KeyPair loadKeyPair(String resourceKey, InputStream inputStream, FilePasswordProvider provider)
                 throws IOException, GeneralSecurityException {
             try (PEMParser r = new PEMParser(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
                 Object o = r.readObject();

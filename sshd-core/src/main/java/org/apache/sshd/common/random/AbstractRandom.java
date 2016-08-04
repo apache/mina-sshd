@@ -27,11 +27,6 @@ public abstract class AbstractRandom implements Random {
         super();
     }
 
-    @Override     // TODO in JDK-8 make this a default method
-    public void fill(byte[] bytes) {
-        fill(bytes, 0, bytes.length);
-    }
-
     @Override
     public String toString() {
         return getName();

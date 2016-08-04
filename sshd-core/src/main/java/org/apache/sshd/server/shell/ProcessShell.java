@@ -62,7 +62,7 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell, 
 
     public ProcessShell(Collection<String> command) {
         // we copy the original list so as not to change it
-        this.command = new ArrayList<String>(ValidateUtils.checkNotNullAndNotEmpty(command, "No process shell command(s)"));
+        this.command = new ArrayList<>(ValidateUtils.checkNotNullAndNotEmpty(command, "No process shell command(s)"));
         this.cmdValue = GenericUtils.join(command, ' ');
     }
 
@@ -145,18 +145,11 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell, 
 
     @Override
     public boolean isAlive() {
-        // TODO in JDK-8 call process.isAlive()
-        try {
-            process.exitValue();
-            return false;
-        } catch (IllegalThreadStateException e) {
-            return true;
-        }
+        return process.isAlive();
     }
 
     @Override
     public int exitValue() {
-        // TODO in JDK-8 call process.isAlive()
         if (isAlive()) {
             try {
                 return process.waitFor();

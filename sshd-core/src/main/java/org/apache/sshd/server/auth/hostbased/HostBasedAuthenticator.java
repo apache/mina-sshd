@@ -30,6 +30,7 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see <A HREF="https://www.ietf.org/rfc/rfc4252.txt">RFC 4252 - section 9</A>
  */
+@FunctionalInterface
 public interface HostBasedAuthenticator {
     /**
      * @param session        The {@link ServerSession} through which the request was received

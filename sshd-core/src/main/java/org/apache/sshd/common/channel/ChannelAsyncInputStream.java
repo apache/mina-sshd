@@ -146,7 +146,7 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
             return buffer;
         }
 
-        @Override   // TODO for JDK-8 make this a default method
+        @Override
         public IoReadFuture verify(long timeoutMillis) throws IOException {
             long startTime = System.nanoTime();
             Number result = verifyResult(Number.class, timeoutMillis);
@@ -158,7 +158,7 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
             return this;
         }
 
-        @Override   // TODO for JDK-8 make this a default method
+        @Override
         public int getRead() {
             Object v = getValue();
             if (v instanceof RuntimeException) {
@@ -174,7 +174,7 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
             }
         }
 
-        @Override   // TODO for JDK-8 make this a default method
+        @Override
         public Throwable getException() {
             Object v = getValue();
             if (v instanceof Throwable) {

@@ -306,13 +306,11 @@ public final class BufferUtils {
      */
     public static long readUInt(InputStream input, byte[] buf, int offset, int len) throws IOException {
         try {
-            // TODO use Integer.BYTES for JDK-8
-            if (len < (Integer.SIZE / Byte.SIZE)) {
-                throw new IllegalArgumentException("Not enough data for a UINT: required=" + (Integer.SIZE / Byte.SIZE) + ", available=" + len);
+            if (len < Integer.BYTES) {
+                throw new IllegalArgumentException("Not enough data for a UINT: required=" + Integer.BYTES + ", available=" + len);
             }
 
-            // TODO use Integer.BYTES for JDK-8
-            IoUtils.readFully(input, buf, offset, Integer.SIZE / Byte.SIZE);
+            IoUtils.readFully(input, buf, offset, Integer.BYTES);
             return getUInt(buf, offset, len);
         } catch (RuntimeException | Error e) {
             throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ")"
@@ -341,9 +339,8 @@ public final class BufferUtils {
      * @return The result as a {@code long} whose 32 high-order bits are zero
      */
     public static long getUInt(byte[] buf, int off, int len) {
-        // TODO use Integer.BYTES for JDK-8
-        if (len < (Integer.SIZE / Byte.SIZE)) {
-            throw new IllegalArgumentException("Not enough data for a UINT: required=" + (Integer.SIZE / Byte.SIZE) + ", available=" + len);
+        if (len < Integer.BYTES) {
+            throw new IllegalArgumentException("Not enough data for a UINT: required=" + Integer.BYTES + ", available=" + len);
         }
 
         long l = (buf[off] << 24) & 0xff000000L;
@@ -439,9 +436,8 @@ public final class BufferUtils {
      * @throws IllegalArgumentException if not enough space available
      */
     public static int putUInt(long value, byte[] buf, int off, int len) {
-        // TODO use Integer.BYTES for JDK-8
-        if (len < Integer.SIZE / Byte.SIZE) {
-            throw new IllegalArgumentException("Not enough data for a UINT: required=" + (Integer.SIZE / Byte.SIZE) + ", available=" + len);
+        if (len < Integer.BYTES) {
+            throw new IllegalArgumentException("Not enough data for a UINT: required=" + Integer.BYTES + ", available=" + len);
         }
 
         buf[off] = (byte) ((value >> 24) & 0xFF);
@@ -449,7 +445,7 @@ public final class BufferUtils {
         buf[off + 2] = (byte) ((value >> 8) & 0xFF);
         buf[off + 3] = (byte) (value & 0xFF);
 
-        return Integer.SIZE / Byte.SIZE;
+        return Integer.BYTES;
     }
 
     public static boolean equals(byte[] a1, byte[] a2) {
@@ -497,7 +493,7 @@ public final class BufferUtils {
      * @return The amount of data that has been encoded
      */
     public static int updateLengthPlaceholder(Buffer buffer, int lenPos) {
-        int startPos = lenPos + (Integer.SIZE / Byte.SIZE);
+        int startPos = lenPos + Integer.BYTES;
         int endPos = buffer.wpos();
         int dataLength = endPos - startPos;
         // NOTE: although data length is defined as UINT32, we do not expected sizes above Integer.MAX_VALUE

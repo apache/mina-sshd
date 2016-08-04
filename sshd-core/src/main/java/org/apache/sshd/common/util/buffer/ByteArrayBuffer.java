@@ -126,15 +126,13 @@ public class ByteArrayBuffer extends Buffer {
 
     @Override
     public byte getByte() {
-        // TODO use Byte.BYTES for JDK-8
-        ensureAvailable(Byte.SIZE / Byte.SIZE);
+        ensureAvailable(Byte.BYTES);
         return data[rpos++];
     }
 
     @Override
     public void putByte(byte b) {
-        // TODO use Byte.BYTES in JDK-8
-        ensureCapacity(Byte.SIZE / Byte.SIZE);
+        ensureCapacity(Byte.BYTES);
         data[wpos++] = b;
     }
 

@@ -43,7 +43,9 @@ public interface WaitableFuture {
      *                     if waiting was interrupted
      * @see #await(long)
      */
-    boolean await() throws IOException;
+    default boolean await() throws IOException {
+        return await(Long.MAX_VALUE);
+    }
 
     /**
      * Wait for the asynchronous operation to complete with the specified timeout.
@@ -55,7 +57,9 @@ public interface WaitableFuture {
      *                     if waiting was interrupted
      * @see #await(long)
      */
-    boolean await(long timeout, TimeUnit unit) throws IOException;
+    default boolean await(long timeout, TimeUnit unit) throws IOException {
+        return await(unit.toMillis(timeout));
+    }
 
     /**
      * Wait for the asynchronous operation to complete with the specified timeout.
@@ -75,7 +79,9 @@ public interface WaitableFuture {
      * @return {@code true} if the operation is completed.
      * @see #awaitUninterruptibly(long)
      */
-    boolean awaitUninterruptibly();
+    default boolean awaitUninterruptibly() {
+        return awaitUninterruptibly(Long.MAX_VALUE);
+    }
 
     /**
      * Wait for the asynchronous operation to complete with the specified timeout
@@ -86,7 +92,9 @@ public interface WaitableFuture {
      * @return {@code true} if the operation is completed.
      * @see #awaitUninterruptibly(long)
      */
-    boolean awaitUninterruptibly(long timeout, TimeUnit unit);
+    default boolean awaitUninterruptibly(long timeout, TimeUnit unit) {
+        return awaitUninterruptibly(unit.toMillis(timeout));
+    }
 
     /**
      * Wait for the asynchronous operation to complete with the specified timeout

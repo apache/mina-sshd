@@ -65,91 +65,6 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
     }
 
     @Override
-    public String getName() {
-        return SftpConstants.SFTP_SUBSYSTEM_NAME;
-    }
-
-    @Override
-    public CloseableHandle open(String path) throws IOException {
-        return open(path, Collections.<OpenMode>emptySet());
-    }
-
-    @Override
-    public CloseableHandle open(String path, OpenMode... options) throws IOException {
-        return open(path, GenericUtils.of(options));
-    }
-
-    @Override
-    public void rename(String oldPath, String newPath) throws IOException {
-        rename(oldPath, newPath, Collections.<CopyMode>emptySet());
-    }
-
-    @Override
-    public void rename(String oldPath, String newPath, CopyMode... options) throws IOException {
-        rename(oldPath, newPath, GenericUtils.of(options));
-    }
-
-    @Override
-    public InputStream read(String path) throws IOException {
-        return read(path, DEFAULT_READ_BUFFER_SIZE);
-    }
-
-    @Override
-    public InputStream read(String path, int bufferSize) throws IOException {
-        return read(path, bufferSize, EnumSet.of(OpenMode.Read));
-    }
-
-    @Override
-    public InputStream read(String path, OpenMode... mode) throws IOException {
-        return read(path, DEFAULT_READ_BUFFER_SIZE, mode);
-    }
-
-    @Override
-    public InputStream read(String path, int bufferSize, OpenMode... mode) throws IOException {
-        return read(path, bufferSize, GenericUtils.of(mode));
-    }
-
-    @Override
-    public InputStream read(String path, Collection<OpenMode> mode) throws IOException {
-        return read(path, DEFAULT_READ_BUFFER_SIZE, mode);
-    }
-
-    @Override
-    public OutputStream write(String path) throws IOException {
-        return write(path, DEFAULT_WRITE_BUFFER_SIZE);
-    }
-
-    @Override
-    public OutputStream write(String path, int bufferSize) throws IOException {
-        return write(path, bufferSize, EnumSet.of(OpenMode.Write, OpenMode.Create, OpenMode.Truncate));
-    }
-
-    @Override
-    public OutputStream write(String path, OpenMode... mode) throws IOException {
-        return write(path, DEFAULT_WRITE_BUFFER_SIZE, mode);
-    }
-
-    @Override
-    public OutputStream write(String path, Collection<OpenMode> mode) throws IOException {
-        return write(path, DEFAULT_WRITE_BUFFER_SIZE, mode);
-    }
-
-    @Override
-    public OutputStream write(String path, int bufferSize, OpenMode... mode) throws IOException {
-        return write(path, bufferSize, GenericUtils.of(mode));
-    }
-
-    @Override
-    public void write(Handle handle, long fileOffset, byte[] src) throws IOException {
-        write(handle, fileOffset, src, 0, src.length);
-    }
-
-    @Override
-    public void symLink(String linkPath, String targetPath) throws IOException {
-        link(linkPath, targetPath, true);
-    }
-
-    @Override
     public <E extends SftpClientExtension> E getExtension(Class<? extends E> extensionType) {
         Object instance = getExtension(BuiltinSftpClientExtensions.fromType(extensionType));
         if (instance == null) {
@@ -780,21 +695,6 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         checkCommandStatus(SftpConstants.SSH_FXP_RENAME, buffer);
     }
 
-    @Override   // TODO make this a default method in Java 8
-    public int read(Handle handle, long fileOffset, byte[] dst) throws IOException {
-        return read(handle, fileOffset, dst, null);
-    }
-
-    @Override   // TODO make this a default method in Java 8
-    public int read(Handle handle, long fileOffset, byte[] dst, AtomicReference<Boolean> eofSignalled) throws IOException {
-        return read(handle, fileOffset, dst, 0, dst.length, eofSignalled);
-    }
-
-    @Override   // TODO make this a default method in Java 8
-    public int read(Handle handle, long fileOffset, byte[] dst, int dstOffset, int len) throws IOException {
-        return read(handle, fileOffset, dst, dstOffset, len, null);
-    }
-
     @Override
     public int read(Handle handle, long fileOffset, byte[] dst, int dstOffset, int len, AtomicReference<Boolean> eofSignalled) throws IOException {
         if (eofSignalled != null) {
@@ -959,11 +859,6 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         return handle;
     }
 
-    @Override   // TODO in JDK-8 make this a default method
-    public List<DirEntry> readDir(Handle handle) throws IOException {
-        return readDir(handle, null);
-    }
-
     @Override
     public List<DirEntry> readDir(Handle handle, AtomicReference<Boolean> eolIndicator) throws IOException {
         if (eolIndicator != null) {
@@ -998,7 +893,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
                 log.debug("checkDirResponse({}}[id={}] reading {} entries", channel, id, len);
             }
 
-            List<DirEntry> entries = new ArrayList<DirEntry>(len);
+            List<DirEntry> entries = new ArrayList<>(len);
             for (int i = 0; i < len; i++) {
                 String name = buffer.getString();
                 String longName = (version == SftpConstants.SFTP_V3) ? buffer.getString() : null;

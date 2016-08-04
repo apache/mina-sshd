@@ -22,6 +22,7 @@ package org.apache.sshd.server.session;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface ServerSessionHolder {
     /**
      * @return The underlying {@link ServerSession} used

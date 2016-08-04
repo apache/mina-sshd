@@ -291,7 +291,7 @@ public class SftpSubsystem
     protected ExecutorService executors;
     protected boolean shutdownExecutor;
     protected Future<?> pendingFuture;
-    protected byte[] workBuf = new byte[Math.max(DEFAULT_FILE_HANDLE_SIZE, Integer.SIZE / Byte.SIZE)]; // TODO in JDK-8 use Integer.BYTES
+    protected byte[] workBuf = new byte[Math.max(DEFAULT_FILE_HANDLE_SIZE, Integer.BYTES)];
     protected FileSystem fileSystem = FileSystems.getDefault();
     protected Path defaultDir = fileSystem.getPath(System.getProperty("user.dir"));
     protected long requestsCount;
@@ -427,9 +427,9 @@ public class SftpSubsystem
         try {
             for (long count = 1L;; count++) {
                 int length = BufferUtils.readInt(in, workBuf, 0, workBuf.length);
-                ValidateUtils.checkTrue(length >= ((Integer.SIZE / Byte.SIZE) + 1 /* command */), "Bad length to read: %d", length);
+                ValidateUtils.checkTrue(length >= (Integer.BYTES + 1 /* command */), "Bad length to read: %d", length);
 
-                Buffer buffer = new ByteArrayBuffer(length + (Integer.SIZE / Byte.SIZE) + Long.SIZE /* a bit extra */, false);
+                Buffer buffer = new ByteArrayBuffer(length + Integer.BYTES + Long.SIZE /* a bit extra */, false);
                 buffer.putInt(length);
                 for (int remainLen = length; remainLen > 0;) {
                     int l = in.read(buffer.array(), buffer.wpos(), remainLen);

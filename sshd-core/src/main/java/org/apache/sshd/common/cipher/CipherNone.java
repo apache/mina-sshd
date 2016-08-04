@@ -18,9 +18,6 @@
  */
 package org.apache.sshd.common.cipher;
 
-import org.apache.sshd.common.util.NumberUtils;
-
-
 /**
  * Represents a no-op cipher.
  * This cipher can not really be used during authentication and should only
@@ -57,11 +54,6 @@ public class CipherNone implements Cipher {
     @Override
     public void init(Mode mode, byte[] bytes, byte[] bytes1) throws Exception {
         // ignored - always succeeds
-    }
-
-    @Override
-    public void update(byte[] input) throws Exception {
-        update(input, 0, NumberUtils.length(input));
     }
 
     @Override

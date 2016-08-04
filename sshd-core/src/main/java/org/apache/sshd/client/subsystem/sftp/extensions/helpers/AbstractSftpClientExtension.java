@@ -145,11 +145,11 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
      */
     protected Buffer getCommandBuffer(Object target, int extraSize) {
         if (target instanceof CharSequence) {
-            return getCommandBuffer((Integer.SIZE / Byte.SIZE) + ((CharSequence) target).length() + extraSize);
+            return getCommandBuffer(Integer.BYTES + ((CharSequence) target).length() + extraSize);
         } else if (target instanceof byte[]) {
-            return getCommandBuffer((Integer.SIZE / Byte.SIZE) + ((byte[]) target).length + extraSize);
+            return getCommandBuffer(Integer.BYTES + ((byte[]) target).length + extraSize);
         } else if (target instanceof Handle) {
-            return getCommandBuffer((Integer.SIZE / Byte.SIZE) + ((Handle) target).length() + extraSize);
+            return getCommandBuffer(Integer.BYTES + ((Handle) target).length() + extraSize);
         } else {
             return getCommandBuffer(extraSize);
         }
@@ -161,7 +161,7 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
      */
     protected Buffer getCommandBuffer(int extraSize) {
         String opcode = getName();
-        Buffer buffer = new ByteArrayBuffer((Integer.SIZE / Byte.SIZE) + GenericUtils.length(opcode) + extraSize + Byte.SIZE, false);
+        Buffer buffer = new ByteArrayBuffer(Integer.BYTES + GenericUtils.length(opcode) + extraSize + Byte.SIZE, false);
         buffer.putString(opcode);
         return buffer;
     }

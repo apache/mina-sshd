@@ -32,7 +32,9 @@ public interface Random extends NamedResource {
      * @param bytes The bytes to fill
      * @see #fill(byte[], int, int)
      */
-    void fill(byte[] bytes);    // TODO in JDK-8 make this a default method
+    default void fill(byte[] bytes) {
+        fill(bytes, 0, bytes.length);
+    }
 
     /**
      * Fill part of bytes with random values.

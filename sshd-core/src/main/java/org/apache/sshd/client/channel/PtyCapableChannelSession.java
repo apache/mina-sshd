@@ -252,7 +252,7 @@ public class PtyCapableChannelSession extends ChannelSession {
             buffer.putInt(ptyHeight);
             buffer.putInt(ptyWidth);
 
-            Buffer modes = new ByteArrayBuffer(GenericUtils.size(ptyModes) * (1 + (Integer.SIZE / Byte.SIZE)) + Long.SIZE, false);
+            Buffer modes = new ByteArrayBuffer(GenericUtils.size(ptyModes) * (1 + Integer.BYTES) + Long.SIZE, false);
             for (Map.Entry<PtyMode, ? extends Number> modeEntry : ptyModes.entrySet()) {
                 PtyMode mode = modeEntry.getKey();
                 Number value = modeEntry.getValue();

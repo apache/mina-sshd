@@ -45,8 +45,7 @@ public class DERParser extends FilterInputStream {
      */
     public static final int MAX_DER_VALUE_LENGTH = 2 * Short.MAX_VALUE;
 
-    // TODO in JDK-8 use Integer.BYTES
-    private final byte[] lenBytes = new byte[Integer.SIZE / Byte.SIZE];
+    private final byte[] lenBytes = new byte[Integer.BYTES];
 
     public DERParser(byte... bytes) {
         this(bytes, 0, NumberUtils.length(bytes));

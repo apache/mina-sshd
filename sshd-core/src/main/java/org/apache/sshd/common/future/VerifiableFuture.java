@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
  * @param <T> Type of verification result
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface VerifiableFuture<T> {
     /**
      * Wait {@link Long#MAX_VALUE} msec. and verify that the operation was successful
@@ -39,7 +40,9 @@ public interface VerifiableFuture<T> {
      * @throws IOException If failed to verify successfully on time
      * @see #verify(long)
      */
-    T verify() throws IOException;
+    default T verify() throws IOException {
+        return verify(Long.MAX_VALUE);
+    }
 
     /**
      * Wait and verify that the operation was successful
@@ -50,7 +53,9 @@ public interface VerifiableFuture<T> {
      * @throws IOException If failed to verify successfully on time
      * @see #verify(long)
      */
-    T verify(long timeout, TimeUnit unit) throws IOException;
+    default T verify(long timeout, TimeUnit unit) throws IOException {
+        return verify(unit.toMillis(timeout));
+    }
 
     /**
      * Wait and verify that the operation was successful
@@ -60,5 +65,4 @@ public interface VerifiableFuture<T> {
      * @throws IOException If failed to verify successfully on time
      */
     T verify(long timeoutMillis) throws IOException;
-
 }

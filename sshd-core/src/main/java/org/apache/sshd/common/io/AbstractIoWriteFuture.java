@@ -20,6 +20,7 @@
 package org.apache.sshd.common.io;
 
 import java.io.IOException;
+
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.DefaultVerifiableSshFuture;
 
@@ -31,7 +32,7 @@ public abstract class AbstractIoWriteFuture extends DefaultVerifiableSshFuture<I
         super(lock);
     }
 
-    @Override      // TODO for JDK-8 make this a default method
+    @Override
     public IoWriteFuture verify(long timeout) throws IOException {
         Boolean result = verifyResult(Boolean.class, timeout);
         if (!result) {
@@ -41,13 +42,13 @@ public abstract class AbstractIoWriteFuture extends DefaultVerifiableSshFuture<I
         return this;
     }
 
-    @Override      // TODO for JDK-8 make this a default method
+    @Override
     public boolean isWritten() {
         Object value = getValue();
         return (value instanceof Boolean) && (Boolean) value;
     }
 
-    @Override      // TODO for JDK-8 make this a default method
+    @Override
     public Throwable getException() {
         Object v = getValue();
         if (v instanceof Throwable) {

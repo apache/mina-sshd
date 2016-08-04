@@ -45,7 +45,7 @@ public class DefaultAuthFuture extends DefaultVerifiableSshFuture<AuthFuture> im
         return this;
     }
 
-    @Override   // TODO for JDK-8 make this a default method
+    @Override
     public Throwable getException() {
         Object v = getValue();
         if (v instanceof Throwable) {
@@ -55,13 +55,13 @@ public class DefaultAuthFuture extends DefaultVerifiableSshFuture<AuthFuture> im
         }
     }
 
-    @Override   // TODO for JDK-8 make this a default method
+    @Override
     public boolean isSuccess() {
         Object v = getValue();
         return (v instanceof Boolean) && ((Boolean) v).booleanValue();
     }
 
-    @Override   // TODO for JDK-8 make this a default method
+    @Override
     public boolean isFailure() {
         Object v = getValue();
         if (v instanceof Boolean) {
@@ -71,12 +71,12 @@ public class DefaultAuthFuture extends DefaultVerifiableSshFuture<AuthFuture> im
         }
     }
 
-    @Override   // TODO for JDK-8 make this a default method
+    @Override
     public void setAuthed(boolean authed) {
         setValue(authed);
     }
 
-    @Override   // TODO for JDK-8 make this a default method
+    @Override
     public void setException(Throwable exception) {
         ValidateUtils.checkNotNull(exception, "No exception provided");
         setValue(exception);

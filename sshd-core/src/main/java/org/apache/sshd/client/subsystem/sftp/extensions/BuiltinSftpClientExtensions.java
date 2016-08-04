@@ -132,12 +132,6 @@ public enum BuiltinSftpClientExtensions implements SftpClientExtensionFactory {
         return type;
     }
 
-    @Override
-    public SftpClientExtension create(SftpClient client, RawSftpClient raw) {
-        Map<String, byte[]> extensions = client.getServerExtensions();
-        return create(client, raw, extensions, ParserUtils.parse(extensions));
-    }
-
     public static BuiltinSftpClientExtensions fromName(String n) {
         return NamedResource.Utils.findByName(n, String.CASE_INSENSITIVE_ORDER, VALUES);
     }

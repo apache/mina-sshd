@@ -29,6 +29,7 @@ import org.apache.sshd.common.session.Session;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
+@FunctionalInterface
 public interface FileSystemFactory {
 
     /**
@@ -39,5 +40,4 @@ public interface FileSystemFactory {
      * @throws IOException if the filesystem can not be created
      */
     FileSystem createFileSystem(Session session) throws IOException;
-
 }

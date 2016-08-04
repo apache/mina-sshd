@@ -32,7 +32,9 @@ public interface SftpClientCreator {
      * @return The created {@link SftpClient}
      * @throws IOException if failed to create the client
      */
-    SftpClient createSftpClient() throws IOException;
+    default SftpClient createSftpClient() throws IOException {
+        return createSftpClient(SftpVersionSelector.CURRENT);
+    }
 
     /**
      * Creates an SFTP client using the specified version
@@ -43,7 +45,9 @@ public interface SftpClientCreator {
      * @return The created {@link SftpClient}
      * @throws IOException If failed to create the client or use the specified version
      */
-    SftpClient createSftpClient(int version) throws IOException;
+    default SftpClient createSftpClient(int version) throws IOException {
+        return createSftpClient(SftpVersionSelector.Utils.fixedVersionSelector(version));
+    }
 
     /**
      * Creates an SFTP client while allowing the selection of a specific version

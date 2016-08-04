@@ -78,7 +78,7 @@ public class DefaultScpClient extends AbstractScpClient {
 
     @Override
     public void download(String remote, OutputStream local) throws IOException {
-        String cmd = createReceiveCommand(remote, Collections.<Option>emptyList());
+        String cmd = ScpClient.createReceiveCommand(remote, Collections.<Option>emptyList());
         ClientSession session = getClientSession();
         ChannelExec channel = openCommandChannel(session, cmd);
         try (InputStream invOut = channel.getInvertedOut();
@@ -94,7 +94,7 @@ public class DefaultScpClient extends AbstractScpClient {
 
     @Override
     protected void download(String remote, FileSystem fs, Path local, Collection<Option> options) throws IOException {
-        String cmd = createReceiveCommand(remote, options);
+        String cmd = ScpClient.createReceiveCommand(remote, options);
         ClientSession session = getClientSession();
         ChannelExec channel = openCommandChannel(session, cmd);
         try (InputStream invOut = channel.getInvertedOut();
@@ -117,7 +117,7 @@ public class DefaultScpClient extends AbstractScpClient {
         final String name = (namePos < 0)
                 ? remote
                 : ValidateUtils.checkNotNullAndNotEmpty(remote.substring(namePos + 1), "No name value in remote=%s", remote);
-        final String cmd = createSendCommand(remote, (time != null) ? EnumSet.of(Option.PreserveAttributes) : Collections.<Option>emptySet());
+        final String cmd = ScpClient.createSendCommand(remote, (time != null) ? EnumSet.of(Option.PreserveAttributes) : Collections.<Option>emptySet());
         ClientSession session = getClientSession();
         ChannelExec channel = openCommandChannel(session, cmd);
         try (InputStream invOut = channel.getInvertedOut();
@@ -141,7 +141,7 @@ public class DefaultScpClient extends AbstractScpClient {
             options = addTargetIsDirectory(options);
         }
 
-        String cmd = createSendCommand(remote, options);
+        String cmd = ScpClient.createSendCommand(remote, options);
         ClientSession session = getClientSession();
         ChannelExec channel = openCommandChannel(session, cmd);
         try {
@@ -182,7 +182,7 @@ public class DefaultScpClient extends AbstractScpClient {
             return args;
         }
 
-        List<String> effective = new ArrayList<String>(numArgs);
+        List<String> effective = new ArrayList<>(numArgs);
         boolean error = false;
         for (int index = 0; (index < numArgs) && (!error); index++) {
             String argName = args[index];

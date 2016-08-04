@@ -48,7 +48,6 @@ import org.bouncycastle.util.Arrays;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface SftpClient extends SubsystemClient {
-
     enum OpenMode {
         Read,
         Write,
@@ -437,6 +436,10 @@ public interface SftpClient extends SubsystemClient {
      */
     int getVersion();
 
+    @Override
+    default String getName() {
+        return SftpConstants.SFTP_SUBSYSTEM_NAME;
+    }
     /**
      * @return An (unmodifiable) {@link Map} of the reported server extensions.
      */
@@ -454,8 +457,11 @@ public interface SftpClient extends SubsystemClient {
      * @param path The remote path
      * @return The file's {@link CloseableHandle}
      * @throws IOException If failed to open the remote file
+     * @see #open(String, Collection)
      */
-    CloseableHandle open(String path) throws IOException;
+    default CloseableHandle open(String path) throws IOException {
+        return open(path, Collections.<OpenMode>emptySet());
+    }
 
     /**
      * Opens a remote file with the specified mode(s)
@@ -465,8 +471,11 @@ public interface SftpClient extends SubsystemClient {
      *                then {@link OpenMode#Read} is assumed
      * @return The file's {@link CloseableHandle}
      * @throws IOException If failed to open the remote file
+     * @see #open(String, Collection)
      */
-    CloseableHandle open(String path, OpenMode... options) throws IOException;
+    default CloseableHandle open(String path, OpenMode... options) throws IOException {
+        return open(path, GenericUtils.of(options));
+    }
 
     /**
      * Opens a remote file with the specified mode(s)
@@ -493,9 +502,13 @@ public interface SftpClient extends SubsystemClient {
      */
     void remove(String path) throws IOException;
 
-    void rename(String oldPath, String newPath) throws IOException;
+    default void rename(String oldPath, String newPath) throws IOException {
+        rename(oldPath, newPath, Collections.<CopyMode>emptySet());
+    }
 
-    void rename(String oldPath, String newPath, CopyMode... options) throws IOException;
+    default void rename(String oldPath, String newPath, CopyMode... options) throws IOException {
+        rename(oldPath, newPath, GenericUtils.of(options));
+    }
 
     void rename(String oldPath, String newPath, Collection<CopyMode> options) throws IOException;
 
@@ -509,7 +522,9 @@ public interface SftpClient extends SubsystemClient {
      * @throws IOException If failed to read the data
      * @see #read(Handle, long, byte[], int, int)
      */
-    int read(Handle handle, long fileOffset, byte[] dst) throws IOException;
+    default int read(Handle handle, long fileOffset, byte[] dst) throws IOException  {
+        return read(handle, fileOffset, dst, null);
+    }
 
     /**
      * Reads data from the open (file) handle
@@ -525,9 +540,13 @@ public interface SftpClient extends SubsystemClient {
      * @see #read(Handle, long, byte[], int, int, AtomicReference)
      * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.3">SFTP v6 - section 9.3</A>
      */
-    int read(Handle handle, long fileOffset, byte[] dst, AtomicReference<Boolean> eofSignalled) throws IOException;
+    default int read(Handle handle, long fileOffset, byte[] dst, AtomicReference<Boolean> eofSignalled) throws IOException {
+        return read(handle, fileOffset, dst, 0, dst.length, eofSignalled);
+    }
 
-    int read(Handle handle, long fileOffset, byte[] dst, int dstOffset, int len) throws IOException;
+    default int read(Handle handle, long fileOffset, byte[] dst, int dstOffset, int len) throws IOException {
+        return read(handle, fileOffset, dst, dstOffset, len, null);
+    }
 
     /**
      * Reads data from the open (file) handle
@@ -546,7 +565,9 @@ public interface SftpClient extends SubsystemClient {
      */
     int read(Handle handle, long fileOffset, byte[] dst, int dstOffset, int len, AtomicReference<Boolean> eofSignalled) throws IOException;
 
-    void write(Handle handle, long fileOffset, byte[] src) throws IOException;
+    default void write(Handle handle, long fileOffset, byte[] src) throws IOException {
+        write(handle, fileOffset, src, 0, src.length);
+    }
 
     /**
      * Write data to (open) file handle
@@ -595,7 +616,9 @@ public interface SftpClient extends SubsystemClient {
      * {@link #readDir(String)}
      * @throws IOException If failed to access the remote site
      */
-    List<DirEntry> readDir(Handle handle) throws IOException;
+    default List<DirEntry> readDir(Handle handle) throws IOException {
+        return readDir(handle, null);
+    }
 
     /**
      * @param handle Directory {@link Handle} to read from
@@ -681,8 +704,11 @@ public interface SftpClient extends SubsystemClient {
      * @param linkPath   The link location
      * @param targetPath The referenced target by the link
      * @throws IOException If failed to execute
+     * @see #link(String, String, boolean)
      */
-    void symLink(String linkPath, String targetPath) throws IOException;
+    default void symLink(String linkPath, String targetPath) throws IOException {
+        link(linkPath, targetPath, true);
+    }
 
     /**
      * Create a link
@@ -711,15 +737,25 @@ public interface SftpClient extends SubsystemClient {
      */
     Iterable<DirEntry> readDir(String path) throws IOException;
 
-    InputStream read(String path) throws IOException;
+    default InputStream read(String path) throws IOException {
+        return read(path, DEFAULT_READ_BUFFER_SIZE);
+    }
 
-    InputStream read(String path, int bufferSize) throws IOException;
+    default InputStream read(String path, int bufferSize) throws IOException {
+        return read(path, bufferSize, EnumSet.of(OpenMode.Read));
+    }
 
-    InputStream read(String path, OpenMode... mode) throws IOException;
+    default InputStream read(String path, OpenMode... mode) throws IOException {
+        return read(path, DEFAULT_READ_BUFFER_SIZE, mode);
+    }
 
-    InputStream read(String path, int bufferSize, OpenMode... mode) throws IOException;
+    default InputStream read(String path, int bufferSize, OpenMode... mode) throws IOException {
+        return read(path, bufferSize, GenericUtils.of(mode));
+    }
 
-    InputStream read(String path, Collection<OpenMode> mode) throws IOException;
+    default InputStream read(String path, Collection<OpenMode> mode) throws IOException {
+        return read(path, DEFAULT_READ_BUFFER_SIZE, mode);
+    }
 
     /**
      * Read a remote file's data via an input stream
@@ -732,15 +768,25 @@ public interface SftpClient extends SubsystemClient {
      */
     InputStream read(String path, int bufferSize, Collection<OpenMode> mode) throws IOException;
 
-    OutputStream write(String path) throws IOException;
+    default OutputStream write(String path) throws IOException {
+        return write(path, DEFAULT_WRITE_BUFFER_SIZE);
+    }
 
-    OutputStream write(String path, int bufferSize) throws IOException;
+    default OutputStream write(String path, int bufferSize) throws IOException {
+        return write(path, bufferSize, EnumSet.of(OpenMode.Write, OpenMode.Create, OpenMode.Truncate));
+    }
 
-    OutputStream write(String path, OpenMode... mode) throws IOException;
+    default OutputStream write(String path, OpenMode... mode) throws IOException {
+        return write(path, DEFAULT_WRITE_BUFFER_SIZE, mode);
+    }
 
-    OutputStream write(String path, int bufferSize, OpenMode... mode) throws IOException;
+    default OutputStream write(String path, int bufferSize, OpenMode... mode) throws IOException {
+        return write(path, bufferSize, GenericUtils.of(mode));
+    }
 
-    OutputStream write(String path, Collection<OpenMode> mode) throws IOException;
+    default OutputStream write(String path, Collection<OpenMode> mode) throws IOException {
+        return write(path, DEFAULT_WRITE_BUFFER_SIZE, mode);
+    }
 
     /**
      * Write to a remote file via an output stream

@@ -35,7 +35,9 @@ public interface ScpClientCreator extends ScpFileOpenerHolder {
      * @see #setScpFileOpener(ScpFileOpener)
      * @see #setScpTransferEventListener(ScpTransferEventListener)
      */
-    ScpClient createScpClient();
+    default ScpClient createScpClient() {
+        return createScpClient(getScpFileOpener(), getScpTransferEventListener());
+    }
 
     /**
      * Create an SCP client from this session.
@@ -46,7 +48,9 @@ public interface ScpClientCreator extends ScpFileOpenerHolder {
      *                 is used <U>instead</U> of any listener set via {@link #setScpTransferEventListener(ScpTransferEventListener)}
      * @return An {@link ScpClient} instance
      */
-    ScpClient createScpClient(ScpTransferEventListener listener);
+    default ScpClient createScpClient(ScpTransferEventListener listener) {
+        return createScpClient(getScpFileOpener(), listener);
+    }
 
     /**
      * Create an SCP client from this session.
@@ -57,7 +61,9 @@ public interface ScpClientCreator extends ScpFileOpenerHolder {
      *               set via {@link #setScpFileOpener(ScpFileOpener)}
      * @return An {@link ScpClient} instance
      */
-    ScpClient createScpClient(ScpFileOpener opener);
+    default ScpClient createScpClient(ScpFileOpener opener) {
+        return createScpClient(opener, getScpTransferEventListener());
+    }
 
     /**
      * Create an SCP client from this session.

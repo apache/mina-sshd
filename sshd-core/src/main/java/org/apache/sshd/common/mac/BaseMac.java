@@ -20,7 +20,6 @@ package org.apache.sshd.common.mac;
 
 import javax.crypto.spec.SecretKeySpec;
 
-import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 
 /**
@@ -81,27 +80,9 @@ public class BaseMac implements Mac {
         update(tmp, 0, 4);
     }
 
-    @Override   // TODO make this a default method in Java 8
-    public void update(byte buf[]) {
-        update(buf, 0, NumberUtils.length(buf));
-    }
-
     @Override
     public void update(byte buf[], int offset, int len) {
         mac.update(buf, offset, len);
-    }
-
-    @Override   // TODO make this a default method in Java 8
-    public byte[] doFinal() throws Exception {
-        int blockSize = getBlockSize();
-        byte[] buf = new byte[blockSize];
-        doFinal(buf);
-        return buf;
-    }
-
-    @Override   // TODO make this a default method in Java 8
-    public void doFinal(byte[] buf) throws Exception {
-        doFinal(buf, 0);
     }
 
     @Override

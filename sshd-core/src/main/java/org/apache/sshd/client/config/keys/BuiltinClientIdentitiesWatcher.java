@@ -26,13 +26,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Supplier;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**

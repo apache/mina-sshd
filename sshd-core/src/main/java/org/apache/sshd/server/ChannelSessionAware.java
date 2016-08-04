@@ -24,6 +24,7 @@ import org.apache.sshd.server.channel.ChannelSession;
  * {@link Command} can implement this optional interface
  * to receive a reference to {@link ChannelSession}.
  */
+@FunctionalInterface
 public interface ChannelSessionAware {
     /**
      * Receives the channel in which the command is being executed.

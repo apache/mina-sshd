@@ -19,7 +19,6 @@
 
 package org.apache.sshd.common.subsystem.sftp.extensions;
 
-import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -36,15 +35,5 @@ public abstract class AbstractParser<T> implements ExtensionParser<T> {
     @Override
     public final String getName() {
         return name;
-    }
-
-    @Override   // TODO in JDK-8 make this a default method
-    public T transform(byte[] input) {
-        return parse(input);
-    }
-
-    @Override   // TODO in JDK-8 make this a default method
-    public T parse(byte[] input) {
-        return parse(input, 0, NumberUtils.length(input));
     }
 }

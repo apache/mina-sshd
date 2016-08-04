@@ -20,15 +20,15 @@
 package org.apache.sshd.common.util;
 
 import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * @param <I> Input type
  * @param <O> Output type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Transformer<I, O> {
-    // TODO in JDK-8 replace this with Function
-
+@FunctionalInterface
+public interface Transformer<I, O> extends Function<I, O> {
     /**
      * Invokes {@link Objects#toString(Object, String)} on the argument
      * with {@code null} as the value to return if argument is {@code null}
@@ -54,6 +54,10 @@ public interface Transformer<I, O> {
         }
     };
 
+    @Override
+    default O apply(I input) {
+        return transform(input);
+    }
     /**
      * @param input Input value
      * @return Transformed output value
@@ -76,9 +80,9 @@ public interface Transformer<I, O> {
             throw new UnsupportedOperationException("No instance allowed");
         }
 
-        @SuppressWarnings({ "cast", "unchecked" })
+        @SuppressWarnings({ "unchecked" })
         public static <U extends V, V> Transformer<U, V> identity() {
-            return (Transformer<U, V>) IDENTITY;
+            return IDENTITY;
         }
     }
 }

@@ -89,9 +89,9 @@ public final class NumberUtils {
             return 0;
         }
 
-        int hash = hashCode(values[0]);
+        int hash = Long.hashCode(values[0]);
         for (int index = 1; index < values.length; index++) {
-            hash += 31 * hash + hashCode(values[index]);
+            hash += 31 * hash + Long.hashCode(values[index]);
         }
 
         return hash;
@@ -108,11 +108,6 @@ public final class NumberUtils {
         }
 
         return hash;
-    }
-
-    // TODO in JDK-8 use Long.hashCode(long)
-    public static int hashCode(long value) {
-        return (int) (value ^ (value >>> 32));
     }
 
     /**

@@ -29,11 +29,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
-import org.apache.sshd.common.util.Predicate;
 import org.apache.sshd.common.util.ReflectionUtils;
 import org.slf4j.Logger;
 
@@ -60,7 +60,7 @@ public final class LoggingUtils {
     public static Map<Integer, String> generateMnemonicMap(Class<?> clazz, final String commonPrefix) {
         return generateMnemonicMap(clazz, new Predicate<Field>() {
             @Override
-            public boolean evaluate(Field f) {
+            public boolean test(Field f) {
                 String name = f.getName();
                 return name.startsWith(commonPrefix);
             }
@@ -113,10 +113,10 @@ public final class LoggingUtils {
      * fields in this map. The key is the field's name and value is its associated opcode.
      * @see #getAmbiguousMenmonics(Class, Predicate)
      */
-    public static Map<String, Integer> getAmbiguousMenmonics(Class<?> clazz, final String commonPrefix) {
+    public static Map<String, Integer> getAmbiguousMenmonics(Class<?> clazz, String commonPrefix) {
         return getAmbiguousMenmonics(clazz, new Predicate<Field>() {
             @Override
-            public boolean evaluate(Field f) {
+            public boolean test(Field f) {
                 String name = f.getName();
                 return name.startsWith(commonPrefix);
             }
@@ -141,7 +141,7 @@ public final class LoggingUtils {
             return Collections.emptyMap();
         }
 
-        Map<String, Integer> result = new TreeMap<String, Integer>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, Integer> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         Map<Integer, List<String>> opcodesMap = new HashMap<>(fields.size());
         for (Field f : fields) {
             String name = f.getName();
@@ -150,7 +150,7 @@ public final class LoggingUtils {
                 Integer key = NumberUtils.toInteger(value);
                 List<String> nameList = opcodesMap.get(key);
                 if (nameList == null) {
-                    nameList = new ArrayList<String>();
+                    nameList = new ArrayList<>();
                     opcodesMap.put(key, nameList);
                 }
                 nameList.add(name);
@@ -179,10 +179,10 @@ public final class LoggingUtils {
      * (besides being a {@link Number} and {@code public static final}).
      * @return A {@link Collection} of all the fields that have satisfied all conditions
      */
-    public static Collection<Field> getMnemonicFields(Class<?> clazz, final Predicate<? super Field> acceptor) {
+    public static Collection<Field> getMnemonicFields(Class<?> clazz, Predicate<? super Field> acceptor) {
         return ReflectionUtils.getMatchingFields(clazz, new Predicate<Field>() {
             @Override
-            public boolean evaluate(Field f) {
+            public boolean test(Field f) {
                 int mods = f.getModifiers();
                 if ((!Modifier.isPublic(mods)) || (!Modifier.isStatic(mods)) || (!Modifier.isFinal(mods))) {
                     return false;
@@ -193,7 +193,7 @@ public final class LoggingUtils {
                     return false;
                 }
 
-                return acceptor.evaluate(f);
+                return acceptor.test(f);
             }
         });
     }

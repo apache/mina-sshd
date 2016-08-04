@@ -28,6 +28,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface ServerProxyAcceptor {
     /**
      * Invoked <U>before</U> any attempt is made to retrieve the SSH client

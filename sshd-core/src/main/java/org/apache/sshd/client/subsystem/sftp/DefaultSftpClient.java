@@ -61,7 +61,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
     private final Map<Integer, Buffer> messages = new HashMap<>();
     private final AtomicInteger cmdId = new AtomicInteger(100);
     private final Buffer receiveBuffer = new ByteArrayBuffer();
-    private final byte[] workBuf = new byte[Integer.SIZE / Byte.SIZE];  // TODO in JDK-8 use Integer.BYTES
+    private final byte[] workBuf = new byte[Integer.BYTES];
     private final AtomicInteger versionHolder = new AtomicInteger(0);
     private final AtomicBoolean closing = new AtomicBoolean(false);
     private final Map<String, byte[]> extensions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -253,7 +253,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         }
 
         OutputStream dos = channel.getInvertedIn();
-        BufferUtils.writeInt(dos, 1 /* cmd */ + (Integer.SIZE / Byte.SIZE) /* id */ + len, workBuf);
+        BufferUtils.writeInt(dos, 1 /* cmd */ + Integer.BYTES /* id */ + len, workBuf);
         dos.write(cmd & 0xFF);
         BufferUtils.writeInt(dos, id, workBuf);
         dos.write(buffer.array(), buffer.rpos(), len);
@@ -288,13 +288,11 @@ public class DefaultSftpClient extends AbstractSftpClient {
         InputStream dis = channel.getInvertedOut();
         int length = BufferUtils.readInt(dis, workBuf);
         // must have at least command + length
-        // TODO in jdk-8 use Integer.BYTES
-        if (length < (1 + (Integer.SIZE / Byte.SIZE))) {
+        if (length < (1 + Integer.BYTES)) {
             throw new IllegalArgumentException("Bad length: " + length);
         }
 
-        // TODO in jdk-8 use Integer.BYTES
-        Buffer buffer = new ByteArrayBuffer(length + (Integer.SIZE / Byte.SIZE), false);
+        Buffer buffer = new ByteArrayBuffer(length + Integer.BYTES, false);
         buffer.putInt(length);
         int nb = length;
         while (nb > 0) {
@@ -441,8 +439,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
         }
 
         String verVal = String.valueOf(selected);
-        Buffer buffer = new ByteArrayBuffer((Integer.SIZE / Byte.SIZE) + SftpConstants.EXT_VERSION_SELECT.length()     // extension name
-                + (Integer.SIZE / Byte.SIZE) + verVal.length() + Byte.SIZE, false);
+        Buffer buffer = new ByteArrayBuffer(Integer.BYTES + SftpConstants.EXT_VERSION_SELECT.length()     // extension name
+                + Integer.BYTES + verVal.length() + Byte.SIZE, false);
         buffer.putString(SftpConstants.EXT_VERSION_SELECT);
         buffer.putString(verVal);
         checkCommandStatus(SftpConstants.SSH_FXP_EXTENDED, buffer);

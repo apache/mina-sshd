@@ -19,15 +19,11 @@
 
 package org.apache.sshd.client.scp;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermission;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,7 +41,6 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.scp.ScpException;
 import org.apache.sshd.common.scp.ScpHelper;
-import org.apache.sshd.common.scp.ScpTimestamp;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -68,16 +63,6 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
     }
 
     @Override
-    public void download(String remote, String local, Option... options) throws IOException {
-        download(remote, local, GenericUtils.isEmpty(options) ? Collections.<Option>emptySet() : GenericUtils.of(options));
-    }
-
-    @Override
-    public void download(String[] remote, String local, Option... options) throws IOException {
-        download(remote, local, GenericUtils.isEmpty(options) ? Collections.<Option>emptySet() : GenericUtils.of(options));
-    }
-
-    @Override
     public void download(String[] remote, String local, Collection<Option> options) throws IOException {
         local = ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local);
         remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s", (Object) remote);
@@ -92,11 +77,6 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
     }
 
     @Override
-    public void download(String[] remote, Path local, Option... options) throws IOException {
-        download(remote, local, GenericUtils.isEmpty(options) ? Collections.<Option>emptySet() : GenericUtils.of(options));
-    }
-
-    @Override
     public void download(String[] remote, Path local, Collection<Option> options) throws IOException {
         remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s", (Object) remote);
 
@@ -107,11 +87,6 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
         for (String r : remote) {
             download(r, local, options);
         }
-    }
-
-    @Override
-    public void download(String remote, Path local, Option... options) throws IOException {
-        download(remote, local, GenericUtils.of(options));
     }
 
     @Override
@@ -165,57 +140,6 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
     }
 
     protected abstract void download(String remote, FileSystem fs, Path local, Collection<Option> options) throws IOException;
-
-    @Override
-    public byte[] downloadBytes(String remote) throws IOException {
-        try (ByteArrayOutputStream local = new ByteArrayOutputStream()) {
-            download(remote, local);
-            return local.toByteArray();
-        }
-    }
-
-    @Override
-    public void upload(String local, String remote, Option... options) throws IOException {
-        upload(local, remote, GenericUtils.of(options));
-    }
-
-    @Override
-    public void upload(String local, String remote, Collection<Option> options) throws IOException {
-        upload(new String[]{ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local)}, remote, options);
-    }
-
-    @Override
-    public void upload(String[] local, String remote, Option... options) throws IOException {
-        upload(local, remote, GenericUtils.isEmpty(options) ? Collections.<Option>emptySet() : GenericUtils.of(options));
-    }
-
-    @Override
-    public void upload(Path local, String remote, Option... options) throws IOException {
-        upload(local, remote, GenericUtils.isEmpty(options) ? Collections.<Option>emptySet() : GenericUtils.of(options));
-    }
-
-    @Override
-    public void upload(Path local, String remote, Collection<Option> options) throws IOException {
-        upload(new Path[]{ValidateUtils.checkNotNull(local, "Invalid local argument: %s", local)},
-                remote, GenericUtils.isEmpty(options) ? Collections.<Option>emptySet() : GenericUtils.of(options));
-    }
-
-    @Override
-    public void upload(Path[] local, String remote, Option... options) throws IOException {
-        upload(local, remote, GenericUtils.isEmpty(options) ? Collections.<Option>emptySet() : GenericUtils.of(options));
-    }
-
-    @Override
-    public void upload(byte[] data, String remote, Collection<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
-        upload(data, 0, data.length, remote, perms, time);
-    }
-
-    @Override
-    public void upload(byte[] data, int offset, int len, String remote, Collection<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
-        try (InputStream local = new ByteArrayInputStream(data, offset, len)) {
-            upload(local, remote, len, perms, time);
-        }
-    }
 
     @Override
     public void upload(String[] local, String remote, Collection<Option> options) throws IOException {
@@ -350,36 +274,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
         }
     }
 
-    public static String createSendCommand(String remote, Collection<Option> options) {
-        StringBuilder sb = new StringBuilder(remote.length() + Long.SIZE).append(ScpHelper.SCP_COMMAND_PREFIX);
-        if (options.contains(Option.Recursive)) {
-            sb.append(" -r");
-        }
-        if (options.contains(Option.TargetIsDirectory)) {
-            sb.append(" -d");
-        }
-        if (options.contains(Option.PreserveAttributes)) {
-            sb.append(" -p");
-        }
-
-        sb.append(" -t").append(" --").append(" ").append(remote);
-        return sb.toString();
-    }
-
-    public static String createReceiveCommand(String remote, Collection<Option> options) {
-        ValidateUtils.checkNotNullAndNotEmpty(remote, "No remote location specified");
-        StringBuilder sb = new StringBuilder(remote.length() + Long.SIZE).append(ScpHelper.SCP_COMMAND_PREFIX);
-        if (options.contains(Option.Recursive)) {
-            sb.append(" -r");
-        }
-        if (options.contains(Option.PreserveAttributes)) {
-            sb.append(" -p");
-        }
-
-        sb.append(" -f").append(" --").append(' ').append(remote);
-        return sb.toString();
-    }
-
+    @FunctionalInterface
     public interface ScpOperationExecutor<T> {
         void execute(ScpHelper helper, Collection<T> local, Collection<Option> options) throws IOException;
     }

@@ -25,10 +25,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.function.Supplier;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Supplier;
 import org.apache.sshd.common.util.Transformer;
 
 /**

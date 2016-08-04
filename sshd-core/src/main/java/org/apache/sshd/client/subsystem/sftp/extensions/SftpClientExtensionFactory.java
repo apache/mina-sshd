@@ -24,13 +24,16 @@ import java.util.Map;
 import org.apache.sshd.client.subsystem.sftp.RawSftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface SftpClientExtensionFactory extends NamedResource {
-    // TODO make this a default method for JDK-8
-    SftpClientExtension create(SftpClient client, RawSftpClient raw);
+    default SftpClientExtension create(SftpClient client, RawSftpClient raw) {
+        Map<String, byte[]> extensions = client.getServerExtensions();
+        return create(client, raw, extensions, ParserUtils.parse(extensions));
+    }
 
     SftpClientExtension create(SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed);
 }

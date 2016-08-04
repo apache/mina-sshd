@@ -106,33 +106,33 @@ public abstract class AbstractSignature implements Signature {
     protected Pair<String, byte[]> extractEncodedSignature(byte[] sig) {
         final int dataLen = NumberUtils.length(sig);
         // if it is encoded then we must have at least 2 UINT32 values
-        if (dataLen < (2 * (Integer.SIZE / Byte.SIZE))) {
+        if (dataLen < (2 * Integer.BYTES)) {
             return null;
         }
 
         long keyTypeLen = BufferUtils.getUInt(sig, 0, dataLen);
         // after the key type we MUST have data bytes
-        if (keyTypeLen >= (dataLen - (Integer.SIZE / Byte.SIZE))) {
+        if (keyTypeLen >= (dataLen - Integer.BYTES)) {
             return null;
         }
 
-        int keyTypeStartPos = Integer.SIZE / Byte.SIZE;
+        int keyTypeStartPos = Integer.BYTES;
         int keyTypeEndPos = keyTypeStartPos + (int) keyTypeLen;
         int remainLen = dataLen - keyTypeEndPos;
         // must have UINT32 with the data bytes length
-        if (remainLen < (Integer.SIZE / Byte.SIZE)) {
+        if (remainLen < Integer.BYTES) {
             return null;
         }
 
         long dataBytesLen = BufferUtils.getUInt(sig, keyTypeEndPos, remainLen);
         // make sure reported number of bytes does not exceed available
-        if (dataBytesLen > (remainLen - (Integer.SIZE / Byte.SIZE))) {
+        if (dataBytesLen > (remainLen - Integer.BYTES)) {
             return null;
         }
 
         String keyType = new String(sig, keyTypeStartPos, (int) keyTypeLen, StandardCharsets.UTF_8);
         byte[] data = new byte[(int) dataBytesLen];
-        System.arraycopy(sig, keyTypeEndPos + (Integer.SIZE / Byte.SIZE), data, 0, (int) dataBytesLen);
+        System.arraycopy(sig, keyTypeEndPos + Integer.BYTES, data, 0, (int) dataBytesLen);
         return new Pair<>(keyType, data);
     }
 

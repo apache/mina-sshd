@@ -35,7 +35,7 @@ public class DefaultCloseFuture extends DefaultSshFuture<CloseFuture> implements
         super(lock);
     }
 
-    @Override   // TODO for JDK-8 make this a default method
+    @Override
     public boolean isClosed() {
         if (isDone()) {
             return (Boolean) getValue();
@@ -44,7 +44,7 @@ public class DefaultCloseFuture extends DefaultSshFuture<CloseFuture> implements
         }
     }
 
-    @Override   // TODO for JDK-8 make this a default method
+    @Override
     public void setClosed() {
         setValue(Boolean.TRUE);
     }

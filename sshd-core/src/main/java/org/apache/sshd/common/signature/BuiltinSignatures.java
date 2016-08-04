@@ -154,7 +154,6 @@ public enum BuiltinSignatures implements SignatureFactory {
      * according to the factory name (case <U>insensitive</U>)
      */
     public static SortedSet<SignatureFactory> getRegisteredExtensions() {
-        // TODO for JDK-8 return Collections.emptySortedSet()
         synchronized (EXTENSIONS) {
             return GenericUtils.asSortedSet(NamedResource.BY_NAME_COMPARATOR, EXTENSIONS.values());
         }

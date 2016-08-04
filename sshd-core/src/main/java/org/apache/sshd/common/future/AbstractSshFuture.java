@@ -22,7 +22,6 @@ package org.apache.sshd.common.future;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.StreamCorruptedException;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.GenericUtils;
@@ -42,29 +41,9 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
         super();
     }
 
-    @Override   // TODO make this a default method in JDK-8
-    public boolean await() throws IOException {
-        return await(Long.MAX_VALUE);
-    }
-
-    @Override   // TODO make this a default method in JDK-8
-    public boolean await(long timeout, TimeUnit unit) throws IOException {
-        return await(unit.toMillis(timeout));
-    }
-
     @Override
     public boolean await(long timeoutMillis) throws IOException {
         return await0(timeoutMillis, true) != null;
-    }
-
-    @Override   // TODO make this a default method in JDK-8
-    public boolean awaitUninterruptibly() {
-        return awaitUninterruptibly(Long.MAX_VALUE);
-    }
-
-    @Override   // TODO make this a default method in JDK-8
-    public boolean awaitUninterruptibly(long timeout, TimeUnit unit) {
-        return awaitUninterruptibly(unit.toMillis(timeout));
     }
 
     @Override
@@ -72,9 +51,8 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
         try {
             return await0(timeoutMillis, false) != null;
         } catch (InterruptedIOException e) {
-            // TODO for JDK-8 use the 2-args constructors
-            throw (InternalError) new InternalError("Unexpected interrupted exception wile awaitUninterruptibly "
-                    + timeoutMillis + " msec.: " + e.getMessage()).initCause(e);
+            throw new InternalError("Unexpected interrupted exception wile awaitUninterruptibly "
+                    + timeoutMillis + " msec.: " + e.getMessage(), e);
         }
     }
 

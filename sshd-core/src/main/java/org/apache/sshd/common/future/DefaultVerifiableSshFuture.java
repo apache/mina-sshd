@@ -19,9 +19,6 @@
 
 package org.apache.sshd.common.future;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
 /**
  * @param <T> Type of future
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -29,15 +26,5 @@ import java.util.concurrent.TimeUnit;
 public abstract class DefaultVerifiableSshFuture<T extends SshFuture> extends DefaultSshFuture<T>implements VerifiableFuture<T> {
     protected DefaultVerifiableSshFuture(Object lock) {
         super(lock);
-    }
-
-    @Override   // TODO for JDK-8 make this a default method
-    public T verify() throws IOException {
-        return verify(Long.MAX_VALUE);
-    }
-
-    @Override   // TODO for JDK-8 make this a default method
-    public T verify(long timeout, TimeUnit unit) throws IOException {
-        return verify(unit.toMillis(timeout));
     }
 }

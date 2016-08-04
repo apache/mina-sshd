@@ -42,9 +42,9 @@ public class CopyDataExtensionImpl extends AbstractSftpClientExtension implement
     public void copyData(Handle readHandle, long readOffset, long readLength, Handle writeHandle, long writeOffset) throws IOException {
         byte[] srcId = readHandle.getIdentifier();
         byte[] dstId = writeHandle.getIdentifier();
-        Buffer buffer = getCommandBuffer((Integer.SIZE / Byte.SIZE) + NumberUtils.length(srcId)
-                + (Integer.SIZE / Byte.SIZE) + NumberUtils.length(dstId)
-                + (3 * (Long.SIZE + (Integer.SIZE / Byte.SIZE))));
+        Buffer buffer = getCommandBuffer(Integer.BYTES + NumberUtils.length(srcId)
+                + Integer.BYTES + NumberUtils.length(dstId)
+                + (3 * (Long.SIZE + Integer.BYTES)));
         buffer.putBytes(srcId);
         buffer.putLong(readOffset);
         buffer.putLong(readLength);

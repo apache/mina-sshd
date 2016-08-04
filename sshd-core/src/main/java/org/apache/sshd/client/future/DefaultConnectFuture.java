@@ -19,6 +19,7 @@
 package org.apache.sshd.client.future;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.RuntimeSshException;
@@ -36,7 +37,7 @@ public class DefaultConnectFuture extends DefaultVerifiableSshFuture<ConnectFutu
         super(lock);
     }
 
-    @Override   // TODO in JDK-8 make this a default method
+    @Override
     public ConnectFuture verify(long timeout) throws IOException {
         long startTime = System.nanoTime();
         ClientSession session = verifyResult(ClientSession.class, timeout);
@@ -48,7 +49,7 @@ public class DefaultConnectFuture extends DefaultVerifiableSshFuture<ConnectFutu
         return this;
     }
 
-    @Override   // TODO in JDK-8 make this a default method
+    @Override
     public ClientSession getSession() {
         Object v = getValue();
         if (v instanceof RuntimeException) {
@@ -64,7 +65,7 @@ public class DefaultConnectFuture extends DefaultVerifiableSshFuture<ConnectFutu
         }
     }
 
-    @Override   // TODO in JDK-8 make this a default method
+    @Override
     public Throwable getException() {
         Object v = getValue();
         if (v instanceof Throwable) {
@@ -74,18 +75,18 @@ public class DefaultConnectFuture extends DefaultVerifiableSshFuture<ConnectFutu
         }
     }
 
-    @Override   // TODO in JDK-8 make this a default method
+    @Override
     public boolean isConnected() {
         return getValue() instanceof ClientSession;
     }
 
-    @Override   // TODO in JDK-8 make this a default method
+    @Override
     public void setSession(ClientSession session) {
-        ValidateUtils.checkNotNull(session, "No client session provided");
+        Objects.requireNonNull(session, "No client session provided");
         setValue(session);
     }
 
-    @Override   // TODO in JDK-8 make this a default method
+    @Override
     public void setException(Throwable exception) {
         ValidateUtils.checkNotNull(exception, "No exception provided");
         setValue(exception);

@@ -31,7 +31,7 @@ public class DefaultKeyExchangeFuture extends DefaultVerifiableSshFuture<KeyExch
         super(lock);
     }
 
-    @Override   // TODO for JDK-8 make this a default method
+    @Override
     public KeyExchangeFuture verify(long timeoutMillis) throws IOException {
         Boolean result = verifyResult(Boolean.class, timeoutMillis);
         if (!result.booleanValue()) {
@@ -41,7 +41,7 @@ public class DefaultKeyExchangeFuture extends DefaultVerifiableSshFuture<KeyExch
         return this;
     }
 
-    @Override   // TODO for JDK-8 make this a default method
+    @Override
     public Throwable getException() {
         Object v = getValue();
         if (v instanceof Throwable) {

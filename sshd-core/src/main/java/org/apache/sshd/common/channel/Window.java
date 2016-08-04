@@ -26,11 +26,11 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
-import org.apache.sshd.common.util.Predicate;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
@@ -50,7 +50,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
     public static final Predicate<Window> SPACE_AVAILABLE_PREDICATE = new Predicate<Window>() {
         @SuppressWarnings("synthetic-access")
         @Override
-        public boolean evaluate(Window input) {
+        public boolean test(Window input) {
             // NOTE: we do not call "getSize()" on purpose in order to avoid the lock
             return input.sizeHolder.get() > 0;
         }
@@ -233,7 +233,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
             waitForCondition(new Predicate<Window>() {
                 @SuppressWarnings("synthetic-access")
                 @Override
-                public boolean evaluate(Window input) {
+                public boolean test(Window input) {
                     // NOTE: we do not call "getSize()" on purpose in order to avoid the lock
                     return input.sizeHolder.get() >= len;
                 }
@@ -291,7 +291,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         long remWaitNanos = maxWaitNanos;
         // The loop takes care of spurious wakeups
         while (isOpen() && (remWaitNanos > 0L)) {
-            if (predicate.evaluate(this)) {
+            if (predicate.test(this)) {
                 return;
             }
 

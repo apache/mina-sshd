@@ -19,10 +19,10 @@
 package org.apache.sshd.client.future;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.DefaultVerifiableSshFuture;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * A default implementation of {@link OpenFuture}.
@@ -34,7 +34,7 @@ public class DefaultOpenFuture extends DefaultVerifiableSshFuture<OpenFuture> im
         super(lock);
     }
 
-    @Override   // TODO for JDK-8 make this a default method
+    @Override
     public OpenFuture verify(long timeoutMillis) throws IOException {
         Boolean result = verifyResult(Boolean.class, timeoutMillis);
         if (!result.booleanValue()) {
@@ -44,7 +44,7 @@ public class DefaultOpenFuture extends DefaultVerifiableSshFuture<OpenFuture> im
         return this;
     }
 
-    @Override   // TODO for JDK-8 make this a default method
+    @Override
     public Throwable getException() {
         Object v = getValue();
         if (v instanceof Throwable) {
@@ -54,20 +54,20 @@ public class DefaultOpenFuture extends DefaultVerifiableSshFuture<OpenFuture> im
         }
     }
 
-    @Override   // TODO for JDK-8 make this a default method
+    @Override
     public boolean isOpened() {
         Object value = getValue();
         return (value instanceof Boolean) && ((Boolean) value).booleanValue();
     }
 
-    @Override   // TODO for JDK-8 make this a default method
+    @Override
     public void setOpened() {
         setValue(Boolean.TRUE);
     }
 
-    @Override   // TODO for JDK-8 make this a default method
+    @Override
     public void setException(Throwable exception) {
-        ValidateUtils.checkNotNull(exception, "No exception provided");
+        Objects.requireNonNull(exception, "No exception provided");
         setValue(exception);
     }
 }

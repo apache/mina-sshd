@@ -25,6 +25,7 @@ package org.apache.sshd.common;
  * @param <T> type of objets this factory will create
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface Factory<T> {
 
     /**

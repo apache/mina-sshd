@@ -71,9 +71,7 @@ import org.apache.sshd.common.util.logging.SimplifiedLog;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class Buffer implements Readable {
-
-    // TODO use Long.BYTES in JDK-8
-    protected final byte[] workBuf = new byte[Long.SIZE / Byte.SIZE];
+    protected final byte[] workBuf = new byte[Long.BYTES];
 
     protected Buffer() {
         super();
@@ -131,16 +129,14 @@ public abstract class Buffer implements Readable {
     }
 
     public byte getByte() {
-        // TODO use Byte.BYTES for JDK-8
-        ensureAvailable(Byte.SIZE / Byte.SIZE);
-        getRawBytes(workBuf, 0, Byte.SIZE / Byte.SIZE);
+        ensureAvailable(Byte.BYTES);
+        getRawBytes(workBuf, 0, Byte.BYTES);
         return workBuf[0];
     }
 
     public short getShort() {
-        // TODO use Short.BYTES for JDK-8
-        ensureAvailable(Short.SIZE / Byte.SIZE);
-        getRawBytes(workBuf, 0, Short.SIZE / Byte.SIZE);
+        ensureAvailable(Short.BYTES);
+        getRawBytes(workBuf, 0, Short.BYTES);
         short v = (short) ((workBuf[1] << Byte.SIZE) & 0xFF00);
         v |= workBuf[0] & 0xF;
         return v;
@@ -151,16 +147,14 @@ public abstract class Buffer implements Readable {
     }
 
     public long getUInt() {
-        // TODO use Integer.BYTES for JDK-8
-        ensureAvailable(Integer.SIZE / Byte.SIZE);
-        getRawBytes(workBuf, 0, Integer.SIZE / Byte.SIZE);
-        return BufferUtils.getUInt(workBuf, 0, Integer.SIZE / Byte.SIZE);
+        ensureAvailable(Integer.BYTES);
+        getRawBytes(workBuf, 0, Integer.BYTES);
+        return BufferUtils.getUInt(workBuf, 0, Integer.BYTES);
     }
 
     public long getLong() {
-        // TODO use Long.BYTES for JDK-8
-        ensureAvailable(Long.SIZE / Byte.SIZE);
-        getRawBytes(workBuf, 0, Long.SIZE / Byte.SIZE);
+        ensureAvailable(Long.BYTES);
+        getRawBytes(workBuf, 0, Long.BYTES);
         long l = ((long) workBuf[0] << 56) & 0xff00000000000000L;
         l |= ((long) workBuf[1] << 48) & 0x00ff000000000000L;
         l |= ((long) workBuf[2] << 40) & 0x0000ff0000000000L;
@@ -226,7 +220,7 @@ public abstract class Buffer implements Readable {
      * @see #getString(Charset)
      */
     public Collection<String> getAvailableStrings(Charset charset) {
-        Collection<String> list = new LinkedList<String>();
+        Collection<String> list = new LinkedList<>();
         while (available() > 0) {
             String s = getString(charset);
             list.add(s);
@@ -255,7 +249,7 @@ public abstract class Buffer implements Readable {
             return Collections.emptyList();
         }
 
-        List<String> list = new ArrayList<String>(count);
+        List<String> list = new ArrayList<>(count);
         for (int index = 0; index < count; index++) {
             String s = getString(charset);
             list.add(s);
@@ -417,10 +411,9 @@ public abstract class Buffer implements Readable {
      ======================*/
 
     public void putByte(byte b) {
-        // TODO use Byte.BYTES in JDK-8
-        ensureCapacity(Byte.SIZE / Byte.SIZE);
+        ensureCapacity(Byte.BYTES);
         workBuf[0] = b;
-        putRawBytes(workBuf, 0, Byte.SIZE / Byte.SIZE);
+        putRawBytes(workBuf, 0, Byte.BYTES);
     }
 
     public void putBuffer(Readable buffer) {
@@ -435,11 +428,10 @@ public abstract class Buffer implements Readable {
      * @param i The 16-bit value
      */
     public void putShort(int i) {
-        // TODO use Short.BYTES for JDK-8
-        ensureCapacity(Short.SIZE / Byte.SIZE);
+        ensureCapacity(Short.BYTES);
         workBuf[0] = (byte) (i >> 8);
         workBuf[1] = (byte) i;
-        putRawBytes(workBuf, 0, Short.SIZE / Byte.SIZE);
+        putRawBytes(workBuf, 0, Short.BYTES);
     }
 
     /**
@@ -448,10 +440,9 @@ public abstract class Buffer implements Readable {
      * @param i The 32-bit value
      */
     public void putInt(long i) {
-        // TODO use Integer.BYTES for JDK-8
-        ensureCapacity(Integer.SIZE / Byte.SIZE);
-        BufferUtils.putUInt(i, workBuf, 0, Integer.SIZE / Byte.SIZE);
-        putRawBytes(workBuf, 0, Integer.SIZE / Byte.SIZE);
+        ensureCapacity(Integer.BYTES);
+        BufferUtils.putUInt(i, workBuf, 0, Integer.BYTES);
+        putRawBytes(workBuf, 0, Integer.BYTES);
     }
 
     /**
@@ -460,8 +451,7 @@ public abstract class Buffer implements Readable {
      * @param i The 64-bit value
      */
     public void putLong(long i) {
-        // TODO use Long.BYTES for JDK-8
-        ensureCapacity(Long.SIZE / Byte.SIZE);
+        ensureCapacity(Long.BYTES);
         workBuf[0] = (byte) (i >> 56);
         workBuf[1] = (byte) (i >> 48);
         workBuf[2] = (byte) (i >> 40);
@@ -470,7 +460,7 @@ public abstract class Buffer implements Readable {
         workBuf[5] = (byte) (i >> 16);
         workBuf[6] = (byte) (i >> 8);
         workBuf[7] = (byte) i;
-        putRawBytes(workBuf, 0, Long.SIZE / Byte.SIZE);
+        putRawBytes(workBuf, 0, Long.BYTES);
     }
 
     public void putBoolean(boolean b) {

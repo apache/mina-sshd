@@ -31,6 +31,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @param <T> Request type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface RequestHandler<T> {
 
     enum Result {
@@ -75,5 +76,4 @@ public interface RequestHandler<T> {
      * value should be returned
      */
     Result process(T t, String request, boolean wantReply, Buffer buffer) throws Exception;
-
 }

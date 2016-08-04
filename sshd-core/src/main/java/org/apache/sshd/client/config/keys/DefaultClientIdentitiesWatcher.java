@@ -21,11 +21,11 @@ package org.apache.sshd.client.config.keys;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Supplier;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**

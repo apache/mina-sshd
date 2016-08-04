@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.client.scp;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,13 +30,16 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
+import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTimestamp;
 import org.apache.sshd.common.session.SessionHolder;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ScpClient extends SessionHolder<ClientSession>, ClientSessionHolder {
-
     enum Option {
         Recursive,
         PreserveAttributes,
@@ -61,48 +66,109 @@ public interface ScpClient extends SessionHolder<ClientSession>, ClientSessionHo
     String SCP_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT = "scp-exec-channel-exit-status-timeout";
     long DEFAULT_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
 
-    void download(String remote, String local, Option... options) throws IOException;
+    default void download(String remote, String local, Option... options) throws IOException {
+        download(remote, local, GenericUtils.of(options));
+    }
 
     void download(String remote, String local, Collection<Option> options) throws IOException;
 
-    void download(String remote, Path local, Option... options) throws IOException;
+    default void download(String remote, Path local, Option... options) throws IOException {
+        download(remote, local, GenericUtils.of(options));
+    }
 
     void download(String remote, Path local, Collection<Option> options) throws IOException;
 
     // NOTE: the remote location MUST be a file or an exception is generated
     void download(String remote, OutputStream local) throws IOException;
 
-    byte[] downloadBytes(String remote) throws IOException;
+    default byte[] downloadBytes(String remote) throws IOException {
+        try (ByteArrayOutputStream local = new ByteArrayOutputStream()) {
+            download(remote, local);
+            return local.toByteArray();
+        }
+    }
 
-    void download(String[] remote, String local, Option... options) throws IOException;
+    default void download(String[] remote, String local, Option... options) throws IOException {
+        download(remote, local, GenericUtils.of(options));
+    }
+
+    default void download(String[] remote, Path local, Option... options) throws IOException {
+        download(remote, local, GenericUtils.of(options));
+    }
 
     void download(String[] remote, String local, Collection<Option> options) throws IOException;
 
-    void download(String[] remote, Path local, Option... options) throws IOException;
-
     void download(String[] remote, Path local, Collection<Option> options) throws IOException;
 
-    void upload(String local, String remote, Option... options) throws IOException;
+    default void upload(String local, String remote, Option... options) throws IOException {
+        upload(local, remote, GenericUtils.of(options));
+    }
 
-    void upload(String local, String remote, Collection<Option> options) throws IOException;
+    default void upload(String local, String remote, Collection<Option> options) throws IOException {
+        upload(new String[]{ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local)}, remote, options);
+    }
 
-    void upload(Path local, String remote, Option... options) throws IOException;
+    default void upload(Path local, String remote, Option... options) throws IOException {
+        upload(local, remote, GenericUtils.of(options));
+    }
 
-    void upload(Path local, String remote, Collection<Option> options) throws IOException;
+    default void upload(Path local, String remote, Collection<Option> options) throws IOException {
+        upload(new Path[]{ValidateUtils.checkNotNull(local, "Invalid local argument: %s", local)}, remote, GenericUtils.of(options));
+    }
 
-    void upload(String[] local, String remote, Option... options) throws IOException;
+    default void upload(String[] local, String remote, Option... options) throws IOException {
+        upload(local, remote, GenericUtils.of(options));
+    }
 
     void upload(String[] local, String remote, Collection<Option> options) throws IOException;
 
-    void upload(Path[] local, String remote, Option... options) throws IOException;
+    default void upload(Path[] local, String remote, Option... options) throws IOException {
+        upload(local, remote, GenericUtils.of(options));
+    }
 
     void upload(Path[] local, String remote, Collection<Option> options) throws IOException;
 
     // NOTE: due to SCP command limitations, the amount of data to be uploaded must be known a-priori
     // To upload a dynamic amount of data use SFTP
-    void upload(byte[] data, String remote, Collection<PosixFilePermission> perms, ScpTimestamp time) throws IOException;
+    default void upload(byte[] data, String remote, Collection<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
+        upload(data, 0, data.length, remote, perms, time);
+    }
 
-    void upload(byte[] data, int offset, int len, String remote, Collection<PosixFilePermission> perms, ScpTimestamp time) throws IOException;
+    default void upload(byte[] data, int offset, int len, String remote, Collection<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
+        try (InputStream local = new ByteArrayInputStream(data, offset, len)) {
+            upload(local, remote, len, perms, time);
+        }
+    }
 
     void upload(InputStream local, String remote, long size, Collection<PosixFilePermission> perms, ScpTimestamp time) throws IOException;
+
+    static String createSendCommand(String remote, Collection<Option> options) {
+        StringBuilder sb = new StringBuilder(remote.length() + Long.SIZE).append(ScpHelper.SCP_COMMAND_PREFIX);
+        if (options.contains(Option.Recursive)) {
+            sb.append(" -r");
+        }
+        if (options.contains(Option.TargetIsDirectory)) {
+            sb.append(" -d");
+        }
+        if (options.contains(Option.PreserveAttributes)) {
+            sb.append(" -p");
+        }
+
+        sb.append(" -t").append(" --").append(" ").append(remote);
+        return sb.toString();
+    }
+
+    static String createReceiveCommand(String remote, Collection<Option> options) {
+        ValidateUtils.checkNotNullAndNotEmpty(remote, "No remote location specified");
+        StringBuilder sb = new StringBuilder(remote.length() + Long.SIZE).append(ScpHelper.SCP_COMMAND_PREFIX);
+        if (options.contains(Option.Recursive)) {
+            sb.append(" -r");
+        }
+        if (options.contains(Option.PreserveAttributes)) {
+            sb.append(" -p");
+        }
+
+        sb.append(" -f").append(" --").append(' ').append(remote);
+        return sb.toString();
+    }
 }

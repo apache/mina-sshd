@@ -20,9 +20,9 @@ package org.apache.sshd.agent;
 
 import java.lang.reflect.Field;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Predicate;
 import org.apache.sshd.common.util.logging.LoggingUtils;
 
 /**
@@ -78,7 +78,7 @@ public final class SshAgentConstants {
         private static final Map<Integer, String> MESSAGES_MAP =
                 LoggingUtils.generateMnemonicMap(SshAgentConstants.class, new Predicate<Field>() {
                     @Override
-                    public boolean evaluate(Field f) {
+                    public boolean test(Field f) {
                         String name = f.getName();
                         if (name.startsWith("SSH_AGENT_CONSTRAIN")) {
                             return false;

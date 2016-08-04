@@ -68,5 +68,4 @@ public interface Compression extends CompressionInformation {
      * @throws IOException if an error occurs
      */
     void uncompress(Buffer from, Buffer to) throws IOException;
-
 }

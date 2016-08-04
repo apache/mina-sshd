@@ -64,7 +64,7 @@ public class CancelTcpipForwardHandler extends AbstractConnectionServiceRequestH
 
         if (wantReply) {
             Session session = connectionService.getSession();
-            buffer = session.createBuffer(SshConstants.SSH_MSG_REQUEST_SUCCESS, Integer.SIZE / Byte.SIZE);
+            buffer = session.createBuffer(SshConstants.SSH_MSG_REQUEST_SUCCESS, Integer.BYTES);
             buffer.putInt(port);
             session.writePacket(buffer);
         }

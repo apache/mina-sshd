@@ -28,6 +28,7 @@ import org.apache.sshd.client.session.ClientSession;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface ModifiedServerKeyAcceptor {
     /**
      * Invoked when a matching known host key was found but it does not match

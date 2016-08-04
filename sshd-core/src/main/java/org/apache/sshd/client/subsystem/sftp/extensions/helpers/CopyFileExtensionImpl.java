@@ -39,8 +39,8 @@ public class CopyFileExtensionImpl extends AbstractSftpClientExtension implement
 
     @Override
     public void copyFile(String src, String dst, boolean overwriteDestination) throws IOException {
-        Buffer buffer = getCommandBuffer((Integer.SIZE / Byte.SIZE) + GenericUtils.length(src)
-                + (Integer.SIZE / Byte.SIZE) + GenericUtils.length(dst)
+        Buffer buffer = getCommandBuffer(Integer.BYTES + GenericUtils.length(src)
+                + Integer.BYTES + GenericUtils.length(dst)
                 + 1 /* override destination */);
         buffer.putString(src);
         buffer.putString(dst);

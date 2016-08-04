@@ -22,6 +22,7 @@ package org.apache.sshd.common;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface FactoryManagerHolder {
     /**
      * @return The currently associated {@link FactoryManager}

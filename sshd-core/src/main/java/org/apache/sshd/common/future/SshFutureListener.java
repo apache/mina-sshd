@@ -28,6 +28,7 @@ import java.util.EventListener;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @SuppressWarnings("rawtypes")
+@FunctionalInterface
 public interface SshFutureListener<T extends SshFuture> extends EventListener {
 
     /**

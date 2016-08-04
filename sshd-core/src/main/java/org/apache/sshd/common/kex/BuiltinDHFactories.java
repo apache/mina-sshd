@@ -160,7 +160,7 @@ public enum BuiltinDHFactories implements DHFactory {
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinDHFactories.class));
 
     private static final Map<String, DHFactory> EXTENSIONS =
-            new TreeMap<String, DHFactory>(String.CASE_INSENSITIVE_ORDER);
+            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private final String factoryName;
 
@@ -207,7 +207,6 @@ public enum BuiltinDHFactories implements DHFactory {
      * according to the factory name (case <U>insensitive</U>)
      */
     public static SortedSet<DHFactory> getRegisteredExtensions() {
-        // TODO for JDK-8 return Collections.emptySortedSet()
         synchronized (EXTENSIONS) {
             return GenericUtils.asSortedSet(NamedResource.BY_NAME_COMPARATOR, EXTENSIONS.values());
         }

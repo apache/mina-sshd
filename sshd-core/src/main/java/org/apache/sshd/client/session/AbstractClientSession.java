@@ -322,33 +322,9 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         scpListener = listener;
     }
 
-    @Override   // TODO make this a default method in JDK-8
-    public ScpClient createScpClient() {
-        return createScpClient(getScpFileOpener(), getScpTransferEventListener());
-    }
-
-    @Override   // TODO make this a default method in JDK-8
-    public ScpClient createScpClient(ScpTransferEventListener listener) {
-        return createScpClient(getScpFileOpener(), listener);
-    }
-
-    @Override   // TODO make this a default method in JDK-8
-    public ScpClient createScpClient(ScpFileOpener opener) {
-        return createScpClient(opener, getScpTransferEventListener());
-    }
-
     @Override
     public ScpClient createScpClient(ScpFileOpener opener, ScpTransferEventListener listener) {
         return new DefaultScpClient(this, opener, listener);
-    }
-    @Override   // TODO make this a default method in JDK-8
-    public SftpClient createSftpClient() throws IOException {
-        return createSftpClient(SftpVersionSelector.CURRENT);
-    }
-
-    @Override   // TODO make this a default method in JDK-8
-    public SftpClient createSftpClient(final int version) throws IOException {
-        return createSftpClient(SftpVersionSelector.Utils.fixedVersionSelector(version));
     }
 
     @Override
@@ -589,7 +565,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
             } else {
                 log.info("switchToNoneCipher({}) switching", this);
 
-                Map<KexProposalOption, String> proposal = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
+                Map<KexProposalOption, String> proposal = new EnumMap<>(KexProposalOption.class);
                 synchronized (clientProposal) {
                     proposal.putAll(clientProposal);
                 }

@@ -22,6 +22,7 @@ package org.apache.sshd.common.channel;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface ChannelHolder {
     /**
      * @return The associated {@link Channel} instance

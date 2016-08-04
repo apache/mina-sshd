@@ -332,7 +332,7 @@ public abstract class AbstractChannel
                  ? SshConstants.SSH_MSG_CHANNEL_SUCCESS
                  : SshConstants.SSH_MSG_CHANNEL_FAILURE;
         Session session = getSession();
-        Buffer rsp = session.createBuffer(cmd, Integer.SIZE / Byte.SIZE);
+        Buffer rsp = session.createBuffer(cmd, Integer.BYTES);
         rsp.putInt(recipient);
         return session.writePacket(rsp);
     }
@@ -664,7 +664,7 @@ public abstract class AbstractChannel
                 log.debug("handleExtendedData({}) SSH_MSG_CHANNEL_FAILURE - non STDERR type: {}", this, ex);
             }
             Session s = getSession();
-            Buffer rsp = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_FAILURE, Integer.SIZE / Byte.SIZE);
+            Buffer rsp = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_FAILURE, Integer.BYTES);
             rsp.putInt(getRecipient());
             writePacket(rsp);
             return;
