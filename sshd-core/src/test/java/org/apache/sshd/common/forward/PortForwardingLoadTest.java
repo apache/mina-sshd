@@ -51,6 +51,7 @@ import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -72,6 +73,60 @@ import org.slf4j.LoggerFactory;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class PortForwardingLoadTest extends BaseTestSupport {
     private final Logger log;
+    @SuppressWarnings("checkstyle:anoninnerlength")
+    private final PortForwardingEventListener serverSideListener = new PortForwardingEventListener() {
+        @Override
+        public void establishingExplicitTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress local,
+                SshdSocketAddress remote, boolean localForwarding) throws IOException {
+            log.info("establishingExplicitTunnel(session={}, local={}, remote={}, localForwarding={})",
+                     session, local, remote, localForwarding);
+        }
+
+        @Override
+        public void establishedExplicitTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress local,
+                SshdSocketAddress remote, boolean localForwarding, SshdSocketAddress boundAddress, Throwable reason)
+                throws IOException {
+            log.info("establishedExplicitTunnel(session={}, local={}, remote={}, bound={}, localForwarding={}): {}",
+                    session, local, remote, boundAddress, localForwarding, reason);
+        }
+
+        @Override
+        public void tearingDownExplicitTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress address,
+                boolean localForwarding) throws IOException {
+            log.info("tearingDownExplicitTunnel(session={}, address={}, localForwarding={})", session, address, localForwarding);
+        }
+
+        @Override
+        public void tornDownExplicitTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress address,
+                boolean localForwarding, Throwable reason) throws IOException {
+            log.info("tornDownExplicitTunnel(session={}, address={}, localForwarding={}, reason={})",
+                     session, address, localForwarding, reason);
+        }
+
+        @Override
+        public void establishingDynamicTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress local)
+                throws IOException {
+            log.info("establishingDynamicTunnel(session={}, local={})", session, local);
+        }
+
+        @Override
+        public void establishedDynamicTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress local,
+                SshdSocketAddress boundAddress, Throwable reason) throws IOException {
+            log.info("establishedDynamicTunnel(session={}, local={}, bound={}, reason={})", session, local, boundAddress, reason);
+        }
+
+        @Override
+        public void tearingDownDynamicTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress address)
+                throws IOException {
+            log.info("tearingDownDynamicTunnel(session={}, address={})", session, address);
+        }
+
+        @Override
+        public void tornDownDynamicTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress address,
+                Throwable reason) throws IOException {
+            log.info("tornDownDynamicTunnel(session={}, address={}, reason={})", session, address, reason);
+        }
+    };
     private SshServer sshd;
     private int sshPort;
     private IoAcceptor acceptor;
@@ -89,6 +144,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
     public void setUp() throws Exception {
         sshd = setupTestServer();
         sshd.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
+        sshd.addPortForwardingEventListener(serverSideListener);
         sshd.start();
         sshPort = sshd.getPort();
 
