@@ -35,6 +35,7 @@ import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.auth.AbstractUserAuthServiceFactory;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
@@ -49,6 +50,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.auth.UserAuth;
+import org.apache.sshd.server.auth.WelcomeBannerPhase;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 import org.apache.sshd.server.auth.hostbased.HostBasedAuthenticator;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
@@ -183,9 +185,28 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     }
 
     @Override
+    protected boolean handleServiceRequest(String serviceName, Buffer buffer) throws Exception {
+        boolean started = super.handleServiceRequest(serviceName, buffer);
+        if (!started) {
+            return false;
+        }
+
+        if (AbstractUserAuthServiceFactory.DEFAULT_NAME.equals(serviceName)
+                && (currentService instanceof ServerUserAuthService)) {
+            ServerUserAuthService authService = (ServerUserAuthService) currentService;
+            if (WelcomeBannerPhase.IMMEDIATE.equals(authService.getWelcomePhase())) {
+                authService.sendWelcomeBanner(this);
+            }
+        }
+
+        return true;
+    }
+
+    @Override
     public void startService(String name) throws Exception {
+        FactoryManager factoryManager = getFactoryManager();
         currentService = ServiceFactory.Utils.create(
-                        getFactoryManager().getServiceFactories(),
+                        factoryManager.getServiceFactories(),
                         ValidateUtils.checkNotNullAndNotEmpty(name, "No service name"),
                         this);
         /*

@@ -18,10 +18,12 @@
  */
 package org.apache.sshd.server.session;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
@@ -31,6 +33,7 @@ import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.KeyRandomArt;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -40,13 +43,15 @@ import org.apache.sshd.server.ServerAuthenticationManager;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.auth.UserAuth;
 import org.apache.sshd.server.auth.UserAuthNoneFactory;
+import org.apache.sshd.server.auth.WelcomeBannerPhase;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ServerUserAuthService extends AbstractCloseable implements Service, ServerSessionHolder {
-
     private final ServerSession serverSession;
+    private final AtomicBoolean welcomeSent = new AtomicBoolean(false);
+    private final WelcomeBannerPhase welcomePhase;
     private List<NamedFactory<UserAuth>> userAuthFactories;
     private List<List<String>> authMethods;
     private String authUserName;
@@ -57,13 +62,16 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     private int maxAuthRequests;
     private int nbAuthRequests;
 
-    public ServerUserAuthService(Session s) throws SshException {
+    public ServerUserAuthService(Session s) throws IOException {
         ValidateUtils.checkTrue(s instanceof ServerSession, "Server side service used on client side");
         if (s.isAuthenticated()) {
             throw new SshException("Session already authenticated");
         }
 
         serverSession = (ServerSession) s;
+        Object phase = PropertyResolverUtils.getObject(s, ServerAuthenticationManager.WELCOME_BANNER_PHASE);
+        phase = PropertyResolverUtils.toEnum(WelcomeBannerPhase.class, phase, true, WelcomeBannerPhase.VALUES);
+        welcomePhase = (phase == null) ? ServerAuthenticationManager.DEFAULT_BANNER_PHASE : (WelcomeBannerPhase) phase;
         maxAuthRequests = PropertyResolverUtils.getIntProperty(s, ServerAuthenticationManager.MAX_AUTH_REQUESTS, ServerAuthenticationManager.DEFAULT_MAX_AUTH_REQUESTS);
 
         List<NamedFactory<UserAuth>> factories = ValidateUtils.checkNotNullAndNotEmpty(
@@ -72,7 +80,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         // Get authentication methods
         authMethods = new ArrayList<>();
 
-        String mths = PropertyResolverUtils.getString(s, ServerFactoryManager.AUTH_METHODS);
+        String mths = PropertyResolverUtils.getString(s, ServerAuthenticationManager.AUTH_METHODS);
         if (GenericUtils.isEmpty(mths)) {
             for (NamedFactory<UserAuth> uaf : factories) {
                 authMethods.add(new ArrayList<>(Collections.singletonList(uaf.getName())));
@@ -101,6 +109,10 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         }
     }
 
+    public WelcomeBannerPhase getWelcomePhase() {
+        return welcomePhase;
+    }
+
     @Override
     public void start() {
         // do nothing
@@ -122,6 +134,10 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         ServerSession session = getServerSession();
 
         if (cmd == SshConstants.SSH_MSG_USERAUTH_REQUEST) {
+            if (WelcomeBannerPhase.FIRST_REQUEST.equals(getWelcomePhase())) {
+                sendWelcomeBanner(session);
+            }
+
             if (currentAuth != null) {
                 try {
                     currentAuth.destroy();
@@ -180,6 +196,10 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 }
             }
         } else {
+            if (WelcomeBannerPhase.FIRST_AUTHCMD.equals(getWelcomePhase())) {
+                sendWelcomeBanner(session);
+            }
+
             if (this.currentAuth == null) {
                 // This should not happen
                 throw new IllegalStateException("No current authentication mechanism for cmd=" + SshConstants.getCommandMessageName(cmd));
@@ -249,34 +269,8 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 }
             }
 
-            /*
-             * TODO check if we can send the banner sooner. According to RFC-4252 section 5.4:
-             *
-             *      The SSH server may send an SSH_MSG_USERAUTH_BANNER message at any
-             *      time after this authentication protocol starts and before
-             *      authentication is successful.  This message contains text to be
-             *      displayed to the client user before authentication is attempted.
-             */
-            String welcomeBanner = PropertyResolverUtils.getString(session, ServerFactoryManager.WELCOME_BANNER);
-            if ((GenericUtils.length(welcomeBanner) > 0)
-                && ServerFactoryManager.AUTO_WELCOME_BANNER_VALUE.equalsIgnoreCase(welcomeBanner)) {
-                welcomeBanner = KeyRandomArt.combine(' ', session.getKeyPairProvider());
-            }
-
-            if (GenericUtils.length(welcomeBanner) > 0) {
-                String lang = PropertyResolverUtils.getStringProperty(session,
-                                        ServerFactoryManager.WELCOME_BANNER_LANGUAGE,
-                                        ServerFactoryManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
-                buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_BANNER,
-                        welcomeBanner.length() + GenericUtils.length(lang) + Long.SIZE);
-                buffer.putString(welcomeBanner);
-                buffer.putString(lang);
-
-                if (log.isDebugEnabled()) {
-                    log.debug("handleAuthenticationSuccess({}@{}) send banner (length={}, lang={})",
-                              username, session, welcomeBanner.length(), lang);
-                }
-                session.writePacket(buffer);
+            if (WelcomeBannerPhase.POST_SUCCESS.equals(getWelcomePhase())) {
+                sendWelcomeBanner(session);
             }
 
             buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_SUCCESS, Byte.SIZE);
@@ -316,8 +310,12 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     }
 
     protected void handleAuthenticationFailure(int cmd, Buffer buffer) throws Exception {
-        String username = (currentAuth == null) ? null : currentAuth.getUsername();
         ServerSession session = getServerSession();
+        if (WelcomeBannerPhase.FIRST_FAILURE.equals(getWelcomePhase())) {
+            sendWelcomeBanner(session);
+        }
+
+        String username = (currentAuth == null) ? null : currentAuth.getUsername();
         if (log.isDebugEnabled()) {
             log.debug("handleAuthenticationFailure({}@{}) {}",
                       username, session, SshConstants.getCommandMessageName(cmd));
@@ -353,6 +351,54 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 currentAuth = null;
             }
         }
+    }
+
+    /**
+     * Sends the welcome banner (if any configured) and if not already invoked
+     *
+     * @param session The {@link ServerSession} to send the welcome banner to
+     * @return The sent welcome banner {@link IoWriteFuture} - {@code null} if none sent
+     * @throws IOException If failed to send the banner
+     */
+    public IoWriteFuture sendWelcomeBanner(ServerSession session) throws IOException {
+        if (welcomeSent.getAndSet(true)) {
+            if (log.isDebugEnabled()) {
+                log.debug("sendWelcomeBanner({}) already sent", session);
+            }
+            return null;
+        }
+
+        String welcomeBanner = PropertyResolverUtils.getString(session, ServerAuthenticationManager.WELCOME_BANNER);
+        if ((GenericUtils.length(welcomeBanner) > 0)
+            && ServerAuthenticationManager.AUTO_WELCOME_BANNER_VALUE.equalsIgnoreCase(welcomeBanner)) {
+            try {
+                welcomeBanner = KeyRandomArt.combine(' ', session.getKeyPairProvider());
+            } catch (Exception e) {
+                if (e instanceof IOException) {
+                    throw (IOException) e;
+                }
+
+                throw new IOException(e);
+            }
+        }
+
+        if (GenericUtils.isEmpty(welcomeBanner)) {
+            return null;
+        }
+
+        String lang = PropertyResolverUtils.getStringProperty(session,
+                                ServerAuthenticationManager.WELCOME_BANNER_LANGUAGE,
+                                ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_BANNER,
+                welcomeBanner.length() + GenericUtils.length(lang) + Long.SIZE);
+        buffer.putString(welcomeBanner);
+        buffer.putString(lang);
+
+        if (log.isDebugEnabled()) {
+            log.debug("sendWelcomeBanner({}) send banner (length={}, lang={})",
+                      session, welcomeBanner.length(), lang);
+        }
+        return session.writePacket(buffer);
     }
 
     public ServerFactoryManager getFactoryManager() {

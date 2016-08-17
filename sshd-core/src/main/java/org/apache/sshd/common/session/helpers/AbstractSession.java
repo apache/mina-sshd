@@ -665,7 +665,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         handleServiceRequest(buffer.getString(), buffer);
     }
 
-    protected void handleServiceRequest(String serviceName, Buffer buffer) throws Exception {
+    protected boolean handleServiceRequest(String serviceName, Buffer buffer) throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("handleServiceRequest({}) SSH_MSG_SERVICE_REQUEST '{}'", this, serviceName);
         }
@@ -682,7 +682,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 log.trace("handleServiceRequest(" + this + ") service=" + serviceName + " rejection details", e);
             }
             disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Bad service request: " + serviceName);
-            return;
+            return false;
         }
 
         if (log.isDebugEnabled()) {
@@ -692,6 +692,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         Buffer response = createBuffer(SshConstants.SSH_MSG_SERVICE_ACCEPT, Byte.SIZE + GenericUtils.length(serviceName));
         response.putString(serviceName);
         writePacket(response);
+        return true;
     }
 
     protected void handleServiceAccept(Buffer buffer) throws Exception {

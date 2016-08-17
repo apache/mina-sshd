@@ -19,8 +19,13 @@
 
 package org.apache.sshd.common;
 
+import java.util.Collection;
+import java.util.Date;
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
@@ -202,13 +207,54 @@ public class PropertyResolverUtilsTest extends BaseTestSupport {
         }
     }
 
+    @Test
+    public void testToEnumFromString() {
+        Collection<TimeUnit> units = EnumSet.allOf(TimeUnit.class);
+        for (TimeUnit expected : units) {
+            String name = expected.name();
+            for (int index = 1, count = name.length(); index <= count; index++) {
+                TimeUnit actual = PropertyResolverUtils.toEnum(TimeUnit.class, name, true, units);
+                assertSame("Mismatched instance for name=" + name, expected, actual);
+                name = shuffleCase(name);
+            }
+        }
+    }
+
+    @Test
+    public void testToEnumFromEnum() {
+        Collection<TimeUnit> units = EnumSet.allOf(TimeUnit.class);
+        for (TimeUnit expected : units) {
+            TimeUnit actual = PropertyResolverUtils.toEnum(TimeUnit.class, expected, true, null);
+            assertSame("Mismatched resolved value", expected, actual);
+        }
+    }
+
+    @Test
+    public void testToEnumFromNonString() {
+        Collection<TimeUnit> units = EnumSet.allOf(TimeUnit.class);
+        for (Object value : new Object[]{this, getClass(), new Date()}) {
+            try {
+                TimeUnit unit = PropertyResolverUtils.toEnum(TimeUnit.class, value, false, units);
+                fail("Unexpected success for value=" + value + ": " + unit);
+            } catch (IllegalArgumentException e) {
+               // expected - ignored
+            }
+        }
+    }
+
+    @Test(expected = NoSuchElementException.class)
+    public void testToEnumNoMatchFound() {
+        TimeUnit result = PropertyResolverUtils.toEnum(TimeUnit.class, getCurrentTestName(), true, EnumSet.allOf(TimeUnit.class));
+        fail("Unexpected success: " + result);
+    }
+
     private Session createMockSession() {
-        Map<String, Object> managerProps = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, Object> managerProps = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         FactoryManager manager = Mockito.mock(FactoryManager.class);
         Mockito.when(manager.getProperties()).thenReturn(managerProps);
         Mockito.when(manager.getParentPropertyResolver()).thenReturn(null);
 
-        Map<String, Object> sessionProps = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, Object> sessionProps = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         Session session = Mockito.mock(Session.class);
         Mockito.when(session.getUsername()).thenReturn(getCurrentTestName());
         Mockito.when(session.getFactoryManager()).thenReturn(manager);

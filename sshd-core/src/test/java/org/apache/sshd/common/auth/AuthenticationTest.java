@@ -59,6 +59,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.server.ServerAuthenticationManager;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.hostbased.HostBasedAuthenticator;
@@ -163,7 +164,7 @@ public class AuthenticationTest extends BaseTestSupport {
             public boolean authenticate(String username, String password, ServerSession session)
                     throws PasswordChangeRequiredException {
                 if (attemptsCount.incrementAndGet() == 1) {
-                    throw new PasswordChangeRequiredException(attemptsCount.toString(), getCurrentTestName(), ServerFactoryManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
+                    throw new PasswordChangeRequiredException(attemptsCount.toString(), getCurrentTestName(), ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
                 }
 
                 return delegate.authenticate(username, password, session);
@@ -191,7 +192,7 @@ public class AuthenticationTest extends BaseTestSupport {
                 }
             }
         ));
-        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+        PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
 
         try (SshClient client = setupTestClient()) {
             final AtomicInteger updatesCount = new AtomicInteger(0);
@@ -209,7 +210,7 @@ public class AuthenticationTest extends BaseTestSupport {
                 @Override
                 public String getUpdatedPassword(ClientSession session, String prompt, String lang) {
                     assertEquals("Mismatched prompt", getCurrentTestName(), prompt);
-                    assertEquals("Mismatched language", ServerFactoryManager.DEFAULT_WELCOME_BANNER_LANGUAGE, lang);
+                    assertEquals("Mismatched language", ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE, lang);
                     assertEquals("Unexpected repeated call", 1, updatesCount.incrementAndGet());
                     return getCurrentTestName();
                 }
@@ -235,7 +236,7 @@ public class AuthenticationTest extends BaseTestSupport {
                         };
                     }
             }));
-            PropertyResolverUtils.updateProperty(client, ServerFactoryManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+            PropertyResolverUtils.updateProperty(client, ServerAuthenticationManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
 
             client.start();
 
@@ -396,7 +397,7 @@ public class AuthenticationTest extends BaseTestSupport {
             challenge.addPrompt(prompt, (GenericUtils.size(challenge.getPrompts()) & 0x1) != 0);
         }
 
-        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
+        PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
         final AtomicInteger genCount = new AtomicInteger(0);
         final AtomicInteger authCount = new AtomicInteger(0);
         sshd.setKeyboardInteractiveAuthenticator(new KeyboardInteractiveAuthenticator() {
@@ -422,7 +423,7 @@ public class AuthenticationTest extends BaseTestSupport {
                 return true;
             }
         });
-        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
+        PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
 
         try (SshClient client = setupTestClient()) {
             final AtomicInteger interactiveCount = new AtomicInteger(0);
@@ -459,7 +460,7 @@ public class AuthenticationTest extends BaseTestSupport {
                     throw new UnsupportedOperationException("Unexpected call");
                 }
             });
-            PropertyResolverUtils.updateProperty(client, ServerFactoryManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
+            PropertyResolverUtils.updateProperty(client, ServerAuthenticationManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
 
             client.start();
 
@@ -483,13 +484,13 @@ public class AuthenticationTest extends BaseTestSupport {
             public boolean authenticate(String username, String password, ServerSession session)
                     throws PasswordChangeRequiredException {
                 if (attemptsCount.incrementAndGet() == 1) {
-                    throw new PasswordChangeRequiredException(attemptsCount.toString(), getCurrentTestName(), ServerFactoryManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
+                    throw new PasswordChangeRequiredException(attemptsCount.toString(), getCurrentTestName(), ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
                 }
 
                 return delegate.authenticate(username, password, session);
             }
         });
-        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+        PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
 
         try (SshClient client = setupTestClient()) {
             final AtomicInteger updatesCount = new AtomicInteger(0);
@@ -507,12 +508,12 @@ public class AuthenticationTest extends BaseTestSupport {
                 @Override
                 public String getUpdatedPassword(ClientSession session, String prompt, String lang) {
                     assertEquals("Mismatched prompt", getCurrentTestName(), prompt);
-                    assertEquals("Mismatched language", ServerFactoryManager.DEFAULT_WELCOME_BANNER_LANGUAGE, lang);
+                    assertEquals("Mismatched language", ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE, lang);
                     assertEquals("Unexpected repeated call", 1, updatesCount.incrementAndGet());
                     return getCurrentTestName();
                 }
             });
-            PropertyResolverUtils.updateProperty(client, ServerFactoryManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+            PropertyResolverUtils.updateProperty(client, ServerAuthenticationManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
 
             client.start();
 

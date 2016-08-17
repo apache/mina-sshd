@@ -19,7 +19,9 @@
 
 package org.apache.sshd.common;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import org.apache.sshd.common.util.GenericUtils;
@@ -136,6 +138,60 @@ public final class PropertyResolverUtils {
         }
     }
 
+    /**
+     * Converts an enumerated configuration value:
+     * <UL>
+     *      <P><LI>
+     *      If value is {@code null} then return {@code null}
+     *      </LI></P>
+     *
+     *      <P><LI>
+     *      If value already of the expected type then simply
+     *      cast and return it.
+     *      </LI></P>
+     *
+     *      <P><LI>
+     *      If value is a {@link CharSequence} then convert it
+     *      to a string and look for a matching enumerated value
+     *      name - case <U>insensitive</U>.
+     *      </LI></P>>
+     * </UL>
+     *
+     * @param <E> Type of enumerated value
+     * @param enumType The enumerated class type
+     * @param value The configured value - ignored if {@code null}
+     * @param failIfNoMatch Whether to fail if no matching name found
+     * @param available The available values to compare the name
+     * @return The matching enumerated value - {@code null} if no match found
+     * @throws IllegalArgumentException If value is neither {@code null},
+     * nor the enumerated type nor a {@link CharSequence}
+     * @throws NoSuchElementException If no matching string name found and
+     * <tt>failIfNoMatch</tt> is {@code true}
+     */
+    public static <E extends Enum<E>> E toEnum(Class<E> enumType, Object value, boolean failIfNoMatch, Collection<E> available) {
+        if (value == null) {
+            return null;
+        } else if (enumType.isInstance(value)) {
+            return enumType.cast(value);
+        } else if (value instanceof CharSequence) {
+            String name = value.toString();
+            if (GenericUtils.size(available) > 0) {
+                for (E v : available) {
+                    if (name.equalsIgnoreCase(v.name())) {
+                        return v;
+                    }
+                }
+            }
+
+            if (failIfNoMatch) {
+                throw new NoSuchElementException("No match found for " + enumType.getSimpleName() + "[" + name + "]");
+            }
+
+            return null;
+        } else {
+            throw new IllegalArgumentException("Bad value type for enum conversion: " + value.getClass().getSimpleName());
+        }
+    }
     public static Object updateProperty(PropertyResolver resolver, String name, long value) {
         return updateProperty(resolver.getProperties(), name, value);
     }

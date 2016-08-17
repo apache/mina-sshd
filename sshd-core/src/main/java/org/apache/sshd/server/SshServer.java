@@ -617,7 +617,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                     ? null
                     : Objects.toString(options.remove(SshConfigFileReader.VISUAL_HOST_KEY), null);
             if (SshConfigFileReader.parseBooleanValue(bannerOption)) {
-                bannerOption = ServerFactoryManager.AUTO_WELCOME_BANNER_VALUE;
+                bannerOption = ServerAuthenticationManager.AUTO_WELCOME_BANNER_VALUE;
             }
         }
 
@@ -627,7 +627,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 return null;
             }
 
-            if (ServerFactoryManager.AUTO_WELCOME_BANNER_VALUE.equalsIgnoreCase(bannerOption)) {
+            if (ServerAuthenticationManager.AUTO_WELCOME_BANNER_VALUE.equalsIgnoreCase(bannerOption)) {
                 banner = KeyRandomArt.combine(' ', server.getKeyPairProvider());
             } else {
                 Path path = Paths.get(bannerOption);
@@ -642,9 +642,9 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         }
 
         if (GenericUtils.length(banner) > 0) {
-            PropertyResolverUtils.updateProperty(server, ServerFactoryManager.WELCOME_BANNER, banner);
+            PropertyResolverUtils.updateProperty(server, ServerAuthenticationManager.WELCOME_BANNER, banner);
         }
 
-        return PropertyResolverUtils.getString(server, ServerFactoryManager.WELCOME_BANNER);
+        return PropertyResolverUtils.getString(server, ServerAuthenticationManager.WELCOME_BANNER);
     }
 }

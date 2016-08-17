@@ -41,5 +41,4 @@ public interface Service extends Closeable {
      * @throws Exception If failed to process the command
      */
     void process(int cmd, Buffer buffer) throws Exception;
-
 }
