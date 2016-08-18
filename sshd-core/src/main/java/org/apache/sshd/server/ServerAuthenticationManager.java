@@ -63,7 +63,30 @@ public interface ServerAuthenticationManager {
     /**
      * Key used to retrieve the value of welcome banner that will be displayed
      * when a user connects to the server. If {@code null}/empty then no banner
-     * will be sent.
+     * will be sent. The value can be one of the following:
+     * <UL>
+     *      <P><LI>
+     *      A {@link java.io.File} or {@link java.nio.file.Path}, in which case
+     *      its contents will be transmitted. <B>Note:</B> if the file is empty
+     *      or does not exits, no banner will be transmitted.
+     *      </LI></P>
+     *
+     *      <P><LI>
+     *      A {@link java.net.URI} or a string starting with &quot;file:/&quot;, in
+     *      which case it will be converted to a {@link java.nio.file.Path} and
+     *      handled accordingly.
+     *      </LI></P>
+     *
+     *      <P><LI>
+     *      A string containing a special value indicator - e.g., {@link #AUTO_WELCOME_BANNER_VALUE},
+     *      in which case the relevant banner content will be generated.
+     *      </LI></P>
+     *
+     *      <P><LI>
+     *      Any other object whose {@code toString()} value yields a non empty string
+     *      will be used as the banner contents.
+     *      </LI></P>
+     * </UL>
      * @see <A HREF="https://www.ietf.org/rfc/rfc4252.txt">RFC-4252 section 5.4</A>
      */
     String WELCOME_BANNER = "welcome-banner";
@@ -98,6 +121,13 @@ public interface ServerAuthenticationManager {
      * Default value for {@link #WELCOME_BANNER_PHASE} if none specified
      */
     WelcomeBannerPhase DEFAULT_BANNER_PHASE = WelcomeBannerPhase.IMMEDIATE;
+
+    /**
+     * The charset to use if the configured welcome banner points
+     * to a file - if not specified (either as a string or a {@link java.nio.charset.Charset}
+     * then the local default is used.
+     */
+    String WELCOME_BANNER_CHARSET = "welcome-banner-charset";
 
     /**
      * This key is used when configuring multi-step authentications.

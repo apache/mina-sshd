@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common;
 
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -311,6 +312,28 @@ public final class PropertyResolverUtils {
         }
     }
 
+    public static Charset getCharset(PropertyResolver resolver, String name, Charset defaultValue) {
+        Object value = getObject(resolver, name);
+        return (value == null) ? defaultValue : toCharset(value);
+    }
+
+    public static Charset getCharset(Map<String, ?> props, String name, Charset defaultValue) {
+        Object value = getObject(props, name);
+        return (value == null) ? defaultValue : toCharset(value);
+    }
+
+    public static Charset toCharset(Object value) {
+        if (value == null) {
+            return null;
+        } else if (value instanceof Charset) {
+            return (Charset) value;
+        } else if (value instanceof CharSequence) {
+            return Charset.forName(value.toString());
+        } else {
+            throw new IllegalArgumentException("Invalid charset conversion value: " + value);
+        }
+    }
+
     public static String getString(PropertyResolver resolver, String name) {
         Object value = getObject(resolver, name);
         return Objects.toString(value, null);
@@ -324,7 +347,6 @@ public final class PropertyResolverUtils {
     public static Object getObject(PropertyResolver resolver, String name) {
         return resolvePropertyValue(resolver, name);
     }
-
 
     // for symmetrical reasons...
     public static Object getObject(Map<String, ?> props, String name) {

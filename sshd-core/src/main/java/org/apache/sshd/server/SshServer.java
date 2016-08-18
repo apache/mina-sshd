@@ -45,7 +45,6 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.config.SshConfigFileReader;
-import org.apache.sshd.common.config.keys.KeyRandomArt;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.IoAcceptor;
@@ -583,7 +582,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
         KeyPairProvider hostKeyProvider = setupServerKeys(sshd, hostKeyType, hostKeySize, keyFiles);
         sshd.setKeyPairProvider(hostKeyProvider);
-        // Should come AFTER key pair provider setup so auto-welcome can be generated
+        // Should come AFTER key pair provider setup so auto-welcome can be generated if needed
         setupServerBanner(sshd, options);
         sshd.setPort(port);
 
@@ -608,7 +607,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         Thread.sleep(Long.MAX_VALUE);
     }
 
-    public static String setupServerBanner(ServerFactoryManager server, Map<String, ?> options) throws Exception {
+    public static Object setupServerBanner(ServerFactoryManager server, Map<String, ?> options) throws Exception {
         String bannerOption = GenericUtils.isEmpty(options)
                 ? null
                 : Objects.toString(options.remove(SshConfigFileReader.BANNER_CONFIG_PROP), null);
@@ -621,30 +620,22 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             }
         }
 
-        String banner;
+        Object banner;
         if (GenericUtils.length(bannerOption) > 0) {
             if ("none".equals(bannerOption)) {
                 return null;
             }
 
             if (ServerAuthenticationManager.AUTO_WELCOME_BANNER_VALUE.equalsIgnoreCase(bannerOption)) {
-                banner = KeyRandomArt.combine(' ', server.getKeyPairProvider());
+                banner = bannerOption;
             } else {
-                Path path = Paths.get(bannerOption);
-                long fileSize = Files.size(path);
-                ValidateUtils.checkTrue(fileSize > 0L, "No banner contents in file=%s", bannerOption);
-
-                List<String> lines = Files.readAllLines(path);
-                banner = GenericUtils.join(lines, '\n');
+                banner = Paths.get(bannerOption);
             }
         } else {
             banner = "Welcome to SSHD\n";
         }
 
-        if (GenericUtils.length(banner) > 0) {
-            PropertyResolverUtils.updateProperty(server, ServerAuthenticationManager.WELCOME_BANNER, banner);
-        }
-
-        return PropertyResolverUtils.getString(server, ServerAuthenticationManager.WELCOME_BANNER);
+        PropertyResolverUtils.updateProperty(server, ServerAuthenticationManager.WELCOME_BANNER, banner);
+        return banner;
     }
 }

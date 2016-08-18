@@ -18,9 +18,17 @@
  */
 package org.apache.sshd.server.session;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -368,20 +376,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             return null;
         }
 
-        String welcomeBanner = PropertyResolverUtils.getString(session, ServerAuthenticationManager.WELCOME_BANNER);
-        if ((GenericUtils.length(welcomeBanner) > 0)
-            && ServerAuthenticationManager.AUTO_WELCOME_BANNER_VALUE.equalsIgnoreCase(welcomeBanner)) {
-            try {
-                welcomeBanner = KeyRandomArt.combine(' ', session.getKeyPairProvider());
-            } catch (Exception e) {
-                if (e instanceof IOException) {
-                    throw (IOException) e;
-                }
-
-                throw new IOException(e);
-            }
-        }
-
+        String welcomeBanner = resolveWelcomeBanner(session);
         if (GenericUtils.isEmpty(welcomeBanner)) {
             return null;
         }
@@ -399,6 +394,67 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                       session, welcomeBanner.length(), lang);
         }
         return session.writePacket(buffer);
+    }
+
+    protected String resolveWelcomeBanner(ServerSession session) throws IOException {
+        Object bannerValue = PropertyResolverUtils.getObject(session, ServerAuthenticationManager.WELCOME_BANNER);
+        if (bannerValue == null) {
+            return null;
+        }
+
+        if (bannerValue instanceof CharSequence) {
+            String message = bannerValue.toString();
+            if (GenericUtils.isEmpty(message)) {
+                return null;
+            }
+
+            if (ServerAuthenticationManager.AUTO_WELCOME_BANNER_VALUE.equalsIgnoreCase(message)) {
+                try {
+                    return KeyRandomArt.combine(' ', session.getKeyPairProvider());
+                } catch (Exception e) {
+                    if (e instanceof IOException) {
+                        throw (IOException) e;
+                    }
+
+                    throw new IOException(e);
+                }
+            }
+
+            if (!message.startsWith("file:/")) {
+                return message;
+            }
+
+            try {
+                bannerValue = new URI(message);
+            } catch (URISyntaxException e) {
+                log.error("resolveWelcomeBanner({}) bad path URI {}: {}", session, message, e.getMessage());
+                throw new IOException(e);
+            }
+        }
+
+        if (bannerValue instanceof URI) {
+            bannerValue = Paths.get((URI) bannerValue);
+        }
+
+        if (bannerValue instanceof File) {
+            bannerValue = ((File) bannerValue).toPath();
+        }
+
+        if (bannerValue instanceof Path) {
+            Path path = (Path) bannerValue;
+            if ((!Files.exists(path)) || (Files.size(path) <= 0L)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("resolveWelcomeBanner({}) file is empty/does not exist", session, path);
+                }
+                return null;
+            }
+
+            Charset cs = PropertyResolverUtils.getCharset(session, ServerAuthenticationManager.WELCOME_BANNER_CHARSET, Charset.defaultCharset());
+            Collection<String> lines = Files.readAllLines((Path) bannerValue, cs);
+            return GenericUtils.join(lines, '\n');
+        }
+
+        return bannerValue.toString();
     }
 
     public ServerFactoryManager getFactoryManager() {

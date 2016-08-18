@@ -51,7 +51,6 @@ public class WelcomeBannerTest extends BaseTestSupport {
         super();
     }
 
-
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
         sshd = Utils.setupTestServer(WelcomeBannerPhaseTest.class);
