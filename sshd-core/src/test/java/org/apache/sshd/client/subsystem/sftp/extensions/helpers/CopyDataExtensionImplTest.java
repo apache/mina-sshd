@@ -34,7 +34,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.AbstractSftpClientTestSupport;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
@@ -45,7 +44,6 @@ import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.Utils;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -111,11 +109,6 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
         setupServer();
     }
 
-    @After
-    public void tearDown() throws Exception {
-        tearDownServer();
-    }
-
     @Test
     public void testCopyDataExtension() throws Exception {
         testCopyDataExtension(size, srcOffset, length, dstOffset);
@@ -151,37 +144,30 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
             Files.delete(dstFile);
         }
         String dstPath = Utils.resolveRelativeRemotePath(parentPath, dstFile);
-
-        try (SshClient client = setupTestClient()) {
-            client.start();
-
-            if (writeOffset > 0L) {
-                Factory<? extends Random> factory = client.getRandomFactory();
-                Random randomizer = factory.create();
-                long totalLength = writeOffset + readLength;
-                byte[] workBuf = new byte[(int) Math.min(totalLength, IoUtils.DEFAULT_COPY_SIZE)];
-                try (OutputStream output = Files.newOutputStream(dstFile, IoUtils.EMPTY_OPEN_OPTIONS)) {
-                    while (totalLength > 0L) {
-                        randomizer.fill(workBuf);
-                        output.write(workBuf);
-                        totalLength -= workBuf.length;
-                    }
+        if (writeOffset > 0L) {
+            Factory<? extends Random> factory = client.getRandomFactory();
+            Random randomizer = factory.create();
+            long totalLength = writeOffset + readLength;
+            byte[] workBuf = new byte[(int) Math.min(totalLength, IoUtils.DEFAULT_COPY_SIZE)];
+            try (OutputStream output = Files.newOutputStream(dstFile, IoUtils.EMPTY_OPEN_OPTIONS)) {
+                while (totalLength > 0L) {
+                    randomizer.fill(workBuf);
+                    output.write(workBuf);
+                    totalLength -= workBuf.length;
                 }
             }
+        }
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(5L, TimeUnit.SECONDS);
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(5L, TimeUnit.SECONDS);
 
-                try (SftpClient sftp = session.createSftpClient()) {
-                    CopyDataExtension ext = assertExtensionCreated(sftp, CopyDataExtension.class);
-                    try (CloseableHandle readHandle = sftp.open(srcPath, SftpClient.OpenMode.Read);
-                         CloseableHandle writeHandle = sftp.open(dstPath, SftpClient.OpenMode.Write, SftpClient.OpenMode.Create)) {
-                        ext.copyData(readHandle, readOffset, readLength, writeHandle, writeOffset);
-                    }
+            try (SftpClient sftp = session.createSftpClient()) {
+                CopyDataExtension ext = assertExtensionCreated(sftp, CopyDataExtension.class);
+                try (CloseableHandle readHandle = sftp.open(srcPath, SftpClient.OpenMode.Read);
+                     CloseableHandle writeHandle = sftp.open(dstPath, SftpClient.OpenMode.Write, SftpClient.OpenMode.Create)) {
+                    ext.copyData(readHandle, readOffset, readLength, writeHandle, writeOffset);
                 }
-            } finally {
-                client.stop();
             }
         }
 

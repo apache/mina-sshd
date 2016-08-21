@@ -54,7 +54,6 @@ import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.Utils;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -74,11 +73,6 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
         setupServer();
     }
 
-    @After
-    public void tearDown() throws Exception {
-        tearDownServer();
-    }
-
     @Test
     public void testFsync() throws IOException {
         Path targetPath = detectTargetFolder();
@@ -88,25 +82,19 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
 
         Path parentPath = targetPath.getParent();
         String srcPath = Utils.resolveRelativeRemotePath(parentPath, srcFile);
-        try (SshClient client = setupTestClient()) {
-            client.start();
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(5L, TimeUnit.SECONDS);
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(5L, TimeUnit.SECONDS);
+            try (SftpClient sftp = session.createSftpClient()) {
+                OpenSSHFsyncExtension fsync = assertExtensionCreated(sftp, OpenSSHFsyncExtension.class);
+                try (CloseableHandle fileHandle = sftp.open(srcPath, SftpClient.OpenMode.Write, SftpClient.OpenMode.Create)) {
+                    sftp.write(fileHandle, 0L, expected);
+                    fsync.fsync(fileHandle);
 
-                try (SftpClient sftp = session.createSftpClient()) {
-                    OpenSSHFsyncExtension fsync = assertExtensionCreated(sftp, OpenSSHFsyncExtension.class);
-                    try (CloseableHandle fileHandle = sftp.open(srcPath, SftpClient.OpenMode.Write, SftpClient.OpenMode.Create)) {
-                        sftp.write(fileHandle, 0L, expected);
-                        fsync.fsync(fileHandle);
-
-                        byte[] actual = Files.readAllBytes(srcFile);
-                        assertArrayEquals("Mismatched written data", expected, actual);
-                    }
+                    byte[] actual = Files.readAllBytes(srcFile);
+                    assertArrayEquals("Mismatched written data", expected, actual);
                 }
-            } finally {
-                client.stop();
             }
         }
     }
@@ -120,7 +108,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
         Path parentPath = targetPath.getParent();
         String srcPath = Utils.resolveRelativeRemotePath(parentPath, srcFile);
 
-        final AtomicReference<String> extensionHolder = new AtomicReference<String>(null);
+        final AtomicReference<String> extensionHolder = new AtomicReference<>(null);
         final OpenSSHStatExtensionInfo expected = new OpenSSHStatExtensionInfo();
         expected.f_bavail = Short.MAX_VALUE;
         expected.f_bfree = Integer.MAX_VALUE;
@@ -142,7 +130,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
                     protected List<OpenSSHExtension> resolveOpenSSHExtensions(ServerSession session) {
                         List<OpenSSHExtension> original = super.resolveOpenSSHExtensions(session);
                         int numOriginal = GenericUtils.size(original);
-                        List<OpenSSHExtension> result = new ArrayList<OpenSSHExtension>(numOriginal + 2);
+                        List<OpenSSHExtension> result = new ArrayList<>(numOriginal + 2);
                         if (numOriginal > 0) {
                             result.addAll(original);
                         }

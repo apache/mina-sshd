@@ -49,7 +49,7 @@ public class KexFactoryManagerTest extends BaseTestSupport {
 
     @Test
     public void testDefaultCompressionFactoriesMethods() {
-        KexFactoryManager manager =  new TestKexFactoryManager();
+        KexFactoryManager manager = new TestKexFactoryManager();
         assertEquals("Mismatched empty factories name list", "", manager.getCompressionFactoriesNameList());
 
         String expected = NamedResource.Utils.getNames(BuiltinCompressions.VALUES);
@@ -66,7 +66,7 @@ public class KexFactoryManagerTest extends BaseTestSupport {
 
     @Test
     public void testDefaultCipherFactoriesMethods() {
-        KexFactoryManager manager =  new TestKexFactoryManager();
+        KexFactoryManager manager = new TestKexFactoryManager();
         assertEquals("Mismatched empty factories name list", "", manager.getCipherFactoriesNameList());
 
         String expected = NamedResource.Utils.getNames(BuiltinCiphers.VALUES);
@@ -83,7 +83,7 @@ public class KexFactoryManagerTest extends BaseTestSupport {
 
     @Test
     public void testDefaultMacFactoriesMethods() {
-        KexFactoryManager manager =  new TestKexFactoryManager();
+        KexFactoryManager manager = new TestKexFactoryManager();
         assertEquals("Mismatched empty factories name list", "", manager.getMacFactoriesNameList());
 
         String expected = NamedResource.Utils.getNames(BuiltinMacs.VALUES);
@@ -100,7 +100,7 @@ public class KexFactoryManagerTest extends BaseTestSupport {
 
     @Test
     public void testDefaultSignatureFactoriesMethods() {
-        KexFactoryManager manager =  new TestKexFactoryManager();
+        KexFactoryManager manager = new TestKexFactoryManager();
         assertEquals("Mismatched empty factories name list", "", manager.getSignatureFactoriesNameList());
 
         String expected = NamedResource.Utils.getNames(BuiltinSignatures.VALUES);

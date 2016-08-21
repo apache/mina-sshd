@@ -53,11 +53,11 @@ public class WelcomeBannerTest extends BaseTestSupport {
 
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
-        sshd = Utils.setupTestServer(WelcomeBannerPhaseTest.class);
+        sshd = Utils.setupTestServer(WelcomeBannerTest.class);
         sshd.start();
         port = sshd.getPort();
 
-        client = Utils.setupTestClient(WelcomeBannerPhaseTest.class);
+        client = Utils.setupTestClient(WelcomeBannerTest.class);
         client.start();
     }
 

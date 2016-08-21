@@ -30,7 +30,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.AbstractSftpClientTestSupport;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
@@ -45,7 +44,6 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.Utils;
-import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -92,11 +90,6 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
         setupServer();
     }
 
-    @After
-    public void tearDown() throws Exception {
-        tearDownServer();
-    }
-
     @Test
     public void testMD5HashExtension() throws Exception {
         testMD5HashExtension(size);
@@ -138,50 +131,43 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
         Path parentPath = targetPath.getParent();
         String srcPath = Utils.resolveRelativeRemotePath(parentPath, srcFile);
         String srcFolder = Utils.resolveRelativeRemotePath(parentPath, srcFile.getParent());
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(5L, TimeUnit.SECONDS);
 
-        try (SshClient client = setupTestClient()) {
-            client.start();
+            try (SftpClient sftp = session.createSftpClient()) {
+                MD5FileExtension file = assertExtensionCreated(sftp, MD5FileExtension.class);
+                try {
+                    byte[] actual = file.getHash(srcFolder, 0L, 0L, quickHash);
+                    fail("Unexpected file success on folder=" + srcFolder + ": " + BufferUtils.toHex(':', actual));
+                } catch (IOException e) {    // expected - not allowed to hash a folder
+                    assertTrue("Not an SftpException for file hash on " + srcFolder, e instanceof SftpException);
+                }
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(5L, TimeUnit.SECONDS);
-
-                try (SftpClient sftp = session.createSftpClient()) {
-                    MD5FileExtension file = assertExtensionCreated(sftp, MD5FileExtension.class);
+                MD5HandleExtension hndl = assertExtensionCreated(sftp, MD5HandleExtension.class);
+                try (CloseableHandle dirHandle = sftp.openDir(srcFolder)) {
                     try {
-                        byte[] actual = file.getHash(srcFolder, 0L, 0L, quickHash);
-                        fail("Unexpected file success on folder=" + srcFolder + ": " + BufferUtils.toHex(':', actual));
+                        byte[] actual = hndl.getHash(dirHandle, 0L, 0L, quickHash);
+                        fail("Unexpected handle success on folder=" + srcFolder + ": " + BufferUtils.toHex(':', actual));
                     } catch (IOException e) {    // expected - not allowed to hash a folder
-                        assertTrue("Not an SftpException for file hash on " + srcFolder, e instanceof SftpException);
+                        assertTrue("Not an SftpException for handle hash on " + srcFolder, e instanceof SftpException);
                     }
+                }
 
-                    MD5HandleExtension hndl = assertExtensionCreated(sftp, MD5HandleExtension.class);
-                    try (CloseableHandle dirHandle = sftp.openDir(srcFolder)) {
-                        try {
-                            byte[] actual = hndl.getHash(dirHandle, 0L, 0L, quickHash);
-                            fail("Unexpected handle success on folder=" + srcFolder + ": " + BufferUtils.toHex(':', actual));
-                        } catch (IOException e) {    // expected - not allowed to hash a folder
-                            assertTrue("Not an SftpException for handle hash on " + srcFolder, e instanceof SftpException);
-                        }
-                    }
-
-                    try (CloseableHandle fileHandle = sftp.open(srcPath, SftpClient.OpenMode.Read)) {
-                        for (byte[] qh : new byte[][]{GenericUtils.EMPTY_BYTE_ARRAY, quickHash}) {
-                            for (boolean useFile : new boolean[]{true, false}) {
-                                byte[] actualHash = useFile ? file.getHash(srcPath, 0L, 0L, qh) : hndl.getHash(fileHandle, 0L, 0L, qh);
-                                String type = useFile ? file.getClass().getSimpleName() : hndl.getClass().getSimpleName();
-                                if (!Arrays.equals(expectedHash, actualHash)) {
-                                    fail("Mismatched hash for quick=" + BufferUtils.toHex(':', qh)
-                                            + " using " + type + " on " + srcFile
-                                            + ": expected=" + BufferUtils.toHex(':', expectedHash)
-                                            + ", actual=" + BufferUtils.toHex(':', actualHash));
-                                }
+                try (CloseableHandle fileHandle = sftp.open(srcPath, SftpClient.OpenMode.Read)) {
+                    for (byte[] qh : new byte[][]{GenericUtils.EMPTY_BYTE_ARRAY, quickHash}) {
+                        for (boolean useFile : new boolean[]{true, false}) {
+                            byte[] actualHash = useFile ? file.getHash(srcPath, 0L, 0L, qh) : hndl.getHash(fileHandle, 0L, 0L, qh);
+                            String type = useFile ? file.getClass().getSimpleName() : hndl.getClass().getSimpleName();
+                            if (!Arrays.equals(expectedHash, actualHash)) {
+                                fail("Mismatched hash for quick=" + BufferUtils.toHex(':', qh)
+                                        + " using " + type + " on " + srcFile
+                                        + ": expected=" + BufferUtils.toHex(':', expectedHash)
+                                        + ", actual=" + BufferUtils.toHex(':', actualHash));
                             }
                         }
                     }
                 }
-            } finally {
-                client.stop();
             }
         }
     }

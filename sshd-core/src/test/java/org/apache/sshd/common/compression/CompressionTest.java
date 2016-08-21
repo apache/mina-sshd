@@ -32,13 +32,16 @@ import com.jcraft.jsch.JSch;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.mac.MacTest;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
+import org.apache.sshd.util.test.Utils;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -60,28 +63,14 @@ public class CompressionTest extends BaseTestSupport {
     private static final Collection<KexProposalOption> COMPRESSION_OPTIONS =
             Collections.unmodifiableSet(EnumSet.of(KexProposalOption.C2SCOMP, KexProposalOption.S2CCOMP));
 
-    private final CompressionFactory factory;
-    private SshServer sshd;
+    private static SshServer sshd;
+    private static int port;
 
+    private final CompressionFactory factory;
+    private final SessionListener listener;
     public CompressionTest(CompressionFactory factory) {
         this.factory = factory;
-    }
-
-    @Parameters(name = "factory={0}")
-    public static List<Object[]> parameters() {
-        return parameterize(BuiltinCompressions.VALUES);
-    }
-
-    @BeforeClass
-    public static void jschInit() {
-        JSchLogger.init();
-    }
-
-    @Before
-    public void setUp() throws Exception {
-        sshd = setupTestServer();
-        sshd.setCompressionFactories(Arrays.<NamedFactory<org.apache.sshd.common.compression.Compression>>asList(factory));
-        sshd.addSessionListener(new SessionListener() {
+        listener = new SessionListener() {
             @Override
             @SuppressWarnings("synthetic-access")
             public void sessionEvent(Session session, Event event) {
@@ -93,8 +82,39 @@ public class CompressionTest extends BaseTestSupport {
                     }
                 }
             }
-        });
+        };
+    }
+
+    @Parameters(name = "factory={0}")
+    public static List<Object[]> parameters() {
+        return parameterize(BuiltinCompressions.VALUES);
+    }
+
+    @BeforeClass
+    public static void setupClientAndServer() throws Exception {
+        JSchLogger.init();
+
+        sshd = Utils.setupTestServer(MacTest.class);
+        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider(MacTest.class));
         sshd.start();
+        port = sshd.getPort();
+    }
+
+    @AfterClass
+    public static void tearDownClientAndServer() throws Exception {
+        if (sshd != null) {
+            try {
+                sshd.stop(true);
+            } finally {
+                sshd = null;
+            }
+        }
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        sshd.setCompressionFactories(Arrays.<NamedFactory<org.apache.sshd.common.compression.Compression>>asList(factory));
+        sshd.addSessionListener(listener);
 
         String name = factory.getName();
         JSch.setConfig("compression.s2c", name);
@@ -106,7 +126,7 @@ public class CompressionTest extends BaseTestSupport {
     @After
     public void tearDown() throws Exception {
         if (sshd != null) {
-            sshd.stop(true);
+            sshd.removeSessionListener(listener);
         }
         JSch.setConfig("compression.s2c", "none");
         JSch.setConfig("compression.c2s", "none");
@@ -117,7 +137,7 @@ public class CompressionTest extends BaseTestSupport {
         Assume.assumeTrue("Skip unsupported compression " + factory, factory.isSupported());
 
         JSch sch = new JSch();
-        com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort());
+        com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), TEST_LOCALHOST, port);
         s.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
 
         s.connect();

@@ -42,9 +42,10 @@ import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.TeeOutputStream;
-import org.junit.After;
+import org.apache.sshd.util.test.Utils;
+import org.junit.AfterClass;
 import org.junit.Assume;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,10 +61,11 @@ import org.junit.runners.Parameterized.Parameters;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class KexTest extends BaseTestSupport {
+    private static SshServer sshd;
+    private static int port;
+    private static SshClient client;
 
     private final BuiltinDHFactories factory;
-    private SshServer sshd;
-    private int port;
 
     public KexTest(BuiltinDHFactories factory) {
         this.factory = factory;
@@ -74,17 +76,33 @@ public class KexTest extends BaseTestSupport {
         return parameterize(BuiltinDHFactories.VALUES);
     }
 
-    @Before
-    public void setUp() throws Exception {
-        sshd = setupTestServer();
+
+    @BeforeClass
+    public static void setupClientAndServer() throws Exception {
+        sshd = Utils.setupTestServer(KexTest.class);
         sshd.start();
         port = sshd.getPort();
+
+        client = Utils.setupTestClient(KexTest.class);
+        client.start();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterClass
+    public static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
-            sshd.stop(true);
+            try {
+                sshd.stop(true);
+            } finally {
+                sshd = null;
+            }
+        }
+
+        if (client != null) {
+            try {
+                client.stop();
+            } finally {
+                client = null;
+            }
         }
     }
 
@@ -103,44 +121,38 @@ public class KexTest extends BaseTestSupport {
         try (ByteArrayOutputStream sent = new ByteArrayOutputStream();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
-            try (SshClient client = setupTestClient()) {
-                client.setKeyExchangeFactories(Collections.singletonList(kex));
-                client.start();
+            client.setKeyExchangeFactories(Collections.singletonList(kex));
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
 
-                try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                    session.addPasswordIdentity(getCurrentTestName());
-                    session.auth().verify(5L, TimeUnit.SECONDS);
+                try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL);
+                     PipedOutputStream pipedIn = new PipedOutputStream();
+                     InputStream inPipe = new PipedInputStream(pipedIn);
+                     ByteArrayOutputStream err = new ByteArrayOutputStream();
+                     OutputStream teeOut = new TeeOutputStream(sent, pipedIn)) {
 
-                    try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL);
-                         PipedOutputStream pipedIn = new PipedOutputStream();
-                         InputStream inPipe = new PipedInputStream(pipedIn);
-                         ByteArrayOutputStream err = new ByteArrayOutputStream();
-                         OutputStream teeOut = new TeeOutputStream(sent, pipedIn)) {
+                    channel.setIn(inPipe);
+                    channel.setOut(out);
+                    channel.setErr(err);
+                    channel.open().verify(9L, TimeUnit.SECONDS);
 
-                        channel.setIn(inPipe);
-                        channel.setOut(out);
-                        channel.setErr(err);
-                        channel.open().verify(9L, TimeUnit.SECONDS);
+                    teeOut.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
+                    teeOut.flush();
 
-                        teeOut.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
-                        teeOut.flush();
-
-                        StringBuilder sb = new StringBuilder();
-                        for (int i = 0; i < 10; i++) {
-                            sb.append("0123456789");
-                        }
-                        sb.append("\n");
-                        teeOut.write(sb.toString().getBytes(StandardCharsets.UTF_8));
-
-                        teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
-                        teeOut.flush();
-
-                        Collection<ClientChannelEvent> result =
-                                channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
-                        assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < 10; i++) {
+                        sb.append("0123456789");
                     }
-                } finally {
-                    client.stop();
+                    sb.append("\n");
+                    teeOut.write(sb.toString().getBytes(StandardCharsets.UTF_8));
+
+                    teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
+                    teeOut.flush();
+
+                    Collection<ClientChannelEvent> result =
+                            channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
                 }
             }
 

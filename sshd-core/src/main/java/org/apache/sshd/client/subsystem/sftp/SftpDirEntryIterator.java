@@ -18,14 +18,17 @@
  */
 package org.apache.sshd.client.subsystem.sftp;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.Channel;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
+import org.apache.sshd.client.subsystem.sftp.SftpClient.Handle;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
@@ -39,27 +42,50 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  */
 public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterator<DirEntry>, Channel {
     private final AtomicReference<Boolean> eolIndicator = new AtomicReference<>();
+    private final AtomicBoolean open = new AtomicBoolean(true);
     private final SftpClient client;
     private final String dirPath;
-    private CloseableHandle dirHandle;
+    private final boolean closeOnFinished;
+    private Handle dirHandle;
     private List<DirEntry> dirEntries;
     private int index;
 
     /**
      * @param client The {@link SftpClient} instance to use for the iteration
      * @param path The remote directory path
+     * @throws IOException If failed to gain access to the remote directory patj
      */
-    public SftpDirEntryIterator(SftpClient client, String path) {
-        this.client = ValidateUtils.checkNotNull(client, "No SFTP client instance");
-        this.dirPath = path;
-        this.dirHandle = open(path);
+    public SftpDirEntryIterator(SftpClient client, String path) throws IOException {
+        this(client, path, client.openDir(path), true);
+    }
+
+    /**
+     * @param client The {@link SftpClient} instance to use for the iteration
+     * @param dirHandle The directory {@link Handle} to use for listing the entries
+     */
+    public SftpDirEntryIterator(SftpClient client, Handle dirHandle) {
+        this(client, Objects.toString(dirHandle, null), dirHandle, false);
+    }
+
+    /**
+     * @param client The {@link SftpClient} instance to use for the iteration
+     * @param path A hint as to the remote directory path - used only for logging
+     * @param dirHandle The directory {@link Handle} to use for listing the entries
+     * @param closeOnFinished If {@code true} then close the directory handle when
+     * all entries have been exahusted
+     */
+    public SftpDirEntryIterator(SftpClient client, String path, Handle dirHandle, boolean closeOnFinished) {
+        this.client = Objects.requireNonNull(client, "No SFTP client instance");
+        this.dirPath = ValidateUtils.checkNotNullAndNotEmpty(path, "No path");
+        this.dirHandle = Objects.requireNonNull(dirHandle, "No directory handle");
+        this.closeOnFinished = closeOnFinished;
         this.dirEntries = load(dirHandle);
     }
 
     /**
      * The client instance
      *
-     * @return {@link SftpClient} instance used to access the remote file
+     * @return {@link SftpClient} instance used to access the remote folder
      */
     public final SftpClient getClient() {
         return client;
@@ -68,10 +94,18 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterato
     /**
      * The remotely accessed directory path
      *
-     * @return Remote directory path
+     * @return Remote directory hint - may be the handle's value if accessed directly
+     * via a {@link Handle} instead of via a path - used only for logging
      */
     public final String getPath() {
         return dirPath;
+    }
+
+    /**
+     * @return The directory {@link Handle} used to access the remote directory
+     */
+    public final Handle getHandle() {
+        return dirHandle;
     }
 
     @Override
@@ -86,7 +120,7 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterato
             index = 0;
 
             try {
-                dirEntries = load(dirHandle);
+                dirEntries = load(getHandle());
             } catch (RuntimeException e) {
                 dirEntries = null;
                 throw e;
@@ -98,42 +132,33 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterato
 
     @Override
     public boolean isOpen() {
-        return (dirHandle != null) && dirHandle.isOpen();
+        return open.get();
+    }
+
+    public boolean isCloseOnFinished() {
+        return closeOnFinished;
     }
 
     @Override
     public void close() throws IOException {
-        if (isOpen()) {
-            if (log.isDebugEnabled()) {
-                log.debug("close(" + getPath() + ") handle=" + dirHandle);
+        if (open.getAndSet(false)) {
+            Handle handle = getHandle();
+            if ((handle instanceof Closeable) && isCloseOnFinished()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("close(" + getPath() + ") handle=" + handle);
+                }
+                ((Closeable) handle).close();
             }
-            dirHandle.close();
         }
     }
 
-    protected CloseableHandle open(String path) {
-        try {
-            CloseableHandle handle = client.openDir(path);
-            if (log.isDebugEnabled()) {
-                log.debug("open(" + path + ") handle=" + handle);
-            }
-
-            return handle;
-        } catch (IOException e) {
-            if (log.isDebugEnabled()) {
-                log.debug("open(" + path + ") failed (" + e.getClass().getSimpleName() + ") to open dir: " + e.getMessage());
-            }
-            throw new RuntimeException(e);
-        }
-    }
-
-    protected List<DirEntry> load(CloseableHandle handle) {
+    protected List<DirEntry> load(Handle handle) {
         try {
             // check if previous call yielded an end-of-list indication
             Boolean eolReached = eolIndicator.getAndSet(null);
             if ((eolReached != null) && eolReached.booleanValue()) {
                 if (log.isTraceEnabled()) {
-                    log.trace("load({}) exhausted all entries on previous call", getPath());
+                    log.trace("load({})[{}] exhausted all entries on previous call", getPath(), handle);
                 }
                 return null;
             }
@@ -142,7 +167,7 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterato
             eolReached = eolIndicator.get();
             if ((entries == null) || ((eolReached != null) && eolReached.booleanValue())) {
                 if (log.isTraceEnabled()) {
-                    log.trace("load({}) exhausted all entries - EOL={}", getPath(), eolReached);
+                    log.trace("load({})[{}] exhausted all entries - EOL={}", getPath(), handle, eolReached);
                 }
                 close();
             }
@@ -164,6 +189,6 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterato
 
     @Override
     public void remove() {
-        throw new UnsupportedOperationException("readDir(" + getPath() + ") Iterator#remove() N/A");
+        throw new UnsupportedOperationException("readDir(" + getPath() + ")[" + getHandle() + "] Iterator#remove() N/A");
     }
 }

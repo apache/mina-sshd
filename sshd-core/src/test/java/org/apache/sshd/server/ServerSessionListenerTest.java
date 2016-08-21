@@ -47,8 +47,9 @@ import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordChangeRequiredException;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.After;
-import org.junit.Before;
+import org.apache.sshd.util.test.Utils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -60,29 +61,40 @@ import org.slf4j.LoggerFactory;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ServerSessionListenerTest extends BaseTestSupport {
-    private SshServer sshd;
-    private SshClient client;
-    private int port;
+    private static SshServer sshd;
+    private static int port;
+    private static SshClient client;
 
     public ServerSessionListenerTest() {
         super();
     }
-    @Before
-    public void setUp() throws Exception {
-        sshd = setupTestServer();
+
+    @BeforeClass
+    public static void setupClientAndServer() throws Exception {
+        sshd = Utils.setupTestServer(ServerSessionListenerTest.class);
         sshd.start();
         port = sshd.getPort();
 
-        client = setupTestClient();
+        client = Utils.setupTestClient(ServerSessionListenerTest.class);
+        client.start();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterClass
+    public static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
-            sshd.stop(true);
+            try {
+                sshd.stop(true);
+            } finally {
+                sshd = null;
+            }
         }
+
         if (client != null) {
-            client.stop();
+            try {
+                client.stop();
+            } finally {
+                client = null;
+            }
         }
     }
 
@@ -90,7 +102,7 @@ public class ServerSessionListenerTest extends BaseTestSupport {
     public void testServerStillListensIfSessionListenerThrowsException() throws Exception {
         final Map<String, SocketAddress> eventsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         final Logger log = LoggerFactory.getLogger(getClass());
-        sshd.addSessionListener(new SessionListener() {
+        SessionListener listener = new SessionListener() {
             @Override
             public void sessionCreated(Session session) {
                 throwException("SessionCreated", session);
@@ -119,36 +131,38 @@ public class ServerSessionListenerTest extends BaseTestSupport {
                 log.info(e.getMessage());
                 throw e;
             }
-        });
-
-        client.start();
+        };
+        sshd.addSessionListener(listener);
 
         int curCount = 0;
-        for (int retryCount = 0; retryCount < Byte.SIZE; retryCount++) {
-            synchronized (eventsMap) {
-                curCount = eventsMap.size();
-                if (curCount >= 3) {
-                    return;
-                }
-            }
-
-            try {
-                try (ClientSession s = createTestClientSession()) {
-                    log.info("Retry #" + retryCount + " successful");
+        try {
+            for (int retryCount = 0; retryCount < Byte.SIZE; retryCount++) {
+                synchronized (eventsMap) {
+                    curCount = eventsMap.size();
+                    if (curCount >= 3) {
+                        return;
+                    }
                 }
 
-                synchronized (eventsMap) {
-                    assertTrue("Unexpected premature success at retry # " + retryCount + ": " + eventsMap, eventsMap.size() >= 3);
-                }
-            } catch (IOException e) {
-                // expected - ignored
-                synchronized (eventsMap) {
-                    int nextCount = eventsMap.size();
-                    assertTrue("No session event generated at retry #" + retryCount, nextCount > curCount);
+                try {
+                    try (ClientSession s = createTestClientSession()) {
+                        log.info("Retry #" + retryCount + " successful");
+                    }
+
+                    synchronized (eventsMap) {
+                        assertTrue("Unexpected premature success at retry # " + retryCount + ": " + eventsMap, eventsMap.size() >= 3);
+                    }
+                } catch (IOException e) {
+                    // expected - ignored
+                    synchronized (eventsMap) {
+                        int nextCount = eventsMap.size();
+                        assertTrue("No session event generated at retry #" + retryCount, nextCount > curCount);
+                    }
                 }
             }
+        } finally {
+            sshd.removeSessionListener(listener);
         }
-
         fail("No success to authenticate");
     }
 
@@ -159,7 +173,7 @@ public class ServerSessionListenerTest extends BaseTestSupport {
         kexParams.put(KexProposalOption.S2CENC, getLeastFavorite(Cipher.class, sshd.getCipherFactories()));
         kexParams.put(KexProposalOption.S2CMAC, getLeastFavorite(Mac.class, sshd.getMacFactories()));
 
-        sshd.addSessionListener(new SessionListener() {
+        SessionListener listener = new SessionListener() {
             @Override
             @SuppressWarnings("unchecked")
             public void sessionCreated(Session session) {
@@ -167,9 +181,9 @@ public class ServerSessionListenerTest extends BaseTestSupport {
                 session.setCipherFactories(Collections.singletonList((NamedFactory<Cipher>) kexParams.get(KexProposalOption.S2CENC)));
                 session.setMacFactories(Collections.singletonList((NamedFactory<Mac>) kexParams.get(KexProposalOption.S2CMAC)));
             }
-        });
+        };
+        sshd.addSessionListener(listener);
 
-        client.start();
         try (ClientSession session = createTestClientSession()) {
             for (Map.Entry<KexProposalOption, ? extends NamedResource> ke : kexParams.entrySet()) {
                 KexProposalOption option = ke.getKey();
@@ -178,7 +192,7 @@ public class ServerSessionListenerTest extends BaseTestSupport {
                 assertEquals("Mismatched values for KEX=" + option, expected, actual);
             }
         } finally {
-            client.stop();
+            sshd.removeSessionListener(listener);
         }
     }
 
@@ -193,7 +207,7 @@ public class ServerSessionListenerTest extends BaseTestSupport {
                 return defaultPassAuth.authenticate(username, password, session);
             }
         };
-        sshd.addSessionListener(new SessionListener() {
+        SessionListener listener = new SessionListener() {
             @Override
             public void sessionCreated(Session session) {
                 if ((!session.isAuthenticated()) && (session instanceof ServerSession)) {
@@ -204,15 +218,15 @@ public class ServerSessionListenerTest extends BaseTestSupport {
                                     ServerAuthenticationManager.Utils.DEFAULT_USER_AUTH_PASSWORD_FACTORY));
                 }
             }
-        });
+        };
+        sshd.addSessionListener(listener);
 
-        client.start();
         try (ClientSession session = createTestClientSession()) {
             assertNotSame("Mismatched default password authenticator", passAuth, sshd.getPasswordAuthenticator());
             assertNotSame("Mismatched default kb authenticator", KeyboardInteractiveAuthenticator.NONE, sshd.getKeyboardInteractiveAuthenticator());
             assertEquals("Authenticator override not invoked", 1, passCount.get());
         } finally {
-            client.stop();
+            sshd.removeSessionListener(listener);
         }
     }
 

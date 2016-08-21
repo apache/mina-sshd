@@ -30,7 +30,7 @@ import java.util.Iterator;
 public class DirectoryHandle extends Handle implements Iterator<Path> {
 
     private boolean done;
-    private boolean sendDotDot;
+    private boolean sendDotDot = true;
     private boolean sendDot = true;
     // the directory should be read once at "open directory"
     private DirectoryStream<Path> ds;
@@ -41,7 +41,9 @@ public class DirectoryHandle extends Handle implements Iterator<Path> {
         ds = Files.newDirectoryStream(file);
 
         Path parent = file.getParent();
-        sendDotDot = parent != null;  // if no parent then no need to send ".."
+        if (parent == null) {
+            sendDotDot = false;  // if no parent then no need to send ".."
+        }
         fileList = ds.iterator();
     }
 

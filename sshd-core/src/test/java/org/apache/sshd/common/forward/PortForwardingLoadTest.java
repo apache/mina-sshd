@@ -127,6 +127,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             log.info("tornDownDynamicTunnel(session={}, address={}, reason={})", session, address, reason);
         }
     };
+
     private SshServer sshd;
     private int sshPort;
     private IoAcceptor acceptor;

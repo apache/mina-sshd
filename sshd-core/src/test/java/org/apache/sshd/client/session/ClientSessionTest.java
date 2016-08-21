@@ -31,8 +31,9 @@ import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommandExecutionHelper;
-import org.junit.After;
-import org.junit.Before;
+import org.apache.sshd.util.test.Utils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -42,31 +43,40 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ClientSessionTest extends BaseTestSupport {
-    private SshServer sshd;
-    private SshClient client;
-    private int port;
+    private static SshServer sshd;
+    private static SshClient client;
+    private static int port;
 
     public ClientSessionTest() {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
-        sshd = setupTestServer();
+    @BeforeClass
+    public static void setupClientAndServer() throws Exception {
+        sshd = Utils.setupTestServer(ClientSessionTest.class);
         sshd.start();
         port = sshd.getPort();
 
-        client = setupTestClient();
+        client = Utils.setupTestClient(ClientSessionTest.class);
         client.start();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterClass
+    public static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
-            sshd.stop(true);
+            try {
+                sshd.stop(true);
+            } finally {
+                sshd = null;
+            }
         }
+
         if (client != null) {
-            client.stop();
+            try {
+                client.stop();
+            } finally {
+                client = null;
+            }
         }
     }
 
@@ -101,8 +111,6 @@ public class ClientSessionTest extends BaseTestSupport {
             // NOTE !!! The LF is only because we are using a buffered reader on the server end to read the command
             String actualResponse = session.executeRemoteCommand(expectedCommand + "\n");
             assertEquals("Mismatched command response", expectedResponse, actualResponse);
-        } finally {
-            client.stop();
         }
     }
 
@@ -149,8 +157,6 @@ public class ClientSessionTest extends BaseTestSupport {
             }
 
             actualErrorMessage = cause.getMessage();
-        } finally {
-            client.stop();
         }
 
         assertEquals("Mismatched captured error message", expectedErrorMessage, actualErrorMessage);
@@ -204,8 +210,6 @@ public class ClientSessionTest extends BaseTestSupport {
             }
 
             actualErrorMessage = cause.getMessage();
-        } finally {
-            client.stop();
         }
 
         assertEquals("Mismatched captured error code", Integer.toString(exepectedErrorCode), actualErrorMessage);

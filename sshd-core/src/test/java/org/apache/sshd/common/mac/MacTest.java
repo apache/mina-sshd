@@ -39,7 +39,8 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
-import org.junit.After;
+import org.apache.sshd.util.test.Utils;
+import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -75,10 +76,11 @@ public class MacTest extends BaseTestSupport {
                 }
             });
 
+    private static SshServer sshd;
+    private static int port;
+
     private final MacFactory factory;
     private final String jschMacClass;
-    private SshServer sshd;
-    private int port;
 
     public MacTest(MacFactory factory, String jschMacClass) {
         this.factory = factory;
@@ -119,25 +121,31 @@ public class MacTest extends BaseTestSupport {
         return ret;
     }
 
-    @BeforeClass
-    public static void jschnit() {
-        JSchLogger.init();
-    }
 
-    @Before
-    public void setUp() throws Exception {
-        sshd = setupTestServer();
-        sshd.setKeyPairProvider(createTestHostKeyProvider());
-        sshd.setMacFactories(Arrays.<NamedFactory<Mac>>asList(factory));
+    @BeforeClass
+    public static void setupClientAndServer() throws Exception {
+        JSchLogger.init();
+
+        sshd = Utils.setupTestServer(MacTest.class);
+        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider(MacTest.class));
         sshd.start();
         port = sshd.getPort();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterClass
+    public static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
-            sshd.stop(true);
+            try {
+                sshd.stop(true);
+            } finally {
+                sshd = null;
+            }
         }
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        sshd.setMacFactories(Arrays.<NamedFactory<Mac>>asList(factory));
     }
 
     @Test

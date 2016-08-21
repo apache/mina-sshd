@@ -66,12 +66,12 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
 import org.apache.sshd.util.test.Utils;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -79,10 +79,9 @@ import org.slf4j.LoggerFactory;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class PortForwardingTest extends BaseTestSupport {
-
-    private final org.slf4j.Logger log = LoggerFactory.getLogger(getClass());
     @SuppressWarnings("checkstyle:anoninnerlength")
-    private final PortForwardingEventListener serverSideListener = new PortForwardingEventListener() {
+    private static final PortForwardingEventListener SERVER_SIDE_LISTENER = new PortForwardingEventListener() {
+        private final org.slf4j.Logger log = LoggerFactory.getLogger(PortForwardingEventListener.class);
 
         @Override
         public void establishingExplicitTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress local,
@@ -137,34 +136,31 @@ public class PortForwardingTest extends BaseTestSupport {
         }
     };
 
-    private final BlockingQueue<String> requestsQ = new LinkedBlockingDeque<>();
+    private static final BlockingQueue<String> REQUESTS_QUEUE = new LinkedBlockingDeque<>();
+    private static SshServer sshd;
+    private static int sshPort;
+    private static int echoPort;
+    private static IoAcceptor acceptor;
+    private static SshClient client;
 
-    private SshServer sshd;
-    private int sshPort;
-    private int echoPort;
-    private IoAcceptor acceptor;
-    private SshClient client;
-
+    private final Logger log = LoggerFactory.getLogger(getClass());
     public PortForwardingTest() {
         super();
     }
 
     @BeforeClass
-    public static void jschInit() {
+    public static void setUpTestEnvironment() throws Exception {
         JSchLogger.init();
-    }
-
-    @Before
-    public void setUp() throws Exception {
-        sshd = setupTestServer();
+        sshd = Utils.setupTestServer(PortForwardingTest.class);
         PropertyResolverUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 2048);
         PropertyResolverUtils.updateProperty(sshd, FactoryManager.MAX_PACKET_SIZE, 256);
         sshd.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
-        sshd.addPortForwardingEventListener(serverSideListener);
+        sshd.addPortForwardingEventListener(SERVER_SIDE_LISTENER);
         sshd.start();
+        sshPort = sshd.getPort();
 
-        if (!requestsQ.isEmpty()) {
-            requestsQ.clear();
+        if (!REQUESTS_QUEUE.isEmpty()) {
+            REQUESTS_QUEUE.clear();
         }
 
         final TcpipForwarderFactory factory = ValidateUtils.checkNotNull(sshd.getTcpipForwarderFactory(), "No TcpipForwarderFactory");
@@ -186,6 +182,8 @@ public class PortForwardingTest extends BaseTestSupport {
 
                 final TcpipForwarder forwarder = factory.create(service);
                 return (TcpipForwarder) Proxy.newProxyInstance(cl, interfaces, new InvocationHandler() {
+                    private final org.slf4j.Logger log = LoggerFactory.getLogger(TcpipForwarder.class);
+
                     @SuppressWarnings("synthetic-access")
                     @Override
                     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
@@ -193,7 +191,7 @@ public class PortForwardingTest extends BaseTestSupport {
                         String name = method.getName();
                         String request = method2req.get(name);
                         if (GenericUtils.length(request) > 0) {
-                            if (requestsQ.offer(request)) {
+                            if (REQUESTS_QUEUE.offer(request)) {
                                 log.info("Signal " + request);
                             } else {
                                 log.error("Failed to offer request=" + request);
@@ -204,7 +202,6 @@ public class PortForwardingTest extends BaseTestSupport {
                 });
             }
         });
-        sshPort = sshd.getPort();
 
         NioSocketAcceptor acceptor = new NioSocketAcceptor();
         acceptor.setHandler(new IoHandlerAdapter() {
@@ -220,13 +217,28 @@ public class PortForwardingTest extends BaseTestSupport {
         acceptor.setReuseAddress(true);
         acceptor.bind(new InetSocketAddress(0));
         echoPort = acceptor.getLocalAddress().getPort();
-        this.acceptor = acceptor;
+
+        client = Utils.setupTestClient(PortForwardingTest.class);
+        client.start();
+    }
+
+    @AfterClass
+    public static void tearDownTestEnvironment() throws Exception {
+        if (sshd != null) {
+            sshd.stop(true);
+        }
+        if (acceptor != null) {
+            acceptor.dispose(true);
+        }
+        if (client != null) {
+            client.stop();
+        }
     }
 
     private void waitForForwardingRequest(String expected, long timeout) throws InterruptedException {
         for (long remaining = timeout; remaining > 0L;) {
             long waitStart = System.currentTimeMillis();
-            String actual = requestsQ.poll(remaining, TimeUnit.MILLISECONDS);
+            String actual = REQUESTS_QUEUE.poll(remaining, TimeUnit.MILLISECONDS);
             long waitEnd = System.currentTimeMillis();
             if (GenericUtils.isEmpty(actual)) {
                 throw new IllegalStateException("Failed to retrieve request=" + expected);
@@ -241,19 +253,6 @@ public class PortForwardingTest extends BaseTestSupport {
         }
 
         throw new IllegalStateException("Timeout while waiting to retrieve request=" + expected);
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        if (sshd != null) {
-            sshd.stop(true);
-        }
-        if (acceptor != null) {
-            acceptor.dispose(true);
-        }
-        if (client != null) {
-            client.stop();
-        }
     }
 
     @Test
@@ -800,14 +799,12 @@ public class PortForwardingTest extends BaseTestSupport {
     }
 
     protected ClientSession createNativeSession(PortForwardingEventListener listener) throws Exception {
-        client = setupTestClient();
         PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 2048);
         PropertyResolverUtils.updateProperty(client, FactoryManager.MAX_PACKET_SIZE, 256);
         client.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         if (listener != null) {
             client.addPortForwardingEventListener(listener);
         }
-        client.start();
 
         ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshPort).verify(7L, TimeUnit.SECONDS).getSession();
         session.addPasswordIdentity(getCurrentTestName());

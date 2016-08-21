@@ -25,8 +25,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.Iterator;
-import java.util.List;
 
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.common.NamedFactory;
@@ -108,12 +106,8 @@ public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
             assertArrayEquals("Mismatched remote written data", written, local);
 
             try (SftpClient.CloseableHandle h = sftp.openDir(remoteFileDir)) {
-                List<SftpClient.DirEntry> dirEntries = sftp.readDir(h);
-                assertNotNull("No dir entries", dirEntries);
-
                 boolean matchFound = false;
-                for (Iterator<SftpClient.DirEntry> it = dirEntries.iterator(); it.hasNext();) {
-                    SftpClient.DirEntry entry = it.next();
+                for (SftpClient.DirEntry entry : sftp.listDir(h)) {
                     String name = entry.getFilename();
                     if (clientFileName.equals(name)) {
                         matchFound = true;

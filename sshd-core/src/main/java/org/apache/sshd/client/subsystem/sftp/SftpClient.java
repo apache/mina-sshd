@@ -634,6 +634,16 @@ public interface SftpClient extends SubsystemClient {
     List<DirEntry> readDir(Handle handle, AtomicReference<Boolean> eolIndicator) throws IOException;
 
     /**
+     * @param handle A directory {@link Handle}
+     * @return An {@link Iterable} that can be used to iterate over all the
+     * directory entries (like {@link #readDir(String)}). <B>Note:</B> the
+     * iterable instance is not re-usable - i.e., files can be iterated
+     * only <U>once</U>
+     * @throws IOException If failed to access the directory
+     */
+    Iterable<DirEntry> listDir(Handle handle) throws IOException;
+
+    /**
      * The effective &quot;normalized&quot; remote path
      *
      * @param path The requested path - may be relative, and/or contain

@@ -43,8 +43,9 @@ import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.After;
-import org.junit.Before;
+import org.apache.sshd.util.test.Utils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -54,29 +55,40 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ClientSessionListenerTest extends BaseTestSupport {
-    private SshServer sshd;
-    private SshClient client;
-    private int port;
+    private static SshServer sshd;
+    private static int port;
+    private static SshClient client;
 
     public ClientSessionListenerTest() {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
-        client = setupTestClient();
-        sshd = setupTestServer();
+    @BeforeClass
+    public static void setupClientAndServer() throws Exception {
+        sshd = Utils.setupTestServer(ClientSessionListenerTest.class);
         sshd.start();
         port = sshd.getPort();
+
+        client = Utils.setupTestClient(ClientSessionListenerTest.class);
+        client.start();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterClass
+    public static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
-            sshd.stop(true);
+            try {
+                sshd.stop(true);
+            } finally {
+                sshd = null;
+            }
         }
+
         if (client != null) {
-            client.stop();
+            try {
+                client.stop();
+            } finally {
+                client = null;
+            }
         }
     }
 
@@ -87,7 +99,7 @@ public class ClientSessionListenerTest extends BaseTestSupport {
         kexParams.put(KexProposalOption.C2SENC, getLeastFavorite(Cipher.class, client.getCipherFactories()));
         kexParams.put(KexProposalOption.C2SMAC, getLeastFavorite(Mac.class, client.getMacFactories()));
 
-        client.addSessionListener(new SessionListener() {
+        SessionListener listener = new SessionListener() {
             @Override
             @SuppressWarnings("unchecked")
             public void sessionCreated(Session session) {
@@ -95,9 +107,9 @@ public class ClientSessionListenerTest extends BaseTestSupport {
                 session.setCipherFactories(Collections.singletonList((NamedFactory<Cipher>) kexParams.get(KexProposalOption.C2SENC)));
                 session.setMacFactories(Collections.singletonList((NamedFactory<Mac>) kexParams.get(KexProposalOption.C2SMAC)));
             }
-        });
+        };
+        client.addSessionListener(listener);
 
-        client.start();
         try (ClientSession session = createTestClientSession()) {
             for (Map.Entry<KexProposalOption, ? extends NamedResource> ke : kexParams.entrySet()) {
                 KexProposalOption option = ke.getKey();
@@ -106,7 +118,7 @@ public class ClientSessionListenerTest extends BaseTestSupport {
                 assertEquals("Mismatched values for KEX=" + option, expected, actual);
             }
         } finally {
-            client.stop();
+            client.removeSessionListener(listener);
         }
     }
 
@@ -121,7 +133,7 @@ public class ClientSessionListenerTest extends BaseTestSupport {
             }
         };
 
-        client.addSessionListener(new SessionListener() {
+        SessionListener listener = new SessionListener() {
             @Override
             public void sessionEvent(Session session, Event event) {
                 if ((!session.isAuthenticated()) && (session instanceof ClientSession) && Event.KexCompleted.equals(event)) {
@@ -130,9 +142,9 @@ public class ClientSessionListenerTest extends BaseTestSupport {
                     clientSession.setUserInteraction(UserInteraction.NONE);
                 }
             }
-        });
+        };
+        client.addSessionListener(listener);
 
-        client.start();
         try (ClientSession session = createTestClientSession()) {
             assertNotSame("Invalid default user interaction", UserInteraction.NONE, client.getUserInteraction());
             assertNotSame("Invalid default server key verifier", verifier, client.getServerKeyVerifier());
@@ -140,7 +152,7 @@ public class ClientSessionListenerTest extends BaseTestSupport {
             assertSame("Mismatched session server key verifier", verifier, session.getServerKeyVerifier());
             assertEquals("Mismatched verification count", 1, verificationCount.get());
         } finally {
-            client.stop();
+            client.removeSessionListener(listener);
         }
     }
 

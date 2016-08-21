@@ -25,9 +25,9 @@ import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.AbstractSftpClientTestSupport;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
@@ -39,7 +39,6 @@ import org.apache.sshd.server.Command;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.Utils;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -59,11 +58,6 @@ public class SpaceAvailableExtensionImplTest extends AbstractSftpClientTestSuppo
         setupServer();
     }
 
-    @After
-    public void tearDown() throws Exception {
-        tearDownServer();
-    }
-
     @Test
     public void testFileStoreReport() throws Exception {
         Path targetPath = detectTargetFolder();
@@ -72,6 +66,8 @@ public class SpaceAvailableExtensionImplTest extends AbstractSftpClientTestSuppo
         FileStore store = Files.getFileStore(lclSftp.getRoot());
         final String queryPath = Utils.resolveRelativeRemotePath(parentPath, lclSftp);
         final SpaceAvailableExtensionInfo expected = new SpaceAvailableExtensionInfo(store);
+
+        List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory() {
             @Override
             public Command create() {
@@ -88,21 +84,17 @@ public class SpaceAvailableExtensionImplTest extends AbstractSftpClientTestSuppo
             }
         }));
 
-        try (SshClient client = setupTestClient()) {
-            client.start();
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(5L, TimeUnit.SECONDS);
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(5L, TimeUnit.SECONDS);
-
-                try (SftpClient sftp = session.createSftpClient()) {
-                    SpaceAvailableExtension ext = assertExtensionCreated(sftp, SpaceAvailableExtension.class);
-                    SpaceAvailableExtensionInfo actual = ext.available(queryPath);
-                    assertEquals("Mismatched information", expected, actual);
-                }
-            } finally {
-                client.stop();
+            try (SftpClient sftp = session.createSftpClient()) {
+                SpaceAvailableExtension ext = assertExtensionCreated(sftp, SpaceAvailableExtension.class);
+                SpaceAvailableExtensionInfo actual = ext.available(queryPath);
+                assertEquals("Mismatched information", expected, actual);
             }
+        } finally {
+            sshd.setSubsystemFactories(factories);
         }
     }
 }

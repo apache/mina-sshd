@@ -39,6 +39,7 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
 import org.apache.sshd.util.test.Utils;
+import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -87,6 +88,8 @@ public class CipherTest extends BaseTestSupport {
             });
 
     private static final String CRYPT_NAMES = NamedResource.Utils.getNames(TEST_CIPHERS);
+    private static SshServer sshd;
+    private static int port;
 
     private final Random random = Utils.getRandomizerInstance();
     private final BuiltinCiphers builtInCipher;
@@ -105,24 +108,29 @@ public class CipherTest extends BaseTestSupport {
     }
 
     @BeforeClass
-    public static void jschInit() {
+    public static void setupClientAndServer() throws Exception {
         JSchLogger.init();
+        sshd = Utils.setupTestServer(CipherTest.class);
+        sshd.start();
+        port = sshd.getPort();
+    }
+
+    @AfterClass
+    public static void tearDownClientAndServer() throws Exception {
+        if (sshd != null) {
+            try {
+                sshd.stop(true);
+            } finally {
+                sshd = null;
+            }
+        }
     }
 
     @Test
     public void testBuiltinCipherSession() throws Exception {
         Assume.assumeTrue("No internal support for " + builtInCipher.getName(), builtInCipher.isSupported() && checkCipher(jschCipher.getName()));
-
-        try (SshServer sshd = setupTestServer()) {
-            sshd.setCipherFactories(Collections.<NamedFactory<org.apache.sshd.common.cipher.Cipher>>singletonList(builtInCipher));
-            sshd.start();
-
-            try {
-                runJschTest(sshd.getPort());
-            } finally {
-                sshd.stop(true);
-            }
-        }
+        sshd.setCipherFactories(Collections.<NamedFactory<org.apache.sshd.common.cipher.Cipher>>singletonList(builtInCipher));
+        runJschTest(port);
     }
 
     private void runJschTest(int port) throws Exception {

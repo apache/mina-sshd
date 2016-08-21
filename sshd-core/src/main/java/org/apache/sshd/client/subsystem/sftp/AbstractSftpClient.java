@@ -1130,6 +1130,15 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
     }
 
     @Override
+    public Iterable<DirEntry> listDir(Handle handle) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("listDir(" + handle + ") client is closed");
+        }
+
+        return new StfpIterableDirHandle(this, handle);
+    }
+
+    @Override
     public InputStream read(final String path, final int bufferSize, final Collection<OpenMode> mode) throws IOException {
         if (bufferSize < MIN_READ_BUFFER_SIZE) {
             throw new IllegalArgumentException("Insufficient read buffer size: " + bufferSize + ", min.=" + MIN_READ_BUFFER_SIZE);

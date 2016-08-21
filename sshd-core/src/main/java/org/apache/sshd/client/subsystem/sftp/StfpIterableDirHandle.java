@@ -18,29 +18,22 @@
  */
 package org.apache.sshd.client.subsystem.sftp;
 
-import java.io.IOException;
 import java.util.Objects;
 
 import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
-import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.client.subsystem.sftp.SftpClient.Handle;
 
-/**
- * Provides an {@link Iterable} implementation of the {@link DirEntry}-ies
- * for a remote directory
- *
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- */
-public class SftpIterableDirEntry implements Iterable<DirEntry> {
+public class StfpIterableDirHandle implements Iterable<DirEntry> {
     private final SftpClient client;
-    private final String path;
+    private final Handle handle;
 
     /**
-     * @param client The {@link SftpClient} instance to use for the iteration
-     * @param path The remote directory path
+     * @param client The {@link SftpClient} to use for iteration
+     * @param handle The remote directory {@link Handle}
      */
-    public SftpIterableDirEntry(SftpClient client, String path) {
+    public StfpIterableDirHandle(SftpClient client, Handle handle) {
         this.client = Objects.requireNonNull(client, "No client instance");
-        this.path = ValidateUtils.checkNotNullAndNotEmpty(path, "No remote path");
+        this.handle = handle;
     }
 
     /**
@@ -53,20 +46,14 @@ public class SftpIterableDirEntry implements Iterable<DirEntry> {
     }
 
     /**
-     * The remotely accessed directory path
-     *
-     * @return Remote directory path
+     * @return The remote directory {@link Handle}
      */
-    public final String getPath() {
-        return path;
+    public final Handle getHandle() {
+        return handle;
     }
 
     @Override
     public SftpDirEntryIterator iterator() {
-        try {
-            return new SftpDirEntryIterator(getClient(), getPath());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return new SftpDirEntryIterator(getClient(), getHandle());
     }
 }

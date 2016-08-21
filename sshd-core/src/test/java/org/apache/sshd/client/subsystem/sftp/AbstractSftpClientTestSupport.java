@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 
+import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.file.FileSystemFactory;
@@ -32,13 +33,19 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.JSchLogger;
+import org.apache.sshd.util.test.Utils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractSftpClientTestSupport extends BaseTestSupport {
-    protected SshServer sshd;
-    protected int port;
+    protected static SshServer sshd;
+    protected static int port;
+    protected static SshClient client;
+
     protected final FileSystemFactory fileSystemFactory;
 
     protected AbstractSftpClientTestSupport() throws IOException {
@@ -47,16 +54,21 @@ public abstract class AbstractSftpClientTestSupport extends BaseTestSupport {
         fileSystemFactory = new VirtualFileSystemFactory(parentPath);
     }
 
-    protected void setupServer() throws Exception {
-        sshd = setupTestServer();
+    @BeforeClass
+    public static void setupClientAndServer() throws Exception {
+        JSchLogger.init();
+        sshd = Utils.setupTestServer(AbstractSftpClientTestSupport.class);
         sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(new SftpSubsystemFactory()));
         sshd.setCommandFactory(new ScpCommandFactory());
-        sshd.setFileSystemFactory(fileSystemFactory);
         sshd.start();
         port = sshd.getPort();
+
+        client = Utils.setupTestClient(AbstractSftpClientTestSupport.class);
+        client.start();
     }
 
-    protected void tearDownServer() throws Exception {
+    @AfterClass
+    public static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
                 sshd.stop(true);
@@ -64,6 +76,18 @@ public abstract class AbstractSftpClientTestSupport extends BaseTestSupport {
                 sshd = null;
             }
         }
+
+        if (client != null) {
+            try {
+                client.stop();
+            } finally {
+                client = null;
+            }
+        }
+    }
+
+    protected void setupServer() throws Exception {
+        sshd.setFileSystemFactory(fileSystemFactory);
     }
 
     protected static final <E extends SftpClientExtension> E assertExtensionCreated(SftpClient sftp, Class<E> type) {

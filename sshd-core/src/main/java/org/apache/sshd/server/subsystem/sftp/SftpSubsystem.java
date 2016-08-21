@@ -1838,12 +1838,13 @@ public class SftpSubsystem
                 reply = BufferUtils.clear(buffer);
                 reply.putByte((byte) SftpConstants.SSH_FXP_NAME);
                 reply.putInt(id);
+
                 int lenPos = reply.wpos();
                 reply.putInt(0);
 
-                int count = doReadDir(id, handle, dh, reply, PropertyResolverUtils.getIntProperty(getServerSession(), MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH));
-                BufferUtils.updateLengthPlaceholder(reply, lenPos, count);
                 ServerSession session = getServerSession();
+                int count = doReadDir(id, handle, dh, reply, PropertyResolverUtils.getIntProperty(session, MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH));
+                BufferUtils.updateLengthPlaceholder(reply, lenPos, count);
                 if ((!dh.isSendDot()) && (!dh.isSendDotDot()) && (!dh.hasNext())) {
                     dh.markDone();
                 }

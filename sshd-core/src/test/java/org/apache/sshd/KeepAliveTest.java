@@ -37,8 +37,11 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.EchoShell;
 import org.apache.sshd.util.test.EchoShellFactory;
+import org.apache.sshd.util.test.Utils;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -55,34 +58,57 @@ public class KeepAliveTest extends BaseTestSupport {
     private static final long TIMEOUT = 2L * HEARTBEAT;
     private static final long WAIT = 2L * TIMEOUT;
 
-    private SshServer sshd;
-    private int port;
+    private static SshServer sshd;
+    private static int port;
+    private static SshClient client;
 
     public KeepAliveTest() {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
-        sshd = setupTestServer();
-        PropertyResolverUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, TIMEOUT);
+    @BeforeClass
+    public static void setupClientAndServer() throws Exception {
+        sshd = Utils.setupTestServer(KeepAliveTest.class);
         sshd.setShellFactory(new TestEchoShellFactory());
         sshd.start();
         port = sshd.getPort();
+
+        client = Utils.setupTestClient(KeepAliveTest.class);
+        client.start();
+    }
+
+    @AfterClass
+    public static void tearDownClientAndServer() throws Exception {
+        if (sshd != null) {
+            try {
+                sshd.stop(true);
+            } finally {
+                sshd = null;
+            }
+        }
+
+        if (client != null) {
+            try {
+                client.stop();
+            } finally {
+                client = null;
+            }
+        }
+    }
+
+    @Before
+    public void setUp() {
+        PropertyResolverUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, TIMEOUT);
     }
 
     @After
-    public void tearDown() throws Exception {
-        if (sshd != null) {
-            sshd.stop(true);
-        }
+    public void tearDown() {
+        PropertyResolverUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, FactoryManager.DEFAULT_IDLE_TIMEOUT);
+        PropertyResolverUtils.updateProperty(client, ClientFactoryManager.HEARTBEAT_INTERVAL, ClientFactoryManager.DEFAULT_HEARTBEAT_INTERVAL);
     }
 
     @Test
     public void testIdleClient() throws Exception {
-        SshClient client = setupTestClient();
-        client.start();
-
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
@@ -92,17 +118,12 @@ public class KeepAliveTest extends BaseTestSupport {
                         channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), WAIT);
                 assertTrue("Wrong channel state: " + result, result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)));
             }
-        } finally {
-            client.stop();
         }
     }
 
     @Test
     public void testClientWithHeartBeat() throws Exception {
-        SshClient client = setupTestClient();
         PropertyResolverUtils.updateProperty(client, ClientFactoryManager.HEARTBEAT_INTERVAL, HEARTBEAT);
-        client.start();
-
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
@@ -112,17 +133,12 @@ public class KeepAliveTest extends BaseTestSupport {
                         channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), WAIT);
                 assertTrue("Wrong channel state: " + result, result.contains(ClientChannelEvent.TIMEOUT));
             }
-        } finally {
-            client.stop();
         }
     }
 
     @Test
     public void testShellClosedOnClientTimeout() throws Exception {
         TestEchoShell.latch = new CountDownLatch(1);
-
-        SshClient client = setupTestClient();
-        client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
@@ -145,7 +161,6 @@ public class KeepAliveTest extends BaseTestSupport {
             }
         } finally {
             TestEchoShell.latch = null;
-            client.stop();
         }
     }
 

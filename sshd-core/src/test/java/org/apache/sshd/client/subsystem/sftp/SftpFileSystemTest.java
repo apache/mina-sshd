@@ -71,17 +71,18 @@ import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.Utils;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SftpFileSystemTest extends BaseTestSupport {
+    private static SshServer sshd;
+    private static int port;
 
-    private SshServer sshd;
-    private int port;
     private final FileSystemFactory fileSystemFactory;
 
     public SftpFileSystemTest() throws IOException {
@@ -90,21 +91,29 @@ public class SftpFileSystemTest extends BaseTestSupport {
         fileSystemFactory = new VirtualFileSystemFactory(parentPath);
     }
 
-    @Before
-    public void setUp() throws Exception {
-        sshd = setupTestServer();
+    @BeforeClass
+    public static void setupServerInstance() throws Exception {
+        sshd = Utils.setupTestServer(SftpFileSystemTest.class);
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
         sshd.setCommandFactory(new ScpCommandFactory());
-        sshd.setFileSystemFactory(fileSystemFactory);
         sshd.start();
         port = sshd.getPort();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterClass
+    public static void tearDownServerInstance() throws Exception {
         if (sshd != null) {
-            sshd.stop(true);
+            try {
+                sshd.stop(true);
+            } finally {
+                sshd = null;
+            }
         }
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        sshd.setFileSystemFactory(fileSystemFactory);
     }
 
     @Test
@@ -125,7 +134,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
     @Test   // see SSHD-578
     public void testFileSystemURIParameters() throws Exception {
-        Map<String, Object> params = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, Object> params = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         params.put("test-class-name", getClass().getSimpleName());
         params.put("test-pkg-name", getClass().getPackage().getName());
         params.put("test-name", getCurrentTestName());
@@ -309,6 +318,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
                 return selected.get();
             }
         };
+
         try (SshClient client = setupTestClient()) {
             client.start();
 
@@ -329,7 +339,6 @@ public class SftpFileSystemTest extends BaseTestSupport {
                 client.stop();
             }
         }
-
     }
 
     private void testFileSystem(FileSystem fs, int version) throws Exception {

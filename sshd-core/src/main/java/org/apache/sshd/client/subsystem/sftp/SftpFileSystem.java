@@ -351,6 +351,14 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
         }
 
         @Override
+        public Iterable<DirEntry> listDir(Handle handle) throws IOException {
+            if (!isOpen()) {
+                throw new IOException("readDir(" + handle + ") client is closed");
+            }
+            return delegate.listDir(handle);
+        }
+
+        @Override
         public String canonicalPath(String path) throws IOException {
             if (!isOpen()) {
                 throw new IOException("canonicalPath(" + path + ") client is closed");

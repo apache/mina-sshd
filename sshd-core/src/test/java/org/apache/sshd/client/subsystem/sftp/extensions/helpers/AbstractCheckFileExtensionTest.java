@@ -32,7 +32,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.AbstractSftpClientTestSupport;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
@@ -52,7 +51,6 @@ import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.Utils;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -125,11 +123,6 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
         setupServer();
     }
 
-    @After
-    public void tearDown() throws Exception {
-        tearDownServer();
-    }
-
     @Test
     public void testCheckFileExtension() throws Exception {
         testCheckFileExtension(algorithm, dataSize, blockSize);
@@ -169,7 +162,7 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
         Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve(factory.getName() + "-data-" + data.length + "-" + hashBlockSize + ".txt");
         Files.write(srcFile, data, IoUtils.EMPTY_OPEN_OPTIONS);
 
-        List<String> algorithms = new ArrayList<String>(BuiltinDigests.VALUES.size());
+        List<String> algorithms = new ArrayList<>(BuiltinDigests.VALUES.size());
         // put the selected algorithm 1st and then the rest
         algorithms.add(factory.getName());
         for (NamedFactory<? extends Digest> f : BuiltinDigests.VALUES) {
@@ -183,40 +176,33 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
         Path parentPath = targetPath.getParent();
         String srcPath = Utils.resolveRelativeRemotePath(parentPath, srcFile);
         String srcFolder = Utils.resolveRelativeRemotePath(parentPath, srcFile.getParent());
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(5L, TimeUnit.SECONDS);
 
-        try (SshClient client = setupTestClient()) {
-            client.start();
+            try (SftpClient sftp = session.createSftpClient()) {
+                CheckFileNameExtension file = assertExtensionCreated(sftp, CheckFileNameExtension.class);
+                try {
+                    Pair<String, ?> result = file.checkFileName(srcFolder, algorithms, 0L, 0L, hashBlockSize);
+                    fail("Unexpected success to hash folder=" + srcFolder + ": " + result.getFirst());
+                } catch (IOException e) {    // expected - not allowed to hash a folder
+                    assertTrue("Not an SftpException", e instanceof SftpException);
+                }
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(5L, TimeUnit.SECONDS);
-
-                try (SftpClient sftp = session.createSftpClient()) {
-                    CheckFileNameExtension file = assertExtensionCreated(sftp, CheckFileNameExtension.class);
+                CheckFileHandleExtension hndl = assertExtensionCreated(sftp, CheckFileHandleExtension.class);
+                try (CloseableHandle dirHandle = sftp.openDir(srcFolder)) {
                     try {
-                        Pair<String, ?> result = file.checkFileName(srcFolder, algorithms, 0L, 0L, hashBlockSize);
-                        fail("Unexpected success to hash folder=" + srcFolder + ": " + result.getFirst());
+                        Pair<String, ?> result = hndl.checkFileHandle(dirHandle, algorithms, 0L, 0L, hashBlockSize);
+                        fail("Unexpected handle success on folder=" + srcFolder + ": " + result.getFirst());
                     } catch (IOException e) {    // expected - not allowed to hash a folder
                         assertTrue("Not an SftpException", e instanceof SftpException);
                     }
-
-                    CheckFileHandleExtension hndl = assertExtensionCreated(sftp, CheckFileHandleExtension.class);
-                    try (CloseableHandle dirHandle = sftp.openDir(srcFolder)) {
-                        try {
-                            Pair<String, ?> result = hndl.checkFileHandle(dirHandle, algorithms, 0L, 0L, hashBlockSize);
-                            fail("Unexpected handle success on folder=" + srcFolder + ": " + result.getFirst());
-                        } catch (IOException e) {    // expected - not allowed to hash a folder
-                            assertTrue("Not an SftpException", e instanceof SftpException);
-                        }
-                    }
-
-                    validateHashResult(file, file.checkFileName(srcPath, algorithms, 0L, 0L, hashBlockSize), algorithms.get(0), expectedHash);
-                    try (CloseableHandle fileHandle = sftp.open(srcPath, SftpClient.OpenMode.Read)) {
-                        validateHashResult(hndl, hndl.checkFileHandle(fileHandle, algorithms, 0L, 0L, hashBlockSize), algorithms.get(0), expectedHash);
-                    }
                 }
-            } finally {
-                client.stop();
+
+                validateHashResult(file, file.checkFileName(srcPath, algorithms, 0L, 0L, hashBlockSize), algorithms.get(0), expectedHash);
+                try (CloseableHandle fileHandle = sftp.open(srcPath, SftpClient.OpenMode.Read)) {
+                    validateHashResult(hndl, hndl.checkFileHandle(fileHandle, algorithms, 0L, 0L, hashBlockSize), algorithms.get(0), expectedHash);
+                }
             }
         }
     }
