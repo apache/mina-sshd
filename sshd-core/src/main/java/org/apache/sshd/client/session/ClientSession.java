@@ -49,6 +49,7 @@ import org.apache.sshd.client.subsystem.sftp.SftpClientCreator;
 import org.apache.sshd.common.forward.PortForwardingManager;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.closeable.CloseableUtils;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.common.util.io.NullOutputStream;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
@@ -94,6 +95,8 @@ public interface ClientSession
 
     Set<ClientChannelEvent> REMOTE_COMMAND_WAIT_EVENTS =
             Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.CLOSED, ClientChannelEvent.EXIT_STATUS));
+    Set<ClientChannelEvent> REMOTE_COMMAND_END_EVENTS =
+            Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.CLOSED));
 
     /**
      * Returns the original address (after having been translated through host
@@ -224,7 +227,16 @@ public interface ClientSession
             if ((exitStatus != null) && (exitStatus.intValue() != 0)) {
                 throw new RemoteException("Remote command failed (" + exitStatus + "): " + command, new ServerException(exitStatus.toString()));
             }
-            byte[]  response = channelOut.toByteArray();
+
+            if (!waitMask.contains(ClientChannelEvent.CLOSED)) {
+                long maxWait = CloseableUtils.getMaxCloseWaitTime(this);
+                waitMask = channel.waitFor(REMOTE_COMMAND_END_EVENTS, maxWait);
+                if (waitMask.contains(ClientChannelEvent.TIMEOUT)) {
+                    throw new SocketTimeoutException("Failed to receive command channel close in time: " + command);
+                }
+            }
+
+            byte[] response = channelOut.toByteArray();
             return new String(response, charset);
         }
     }
