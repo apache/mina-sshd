@@ -18,9 +18,14 @@
  */
 package org.apache.sshd.server.auth;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
@@ -28,6 +33,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.keys.KeyRandomArt;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.ServerAuthenticationManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -94,6 +100,58 @@ public class WelcomeBannerTest extends BaseTestSupport {
         testBanner(KeyRandomArt.combine(' ', keys));
     }
 
+    @Test
+    public void testPathBanner() throws Exception {
+        testFileContentBanner(Function.<Path>identity());
+    }
+
+    @Test
+    public void testFileBanner() throws Exception {
+        testFileContentBanner(path -> path.toFile());
+    }
+
+    @Test
+    public void testURIBanner() throws Exception {
+        testFileContentBanner(path -> path.toUri());
+    }
+
+    @Test
+    public void testURIStringBanner() throws Exception {
+        testFileContentBanner(path -> Objects.toString(path.toUri()));
+    }
+
+    @Test
+    public void testFileNotExistsBanner() throws Exception {
+        Path dir = getTempTargetRelativeFile(getClass().getSimpleName());
+        Path file = assertHierarchyTargetFolderExists(dir).resolve(getCurrentTestName() + ".txt");
+        Files.deleteIfExists(file);
+        assertFalse("Banner file not deleted: " + file, Files.exists(file));
+        PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.WELCOME_BANNER, file);
+        testBanner(null);
+    }
+
+    @Test
+    public void testEmptyFileBanner() throws Exception {
+        Path dir = getTempTargetRelativeFile(getClass().getSimpleName());
+        Path file = assertHierarchyTargetFolderExists(dir).resolve(getCurrentTestName() + ".txt");
+        Files.deleteIfExists(file);
+        Files.write(file, GenericUtils.EMPTY_BYTE_ARRAY);
+        assertTrue("Empty file not created: " + file, Files.exists(file));
+        PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.WELCOME_BANNER, file);
+        testBanner(null);
+    }
+
+    private void testFileContentBanner(Function<? super Path, ?> configValueExtractor) throws Exception {
+        Path dir = getTempTargetRelativeFile(getClass().getSimpleName());
+        Path file = assertHierarchyTargetFolderExists(dir).resolve(getCurrentTestName() + ".txt");
+        String expectedWelcome = getClass().getName() + "#" + getCurrentTestName();
+        Files.deleteIfExists(file);
+        Files.write(file, expectedWelcome.getBytes(StandardCharsets.UTF_8));
+        Object configValue = configValueExtractor.apply(file);
+        PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.WELCOME_BANNER, configValue);
+        testBanner(expectedWelcome);
+    }
+
     private void testBanner(String expectedWelcome) throws Exception {
         AtomicReference<String> welcomeHolder = new AtomicReference<>(null);
         AtomicReference<ClientSession> sessionHolder = new AtomicReference<>(null);
@@ -136,7 +194,11 @@ public class WelcomeBannerTest extends BaseTestSupport {
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
-            assertSame("Mismatched sessions", session, sessionHolder.get());
+            if (expectedWelcome != null) {
+                assertSame("Mismatched sessions", session, sessionHolder.get());
+            } else {
+                assertNull("Unexpected session", sessionHolder.get());
+            }
         }
 
         assertEquals("Mismatched banner", expectedWelcome, welcomeHolder.get());
