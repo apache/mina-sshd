@@ -42,9 +42,15 @@ public abstract class CommandExecutionHelper implements Command, Runnable, ExitC
     private Environment environment;
     private Thread thread;
     private boolean cbCalled;
+    // null/empty if shell
+    private String command;
 
     protected CommandExecutionHelper() {
-        super();
+        this(null);
+    }
+
+    protected CommandExecutionHelper(String command) {
+        this.command = command;
     }
 
     public InputStream getIn() {
@@ -102,17 +108,22 @@ public abstract class CommandExecutionHelper implements Command, Runnable, ExitC
 
     @Override
     public void run() {
-        String command = null;
-        try (BufferedReader r = new BufferedReader(new InputStreamReader(getIn(), StandardCharsets.UTF_8))) {
-            for (;;) {
-                command = r.readLine();
-                if (command == null) {
-                    return;
-                }
+        try {
+            if (command == null) {
+                try (BufferedReader r = new BufferedReader(new InputStreamReader(getIn(), StandardCharsets.UTF_8))) {
+                    for (;;) {
+                        command = r.readLine();
+                        if (command == null) {
+                            return;
+                        }
 
-                if (!handleCommandLine(command)) {
-                    return;
+                        if (!handleCommandLine(command)) {
+                            return;
+                        }
+                    }
                 }
+            } else {
+                handleCommandLine(command);
             }
         } catch (InterruptedIOException e) {
             // Ignore - signaled end

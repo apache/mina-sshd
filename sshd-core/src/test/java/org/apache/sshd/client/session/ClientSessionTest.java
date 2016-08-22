@@ -87,7 +87,7 @@ public class ClientSessionTest extends BaseTestSupport {
         sshd.setCommandFactory(new CommandFactory() {
             @Override
             public Command createCommand(String command) {
-                return new CommandExecutionHelper() {
+                return new CommandExecutionHelper(command) {
                     private boolean cmdProcessed;
 
                     @Override
@@ -121,7 +121,7 @@ public class ClientSessionTest extends BaseTestSupport {
         sshd.setCommandFactory(new CommandFactory() {
             @Override
             public Command createCommand(String command) {
-                return new CommandExecutionHelper() {
+                return new CommandExecutionHelper(command) {
                     private boolean cmdProcessed;
 
                     @Override
@@ -169,7 +169,7 @@ public class ClientSessionTest extends BaseTestSupport {
         sshd.setCommandFactory(new CommandFactory() {
             @Override
             public Command createCommand(String command) {
-                return new CommandExecutionHelper() {
+                return new CommandExecutionHelper(command) {
                     private boolean cmdProcessed;
 
                     @Override
