@@ -164,15 +164,17 @@ public class ClientUserAuthService
     @Override
     public void process(int cmd, Buffer buffer) throws Exception {
         ClientSession session = getClientSession();
-        AuthFuture authFuture = ValidateUtils.checkNotNull(authFutureHolder.get(), "No current future");
-        if (authFuture.isSuccess()) {
+        AuthFuture authFuture = authFutureHolder.get();
+        if ((authFuture != null) && authFuture.isSuccess()) {
+            log.error("process({}) unexpected authenticated client command: {}",
+                      session, SshConstants.getCommandMessageName(cmd));
             throw new IllegalStateException("UserAuth message delivered to authenticated client");
-        } else if (authFuture.isDone()) {
+        } else if ((authFuture != null) && authFuture.isDone()) {
+            // ignore for now; TODO: random packets
             if (log.isDebugEnabled()) {
                 log.debug("process({}) Ignoring random message - cmd={}",
                           session, SshConstants.getCommandMessageName(cmd));
             }
-            // ignore for now; TODO: random packets
         } else if (cmd == SshConstants.SSH_MSG_USERAUTH_BANNER) {
             String welcome = buffer.getString();
             String lang = buffer.getString();

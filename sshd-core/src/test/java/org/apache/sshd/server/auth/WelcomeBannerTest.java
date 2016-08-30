@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -141,6 +142,44 @@ public class WelcomeBannerTest extends BaseTestSupport {
         testBanner(null);
     }
 
+    @Test   // see SSHD-695
+    public void testWelcomeBannerBeforeAuthBegins() throws Exception {
+        UserInteraction ui = client.getUserInteraction();
+        try {
+            Semaphore sigSem = new Semaphore(0);
+            client.setUserInteraction(new UserInteraction() {
+                @Override
+                public void welcome(ClientSession session, String banner, String lang) {
+                    sigSem.release();
+                }
+
+                @Override
+                public boolean isInteractionAllowed(ClientSession session) {
+                    return true;
+                }
+
+                @Override
+                public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                    throw new UnsupportedOperationException("Unexpected interactive call");
+                }
+
+                @Override
+                public String getUpdatedPassword(ClientSession session, String prompt, String lang) {
+                    throw new UnsupportedOperationException("Unexpected password update call");
+                }
+            });
+            PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.WELCOME_BANNER, getCurrentTestName());
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                assertTrue("Welcome not signalled on time", sigSem.tryAcquire(11L, TimeUnit.SECONDS));
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+            }
+
+        } finally {
+            client.setUserInteraction(ui);
+        }
+    }
+
     private void testFileContentBanner(Function<? super Path, ?> configValueExtractor) throws Exception {
         Path dir = getTempTargetRelativeFile(getClass().getSimpleName());
         Path file = assertHierarchyTargetFolderExists(dir).resolve(getCurrentTestName() + ".txt");
@@ -153,54 +192,58 @@ public class WelcomeBannerTest extends BaseTestSupport {
     }
 
     private void testBanner(String expectedWelcome) throws Exception {
+        UserInteraction ui = client.getUserInteraction();
         AtomicReference<String> welcomeHolder = new AtomicReference<>(null);
-        AtomicReference<ClientSession> sessionHolder = new AtomicReference<>(null);
-        client.setUserInteraction(new UserInteraction() {
-            @Override
-            public boolean isInteractionAllowed(ClientSession session) {
-                return true;
-            }
+        try {
+            AtomicReference<ClientSession> sessionHolder = new AtomicReference<>(null);
+            client.setUserInteraction(new UserInteraction() {
+                @Override
+                public boolean isInteractionAllowed(ClientSession session) {
+                    return true;
+                }
 
-            @Override
-            public void serverVersionInfo(ClientSession session, List<String> lines) {
-                validateSession("serverVersionInfo", session);
-            }
+                @Override
+                public void serverVersionInfo(ClientSession session, List<String> lines) {
+                    validateSession("serverVersionInfo", session);
+                }
 
-            @Override
-            public void welcome(ClientSession session, String banner, String lang) {
-                validateSession("welcome", session);
-                assertNull("Multiple banner invocations", welcomeHolder.getAndSet(banner));
-            }
+                @Override
+                public void welcome(ClientSession session, String banner, String lang) {
+                    validateSession("welcome", session);
+                    assertNull("Multiple banner invocations", welcomeHolder.getAndSet(banner));
+                }
 
-            @Override
-            public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
-                validateSession("interactive", session);
-                return null;
-            }
+                @Override
+                public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                    validateSession("interactive", session);
+                    return null;
+                }
 
-            @Override
-            public String getUpdatedPassword(ClientSession clientSession, String prompt, String lang) {
-                throw new UnsupportedOperationException("Unexpected call");
-            }
+                @Override
+                public String getUpdatedPassword(ClientSession clientSession, String prompt, String lang) {
+                    throw new UnsupportedOperationException("Unexpected call");
+                }
 
-            private void validateSession(String phase, ClientSession session) {
-                ClientSession prev = sessionHolder.getAndSet(session);
-                if (prev != null) {
-                    assertSame("Mismatched " + phase + " client session", prev, session);
+                private void validateSession(String phase, ClientSession session) {
+                    ClientSession prev = sessionHolder.getAndSet(session);
+                    if (prev != null) {
+                        assertSame("Mismatched " + phase + " client session", prev, session);
+                    }
+                }
+            });
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+                if (expectedWelcome != null) {
+                    assertSame("Mismatched sessions", session, sessionHolder.get());
+                } else {
+                    assertNull("Unexpected session", sessionHolder.get());
                 }
             }
-        });
-
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
-            if (expectedWelcome != null) {
-                assertSame("Mismatched sessions", session, sessionHolder.get());
-            } else {
-                assertNull("Unexpected session", sessionHolder.get());
-            }
+        } finally {
+            client.setUserInteraction(ui);
         }
-
         assertEquals("Mismatched banner", expectedWelcome, welcomeHolder.get());
     }
 }
