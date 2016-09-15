@@ -174,7 +174,7 @@ public interface PasswordIdentityProvider {
                 return Collections.emptyList();
             }
 
-            Collection<Supplier<Iterable<String>>> suppliers = new ArrayList<Supplier<Iterable<String>>>(providers.size());
+            Collection<Supplier<Iterable<String>>> suppliers = new ArrayList<>(providers.size());
             for (final PasswordIdentityProvider p : providers) {
                 if (p == null) {
                     continue;

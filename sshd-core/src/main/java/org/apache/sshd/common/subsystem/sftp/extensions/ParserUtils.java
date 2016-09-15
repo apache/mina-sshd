@@ -132,7 +132,7 @@ public final class ParserUtils {
             if (PARSERS_MAP.isEmpty()) {
                 return Collections.emptyList();
             } else { // return a copy in order to avoid concurrent modification issues
-                return new ArrayList<ExtensionParser<?>>(PARSERS_MAP.values());
+                return new ArrayList<>(PARSERS_MAP.values());
             }
         }
     }

@@ -148,7 +148,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
             return Collections.emptyList();
         }
 
-        List<PublicKey> keys = new ArrayList<PublicKey>(entries.size());
+        List<PublicKey> keys = new ArrayList<>(entries.size());
         for (AuthorizedKeyEntry e : entries) {
             PublicKey k = e.resolvePublicKey(fallbackResolver);
             if (k != null) {

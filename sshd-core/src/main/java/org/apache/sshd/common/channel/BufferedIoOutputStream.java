@@ -35,8 +35,8 @@ import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
  */
 public class BufferedIoOutputStream extends AbstractInnerCloseable implements IoOutputStream {
     protected final IoOutputStream out;
-    protected final Queue<IoWriteFutureImpl> writes = new ConcurrentLinkedQueue<IoWriteFutureImpl>();
-    protected final AtomicReference<IoWriteFutureImpl> currentWrite = new AtomicReference<IoWriteFutureImpl>();
+    protected final Queue<IoWriteFutureImpl> writes = new ConcurrentLinkedQueue<>();
+    protected final AtomicReference<IoWriteFutureImpl> currentWrite = new AtomicReference<>();
 
     public BufferedIoOutputStream(IoOutputStream out) {
         this.out = out;

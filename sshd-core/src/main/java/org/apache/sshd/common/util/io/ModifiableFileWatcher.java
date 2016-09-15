@@ -230,7 +230,7 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
         if (OsUtils.isUNIX()) {
             PosixFilePermission p = IoUtils.validateExcludedPermissions(perms, STRICTLY_PROHIBITED_FILE_PERMISSION);
             if (p != null) {
-                return new Pair<String, Object>(String.format("Permissions violation (%s)", p), p);
+                return new Pair<>(String.format("Permissions violation (%s)", p), p);
             }
         }
 
@@ -251,7 +251,7 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
         }
 
         if (!expected.contains(owner)) {
-            return new Pair<String, Object>(String.format("Owner violation (%s)", owner), owner);
+            return new Pair<>(String.format("Owner violation (%s)", owner), owner);
         }
 
         return null;

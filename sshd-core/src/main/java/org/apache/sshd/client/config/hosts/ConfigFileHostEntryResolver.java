@@ -39,7 +39,7 @@ import org.apache.sshd.common.util.io.ModifiableFileWatcher;
  */
 public class ConfigFileHostEntryResolver extends ModifiableFileWatcher implements HostConfigEntryResolver {
     private final AtomicReference<HostConfigEntryResolver> delegateHolder = // assumes initially empty
-            new AtomicReference<HostConfigEntryResolver>(HostConfigEntryResolver.EMPTY);
+            new AtomicReference<>(HostConfigEntryResolver.EMPTY);
 
     public ConfigFileHostEntryResolver(File file) {
         this(ValidateUtils.checkNotNull(file, "No file to watch").toPath());

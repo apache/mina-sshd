@@ -34,7 +34,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 public final class Builder implements ObjectBuilder<Closeable> {
 
     private final Object lock;
-    private final List<Closeable> closeables = new ArrayList<Closeable>();
+    private final List<Closeable> closeables = new ArrayList<>();
 
     public Builder(Object lock) {
         this.lock = ValidateUtils.checkNotNull(lock, "No lock");
@@ -69,7 +69,7 @@ public final class Builder implements ObjectBuilder<Closeable> {
 
     @SuppressWarnings("rawtypes")
     public <T extends SshFuture> Builder when(final Iterable<? extends SshFuture<T>> futures) {
-        return close(new FuturesCloseable<T>(lock, futures));
+        return close(new FuturesCloseable<>(lock, futures));
     }
 
     public Builder sequential(Closeable... closeables) {

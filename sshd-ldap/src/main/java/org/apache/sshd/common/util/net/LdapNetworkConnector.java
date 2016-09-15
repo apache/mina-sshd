@@ -86,7 +86,7 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
            + ",crossCertificatePair,x500UniqueIdentifier";
 
     protected final SearchControls searchControls = new SearchControls();
-    protected final Map<String, Object> ldapEnv = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
+    protected final Map<String, Object> ldapEnv = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     protected MessageFormat bindDNPattern = new MessageFormat(DEFAULT_LDAP_BIND_DN_PATTERN);
     protected MessageFormat bindPasswordPattern = new MessageFormat(DEFAULT_LDAP_BIND_PASSWORD_PATTERN);
     protected MessageFormat searchFilterPattern;
@@ -347,7 +347,7 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
      */
     public Map<String, Object> resolveAttributes(String username, String password, C queryContext) throws NamingException {
         // create a copy of the original environment so we can change it
-        DirContext context = initializeDirContext(queryContext, new HashMap<String, Object>(ldapEnv), username, password);
+        DirContext context = initializeDirContext(queryContext, new HashMap<>(ldapEnv), username, password);
         try {
             return queryAttributes(queryContext, context, context.getEnvironment(), username, password);
         } finally {
@@ -374,7 +374,7 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
                                ValidateUtils.checkNotNullAndNotEmpty(filter, "No filter"),
                                searchControls);
         try {
-            Map<String, Object> attrsMap = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
+            Map<String, Object> attrsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
             String referralMode = Objects.toString(ldapConfig.get(Context.REFERRAL), null);
             for (int index = 0;; index++) {
                 if (!result.hasMore()) {
@@ -516,7 +516,7 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
         if (prev instanceof List<?>) {
             values = (List<Object>) prev;
         } else {
-            values = new ArrayList<Object>();
+            values = new ArrayList<>();
             values.add(prev);
             attrsMap.put(attrID, values);
         }

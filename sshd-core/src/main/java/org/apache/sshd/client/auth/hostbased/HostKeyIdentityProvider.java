@@ -75,7 +75,7 @@ public interface HostKeyIdentityProvider {
                                 @Override
                                 public Pair<KeyPair, List<X509Certificate>> next() {
                                     KeyPair kp = iter.next();
-                                    return new Pair<KeyPair, List<X509Certificate>>(kp, Collections.emptyList());
+                                    return new Pair<>(kp, Collections.emptyList());
                                 }
 
                                 @Override

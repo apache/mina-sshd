@@ -266,7 +266,7 @@ public abstract class HostPatternsHolder {
             }
         }
 
-        return new Pair<Pattern, Boolean>(Pattern.compile(sb.toString(), Pattern.CASE_INSENSITIVE), negated);
+        return new Pair<>(Pattern.compile(sb.toString(), Pattern.CASE_INSENSITIVE), negated);
     }
 
     /**

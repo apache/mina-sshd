@@ -43,7 +43,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
 public class SocksProxy extends AbstractCloseable implements IoHandler {
 
     private final ConnectionService service;
-    private final Map<IoSession, Proxy> proxies = new ConcurrentHashMap<IoSession, Proxy>();
+    private final Map<IoSession, Proxy> proxies = new ConcurrentHashMap<>();
 
     public SocksProxy(ConnectionService service) {
         this.service = service;

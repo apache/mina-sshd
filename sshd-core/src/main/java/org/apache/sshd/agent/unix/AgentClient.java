@@ -67,7 +67,7 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
                 throwException(result);
             }
             receiveBuffer = new ByteArrayBuffer();
-            messages = new ArrayBlockingQueue<Buffer>(10);
+            messages = new ArrayBlockingQueue<>(10);
 
             ExecutorService service = getExecutorService();
             pumper = service.submit(this);

@@ -165,7 +165,7 @@ public class LdapPublickeyAuthenticator extends LdapAuthenticator implements Pub
         // handle case of multi-valued attribute
         if (keyData instanceof Collection<?>) {
             Collection<?> values = (Collection<?>) keyData;
-            List<PublicKey> keys = new ArrayList<PublicKey>(values.size());
+            List<PublicKey> keys = new ArrayList<>(values.size());
             for (Object v : values) {
                 PublicKey k = parsePublicKeyValue(username, expected, session, attrs, v);
                 if (k == null) {

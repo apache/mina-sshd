@@ -117,7 +117,7 @@ public class KnownHostsServerKeyVerifier
     protected final Object updateLock = new Object();
     private final ServerKeyVerifier delegate;
     private final AtomicReference<Collection<HostEntryPair>> keysHolder =
-            new AtomicReference<Collection<HostEntryPair>>(Collections.emptyList());
+            new AtomicReference<>(Collections.emptyList());
     private ModifiedServerKeyAcceptor modKeyAcceptor;
 
     public KnownHostsServerKeyVerifier(ServerKeyVerifier delegate, Path file) {
@@ -733,7 +733,7 @@ public class KnownHostsServerKeyVerifier
          * NOTE !!! we do not resolve the fully-qualified name to avoid long DNS timeouts.
          * Instead we use the reported peer address and the original connection target host
          */
-        Collection<String> candidates = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+        Collection<String> candidates = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         candidates.add(SshdSocketAddress.toAddressString(remoteAddress));
         SocketAddress connectAddress = clientSession.getConnectAddress();
         candidates.add(SshdSocketAddress.toAddressString(connectAddress));

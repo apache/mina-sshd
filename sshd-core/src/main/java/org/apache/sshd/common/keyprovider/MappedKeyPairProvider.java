@@ -90,7 +90,7 @@ public class MappedKeyPairProvider implements KeyPairProvider {
             return Collections.emptyMap();
         }
 
-        Map<String, KeyPair> pairsMap = new TreeMap<String, KeyPair>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, KeyPair> pairsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (KeyPair kp : pairs) {
             String keyType = ValidateUtils.checkNotNullAndNotEmpty(KeyUtils.getKeyType(kp), "Cannot determine key type");
             KeyPair prev = pairsMap.put(keyType, kp);

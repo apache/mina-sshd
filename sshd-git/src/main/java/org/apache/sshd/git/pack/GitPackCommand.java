@@ -148,7 +148,7 @@ public class GitPackCommand implements Command, Runnable {
             value = "";
         }
 
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
 
         StringBuilder sb = new StringBuilder();
 

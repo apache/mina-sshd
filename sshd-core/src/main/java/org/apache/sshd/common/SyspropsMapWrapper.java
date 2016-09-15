@@ -107,7 +107,7 @@ public final class SyspropsMapWrapper implements Map<String, Object> {
         Properties props = System.getProperties();
         // return a copy in order to avoid concurrent modifications
         Set<Entry<String, Object>> entries =
-                new TreeSet<Entry<String, Object>>(Pair.byKeyEntryComparator());
+                new TreeSet<>(Pair.byKeyEntryComparator());
         for (String key : props.stringPropertyNames()) {
             if (!isMappedSyspropKey(key)) {
                 continue;

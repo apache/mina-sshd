@@ -479,7 +479,7 @@ public final class SftpHelper {
     }
 
     public static Map<String, Object> readAttrs(Buffer buffer, int version) {
-        Map<String, Object> attrs = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, Object> attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         int flags = buffer.getInt();
         if (version >= SftpConstants.SFTP_V4) {
             int type = buffer.getUByte();
@@ -592,7 +592,7 @@ public final class SftpHelper {
     public static Map<String, byte[]> readExtensions(Buffer buffer) {
         int count = buffer.getInt();
         // NOTE
-        Map<String, byte[]> extended = new TreeMap<String, byte[]>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, byte[]> extended = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (int i = 0; i < count; i++) {
             String key = buffer.getString();
             byte[] val = buffer.getBytes();

@@ -41,8 +41,8 @@ public final class SttySupport {
     public static final String DEFAULT_SSHD_STTY_COMMAND = "stty";
 
     private static final AtomicReference<String> STTY_COMMAND_HOLDER =
-            new AtomicReference<String>(System.getProperty(SSHD_STTY_COMMAND_PROP, DEFAULT_SSHD_STTY_COMMAND));
-    private static final AtomicReference<String> TTY_PROPS_HOLDER = new AtomicReference<String>(null);
+            new AtomicReference<>(System.getProperty(SSHD_STTY_COMMAND_PROP, DEFAULT_SSHD_STTY_COMMAND));
+    private static final AtomicReference<String> TTY_PROPS_HOLDER = new AtomicReference<>(null);
     private static final AtomicLong TTY_PROPS_LAST_FETCHED_HOLDER = new AtomicLong(0L);
 
     private SttySupport() {
@@ -54,7 +54,7 @@ public final class SttySupport {
     }
 
     public static Map<PtyMode, Integer> parsePtyModes(String stty) {
-        Map<PtyMode, Integer> modes = new TreeMap<PtyMode, Integer>();
+        Map<PtyMode, Integer> modes = new TreeMap<>();
         for (PtyMode mode : PtyMode.values()) {
             if (mode == PtyMode.TTY_OP_ISPEED || mode == PtyMode.TTY_OP_OSPEED) {
                 // TODO ...

@@ -102,7 +102,7 @@ public enum TimeValueConfig {
         }
 
         int lastPos = 0;
-        Map<TimeValueConfig, Long> spec = new EnumMap<TimeValueConfig, Long>(TimeValueConfig.class);
+        Map<TimeValueConfig, Long> spec = new EnumMap<>(TimeValueConfig.class);
         for (int curPos = 0; curPos < s.length(); curPos++) {
             char ch = s.charAt(curPos);
             if ((ch >= '0') && (ch <= '9')) {

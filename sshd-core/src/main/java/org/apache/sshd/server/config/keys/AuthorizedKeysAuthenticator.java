@@ -64,7 +64,7 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
     }
 
     private final AtomicReference<PublickeyAuthenticator> delegateHolder =  // assumes initially reject-all
-            new AtomicReference<PublickeyAuthenticator>(RejectAllPublickeyAuthenticator.INSTANCE);
+            new AtomicReference<>(RejectAllPublickeyAuthenticator.INSTANCE);
 
     public AuthorizedKeysAuthenticator(File file) {
         this(ValidateUtils.checkNotNull(file, "No file to watch").toPath());

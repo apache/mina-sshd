@@ -71,6 +71,6 @@ public abstract class AbstractCheckFileExtension extends AbstractSftpClientExten
             hashes.add(hashValue);
         }
 
-        return new Pair<String, Collection<byte[]>>(algo, hashes);
+        return new Pair<>(algo, hashes);
     }
 }

@@ -128,7 +128,7 @@ public interface AuthenticationIdentitiesProvider extends KeyIdentityProvider, P
                         }
 
                         if (matches == null) {
-                            matches = new LinkedList<T>();
+                            matches = new LinkedList<>();
                         }
 
                         matches.add(type.cast(o));

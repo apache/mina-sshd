@@ -166,7 +166,7 @@ public class SshdSocketAddress extends SocketAddress {
      * or localhost sorted according to {@link #BY_HOST_ADDRESS}
      */
     public static List<InetAddress> getExternalNetwork4Addresses() {
-        List<InetAddress> addresses = new ArrayList<InetAddress>();
+        List<InetAddress> addresses = new ArrayList<>();
         try {
             for (Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces(); (nets != null) && nets.hasMoreElements();) {
                 NetworkInterface netint = nets.nextElement();

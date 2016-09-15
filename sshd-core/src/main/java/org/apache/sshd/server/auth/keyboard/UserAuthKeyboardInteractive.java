@@ -97,7 +97,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             }
 
             int num = buffer.getInt();
-            List<String> responses = (num <= 0) ? Collections.emptyList() : new ArrayList<String>(num);
+            List<String> responses = (num <= 0) ? Collections.emptyList() : new ArrayList<>(num);
             for (int index = 0; index < num; index++) {
                 String value = buffer.getString();
                 if (log.isTraceEnabled()) {

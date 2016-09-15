@@ -717,7 +717,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
 
         Map<String, String> props = entry.getProperties();
         if (GenericUtils.size(props) > 0) {
-            normal.setProperties(new TreeMap<String, String>(props));
+            normal.setProperties(new TreeMap<>(props));
         }
 
         Collection<String> ids = entry.getIdentities();

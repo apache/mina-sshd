@@ -139,7 +139,7 @@ public final class ThreadUtils {
     public static ExecutorService newFixedThreadPool(String poolName, int nThreads) {
         return new ThreadPoolExecutor(nThreads, nThreads,
                 0L, TimeUnit.MILLISECONDS, // TODO make this configurable
-                new LinkedBlockingQueue<Runnable>(),
+                new LinkedBlockingQueue<>(),
                 new SshdThreadFactory(poolName),
                 new ThreadPoolExecutor.CallerRunsPolicy());
     }
@@ -147,7 +147,7 @@ public final class ThreadUtils {
     public static ExecutorService newCachedThreadPool(String poolName) {
         return new ThreadPoolExecutor(0, Integer.MAX_VALUE, // TODO make this configurable
                 60L, TimeUnit.SECONDS, // TODO make this configurable
-                new SynchronousQueue<Runnable>(),
+                new SynchronousQueue<>(),
                 new SshdThreadFactory(poolName),
                 new ThreadPoolExecutor.CallerRunsPolicy());
     }

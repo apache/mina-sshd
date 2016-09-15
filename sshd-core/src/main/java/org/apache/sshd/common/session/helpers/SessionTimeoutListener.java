@@ -32,7 +32,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @see org.apache.sshd.common.session.helpers.AbstractSession#checkForTimeouts()
  */
 public class SessionTimeoutListener extends AbstractLoggingBean implements SessionListener, Runnable {
-    private final Set<AbstractSession> sessions = new CopyOnWriteArraySet<AbstractSession>();
+    private final Set<AbstractSession> sessions = new CopyOnWriteArraySet<>();
 
     public SessionTimeoutListener() {
         super();

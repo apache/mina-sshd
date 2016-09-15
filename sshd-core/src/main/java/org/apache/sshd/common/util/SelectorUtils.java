@@ -522,7 +522,7 @@ public final class SelectorUtils {
     }
 
     public static List<String> tokenizePath(String path, String separator) {
-        List<String> ret = new ArrayList<String>();
+        List<String> ret = new ArrayList<>();
         StringTokenizer st = new StringTokenizer(path, separator);
         while (st.hasMoreTokens()) {
             ret.add(st.nextToken());
