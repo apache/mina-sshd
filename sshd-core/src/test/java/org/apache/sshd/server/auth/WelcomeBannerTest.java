@@ -125,11 +125,11 @@ public class WelcomeBannerTest extends BaseTestSupport {
     @Test
     public void testURLBanner() throws Exception {
         testFileContentBanner(path -> {
-                try {
-                    return path.toUri().toURL();
-                } catch (MalformedURLException e) {
-                    throw new RuntimeException(e);
-                }
+            try {
+                return path.toUri().toURL();
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            }
         });
     }
 
