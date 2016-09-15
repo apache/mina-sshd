@@ -402,50 +402,51 @@
                         </lifecycleMappingMetadata>
                     </configuration>
                 </plugin>
-				<plugin>
-					<groupId>org.apache.rat</groupId>
-					<artifactId>apache-rat-plugin</artifactId>
-					<version>0.11</version>
-					<configuration>
-						<excludes>
-							<exclude>**/*.iml</exclude>
-							<exclude>src/docs/**</exclude>
-							<exclude>src/test/resources/**</exclude>
-							<exclude>**/stty-output-*.txt</exclude>
+                <plugin>
+                    <groupId>org.apache.rat</groupId>
+                    <artifactId>apache-rat-plugin</artifactId>
+                    <version>0.11</version>
+                    <configuration>
+                        <excludes>
+                            <exclude>**/*.iml</exclude>
+                            <exclude>README.md</exclude>
+                            <exclude>src/docs/**</exclude>
+                            <exclude>src/test/resources/**</exclude>
+                            <exclude>**/stty-output-*.txt</exclude>
                             <exclude>*checkstyle*</exclude>
-							<exclude>**/big-msg.txt</exclude>
-								<!-- Eclipse files -->
-							<exclude>.metadata/**</exclude>
-							<exclude>.recommenders/**</exclude>
-							<exclude>RemoteSystemsTempFiles/**</exclude>
-							<exclude>.project</exclude>
-							<exclude>.classpath</exclude>
-							<exclude>.springBeans</exclude>
-							<exclude>.settings/**</exclude>
-						</excludes>
-					</configuration>
-				</plugin>
-				<plugin>
-					<groupId>org.codehaus.mojo</groupId>
-					<artifactId>animal-sniffer-maven-plugin</artifactId>
-					<version>1.15</version>
-					<configuration>
-						<signature>
-							<groupId>org.codehaus.mojo.signature</groupId>
-							<artifactId>java${java.major.version}${java.minor.version}</artifactId>
-							<version>${sniffer.signatures.version}</version>
-						</signature>
-					</configuration>
-						<!-- make sure the signatures artifact is downloaded -->
-					<dependencies>
-						<dependency>
-							<groupId>org.codehaus.mojo.signature</groupId>
-							<artifactId>java${java.major.version}${java.minor.version}</artifactId>
-							<version>${sniffer.signatures.version}</version>
-							<type>pom</type>
-						</dependency>
-					</dependencies>
-				</plugin>
+                            <exclude>**/big-msg.txt</exclude>
+                                <!-- Eclipse files -->
+                            <exclude>.metadata/**</exclude>
+                            <exclude>.recommenders/**</exclude>
+                            <exclude>RemoteSystemsTempFiles/**</exclude>
+                            <exclude>.project</exclude>
+                            <exclude>.classpath</exclude>
+                            <exclude>.springBeans</exclude>
+                            <exclude>.settings/**</exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>animal-sniffer-maven-plugin</artifactId>
+                    <version>1.15</version>
+                    <configuration>
+                        <signature>
+                            <groupId>org.codehaus.mojo.signature</groupId>
+                            <artifactId>java${java.major.version}${java.minor.version}</artifactId>
+                            <version>${sniffer.signatures.version}</version>
+                        </signature>
+                    </configuration>
+                        <!-- make sure the signatures artifact is downloaded -->
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.codehaus.mojo.signature</groupId>
+                            <artifactId>java${java.major.version}${java.minor.version}</artifactId>
+                            <version>${sniffer.signatures.version}</version>
+                            <type>pom</type>
+                        </dependency>
+                    </dependencies>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
@@ -474,74 +475,74 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>2.10.3</version>
                 </plugin>
-			    <plugin>
-				    <groupId>org.codehaus.gmaven</groupId>
-				    <artifactId>groovy-maven-plugin</artifactId>
-				    <version>${gmaven.plugin.version}</version>
-				    <dependencies>
-					    <dependency>
-						    <groupId>org.codehaus.groovy</groupId>
-						    <artifactId>groovy-all</artifactId>
-						    <version>${groovy.version}</version>
-					    </dependency>
-					      <!-- referenced indirectly by groovy-all -->
-					    <dependency>
-						    <groupId>org.apache.ant</groupId>
-						    <artifactId>ant</artifactId>
-						    <version>${ant.version}</version>
-					    </dependency>
-					    <dependency>
-						    <groupId>org.apache.ant</groupId>
-						    <artifactId>ant-launcher</artifactId>
-						    <version>${ant.version}</version>
-					    </dependency>
-					    <dependency>    <!-- replace ant-junit artifact -->
-						    <groupId>org.apache.ant</groupId>
-						    <artifactId>ant-junit4</artifactId>
-						    <version>${ant.version}</version>
-					    </dependency>
-					    <dependency>
-						    <groupId>junit</groupId>
-						    <artifactId>junit</artifactId>
-						    <version>${junit.version}</version>
-					    </dependency>
-				    </dependencies>
-				</plugin>                
-				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-checkstyle-plugin</artifactId>
-					<version>2.17</version>
-					<configuration>
-						<logViolationsToConsole>true</logViolationsToConsole>
+                <plugin>
+                    <groupId>org.codehaus.gmaven</groupId>
+                    <artifactId>groovy-maven-plugin</artifactId>
+                    <version>${gmaven.plugin.version}</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.codehaus.groovy</groupId>
+                            <artifactId>groovy-all</artifactId>
+                            <version>${groovy.version}</version>
+                        </dependency>
+                          <!-- referenced indirectly by groovy-all -->
+                        <dependency>
+                            <groupId>org.apache.ant</groupId>
+                            <artifactId>ant</artifactId>
+                            <version>${ant.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.apache.ant</groupId>
+                            <artifactId>ant-launcher</artifactId>
+                            <version>${ant.version}</version>
+                        </dependency>
+                        <dependency>    <!-- replace ant-junit artifact -->
+                            <groupId>org.apache.ant</groupId>
+                            <artifactId>ant-junit4</artifactId>
+                            <version>${ant.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>junit</groupId>
+                            <artifactId>junit</artifactId>
+                            <version>${junit.version}</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>                
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <version>2.17</version>
+                    <configuration>
+                        <logViolationsToConsole>true</logViolationsToConsole>
                         <includeTestSourceDirectory>true</includeTestSourceDirectory>
-						<resourceExcludes>**/*.properties</resourceExcludes>
-					</configuration>
-					<dependencies>
-							<!-- see http://checkstyle.sourceforge.net/ for latest version -->
-						<dependency>
-							<groupId>com.puppycrawl.tools</groupId>
-							<artifactId>checkstyle</artifactId>
-							<version>7.0</version>
-							<exclusions>
-								<!-- MCHECKSTYLE-156 -->
-								<exclusion>
-									<groupId>com.sun</groupId>
-									<artifactId>tools</artifactId>
-								</exclusion>
-							</exclusions>
-						</dependency>
-					</dependencies>
-				</plugin>
+                        <resourceExcludes>**/*.properties</resourceExcludes>
+                    </configuration>
+                    <dependencies>
+                            <!-- see http://checkstyle.sourceforge.net/ for latest version -->
+                        <dependency>
+                            <groupId>com.puppycrawl.tools</groupId>
+                            <artifactId>checkstyle</artifactId>
+                            <version>7.0</version>
+                            <exclusions>
+                                <!-- MCHECKSTYLE-156 -->
+                                <exclusion>
+                                    <groupId>com.sun</groupId>
+                                    <artifactId>tools</artifactId>
+                                </exclusion>
+                            </exclusions>
+                        </dependency>
+                    </dependencies>
+                </plugin>
             </plugins>
         </pluginManagement>
 
         <plugins>
             <plugin>
-			    <groupId>org.codehaus.gmaven</groupId>
-			    <artifactId>groovy-maven-plugin</artifactId>
+                <groupId>org.codehaus.gmaven</groupId>
+                <artifactId>groovy-maven-plugin</artifactId>
                 <executions>
                     <!-- Works only for Maven 3.x -->
-					<execution>
+                    <execution>
                         <id>detect-workspace-root-dir</id>
                         <!-- NOTE: phase must be BEFORE checkstyle plugin one -->
                         <phase>validate</phase>
@@ -550,7 +551,7 @@
                         </goals>
                         <configuration>
                             <source>
-							    <![CDATA[
+                                <![CDATA[
                                     for (java.io.File file = new java.io.File(new java.net.URI('${project.baseUri}')); file != null; file = file.getParentFile()) {
                                         if (!file.isDirectory()) {
                                             continue
@@ -564,8 +565,8 @@
                                         }
                                     }
                                     
-                                    System.err.println("Failed to detected Insight root dir")
-							    ]]>
+                                    System.err.println("Failed to detect workspace root dir")
+                                ]]>
                             </source>
                         </configuration>
                     </execution>
@@ -633,7 +634,7 @@
                     <source>${javac.source}</source>
                     <target>${javac.target}</target>
                     <compilerArgument>-g</compilerArgument>
-						<!-- see http://www.javaworld.com/article/2073587/javac-s(dashdash)xlint-options.html -->
+                        <!-- see http://www.javaworld.com/article/2073587/javac-s(dashdash)xlint-options.html -->
                     <compilerArgument>-Xlint:-serial</compilerArgument>
                     <compilerArgument>-Xlint:unchecked</compilerArgument>
                 </configuration>
@@ -646,7 +647,7 @@
                     <execution>
                         <id>install</id>
                         <phase>install</phase>
-                        <goals>	<!-- automatically download the dependency sources - useful for debugging -->
+                        <goals>    <!-- automatically download the dependency sources - useful for debugging -->
                             <goal>sources</goal>
                         </goals>
                         <configuration>
