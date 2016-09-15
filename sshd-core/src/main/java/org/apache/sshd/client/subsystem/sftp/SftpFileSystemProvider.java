@@ -87,6 +87,13 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A registered {@link FileSystemProvider} that registers the &quot;sftp://&quot;
+ * scheme so that URLs with this protocol are handled as remote SFTP {@link Path}-s
+ * - e.g., &quot;{@code sftp://user:password@host/remote/file/path}&quot;
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
 public class SftpFileSystemProvider extends FileSystemProvider {
     public static final String READ_BUFFER_PROP_NAME = "sftp-fs-read-buffer-size";
     public static final int DEFAULT_READ_BUFFER_SIZE = SftpClient.DEFAULT_READ_BUFFER_SIZE;
@@ -124,7 +131,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     private final SshClient client;
     private final SftpVersionSelector selector;
-    private final Map<String, SftpFileSystem> fileSystems = new HashMap<String, SftpFileSystem>();
+    private final Map<String, SftpFileSystem> fileSystems = new HashMap<>();
 
     public SftpFileSystemProvider() {
         this((SshClient) null);
@@ -282,7 +289,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             return Collections.unmodifiableMap(env);
         }
 
-        Map<String, Object> resolved = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, Object> resolved = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         resolved.putAll(env);
         resolved.putAll(uriParams);
         return resolved;
@@ -305,7 +312,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         }
 
         String[] pairs = GenericUtils.split(params, '&');
-        Map<String, Object> map = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, Object> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (String p : pairs) {
             int pos = p.indexOf('=');
             if (pos < 0) {

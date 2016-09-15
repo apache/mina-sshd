@@ -42,7 +42,6 @@ import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.attribute.UserPrincipalNotFoundException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -94,7 +93,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
     @BeforeClass
     public static void setupServerInstance() throws Exception {
         sshd = Utils.setupTestServer(SftpFileSystemTest.class);
-        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
+        sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(new SftpSubsystemFactory()));
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.start();
         port = sshd.getPort();
@@ -297,7 +296,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
         final AtomicInteger selected = new AtomicInteger(-1);
         SftpVersionSelector selector = new SftpVersionSelector() {
             @Override
-            public int selectVersion(int current, List<Integer> available) {
+            public int selectVersion(ClientSession session, int current, List<Integer> available) {
                 int numAvailable = GenericUtils.size(available);
                 Integer maxValue = null;
                 if (numAvailable == 1) {

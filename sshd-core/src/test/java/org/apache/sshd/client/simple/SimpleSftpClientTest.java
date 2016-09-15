@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
@@ -59,7 +59,7 @@ public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
+        sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(new SftpSubsystemFactory()));
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.setFileSystemFactory(fileSystemFactory);
         client.start();

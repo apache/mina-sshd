@@ -25,11 +25,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import org.mockito.Mockito;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -44,8 +46,10 @@ public class SftpVersionSelectorTest extends BaseTestSupport {
     public void testCurrentVersionSelector() {
         List<Integer> available = new ArrayList<>();
         Random rnd = new Random(System.nanoTime());
+        ClientSession session = Mockito.mock(ClientSession.class);
         for (int expected = SftpSubsystem.LOWER_SFTP_IMPL; expected <= SftpSubsystem.HIGHER_SFTP_IMPL; expected++) {
-            assertEquals("Mismatched directly selected for available=" + available, expected, SftpVersionSelector.CURRENT.selectVersion(expected, available));
+            assertEquals("Mismatched directly selected for available=" + available,
+                    expected, SftpVersionSelector.CURRENT.selectVersion(session, expected, available));
             available.add(Integer.valueOf(expected));
         }
 
@@ -53,7 +57,7 @@ public class SftpVersionSelectorTest extends BaseTestSupport {
             for (int index = 0; index < available.size(); index++) {
                 Collections.shuffle(available, rnd);
                 assertEquals("Mismatched suffling selected for current=" + expected + ", available=" + available,
-                        expected, SftpVersionSelector.CURRENT.selectVersion(expected, available));
+                        expected, SftpVersionSelector.CURRENT.selectVersion(session, expected, available));
             }
         }
     }
@@ -74,6 +78,7 @@ public class SftpVersionSelectorTest extends BaseTestSupport {
         List<Integer> preferred = new ArrayList<>(available);
         List<Integer> unavailable = Arrays.asList(7365, 3777347);
         Random rnd = new Random(System.nanoTime());
+        ClientSession session = Mockito.mock(ClientSession.class);
         for (int index = 0; index < preferred.size(); index++) {
             Collections.shuffle(preferred, rnd);
             SftpVersionSelector selector = SftpVersionSelector.Utils.preferredVersionSelector(preferred);
@@ -81,12 +86,12 @@ public class SftpVersionSelectorTest extends BaseTestSupport {
 
             for (int current = SftpSubsystem.LOWER_SFTP_IMPL; current <= SftpSubsystem.HIGHER_SFTP_IMPL; current++) {
                 assertEquals("Mismatched selected for current= " + current + ", available=" + available + ", preferred=" + preferred,
-                             expected, selector.selectVersion(current, available));
+                             expected, selector.selectVersion(session, current, available));
 
                 try {
                     Collections.shuffle(unavailable, rnd);
                     int version = unavailable.get(0);
-                    int actual = selector.selectVersion(version, unavailable);
+                    int actual = selector.selectVersion(session, version, unavailable);
                     fail("Unexpected selected version (" + actual + ")"
                             + " for current= " + version
                             + ", available=" + unavailable
@@ -115,9 +120,11 @@ public class SftpVersionSelectorTest extends BaseTestSupport {
         }
 
         Random rnd = new Random(System.nanoTime());
+        ClientSession session = Mockito.mock(ClientSession.class);
         for (int current = SftpSubsystem.LOWER_SFTP_IMPL; current <= SftpSubsystem.HIGHER_SFTP_IMPL; current++) {
             for (int index = 0; index < available.size(); index++) {
-                assertEquals("Mismatched selection for current=" + current + ", availble=" + available, expected, selector.selectVersion(current, available));
+                assertEquals("Mismatched selection for current=" + current + ", availble=" + available,
+                        expected, selector.selectVersion(session, current, available));
                 Collections.shuffle(available, rnd);
             }
         }

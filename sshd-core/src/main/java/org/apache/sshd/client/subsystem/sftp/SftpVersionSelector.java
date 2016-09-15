@@ -22,6 +22,7 @@ package org.apache.sshd.client.subsystem.sftp;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -29,6 +30,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface SftpVersionSelector {
 
     /**
@@ -36,8 +38,13 @@ public interface SftpVersionSelector {
      */
     SftpVersionSelector CURRENT = new SftpVersionSelector() {
         @Override
-        public int selectVersion(int current, List<Integer> available) {
+        public int selectVersion(ClientSession session, int current, List<Integer> available) {
             return current;
+        }
+
+        @Override
+        public String toString() {
+            return "CURRENT";
         }
     };
 
@@ -46,7 +53,7 @@ public interface SftpVersionSelector {
      */
     SftpVersionSelector MAXIMUM = new SftpVersionSelector() {
         @Override
-        public int selectVersion(int current, List<Integer> available) {
+        public int selectVersion(ClientSession session, int current, List<Integer> available) {
             int candidate = current;
             if (GenericUtils.size(available) > 0) {
                 for (Number version : available) {
@@ -57,6 +64,11 @@ public interface SftpVersionSelector {
             }
             return candidate;
         }
+
+        @Override
+        public String toString() {
+            return "MAXIMUM";
+        }
     };
 
     /**
@@ -64,7 +76,7 @@ public interface SftpVersionSelector {
      */
     SftpVersionSelector MINIMUM = new SftpVersionSelector() {
         @Override
-        public int selectVersion(int current, List<Integer> available) {
+        public int selectVersion(ClientSession session, int current, List<Integer> available) {
             int candidate = current;
             if (GenericUtils.size(available) > 0) {
                 for (Number version : available) {
@@ -75,15 +87,21 @@ public interface SftpVersionSelector {
             }
             return candidate;
         }
+
+        @Override
+        public String toString() {
+            return "MINIMUM";
+        }
     };
 
     /**
+     * @param session   The {@link ClientSession} through which the SFTP connection is made
      * @param current   The current version negotiated with the server
      * @param available Extra versions available - may be empty and/or contain
      *                  only the current one
      * @return The new requested version - if same as current, then nothing is done
      */
-    int selectVersion(int current, List<Integer> available);
+    int selectVersion(ClientSession session, int current, List<Integer> available);
 
     /**
      * Utility class to help using {@link SftpVersionSelector}s
@@ -108,7 +126,7 @@ public interface SftpVersionSelector {
         public static SftpVersionSelector fixedVersionSelector(final int version) {
             return new SftpVersionSelector() {
                 @Override
-                public int selectVersion(int current, List<Integer> available) {
+                public int selectVersion(ClientSession session, int current, List<Integer> available) {
                     return version;
                 }
             };
@@ -148,7 +166,7 @@ public interface SftpVersionSelector {
 
             return new SftpVersionSelector() {
                 @Override
-                public int selectVersion(int current, List<Integer> available) {
+                public int selectVersion(ClientSession session, int current, List<Integer> available) {
                     for (Number prefValue : preferred) {
                         int version = prefValue.intValue();
                         if (version == current) {

@@ -425,7 +425,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
             }
         }
 
-        int selected = selector.selectVersion(current, new ArrayList<>(available));
+        int selected = selector.selectVersion(getClientSession(), current, new ArrayList<>(available));
         if (log.isDebugEnabled()) {
             log.debug("negotiateVersion({}) current={} {} -> {}", getClientChannel(), current, available, selected);
         }
