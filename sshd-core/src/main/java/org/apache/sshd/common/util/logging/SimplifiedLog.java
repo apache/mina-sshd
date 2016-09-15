@@ -36,7 +36,6 @@ public interface SimplifiedLog {
 
         @Override
         public void log(Level level, Object message, Throwable t) {
-            return;
         }
 
         @Override

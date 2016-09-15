@@ -18,12 +18,10 @@
  */
 package org.apache.sshd.common;
 
-import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.LoggingUtils;
@@ -153,19 +151,16 @@ public final class SshConstants {
 
     private static class LazyMessagesMapHolder {
         private static final Map<Integer, String> MESSAGES_MAP =
-                LoggingUtils.generateMnemonicMap(SshConstants.class, new Predicate<Field>() {
-                    @Override
-                    public boolean test(Field f) {
-                        String name = f.getName();
-                        if (!name.startsWith("SSH_MSG_")) {
-                            return false;
-                        }
+                LoggingUtils.generateMnemonicMap(SshConstants.class, f -> {
+                    String name = f.getName();
+                    if (!name.startsWith("SSH_MSG_")) {
+                        return false;
+                    }
 
-                        try {
-                            return !isAmbiguousOpcode(f.getByte(null));
-                        } catch (Exception e) {
-                            return false;
-                        }
+                    try {
+                        return !isAmbiguousOpcode(f.getByte(null));
+                    } catch (Exception e) {
+                        return false;
                     }
                 });
     }

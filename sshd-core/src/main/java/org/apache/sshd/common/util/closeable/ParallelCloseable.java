@@ -43,17 +43,13 @@ public class ParallelCloseable extends SimpleCloseable {
     @Override
     protected void doClose(final boolean immediately) {
         final AtomicInteger count = new AtomicInteger(1);
-        SshFutureListener<CloseFuture> listener = new SshFutureListener<CloseFuture>() {
-            @SuppressWarnings("synthetic-access")
-            @Override
-            public void operationComplete(CloseFuture f) {
-                int pendingCount = count.decrementAndGet();
-                if (log.isTraceEnabled()) {
-                    log.trace("doClose(" + immediately + ") completed pending: " + pendingCount);
-                }
-                if (pendingCount == 0) {
-                    future.setClosed();
-                }
+        SshFutureListener<CloseFuture> listener = f -> {
+            int pendingCount = count.decrementAndGet();
+            if (log.isTraceEnabled()) {
+                log.trace("doClose(" + immediately + ") completed pending: " + pendingCount);
+            }
+            if (pendingCount == 0) {
+                future.setClosed();
             }
         };
         for (Closeable c : closeables) {

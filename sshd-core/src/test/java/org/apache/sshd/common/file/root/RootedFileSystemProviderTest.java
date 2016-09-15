@@ -304,13 +304,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         }
 
         public static DirectoryStream<Path> readDirectory(Path dir) throws InvalidPathException, IOException {
-            DirectoryStream<Path> dirStream = fileSystem.provider().newDirectoryStream(dir,
-                    new DirectoryStream.Filter<Path>() {
-                        @Override
-                        public boolean accept(Path entry) throws IOException {
-                            return true;
-                        }
-                    });
+            DirectoryStream<Path> dirStream = fileSystem.provider().newDirectoryStream(dir, entry -> true);
             return dirStream;
         }
 

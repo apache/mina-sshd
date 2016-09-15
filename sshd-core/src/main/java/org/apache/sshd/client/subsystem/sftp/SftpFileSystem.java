@@ -27,7 +27,6 @@ import java.nio.file.FileSystemException;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.UserPrincipal;
 import java.nio.file.attribute.UserPrincipalLookupService;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -56,9 +55,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
     public static final Set<String> UNIVERSAL_SUPPORTED_VIEWS =
             Collections.unmodifiableSet(
                     GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
-                            Arrays.asList(
-                                    "basic", "posix", "owner"
-                            )));
+                            "basic", "posix", "owner"));
 
     private final String id;
     private final ClientSession clientSession;

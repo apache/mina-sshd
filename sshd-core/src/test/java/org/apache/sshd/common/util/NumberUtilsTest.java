@@ -39,14 +39,14 @@ public class NumberUtilsTest extends BaseTestSupport {
         long expected = 1L;
         for (int index = 0; index < Long.SIZE; index++, expected <<= 1) {
             Long actual = NumberUtils.POWERS_OF_TWO.get(index);
-            assertEquals("Mismatched value at index=" + index, Long.toHexString(expected), Long.toHexString(actual.longValue()));
+            assertEquals("Mismatched value at index=" + index, Long.toHexString(expected), Long.toHexString(actual));
         }
     }
 
     @Test
     public void testNextPowerOf2() {
         for (Long v : NumberUtils.POWERS_OF_TWO) {
-            long expected = v.longValue();
+            long expected = v;
             if (expected > 2L) {
                 assertEquals("Mismatched lower bound value", expected, NumberUtils.getNextPowerOf2(expected - 1L));
             }

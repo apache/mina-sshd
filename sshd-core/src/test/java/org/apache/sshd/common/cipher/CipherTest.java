@@ -21,14 +21,14 @@ package org.apache.sshd.common.cipher;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.jcraft.jsch.JSch;
-
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.channel.Channel;
@@ -57,7 +57,7 @@ import org.junit.runners.Parameterized.Parameters;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class CipherTest extends BaseTestSupport {
-    private static final Integer NUM_LOADTEST_ROUNDS = Integer.valueOf(100000);
+    private static final Integer NUM_LOADTEST_ROUNDS = 100000;
 
     /*
      * NOTE !!! order is important since we build from it the C2S/S2C ciphers proposal
@@ -75,19 +75,12 @@ public class CipherTest extends BaseTestSupport {
 
     @SuppressWarnings("synthetic-access")
     private static final List<NamedResource> TEST_CIPHERS =
-            Collections.unmodifiableList(new ArrayList<NamedResource>(PARAMETERS.size()) {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
+            Collections.unmodifiableList(
+                    Stream.concat(PARAMETERS.stream().map(params -> (NamedResource) params[0]),
+                                  Stream.of(BuiltinCiphers.none))
+                          .collect(Collectors.toList()));
 
-                {
-                    for (Object[] params : PARAMETERS) {
-                        add((NamedResource) params[0]);
-                    }
-
-                    add(BuiltinCiphers.none);
-                }
-            });
-
-    private static final String CRYPT_NAMES = NamedResource.Utils.getNames(TEST_CIPHERS);
+    private static final String CRYPT_NAMES = NamedResource.getNames(TEST_CIPHERS);
     private static SshServer sshd;
     private static int port;
 

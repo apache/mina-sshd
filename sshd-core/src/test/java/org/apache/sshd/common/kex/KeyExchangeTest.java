@@ -22,6 +22,7 @@ package org.apache.sshd.common.kex;
 import java.util.Map;
 
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.kex.KeyExchange.Utils;
 import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
@@ -39,22 +40,12 @@ public class KeyExchangeTest extends BaseTestSupport {
 
     @Test
     public void testSimpleKexOpcodeName() {
-        testKexOpcodeName(KeyExchange.Utils.SIMPLE_KEX_OPCODES_MAP, new Transformer<Integer, String>() {
-            @Override
-            public String transform(Integer cmd) {
-                return KeyExchange.Utils.getSimpleKexOpcodeName(cmd);
-            }
-        });
+        testKexOpcodeName(KeyExchange.SIMPLE_KEX_OPCODES_MAP, Utils::getSimpleKexOpcodeName);
     }
 
     @Test
     public void testGroupKexOpcodeName() {
-        testKexOpcodeName(KeyExchange.Utils.GROUP_KEX_OPCODES_MAP, new Transformer<Integer, String>() {
-            @Override
-            public String transform(Integer cmd) {
-                return KeyExchange.Utils.getGroupKexOpcodeName(cmd);
-            }
-        });
+        testKexOpcodeName(KeyExchange.GROUP_KEX_OPCODES_MAP, Utils::getGroupKexOpcodeName);
     }
 
     private static void testKexOpcodeName(Map<Integer, String> opsMap, Transformer<Integer, String> xformer) {

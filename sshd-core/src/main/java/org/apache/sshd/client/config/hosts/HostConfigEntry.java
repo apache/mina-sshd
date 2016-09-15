@@ -504,9 +504,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
             return setProperty(key, value);
         }
 
-        StringBuilder sb = new StringBuilder(curVal.length() + value.length() + 1);
-        sb.append(curVal).append(',').append(value);
-        return setProperty(key, sb.toString());
+        return setProperty(key, curVal + ',' + value);
     }
 
     /**
@@ -671,22 +669,19 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         if (GenericUtils.isEmpty(entries)) {
             return HostConfigEntryResolver.EMPTY;
         } else {
-            return new HostConfigEntryResolver() {
-                @Override
-                public HostConfigEntry resolveEffectiveHost(String host, int port, String username) throws IOException {
-                    List<HostConfigEntry> matches = findMatchingEntries(host, entries);
-                    int numMatches = GenericUtils.size(matches);
-                    if (numMatches <= 0) {
-                        return null;
-                    }
-
-                    HostConfigEntry match = (numMatches == 1) ? matches.get(0) : findBestMatch(matches);
-                    if (match == null) {
-                        ValidateUtils.throwIllegalArgumentException("No best match found for %s@%s:%d out of %d matches", username, host, port, numMatches);
-                    }
-
-                    return normalizeEntry(match, host, port, username);
+            return (host1, port1, username1) -> {
+                List<HostConfigEntry> matches = findMatchingEntries(host1, entries);
+                int numMatches = GenericUtils.size(matches);
+                if (numMatches <= 0) {
+                    return null;
                 }
+
+                HostConfigEntry match = (numMatches == 1) ? matches.get(0) : findBestMatch(matches);
+                if (match == null) {
+                    ValidateUtils.throwIllegalArgumentException("No best match found for %s@%s:%d out of %d matches", username1, host1, port1, numMatches);
+                }
+
+                return normalizeEntry(match, host1, port1, username1);
             };
         }
     }

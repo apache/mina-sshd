@@ -24,8 +24,6 @@ import java.util.Date;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -112,12 +110,7 @@ public class ChannelSubsystem extends ChannelSession {
     }
 
     public void onClose(final Runnable run) {
-        closeFuture.addListener(new SshFutureListener<CloseFuture>() {
-            @Override
-            public void operationComplete(CloseFuture future) {
-                run.run();
-            }
-        });
+        closeFuture.addListener(future -> run.run());
     }
 
     @Override

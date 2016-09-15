@@ -133,7 +133,7 @@ public enum BuiltinSftpClientExtensions implements SftpClientExtensionFactory {
     }
 
     public static BuiltinSftpClientExtensions fromName(String n) {
-        return NamedResource.Utils.findByName(n, String.CASE_INSENSITIVE_ORDER, VALUES);
+        return NamedResource.findByName(n, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 
     public static BuiltinSftpClientExtensions fromInstance(Object o) {

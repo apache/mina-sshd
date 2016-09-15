@@ -54,14 +54,14 @@ public class BuiltinSignaturesTest extends BaseTestSupport {
 
     @Test
     public void testParseSignaturesList() {
-        List<String> builtin = NamedResource.Utils.getNameList(BuiltinSignatures.VALUES);
+        List<String> builtin = NamedResource.getNameList(BuiltinSignatures.VALUES);
         List<String> unknown = Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
         Random rnd = new Random();
         for (int index = 0; index < (builtin.size() + unknown.size()); index++) {
             Collections.shuffle(builtin, rnd);
             Collections.shuffle(unknown, rnd);
 
-            List<String> weavedList = new ArrayList<String>(builtin.size() + unknown.size());
+            List<String> weavedList = new ArrayList<>(builtin.size() + unknown.size());
             for (int bIndex = 0, uIndex = 0; (bIndex < builtin.size()) || (uIndex < unknown.size());) {
                 boolean useBuiltin = false;
                 if (bIndex < builtin.size()) {
@@ -79,7 +79,7 @@ public class BuiltinSignaturesTest extends BaseTestSupport {
 
             String fullList = GenericUtils.join(weavedList, ',');
             ParseResult result = BuiltinSignatures.parseSignatureList(fullList);
-            List<String> parsed = NamedResource.Utils.getNameList(result.getParsedFactories());
+            List<String> parsed = NamedResource.getNameList(result.getParsedFactories());
             List<String> missing = result.getUnsupportedFactories();
 
             // makes sure not only that the contents are the same but also the order

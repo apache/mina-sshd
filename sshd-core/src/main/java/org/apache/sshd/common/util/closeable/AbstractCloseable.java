@@ -95,15 +95,11 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
                 preClose();
                 SshFuture<CloseFuture> grace = doCloseGracefully();
                 if (grace != null) {
-                    grace.addListener(new SshFutureListener<CloseFuture>() {
-                        @Override
-                        @SuppressWarnings("synthetic-access")
-                        public void operationComplete(CloseFuture future) {
-                            if (state.compareAndSet(State.Graceful, State.Immediate)) {
-                                doCloseImmediately();
-                                if (log.isDebugEnabled()) {
-                                    log.debug("close({}][Graceful] - operationComplete() closed", AbstractCloseable.this);
-                                }
+                    grace.addListener(future -> {
+                        if (state.compareAndSet(State.Graceful, State.Immediate)) {
+                            doCloseImmediately();
+                            if (log.isDebugEnabled()) {
+                                log.debug("close({}][Graceful] - operationComplete() closed", AbstractCloseable.this);
                             }
                         }
                     });

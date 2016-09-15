@@ -72,7 +72,6 @@ import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.session.ServerConnectionServiceFactory;
 import org.apache.sshd.server.session.ServerProxyAcceptor;
-import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerUserAuthServiceFactory;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.server.shell.InteractiveProcessShellFactory;
@@ -108,12 +107,7 @@ import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
  */
 public class SshServer extends AbstractFactoryManager implements ServerFactoryManager, Closeable {
 
-    public static final Factory<SshServer> DEFAULT_SSH_SERVER_FACTORY = new Factory<SshServer>() {
-        @Override
-        public SshServer create() {
-            return new SshServer();
-        }
-    };
+    public static final Factory<SshServer> DEFAULT_SSH_SERVER_FACTORY = SshServer::new;
 
     public static final List<ServiceFactory> DEFAULT_SERVICE_FACTORIES =
             Collections.unmodifiableList(Arrays.asList(
@@ -279,7 +273,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
         ValidateUtils.checkTrue(getPort() >= 0 /* zero means not set yet */, "Bad port number: %d", Integer.valueOf(getPort()));
 
-        List<NamedFactory<UserAuth>> authFactories = ServerAuthenticationManager.Utils.resolveUserAuthFactories(this);
+        List<NamedFactory<UserAuth>> authFactories = ServerAuthenticationManager.resolveUserAuthFactories(this);
         setUserAuthFactories(ValidateUtils.checkNotNullAndNotEmpty(authFactories, "UserAuthFactories not set"));
 
         ValidateUtils.checkNotNullAndNotEmpty(getChannelFactories(), "ChannelFactories not set");
@@ -358,26 +352,16 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .run(new Runnable() {
-                    @SuppressWarnings("synthetic-access")
-                    @Override
-                    public void run() {
-                        removeSessionTimeout(sessionFactory);
-                    }
-                })
+                .run(() -> removeSessionTimeout(sessionFactory))
                 .sequential(acceptor, ioServiceFactory)
-                .run(new Runnable() {
-                    @SuppressWarnings("synthetic-access")
-                    @Override
-                    public void run() {
-                        acceptor = null;
-                        ioServiceFactory = null;
-                        if (shutdownExecutor && (executor != null) && (!executor.isShutdown())) {
-                            try {
-                                executor.shutdownNow();
-                            } finally {
-                                executor = null;
-                            }
+                .run(() -> {
+                    acceptor = null;
+                    ioServiceFactory = null;
+                    if (shutdownExecutor && (executor != null) && (!executor.isShutdown())) {
+                        try {
+                            executor.shutdownNow();
+                        } finally {
+                            executor = null;
                         }
                     }
                 })
@@ -587,20 +571,12 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         sshd.setPort(port);
 
         sshd.setShellFactory(InteractiveProcessShellFactory.INSTANCE);
-        sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
-            @Override
-            public boolean authenticate(String username, String password, ServerSession session) {
-                return (GenericUtils.length(username) > 0) && username.equals(password);
-            }
-        });
+        sshd.setPasswordAuthenticator((username, password, session) -> Objects.equals(username, password));
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
-        sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(new CommandFactory() {
-            @Override
-            public Command createCommand(String command) {
-                return new ProcessShellFactory(GenericUtils.split(command, ' ')).create();
-            }
-        }).build());
+        sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(
+            command -> new ProcessShellFactory(GenericUtils.split(command, ' ')).create()
+        ).build());
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
         sshd.start();
 
@@ -621,7 +597,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         }
 
         Object banner;
-        if (GenericUtils.length(bannerOption) > 0) {
+        if (GenericUtils.isNotEmpty(bannerOption)) {
             if ("none".equals(bannerOption)) {
                 return null;
             }

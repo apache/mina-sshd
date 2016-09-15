@@ -61,11 +61,7 @@ public class AgentImpl implements SshAgent {
             throw new SshException("Agent closed");
         }
 
-        List<Pair<PublicKey, String>> pks = new ArrayList<>();
-        for (Pair<KeyPair, String> kp : keys) {
-            pks.add(new Pair<>(kp.getFirst().getPublic(), kp.getSecond()));
-        }
-        return pks;
+        return GenericUtils.map(keys, kp -> new Pair<>(kp.getFirst().getPublic(), kp.getSecond()));
     }
 
     @Override

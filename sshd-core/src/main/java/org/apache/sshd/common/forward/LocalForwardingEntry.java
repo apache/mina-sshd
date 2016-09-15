@@ -72,7 +72,7 @@ public class LocalForwardingEntry extends SshdSocketAddress {
      * @return The <U>first</U> entry whose host or alias matches the host name - case
      * <U>sensitive</U> <B>and</B> has a matching port - {@code null} if no match found
      */
-    public static final LocalForwardingEntry findMatchingEntry(String host, int port, Collection<? extends LocalForwardingEntry> entries) {
+    public static LocalForwardingEntry findMatchingEntry(String host, int port, Collection<? extends LocalForwardingEntry> entries) {
         if (GenericUtils.isEmpty(host) || (port <= 0) || (GenericUtils.isEmpty(entries))) {
             return null;
         }

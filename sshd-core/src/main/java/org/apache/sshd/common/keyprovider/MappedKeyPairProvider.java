@@ -44,12 +44,7 @@ public class MappedKeyPairProvider implements KeyPairProvider {
      * associated {@link KeyPair}
      */
     public static final Transformer<Map<String, KeyPair>, KeyPairProvider> MAP_TO_KEY_PAIR_PROVIDER =
-        new Transformer<Map<String, KeyPair>, KeyPairProvider>() {
-            @Override
-            public KeyPairProvider transform(final Map<String, KeyPair> input) {
-                return new MappedKeyPairProvider(input);
-            }
-        };
+            MappedKeyPairProvider::new;
 
     private final Map<String, KeyPair> pairsMap;
 

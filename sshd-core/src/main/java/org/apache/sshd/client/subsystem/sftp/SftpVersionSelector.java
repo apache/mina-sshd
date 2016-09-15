@@ -21,6 +21,7 @@ package org.apache.sshd.client.subsystem.sftp;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.StreamSupport;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
@@ -36,63 +37,19 @@ public interface SftpVersionSelector {
     /**
      * An {@link SftpVersionSelector} that returns the current version
      */
-    SftpVersionSelector CURRENT = new SftpVersionSelector() {
-        @Override
-        public int selectVersion(ClientSession session, int current, List<Integer> available) {
-            return current;
-        }
-
-        @Override
-        public String toString() {
-            return "CURRENT";
-        }
-    };
+    SftpVersionSelector CURRENT = new NamedVersionSelector("CURRENT", (session, current, available) -> current);
 
     /**
      * An {@link SftpVersionSelector} that returns the maximum available version
      */
-    SftpVersionSelector MAXIMUM = new SftpVersionSelector() {
-        @Override
-        public int selectVersion(ClientSession session, int current, List<Integer> available) {
-            int candidate = current;
-            if (GenericUtils.size(available) > 0) {
-                for (Number version : available) {
-                    if (candidate < version.intValue()) {
-                        candidate = version.intValue();
-                    }
-                }
-            }
-            return candidate;
-        }
-
-        @Override
-        public String toString() {
-            return "MAXIMUM";
-        }
-    };
+    SftpVersionSelector MAXIMUM = new NamedVersionSelector("MAXIMUM", (session, current, available) ->
+            GenericUtils.stream(available).mapToInt(Integer::intValue).max().orElse(current));
 
     /**
      * An {@link SftpVersionSelector} that returns the maximum available version
      */
-    SftpVersionSelector MINIMUM = new SftpVersionSelector() {
-        @Override
-        public int selectVersion(ClientSession session, int current, List<Integer> available) {
-            int candidate = current;
-            if (GenericUtils.size(available) > 0) {
-                for (Number version : available) {
-                    if (candidate > version.intValue()) {
-                        candidate = version.intValue();
-                    }
-                }
-            }
-            return candidate;
-        }
-
-        @Override
-        public String toString() {
-            return "MINIMUM";
-        }
-    };
+    SftpVersionSelector MINIMUM = new NamedVersionSelector("MINIMUM", (session, current, available) ->
+            GenericUtils.stream(available).mapToInt(Integer::intValue).min().orElse(current));
 
     /**
      * @param session   The {@link ClientSession} through which the SFTP connection is made
@@ -107,6 +64,7 @@ public interface SftpVersionSelector {
      * Utility class to help using {@link SftpVersionSelector}s
      */
     // CHECKSTYLE:OFF
+    @Deprecated
     final class Utils {
     // CHECKSTYLE:ON
 
@@ -114,75 +72,85 @@ public interface SftpVersionSelector {
             throw new UnsupportedOperationException("No instance allowed");
         }
 
-        /**
-         * Creates a selector the always returns the requested (fixed version) regardless
-         * of what the current or reported available versions are. If the requested version
-         * is not reported as available then an exception will be eventually thrown by the
-         * client during re-negotiation phase.
-         *
-         * @param version The requested version
-         * @return The {@link SftpVersionSelector}
-         */
         public static SftpVersionSelector fixedVersionSelector(final int version) {
-            return new SftpVersionSelector() {
-                @Override
-                public int selectVersion(ClientSession session, int current, List<Integer> available) {
-                    return version;
-                }
-            };
+            return SftpVersionSelector.fixedVersionSelector(version);
         }
 
-        /**
-         * Selects a version in order of preference - if none of the preferred
-         * versions is listed as available then an exception is thrown when the
-         * {@link SftpVersionSelector#selectVersion(int, List)} method is invoked
-         *
-         * @param preferred The preferred versions in decreasing order of
-         * preference (i.e., most preferred is 1st) - may not be {@code null}/empty
-         * @return A {@link SftpVersionSelector} that attempts to select
-         * the most preferred version that is also listed as available.
-         */
         public static SftpVersionSelector preferredVersionSelector(final int ... preferred) {
-            return preferredVersionSelector(NumberUtils.asList(preferred));
+            return SftpVersionSelector.preferredVersionSelector(preferred);
 
         }
 
-        /**
-         * Selects a version in order of preference - if none of the preferred
-         * versions is listed as available then an exception is thrown when the
-         * {@link SftpVersionSelector#selectVersion(int, List)} method is invoked
-         *
-         * @param preferred The preferred versions in decreasing order of
-         * preference (i.e., most preferred is 1st)
-         * @return A {@link SftpVersionSelector} that attempts to select
-         * the most preferred version that is also listed as available.
-         */
         public static SftpVersionSelector preferredVersionSelector(final Iterable<? extends Number> preferred) {
-            if (preferred instanceof Collection<?>) {
-                ValidateUtils.checkNotNullAndNotEmpty((Collection<?>) preferred, "Empty preferred versions");
-            } else {
-                ValidateUtils.checkNotNull(preferred, "No preferred versions");
-            }
-
-            return new SftpVersionSelector() {
-                @Override
-                public int selectVersion(ClientSession session, int current, List<Integer> available) {
-                    for (Number prefValue : preferred) {
-                        int version = prefValue.intValue();
-                        if (version == current) {
-                            return version;
-                        }
-
-                        for (Integer avail : available) {
-                            if (version == avail) {
-                                return version;
-                            }
-                        }
-                    }
-
-                    throw new IllegalStateException("Preferred versions (" + preferred + ") not available: " + available);
-                }
-            };
+            return SftpVersionSelector.preferredVersionSelector(preferred);
         }
     }
+
+    /**
+     * Creates a selector the always returns the requested (fixed version) regardless
+     * of what the current or reported available versions are. If the requested version
+     * is not reported as available then an exception will be eventually thrown by the
+     * client during re-negotiation phase.
+     *
+     * @param version The requested version
+     * @return The {@link SftpVersionSelector}
+     */
+    static SftpVersionSelector fixedVersionSelector(final int version) {
+        return (session, current, available) -> version;
+    }
+
+    /**
+     * Selects a version in order of preference - if none of the preferred
+     * versions is listed as available then an exception is thrown when the
+     * {@link SftpVersionSelector#selectVersion(ClientSession, int, List)} method is invoked
+     *
+     * @param preferred The preferred versions in decreasing order of
+     * preference (i.e., most preferred is 1st) - may not be {@code null}/empty
+     * @return A {@link SftpVersionSelector} that attempts to select
+     * the most preferred version that is also listed as available.
+     */
+    static SftpVersionSelector preferredVersionSelector(final int ... preferred) {
+        return preferredVersionSelector(NumberUtils.asList(preferred));
+
+    }
+
+    /**
+     * Selects a version in order of preference - if none of the preferred
+     * versions is listed as available then an exception is thrown when the
+     * {@link SftpVersionSelector#selectVersion(ClientSession, int, List)} method is invoked
+     *
+     * @param preferred The preferred versions in decreasing order of
+     * preference (i.e., most preferred is 1st)
+     * @return A {@link SftpVersionSelector} that attempts to select
+     * the most preferred version that is also listed as available.
+     */
+    static SftpVersionSelector preferredVersionSelector(final Iterable<? extends Number> preferred) {
+        ValidateUtils.checkNotNullAndNotEmpty((Collection<?>) preferred, "Empty preferred versions");
+        return (session, current, available) -> StreamSupport.stream(preferred.spliterator(), false)
+                .mapToInt(Number::intValue)
+                .filter(v -> v == current || available.contains(v))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Preferred versions (" + preferred + ") not available: " + available));
+    }
+
+    class NamedVersionSelector implements SftpVersionSelector {
+        private final String name;
+        private final SftpVersionSelector selector;
+
+        public NamedVersionSelector(String name, SftpVersionSelector selector) {
+            this.name = name;
+            this.selector = selector;
+        }
+
+        @Override
+        public int selectVersion(ClientSession session, int current, List<Integer> available) {
+            return selector.selectVersion(session, current, available);
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
+
 }

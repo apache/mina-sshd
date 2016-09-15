@@ -133,7 +133,7 @@ public interface ForwardingFilter {
          * or {@code null} if no match found
          */
         public static Type fromName(String name) {
-            return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
+            return NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
         }
 
         /**

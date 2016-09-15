@@ -68,7 +68,7 @@ public abstract class AbstractChannel
     /**
      * Default growth factor function used to resize response buffers
      */
-    public static final Int2IntFunction RESPONSE_BUFFER_GROWTH_FACTOR = Int2IntFunction.Utils.add(Byte.SIZE);
+    public static final Int2IntFunction RESPONSE_BUFFER_GROWTH_FACTOR = Int2IntFunction.add(Byte.SIZE);
 
     protected enum GracefulState {
         Opened, CloseSent, CloseReceived, Closed
@@ -125,11 +125,7 @@ public abstract class AbstractChannel
     }
 
     public void addRequestHandlers(Collection<? extends RequestHandler<Channel>> handlers) {
-        if (GenericUtils.size(handlers) > 0) {
-            for (RequestHandler<Channel> h : handlers) {
-                addRequestHandler(h);
-            }
-        }
+        GenericUtils.forEach(handlers, this::addRequestHandler);
     }
 
     public void addRequestHandler(RequestHandler<Channel> handler) {
@@ -505,14 +501,11 @@ public abstract class AbstractChannel
 
                 try {
                     long timeout = PropertyResolverUtils.getLongProperty(channel, FactoryManager.CHANNEL_CLOSE_TIMEOUT, FactoryManager.DEFAULT_CHANNEL_CLOSE_TIMEOUT);
-                    s.writePacket(buffer, timeout, TimeUnit.MILLISECONDS).addListener(new SshFutureListener<IoWriteFuture>() {
-                        @Override
-                        public void operationComplete(IoWriteFuture future) {
-                            if (future.isWritten()) {
-                                handleClosePacketWritten(channel, immediately);
-                            } else {
-                                handleClosePacketWriteFailure(channel, immediately, future.getException());
-                            }
+                    s.writePacket(buffer, timeout, TimeUnit.MILLISECONDS).addListener(future -> {
+                        if (future.isWritten()) {
+                            handleClosePacketWritten(channel, immediately);
+                        } else {
+                            handleClosePacketWriteFailure(channel, immediately, future.getException());
                         }
                     });
                 } catch (IOException e) {
@@ -815,7 +808,7 @@ public abstract class AbstractChannel
 
     @Override
     public <T> T resolveAttribute(AttributeKey<T> key) {
-        return AttributeStore.Utils.resolveAttribute(this, key);
+        return AttributeStore.resolveAttribute(this, key);
     }
 
     protected void configureWindow() {

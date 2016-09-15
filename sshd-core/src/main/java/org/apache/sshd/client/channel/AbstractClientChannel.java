@@ -91,15 +91,11 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         this.type = ValidateUtils.checkNotNullAndNotEmpty(type, "No channel type specified");
         this.streaming = Streaming.Sync;
 
-        addChannelSignalRequestHandlers(new EventNotifier<String>() {
-            @SuppressWarnings("synthetic-access")
-            @Override
-            public void notifyEvent(String event) throws Exception {
-                if (log.isDebugEnabled()) {
-                    log.debug("notifyEvent({}): {}", AbstractClientChannel.this, event);
-                }
-                notifyStateChanged(event);
+        addChannelSignalRequestHandlers(event -> {
+            if (log.isDebugEnabled()) {
+                log.debug("notifyEvent({}): {}", AbstractClientChannel.this, event);
             }
+            notifyStateChanged(event);
         });
     }
 
@@ -179,24 +175,20 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     protected Closeable getInnerCloseable() {
         return builder()
                 .when(openFuture)
-                .run(new Runnable() {
-                    @SuppressWarnings("synthetic-access")
-                    @Override
-                    public void run() {
-                        // If the channel has not been opened yet,
-                        // skip the SSH_MSG_CHANNEL_CLOSE exchange
-                        if (openFuture == null) {
-                            gracefulFuture.setClosed();
-                        }
-                        // Close inverted streams after
-                        // If the inverted stream is closed before, there's a small time window
-                        // in which we have:
-                        //    ChannelPipedInputStream#closed = true
-                        //    ChannelPipedInputStream#writerClosed = false
-                        // which leads to an IOException("Pipe closed") when reading.
-                        IoUtils.closeQuietly(in, out, err);
-                        IoUtils.closeQuietly(invertedIn, invertedOut, invertedErr);
+                .run(() -> {
+                    // If the channel has not been opened yet,
+                    // skip the SSH_MSG_CHANNEL_CLOSE exchange
+                    if (openFuture == null) {
+                        gracefulFuture.setClosed();
                     }
+                    // Close inverted streams after
+                    // If the inverted stream is closed before, there's a small time window
+                    // in which we have:
+                    //    ChannelPipedInputStream#closed = true
+                    //    ChannelPipedInputStream#writerClosed = false
+                    // which leads to an IOException("Pipe closed") when reading.
+                    IoUtils.closeQuietly(in, out, err);
+                    IoUtils.closeQuietly(invertedIn, invertedOut, invertedErr);
                 })
                 .parallel(asyncIn, asyncOut, asyncErr)
                 .close(new GracefulChannelCloseable())

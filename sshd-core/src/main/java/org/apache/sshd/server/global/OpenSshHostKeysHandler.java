@@ -92,7 +92,7 @@ public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler imple
                         session);
         if (log.isDebugEnabled()) {
             log.debug("handleHostKeys({})[want-reply={}] received {} keys - factories={}",
-                      session, wantReply, GenericUtils.size(keys), NamedResource.Utils.getNames(factories));
+                      session, wantReply, GenericUtils.size(keys), NamedResource.getNames(factories));
         }
 
         // generate the required signatures
@@ -104,7 +104,7 @@ public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler imple
         for (PublicKey k : keys) {
             String keyType = KeyUtils.getKeyType(k);
             Signature verifier = ValidateUtils.checkNotNull(
-                    NamedFactory.Utils.create(factories, keyType),
+                    NamedFactory.create(factories, keyType),
                     "No signer could be located for key type=%s",
                     keyType);
 

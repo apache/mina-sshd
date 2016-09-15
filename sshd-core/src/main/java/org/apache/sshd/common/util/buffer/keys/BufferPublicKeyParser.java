@@ -35,6 +35,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface BufferPublicKeyParser<PUB extends PublicKey> {
+
     BufferPublicKeyParser<PublicKey> EMPTY = new BufferPublicKeyParser<PublicKey>() {
         @Override
         public boolean isKeyTypeSupported(String keyType) {
@@ -51,6 +52,12 @@ public interface BufferPublicKeyParser<PUB extends PublicKey> {
             return "EMPTY";
         }
     };
+
+    BufferPublicKeyParser<PublicKey> DEFAULT = aggregate(
+            Arrays.asList(
+                    RSABufferPublicKeyParser.INSTANCE,
+                    DSSBufferPublicKeyParser.INSTANCE,
+                    ECBufferPublicKeyParser.INSTANCE));
 
     /**
      * @param keyType The key type - e.g., &quot;ssh-rsa&quot, &quot;ssh-dss&quot;
@@ -71,51 +78,53 @@ public interface BufferPublicKeyParser<PUB extends PublicKey> {
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     // CHECKSTYLE:OFF
+    @Deprecated
     final class Utils {
     // CHECKSTYLE:ON
-        public static final BufferPublicKeyParser<PublicKey> DEFAULT = aggregate(
-                Arrays.asList(
-                        RSABufferPublicKeyParser.INSTANCE,
-                        DSSBufferPublicKeyParser.INSTANCE,
-                        ECBufferPublicKeyParser.INSTANCE));
+
+        public static final BufferPublicKeyParser<PublicKey> DEFAULT = BufferPublicKeyParser.DEFAULT;
 
         private Utils() {
             throw new UnsupportedOperationException("No instance");
         }
 
         public static BufferPublicKeyParser<PublicKey> aggregate(final Collection<? extends BufferPublicKeyParser<? extends PublicKey>> parsers) {
-            if (GenericUtils.isEmpty(parsers)) {
-                return EMPTY;
+            return BufferPublicKeyParser.aggregate(parsers);
+        }
+    }
+
+    static BufferPublicKeyParser<PublicKey> aggregate(final Collection<? extends BufferPublicKeyParser<? extends PublicKey>> parsers) {
+        if (GenericUtils.isEmpty(parsers)) {
+            return EMPTY;
+        }
+
+        return new BufferPublicKeyParser<PublicKey>() {
+            @Override
+            public boolean isKeyTypeSupported(String keyType) {
+                for (BufferPublicKeyParser<? extends PublicKey> p : parsers) {
+                    if (p.isKeyTypeSupported(keyType)) {
+                        return true;
+                    }
+                }
+
+                return false;
             }
 
-            return new BufferPublicKeyParser<PublicKey>() {
-                @Override
-                public boolean isKeyTypeSupported(String keyType) {
-                    for (BufferPublicKeyParser<? extends PublicKey> p : parsers) {
-                        if (p.isKeyTypeSupported(keyType)) {
-                            return true;
-                        }
+            @Override
+            public PublicKey getRawPublicKey(String keyType, Buffer buffer) throws GeneralSecurityException {
+                for (BufferPublicKeyParser<? extends PublicKey> p : parsers) {
+                    if (p.isKeyTypeSupported(keyType)) {
+                        return p.getRawPublicKey(keyType, buffer);
                     }
-
-                    return false;
                 }
 
-                @Override
-                public PublicKey getRawPublicKey(String keyType, Buffer buffer) throws GeneralSecurityException {
-                    for (BufferPublicKeyParser<? extends PublicKey> p : parsers) {
-                        if (p.isKeyTypeSupported(keyType)) {
-                            return p.getRawPublicKey(keyType, buffer);
-                        }
-                    }
+                throw new NoSuchAlgorithmException("No aggregate matcher for " + keyType);
+            }
 
-                    throw new NoSuchAlgorithmException("No aggregate matcher for " + keyType);
-                }
-
-                @Override
-                public String toString() {
-                    return String.valueOf(parsers);
-                }
-            };
-        }
+            @Override
+            public String toString() {
+                return String.valueOf(parsers);
+            }
+        };
     }
 }

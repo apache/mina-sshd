@@ -23,7 +23,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,6 +30,8 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.util.GenericUtils;
@@ -51,17 +52,10 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class TtyFilterInputStreamTest extends BaseTestSupport {
     private static final List<PtyMode> MODES =
-            Collections.unmodifiableList(new ArrayList<PtyMode>(TtyFilterInputStream.INPUT_OPTIONS.size() + 2) {
-                private static final long serialVersionUID = 1L;    // we-re not serializing it
-
-                {
-                    add(PtyMode.ECHO);  // NO-OP
-
-                    for (PtyMode m : TtyFilterInputStream.INPUT_OPTIONS) {
-                        add(m);
-                    }
-                }
-            });
+            Collections.unmodifiableList(
+                    Stream.concat(Stream.of(PtyMode.ECHO),
+                                  TtyFilterInputStream.INPUT_OPTIONS.stream())
+                    .collect(Collectors.toList()));
 
     private final PtyMode mode;
 

@@ -79,14 +79,11 @@ public class SshdSocketAddress extends SocketAddress {
      * Compares {@link InetAddress}-es according to their {@link InetAddress#getHostAddress()}
      * value case <U>insensitive</U>
      */
-    public static final Comparator<InetAddress> BY_HOST_ADDRESS = new Comparator<InetAddress>() {
-            @Override
-            public int compare(InetAddress a1, InetAddress a2) {
-                String n1 = GenericUtils.trimToEmpty(toAddressString(a1));
-                String n2 = GenericUtils.trimToEmpty(toAddressString(a2));
-                return String.CASE_INSENSITIVE_ORDER.compare(n1, n2);
-            }
-        };
+    public static final Comparator<InetAddress> BY_HOST_ADDRESS = (a1, a2) -> {
+        String n1 = GenericUtils.trimToEmpty(toAddressString(a1));
+        String n2 = GenericUtils.trimToEmpty(toAddressString(a2));
+        return String.CASE_INSENSITIVE_ORDER.compare(n1, n2);
+    };
 
     private static final long serialVersionUID = 6461645947151952729L;
 
@@ -336,7 +333,7 @@ public class SshdSocketAddress extends SocketAddress {
         }
     }
 
-    public static final boolean isIPv4Address(String addr) {
+    public static boolean isIPv4Address(String addr) {
         if (GenericUtils.isEmpty(addr)) {
             return false;
         }
@@ -367,7 +364,7 @@ public class SshdSocketAddress extends SocketAddress {
      * @see #PRIVATE_CLASS_C_PREFIX
      * @see <A HREF="http://en.wikipedia.org/wiki/Private_network#Private_IPv4_address_spaces">Wiki page</A>
      */
-    public static final boolean isPrivateIPv4Address(String addr) {
+    public static boolean isPrivateIPv4Address(String addr) {
         if (GenericUtils.isEmpty(addr)) {
             return false;
         }
@@ -400,7 +397,7 @@ public class SshdSocketAddress extends SocketAddress {
      * @return {@code true} if the address is in the 100.64.0.0/10 range
      * @see <A HREF="http://tools.ietf.org/html/rfc6598">RFC6598</A>
      */
-    public static final boolean isCarrierGradeNatIPv4Address(String addr) {
+    public static boolean isCarrierGradeNatIPv4Address(String addr) {
         if (GenericUtils.isEmpty(addr)) {
             return false;
         }
@@ -433,7 +430,7 @@ public class SshdSocketAddress extends SocketAddress {
      * @param c The {@link CharSequence} to be validate
      * @return {@code true} if valid IPv4 address component
      */
-    public static final boolean isValidIPv4AddressComponent(CharSequence c) {
+    public static boolean isValidIPv4AddressComponent(CharSequence c) {
         if (GenericUtils.isEmpty(c) || (c.length() > 3)) {
             return false;
         }

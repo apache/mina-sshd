@@ -284,7 +284,7 @@ public abstract class Buffer implements Readable {
     }
 
     public PublicKey getPublicKey() throws SshException {
-        return getPublicKey(BufferPublicKeyParser.Utils.DEFAULT);
+        return getPublicKey(BufferPublicKeyParser.DEFAULT);
     }
 
     /**
@@ -306,7 +306,7 @@ public abstract class Buffer implements Readable {
     }
 
     public PublicKey getRawPublicKey() throws SshException {
-        return getRawPublicKey(BufferPublicKeyParser.Utils.DEFAULT);
+        return getRawPublicKey(BufferPublicKeyParser.DEFAULT);
     }
 
     /**

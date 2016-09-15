@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
@@ -108,7 +109,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         // Verify all required methods are supported
         for (List<String> l : authMethods) {
             for (String m : l) {
-                NamedFactory<UserAuth> factory = NamedResource.Utils.findByName(m, String.CASE_INSENSITIVE_ORDER, userAuthFactories);
+                NamedFactory<UserAuth> factory = NamedResource.findByName(m, String.CASE_INSENSITIVE_ORDER, userAuthFactories);
                 if (factory == null) {
                     throw new SshException("Configured method is not supported: " + m);
                 }
@@ -117,7 +118,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
         if (log.isDebugEnabled()) {
             log.debug("ServerUserAuthService({}) authorized authentication methods: {}",
-                      s, NamedResource.Utils.getNames(userAuthFactories));
+                      s, NamedResource.getNames(userAuthFactories));
         }
     }
 
@@ -188,7 +189,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                           session, username, service, method, nbAuthRequests, maxAuthRequests);
             }
 
-            Factory<UserAuth> factory = NamedResource.Utils.findByName(method, String.CASE_INSENSITIVE_ORDER, userAuthFactories);
+            Factory<UserAuth> factory = NamedResource.findByName(method, String.CASE_INSENSITIVE_ORDER, userAuthFactories);
             if (factory != null) {
                 currentAuth = ValidateUtils.checkNotNull(factory.create(), "No authenticator created for method=%s", method);
                 try {
@@ -293,17 +294,11 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             session.resetIdleTimeout();
             log.info("Session {}@{} authenticated", username, session.getIoSession().getRemoteAddress());
         } else {
-            StringBuilder sb = new StringBuilder();
-            for (List<String> l : authMethods) {
-                if (GenericUtils.size(l) > 0) {
-                    if (sb.length() > 0) {
-                        sb.append(",");
-                    }
-                    sb.append(l.get(0));
-                }
-            }
+            String remaining = authMethods.stream()
+                    .filter(GenericUtils::isNotEmpty)
+                    .map(l -> l.get(0))
+                    .collect(Collectors.joining(","));
 
-            String remaining = sb.toString();
             if (log.isDebugEnabled()) {
                 log.debug("handleAuthenticationSuccess({}@{}) remaining methods={}", username, session, remaining);
             }

@@ -24,13 +24,12 @@ import java.security.spec.ECFieldFp;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.EllipticCurve;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.OptionalFeature;
@@ -103,49 +102,31 @@ public enum ECCurves implements NamedResource, OptionalFeature {
      * A {@link Set} of all the known curves names
      */
     public static final Set<String> NAMES =
-            Collections.unmodifiableSet(new TreeSet<String>(String.CASE_INSENSITIVE_ORDER) {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
-
-                {
-                    for (ECCurves c : VALUES) {
-                        add(c.getName());
-                    }
-                }
-            });
+            Collections.unmodifiableSet(GenericUtils.mapSort(
+                    VALUES,
+                    ECCurves::getName,
+                    String.CASE_INSENSITIVE_ORDER));
 
     /**
      * A {@link Set} of all the known curves key types
      */
     public static final Set<String> KEY_TYPES =
-            Collections.unmodifiableSet(new TreeSet<String>(String.CASE_INSENSITIVE_ORDER) {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
+            Collections.unmodifiableSet(GenericUtils.mapSort(
+                    VALUES,
+                    ECCurves::getKeyType,
+                    String.CASE_INSENSITIVE_ORDER));
 
-                {
-                    for (ECCurves c : VALUES) {
-                        add(c.getKeyType());
-                    }
-                }
-            });
-
-    public static final Comparator<ECCurves> BY_KEY_SIZE = new Comparator<ECCurves>() {
-        @Override
-        public int compare(ECCurves o1, ECCurves o2) {
-            int k1 = (o1 == null) ? Integer.MAX_VALUE : o1.getKeySize();
-            int k2 = (o2 == null) ? Integer.MAX_VALUE : o2.getKeySize();
-            return Integer.compare(k1, k2);
-        }
+    public static final Comparator<ECCurves> BY_KEY_SIZE = (o1, o2) -> {
+        int k1 = (o1 == null) ? Integer.MAX_VALUE : o1.getKeySize();
+        int k2 = (o2 == null) ? Integer.MAX_VALUE : o2.getKeySize();
+        return Integer.compare(k1, k2);
     };
 
     public static final List<ECCurves> SORTED_KEY_SIZE =
-            Collections.unmodifiableList(
-                    new ArrayList<ECCurves>(VALUES) {
-                        // Not serializing it
-                        private static final long serialVersionUID = 1L;
+            Collections.unmodifiableList(VALUES.stream()
+                    .sorted(BY_KEY_SIZE)
+                    .collect(Collectors.toList()));
 
-                        {
-                            Collections.sort(this, BY_KEY_SIZE);
-                        }
-                    });
     private final String name;
     private final String keyType;
     private final ECParameterSpec params;
@@ -230,7 +211,7 @@ public enum ECCurves implements NamedResource, OptionalFeature {
      * match found
      */
     public static ECCurves fromCurveName(String name) {
-        return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
+        return NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 
     /**

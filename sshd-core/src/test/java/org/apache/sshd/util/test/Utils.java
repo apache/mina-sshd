@@ -109,9 +109,9 @@ public final class Utils {
 
     public static final String DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM = KeyUtils.RSA_ALGORITHM;
     // uses a cached instance to avoid re-creating the keys as it is a time-consuming effort
-    private static final AtomicReference<KeyPairProvider> KEYPAIR_PROVIDER_HOLDER = new AtomicReference<KeyPairProvider>();
+    private static final AtomicReference<KeyPairProvider> KEYPAIR_PROVIDER_HOLDER = new AtomicReference<>();
     // uses a cached instance to avoid re-creating the keys as it is a time-consuming effort
-    private static final Map<String, AbstractFileKeyPairProvider> PROVIDERS_MAP = new ConcurrentHashMap<String, AbstractFileKeyPairProvider>();
+    private static final Map<String, AbstractFileKeyPairProvider> PROVIDERS_MAP = new ConcurrentHashMap<>();
 
     private Utils() {
         throw new UnsupportedOperationException("No instance");
@@ -586,10 +586,7 @@ public final class Utils {
         if (GenericUtils.isEmpty(name)) {
             return name;
         } else {
-            return new StringBuilder(name.length() + CLASS_FILE_SUFFIX.length())
-                    .append(name.replace('.', '/'))
-                    .append(CLASS_FILE_SUFFIX)
-                    .toString();
+            return name.replace('.', '/') + CLASS_FILE_SUFFIX;
         }
     }
 

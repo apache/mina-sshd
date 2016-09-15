@@ -58,12 +58,9 @@ public final class LoggingUtils {
      * @see #generateMnemonicMap(Class, Predicate)
      */
     public static Map<Integer, String> generateMnemonicMap(Class<?> clazz, final String commonPrefix) {
-        return generateMnemonicMap(clazz, new Predicate<Field>() {
-            @Override
-            public boolean test(Field f) {
-                String name = f.getName();
-                return name.startsWith(commonPrefix);
-            }
+        return generateMnemonicMap(clazz, f -> {
+            String name = f.getName();
+            return name.startsWith(commonPrefix);
         });
     }
 
@@ -92,9 +89,11 @@ public final class LoggingUtils {
                 Number value = (Number) f.get(null);
                 String prev = result.put(NumberUtils.toInteger(value), name);
                 if (prev != null) {
+                    //noinspection UnnecessaryContinue
                     continue;   // debug breakpoint
                 }
             } catch (Exception e) {
+                //noinspection UnnecessaryContinue
                 continue;   // debug breakpoint
             }
         }
@@ -114,12 +113,9 @@ public final class LoggingUtils {
      * @see #getAmbiguousMenmonics(Class, Predicate)
      */
     public static Map<String, Integer> getAmbiguousMenmonics(Class<?> clazz, String commonPrefix) {
-        return getAmbiguousMenmonics(clazz, new Predicate<Field>() {
-            @Override
-            public boolean test(Field f) {
-                String name = f.getName();
-                return name.startsWith(commonPrefix);
-            }
+        return getAmbiguousMenmonics(clazz, f -> {
+            String name = f.getName();
+            return name.startsWith(commonPrefix);
         });
     }
 
@@ -180,21 +176,18 @@ public final class LoggingUtils {
      * @return A {@link Collection} of all the fields that have satisfied all conditions
      */
     public static Collection<Field> getMnemonicFields(Class<?> clazz, Predicate<? super Field> acceptor) {
-        return ReflectionUtils.getMatchingFields(clazz, new Predicate<Field>() {
-            @Override
-            public boolean test(Field f) {
-                int mods = f.getModifiers();
-                if ((!Modifier.isPublic(mods)) || (!Modifier.isStatic(mods)) || (!Modifier.isFinal(mods))) {
-                    return false;
-                }
-
-                Class<?> type = f.getType();
-                if (!NumberUtils.isNumericClass(type)) {
-                    return false;
-                }
-
-                return acceptor.test(f);
+        return ReflectionUtils.getMatchingFields(clazz, f -> {
+            int mods = f.getModifiers();
+            if ((!Modifier.isPublic(mods)) || (!Modifier.isStatic(mods)) || (!Modifier.isFinal(mods))) {
+                return false;
             }
+
+            Class<?> type = f.getType();
+            if (!NumberUtils.isNumericClass(type)) {
+                return false;
+            }
+
+            return acceptor.test(f);
         });
     }
 
@@ -263,9 +256,10 @@ public final class LoggingUtils {
     }
 
     // NOTE: assume that level enabled has been checked !!!
+    @SuppressWarnings("StatementWithEmptyBody")
     public static void logMessage(Logger logger, Level level, Object message, Throwable t) {
         if ((logger == null) || (level == null) || Level.OFF.equals(level)) {
-            return;
+            // ignore
         } else if (Level.SEVERE.equals(level)) {
             logger.error(Objects.toString(message), t);
         } else if (Level.WARNING.equals(level)) {

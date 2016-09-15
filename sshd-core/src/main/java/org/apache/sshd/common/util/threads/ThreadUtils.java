@@ -177,13 +177,8 @@ public final class ThreadUtils {
             Thread t;
             try {
                 // see SSHD-668
-                t = AccessController.doPrivileged(new PrivilegedExceptionAction<Thread>() {
-                    @SuppressWarnings("synthetic-access")
-                    @Override
-                    public Thread run() {
-                        return new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0);
-                    }
-                });
+                t = AccessController.doPrivileged((PrivilegedExceptionAction<Thread>) () ->
+                        new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0));
             } catch (PrivilegedActionException e) {
                 Exception err = e.getException();
                 if (err instanceof RuntimeException) {

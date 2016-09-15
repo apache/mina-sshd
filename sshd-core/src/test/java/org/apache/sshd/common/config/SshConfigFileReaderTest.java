@@ -146,7 +146,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
                 getCurrentTestName(),
                 false,
                 true);
-        fail("Unexpected success: " + NamedResource.Utils.getNames(manager.getCipherFactories()));
+        fail("Unexpected success: " + NamedResource.getNames(manager.getCipherFactories()));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -161,7 +161,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
                 getCurrentTestName(),
                 false,
                 true);
-        fail("Unexpected success: " + NamedResource.Utils.getNames(manager.getSignatureFactories()));
+        fail("Unexpected success: " + NamedResource.getNames(manager.getSignatureFactories()));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -176,7 +176,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
                 getCurrentTestName(),
                 false,
                 true);
-        fail("Unexpected success: " + NamedResource.Utils.getNames(manager.getMacFactories()));
+        fail("Unexpected success: " + NamedResource.getNames(manager.getMacFactories()));
     }
 
     @Test
@@ -285,7 +285,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     }
 
     private static <R extends NamedResource> Properties initNamedResourceProperties(String key, Collection<? extends R> values) {
-        return initProperties(key, NamedResource.Utils.getNames(values));
+        return initProperties(key, NamedResource.getNames(values));
     }
 
     private static Properties initProperties(String key, String value) {

@@ -89,18 +89,14 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
         long initializationTimeout = PropertyResolverUtils.getLongProperty(clientSession, SFTP_CHANNEL_OPEN_TIMEOUT, DEFAULT_CHANNEL_OPEN_TIMEOUT);
         this.channel.open().verify(initializationTimeout);
-        this.channel.onClose(new Runnable() {
-            @SuppressWarnings("synthetic-access")
-            @Override
-            public void run() {
-                synchronized (messages) {
-                    closing.set(true);
-                    messages.notifyAll();
-                }
+        this.channel.onClose(() -> {
+            synchronized (messages) {
+                closing.set(true);
+                messages.notifyAll();
+            }
 
-                if (versionHolder.get() <= 0) {
-                    log.warn("onClose({}) closed before version negotiated", channel);
-                }
+            if (versionHolder.get() <= 0) {
+                log.warn("onClose({}) closed before version negotiated", channel);
             }
         });
 

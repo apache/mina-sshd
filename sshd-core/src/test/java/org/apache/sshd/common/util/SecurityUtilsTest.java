@@ -19,7 +19,6 @@
 
 package org.apache.sshd.common.util;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
@@ -56,12 +55,7 @@ import org.junit.runners.MethodSorters;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SecurityUtilsTest extends BaseTestSupport {
     private static final String DEFAULT_PASSWORD = "super secret passphrase";
-    private static final FilePasswordProvider TEST_PASSWORD_PROVIDER = new FilePasswordProvider() {
-        @Override
-        public String getPassword(String file) throws IOException {
-            return DEFAULT_PASSWORD;
-        }
-    };
+    private static final FilePasswordProvider TEST_PASSWORD_PROVIDER = file -> DEFAULT_PASSWORD;
 
     public SecurityUtilsTest() {
         super();
@@ -157,7 +151,7 @@ public class SecurityUtilsTest extends BaseTestSupport {
             Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
         provider.setPasswordFinder(TEST_PASSWORD_PROVIDER);
         Iterable<KeyPair> iterator = provider.loadKeys();
-        List<KeyPair> pairs = new ArrayList<KeyPair>();
+        List<KeyPair> pairs = new ArrayList<>();
         for (KeyPair kp : iterator) {
             pairs.add(kp);
         }

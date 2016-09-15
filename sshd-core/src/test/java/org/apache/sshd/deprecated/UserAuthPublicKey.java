@@ -62,7 +62,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 buffer.putPublicKey(key.getPublic());
 
                 Signature verif =
-                        ValidateUtils.checkNotNull(NamedFactory.Utils.create(session.getSignatureFactories(), alg),
+                        ValidateUtils.checkNotNull(NamedFactory.create(session.getSignatureFactories(), alg),
                                 "No signature factory located for algorithm=%s",
                                 alg);
                 verif.initSigner(key.getPrivate());
@@ -105,7 +105,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 }
                 return Result.Failure;
             } else {
-                log.debug("Received unknown packet {}", Integer.valueOf(cmd));
+                log.debug("Received unknown packet {}", cmd);
                 // TODO: check packets
                 return Result.Continued;
             }

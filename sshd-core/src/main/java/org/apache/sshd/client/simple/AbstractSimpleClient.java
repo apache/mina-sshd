@@ -20,8 +20,6 @@
 package org.apache.sshd.client.simple;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -42,46 +40,6 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 public abstract class AbstractSimpleClient extends AbstractLoggingBean implements SimpleClient {
     protected AbstractSimpleClient() {
         super();
-    }
-
-    @Override
-    public SftpClient sftpLogin(String host, String username, String password) throws IOException {
-        return sftpLogin(host, DEFAULT_PORT, username, password);
-    }
-
-    @Override
-    public SftpClient sftpLogin(String host, int port, String username, String password) throws IOException {
-        return sftpLogin(InetAddress.getByName(ValidateUtils.checkNotNullAndNotEmpty(host, "No host")), port, username, password);
-    }
-
-    @Override
-    public SftpClient sftpLogin(String host, String username, KeyPair identity) throws IOException {
-        return sftpLogin(host, DEFAULT_PORT, username, identity);
-    }
-
-    @Override
-    public SftpClient sftpLogin(String host, int port, String username, KeyPair identity) throws IOException {
-        return sftpLogin(InetAddress.getByName(ValidateUtils.checkNotNullAndNotEmpty(host, "No host")), port, username, identity);
-    }
-
-    @Override
-    public SftpClient sftpLogin(InetAddress host, String username, String password) throws IOException {
-        return sftpLogin(host, DEFAULT_PORT, username, password);
-    }
-
-    @Override
-    public SftpClient sftpLogin(InetAddress host, int port, String username, String password) throws IOException {
-        return sftpLogin(new InetSocketAddress(ValidateUtils.checkNotNull(host, "No host address"), port), username, password);
-    }
-
-    @Override
-    public SftpClient sftpLogin(InetAddress host, String username, KeyPair identity) throws IOException {
-        return sftpLogin(host, DEFAULT_PORT, username, identity);
-    }
-
-    @Override
-    public SftpClient sftpLogin(InetAddress host, int port, String username, KeyPair identity) throws IOException {
-        return sftpLogin(new InetSocketAddress(ValidateUtils.checkNotNull(host, "No host address"), port), username, identity);
     }
 
     @Override
@@ -148,42 +106,38 @@ public abstract class AbstractSimpleClient extends AbstractLoggingBean implement
     protected SftpClient createSftpClient(final ClientSession session, final SftpClient client) throws IOException {
         ClassLoader loader = getClass().getClassLoader();
         Class<?>[] interfaces = {SftpClient.class};
-        return (SftpClient) Proxy.newProxyInstance(loader, interfaces, new InvocationHandler() {
-            @SuppressWarnings("synthetic-access")
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                Throwable err = null;
-                Object result = null;
-                String name = method.getName();
+        return (SftpClient) Proxy.newProxyInstance(loader, interfaces, (proxy, method, args) -> {
+            Throwable err = null;
+            Object result = null;
+            String name = method.getName();
+            try {
+                result = method.invoke(client, args);
+            } catch (Throwable t) {
+                if (log.isTraceEnabled()) {
+                    log.trace("invoke(SftpClient#{}) failed ({}) to execute: {}",
+                              name, t.getClass().getSimpleName(), t.getMessage());
+                }
+                err = GenericUtils.accumulateException(err, t);
+            }
+
+            // propagate the "close" call to the session as well
+            if ("close".equals(name) && GenericUtils.isEmpty(args)) {
                 try {
-                    result = method.invoke(client, args);
+                    session.close();
                 } catch (Throwable t) {
-                    if (log.isTraceEnabled()) {
-                        log.trace("invoke(SftpClient#{}) failed ({}) to execute: {}",
+                    if (log.isDebugEnabled()) {
+                        log.debug("invoke(ClientSession#{}) failed ({}) to execute: {}",
                                   name, t.getClass().getSimpleName(), t.getMessage());
                     }
                     err = GenericUtils.accumulateException(err, t);
                 }
-
-                // propagate the "close" call to the session as well
-                if ("close".equals(name) && GenericUtils.isEmpty(args)) {
-                    try {
-                        session.close();
-                    } catch (Throwable t) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("invoke(ClientSession#{}) failed ({}) to execute: {}",
-                                      name, t.getClass().getSimpleName(), t.getMessage());
-                        }
-                        err = GenericUtils.accumulateException(err, t);
-                    }
-                }
-
-                if (err != null) {
-                    throw err;
-                }
-
-                return result;
             }
+
+            if (err != null) {
+                throw err;
+            }
+
+            return result;
         });
     }
     @Override
@@ -241,25 +195,21 @@ public abstract class AbstractSimpleClient extends AbstractLoggingBean implement
             final ScpClient client = ValidateUtils.checkNotNull(session, "No client session").createScpClient();
             ClassLoader loader = getClass().getClassLoader();
             Class<?>[] interfaces = {CloseableScpClient.class};
-            return (CloseableScpClient) Proxy.newProxyInstance(loader, interfaces, new InvocationHandler() {
-                @SuppressWarnings("synthetic-access")
-                @Override
-                public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                    String name = method.getName();
-                    try {
-                        // The Channel implementation is provided by the session
-                        if (("close".equals(name) || "isOpen".equals(name)) && GenericUtils.isEmpty(args)) {
-                            return method.invoke(session, args);
-                        } else {
-                            return method.invoke(client, args);
-                        }
-                    } catch (Throwable t) {
-                        if (log.isTraceEnabled()) {
-                            log.trace("invoke(CloseableScpClient#{}) failed ({}) to execute: {}",
-                                      name, t.getClass().getSimpleName(), t.getMessage());
-                        }
-                        throw t;
+            return (CloseableScpClient) Proxy.newProxyInstance(loader, interfaces, (proxy, method, args) -> {
+                String name = method.getName();
+                try {
+                    // The Channel implementation is provided by the session
+                    if (("close".equals(name) || "isOpen".equals(name)) && GenericUtils.isEmpty(args)) {
+                        return method.invoke(session, args);
+                    } else {
+                        return method.invoke(client, args);
                     }
+                } catch (Throwable t) {
+                    if (log.isTraceEnabled()) {
+                        log.trace("invoke(CloseableScpClient#{}) failed ({}) to execute: {}",
+                                  name, t.getClass().getSimpleName(), t.getMessage());
+                    }
+                    throw t;
                 }
             });
         } catch (Exception e) {
@@ -287,43 +237,4 @@ public abstract class AbstractSimpleClient extends AbstractLoggingBean implement
         }
     }
 
-    @Override   // TODO make this a default method in Java-8
-    public ClientSession sessionLogin(String host, String username, String password) throws IOException {
-        return sessionLogin(host, DEFAULT_PORT, username, password);
-    }
-
-    @Override   // TODO make this a default method in Java-8
-    public ClientSession sessionLogin(String host, String username, KeyPair identity) throws IOException {
-        return sessionLogin(host, DEFAULT_PORT, username, identity);
-    }
-
-    @Override   // TODO make this a default method in Java-8
-    public ClientSession sessionLogin(InetAddress host, String username, String password) throws IOException {
-        return sessionLogin(host, DEFAULT_PORT, username, password);
-    }
-
-    @Override
-    public ClientSession sessionLogin(InetAddress host, String username, KeyPair identity) throws IOException {
-        return sessionLogin(host, DEFAULT_PORT, username, identity);
-    }
-
-    @Override   // TODO make this a default method in Java-8
-    public ClientSession sessionLogin(String host, int port, String username, String password) throws IOException {
-        return sessionLogin(InetAddress.getByName(ValidateUtils.checkNotNullAndNotEmpty(host, "No host")), port, username, password);
-    }
-
-    @Override   // TODO make this a default method in Java-8
-    public ClientSession sessionLogin(InetAddress host, int port, String username, String password) throws IOException {
-        return sessionLogin(new InetSocketAddress(ValidateUtils.checkNotNull(host, "No host address"), port), username, password);
-    }
-
-    @Override   // TODO make this a default method in Java-8
-    public ClientSession sessionLogin(String host, int port, String username, KeyPair identity) throws IOException {
-        return sessionLogin(InetAddress.getByName(ValidateUtils.checkNotNullAndNotEmpty(host, "No host")), port, username, identity);
-    }
-
-    @Override
-    public ClientSession sessionLogin(InetAddress host, int port, String username, KeyPair identity) throws IOException {
-        return sessionLogin(new InetSocketAddress(ValidateUtils.checkNotNull(host, "No host address"), port), username, identity);
-    }
 }

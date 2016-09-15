@@ -88,11 +88,11 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                         session);
         if (log.isDebugEnabled()) {
             log.debug("doAuth({}@{}) verify key type={}, factories={}, fingerprint={}",
-                      username, session, alg, NamedResource.Utils.getNames(factories), KeyUtils.getFingerPrint(key));
+                      username, session, alg, NamedResource.getNames(factories), KeyUtils.getFingerPrint(key));
         }
 
         Signature verifier = ValidateUtils.checkNotNull(
-                NamedFactory.Utils.create(factories, alg),
+                NamedFactory.create(factories, alg),
                 "No verifier located for algorithm=%s",
                 alg);
         verifier.initVerifier(key);

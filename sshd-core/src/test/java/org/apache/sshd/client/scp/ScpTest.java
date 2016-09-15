@@ -1163,8 +1163,7 @@ public class ScpTest extends BaseTestSupport {
     }
 
     private static String readLine(InputStream in) throws IOException {
-        OutputStream baos = new ByteArrayOutputStream();
-        try {
+        try (OutputStream baos = new ByteArrayOutputStream()) {
             for (;;) {
                 int c = in.read();
                 if (c == '\n') {
@@ -1175,8 +1174,6 @@ public class ScpTest extends BaseTestSupport {
                     baos.write(c);
                 }
             }
-        } finally {
-            baos.close();
         }
     }
 

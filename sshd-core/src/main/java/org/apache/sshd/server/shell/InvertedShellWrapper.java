@@ -150,12 +150,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
         shellIn = shell.getInputStream();
         shellOut = shell.getOutputStream();
         shellErr = shell.getErrorStream();
-        executor.execute(new Runnable() {
-            @Override
-            public void run() {
-                pumpStreams();
-            }
-        });
+        executor.execute(this::pumpStreams);
     }
 
     @Override

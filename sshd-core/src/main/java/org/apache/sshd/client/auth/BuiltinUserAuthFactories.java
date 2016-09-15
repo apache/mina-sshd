@@ -72,7 +72,7 @@ public enum BuiltinUserAuthFactories implements NamedFactory<UserAuthFactory> {
      * @return The matching factory instance - {@code null} if no match found
      */
     public static UserAuthFactory fromFactoryName(String name) {
-        Factory<UserAuthFactory> factory = NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
+        Factory<UserAuthFactory> factory = NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
         if (factory == null) {
             return null;
         }

@@ -274,7 +274,7 @@ public abstract class BaseTestSupport extends Assert {
             return Collections.emptyList();
         }
 
-        List<Object[]> result = new ArrayList<Object[]>(params.size());
+        List<Object[]> result = new ArrayList<>(params.size());
         for (Object p : params) {
             result.add(new Object[]{p});
         }

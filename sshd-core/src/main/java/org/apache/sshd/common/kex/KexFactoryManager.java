@@ -57,10 +57,10 @@ public interface KexFactoryManager extends KeyPairProviderHolder, SignatureFacto
      */
     List<NamedFactory<Cipher>> getCipherFactories();
     default String getCipherFactoriesNameList() {
-        return NamedResource.Utils.getNames(getCipherFactories());
+        return NamedResource.getNames(getCipherFactories());
     }
     default List<String> getCipherFactoriesNames() {
-        return NamedResource.Utils.getNameList(getCipherFactories());
+        return NamedResource.getNameList(getCipherFactories());
     }
 
     void setCipherFactories(List<NamedFactory<Cipher>> cipherFactories);
@@ -87,10 +87,10 @@ public interface KexFactoryManager extends KeyPairProviderHolder, SignatureFacto
      */
     List<NamedFactory<Compression>> getCompressionFactories();
     default String getCompressionFactoriesNameList() {
-        return NamedResource.Utils.getNames(getCompressionFactories());
+        return NamedResource.getNames(getCompressionFactories());
     }
     default List<String> getCompressionFactoriesNames() {
-        return NamedResource.Utils.getNameList(getCompressionFactories());
+        return NamedResource.getNameList(getCompressionFactories());
     }
 
     void setCompressionFactories(List<NamedFactory<Compression>> compressionFactories);
@@ -117,10 +117,10 @@ public interface KexFactoryManager extends KeyPairProviderHolder, SignatureFacto
      */
     List<NamedFactory<Mac>> getMacFactories();
     default String getMacFactoriesNameList() {
-        return NamedResource.Utils.getNames(getMacFactories());
+        return NamedResource.getNames(getMacFactories());
     }
     default List<String> getMacFactoriesNames() {
-        return NamedResource.Utils.getNameList(getMacFactories());
+        return NamedResource.getNameList(getMacFactories());
     }
 
     void setMacFactories(List<NamedFactory<Mac>> macFactories);

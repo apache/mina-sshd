@@ -19,8 +19,6 @@
 
 package org.apache.sshd.common.util;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,55 +38,51 @@ public final class EventListenerUtils {
      * there are no same references in a listener's set
      */
     @SuppressWarnings("checkstyle:anoninnerlength")
-    public static final Comparator<EventListener> LISTENER_INSTANCE_COMPARATOR =
-        new Comparator<EventListener>() {
-            @Override
-            public int compare(EventListener l1, EventListener l2) {
-                if (l1 == l2) {
-                    return 0;
-                } else if (l1 == null) {
-                    return 1;
-                } else if (l2 == null) {
-                    return -1;
-                }
+    public static final Comparator<EventListener> LISTENER_INSTANCE_COMPARATOR = (l1, l2) -> {
+        if (l1 == l2) {
+            return 0;
+        } else if (l1 == null) {
+            return 1;
+        } else if (l2 == null) {
+            return -1;
+        }
 
-                Class<?> c1 = l1.getClass();
-                Class<?> c2 = l2.getClass();
-                boolean checkHashCodes = true;
-                if (Proxy.isProxyClass(c1)) {
-                    if (Proxy.isProxyClass(c2)) {
-                        checkHashCodes = false; // cannot call hashCode on a proxy
-                    } else {
-                        return 1;
-                    }
-                } else if (Proxy.isProxyClass(c2)) {
-                    return -1;
-                }
-
-                if (checkHashCodes) {
-                    int nRes = Integer.compare(l1.hashCode(), l2.hashCode());
-                    if (nRes != 0) {
-                        return nRes;
-                    }
-                }
-
-                int nRes = Integer.compare(System.identityHashCode(l1), System.identityHashCode(l2));
-                if (nRes != 0) {
-                    return nRes;
-                }
-
-                if (c1 != c2) {
-                    return c1.getName().compareTo(c2.getName());
-                }
-
-                String s1 = Objects.toString(l1.toString(), "");
-                String s2 = Objects.toString(l2.toString(), "");
-                nRes = s1.compareTo(s2);
-                if (nRes != 0) {
-                    return nRes;
-                }
-                throw new UnsupportedOperationException("Ran out of options to compare instance of " + s1 + " vs. " + s2);
+        Class<?> c1 = l1.getClass();
+        Class<?> c2 = l2.getClass();
+        boolean checkHashCodes = true;
+        if (Proxy.isProxyClass(c1)) {
+            if (Proxy.isProxyClass(c2)) {
+                checkHashCodes = false; // cannot call hashCode on a proxy
+            } else {
+                return 1;
             }
+        } else if (Proxy.isProxyClass(c2)) {
+            return -1;
+        }
+
+        if (checkHashCodes) {
+            int nRes = Integer.compare(l1.hashCode(), l2.hashCode());
+            if (nRes != 0) {
+                return nRes;
+            }
+        }
+
+        int nRes = Integer.compare(System.identityHashCode(l1), System.identityHashCode(l2));
+        if (nRes != 0) {
+            return nRes;
+        }
+
+        if (c1 != c2) {
+            return c1.getName().compareTo(c2.getName());
+        }
+
+        String s1 = Objects.toString(l1.toString(), "");
+        String s2 = Objects.toString(l2.toString(), "");
+        nRes = s1.compareTo(s2);
+        if (nRes != 0) {
+            return nRes;
+        }
+        throw new UnsupportedOperationException("Ran out of options to compare instance of " + s1 + " vs. " + s2);
     };
 
     private EventListenerUtils() {
@@ -120,7 +114,7 @@ public final class EventListenerUtils {
      * @see #LISTENER_INSTANCE_COMPARATOR
      */
     public static <L extends EventListener> Set<L> synchronizedListenersSet() {
-        return Collections.synchronizedSet(new TreeSet<L>(LISTENER_INSTANCE_COMPARATOR));
+        return Collections.synchronizedSet(new TreeSet<>(LISTENER_INSTANCE_COMPARATOR));
     }
 
     /**
@@ -197,25 +191,22 @@ public final class EventListenerUtils {
         ValidateUtils.checkTrue(listenerType.isInterface(), "Target proxy is not an interface: %s", listenerType.getSimpleName());
         ValidateUtils.checkNotNull(listeners, "No listeners container provided");
 
-        Object wrapper = Proxy.newProxyInstance(loader, new Class<?>[]{listenerType}, new InvocationHandler() {
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                Throwable err = null;
-                for (T l : listeners) {
-                    try {
-                        method.invoke(l, args);
-                    } catch (Throwable t) {
-                        Throwable e = GenericUtils.peelException(t);
-                        err = GenericUtils.accumulateException(err, e);
-                    }
+        Object wrapper = Proxy.newProxyInstance(loader, new Class<?>[]{listenerType}, (proxy, method, args) -> {
+            Throwable err = null;
+            for (T l : listeners) {
+                try {
+                    method.invoke(l, args);
+                } catch (Throwable t) {
+                    Throwable e = GenericUtils.peelException(t);
+                    err = GenericUtils.accumulateException(err, e);
                 }
-
-                if (err != null) {
-                    throw err;
-                }
-
-                return null;    // we assume always void return value...
             }
+
+            if (err != null) {
+                throw err;
+            }
+
+            return null;    // we assume always void return value...
         });
         return listenerType.cast(wrapper);
     }

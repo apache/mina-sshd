@@ -20,8 +20,6 @@
 package org.apache.sshd.client;
 
 import java.io.IOException;
-import java.net.SocketAddress;
-import java.security.PublicKey;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
@@ -125,12 +123,9 @@ public class ClientSessionListenerTest extends BaseTestSupport {
     @Test
     public void testSessionListenerCanInfluenceAuthentication() throws IOException {
         final AtomicInteger verificationCount = new AtomicInteger();
-        final ServerKeyVerifier verifier = new ServerKeyVerifier() {
-            @Override
-            public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
-                verificationCount.incrementAndGet();
-                return true;
-            }
+        final ServerKeyVerifier verifier = (sshClientSession, remoteAddress, serverKey) -> {
+            verificationCount.incrementAndGet();
+            return true;
         };
 
         SessionListener listener = new SessionListener() {

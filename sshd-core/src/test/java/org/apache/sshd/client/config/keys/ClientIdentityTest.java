@@ -79,7 +79,7 @@ public class ClientIdentityTest extends BaseTestSupport {
                 options);
         assertEquals("Mismatched loaded ids count", GenericUtils.size(expected), GenericUtils.size(ids));
 
-        Collection<KeyPair> pairs = new ArrayList<KeyPair>(ids.size());
+        Collection<KeyPair> pairs = new ArrayList<>(ids.size());
         for (BuiltinIdentities type : BuiltinIdentities.VALUES) {
             if (expected.contains(type)) {
                 KeyPair kp = ids.get(type.getName());

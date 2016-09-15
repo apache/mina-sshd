@@ -234,7 +234,7 @@ public enum BuiltinDHFactories implements DHFactory {
      * or {@code null} if no match found
      */
     public static BuiltinDHFactories fromFactoryName(String name) {
-        return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
+        return NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 
     @Override

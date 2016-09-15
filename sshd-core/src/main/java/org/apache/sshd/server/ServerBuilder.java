@@ -52,19 +52,12 @@ import org.apache.sshd.server.kex.DHGServer;
  */
 public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
 
-    public static final Transformer<DHFactory, NamedFactory<KeyExchange>> DH2KEX =
-        new Transformer<DHFactory, NamedFactory<KeyExchange>>() {
-            @Override
-            public NamedFactory<KeyExchange> transform(DHFactory factory) {
-                if (factory == null) {
-                    return null;
-                } else if (factory.isGroupExchange()) {
-                    return DHGEXServer.newFactory(factory);
-                } else {
-                    return DHGServer.newFactory(factory);
-                }
-            }
-        };
+    public static final Transformer<DHFactory, NamedFactory<KeyExchange>> DH2KEX = factory ->
+            factory == null
+                ? null
+                : factory.isGroupExchange()
+                    ? DHGEXServer.newFactory(factory)
+                    : DHGServer.newFactory(factory);
 
     public static final List<NamedFactory<Channel>> DEFAULT_CHANNEL_FACTORIES =
         Collections.unmodifiableList(Arrays.<NamedFactory<Channel>>asList(
@@ -84,8 +77,8 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
     public static final PublickeyAuthenticator DEFAULT_PUBLIC_KEY_AUTHENTICATOR = DefaultAuthorizedKeysAuthenticator.INSTANCE;
     public static final KeyboardInteractiveAuthenticator DEFAULT_INTERACTIVE_AUTHENTICATOR = DefaultKeyboardInteractiveAuthenticator.INSTANCE;
     public static final List<CompressionFactory> DEFAULT_COMPRESSION_FACTORIES =
-            Collections.unmodifiableList(Arrays.<CompressionFactory>asList(
-                    BuiltinCompressions.none, BuiltinCompressions.zlib, BuiltinCompressions.delayedZlib));
+        Collections.unmodifiableList(Arrays.<CompressionFactory>asList(
+                BuiltinCompressions.none, BuiltinCompressions.zlib, BuiltinCompressions.delayedZlib));
 
     protected PublickeyAuthenticator pubkeyAuthenticator;
     protected KeyboardInteractiveAuthenticator interactiveAuthenticator;
@@ -109,7 +102,7 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
         super.fillWithDefaultValues();
 
         if (compressionFactories == null) {
-            compressionFactories = NamedFactory.Utils.setUpBuiltinFactories(false, DEFAULT_COMPRESSION_FACTORIES);
+            compressionFactories = NamedFactory.setUpBuiltinFactories(false, DEFAULT_COMPRESSION_FACTORIES);
         }
 
         if (keyExchangeFactories == null) {
@@ -160,7 +153,7 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
      * @see org.apache.sshd.common.kex.BuiltinDHFactories#isSupported()
      */
     public static List<NamedFactory<KeyExchange>> setUpDefaultKeyExchanges(boolean ignoreUnsupported) {
-        return NamedFactory.Utils.setUpTransformedFactories(ignoreUnsupported, DEFAULT_KEX_PREFERENCE, DH2KEX);
+        return NamedFactory.setUpTransformedFactories(ignoreUnsupported, DEFAULT_KEX_PREFERENCE, DH2KEX);
     }
 
     public static ServerBuilder builder() {

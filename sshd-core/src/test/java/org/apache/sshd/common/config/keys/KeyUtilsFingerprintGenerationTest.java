@@ -140,12 +140,12 @@ public class KeyUtilsFingerprintGenerationTest extends BaseTestSupport {
         );
         assertEquals(
             String.format("Fingerprint check failed for digest %s", name),
-            new Pair<Boolean, String>(true, expected),
+                new Pair<>(true, expected),
             KeyUtils.checkFingerPrint(expected, digestFactory, key)
         );
         assertEquals(
             String.format("Fingerprint check succeeded for invalid digest %s", name),
-            new Pair<Boolean, String>(false, expected),
+                new Pair<>(false, expected),
             KeyUtils.checkFingerPrint(expected + "A", digestFactory, key)
         );
     }

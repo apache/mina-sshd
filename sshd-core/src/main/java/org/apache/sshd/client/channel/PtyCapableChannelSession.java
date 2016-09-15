@@ -79,19 +79,15 @@ public class PtyCapableChannelSession extends ChannelSession {
     public static final int DEFAULT_WIDTH = 640;
     public static final int DEFAULT_HEIGHT = 480;
     public static final Map<PtyMode, Integer> DEFAULT_PTY_MODES =
-            Collections.unmodifiableMap(new EnumMap<PtyMode, Integer>(PtyMode.class) {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
-
-                {
-                    put(PtyMode.ISIG, 1);
-                    put(PtyMode.ICANON, 1);
-                    put(PtyMode.ECHO, 1);
-                    put(PtyMode.ECHOE, 1);
-                    put(PtyMode.ECHOK, 1);
-                    put(PtyMode.ECHONL, 0);
-                    put(PtyMode.NOFLSH, 0);
-                }
-            });
+            GenericUtils.<PtyMode, Integer>mapBuilder()
+                .put(PtyMode.ISIG, 1)
+                .put(PtyMode.ICANON, 1)
+                .put(PtyMode.ECHO, 1)
+                .put(PtyMode.ECHOE, 1)
+                .put(PtyMode.ECHOK, 1)
+                .put(PtyMode.ECHONL, 0)
+                .put(PtyMode.NOFLSH, 0)
+                .immutable();
 
     private boolean agentForwarding;
     private boolean usePty;

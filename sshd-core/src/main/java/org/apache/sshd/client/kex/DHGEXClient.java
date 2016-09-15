@@ -103,13 +103,13 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
     public boolean next(int cmd, Buffer buffer) throws Exception {
         Session session = getSession();
         if (log.isDebugEnabled()) {
-            log.debug("next({})[{}] process command={}", this, session, KeyExchange.Utils.getGroupKexOpcodeName(cmd));
+            log.debug("next({})[{}] process command={}", this, session, KeyExchange.getGroupKexOpcodeName(cmd));
         }
 
         if (cmd != expected) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "Protocol error: expected packet " + KeyExchange.Utils.getGroupKexOpcodeName(expected)
-                  + ", got " + KeyExchange.Utils.getGroupKexOpcodeName(cmd));
+                    "Protocol error: expected packet " + KeyExchange.getGroupKexOpcodeName(expected)
+                  + ", got " + KeyExchange.getGroupKexOpcodeName(cmd));
         }
 
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_GROUP) {
@@ -163,7 +163,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             h = hash.digest();
 
             Signature verif = ValidateUtils.checkNotNull(
-                    NamedFactory.Utils.create(session.getSignatureFactories(), keyAlg),
+                    NamedFactory.create(session.getSignatureFactories(), keyAlg),
                     "No verifier located for algorithm=%s",
                     keyAlg);
             verif.initVerifier(serverKey);
@@ -175,7 +175,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             return true;
         }
 
-        throw new IllegalStateException("Unknown command value: " + KeyExchange.Utils.getGroupKexOpcodeName(cmd));
+        throw new IllegalStateException("Unknown command value: " + KeyExchange.getGroupKexOpcodeName(cmd));
     }
 
     protected AbstractDH getDH(BigInteger p, BigInteger g) throws Exception {

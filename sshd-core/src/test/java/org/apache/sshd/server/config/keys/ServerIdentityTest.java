@@ -55,7 +55,7 @@ public class ServerIdentityTest extends BaseTestSupport {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
 
         Path resFolder = getClassResourcesFolder(TEST_SUBFOLDER, getClass());
-        Collection<Path> paths = new ArrayList<Path>(BuiltinIdentities.VALUES.size());
+        Collection<Path> paths = new ArrayList<>(BuiltinIdentities.VALUES.size());
         LinkOption[] options = IoUtils.getLinkOptions(false);
         Collection<BuiltinIdentities> expected = EnumSet.noneOf(BuiltinIdentities.class);
         for (BuiltinIdentities type : BuiltinIdentities.VALUES) {
@@ -81,7 +81,7 @@ public class ServerIdentityTest extends BaseTestSupport {
         Map<String, KeyPair> ids = ServerIdentity.loadIdentities(props, options);
         assertEquals("Mismatched loaded ids count", GenericUtils.size(paths), GenericUtils.size(ids));
 
-        Collection<KeyPair> pairs = new ArrayList<KeyPair>(ids.size());
+        Collection<KeyPair> pairs = new ArrayList<>(ids.size());
         for (BuiltinIdentities type : BuiltinIdentities.VALUES) {
             if (expected.contains(type)) {
                 KeyPair kp = ids.get(type.getName());

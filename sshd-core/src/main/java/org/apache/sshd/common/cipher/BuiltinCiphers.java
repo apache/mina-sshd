@@ -98,7 +98,7 @@ public enum BuiltinCiphers implements CipherFactory {
          * and then the JVM re-started. Therefore, the answer is not going to
          * change while the JVM is running
          */
-        this.supported = Constants.NONE.equals(factoryName) || Cipher.Utils.checkSupported(this.transformation, this.keysize);
+        this.supported = Constants.NONE.equals(factoryName) || Cipher.checkSupported(this.transformation, this.keysize);
     }
 
     @Override
@@ -237,7 +237,7 @@ public enum BuiltinCiphers implements CipherFactory {
      * (case <U>insensitive</U>) the provided name - {@code null} if no match
      */
     public static BuiltinCiphers fromFactoryName(String name) {
-        return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
+        return NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 
     /**

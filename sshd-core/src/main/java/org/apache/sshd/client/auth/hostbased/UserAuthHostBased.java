@@ -62,7 +62,7 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
     @Override
     public void init(ClientSession session, String service) throws Exception {
         super.init(session, service);
-        keys = HostKeyIdentityProvider.Utils.iteratorOf(clientHostKeys);  // in case multiple calls to the method
+        keys = HostKeyIdentityProvider.iteratorOf(clientHostKeys);  // in case multiple calls to the method
     }
 
     @Override
@@ -117,7 +117,7 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
                         "No signature factories for session=%s",
                         session);
         Signature verifier = ValidateUtils.checkNotNull(
-                NamedFactory.Utils.create(factories, keyType),
+                NamedFactory.create(factories, keyType),
                 "No signer could be located for key type=%s",
                 keyType);
 

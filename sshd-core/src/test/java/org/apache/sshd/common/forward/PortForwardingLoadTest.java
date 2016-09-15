@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
-
 import org.apache.commons.httpclient.HostConfiguration;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpVersion;
@@ -237,7 +236,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                                     }
                                 }
                             }
-                            log.info("Finished iteration {}", Integer.valueOf(i));
+                            log.info("Finished iteration {}", i);
                             iterationsSignal.release();
                         }
                         log.info("Done");
@@ -252,7 +251,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             byte[] buf = new byte[8192];
             byte[] bytes = payload.getBytes(StandardCharsets.UTF_8);
             for (int i = 0; i < numIterations; i++) {
-                log.info("Iteration {}", Integer.valueOf(i));
+                log.info("Iteration {}", i);
                 try (Socket s = new Socket(TEST_LOCALHOST, sinkPort);
                      OutputStream sockOut = s.getOutputStream()) {
 
@@ -463,8 +462,8 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                     }
                 };
             }
-            for (int i = 0; i < threads.length; i++) {
-                threads[i].start();
+            for (Thread thread : threads) {
+                thread.start();
             }
             latch.await();
             for (Throwable t : errors) {

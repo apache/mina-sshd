@@ -281,7 +281,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
      * @see BuiltinCiphers#isSupported()
      */
     public static List<NamedFactory<Cipher>> setUpDefaultCiphers(boolean ignoreUnsupported) {
-        return NamedFactory.Utils.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_CIPHERS_PREFERENCE);
+        return NamedFactory.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_CIPHERS_PREFERENCE);
     }
 
     /**
@@ -296,7 +296,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
      * @see BuiltinMacs#isSupported()
      */
     public static List<NamedFactory<Mac>> setUpDefaultMacs(boolean ignoreUnsupported) {
-        return NamedFactory.Utils.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_MAC_PREFERENCE);
+        return NamedFactory.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_MAC_PREFERENCE);
     }
 
     /**
@@ -311,6 +311,6 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
      * @see BuiltinSignatures#isSupported()
      */
     public static List<NamedFactory<Signature>> setUpDefaultSignatures(boolean ignoreUnsupported) {
-        return NamedFactory.Utils.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_SIGNATURE_PREFERENCE);
+        return NamedFactory.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_SIGNATURE_PREFERENCE);
     }
 }

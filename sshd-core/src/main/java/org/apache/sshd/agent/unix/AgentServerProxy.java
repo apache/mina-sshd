@@ -92,36 +92,32 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
 
             pipeService = (executor == null) ? ThreadUtils.newSingleThreadExecutor("sshd-AgentServerProxy-PIPE-" + authSocket) : executor;
             pipeCloseOnExit = executor != pipeService || shutdownOnExit;
-            piper = pipeService.submit(new Runnable() {
-                @SuppressWarnings("synthetic-access")
-                @Override
-                public void run() {
-                    try {
-                        while (isOpen()) {
-                            try {
-                                long clientSock = Local.accept(handle);
-                                if (!isOpen()) {
-                                    break;
-                                }
+            piper = pipeService.submit(() -> {
+                try {
+                    while (isOpen()) {
+                        try {
+                            long clientSock = Local.accept(handle);
+                            if (!isOpen()) {
+                                break;
+                            }
 
-                                Session session = AgentServerProxy.this.service.getSession();
-                                Socket.timeoutSet(clientSock, PropertyResolverUtils.getIntProperty(session, AUTH_SOCKET_TIMEOUT, DEFAULT_AUTH_SOCKET_TIMEOUT));
-                                AgentForwardedChannel channel = new AgentForwardedChannel(clientSock);
-                                AgentServerProxy.this.service.registerChannel(channel);
-                                channel.open().verify(PropertyResolverUtils.getLongProperty(session, CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
-                            } catch (Exception e) {
-                                if (log.isDebugEnabled()) {
-                                    log.debug("run(open={}) {} while authentication forwarding: {}",
-                                              isOpen(), e.getClass().getSimpleName(), e.getMessage());
-                                }
-                                if (log.isTraceEnabled()) {
-                                    log.trace("run(open=" + isOpen() + ") authentication forwarding failure details", e);
-                                }
+                            Session session = AgentServerProxy.this.service.getSession();
+                            Socket.timeoutSet(clientSock, PropertyResolverUtils.getIntProperty(session, AUTH_SOCKET_TIMEOUT, DEFAULT_AUTH_SOCKET_TIMEOUT));
+                            AgentForwardedChannel channel = new AgentForwardedChannel(clientSock);
+                            AgentServerProxy.this.service.registerChannel(channel);
+                            channel.open().verify(PropertyResolverUtils.getLongProperty(session, CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
+                        } catch (Exception e) {
+                            if (log.isDebugEnabled()) {
+                                log.debug("run(open={}) {} while authentication forwarding: {}",
+                                          isOpen(), e.getClass().getSimpleName(), e.getMessage());
+                            }
+                            if (log.isTraceEnabled()) {
+                                log.trace("run(open=" + isOpen() + ") authentication forwarding failure details", e);
                             }
                         }
-                    } finally {
-                        innerFinished.set(true);
                     }
+                } finally {
+                    innerFinished.set(true);
                 }
             });
         } catch (IOException e) {

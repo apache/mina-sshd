@@ -21,7 +21,6 @@ package org.apache.sshd.client.simple;
 
 import java.io.IOException;
 import java.security.KeyPair;
-import java.security.PublicKey;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -32,9 +31,7 @@ import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
-import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
-import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.Utils;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -64,16 +61,13 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
     public void testLoginSessionWithIdentity() throws Exception {
         final KeyPair identity = Utils.getFirstKeyPair(createTestHostKeyProvider());
         final AtomicBoolean identityQueried = new AtomicBoolean(false);
-        sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
-            @Override
-            public boolean authenticate(String username, PublicKey key, ServerSession session) {
-                if (username.equals(getCurrentTestName())) {
-                    identityQueried.set(true);
-                    return KeyUtils.compareKeys(identity.getPublic(), key);
-                }
-
-                return false;
+        sshd.setPublickeyAuthenticator((username, key, session) -> {
+            if (username.equals(getCurrentTestName())) {
+                identityQueried.set(true);
+                return KeyUtils.compareKeys(identity.getPublic(), key);
             }
+
+            return false;
         });
         // make sure authentication occurs only with public keys
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
@@ -116,16 +110,13 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
         // make sure authentication occurs only for passwords
         sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
         final PasswordAuthenticator delegate = ValidateUtils.checkNotNull(sshd.getPasswordAuthenticator(), "No password authenticator");
-        sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
-            @Override
-            public boolean authenticate(String username, String password, ServerSession session) {
-                try {
-                    Thread.sleep(AUTH_TIMEOUT + 150L);
-                } catch (InterruptedException e) {
-                    // ignored
-                }
-                return delegate.authenticate(username, password, session);
+        sshd.setPasswordAuthenticator((username, password, session) -> {
+            try {
+                Thread.sleep(AUTH_TIMEOUT + 150L);
+            } catch (InterruptedException e) {
+                // ignored
             }
+            return delegate.authenticate(username, password, session);
         });
         client.start();
 

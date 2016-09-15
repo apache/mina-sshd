@@ -39,11 +39,8 @@ public class StandardEnvironmentTest extends BaseTestSupport {
     @Test
     public void testAddSignalListenerOnDuplicateSignals() {
         StandardEnvironment environ = new StandardEnvironment();
-        SignalListener listener = new SignalListener() {
-            @Override
-            public void signal(Signal signal) {
-                // ignored
-            }
+        SignalListener listener = signal -> {
+            // ignored
         };
 
         for (Signal s : Signal.SIGNALS) {

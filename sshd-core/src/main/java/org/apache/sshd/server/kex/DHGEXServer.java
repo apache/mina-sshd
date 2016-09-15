@@ -104,7 +104,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
     public boolean next(int cmd, Buffer buffer) throws Exception {
         ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
-            log.debug("next({})[{}] process command={}", this, session, KeyExchange.Utils.getGroupKexOpcodeName(cmd));
+            log.debug("next({})[{}] process command={}", this, session, KeyExchange.getGroupKexOpcodeName(cmd));
         }
 
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST_OLD && expected == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST) {
@@ -162,8 +162,8 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
 
         if (cmd != expected) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "Protocol error: expected packet " + KeyExchange.Utils.getGroupKexOpcodeName(expected)
-                  + ", got " + KeyExchange.Utils.getGroupKexOpcodeName(cmd));
+                    "Protocol error: expected packet " + KeyExchange.getGroupKexOpcodeName(expected)
+                  + ", got " + KeyExchange.getGroupKexOpcodeName(cmd));
         }
 
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_INIT) {
@@ -176,7 +176,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             KeyPair kp = ValidateUtils.checkNotNull(session.getHostKey(), "No server key pair available");
             String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
             Signature sig = ValidateUtils.checkNotNull(
-                    NamedFactory.Utils.create(session.getSignatureFactories(), algo),
+                    NamedFactory.create(session.getSignatureFactories(), algo),
                     "Unknown negotiated server keys: %s",
                     algo);
             sig.initSigner(kp.getPrivate());

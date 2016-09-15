@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.JSch;
-
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;

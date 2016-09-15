@@ -50,7 +50,7 @@ public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKey
         super(session);
 
         Collection<Iterator<? extends PublicKeyIdentity>> identities = new LinkedList<>();
-        identities.add(new SessionKeyPairIterator(session, signatureFactories, KeyIdentityProvider.Utils.iteratorOf(session)));
+        identities.add(new SessionKeyPairIterator(session, signatureFactories, KeyIdentityProvider.iteratorOf(session)));
 
         FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No session factory manager");
         SshAgentFactory factory = manager.getAgentFactory();

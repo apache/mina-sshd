@@ -296,6 +296,7 @@ public final class KeyUtils {
             for (String n : names) {
                 PublicKeyEntryDecoder<?, ?> prev = BY_KEY_TYPE_DECODERS_MAP.put(n, decoder);
                 if (prev != null) {
+                    //noinspection UnnecessaryContinue
                     continue;   // debug breakpoint
                 }
             }

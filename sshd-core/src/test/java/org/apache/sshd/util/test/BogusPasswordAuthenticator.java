@@ -38,7 +38,7 @@ public class BogusPasswordAuthenticator extends AbstractLoggingBean implements P
     public boolean authenticate(String username, String password, ServerSession session) {
         boolean result = (username != null) && username.equals(password);
         if (log.isDebugEnabled()) {
-            log.debug("authenticate({}) {} / {} - sucess = {}", session, username, password, Boolean.valueOf(result));
+            log.debug("authenticate({}) {} / {} - sucess = {}", session, username, password, result);
         }
 
         return result;

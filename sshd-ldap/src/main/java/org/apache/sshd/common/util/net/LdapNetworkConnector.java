@@ -397,7 +397,7 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
 
     protected DirContext initializeDirContext(C queryContext, Map<String, Object> env, String username, String password) throws NamingException {
         Map<String, ?> ldapConfig = setupDirContextEnvironment(queryContext, env, username, password);
-        return new InitialDirContext(new Hashtable<String, Object>(ldapConfig));
+        return new InitialDirContext(new Hashtable<>(ldapConfig));
     }
 
     /**

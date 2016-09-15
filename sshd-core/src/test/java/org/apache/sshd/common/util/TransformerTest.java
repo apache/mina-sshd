@@ -59,14 +59,14 @@ public class TransformerTest extends BaseTestSupport {
 
     @Test
     public void testSingletonIdentityInstance() {
-        Transformer<Date, Date> dateTransformer = Transformer.Utils.identity();
-        Transformer<String, String> stringTransformer = Transformer.Utils.identity();
+        Transformer<Date, Date> dateTransformer = Transformer.identity();
+        Transformer<String, String> stringTransformer = Transformer.identity();
         assertSame("Mismatched identity instance", dateTransformer, stringTransformer);
     }
 
     @Test
     public void testIdentity() {
-        Transformer<Object, Object> identity = Transformer.Utils.identity();
+        Transformer<Object, Object> identity = Transformer.identity();
         for (Object expected : new Object[]{null, getClass(), getCurrentTestName()}) {
             Object actual = identity.transform(expected);
             assertSame("Mismatched identity result", expected, actual);

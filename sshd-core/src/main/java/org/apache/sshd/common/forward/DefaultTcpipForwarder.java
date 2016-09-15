@@ -33,7 +33,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.channel.ClientChannelEvent;
-import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
@@ -41,7 +40,6 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoHandlerFactory;
@@ -86,23 +84,13 @@ public class DefaultTcpipForwarder
             Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.OPENED, ClientChannelEvent.CLOSED));
 
     private final ConnectionService service;
-    private final IoHandlerFactory socksProxyIoHandlerFactory = new IoHandlerFactory() {
-        @Override
-        public IoHandler create() {
-            return new SocksProxy(getConnectionService());
-        }
-    };
+    private final IoHandlerFactory socksProxyIoHandlerFactory = () -> new SocksProxy(getConnectionService());
     private final Session sessionInstance;
     private final Map<Integer, SshdSocketAddress> localToRemote = new HashMap<>();
     private final Map<Integer, SshdSocketAddress> remoteToLocal = new HashMap<>();
     private final Map<Integer, SocksProxy> dynamicLocal = new HashMap<>();
     private final Set<LocalForwardingEntry> localForwards = new HashSet<>();
-    private final IoHandlerFactory staticIoHandlerFactory = new IoHandlerFactory() {
-        @Override
-        public IoHandler create() {
-            return new StaticIoHandler();
-        }
-    };
+    private final IoHandlerFactory staticIoHandlerFactory = StaticIoHandler::new;
     private final Collection<PortForwardingEventListener> listeners =
             EventListenerUtils.synchronizedListenersSet();
     private final PortForwardingEventListener listenerProxy;
@@ -586,19 +574,16 @@ public class DefaultTcpipForwarder
             session.setAttribute(TcpipClientChannel.class, channel);
 
             service.registerChannel(channel);
-            channel.open().addListener(new SshFutureListener<OpenFuture>() {
-                @Override
-                public void operationComplete(OpenFuture future) {
-                    Throwable t = future.getException();
-                    if (t != null) {
-                        log.warn("Failed ({}) to open channel for session={}: {}",
-                                 t.getClass().getSimpleName(), session, t.getMessage());
-                        if (log.isDebugEnabled()) {
-                            log.debug("sessionCreated(" + session + ") channel=" + channel + " open failure details", t);
-                        }
-                        DefaultTcpipForwarder.this.service.unregisterChannel(channel);
-                        channel.close(false);
+            channel.open().addListener(future -> {
+                Throwable t = future.getException();
+                if (t != null) {
+                    log.warn("Failed ({}) to open channel for session={}: {}",
+                             t.getClass().getSimpleName(), session, t.getMessage());
+                    if (log.isDebugEnabled()) {
+                        log.debug("sessionCreated(" + session + ") channel=" + channel + " open failure details", t);
                     }
+                    DefaultTcpipForwarder.this.service.unregisterChannel(channel);
+                    channel.close(false);
                 }
             });
         }

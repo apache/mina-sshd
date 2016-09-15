@@ -18,9 +18,11 @@
  */
 package org.apache.sshd.common;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * A named optional factory.
@@ -31,6 +33,7 @@ import java.util.List;
 public interface BuiltinFactory<T> extends NamedFactory<T>, OptionalFeature {
 
     // CHECKSTYLE:OFF
+    @Deprecated
     final class Utils {
     // CHECKSTYLE:ON
 
@@ -40,13 +43,15 @@ public interface BuiltinFactory<T> extends NamedFactory<T>, OptionalFeature {
 
         public static <T, E extends BuiltinFactory<T>> List<NamedFactory<T>> setUpFactories(
                 boolean ignoreUnsupported, Collection<? extends E> preferred) {
-            List<NamedFactory<T>> avail = new ArrayList<>(preferred.size());
-            for (E f : preferred) {
-                if (ignoreUnsupported || f.isSupported()) {
-                    avail.add(f);
-                }
-            }
-            return avail;
+            return BuiltinFactory.setUpFactories(ignoreUnsupported, preferred);
         }
     }
+
+    static <T, E extends BuiltinFactory<T>> List<NamedFactory<T>> setUpFactories(
+            boolean ignoreUnsupported, Collection<? extends E> preferred) {
+        return GenericUtils.stream(preferred)
+                .filter(f -> ignoreUnsupported || f.isSupported())
+                .collect(Collectors.toList());
+    }
+
 }

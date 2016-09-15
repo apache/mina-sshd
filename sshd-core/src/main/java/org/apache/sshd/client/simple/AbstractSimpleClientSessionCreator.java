@@ -151,7 +151,7 @@ public abstract class AbstractSimpleClientSessionCreator extends AbstractSimpleC
 
             @Override
             public ConnectFuture connect(HostConfigEntry hostConfig) throws IOException {
-                return connect(hostConfig);
+                return creator.connect(hostConfig);
             }
 
             @Override

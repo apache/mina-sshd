@@ -100,9 +100,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
             }
 
             if (GenericUtils.size(toDelete) > 0) {
-                for (String f : toDelete) {
-                    cacheMap.remove(f);
-                }
+                toDelete.forEach(cacheMap::remove);
             }
         }
 
@@ -115,12 +113,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
         if (GenericUtils.isEmpty(resources)) {
             return Collections.emptyList();
         } else {
-            return new Iterable<KeyPair>() {
-                @Override
-                public Iterator<KeyPair> iterator() {
-                    return new KeyPairIterator(resources);
-                }
-            };
+            return () -> new KeyPairIterator(resources);
         }
     }
 

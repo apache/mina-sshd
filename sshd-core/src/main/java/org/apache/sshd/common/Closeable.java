@@ -18,7 +18,10 @@
  */
 package org.apache.sshd.common;
 
+import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.nio.channels.Channel;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -32,6 +35,18 @@ import org.apache.sshd.common.future.SshFutureListener;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface Closeable extends Channel {
+
+    /**
+     * Timeout (milliseconds) for waiting on a {@link CloseFuture} to successfully
+     * complete its action.
+     * @see #DEFAULT_CLOSE_WAIT_TIMEOUT
+     */
+    String CLOSE_WAIT_TIMEOUT = "sshd-close-wait-time";
+
+    /**
+     * Default value for {@link #CLOSE_WAIT_TIMEOUT} if none specified
+     */
+    long DEFAULT_CLOSE_WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
 
     /**
      * Close this resource asynchronously and return a future.
@@ -78,4 +93,32 @@ public interface Closeable extends Channel {
      */
     boolean isClosing();
 
+    default boolean isOpen() {
+        return !(isClosed() || isClosing());
+    }
+
+    @Override
+    default void close() throws IOException {
+        Closeable.close(this);
+    }
+
+    static long getMaxCloseWaitTime(PropertyResolver resolver) {
+        return (resolver == null) ? DEFAULT_CLOSE_WAIT_TIMEOUT
+                : PropertyResolverUtils.getLongProperty(resolver, CLOSE_WAIT_TIMEOUT, DEFAULT_CLOSE_WAIT_TIMEOUT);
+    }
+
+    static void close(Closeable closeable) throws IOException {
+        if (closeable == null) {
+            return;
+        }
+        if ((!closeable.isClosed()) && (!closeable.isClosing())) {
+            CloseFuture future = closeable.close(true);
+            long maxWait = (closeable instanceof PropertyResolver)
+                    ? getMaxCloseWaitTime((PropertyResolver) closeable) : DEFAULT_CLOSE_WAIT_TIMEOUT;
+            boolean successful = future.await(maxWait);
+            if (!successful) {
+                throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");
+            }
+        }
+    }
 }

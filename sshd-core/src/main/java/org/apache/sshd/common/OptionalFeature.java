@@ -58,6 +58,7 @@ public interface OptionalFeature {
      * Utility class to help using {@link OptionalFeature}s
      */
     // CHECKSTYLE:OFF
+    @Deprecated
     final class Utils {
     // CHECKSTYLE:ON
 
@@ -66,45 +67,51 @@ public interface OptionalFeature {
         }
 
         public static OptionalFeature of(boolean supported) {
-            return supported ? TRUE : FALSE;
+            return OptionalFeature.of(supported);
         }
 
         public static OptionalFeature all(final Collection<? extends OptionalFeature> features) {
-            return new OptionalFeature() {
-                @Override
-                public boolean isSupported() {
-                    if (GenericUtils.isEmpty(features)) {
-                        return false;
-                    }
-
-                    for (OptionalFeature f : features) {
-                        if (!f.isSupported()) {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                }
-            };
+            return OptionalFeature.all(features);
         }
 
         public static OptionalFeature any(final Collection<? extends OptionalFeature> features) {
-            return new OptionalFeature() {
-                @Override
-                public boolean isSupported() {
-                    if (GenericUtils.isEmpty(features)) {
-                        return false;
-                    }
+            return OptionalFeature.any(features);
+        }
+    }
 
-                    for (OptionalFeature f : features) {
-                        if (f.isSupported()) {
-                            return true;
-                        }
-                    }
+    static OptionalFeature of(boolean supported) {
+        return supported ? TRUE : FALSE;
+    }
 
+    static OptionalFeature all(final Collection<? extends OptionalFeature> features) {
+        return () -> {
+            if (GenericUtils.isEmpty(features)) {
+                return false;
+            }
+
+            for (OptionalFeature f : features) {
+                if (!f.isSupported()) {
                     return false;
                 }
-            };
-        }
+            }
+
+            return true;
+        };
+    }
+
+    static OptionalFeature any(final Collection<? extends OptionalFeature> features) {
+        return () -> {
+            if (GenericUtils.isEmpty(features)) {
+                return false;
+            }
+
+            for (OptionalFeature f : features) {
+                if (f.isSupported()) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
     }
 }

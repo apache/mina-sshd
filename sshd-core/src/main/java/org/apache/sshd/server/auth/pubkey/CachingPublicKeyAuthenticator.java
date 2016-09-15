@@ -38,7 +38,7 @@ import org.apache.sshd.server.session.ServerSession;
 public class CachingPublicKeyAuthenticator extends AbstractLoggingBean implements PublickeyAuthenticator, SessionListener {
 
     protected final PublickeyAuthenticator authenticator;
-    protected final Map<ServerSession, Map<PublicKey, Boolean>> cache = new ConcurrentHashMap<>();
+    protected final Map<Session, Map<PublicKey, Boolean>> cache = new ConcurrentHashMap<>();
 
     public CachingPublicKeyAuthenticator(PublickeyAuthenticator authenticator) {
         this.authenticator = ValidateUtils.checkNotNull(authenticator, "No delegate authenticator");

@@ -27,7 +27,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -38,8 +40,15 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.BinaryOperator;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
@@ -64,28 +73,18 @@ public final class GenericUtils {
     /**
      * The complement of {@link String#CASE_INSENSITIVE_ORDER}
      */
-    public static final Comparator<String> CASE_SENSITIVE_ORDER = new Comparator<String>() {
-        @Override
-        public int compare(String s1, String s2) {
-            if (s1 == s2) {
-                return 0;
-            } else {
-                return s1.compareTo(s2);
-            }
+    public static final Comparator<String> CASE_SENSITIVE_ORDER = (s1, s2) -> {
+        if (s1 == s2) {
+            return 0;
+        } else {
+            return s1.compareTo(s2);
         }
     };
 
     public static final String QUOTES = "\"'";
 
     @SuppressWarnings("rawtypes")
-    private static final Factory CASE_INSENSITIVE_MAP_FACTORY = new Factory() {
-        @Override
-        @SuppressWarnings("unchecked")
-        public Object create() {
-            return new TreeMap(String.CASE_INSENSITIVE_ORDER);
-        }
-
-    };
+    private static final Factory CASE_INSENSITIVE_MAP_FACTORY = () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private GenericUtils() {
         throw new UnsupportedOperationException("No instance");
@@ -119,6 +118,10 @@ public final class GenericUtils {
 
     public static boolean isEmpty(CharSequence cs) {
         return length(cs) <= 0;
+    }
+
+    public static boolean isNotEmpty(CharSequence cs) {
+        return !isEmpty(cs);
     }
 
     // a List would be better, but we want to be compatible with String.split(...)
@@ -217,12 +220,20 @@ public final class GenericUtils {
         return (c == null) || c.isEmpty();
     }
 
+    public static boolean isNotEmpty(Collection<?> c) {
+        return !isEmpty(c);
+    }
+
     public static int size(Map<?, ?> m) {
         return m == null ? 0 : m.size();
     }
 
     public static boolean isEmpty(Map<?, ?> m) {
         return (m == null) || m.isEmpty();
+    }
+
+    public static boolean isNotEmpty(Map<?, ?> m) {
+        return !isEmpty(m);
     }
 
     @SafeVarargs
@@ -240,8 +251,16 @@ public final class GenericUtils {
         }
     }
 
+    public static<T> boolean isNotEmpty(Iterable<? extends T> iter) {
+        return !isEmpty(iter);
+    }
+
     public static <T> boolean isEmpty(Iterator<? extends T> iter) {
         return iter == null || !iter.hasNext();
+    }
+
+    public static <T> boolean isNotEmpty(Iterator<? extends T> iter) {
+        return !isEmpty(iter);
     }
 
     @SafeVarargs
@@ -275,6 +294,58 @@ public final class GenericUtils {
         return result;
     }
 
+    public static <T> void forEach(Iterable<T> values, Consumer<T> consumer) {
+        if (isNotEmpty(values)) {
+            values.forEach(consumer);
+        }
+    }
+
+    public static <T, U> List<U> map(Collection<T> values, Function<? super T, ? extends U> mapper) {
+        return stream(values).map(mapper).collect(Collectors.toList());
+    }
+
+    public static <T, U> SortedSet<U> mapSort(Collection<T> values,
+                                              Function<? super T, ? extends U> mapper,
+                                              Comparator<U> comparator) {
+        return stream(values).map(mapper).collect(toSortedSet(comparator));
+    }
+
+    public static <T, K, U> SortedMap<K, U> toSortedMap(
+                                Iterable<T> values,
+                                Function<? super T, ? extends K> keyMapper,
+                                Function<? super T, ? extends U> valueMapper,
+                                Comparator<K> comparator) {
+        return stream(values).collect(toSortedMap(keyMapper, valueMapper, comparator));
+    }
+
+    public static <T, K, U> Collector<T, ?, SortedMap<K, U>> toSortedMap(
+                                Function<? super T, ? extends K> keyMapper,
+                                Function<? super T, ? extends U> valueMapper,
+                                Comparator<K> comparator) {
+        return Collectors.toMap(keyMapper, valueMapper, throwingMerger(), () -> new TreeMap<>(comparator));
+    }
+
+    private static <T> BinaryOperator<T> throwingMerger() {
+        return (u, v) -> {
+            throw new IllegalStateException(String.format("Duplicate key %s", u));
+        };
+    }
+
+    public static <T>
+    Collector<T, ?, SortedSet<T>> toSortedSet(Comparator<T> comparator) {
+        return Collectors.toCollection(() -> new TreeSet<>(comparator));
+    }
+
+    public static <T> Stream<T> stream(Iterable<T> values) {
+        if (isEmpty(values)) {
+            return Stream.empty();
+        } else if (values instanceof Collection) {
+            return ((Collection<T>) values).stream();
+        } else {
+            return StreamSupport.stream(values.spliterator(), false);
+        }
+    }
+
     @SafeVarargs
     public static <T> List<T> unmodifiableList(T ... values) {
         return unmodifiableList(asList(values));
@@ -284,22 +355,31 @@ public final class GenericUtils {
         if (isEmpty(values)) {
             return Collections.emptyList();
         } else {
-            return Collections.unmodifiableList(new ArrayList<T>(values));
+            return Collections.unmodifiableList(new ArrayList<>(values));
         }
+    }
+
+    public static <T> List<T> unmodifiableList(Stream<T> values) {
+        return unmodifiableList(values.collect(Collectors.toList()));
     }
 
     @SafeVarargs
     public static <T> List<T> asList(T ... values) {
-        int len = length(values);
-        if (len <= 0) {
-            return Collections.emptyList();
-        } else {
-            return Arrays.asList(values);
-        }
+        return isEmpty(values) ? Collections.emptyList() : Arrays.asList(values);
+    }
+
+    @SafeVarargs
+    public static <T> Set<T> asSet(T ... values) {
+        return new HashSet<>(asList(values));
+    }
+
+    @SafeVarargs
+    public static <V extends Comparable<V>> SortedSet<V> asSortedSet(V ... values) {
+        return asSortedSet(Comparator.naturalOrder(), values);
     }
 
     public static <V extends Comparable<V>> SortedSet<V> asSortedSet(Collection<? extends V> values) {
-        return asSortedSet(Comparator.<V>naturalOrder(), values);
+        return asSortedSet(Comparator.naturalOrder(), values);
     }
 
     /**
@@ -372,7 +452,7 @@ public final class GenericUtils {
      * that 2 (or more) values are not mapped to the same key
      */
     public static <K, V> Map<K, V> mapValues(
-            Transformer<? super V, ? extends K> keyMapper, Factory<? extends Map<K, V>> mapCreator, Collection<? extends V> values) {
+            Transformer<? super V, ? extends K> keyMapper, Factory<? extends Map<K, V>> mapCreator, Collection<V> values) {
         if (isEmpty(values)) {
             return Collections.emptyMap();
         }
@@ -411,18 +491,9 @@ public final class GenericUtils {
      * @return A {@link List} of all the values that were accepted by the predicate
      */
     public static <T> List<T> selectMatchingMembers(Predicate<? super T> acceptor, Collection<? extends T> values) {
-        if (isEmpty(values)) {
-            return Collections.emptyList();
-        }
-
-        List<T> matches = new ArrayList<>(values.size());
-        for (T v : values) {
-            if (acceptor.test(v)) {
-                matches.add(v);
-            }
-        }
-
-        return matches;
+        return GenericUtils.stream(values)
+                .filter(acceptor::test)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -597,6 +668,24 @@ public final class GenericUtils {
         return (iter == null) ? Collections.emptyIterator() : iter;
     }
 
+    public static <U, V> Iterable<V> wrapIterable(Iterable<? extends U> iter, Function<U, V> mapper) {
+        return () -> wrapIterator(iteratorOf(iter), mapper);
+    }
+
+    public static <U, V> Iterator<V> wrapIterator(Iterator<? extends U> iter, Function<U, V> mapper) {
+        final Iterator<? extends U> iterator = iteratorOf(iter);
+        return new Iterator<V>() {
+            @Override
+            public boolean hasNext() {
+                return iterator.hasNext();
+            }
+            @Override
+            public V next() {
+                return mapper.apply(iterator.next());
+            }
+        };
+    }
+
     /**
      * Wraps a group of {@link Supplier}s of {@link Iterable} instances into a &quot;unified&quot;
      * {@link Iterable} of their values, in the same order as the suppliers - i.e., once the values
@@ -608,50 +697,71 @@ public final class GenericUtils {
      * @return The wrapping instance
      */
     public static <T> Iterable<T> multiIterableSuppliers(final Iterable<? extends Supplier<? extends Iterable<? extends T>>> providers) {
-        return (providers == null) ? Collections.emptyList() : new Iterable<T>() {
+        return (providers == null) ? Collections.emptyList() : () -> new Iterator<T>() {
+            private final Iterator<? extends Supplier<? extends Iterable<? extends T>>> iter = iteratorOf(providers);
+            private Iterator<? extends T> current = nextIterator();
+
             @Override
-            public Iterator<T> iterator() {
-                return new Iterator<T>() {
-                    private final Iterator<? extends Supplier<? extends Iterable<? extends T>>> iter = iteratorOf(providers);
-                    private Iterator<? extends T> current = nextIterator();
+            public boolean hasNext() {
+                return current != null;
+            }
 
-                    @Override
-                    public boolean hasNext() {
-                        return current != null;
+            @Override
+            public T next() {
+                if (current == null) {
+                    throw new NoSuchElementException("No more elements");
+                }
+
+                T value = current.next();
+                if (!current.hasNext()) {
+                    current = nextIterator();
+                }
+
+                return value;
+            }
+
+            private Iterator<? extends T> nextIterator() {
+                while (iter.hasNext()) {
+                    Supplier<? extends Iterable<? extends T>> supplier = iter.next();
+                    Iterator<? extends T> values = iteratorOf((supplier == null) ? null : supplier.get());
+                    if (values.hasNext()) {
+                        return values;
                     }
+                }
 
-                    @Override
-                    public T next() {
-                        if (current == null) {
-                            throw new NoSuchElementException("No more elements");
-                        }
-
-                        T value = current.next();
-                        if (!current.hasNext()) {
-                            current = nextIterator();
-                        }
-
-                        return value;
-                    }
-
-                    @Override
-                    public void remove() {
-                        throw new UnsupportedOperationException("remove");
-                    }
-
-                    private Iterator<? extends T> nextIterator() {
-                        while (iter.hasNext()) {
-                            Supplier<? extends Iterable<? extends T>> supplier = iter.next();
-                            Iterator<? extends T> values = iteratorOf((supplier == null) ? null : supplier.get());
-                            if (values.hasNext()) {
-                                return values;
-                            }
-                        }
-
-                        return null;
-                    }
-                };
+                return null;
             }
         };
+    }
+
+    public static <K, V> MapBuilder<K, V> mapBuilder() {
+        return new MapBuilder<>();
+    }
+
+    public static <K, V> MapBuilder<K, V> mapBuilder(Comparator<K> comparator) {
+        return new MapBuilder<>(comparator);
+    }
+
+    public static class MapBuilder<K, V> {
+        private Map<K, V> map;
+
+        public MapBuilder() {
+            this.map = new LinkedHashMap<>();
+        }
+
+        public MapBuilder(Comparator<K> comparator) {
+            this.map = new TreeMap<>(comparator);
+        }
+
+        public MapBuilder<K, V> put(K k, V v) {
+            map.put(k, v);
+            return this;
+        }
+        public Map<K, V> build() {
+            return map;
+        }
+        public Map<K, V> immutable() {
+            return Collections.unmodifiableMap(map);
+        }
     }
 }

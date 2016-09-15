@@ -64,12 +64,7 @@ public class ClientConnectionService extends AbstractConnectionService<AbstractC
         if (interval > 0L) {
             FactoryManager manager = session.getFactoryManager();
             ScheduledExecutorService service = manager.getScheduledExecutorService();
-            service.scheduleAtFixedRate(new Runnable() {
-                @Override
-                public void run() {
-                    sendHeartBeat();
-                }
-            }, interval, interval, TimeUnit.MILLISECONDS);
+            service.scheduleAtFixedRate(this::sendHeartBeat, interval, interval, TimeUnit.MILLISECONDS);
             if (log.isDebugEnabled()) {
                 log.debug("startHeartbeat - started at interval={}", interval);
             }

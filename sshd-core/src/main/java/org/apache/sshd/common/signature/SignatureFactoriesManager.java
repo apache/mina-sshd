@@ -40,10 +40,10 @@ public interface SignatureFactoriesManager {
      */
     List<NamedFactory<Signature>> getSignatureFactories();
     default String getSignatureFactoriesNameList() {
-        return NamedResource.Utils.getNames(getSignatureFactories());
+        return NamedResource.getNames(getSignatureFactories());
     }
     default List<String> getSignatureFactoriesNames() {
-        return NamedResource.Utils.getNameList(getSignatureFactories());
+        return NamedResource.getNameList(getSignatureFactories());
     }
 
     void setSignatureFactories(List<NamedFactory<Signature>> factories);

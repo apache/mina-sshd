@@ -71,10 +71,13 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
@@ -158,7 +161,9 @@ public class SftpSubsystem
 
     public static final int LOWER_SFTP_IMPL = SftpConstants.SFTP_V3; // Working implementation from v3
     public static final int HIGHER_SFTP_IMPL = SftpConstants.SFTP_V6; //  .. up to and including
-    public static final String ALL_SFTP_IMPL;
+    public static final String ALL_SFTP_IMPL = IntStream.rangeClosed(LOWER_SFTP_IMPL, HIGHER_SFTP_IMPL)
+                            .mapToObj(Integer::toString)
+                            .collect(Collectors.joining(","));
 
     /**
      * Force the use of a max. packet length - especially for {@link #doReadDir(Buffer, int)}
@@ -186,22 +191,16 @@ public class SftpSubsystem
     public static final Map<String, OptionalFeature> DEFAULT_SUPPORTED_CLIENT_EXTENSIONS =
             // TODO text-seek - see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-13.txt
             // TODO home-directory - see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt
-            Collections.unmodifiableMap(
-                    new LinkedHashMap<String, OptionalFeature>() {
-                        private static final long serialVersionUID = 1L;    // we're not serializing it
-
-                        private final OptionalFeature anyDigests = OptionalFeature.Utils.any(BuiltinDigests.VALUES);
-                        {
-                            put(SftpConstants.EXT_VERSION_SELECT, OptionalFeature.TRUE);
-                            put(SftpConstants.EXT_COPY_FILE, OptionalFeature.TRUE);
-                            put(SftpConstants.EXT_MD5_HASH, BuiltinDigests.md5);
-                            put(SftpConstants.EXT_MD5_HASH_HANDLE, BuiltinDigests.md5);
-                            put(SftpConstants.EXT_CHECK_FILE_HANDLE, anyDigests);
-                            put(SftpConstants.EXT_CHECK_FILE_NAME, anyDigests);
-                            put(SftpConstants.EXT_COPY_DATA, OptionalFeature.TRUE);
-                            put(SftpConstants.EXT_SPACE_AVAILABLE, OptionalFeature.TRUE);
-                        }
-                    });
+            GenericUtils.<String, OptionalFeature>mapBuilder()
+                .put(SftpConstants.EXT_VERSION_SELECT, OptionalFeature.TRUE)
+                .put(SftpConstants.EXT_COPY_FILE, OptionalFeature.TRUE)
+                .put(SftpConstants.EXT_MD5_HASH, BuiltinDigests.md5)
+                .put(SftpConstants.EXT_MD5_HASH_HANDLE, BuiltinDigests.md5)
+                .put(SftpConstants.EXT_CHECK_FILE_HANDLE, OptionalFeature.any(BuiltinDigests.VALUES))
+                .put(SftpConstants.EXT_CHECK_FILE_NAME, OptionalFeature.any(BuiltinDigests.VALUES))
+                .put(SftpConstants.EXT_COPY_DATA, OptionalFeature.TRUE)
+                .put(SftpConstants.EXT_SPACE_AVAILABLE, OptionalFeature.TRUE)
+                .immutable();
 
     /**
      * Comma-separated list of which {@code OpenSSH} extensions are reported and
@@ -218,16 +217,7 @@ public class SftpSubsystem
                     ));
 
     public static final List<String> DEFAULT_OPEN_SSH_EXTENSIONS_NAMES =
-            Collections.unmodifiableList(new ArrayList<String>(DEFAULT_OPEN_SSH_EXTENSIONS.size()) {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
-
-                {
-                    for (OpenSSHExtension ext : DEFAULT_OPEN_SSH_EXTENSIONS) {
-                        add(ext.getName());
-                    }
-                }
-
-            });
+            Collections.unmodifiableList(NamedResource.getNameList(DEFAULT_OPEN_SSH_EXTENSIONS));
 
     public static final List<String> DEFAULT_UNIX_VIEW = Collections.singletonList("unix:*");
 
@@ -256,29 +246,14 @@ public class SftpSubsystem
      * effort if not accessible via the file system attributes views
      */
     public static final Map<String, FileInfoExtractor<?>> FILEATTRS_RESOLVERS =
-            Collections.unmodifiableMap(new TreeMap<String, FileInfoExtractor<?>>(String.CASE_INSENSITIVE_ORDER) {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
-
-                {
-                    put("isRegularFile", FileInfoExtractor.ISREG);
-                    put("isDirectory", FileInfoExtractor.ISDIR);
-                    put("isSymbolicLink", FileInfoExtractor.ISSYMLINK);
-                    put("permissions", FileInfoExtractor.PERMISSIONS);
-                    put("size", FileInfoExtractor.SIZE);
-                    put("lastModifiedTime", FileInfoExtractor.LASTMODIFIED);
-                }
-            });
-
-    static {
-        StringBuilder sb = new StringBuilder(2 * (1 + (HIGHER_SFTP_IMPL - LOWER_SFTP_IMPL)));
-        for (int v = LOWER_SFTP_IMPL; v <= HIGHER_SFTP_IMPL; v++) {
-            if (sb.length() > 0) {
-                sb.append(',');
-            }
-            sb.append(v);
-        }
-        ALL_SFTP_IMPL = sb.toString();
-    }
+            GenericUtils.<String, FileInfoExtractor<?>>mapBuilder(String.CASE_INSENSITIVE_ORDER)
+                .put("isRegularFile", FileInfoExtractor.ISREG)
+                .put("isDirectory", FileInfoExtractor.ISDIR)
+                .put("isSymbolicLink", FileInfoExtractor.ISSYMLINK)
+                .put("permissions", FileInfoExtractor.PERMISSIONS)
+                .put("size", FileInfoExtractor.SIZE)
+                .put("lastModifiedTime", FileInfoExtractor.LASTMODIFIED)
+                .immutable();
 
     protected ExitCallback callback;
     protected InputStream in;
@@ -2851,21 +2826,18 @@ public class SftpSubsystem
         } else if (supportedViews.contains("unix")) {
             views = DEFAULT_UNIX_VIEW;
         } else {
-            views = new ArrayList<>(supportedViews.size());
-            for (String v : supportedViews) {
-                views.add(v + ":*");
-            }
+            views = GenericUtils.map(supportedViews, v -> v + ":*");
         }
 
         for (String v : views) {
             Map<String, Object> ta = readFileAttributes(file, v, options);
-            if (GenericUtils.size(ta) > 0) {
+            if (GenericUtils.isNotEmpty(ta)) {
                 attrs.putAll(ta);
             }
         }
 
         Map<String, Object> completions = resolveMissingFileAttributes(file, flags, attrs, options);
-        if (GenericUtils.size(completions) > 0) {
+        if (GenericUtils.isNotEmpty(completions)) {
             attrs.putAll(completions);
         }
 

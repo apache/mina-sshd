@@ -95,19 +95,15 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
         }
 
         ExecutorService executor = getExecutorService();
-        agentThread = executor.submit(new Runnable() {
-            @SuppressWarnings("synthetic-access")
-            @Override
-            public void run() {
-                try {
-                    while (true) {
-                        long clientSock = Local.accept(handle);
-                        Socket.timeoutSet(clientSock, 10000000);    // TODO make this configurable
-                        new SshAgentSession(clientSock, agent).run();
-                    }
-                } catch (Exception e) {
-                    log.error("Failed to run session", e);
+        agentThread = executor.submit(() -> {
+            try {
+                while (true) {
+                    long clientSock = Local.accept(handle);
+                    Socket.timeoutSet(clientSock, 10000000);    // TODO make this configurable
+                    new SshAgentSession(clientSock, agent).run();
                 }
+            } catch (Exception e) {
+                log.error("Failed to run session", e);
             }
         });
         return authSocket;

@@ -19,31 +19,30 @@
 package org.apache.sshd.common.util.closeable;
 
 import java.io.IOException;
-import java.net.SocketTimeoutException;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.PropertyResolver;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.future.CloseFuture;
 
 /**
  * Utility class to help with {@link Closeable}s.
  *
+ * @deprecated Use Closeable static methods instead
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@Deprecated
 public final class CloseableUtils {
     /**
      * Timeout (milliseconds) for waiting on a {@link CloseFuture} to successfully
      * complete its action.
      * @see #DEFAULT_CLOSE_WAIT_TIMEOUT
      */
-    public static final String CLOSE_WAIT_TIMEOUT = "sshd-close-wait-time";
+    public static final String CLOSE_WAIT_TIMEOUT = Closeable.CLOSE_WAIT_TIMEOUT;
 
     /**
      * Default value for {@link #CLOSE_WAIT_TIMEOUT} if none specified
      */
-    public static final long DEFAULT_CLOSE_WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
+    public static final long DEFAULT_CLOSE_WAIT_TIMEOUT = Closeable.DEFAULT_CLOSE_WAIT_TIMEOUT;
 
     /**
      * Private Constructor
@@ -53,22 +52,10 @@ public final class CloseableUtils {
     }
 
     public static long getMaxCloseWaitTime(PropertyResolver resolver) {
-        return (resolver == null) ? DEFAULT_CLOSE_WAIT_TIMEOUT : PropertyResolverUtils.getLongProperty(resolver, CLOSE_WAIT_TIMEOUT, DEFAULT_CLOSE_WAIT_TIMEOUT);
+        return Closeable.getMaxCloseWaitTime(resolver);
     }
 
-    // TODO once JDK 8+ becomes the minimum for this project, make it a static method in the Closeable interface
     public static void close(Closeable closeable) throws IOException {
-        if (closeable == null) {
-            return;
-        }
-
-        if ((!closeable.isClosed()) && (!closeable.isClosing())) {
-            CloseFuture future = closeable.close(true);
-            long maxWait = (closeable instanceof PropertyResolver) ? getMaxCloseWaitTime((PropertyResolver) closeable) : DEFAULT_CLOSE_WAIT_TIMEOUT;
-            boolean successful = future.await(maxWait);
-            if (!successful) {
-                throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");
-            }
-        }
+        Closeable.close(closeable);
     }
 }

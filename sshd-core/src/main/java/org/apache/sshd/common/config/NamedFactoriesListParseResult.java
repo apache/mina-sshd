@@ -41,7 +41,7 @@ public abstract class NamedFactoriesListParseResult<T, F extends NamedFactory<T>
 
     @Override
     public String toString() {
-        return "parsed=" + NamedResource.Utils.getNames(getParsedFactories())
+        return "parsed=" + NamedResource.getNames(getParsedFactories())
                 + ";unknown=" + GenericUtils.join(getUnsupportedFactories(), ',');
     }
 }

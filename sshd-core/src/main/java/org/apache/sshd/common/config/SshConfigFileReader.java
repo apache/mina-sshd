@@ -501,7 +501,7 @@ public final class SshConfigFileReader {
         ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported), "Unsupported cipher(s) (%s) in %s", unsupported, value);
 
         List<NamedFactory<Cipher>> factories =
-                BuiltinFactory.Utils.setUpFactories(ignoreUnsupported, result.getParsedFactories());
+                BuiltinFactory.setUpFactories(ignoreUnsupported, result.getParsedFactories());
         manager.setCipherFactories(ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/unsupported ciphers(s): %s", value));
         return manager;
     }
@@ -519,7 +519,7 @@ public final class SshConfigFileReader {
         ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported), "Unsupported signatures (%s) in %s", unsupported, value);
 
         List<NamedFactory<Signature>> factories =
-                BuiltinFactory.Utils.setUpFactories(ignoreUnsupported, result.getParsedFactories());
+                BuiltinFactory.setUpFactories(ignoreUnsupported, result.getParsedFactories());
         manager.setSignatureFactories(ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/supported signatures: %s", value));
         return manager;
     }
@@ -537,7 +537,7 @@ public final class SshConfigFileReader {
         ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported), "Unsupported MAC(s) (%s) in %s", unsupported, value);
 
         List<NamedFactory<Mac>> factories =
-                BuiltinFactory.Utils.setUpFactories(ignoreUnsupported, result.getParsedFactories());
+                BuiltinFactory.setUpFactories(ignoreUnsupported, result.getParsedFactories());
         manager.setMacFactories(ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/supported MAC(s): %s", value));
         return manager;
     }
@@ -573,7 +573,7 @@ public final class SshConfigFileReader {
         ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported), "Unsupported KEX(s) (%s) in %s", unsupported, value);
 
         List<NamedFactory<KeyExchange>> factories =
-                NamedFactory.Utils.setUpTransformedFactories(ignoreUnsupported, result.getParsedFactories(), xformer);
+                NamedFactory.setUpTransformedFactories(ignoreUnsupported, result.getParsedFactories(), xformer);
         manager.setKeyExchangeFactories(ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/supported KEXS(s): %s", value));
         return manager;
     }
@@ -621,7 +621,7 @@ public final class SshConfigFileReader {
             ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported), "Unsupported compressions(s) (%s) in %s", unsupported, value);
 
             List<NamedFactory<Compression>> factories =
-                    BuiltinFactory.Utils.setUpFactories(ignoreUnsupported, result.getParsedFactories());
+                    BuiltinFactory.setUpFactories(ignoreUnsupported, result.getParsedFactories());
             // SSH can work without compression
             if (GenericUtils.size(factories) > 0) {
                 manager.setCompressionFactories(factories);

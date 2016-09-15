@@ -20,7 +20,6 @@ package org.apache.sshd.common.util.closeable;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -44,12 +43,6 @@ public abstract class AbstractInnerCloseable extends AbstractCloseable {
 
     @Override
     protected void doCloseImmediately() {
-        getInnerCloseable().close(true).addListener(new SshFutureListener<CloseFuture>() {
-            @Override
-            @SuppressWarnings("synthetic-access")
-            public void operationComplete(CloseFuture future) {
-                AbstractInnerCloseable.super.doCloseImmediately();
-            }
-        });
+        getInnerCloseable().close(true).addListener(future -> AbstractInnerCloseable.super.doCloseImmediately());
     }
 }

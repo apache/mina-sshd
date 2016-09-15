@@ -89,6 +89,7 @@ public class CloseableEmptyInputStream extends EmptyInputStream implements Chann
     @Override
     public void close() throws IOException {
         if (open.getAndSet(false)) {
+            //noinspection UnnecessaryReturnStatement
             return; // debug breakpoint
         }
     }

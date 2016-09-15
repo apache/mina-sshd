@@ -114,7 +114,7 @@ public class SshBuilderTest extends BaseTestSupport {
             }
 
             // make sure order is according to the default preference list
-            List<String> cipherNames = NamedResource.Utils.getNameList(ciphers);
+            List<String> cipherNames = NamedResource.getNameList(ciphers);
             int nameIndex = 0;
             for (BuiltinCiphers c : BaseBuilder.DEFAULT_CIPHERS_PREFERENCE) {
                 if ((!c.isSupported()) && (!ignoreUnsupported)) {

@@ -36,6 +36,12 @@ import org.apache.sshd.common.util.logging.LoggingUtils;
  */
 public interface KeyExchange extends NamedResource {
 
+    Map<Integer, String> GROUP_KEX_OPCODES_MAP =
+            LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_MSG_KEX_DH_GEX_");
+
+    Map<Integer, String> SIMPLE_KEX_OPCODES_MAP =
+            LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_MSG_KEXDH_");
+
     /**
      * Initialize the key exchange algorithm.
      *
@@ -91,33 +97,44 @@ public interface KeyExchange extends NamedResource {
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     // CHECKSTYLE:OFF
+    @Deprecated
     final class Utils {
     // CHECKSTYLE:ON
+
         public static final Map<Integer, String> GROUP_KEX_OPCODES_MAP =
-                LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_MSG_KEX_DH_GEX_");
+                KeyExchange.GROUP_KEX_OPCODES_MAP;
+
         public static final Map<Integer, String> SIMPLE_KEX_OPCODES_MAP =
-                LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_MSG_KEXDH_");
+                KeyExchange.SIMPLE_KEX_OPCODES_MAP;
 
         private Utils() {
             throw new UnsupportedOperationException("No instance allowed");
         }
 
         public static String getGroupKexOpcodeName(int cmd) {
-            String name = GROUP_KEX_OPCODES_MAP.get(cmd);
-            if (GenericUtils.isEmpty(name)) {
-                return SshConstants.getCommandMessageName(cmd);
-            } else {
-                return name;
-            }
+            return KeyExchange.getGroupKexOpcodeName(cmd);
         }
 
         public static String getSimpleKexOpcodeName(int cmd) {
-            String name = SIMPLE_KEX_OPCODES_MAP.get(cmd);
-            if (GenericUtils.isEmpty(name)) {
-                return SshConstants.getCommandMessageName(cmd);
-            } else {
-                return name;
-            }
+            return KeyExchange.getSimpleKexOpcodeName(cmd);
+        }
+    }
+
+    static String getGroupKexOpcodeName(int cmd) {
+        String name = GROUP_KEX_OPCODES_MAP.get(cmd);
+        if (GenericUtils.isEmpty(name)) {
+            return SshConstants.getCommandMessageName(cmd);
+        } else {
+            return name;
+        }
+    }
+
+    static String getSimpleKexOpcodeName(int cmd) {
+        String name = SIMPLE_KEX_OPCODES_MAP.get(cmd);
+        if (GenericUtils.isEmpty(name)) {
+            return SshConstants.getCommandMessageName(cmd);
+        } else {
+            return name;
         }
     }
 }

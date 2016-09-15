@@ -39,6 +39,8 @@ import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
@@ -71,15 +73,9 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class SftpVersionsTest extends AbstractSftpClientTestSupport {
     private static final List<Integer> VERSIONS =
-            Collections.unmodifiableList(new ArrayList<Integer>() {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
-
-                {
-                    for (int version = SftpSubsystem.LOWER_SFTP_IMPL; version <= SftpSubsystem.HIGHER_SFTP_IMPL; version++) {
-                        add(Integer.valueOf(version));
-                    }
-                }
-            });
+            Collections.unmodifiableList(
+                    IntStream.rangeClosed(SftpSubsystem.LOWER_SFTP_IMPL, SftpSubsystem.HIGHER_SFTP_IMPL)
+                            .boxed().collect(Collectors.toList()));
 
     private final int testVersion;
 
@@ -308,15 +304,11 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
     @Test   // see SSHD-575
     public void testSftpExtensionsEncodeDecode() throws Exception {
         final Class<?> anchor = getClass();
-        final Map<String, String> expExtensions = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER) {
-            private static final long serialVersionUID = 1L;    // we're not serializing it
-
-            {
-                put("class", anchor.getSimpleName());
-                put("package", anchor.getPackage().getName());
-                put("method", getCurrentTestName());
-            }
-        };
+        final Map<String, String> expExtensions = GenericUtils.<String, String>mapBuilder()
+                .put("class", anchor.getSimpleName())
+                .put("package", anchor.getPackage().getName())
+                .put("method", getCurrentTestName())
+                .build();
 
         final AtomicInteger numInvocations = new AtomicInteger(0);
         SftpSubsystemFactory factory = new SftpSubsystemFactory() {
@@ -439,7 +431,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                             assertNull("Unexpected indicator value at iteration #" + index, value);
                         } else {
                             assertNotNull("No indicator returned at iteration #" + index, value);
-                            if (value.booleanValue()) {
+                            if (value) {
                                 break;
                             }
                         }
@@ -453,7 +445,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                     } else {
                         assertNotNull("No end-of-list indication received at end of entries", value);
                         assertNotNull("No last received entries", entries);
-                        assertTrue("Bad end-of-list value", value.booleanValue());
+                        assertTrue("Bad end-of-list value", value);
                     }
                 }
             }

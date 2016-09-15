@@ -308,9 +308,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
                     log(Level.FINER, "Authenticating with key type=" + kt + " to " + remoteLocation);
                 }
 
-                for (KeyPair kp : ids) {
-                    session.addPublicKeyIdentity(kp);
-                }
+                GenericUtils.forEach(ids, session::addPublicKeyIdentity);
 
                 try {
                     // shouldn't really succeed, but do it since key exchange occurs only on auth attempt
@@ -321,9 +319,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
                         log(Level.FINER, "Failed to authenticate using key type=" + kt + " with " + remoteLocation);
                     }
                 } finally {
-                    for (KeyPair kp : ids) {
-                        session.removePublicKeyIdentity(kp);
-                    }
+                    GenericUtils.forEach(ids, session::removePublicKeyIdentity);
                 }
             } finally {
                 session.removeSessionListener(this);

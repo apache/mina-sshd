@@ -171,7 +171,7 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
             throw e;
         }
 
-        return new Pair<LdapServer, DirectoryService>(ldapServer, directoryService);
+        return new Pair<>(ldapServer, directoryService);
     }
 
     // see http://users.directory.apache.narkive.com/GkyqAkot/how-to-import-ldif-file-programmatically

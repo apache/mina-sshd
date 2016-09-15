@@ -22,8 +22,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -96,18 +96,15 @@ public class LoadTest extends BaseTestSupport {
         final List<Throwable> errors = new ArrayList<>();
         final CountDownLatch latch = new CountDownLatch(nbThreads);
         for (int i = 0; i < nbThreads; i++) {
-            Runnable r = new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        for (int i = 0; i < nbSessionsPerThread; i++) {
-                            runClient(msg);
-                        }
-                    } catch (Throwable t) {
-                        errors.add(t);
-                    } finally {
-                        latch.countDown();
+            Runnable r = () -> {
+                try {
+                    for (int i1 = 0; i1 < nbSessionsPerThread; i1++) {
+                        runClient(msg);
                     }
+                } catch (Throwable t) {
+                    errors.add(t);
+                } finally {
+                    latch.countDown();
                 }
             };
             new Thread(r).start();
@@ -123,9 +120,8 @@ public class LoadTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             PropertyResolverUtils.updateProperty(client, FactoryManager.MAX_PACKET_SIZE, 1024 * 16);
             PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024 * 8);
-            client.setKeyExchangeFactories(Arrays.asList(
-                    ClientBuilder.DH2KEX.transform(BuiltinDHFactories.dhg1)));
-            client.setCipherFactories(Arrays.asList(BuiltinCiphers.blowfishcbc));
+            client.setKeyExchangeFactories(Collections.singletonList(ClientBuilder.DH2KEX.transform(BuiltinDHFactories.dhg1)));
+            client.setCipherFactories(Collections.singletonList(BuiltinCiphers.blowfishcbc));
             client.start();
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());

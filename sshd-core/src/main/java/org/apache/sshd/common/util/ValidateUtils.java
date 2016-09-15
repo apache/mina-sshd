@@ -80,6 +80,12 @@ public final class ValidateUtils {
         return t;
     }
 
+    public static <T, C extends Iterable<T>> C checkNotNullAndNotEmpty(C t, String message, Object... args) {
+        t = checkNotNull(t, message, args);
+        checkTrue(GenericUtils.isNotEmpty(t), message, args);
+        return t;
+    }
+
     public static byte[] checkNotNullAndNotEmpty(byte[] a, String message) {
         a = checkNotNull(a, message);
         checkTrue(NumberUtils.length(a) > 0, message);

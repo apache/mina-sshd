@@ -104,61 +104,74 @@ public interface AttributeStore {
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     // CHECKSTYLE:OFF
+    @Deprecated
     final class Utils {
     // CHECKSTYLE:ON
         private Utils() {
             throw new UnsupportedOperationException("No instance allowed");
         }
 
-        /**
-         * @param <T> The generic attribute type
-         * @param manager The {@link FactoryManager} - ignored if {@code null}
-         * @param key The attribute key - never {@code null}
-         * @return Associated value - {@code null} if not found
-         */
         public static <T> T resolveAttribute(FactoryManager manager, AttributeKey<T> key) {
-            ValidateUtils.checkNotNull(key, "No key");
-            return (manager == null) ? null : manager.getAttribute(key);
+            return AttributeStore.resolveAttribute(manager, key);
         }
 
-        /**
-         * Attempts to use the session's attribute, if not found then tries the factory manager
-         *
-         * @param <T> The generic attribute type
-         * @param session The {@link Session} - ignored if {@code null}
-         * @param key The attribute key - never {@code null}
-         * @return Associated value - {@code null} if not found
-         * @see Session#getFactoryManager()
-         * @see #resolveAttribute(FactoryManager, AttributeKey)
-         */
         public static <T> T resolveAttribute(Session session, AttributeKey<T> key) {
-            ValidateUtils.checkNotNull(key, "No key");
-            if (session == null) {
-                return null;
-            }
-
-            T value = session.getAttribute(key);
-            return (value != null) ? value : resolveAttribute(session.getFactoryManager(), key);
+            return AttributeStore.resolveAttribute(session, key);
         }
 
-        /**
-         * Attempts to use the channel attribute, if not found then tries the session
-         *
-         * @param <T> The generic attribute type
-         * @param channel The {@link Channel} - ignored if {@code null}
-         * @param key The attribute key - never {@code null}
-         * @return Associated value - {@code null} if not found
-         * @see Session#getFactoryManager()
-         * @see #resolveAttribute(Session, AttributeKey)
-         */
         public static <T> T resolveAttribute(Channel channel, AttributeKey<T> key) {
-            ValidateUtils.checkNotNull(key, "No key");
-            if (channel == null) {
-                return null;
-            }
-
-            T value = channel.getAttribute(key);
-            return (value != null) ? value : resolveAttribute(channel.getSession(), key);
+            return AttributeStore.resolveAttribute(channel, key);
         }
+    }
+
+    /**
+     * @param <T> The generic attribute type
+     * @param manager The {@link FactoryManager} - ignored if {@code null}
+     * @param key The attribute key - never {@code null}
+     * @return Associated value - {@code null} if not found
+     */
+    static <T> T resolveAttribute(FactoryManager manager, AttributeKey<T> key) {
+        ValidateUtils.checkNotNull(key, "No key");
+        return (manager == null) ? null : manager.getAttribute(key);
+    }
+
+    /**
+     * Attempts to use the session's attribute, if not found then tries the factory manager
+     *
+     * @param <T> The generic attribute type
+     * @param session The {@link Session} - ignored if {@code null}
+     * @param key The attribute key - never {@code null}
+     * @return Associated value - {@code null} if not found
+     * @see Session#getFactoryManager()
+     * @see #resolveAttribute(FactoryManager, AttributeKey)
+     */
+    static <T> T resolveAttribute(Session session, AttributeKey<T> key) {
+        ValidateUtils.checkNotNull(key, "No key");
+        if (session == null) {
+            return null;
+        }
+
+        T value = session.getAttribute(key);
+        return (value != null) ? value : resolveAttribute(session.getFactoryManager(), key);
+    }
+
+    /**
+     * Attempts to use the channel attribute, if not found then tries the session
+     *
+     * @param <T> The generic attribute type
+     * @param channel The {@link Channel} - ignored if {@code null}
+     * @param key The attribute key - never {@code null}
+     * @return Associated value - {@code null} if not found
+     * @see Session#getFactoryManager()
+     * @see #resolveAttribute(Session, AttributeKey)
+     */
+    static <T> T resolveAttribute(Channel channel, AttributeKey<T> key) {
+        ValidateUtils.checkNotNull(key, "No key");
+        if (channel == null) {
+            return null;
+        }
+
+        T value = channel.getAttribute(key);
+        return (value != null) ? value : resolveAttribute(channel.getSession(), key);
     }
 }

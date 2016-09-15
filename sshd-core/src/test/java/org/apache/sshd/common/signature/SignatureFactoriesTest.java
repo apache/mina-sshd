@@ -78,27 +78,22 @@ public class SignatureFactoriesTest extends BaseTestSupport {
 
     @Parameters(name = "type={0}, size={2}")
     public static List<Object[]> parameters() {
-        return Collections.unmodifiableList(new ArrayList<Object[]>() {
-            // Not serializing it
-            private static final long serialVersionUID = 1L;
-
-            {
-                addTests(KeyPairProvider.SSH_DSS, BuiltinSignatures.dsa, DSS_SIZES, DSSPublicKeyEntryDecoder.INSTANCE);
-                addTests(KeyPairProvider.SSH_RSA, BuiltinSignatures.rsa, RSA_SIZES, RSAPublicKeyDecoder.INSTANCE);
-                if (SecurityUtils.hasEcc()) {
-                    for (ECCurves curve : ECCurves.VALUES) {
-                        BuiltinSignatures factory = BuiltinSignatures.fromFactoryName(curve.getKeyType());
-                        addTests(curve.getName(), factory, Collections.singletonList(curve.getKeySize()), ECDSAPublicKeyEntryDecoder.INSTANCE);
-                    }
-                }
+        List<Object[]> list = new ArrayList<>();
+        addTests(list, KeyPairProvider.SSH_DSS, BuiltinSignatures.dsa, DSS_SIZES, DSSPublicKeyEntryDecoder.INSTANCE);
+        addTests(list, KeyPairProvider.SSH_RSA, BuiltinSignatures.rsa, RSA_SIZES, RSAPublicKeyDecoder.INSTANCE);
+        if (SecurityUtils.hasEcc()) {
+            for (ECCurves curve : ECCurves.VALUES) {
+                BuiltinSignatures factory = BuiltinSignatures.fromFactoryName(curve.getKeyType());
+                addTests(list, curve.getName(), factory, Collections.singletonList(curve.getKeySize()), ECDSAPublicKeyEntryDecoder.INSTANCE);
             }
+        }
+        return Collections.unmodifiableList(list);
+    }
 
-            private void addTests(String keyType, NamedFactory<Signature> factory, Collection<Integer> sizes, PublicKeyEntryDecoder<?, ?> decoder) {
-                for (Integer keySize : sizes) {
-                    add(new Object[]{keyType, factory, keySize, decoder});
-                }
-            }
-        });
+    private static void addTests(List<Object[]> list, String keyType, NamedFactory<Signature> factory, Collection<Integer> sizes, PublicKeyEntryDecoder<?, ?> decoder) {
+        for (Integer keySize : sizes) {
+            list.add(new Object[]{keyType, factory, keySize, decoder});
+        }
     }
 
     @BeforeClass
@@ -146,16 +141,13 @@ public class SignatureFactoriesTest extends BaseTestSupport {
     protected void testKeyPairProvider(
             final String keyName, final int keySize, final PublicKeyEntryDecoder<?, ?> decoder, List<NamedFactory<Signature>> signatures)
                     throws Exception {
-        testKeyPairProvider(keyName, new Factory<Iterable<KeyPair>>() {
-            @Override
-            public Iterable<KeyPair> create() {
-                try {
-                    KeyPair kp = decoder.generateKeyPair(keySize);
-                    outputDebugMessage("Generated key pair for %s - key size=%d", keyName, keySize);
-                    return Collections.singletonList(kp);
-                } catch (Exception e) {
-                    throw new RuntimeSshException(e);
-                }
+        testKeyPairProvider(keyName, () -> {
+            try {
+                KeyPair kp = decoder.generateKeyPair(keySize);
+                outputDebugMessage("Generated key pair for %s - key size=%d", keyName, keySize);
+                return Collections.singletonList(kp);
+            } catch (Exception e) {
+                throw new RuntimeSshException(e);
             }
         }, signatures);
     }

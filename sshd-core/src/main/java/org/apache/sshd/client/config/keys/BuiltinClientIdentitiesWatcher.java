@@ -43,7 +43,7 @@ public class BuiltinClientIdentitiesWatcher extends ClientIdentitiesWatcher {
 
     public BuiltinClientIdentitiesWatcher(Path keysFolder, boolean supportedOnly,
             ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
-        this(keysFolder, NamedResource.Utils.getNameList(BuiltinIdentities.VALUES), supportedOnly, loader, provider, strict);
+        this(keysFolder, NamedResource.getNameList(BuiltinIdentities.VALUES), supportedOnly, loader, provider, strict);
     }
 
     public BuiltinClientIdentitiesWatcher(Path keysFolder, Collection<String> ids, boolean supportedOnly,
@@ -56,7 +56,7 @@ public class BuiltinClientIdentitiesWatcher extends ClientIdentitiesWatcher {
 
     public BuiltinClientIdentitiesWatcher(Path keysFolder, boolean supportedOnly,
             Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider, boolean strict) {
-        this(keysFolder, NamedResource.Utils.getNameList(BuiltinIdentities.VALUES), supportedOnly, loader, provider, strict);
+        this(keysFolder, NamedResource.getNameList(BuiltinIdentities.VALUES), supportedOnly, loader, provider, strict);
     }
 
     public BuiltinClientIdentitiesWatcher(Path keysFolder, Collection<String> ids, boolean supportedOnly,
@@ -94,19 +94,13 @@ public class BuiltinClientIdentitiesWatcher extends ClientIdentitiesWatcher {
             toRemove.add(kp);
         }
 
-        if (GenericUtils.isEmpty(toRemove)) {
-            return keys;
-        }
-
-        for (KeyPair kp : toRemove) {
-            keys.remove(kp);
-        }
+        GenericUtils.forEach(toRemove, keys::remove);
 
         return keys;
     }
 
     public static List<Path> getDefaultBuiltinIdentitiesPaths(Path keysFolder) {
-        return getBuiltinIdentitiesPaths(keysFolder, NamedResource.Utils.getNameList(BuiltinIdentities.VALUES));
+        return getBuiltinIdentitiesPaths(keysFolder, NamedResource.getNameList(BuiltinIdentities.VALUES));
     }
 
     public static List<Path> getBuiltinIdentitiesPaths(Path keysFolder, Collection<String> ids) {

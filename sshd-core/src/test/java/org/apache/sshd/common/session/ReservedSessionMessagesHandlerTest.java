@@ -99,18 +99,14 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
                 @Override
                 public void sessionEvent(final Session session, Event event) {
                     if (Event.Authenticated.equals(event)) {
-                        service.execute(new Runnable() {
-                            @SuppressWarnings("synthetic-access")
-                            @Override
-                            public void run() {
-                                try {
-                                    testReservedSessionMessagesHandler(session, handler);
-                                    outputDebugMessage("Release test signal for %s", session);
-                                    signal.release();
-                                } catch (Throwable t) {
-                                    outputDebugMessage("Failed (%s) to run test: %s", t.getClass().getSimpleName(), t.getMessage());
-                                    session.exceptionCaught(t);
-                                }
+                        service.execute(() -> {
+                            try {
+                                testReservedSessionMessagesHandler(session, handler);
+                                outputDebugMessage("Release test signal for %s", session);
+                                signal.release();
+                            } catch (Throwable t) {
+                                outputDebugMessage("Failed (%s) to run test: %s", t.getClass().getSimpleName(), t.getMessage());
+                                session.exceptionCaught(t);
                             }
                         });
                     }
@@ -172,7 +168,7 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
             sb.setLength(sbLen);
             sb.append(index);
 
-            Pair<String, Boolean> entry = new Pair<>(sb.toString(), Boolean.valueOf((index & 0x01) == 0));
+            Pair<String, Boolean> entry = new Pair<>(sb.toString(), (index & 0x01) == 0);
             expected.add(entry);
             session.sendDebugMessage(entry.getValue(), entry.getKey(), null);
         }
@@ -225,7 +221,7 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
 
         @Override
         public void handleDebugMessage(Session session, boolean display, String msg, String lang, Buffer buffer) throws Exception {
-            debugMessages.add(new Pair<>(msg, Boolean.valueOf(display)));
+            debugMessages.add(new Pair<>(msg, display));
             super.handleDebugMessage(session, display, msg, lang, buffer);
             debugSignal.release();
         }

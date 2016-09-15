@@ -172,7 +172,7 @@ public class PublicKeyEntry implements Serializable {
      * @throws IllegalArgumentException if bad format found
      * @see #parsePublicKeyEntry(PublicKeyEntry, String)
      */
-    public static final PublicKeyEntry parsePublicKeyEntry(String data) throws IllegalArgumentException {
+    public static PublicKeyEntry parsePublicKeyEntry(String data) throws IllegalArgumentException {
         if (GenericUtils.isEmpty(data)) {
             return null;
         } else {
@@ -189,7 +189,7 @@ public class PublicKeyEntry implements Serializable {
      * @return The updated entry instance
      * @throws IllegalArgumentException if bad format found
      */
-    public static final <E extends PublicKeyEntry> E parsePublicKeyEntry(E entry, String data) throws IllegalArgumentException {
+    public static <E extends PublicKeyEntry> E parsePublicKeyEntry(E entry, String data) throws IllegalArgumentException {
         if (GenericUtils.isEmpty(data) || (entry == null)) {
             return entry;
         }

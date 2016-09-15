@@ -121,7 +121,7 @@ public class UserAuthAgent extends AbstractUserAuth {
                 }
             } else {
                 // TODO: check packets
-                log.info("Received unknown packet: {}", Integer.valueOf(cmd));
+                log.info("Received unknown packet: {}", cmd);
                 return Result.Continued;
             }
         }

@@ -59,7 +59,7 @@ public class JaasPasswordAuthenticatorTest extends BaseTestSupport {
                 return new AppConfigurationEntry[]{
                     new AppConfigurationEntry(DummyLoginModule.class.getName(),
                             AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
-                            new HashMap<String, Object>())
+                            new HashMap<>())
                 };
             }
 

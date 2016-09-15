@@ -37,11 +37,8 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.Factory;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
-import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.io.WritePendingException;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -49,7 +46,6 @@ import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.AsyncCommand;
-import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SshServer;
@@ -90,12 +86,7 @@ public class WindowAdjustTest extends BaseTestSupport {
 
         final byte[] msg = Files.readAllBytes(
                 Paths.get(getClass().getResource("/big-msg.txt").toURI()));
-        sshServer.setShellFactory(new Factory<Command>() {
-            @Override
-            public Command create() {
-                return new FloodingAsyncCommand(msg, BIG_MSG_SEND_COUNT, END_FILE);
-            }
-        });
+        sshServer.setShellFactory(() -> new FloodingAsyncCommand(msg, BIG_MSG_SEND_COUNT, END_FILE));
 
         sshServer.setKeyPairProvider(new SimpleGeneratorHostKeyProvider());
         sshServer.start();
@@ -182,7 +173,7 @@ public class WindowAdjustTest extends BaseTestSupport {
         private static final AtomicInteger POOL_COUNT = new AtomicInteger(0);
 
         private final AtomicReference<ExecutorService> executorHolder = new AtomicReference<>();
-        private final AtomicReference<Future<?>> futureHolder = new AtomicReference<Future<?>>();
+        private final AtomicReference<Future<?>> futureHolder = new AtomicReference<>();
 
         private AsyncInPendingWrapper pendingWrapper;
         private byte[] msg;
@@ -237,17 +228,13 @@ public class WindowAdjustTest extends BaseTestSupport {
             ExecutorService service = ThreadUtils.newSingleThreadExecutor(getClass().getSimpleName() + "-" + POOL_COUNT.incrementAndGet());
             executorHolder.set(service);
 
-            futureHolder.set(service.submit(new Runnable() {
-                @SuppressWarnings("synthetic-access")
-                @Override
-                public void run() {
-                    log.info("Start heavy load sending " + sendCount + " messages of " + msg.length + " bytes");
-                    for (int i = 0; i < sendCount; i++) {
-                        pendingWrapper.write(new ByteArrayBuffer(msg));
-                    }
-                    log.info("Sending EOF signal");
-                    pendingWrapper.write(new ByteArrayBuffer(new byte[]{eofSignal}));
+            futureHolder.set(service.submit((Runnable) () -> {
+                log.info("Start heavy load sending " + sendCount + " messages of " + msg.length + " bytes");
+                for (int i = 0; i < sendCount; i++) {
+                    pendingWrapper.write(new ByteArrayBuffer(msg));
                 }
+                log.info("Sending EOF signal");
+                pendingWrapper.write(new ByteArrayBuffer(new byte[]{eofSignal}));
             }));
             log.info("Started");
         }
@@ -277,15 +264,7 @@ public class WindowAdjustTest extends BaseTestSupport {
         private IoOutputStream asyncIn;
 
         // Order has to be preserved for queued writes
-        private final Deque<Buffer> pending = new LinkedList<Buffer>() {
-            // we don't expect to serialize it
-            private static final long serialVersionUID = 1L;
-
-            @Override
-            public boolean add(Buffer o) {
-                return super.add(o);
-            }
-        };
+        private final Deque<Buffer> pending = new LinkedList<Buffer>();
 
         AsyncInPendingWrapper(IoOutputStream out) {
             this.asyncIn = out;
@@ -305,19 +284,15 @@ public class WindowAdjustTest extends BaseTestSupport {
 
         private void writeWithPendingDetection(final Buffer msg, final boolean wasPending) {
             try {
-                asyncIn.write(msg).addListener(new SshFutureListener<IoWriteFuture>() {
-                    @SuppressWarnings("synthetic-access")
-                    @Override
-                    public void operationComplete(IoWriteFuture future) {
-                        if (future.isWritten()) {
-                            if (wasPending) {
-                                pending.remove();
-                            }
-                            writePendingIfAny();
-                        } else {
-                            Throwable t = future.getException();
-                            log.warn("Failed to write message", t);
+                asyncIn.write(msg).addListener(future -> {
+                    if (future.isWritten()) {
+                        if (wasPending) {
+                            pending.remove();
                         }
+                        writePendingIfAny();
+                    } else {
+                        Throwable t = future.getException();
+                        log.warn("Failed to write message", t);
                     }
                 });
             } catch (final WritePendingException e) {

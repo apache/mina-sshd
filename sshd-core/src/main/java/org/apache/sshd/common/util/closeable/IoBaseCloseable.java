@@ -18,8 +18,6 @@
  */
 package org.apache.sshd.common.util.closeable;
 
-import java.io.IOException;
-
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
@@ -35,15 +33,4 @@ public abstract class IoBaseCloseable extends AbstractLoggingBean implements Clo
         super(discriminator);
     }
 
-    // TODO once JDK 8+ becomes the minimum for this project, make it a default method instead of this class
-    @Override
-    public boolean isOpen() {
-        return !(isClosed() || isClosing());
-    }
-
-    // TODO once JDK 8+ becomes the minimum for this project, make it a default method instead of this class
-    @Override
-    public void close() throws IOException {
-        CloseableUtils.close(this);
-    }
 }

@@ -18,9 +18,9 @@
  */
 package org.apache.sshd.common;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.sshd.common.util.Transformer;
 
@@ -36,6 +36,7 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
      * Utility class to help using NamedFactories
      */
     // CHECKSTYLE:OFF
+    @Deprecated
     final class Utils {
     // CHECKSTYLE:ON
 
@@ -43,45 +44,51 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
             throw new UnsupportedOperationException("No instance allowed");
         }
 
-        /**
-         * Create an instance of the specified name by looking up the needed factory
-         * in the list.
-         *
-         * @param factories list of available factories
-         * @param name      the factory name to use
-         * @param <T>       type of object to create
-         * @return a newly created object or {@code null} if the factory is not in the list
-         */
         public static <T> T create(Collection<? extends NamedFactory<T>> factories, String name) {
-            NamedFactory<? extends T> f = NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, factories);
-            if (f != null) {
-                return f.create();
-            } else {
-                return null;
-            }
+            return NamedFactory.create(factories, name);
         }
 
         public static <S extends OptionalFeature, T, E extends NamedFactory<T>> List<NamedFactory<T>> setUpTransformedFactories(
                 boolean ignoreUnsupported, Collection<? extends S> preferred, Transformer<? super S, ? extends E> xform) {
-            List<NamedFactory<T>> avail = new ArrayList<>(preferred.size());
-            for (S f : preferred) {
-                if (ignoreUnsupported || f.isSupported()) {
-                    avail.add(xform.transform(f));
-                }
-            }
-            return avail;
+            return NamedFactory.setUpTransformedFactories(ignoreUnsupported, preferred, xform);
         }
 
         public static <T, E extends NamedFactory<T> & OptionalFeature> List<NamedFactory<T>> setUpBuiltinFactories(
                 boolean ignoreUnsupported, Collection<? extends E> preferred) {
-            List<NamedFactory<T>> avail = new ArrayList<>(preferred.size());
-            for (E f : preferred) {
-                if (ignoreUnsupported || f.isSupported()) {
-                    avail.add(f);
-                }
-            }
-
-            return avail;
+            return NamedFactory.setUpBuiltinFactories(ignoreUnsupported, preferred);
         }
+    }
+
+    /**
+     * Create an instance of the specified name by looking up the needed factory
+     * in the list.
+     *
+     * @param factories list of available factories
+     * @param name      the factory name to use
+     * @param <T>       type of object to create
+     * @return a newly created object or {@code null} if the factory is not in the list
+     */
+    static <T> T create(Collection<? extends NamedFactory<T>> factories, String name) {
+        NamedFactory<? extends T> f = NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, factories);
+        if (f != null) {
+            return f.create();
+        } else {
+            return null;
+        }
+    }
+
+    static <S extends OptionalFeature, T, E extends NamedFactory<T>> List<NamedFactory<T>> setUpTransformedFactories(
+            boolean ignoreUnsupported, Collection<? extends S> preferred, Transformer<? super S, ? extends E> xform) {
+        return preferred.stream()
+                .filter(f -> ignoreUnsupported || f.isSupported())
+                .map(xform::transform)
+                .collect(Collectors.toList());
+    }
+
+    static <T, E extends NamedFactory<T> & OptionalFeature> List<NamedFactory<T>> setUpBuiltinFactories(
+            boolean ignoreUnsupported, Collection<? extends E> preferred) {
+        return preferred.stream()
+                .filter(f -> ignoreUnsupported || f.isSupported())
+                .collect(Collectors.toList());
     }
 }

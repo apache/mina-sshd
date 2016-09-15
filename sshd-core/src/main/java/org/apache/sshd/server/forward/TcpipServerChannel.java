@@ -36,12 +36,10 @@ import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.OpenChannelException;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Readable;
@@ -188,12 +186,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
 
         connector = manager.getIoServiceFactory().createConnector(handler);
         IoConnectFuture future = connector.connect(address.toInetSocketAddress());
-        future.addListener(new SshFutureListener<IoConnectFuture>() {
-            @Override
-            public void operationComplete(IoConnectFuture future) {
-                handleChannelConnectResult(f, future);
-            }
-        });
+        future.addListener(future1 -> handleChannelConnectResult(f, future1));
         return f;
     }
 
@@ -315,18 +308,14 @@ public class TcpipServerChannel extends AbstractServerChannel {
                 : service;
         // shutdown the temporary executor service if had to create it
         final boolean shutdown = executors != service || isShutdownOnExit();
-        executors.submit(new Runnable() {
-            @SuppressWarnings("synthetic-access")
-            @Override
-            public void run() {
-                try {
-                    connector.close(true);
-                } finally {
-                    if ((executors != null) && (!executors.isShutdown()) && shutdown) {
-                        Collection<Runnable> runners = executors.shutdownNow();
-                        if (log.isDebugEnabled()) {
-                            log.debug("destroy({}) - shutdown executor service - runners count={}", TcpipServerChannel.this, runners.size());
-                        }
+        executors.submit(() -> {
+            try {
+                connector.close(true);
+            } finally {
+                if (shutdown && !executors.isShutdown()) {
+                    Collection<Runnable> runners = executors.shutdownNow();
+                    if (log.isDebugEnabled()) {
+                        log.debug("destroy({}) - shutdown executor service - runners count={}", TcpipServerChannel.this, runners.size());
                     }
                 }
             }
@@ -335,27 +324,18 @@ public class TcpipServerChannel extends AbstractServerChannel {
 
     @Override
     public CloseFuture close(boolean immediately) {
-        return super.close(immediately).addListener(new SshFutureListener<CloseFuture>() {
-            @SuppressWarnings("synthetic-access")
-            @Override
-            public void operationComplete(CloseFuture sshFuture) {
-                closeImmediately0();
-            }
-        });
+        return super.close(immediately).addListener(sshFuture -> closeImmediately0());
     }
 
     @Override
     protected void doWriteData(byte[] data, int off, final int len) throws IOException {
         // Make sure we copy the data as the incoming buffer may be reused
         final Buffer buf = ByteArrayBuffer.getCompactClone(data, off, len);
-        ioSession.write(buf).addListener(new SshFutureListener<IoWriteFuture>() {
-            @Override
-            public void operationComplete(IoWriteFuture future) {
-                if (future.isWritten()) {
-                    handleWriteDataSuccess(SshConstants.SSH_MSG_CHANNEL_DATA, buf.array(), 0, len);
-                } else {
-                    handleWriteDataFailure(SshConstants.SSH_MSG_CHANNEL_DATA, buf.array(), 0, len, future.getException());
-                }
+        ioSession.write(buf).addListener(future -> {
+            if (future.isWritten()) {
+                handleWriteDataSuccess(SshConstants.SSH_MSG_CHANNEL_DATA, buf.array(), 0, len);
+            } else {
+                handleWriteDataFailure(SshConstants.SSH_MSG_CHANNEL_DATA, buf.array(), 0, len, future.getException());
             }
         });
     }

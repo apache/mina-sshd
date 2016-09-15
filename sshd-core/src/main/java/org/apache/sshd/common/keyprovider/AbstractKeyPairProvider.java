@@ -18,13 +18,6 @@
  */
 package org.apache.sshd.common.keyprovider;
 
-import java.security.KeyPair;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -33,37 +26,9 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractKeyPairProvider extends AbstractLoggingBean implements KeyPairProvider {
-    // TODO move this code as default interface methods in Java-8
+
     protected AbstractKeyPairProvider() {
         super();
     }
 
-    @Override
-    public KeyPair loadKey(String type) {
-        ValidateUtils.checkNotNullAndNotEmpty(type, "No key type to load");
-
-        Iterable<KeyPair> keys = loadKeys();
-        for (KeyPair key : keys) {
-            String keyType = KeyUtils.getKeyType(key);
-            if (type.equals(keyType)) {
-                return key;
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public List<String> getKeyTypes() {
-        List<String> types = new ArrayList<>();
-        Iterable<KeyPair> keys = loadKeys();
-        for (KeyPair key : keys) {
-            String type = KeyUtils.getKeyType(key);
-            if (GenericUtils.isEmpty(type) || types.contains(type)) {
-                continue;
-            }
-            types.add(type);
-        }
-
-        return types;
-    }
 }

@@ -52,7 +52,7 @@ public class KexFactoryManagerTest extends BaseTestSupport {
         KexFactoryManager manager = new TestKexFactoryManager();
         assertEquals("Mismatched empty factories name list", "", manager.getCompressionFactoriesNameList());
 
-        String expected = NamedResource.Utils.getNames(BuiltinCompressions.VALUES);
+        String expected = NamedResource.getNames(BuiltinCompressions.VALUES);
         manager.setCompressionFactoriesNameList(expected);
         assertEquals("Mismatched updated factories name list", expected, manager.getCompressionFactoriesNameList());
 
@@ -69,7 +69,7 @@ public class KexFactoryManagerTest extends BaseTestSupport {
         KexFactoryManager manager = new TestKexFactoryManager();
         assertEquals("Mismatched empty factories name list", "", manager.getCipherFactoriesNameList());
 
-        String expected = NamedResource.Utils.getNames(BuiltinCiphers.VALUES);
+        String expected = NamedResource.getNames(BuiltinCiphers.VALUES);
         manager.setCipherFactoriesNameList(expected);
         assertEquals("Mismatched updated factories name list", expected, manager.getCipherFactoriesNameList());
 
@@ -86,7 +86,7 @@ public class KexFactoryManagerTest extends BaseTestSupport {
         KexFactoryManager manager = new TestKexFactoryManager();
         assertEquals("Mismatched empty factories name list", "", manager.getMacFactoriesNameList());
 
-        String expected = NamedResource.Utils.getNames(BuiltinMacs.VALUES);
+        String expected = NamedResource.getNames(BuiltinMacs.VALUES);
         manager.setMacFactoriesNameList(expected);
         assertEquals("Mismatched updated factories name list", expected, manager.getMacFactoriesNameList());
 
@@ -103,7 +103,7 @@ public class KexFactoryManagerTest extends BaseTestSupport {
         KexFactoryManager manager = new TestKexFactoryManager();
         assertEquals("Mismatched empty factories name list", "", manager.getSignatureFactoriesNameList());
 
-        String expected = NamedResource.Utils.getNames(BuiltinSignatures.VALUES);
+        String expected = NamedResource.getNames(BuiltinSignatures.VALUES);
         manager.setSignatureFactoriesNameList(expected);
         assertEquals("Mismatched updated factories name list", expected, manager.getSignatureFactoriesNameList());
 

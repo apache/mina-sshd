@@ -46,7 +46,7 @@ public interface SftpClientCreator {
      * @throws IOException If failed to create the client or use the specified version
      */
     default SftpClient createSftpClient(int version) throws IOException {
-        return createSftpClient(SftpVersionSelector.Utils.fixedVersionSelector(version));
+        return createSftpClient(SftpVersionSelector.fixedVersionSelector(version));
     }
 
     /**

@@ -43,8 +43,8 @@ public abstract class AbstractOpenSshHostKeysHandler extends AbstractConnectionS
 
     protected AbstractOpenSshHostKeysHandler(String request) {
         // TODO use only the default parser once ED25519 implementation is complete (see SSHD-440)
-        this(request, BufferPublicKeyParser.Utils.aggregate(Arrays.asList(
-                            BufferPublicKeyParser.Utils.DEFAULT,
+        this(request, BufferPublicKeyParser.aggregate(Arrays.asList(
+                            BufferPublicKeyParser.DEFAULT,
                             ED25519BufferPublicKeyParser.IGNORING
                     )));
     }

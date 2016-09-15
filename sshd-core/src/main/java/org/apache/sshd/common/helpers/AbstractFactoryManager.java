@@ -154,7 +154,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
 
     @Override
     public <T> T resolveAttribute(AttributeKey<T> key) {
-        return AttributeStore.Utils.resolveAttribute(this, key);
+        return AttributeStore.resolveAttribute(this, key);
     }
 
     @Override

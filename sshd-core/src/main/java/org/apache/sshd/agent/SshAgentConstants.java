@@ -18,9 +18,7 @@
  */
 package org.apache.sshd.agent;
 
-import java.lang.reflect.Field;
 import java.util.Map;
-import java.util.function.Predicate;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.LoggingUtils;
@@ -76,16 +74,11 @@ public final class SshAgentConstants {
 
     private static class LazyMessagesMapHolder {
         private static final Map<Integer, String> MESSAGES_MAP =
-                LoggingUtils.generateMnemonicMap(SshAgentConstants.class, new Predicate<Field>() {
-                    @Override
-                    public boolean test(Field f) {
-                        String name = f.getName();
-                        if (name.startsWith("SSH_AGENT_CONSTRAIN")) {
-                            return false;
-                        }
+                LoggingUtils.generateMnemonicMap(SshAgentConstants.class, f -> {
+                    String name = f.getName();
+                    return !name.startsWith("SSH_AGENT_CONSTRAIN")
+                            && (name.startsWith("SSH_AGENT") || name.startsWith("SSH2_AGENT"));
 
-                        return name.startsWith("SSH_AGENT") || name.startsWith("SSH2_AGENT");
-                    }
                 });
     }
 

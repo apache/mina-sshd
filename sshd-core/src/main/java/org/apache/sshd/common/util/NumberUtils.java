@@ -20,9 +20,9 @@
 package org.apache.sshd.common.util;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.IntStream;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -33,26 +33,18 @@ public final class NumberUtils {
      * primitive numerical values
      */
     public static final List<Class<?>> NUMERIC_PRIMITIVE_CLASSES =
-            Collections.unmodifiableList(Arrays.<Class<?>>asList(
+            GenericUtils.unmodifiableList(
                         Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE,
                         Float.TYPE, Double.TYPE
-                    ));
+                    );
 
     /**
      * A {@link List} containing all the pure powers of 2 for a {@code long}
      * value. The value at index <I>n</I> is 2 to the power of <I>n</I>
      */
     public static final List<Long> POWERS_OF_TWO =
-            Collections.unmodifiableList(new ArrayList<Long>(Long.SIZE) {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
-
-                {
-                    long value = 1L;
-                    for (int power = 0; power < Long.SIZE; power++, value <<= 1) {
-                        add(value);
-                    }
-                }
-            });
+            GenericUtils.unmodifiableList(IntStream.range(0, 64)
+                    .mapToObj(i -> 1L << i));
 
     private NumberUtils() {
         throw new UnsupportedOperationException("No instance");

@@ -88,7 +88,7 @@ public class ClientUserAuthService
             }
 
             for (String pref : GenericUtils.split(prefs, ',')) {
-                NamedFactory<UserAuth> factory = NamedResource.Utils.findByName(pref, String.CASE_INSENSITIVE_ORDER, authFactories);
+                NamedFactory<UserAuth> factory = NamedResource.findByName(pref, String.CASE_INSENSITIVE_ORDER, authFactories);
                 if (factory != null) {
                     clientMethods.add(pref);
                 } else {
@@ -318,7 +318,7 @@ public class ClientUserAuthService
                 return;
             }
 
-            userAuth = NamedFactory.Utils.create(authFactories, method);
+            userAuth = NamedFactory.create(authFactories, method);
             if (userAuth == null) {
                 throw new UnsupportedOperationException("Failed to find a user-auth factory for method=" + method);
             }

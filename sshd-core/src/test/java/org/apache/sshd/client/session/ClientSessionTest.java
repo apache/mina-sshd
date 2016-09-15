@@ -84,23 +84,18 @@ public class ClientSessionTest extends BaseTestSupport {
     public void testDefaultExecuteCommandMethod() throws Exception {
         final String expectedCommand = getCurrentTestName() + "-CMD";
         final String expectedResponse = getCurrentTestName() + "-RSP";
-        sshd.setCommandFactory(new CommandFactory() {
-            @Override
-            public Command createCommand(String command) {
-                return new CommandExecutionHelper(command) {
-                    private boolean cmdProcessed;
+        sshd.setCommandFactory(command -> new CommandExecutionHelper(command) {
+            private boolean cmdProcessed;
 
-                    @Override
-                    protected boolean handleCommandLine(String command) throws Exception {
-                        assertEquals("Mismatched incoming command", expectedCommand, command);
-                        assertFalse("Duplicated command call", cmdProcessed);
-                        OutputStream stdout = getOut();
-                        stdout.write(expectedResponse.getBytes(StandardCharsets.US_ASCII));
-                        stdout.flush();
-                        cmdProcessed = true;
-                        return false;
-                    }
-                };
+            @Override
+            protected boolean handleCommandLine(String command) throws Exception {
+                assertEquals("Mismatched incoming command", expectedCommand, command);
+                assertFalse("Duplicated command call", cmdProcessed);
+                OutputStream stdout = getOut();
+                stdout.write(expectedResponse.getBytes(StandardCharsets.US_ASCII));
+                stdout.flush();
+                cmdProcessed = true;
+                return false;
             }
         });
 
@@ -118,23 +113,18 @@ public class ClientSessionTest extends BaseTestSupport {
     public void testExceptionThrownIfRemoteStderrWrittenTo() throws Exception {
         final String expectedCommand = getCurrentTestName() + "-CMD";
         final String expectedErrorMessage = getCurrentTestName() + "-ERR";
-        sshd.setCommandFactory(new CommandFactory() {
-            @Override
-            public Command createCommand(String command) {
-                return new CommandExecutionHelper(command) {
-                    private boolean cmdProcessed;
+        sshd.setCommandFactory(command -> new CommandExecutionHelper(command) {
+            private boolean cmdProcessed;
 
-                    @Override
-                    protected boolean handleCommandLine(String command) throws Exception {
-                        assertEquals("Mismatched incoming command", expectedCommand, command);
-                        assertFalse("Duplicated command call", cmdProcessed);
-                        OutputStream stderr = getErr();
-                        stderr.write(expectedErrorMessage.getBytes(StandardCharsets.US_ASCII));
-                        stderr.flush();
-                        cmdProcessed = true;
-                        return false;
-                    }
-                };
+            @Override
+            protected boolean handleCommandLine(String command) throws Exception {
+                assertEquals("Mismatched incoming command", expectedCommand, command);
+                assertFalse("Duplicated command call", cmdProcessed);
+                OutputStream stderr = getErr();
+                stderr.write(expectedErrorMessage.getBytes(StandardCharsets.US_ASCII));
+                stderr.flush();
+                cmdProcessed = true;
+                return false;
             }
         });
 

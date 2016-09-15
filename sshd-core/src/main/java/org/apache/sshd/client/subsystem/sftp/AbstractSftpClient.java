@@ -141,6 +141,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             String lang = buffer.getString();
             checkResponseStatus(cmd, id, substatus, msg, lang);
         } else {
+            //noinspection ThrowableResultOfMethodCallIgnored
             handleUnexpectedPacket(cmd, SftpConstants.SSH_FXP_STATUS, id, type, length, buffer);
         }
     }

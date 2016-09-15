@@ -25,10 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -53,27 +50,12 @@ public abstract class AbstractFileKeyPairProvider extends AbstractResourceKeyPai
     }
 
     public void setFiles(Collection<File> files) {
-        if (GenericUtils.isEmpty(files)) {
-            setPaths(Collections.emptyList());
-        } else {
-            List<Path> paths = new ArrayList<>(files.size());
-            for (File f : files) {
-                paths.add(f.toPath());
-            }
-            setPaths(paths);
-        }
+        setPaths(GenericUtils.map(files, File::toPath));
     }
 
     public void setPaths(Collection<? extends Path> paths) {
-        int numPaths = GenericUtils.size(paths);
-        Collection<Path> resolved = (numPaths <= 0) ? Collections.emptyList() : new ArrayList<>(paths.size());
         // use absolute path in order to have unique cache keys
-        if (numPaths > 0) {
-            for (Path p : paths) {
-                resolved.add(p.toAbsolutePath());
-            }
-        }
-
+        Collection<Path> resolved = GenericUtils.map(paths, Path::toAbsolutePath);
         resetCacheMap(resolved);
         files = resolved;
     }

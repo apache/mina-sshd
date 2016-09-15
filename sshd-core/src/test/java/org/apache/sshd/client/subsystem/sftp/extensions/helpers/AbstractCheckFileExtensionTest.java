@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -68,40 +67,39 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
     private static final Collection<Integer> DATA_SIZES =
             Collections.unmodifiableList(
                     Arrays.asList(
-                            Integer.valueOf(Byte.MAX_VALUE),
-                            Integer.valueOf(SftpConstants.MIN_CHKFILE_BLOCKSIZE),
-                            Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
-                            Integer.valueOf(Byte.SIZE * IoUtils.DEFAULT_COPY_SIZE)
+                            (int) Byte.MAX_VALUE,
+                            SftpConstants.MIN_CHKFILE_BLOCKSIZE,
+                            IoUtils.DEFAULT_COPY_SIZE,
+                            Byte.SIZE * IoUtils.DEFAULT_COPY_SIZE
                     ));
     private static final Collection<Integer> BLOCK_SIZES =
             Collections.unmodifiableList(
                     Arrays.asList(
-                            Integer.valueOf(0),
-                            Integer.valueOf(SftpConstants.MIN_CHKFILE_BLOCKSIZE),
-                            Integer.valueOf(1024),
-                            Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE)
+                            0,
+                            SftpConstants.MIN_CHKFILE_BLOCKSIZE,
+                            1024,
+                            IoUtils.DEFAULT_COPY_SIZE
                     ));
-    @SuppressWarnings("synthetic-access")
-    private static final Collection<Object[]> PARAMETERS =
-            Collections.unmodifiableCollection(new LinkedList<Object[]>() {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
+    private static final Collection<Object[]> PARAMETERS;
 
-                {
-                    for (DigestFactory factory : BuiltinDigests.VALUES) {
-                        if (!factory.isSupported()) {
-                            System.out.println("Skip unsupported digest=" + factory.getAlgorithm());
-                            continue;
-                        }
+    static {
+        Collection<Object[]> list = new ArrayList<>();
+        for (DigestFactory factory : BuiltinDigests.VALUES) {
+            if (!factory.isSupported()) {
+                System.out.println("Skip unsupported digest=" + factory.getAlgorithm());
+                continue;
+            }
 
-                        String algorithm = factory.getName();
-                        for (Number dataSize : DATA_SIZES) {
-                            for (Number blockSize : BLOCK_SIZES) {
-                                add(new Object[]{algorithm, dataSize, blockSize});
-                            }
-                        }
-                    }
+            String algorithm = factory.getName();
+            for (Number dataSize : DATA_SIZES) {
+                for (Number blockSize : BLOCK_SIZES) {
+                    list.add(new Object[]{algorithm, dataSize, blockSize});
                 }
-            });
+            }
+        }
+        PARAMETERS = list;
+    }
+
 
     private final String algorithm;
     private final int dataSize;

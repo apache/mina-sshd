@@ -33,7 +33,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeSet;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.util.GenericUtils;
@@ -56,13 +55,9 @@ public enum BuiltinIdentities implements Identity {
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinIdentities.class));
 
     public static final Set<String> NAMES =
-            Collections.unmodifiableSet(new TreeSet<String>(String.CASE_INSENSITIVE_ORDER) {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
-
-                {
-                    addAll(NamedResource.Utils.getNameList(VALUES));
-                }
-            });
+            Collections.unmodifiableSet(GenericUtils.asSortedSet(
+                        String.CASE_INSENSITIVE_ORDER,
+                        NamedResource.getNameList(VALUES)));
 
     private final String name;
     private final String algorithm;
@@ -111,7 +106,7 @@ public enum BuiltinIdentities implements Identity {
      * value matches case <U>insensitive</U> or {@code null} if no match found
      */
     public static BuiltinIdentities fromName(String name) {
-        return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
+        return NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 
     /**

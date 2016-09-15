@@ -19,11 +19,11 @@
 
 package org.apache.sshd.common.kex;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.sshd.common.util.GenericUtils;
 
@@ -43,33 +43,23 @@ public enum KexProposalOption {
     S2CLANG(Constants.PROPOSAL_LANG_STOC, "languages (server to client)");
 
     /**
+     * Compares values according to {@link KexProposalOption#getProposalIndex()}
+     */
+    public static final Comparator<KexProposalOption> BY_PROPOSAL_INDEX =
+            Comparator.comparingInt(KexProposalOption::getProposalIndex);
+
+    /**
      * A {@link List} of all the options <U>sorted</U> according to {@link #getProposalIndex()}
      *
      * @see #BY_PROPOSAL_INDEX
      */
     public static final List<KexProposalOption> VALUES =
-        Collections.unmodifiableList(new ArrayList<KexProposalOption>(EnumSet.allOf(KexProposalOption.class)) {
-            private static final long serialVersionUID = 1L;    // we're not serializing it
-
-            {
-                Collections.sort(this, BY_PROPOSAL_INDEX);
-            }
-        });
+        Collections.unmodifiableList(
+                EnumSet.allOf(KexProposalOption.class).stream()
+                        .sorted(BY_PROPOSAL_INDEX)
+                        .collect(Collectors.toList()));
 
     public static final int PROPOSAL_MAX = VALUES.size();
-
-    /**
-     * Compares values according to {@link KexProposalOption#getProposalIndex()}
-     */
-    public static final Comparator<KexProposalOption> BY_PROPOSAL_INDEX =
-        new Comparator<KexProposalOption>() {
-            @Override
-            public int compare(KexProposalOption o1, KexProposalOption o2) {
-                int i1 = (o1 == null) ? -1 : o1.getProposalIndex();
-                int i2 = (o2 == null) ? -1 : o2.getProposalIndex();
-                return Integer.compare(i1, i2);
-            }
-        };
 
     private final int proposalIndex;
 

@@ -32,7 +32,6 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -94,22 +93,18 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
             ValidateUtils.checkTrue(copyBufSize >= MIN_FORWARDER_BUF_SIZE, "Copy buf size below min.: %d", copyBufSize);
             ValidateUtils.checkTrue(copyBufSize <= MAX_FORWARDER_BUF_SIZE, "Copy buf size above max.: %d", copyBufSize);
 
-            forwarder = forwardService.submit(new Runnable() {
-                @SuppressWarnings("synthetic-access")
-                @Override
-                public void run() {
-                    try {
-                        byte[] buf = new byte[copyBufSize];
-                        while (true) {
-                            int len = Socket.recv(handle, buf, 0, buf.length);
-                            if (len > 0) {
-                                out.write(buf, 0, len);
-                                out.flush();
-                            }
+            forwarder = forwardService.submit(() -> {
+                try {
+                    byte[] buf = new byte[copyBufSize];
+                    while (true) {
+                        int len = Socket.recv(handle, buf, 0, buf.length);
+                        if (len > 0) {
+                            out.write(buf, 0, len);
+                            out.flush();
                         }
-                    } catch (IOException e) {
-                        close(true);
                     }
+                } catch (IOException e) {
+                    close(true);
                 }
             });
 
@@ -175,13 +170,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
 
     @Override
     public CloseFuture close(boolean immediately) {
-        return super.close(immediately).addListener(new SshFutureListener<CloseFuture>() {
-            @SuppressWarnings("synthetic-access")
-            @Override
-            public void operationComplete(CloseFuture sshFuture) {
-                closeImmediately0();
-            }
-        });
+        return super.close(immediately).addListener(sshFuture -> closeImmediately0());
     }
 
     @Override

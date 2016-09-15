@@ -48,12 +48,7 @@ public final class BufferUtils {
     public static final Level DEFAULT_HEXDUMP_LEVEL = Level.FINEST;
 
     public static final Int2IntFunction DEFAULT_BUFFER_GROWTH_FACTOR =
-        new Int2IntFunction() {
-            @Override
-            public int apply(int value) {
-                return getNextPowerOf2(value);
-            }
-        };
+            BufferUtils::getNextPowerOf2;
 
     /**
      * Private Constructor

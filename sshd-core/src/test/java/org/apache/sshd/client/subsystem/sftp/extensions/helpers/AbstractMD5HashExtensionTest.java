@@ -63,10 +63,10 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
     private static final List<Integer> DATA_SIZES =
             Collections.unmodifiableList(
                     Arrays.asList(
-                            Integer.valueOf(Byte.MAX_VALUE),
-                            Integer.valueOf(SftpConstants.MD5_QUICK_HASH_SIZE),
-                            Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
-                            Integer.valueOf(Byte.SIZE * IoUtils.DEFAULT_COPY_SIZE)
+                            (int) Byte.MAX_VALUE,
+                            SftpConstants.MD5_QUICK_HASH_SIZE,
+                            IoUtils.DEFAULT_COPY_SIZE,
+                            Byte.SIZE * IoUtils.DEFAULT_COPY_SIZE
                     ));
 
     private final int size;

@@ -118,15 +118,12 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     public static final String VERSION_PARAM = "version";
 
     public static final Set<Class<? extends FileAttributeView>> UNIVERSAL_SUPPORTED_VIEWS =
-            Collections.unmodifiableSet(new HashSet<Class<? extends FileAttributeView>>() {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
+            Collections.unmodifiableSet(GenericUtils.asSet(
+                    PosixFileAttributeView.class,
+                    FileOwnerAttributeView.class,
+                    BasicFileAttributeView.class
+            ));
 
-                {
-                    add(PosixFileAttributeView.class);
-                    add(FileOwnerAttributeView.class);
-                    add(BasicFileAttributeView.class);
-                }
-            });
     protected final Logger log;
 
     private final SshClient client;
@@ -270,7 +267,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
         String[] values = GenericUtils.split(preference, ',');
         if (values.length == 1) {
-            return SftpVersionSelector.Utils.fixedVersionSelector(Integer.parseInt(values[0]));
+            return SftpVersionSelector.fixedVersionSelector(Integer.parseInt(values[0]));
         }
 
         int[] preferred = new int[values.length];
@@ -278,7 +275,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             preferred[index] = Integer.parseInt(values[index]);
         }
 
-        return SftpVersionSelector.Utils.preferredVersionSelector(preferred);
+        return SftpVersionSelector.preferredVersionSelector(preferred);
     }
 
     // NOTE: URI parameters override environment ones
@@ -431,6 +428,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                  *      The option is ignored when the file system does not
                  *  support the creation of sparse files
                  */
+                //noinspection UnnecessaryContinue
                 continue;
             } else {
                 throw new IllegalArgumentException("newFileChannel(" + path + ") unsupported open option: " + option);

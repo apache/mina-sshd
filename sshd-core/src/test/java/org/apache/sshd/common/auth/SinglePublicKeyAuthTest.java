@@ -31,13 +31,13 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.server.ServerAuthenticationManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.pubkey.CachingPublicKeyAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.auth.pubkey.UserAuthPublicKeyFactory;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
-import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.After;
 import org.junit.Before;
@@ -69,13 +69,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
     public void setUp() throws Exception {
         sshd = setupTestServer();
         PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.AUTH_METHODS, UserAuthPublicKeyFactory.NAME);
-        sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
-            @SuppressWarnings("synthetic-access")
-            @Override
-            public boolean authenticate(String username, PublicKey key, ServerSession session) {
-                return delegate.authenticate(username, key, session);
-            }
-        });
+        sshd.setPublickeyAuthenticator((username, key, session) -> delegate.authenticate(username, key, session));
         sshd.start();
         port = sshd.getPort();
     }
@@ -89,16 +83,12 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
 
     @Test
     public void testPublicKeyAuthWithCache() throws Exception {
-        final ConcurrentHashMap<String, AtomicInteger> count = new ConcurrentHashMap<String, AtomicInteger>();
-        TestCachingPublicKeyAuthenticator auth = new TestCachingPublicKeyAuthenticator(new PublickeyAuthenticator() {
-            @SuppressWarnings("synthetic-access")
-            @Override
-            public boolean authenticate(String username, PublicKey key, ServerSession session) {
-                String fp = KeyUtils.getFingerPrint(key);
-                count.putIfAbsent(fp, new AtomicInteger());
-                count.get(fp).incrementAndGet();
-                return key.equals(pairRsa.getPublic());
-            }
+        final ConcurrentHashMap<String, AtomicInteger> count = new ConcurrentHashMap<>();
+        TestCachingPublicKeyAuthenticator auth = new TestCachingPublicKeyAuthenticator((username, key, session) -> {
+            String fp = KeyUtils.getFingerPrint(key);
+            count.putIfAbsent(fp, new AtomicInteger());
+            count.get(fp).incrementAndGet();
+            return key.equals(pairRsa.getPublic());
         });
         delegate = auth;
 
@@ -129,16 +119,12 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
 
     @Test
     public void testPublicKeyAuthWithoutCache() throws Exception {
-        final ConcurrentHashMap<String, AtomicInteger> count = new ConcurrentHashMap<String, AtomicInteger>();
-        delegate = new PublickeyAuthenticator() {
-            @SuppressWarnings("synthetic-access")
-            @Override
-            public boolean authenticate(String username, PublicKey key, ServerSession session) {
-                String fp = KeyUtils.getFingerPrint(key);
-                count.putIfAbsent(fp, new AtomicInteger());
-                count.get(fp).incrementAndGet();
-                return key.equals(pairRsa.getPublic());
-            }
+        final ConcurrentHashMap<String, AtomicInteger> count = new ConcurrentHashMap<>();
+        delegate = (username, key, session) -> {
+            String fp = KeyUtils.getFingerPrint(key);
+            count.putIfAbsent(fp, new AtomicInteger());
+            count.get(fp).incrementAndGet();
+            return key.equals(pairRsa.getPublic());
         };
 
         try (SshClient client = setupTestClient()) {
@@ -174,7 +160,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
             super(authenticator);
         }
 
-        public Map<ServerSession, Map<PublicKey, Boolean>> getCache() {
+        public Map<Session, Map<PublicKey, Boolean>> getCache() {
             return cache;
         }
     }

@@ -111,7 +111,7 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
     }
 
     protected boolean isValidUsername(String username, ServerSession session) {
-        return !GenericUtils.isEmpty(username);
+        return GenericUtils.isNotEmpty(username);
     }
 
     protected PublickeyAuthenticator resolvePublickeyAuthenticator(String username, ServerSession session)

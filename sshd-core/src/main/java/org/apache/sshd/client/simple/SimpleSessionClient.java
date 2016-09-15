@@ -21,11 +21,13 @@ package org.apache.sshd.client.simple;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.Channel;
 import java.security.KeyPair;
 
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * A simplified <U>synchronous</U> API for creating client sessions
@@ -42,7 +44,9 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
      * @return Created {@link ClientSession}
      * @throws IOException If failed to login or authenticate
      */
-    ClientSession sessionLogin(String host, String username, String password) throws IOException;
+    default ClientSession sessionLogin(String host, String username, String password) throws IOException {
+        return sessionLogin(host, DEFAULT_PORT, username, password);
+    }
 
     /**
      * Creates a session and logs in using the provided credentials
@@ -54,7 +58,9 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
      * @return Created {@link ClientSession}
      * @throws IOException If failed to login or authenticate
      */
-    ClientSession sessionLogin(String host, int port, String username, String password) throws IOException;
+    default ClientSession sessionLogin(String host, int port, String username, String password) throws IOException {
+        return sessionLogin(InetAddress.getByName(ValidateUtils.checkNotNullAndNotEmpty(host, "No host")), port, username, password);
+    }
 
     /**
      * Creates a session on the default port and logs in using the provided credentials
@@ -65,7 +71,9 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
      * @return Created {@link ClientSession}
      * @throws IOException If failed to login or authenticate
      */
-    ClientSession sessionLogin(String host, String username, KeyPair identity) throws IOException;
+    default ClientSession sessionLogin(String host, String username, KeyPair identity) throws IOException {
+        return sessionLogin(host, DEFAULT_PORT, username, identity);
+    }
 
     /**
      * Creates a session and logs in using the provided credentials
@@ -77,7 +85,9 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
      * @return Created {@link ClientSession}
      * @throws IOException If failed to login or authenticate
      */
-    ClientSession sessionLogin(String host, int port, String username, KeyPair identity) throws IOException;
+    default ClientSession sessionLogin(String host, int port, String username, KeyPair identity) throws IOException {
+        return sessionLogin(InetAddress.getByName(ValidateUtils.checkNotNullAndNotEmpty(host, "No host")), port, username, identity);
+    }
 
     /**
      * Creates a session on the default port and logs in using the provided credentials
@@ -88,7 +98,9 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
      * @return Created {@link ClientSession}
      * @throws IOException If failed to login or authenticate
      */
-    ClientSession sessionLogin(InetAddress host, String username, String password) throws IOException;
+    default ClientSession sessionLogin(InetAddress host, String username, String password) throws IOException {
+        return sessionLogin(host, DEFAULT_PORT, username, password);
+    }
 
     /**
      * Creates a session and logs in using the provided credentials
@@ -100,7 +112,9 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
      * @return Created {@link ClientSession}
      * @throws IOException If failed to login or authenticate
      */
-    ClientSession sessionLogin(InetAddress host, int port, String username, String password) throws IOException;
+    default ClientSession sessionLogin(InetAddress host, int port, String username, String password) throws IOException {
+        return sessionLogin(new InetSocketAddress(ValidateUtils.checkNotNull(host, "No host address"), port), username, password);
+    }
 
     /**
      * Creates a session on the default port and logs in using the provided credentials
@@ -111,7 +125,9 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
      * @return Created {@link ClientSession}
      * @throws IOException If failed to login or authenticate
      */
-    ClientSession sessionLogin(InetAddress host, String username, KeyPair identity) throws IOException;
+    default ClientSession sessionLogin(InetAddress host, String username, KeyPair identity) throws IOException {
+        return sessionLogin(host, DEFAULT_PORT, username, identity);
+    }
 
     /**
      * Creates a session and logs in using the provided credentials
@@ -123,7 +139,9 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
      * @return Created {@link ClientSession}
      * @throws IOException If failed to login or authenticate
      */
-    ClientSession sessionLogin(InetAddress host, int port, String username, KeyPair identity) throws IOException;
+    default ClientSession sessionLogin(InetAddress host, int port, String username, KeyPair identity) throws IOException {
+        return sessionLogin(new InetSocketAddress(ValidateUtils.checkNotNull(host, "No host address"), port), username, identity);
+    }
 
     /**
      * Creates a session and logs in using the provided credentials

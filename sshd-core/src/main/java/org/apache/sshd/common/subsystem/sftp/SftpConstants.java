@@ -18,9 +18,7 @@
  */
 package org.apache.sshd.common.subsystem.sftp;
 
-import java.lang.reflect.Field;
 import java.util.Map;
-import java.util.function.Predicate;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.LoggingUtils;
@@ -279,16 +277,13 @@ public final class SftpConstants {
 
     private static class LazyCommandNameHolder {
         private static final Map<Integer, String> NAMES_MAP =
-                LoggingUtils.generateMnemonicMap(SftpConstants.class, new Predicate<Field>() {
-                    @Override
-                    public boolean test(Field f) {
-                        String name = f.getName();
-                        return name.startsWith("SSH_FXP_")
-                            // exclude the rename modes which are not opcodes
-                            && (!name.startsWith("SSH_FXP_RENAME_"))
-                            // exclude the realpath modes wich are not opcodes
-                            && (!name.startsWith("SSH_FXP_REALPATH_"));
-                    }
+                LoggingUtils.generateMnemonicMap(SftpConstants.class, f -> {
+                    String name = f.getName();
+                    return name.startsWith("SSH_FXP_")
+                        // exclude the rename modes which are not opcodes
+                        && (!name.startsWith("SSH_FXP_RENAME_"))
+                        // exclude the realpath modes wich are not opcodes
+                        && (!name.startsWith("SSH_FXP_REALPATH_"));
                 });
     }
 

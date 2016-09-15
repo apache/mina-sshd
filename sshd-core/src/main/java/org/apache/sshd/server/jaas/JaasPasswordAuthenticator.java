@@ -18,10 +18,8 @@
  */
 package org.apache.sshd.server.jaas;
 
-import java.io.IOException;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
@@ -64,17 +62,14 @@ public class JaasPasswordAuthenticator extends AbstractLoggingBean implements Pa
     public boolean authenticate(final String username, final String password) {
         try {
             Subject subject = new Subject();
-            LoginContext loginContext = new LoginContext(domain, subject, new CallbackHandler() {
-                @Override
-                public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
-                    for (Callback callback : callbacks) {
-                        if (callback instanceof NameCallback) {
-                            ((NameCallback) callback).setName(username);
-                        } else if (callback instanceof PasswordCallback) {
-                            ((PasswordCallback) callback).setPassword(password.toCharArray());
-                        } else {
-                            throw new UnsupportedCallbackException(callback);
-                        }
+            LoginContext loginContext = new LoginContext(domain, subject, callbacks -> {
+                for (Callback callback : callbacks) {
+                    if (callback instanceof NameCallback) {
+                        ((NameCallback) callback).setName(username);
+                    } else if (callback instanceof PasswordCallback) {
+                        ((PasswordCallback) callback).setPassword(password.toCharArray());
+                    } else {
+                        throw new UnsupportedCallbackException(callback);
                     }
                 }
             });

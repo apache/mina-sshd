@@ -23,11 +23,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 
 import com.jcraft.jsch.JSch;
@@ -62,18 +60,8 @@ import ch.ethz.ssh2.ConnectionInfo;
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class MacTest extends BaseTestSupport {
     private static final Collection<String> GANYMEDE_MACS =
-            Collections.unmodifiableSet(new TreeSet<String>(String.CASE_INSENSITIVE_ORDER) {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
-
-                {
-                    String[] macs = Connection.getAvailableMACs();
-                    if (GenericUtils.length(macs) > 0) {
-                        for (String m : macs) {
-                            add(m);
-                        }
-                    }
-                }
-            });
+            Collections.unmodifiableSet(
+                    GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, Connection.getAvailableMACs()));
 
     private static SshServer sshd;
     private static int port;
@@ -144,7 +132,7 @@ public class MacTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd.setMacFactories(Arrays.asList(factory));
+        sshd.setMacFactories(Collections.singletonList(factory));
     }
 
     @Test

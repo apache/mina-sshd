@@ -121,46 +121,43 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     }
 
     public void receiveFileStream(final OutputStream local, final int bufferSize) throws IOException {
-        receive(new ScpReceiveLineHandler() {
-            @Override
-            public void process(final String line, boolean isDir, ScpTimestamp timestamp) throws IOException {
-                if (isDir) {
-                    throw new StreamCorruptedException("Cannot download a directory into a file stream: " + line);
+        receive((line, isDir, timestamp) -> {
+            if (isDir) {
+                throw new StreamCorruptedException("Cannot download a directory into a file stream: " + line);
+            }
+
+            final Path path = new MockPath(line);
+            receiveStream(line, new ScpTargetStreamResolver() {
+                @SuppressWarnings("synthetic-access")
+                @Override
+                public OutputStream resolveTargetStream(Session session, String name, long length,
+                        Set<PosixFilePermission> perms, OpenOption... options) throws IOException {
+                    if (log.isDebugEnabled()) {
+                        log.debug("resolveTargetStream({}) name={}, perms={}, len={} - started local stream download",
+                                  ScpHelper.this, name, perms, length);
+                    }
+                    return local;
                 }
 
-                final Path path = new MockPath(line);
-                receiveStream(line, new ScpTargetStreamResolver() {
-                    @SuppressWarnings("synthetic-access")
-                    @Override
-                    public OutputStream resolveTargetStream(Session session, String name, long length,
-                            Set<PosixFilePermission> perms, OpenOption... options) throws IOException {
-                        if (log.isDebugEnabled()) {
-                            log.debug("resolveTargetStream({}) name={}, perms={}, len={} - started local stream download",
-                                      ScpHelper.this, name, perms, length);
-                        }
-                        return local;
-                    }
+                @Override
+                public Path getEventListenerFilePath() {
+                    return path;
+                }
 
-                    @Override
-                    public Path getEventListenerFilePath() {
-                        return path;
+                @Override
+                @SuppressWarnings("synthetic-access")
+                public void postProcessReceivedData(String name, boolean preserve, Set<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
+                    if (log.isDebugEnabled()) {
+                        log.debug("postProcessReceivedData({}) name={}, perms={}, preserve={} time={}",
+                                  ScpHelper.this, name, perms, preserve, time);
                     }
+                }
 
-                    @Override
-                    @SuppressWarnings("synthetic-access")
-                    public void postProcessReceivedData(String name, boolean preserve, Set<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
-                        if (log.isDebugEnabled()) {
-                            log.debug("postProcessReceivedData({}) name={}, perms={}, preserve={} time={}",
-                                      ScpHelper.this, name, perms, preserve, time);
-                        }
-                    }
-
-                    @Override
-                    public String toString() {
-                        return line;
-                    }
-                }, timestamp, false, bufferSize);
-            }
+                @Override
+                public String toString() {
+                    return line;
+                }
+            }, timestamp, false, bufferSize);
         });
     }
 
@@ -180,14 +177,11 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             }
         }
 
-        receive(new ScpReceiveLineHandler() {
-            @Override
-            public void process(String line, boolean isDir, ScpTimestamp time) throws IOException {
-                if (recursive && isDir) {
-                    receiveDir(line, path, time, preserve, bufferSize);
-                } else {
-                    receiveFile(line, path, time, preserve, bufferSize);
-                }
+        receive((line, isDir, time) -> {
+            if (recursive && isDir) {
+                receiveDir(line, path, time, preserve, bufferSize);
+            } else {
+                receiveFile(line, path, time, preserve, bufferSize);
             }
         });
     }

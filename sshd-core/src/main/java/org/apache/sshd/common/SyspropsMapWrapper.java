@@ -19,14 +19,13 @@
 
 package org.apache.sshd.common;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Pair;
@@ -134,16 +133,12 @@ public final class SyspropsMapWrapper implements Map<String, Object> {
 
     @Override
     public Set<String> keySet() {
-        Properties props = System.getProperties();
-        Set<String> keys = new TreeSet<>();
-        // filter out any non-SSHD properties
-        for (String key : props.stringPropertyNames()) {
-            if (isMappedSyspropKey(key)) {
-                keys.add(getUnmappedSyspropKey(key));
-            }
-        }
-
-        return keys;
+        return System.getProperties()
+                .stringPropertyNames().stream()
+                // filter out any non-SSHD properties
+                .filter(SyspropsMapWrapper::isMappedSyspropKey)
+                .map(SyspropsMapWrapper::getUnmappedSyspropKey)
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -152,7 +147,7 @@ public final class SyspropsMapWrapper implements Map<String, Object> {
     }
 
     @Override
-    public void putAll(Map<? extends String, ? extends Object> m) {
+    public void putAll(Map<? extends String, ?> m) {
         throw new UnsupportedOperationException("sysprops#putAll(" + m + ") N/A");
     }
 
@@ -170,18 +165,11 @@ public final class SyspropsMapWrapper implements Map<String, Object> {
     public Collection<Object> values() {
         Properties props = System.getProperties();
         // return a copy in order to avoid concurrent modifications
-        List<Object> values = new ArrayList<>(props.size());
-        for (String key : props.stringPropertyNames()) {
-            if (!isMappedSyspropKey(key)) {
-                continue;
-            }
-            Object v = props.getProperty(key);
-            if (v != null) {
-                values.add(v);
-            }
-        }
-
-        return values;
+        return props
+                .stringPropertyNames().stream()
+                .filter(SyspropsMapWrapper::isMappedSyspropKey)
+                .map(props::get)
+                .collect(Collectors.toList());
     }
 
     @Override

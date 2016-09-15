@@ -86,20 +86,15 @@ public class SignatureRSATest extends BaseTestSupport {
 
     @Test   // see SSHD-642
     public void testLeadingZeroesJCE() throws Throwable {
-        testLeadingZeroes(new Factory<SignatureRSA>() {
+        testLeadingZeroes(() -> new SignatureRSA() {
             @Override
-            public SignatureRSA create() {
-                return new SignatureRSA() {
-                    @Override
-                    protected java.security.Signature doInitSignature(String algo, boolean forSigning) throws GeneralSecurityException {
-                        assertFalse("Signature not initialized for verification", forSigning);
-                        java.security.Signature signature = java.security.Signature.getInstance(algo);
-                        Provider provider = signature.getProvider();
-                        String name = provider.getName();
-                        assertNotEquals("BC provider used although not required", SecurityUtils.BOUNCY_CASTLE, name);
-                        return signature;
-                    }
-                };
+            protected java.security.Signature doInitSignature(String algo, boolean forSigning) throws GeneralSecurityException {
+                assertFalse("Signature not initialized for verification", forSigning);
+                java.security.Signature signature = java.security.Signature.getInstance(algo);
+                Provider provider = signature.getProvider();
+                String name = provider.getName();
+                assertNotEquals("BC provider used although not required", SecurityUtils.BOUNCY_CASTLE, name);
+                return signature;
             }
         });
     }

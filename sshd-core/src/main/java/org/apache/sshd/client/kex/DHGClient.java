@@ -54,7 +54,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         return factory.getName();
     }
 
-    public static final KeyExchangeFactory newFactory(final DHFactory delegate) {
+    public static KeyExchangeFactory newFactory(final DHFactory delegate) {
         return new KeyExchangeFactory() {
             @Override
             public String getName() {
@@ -100,11 +100,11 @@ public class DHGClient extends AbstractDHClientKeyExchange {
     public boolean next(int cmd, Buffer buffer) throws Exception {
         Session session = getSession();
         if (log.isDebugEnabled()) {
-            log.debug("next({})[{}] process command={}", this, session, KeyExchange.Utils.getSimpleKexOpcodeName(cmd));
+            log.debug("next({})[{}] process command={}", this, session, KeyExchange.getSimpleKexOpcodeName(cmd));
         }
         if (cmd != SshConstants.SSH_MSG_KEXDH_REPLY) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "Protocol error: expected packet SSH_MSG_KEXDH_REPLY, got " + KeyExchange.Utils.getSimpleKexOpcodeName(cmd));
+                    "Protocol error: expected packet SSH_MSG_KEXDH_REPLY, got " + KeyExchange.getSimpleKexOpcodeName(cmd));
         }
 
         byte[] k_s = buffer.getBytes();
@@ -132,7 +132,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         hash.update(buffer.array(), 0, buffer.available());
         h = hash.digest();
 
-        Signature verif = ValidateUtils.checkNotNull(NamedFactory.Utils.create(session.getSignatureFactories(), keyAlg),
+        Signature verif = ValidateUtils.checkNotNull(NamedFactory.create(session.getSignatureFactories(), keyAlg),
                 "No verifier located for algorithm=%s",
                 keyAlg);
         verif.initVerifier(serverKey);

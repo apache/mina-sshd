@@ -146,12 +146,9 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
         }
 
         final Pattern regex = Pattern.compile(expr);
-        return new PathMatcher() {
-            @Override
-            public boolean matches(Path path) {
-                Matcher m = regex.matcher(path.toString());
-                return m.matches();
-            }
+        return path -> {
+            Matcher m = regex.matcher(path.toString());
+            return m.matches();
         };
     }
 

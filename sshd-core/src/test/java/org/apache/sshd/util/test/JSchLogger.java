@@ -20,7 +20,6 @@ package org.apache.sshd.util.test;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Logger;
-
 import org.slf4j.LoggerFactory;
 
 /**

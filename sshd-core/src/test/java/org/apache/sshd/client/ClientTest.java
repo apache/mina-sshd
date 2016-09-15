@@ -27,10 +27,8 @@ import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
-import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -60,7 +58,6 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
-import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.SubsystemClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
@@ -102,7 +99,6 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.keyboard.DefaultKeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
-import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.channel.ChannelSessionFactory;
 import org.apache.sshd.server.forward.DirectTcpipFactory;
@@ -446,34 +442,25 @@ public class ClientTest extends BaseTestSupport {
         client.start();
 
         try (final ClientSession session = createTestClientSession()) {
-            testClientListener(channelHolder, ChannelShell.class, new Factory<ChannelShell>() {
-                @Override
-                public ChannelShell create() {
-                    try {
-                        return session.createShellChannel();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+            testClientListener(channelHolder, ChannelShell.class, () -> {
+                try {
+                    return session.createShellChannel();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
             });
-            testClientListener(channelHolder, ChannelExec.class, new Factory<ChannelExec>() {
-                @Override
-                public ChannelExec create() {
-                    try {
-                        return session.createExecChannel(getCurrentTestName());
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+            testClientListener(channelHolder, ChannelExec.class, () -> {
+                try {
+                    return session.createExecChannel(getCurrentTestName());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
             });
-            testClientListener(channelHolder, SftpClient.class, new Factory<SftpClient>() {
-                @Override
-                public SftpClient create() {
-                    try {
-                        return session.createSftpClient();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+            testClientListener(channelHolder, SftpClient.class, () -> {
+                try {
+                    return session.createSftpClient();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
             });
         } finally {
@@ -955,7 +942,7 @@ public class ClientTest extends BaseTestSupport {
     public void testPublicKeyAuth() throws Exception {
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
-        client.setUserAuthFactories(Arrays.asList(UserAuthPublicKeyFactory.INSTANCE));
+        client.setUserAuthFactories(Collections.singletonList(UserAuthPublicKeyFactory.INSTANCE));
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -974,13 +961,8 @@ public class ClientTest extends BaseTestSupport {
         provider.setAlgorithm(KeyUtils.RSA_ALGORITHM);
 
         final KeyPair pair = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
-        sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
-            @Override
-            public boolean authenticate(String username, PublicKey key, ServerSession session) {
-                return key.equals(pair.getPublic());
-            }
-        });
-        client.setUserAuthFactories(Arrays.asList(UserAuthPublicKeyFactory.INSTANCE));
+        sshd.setPublickeyAuthenticator((username, key, session) -> key.equals(pair.getPublic()));
+        client.setUserAuthFactories(Collections.singletonList(UserAuthPublicKeyFactory.INSTANCE));
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -996,7 +978,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testPasswordAuthNew() throws Exception {
-        client.setUserAuthFactories(Arrays.asList(UserAuthPasswordFactory.INSTANCE));
+        client.setUserAuthFactories(Collections.singletonList(UserAuthPasswordFactory.INSTANCE));
         client.start();
 
         try (ClientSession session = createTestClientSession()) {
@@ -1009,7 +991,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testPasswordAuthNewWithFailureOnFirstIdentity() throws Exception {
-        client.setUserAuthFactories(Arrays.asList(UserAuthPasswordFactory.INSTANCE));
+        client.setUserAuthFactories(Collections.singletonList(UserAuthPasswordFactory.INSTANCE));
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -1025,7 +1007,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testKeyboardInteractiveAuthNew() throws Exception {
-        client.setUserAuthFactories(Arrays.asList(UserAuthKeyboardInteractiveFactory.INSTANCE));
+        client.setUserAuthFactories(Collections.singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
         try (ClientSession session = createTestClientSession()) {
@@ -1038,7 +1020,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testKeyboardInteractiveAuthNewWithFailureOnFirstIdentity() throws Exception {
-        client.setUserAuthFactories(Arrays.asList(UserAuthKeyboardInteractiveFactory.INSTANCE));
+        client.setUserAuthFactories(Collections.singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -1055,7 +1037,7 @@ public class ClientTest extends BaseTestSupport {
     @Test   // see SSHD-504
     public void testDefaultKeyboardInteractivePasswordPromptLocationIndependence() throws Exception {
         final Collection<String> mismatchedPrompts = new LinkedList<>();
-        client.setUserAuthFactories(Arrays.asList(new UserAuthKeyboardInteractiveFactory() {
+        client.setUserAuthFactories(Collections.singletonList(new UserAuthKeyboardInteractiveFactory() {
             @Override
             public UserAuthKeyboardInteractive create() {
                 return new UserAuthKeyboardInteractive() {
@@ -1074,38 +1056,20 @@ public class ClientTest extends BaseTestSupport {
         }));
         client.start();
 
-        final Transformer<String, String> stripper = new Transformer<String, String>() {
-            @Override
-            public String transform(String input) {
-                int pos = GenericUtils.isEmpty(input) ? -1 : input.lastIndexOf(':');
-                if (pos < 0) {
-                    return input;
-                } else {
-                    return input.substring(0, pos);
-                }
+        final Transformer<String, String> stripper = input -> {
+            int pos = GenericUtils.isEmpty(input) ? -1 : input.lastIndexOf(':');
+            if (pos < 0) {
+                return input;
+            } else {
+                return input.substring(0, pos);
             }
         };
         final List<Transformer<String, String>> xformers =
-                Collections.unmodifiableList(Arrays.asList(
-                        new Transformer<String, String>() {  // prefixed
-                            @Override
-                            public String transform(String input) {
-                                return getCurrentTestName() + " " + input;
-                            }
-                        },
-                        new Transformer<String, String>() {  // suffixed
-                            @Override
-                            public String transform(String input) {
-                                return stripper.transform(input) + " " + getCurrentTestName() + ":";
-                            }
-                        },
-                        new Transformer<String, String>() {  // infix
-                            @Override
-                            public String transform(String input) {
-                                return getCurrentTestName() + " " + stripper.transform(input) + " " + getCurrentTestName() + ":";
-                            }
-                        }
-                ));
+            Collections.unmodifiableList(Arrays.<Transformer<String, String>>asList(
+                input -> getCurrentTestName() + " " + input,
+                input -> stripper.transform(input) + " " + getCurrentTestName() + ":",
+                input -> getCurrentTestName() + " " + stripper.transform(input) + " " + getCurrentTestName() + ":"
+            ));
         sshd.setKeyboardInteractiveAuthenticator(new DefaultKeyboardInteractiveAuthenticator() {
             private int xformerIndex;
 
@@ -1356,14 +1320,11 @@ public class ClientTest extends BaseTestSupport {
     public void testWaitAuth() throws Exception {
         final AtomicBoolean ok = new AtomicBoolean();
         client.setServerKeyVerifier(
-                new ServerKeyVerifier() {
-                    @Override
-                    public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
-                        outputDebugMessage("verifyServerKey(%s): %s", remoteAddress, serverKey);
-                        ok.set(true);
-                        return true;
-                    }
-                }
+            (sshClientSession, remoteAddress, serverKey) -> {
+                outputDebugMessage("verifyServerKey(%s): %s", remoteAddress, serverKey);
+                ok.set(true);
+                return true;
+            }
         );
         client.start();
 
@@ -1394,7 +1355,7 @@ public class ClientTest extends BaseTestSupport {
             Set<Integer> ids = new HashSet<>(channels.size());
             for (ClientChannel c : channels) {
                 int id = c.getId();
-                assertTrue("Channel ID repeated: " + id, ids.add(Integer.valueOf(id)));
+                assertTrue("Channel ID repeated: " + id, ids.add(id));
             }
         } finally {
             for (Closeable c : channels) {

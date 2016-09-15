@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
-import org.apache.sshd.client.session.ClientProxyConnector;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.Session;
@@ -129,12 +128,9 @@ public class ServerProxyAcceptorTest extends BaseTestSupport {
         });
         sshd.start();
 
-        client.setClientProxyConnector(new ClientProxyConnector() {
-            @Override
-            public void sendClientProxyMetadata(ClientSession session) throws Exception {
-                IoSession ioSession = session.getIoSession();
-                ioSession.write(new ByteArrayBuffer(metaDataBytes));
-            }
+        client.setClientProxyConnector(session -> {
+            IoSession ioSession = session.getIoSession();
+            ioSession.write(new ByteArrayBuffer(metaDataBytes));
         });
         client.start();
 

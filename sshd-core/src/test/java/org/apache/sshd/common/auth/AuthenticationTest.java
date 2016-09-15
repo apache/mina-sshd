@@ -19,10 +19,8 @@
 package org.apache.sshd.common.auth;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import java.security.KeyPair;
 import java.security.PublicKey;
-import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,7 +29,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -40,7 +37,6 @@ import org.apache.sshd.client.auth.hostbased.HostKeyIdentityProvider;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.future.AuthFuture;
-import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
@@ -61,7 +57,6 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.ServerAuthenticationManager;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.auth.hostbased.HostBasedAuthenticator;
 import org.apache.sshd.server.auth.keyboard.DefaultKeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.keyboard.InteractiveChallenge;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
@@ -158,16 +153,12 @@ public class AuthenticationTest extends BaseTestSupport {
     public void testChangePassword() throws Exception {
         final PasswordAuthenticator delegate = sshd.getPasswordAuthenticator();
         final AtomicInteger attemptsCount = new AtomicInteger(0);
-        sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
-            @Override
-            public boolean authenticate(String username, String password, ServerSession session)
-                    throws PasswordChangeRequiredException {
-                if (attemptsCount.incrementAndGet() == 1) {
-                    throw new PasswordChangeRequiredException(attemptsCount.toString(), getCurrentTestName(), ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
-                }
-
-                return delegate.authenticate(username, password, session);
+        sshd.setPasswordAuthenticator((username, password, session) -> {
+            if (attemptsCount.incrementAndGet() == 1) {
+                throw new PasswordChangeRequiredException(attemptsCount.toString(), getCurrentTestName(), ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
             }
+
+            return delegate.authenticate(username, password, session);
         });
 
         final AtomicInteger changesCount = new AtomicInteger(0);
@@ -383,15 +374,11 @@ public class AuthenticationTest extends BaseTestSupport {
         challenge.setInteractionInstruction(anchor.getPackage().getName());
         challenge.setLanguageTag(Locale.getDefault().getLanguage());
 
-        final Map<String, String> rspMap = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER) {
-            private static final long serialVersionUID = 1L;    // we're not serializing it
-
-            {
-                put("class", anchor.getSimpleName());
-                put("package", anchor.getPackage().getName());
-                put("test", getCurrentTestName());
-            }
-        };
+        final Map<String, String> rspMap = GenericUtils.<String, String>mapBuilder(String.CASE_INSENSITIVE_ORDER)
+                .put("class", anchor.getSimpleName())
+                .put("package", anchor.getPackage().getName())
+                .put("test", getCurrentTestName())
+                .build();
         for (String prompt : rspMap.keySet()) {
             challenge.addPrompt(prompt, (GenericUtils.size(challenge.getPrompts()) & 0x1) != 0);
         }
@@ -478,16 +465,12 @@ public class AuthenticationTest extends BaseTestSupport {
     public void testAuthPasswordChangeRequest() throws Exception {
         final PasswordAuthenticator delegate = ValidateUtils.checkNotNull(sshd.getPasswordAuthenticator(), "No password authenticator");
         final AtomicInteger attemptsCount = new AtomicInteger(0);
-        sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
-            @Override
-            public boolean authenticate(String username, String password, ServerSession session)
-                    throws PasswordChangeRequiredException {
-                if (attemptsCount.incrementAndGet() == 1) {
-                    throw new PasswordChangeRequiredException(attemptsCount.toString(), getCurrentTestName(), ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
-                }
-
-                return delegate.authenticate(username, password, session);
+        sshd.setPasswordAuthenticator((username, password, session) -> {
+            if (attemptsCount.incrementAndGet() == 1) {
+                throw new PasswordChangeRequiredException(attemptsCount.toString(), getCurrentTestName(), ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
             }
+
+            return delegate.authenticate(username, password, session);
         });
         PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
 
@@ -564,13 +547,10 @@ public class AuthenticationTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             final List<String> passwords = Collections.singletonList(getCurrentTestName());
             final AtomicInteger loadCount = new AtomicInteger(0);
-            PasswordIdentityProvider provider = new PasswordIdentityProvider() {
-                @Override
-                public Iterable<String> loadPasswords() {
-                    loadCount.incrementAndGet();
-                    outputDebugMessage("loadPasswords - count=%s", loadCount);
-                    return passwords;
-                }
+            PasswordIdentityProvider provider = () -> {
+                loadCount.incrementAndGet();
+                outputDebugMessage("loadPasswords - count=%s", loadCount);
+                return passwords;
             };
             client.setPasswordIdentityProvider(provider);
 
@@ -587,7 +567,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test   // see SSHD-618
     public void testPublicKeyAuthDifferentThanKex() throws Exception {
-        final KeyPairProvider serverKeys = KeyPairProvider.Utils.wrap(
+        final KeyPairProvider serverKeys = KeyPairProvider.wrap(
                     Utils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024),
                     Utils.generateKeyPair(KeyUtils.DSS_ALGORITHM, 512),
                     Utils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256));
@@ -596,32 +576,26 @@ public class AuthenticationTest extends BaseTestSupport {
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
 
         final KeyPair clientIdentity = Utils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256);
-        sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
-            @Override
-            public boolean authenticate(String username, PublicKey key, ServerSession session) {
-                String keyType = KeyUtils.getKeyType(key);
-                String expType = KeyUtils.getKeyType(clientIdentity);
-                assertEquals("Mismatched client key types", expType, keyType);
-                assertKeyEquals("Mismatched authentication public keys", clientIdentity.getPublic(), key);
-                return true;
-            }
+        sshd.setPublickeyAuthenticator((username, key, session) -> {
+            String keyType = KeyUtils.getKeyType(key);
+            String expType = KeyUtils.getKeyType(clientIdentity);
+            assertEquals("Mismatched client key types", expType, keyType);
+            assertKeyEquals("Mismatched authentication public keys", clientIdentity.getPublic(), key);
+            return true;
         });
 
         try (SshClient client = setupTestClient()) {
             // force server to use only the RSA key
             final NamedFactory<Signature> kexSignature = BuiltinSignatures.rsa;
             client.setSignatureFactories(Collections.singletonList(kexSignature));
-            client.setServerKeyVerifier(new ServerKeyVerifier() {
-                @Override
-                public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
-                    String keyType = KeyUtils.getKeyType(serverKey);
-                    String expType = kexSignature.getName();
-                    assertEquals("Mismatched server key type", expType, keyType);
+            client.setServerKeyVerifier((sshClientSession, remoteAddress, serverKey) -> {
+                String keyType = KeyUtils.getKeyType(serverKey);
+                String expType = kexSignature.getName();
+                assertEquals("Mismatched server key type", expType, keyType);
 
-                    KeyPair kp = ValidateUtils.checkNotNull(serverKeys.loadKey(keyType), "No server key for type=%s", keyType);
-                    assertKeyEquals("Mismatched server public keys", kp.getPublic(), serverKey);
-                    return true;
-                }
+                KeyPair kp = ValidateUtils.checkNotNull(serverKeys.loadKey(keyType), "No server key for type=%s", keyType);
+                assertKeyEquals("Mismatched server public keys", kp.getPublic(), serverKey);
+                return true;
             });
 
             // allow only EC keys for public key authentication
@@ -702,15 +676,11 @@ public class AuthenticationTest extends BaseTestSupport {
         final String hostClientName = SshdSocketAddress.toAddressString(SshdSocketAddress.getFirstExternalNetwork4Address());
         final KeyPair hostClientKey = Utils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
         final AtomicInteger invocationCount = new AtomicInteger(0);
-        sshd.setHostBasedAuthenticator(new HostBasedAuthenticator() {
-            @Override
-            public boolean authenticate(ServerSession session, String username,
-                    PublicKey clientHostKey, String clientHostName, String clientUsername, List<X509Certificate> certificates) {
-                invocationCount.incrementAndGet();
-                return hostClienUser.equals(clientUsername)
-                    && hostClientName.equals(clientHostName)
-                    && KeyUtils.compareKeys(hostClientKey.getPublic(), clientHostKey);
-            }
+        sshd.setHostBasedAuthenticator((session, username, clientHostKey, clientHostName, clientUsername, certificates) -> {
+            invocationCount.incrementAndGet();
+            return hostClienUser.equals(clientUsername)
+                && hostClientName.equals(clientHostName)
+                && KeyUtils.compareKeys(hostClientKey.getPublic(), clientHostKey);
         });
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
@@ -724,7 +694,7 @@ public class AuthenticationTest extends BaseTestSupport {
                     new org.apache.sshd.client.auth.hostbased.UserAuthHostBasedFactory();
             // TODO factory.setClientHostname(CLIENT_HOSTNAME);
             factory.setClientUsername(hostClienUser);
-            factory.setClientHostKeys(HostKeyIdentityProvider.Utils.wrap(hostClientKey));
+            factory.setClientHostKeys(HostKeyIdentityProvider.wrap(hostClientKey));
 
             client.setUserAuthFactories(Collections.singletonList(factory));
             client.start();
@@ -742,29 +712,22 @@ public class AuthenticationTest extends BaseTestSupport {
         final Error thrown = new OutOfMemoryError(getCurrentTestName());
         final PasswordAuthenticator authPassword = sshd.getPasswordAuthenticator();
         final AtomicInteger passCounter = new AtomicInteger(0);
-        sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
-            @Override
-            public boolean authenticate(String username, String password, ServerSession session)
-                    throws PasswordChangeRequiredException {
-                int count = passCounter.incrementAndGet();
-                if (count == 1) {
-                    throw thrown;
-                }
-                return authPassword.authenticate(username, password, session);
+        sshd.setPasswordAuthenticator((username, password, session) -> {
+            int count = passCounter.incrementAndGet();
+            if (count == 1) {
+                throw thrown;
             }
+            return authPassword.authenticate(username, password, session);
         });
 
         final PublickeyAuthenticator authPubkey = sshd.getPublickeyAuthenticator();
         final AtomicInteger pubkeyCounter = new AtomicInteger(0);
-        sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
-            @Override
-            public boolean authenticate(String username, PublicKey key, ServerSession session) {
-                int count = pubkeyCounter.incrementAndGet();
-                if (count == 1) {
-                    throw thrown;
-                }
-                return authPubkey.authenticate(username, key, session);
+        sshd.setPublickeyAuthenticator((username, key, session) -> {
+            int count = pubkeyCounter.incrementAndGet();
+            if (count == 1) {
+                throw thrown;
             }
+            return authPubkey.authenticate(username, key, session);
         });
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
 

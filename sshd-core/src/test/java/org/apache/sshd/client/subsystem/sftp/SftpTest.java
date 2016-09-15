@@ -51,7 +51,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
-
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
@@ -64,10 +63,8 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.WindowClosedException;
-import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.random.Random;
-import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.subsystem.sftp.extensions.AclSupportedParser.AclCapabilities;
@@ -224,12 +221,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     public void testNavigateBeyondRootFolder() throws Exception {
         Path rootLocation = Paths.get(OsUtils.isUNIX() ? "/" : "C:\\");
         final FileSystem fsRoot = rootLocation.getFileSystem();
-        sshd.setFileSystemFactory(new FileSystemFactory() {
-                @Override
-                public FileSystem createFileSystem(Session session) throws IOException {
-                    return fsRoot;
-                }
-            });
+        sshd.setFileSystemFactory(session1 -> fsRoot);
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
@@ -1034,28 +1026,14 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     @Test
     public void testSftpVersionSelector() throws Exception {
         final AtomicInteger selected = new AtomicInteger(-1);
-        SftpVersionSelector selector = new SftpVersionSelector() {
-            @Override
-            public int selectVersion(ClientSession session, int current, List<Integer> available) {
-                int numAvailable = GenericUtils.size(available);
-                Integer maxValue = null;
-                if (numAvailable == 1) {
-                    maxValue = available.get(0);
-                } else {
-                    for (Integer v : available) {
-                        if (v.intValue() == current) {
-                            continue;
-                        }
-
-                        if ((maxValue == null) || (maxValue.intValue() < v.intValue())) {
-                            maxValue = v;
-                        }
-                    }
-                }
-
-                selected.set(maxValue.intValue());
-                return selected.get();
-            }
+        SftpVersionSelector selector = (session, current, available) -> {
+            int value = GenericUtils.stream(available)
+                    .mapToInt(Integer::intValue)
+                    .filter(v -> v != current)
+                    .max()
+                    .orElseGet(() -> current);
+            selected.set(value);
+            return value;
         };
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {

@@ -63,7 +63,6 @@ import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.KeyExchangeFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.AbstractKexFactoryManager;
@@ -719,7 +718,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
         Map<KexProposalOption, String> result = negotiate();
         String kexAlgorithm = result.get(KexProposalOption.ALGORITHMS);
-        kex = ValidateUtils.checkNotNull(NamedFactory.Utils.create(getKeyExchangeFactories(), kexAlgorithm),
+        kex = ValidateUtils.checkNotNull(NamedFactory.create(getKeyExchangeFactories(), kexAlgorithm),
                 "Unknown negotiated KEX algorithm: %s",
                 kexAlgorithm);
         kex.init(this, serverVersion.getBytes(StandardCharsets.UTF_8), clientVersion.getBytes(StandardCharsets.UTF_8), i_s, i_c);
@@ -944,23 +943,14 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         final IoWriteFuture writeFuture = writePacket(buffer);
         final DefaultSshFuture<IoWriteFuture> future = (DefaultSshFuture<IoWriteFuture>) writeFuture;
         ScheduledExecutorService executor = factoryManager.getScheduledExecutorService();
-        final ScheduledFuture<?> sched = executor.schedule(new Runnable() {
-                @SuppressWarnings("synthetic-access")
-                @Override
-                public void run() {
-                    Throwable t = new TimeoutException("Timeout writing packet: " + timeout + " " + unit);
-                    if (log.isDebugEnabled()) {
-                        log.debug("writePacket({}): {}", AbstractSession.this, t.getMessage());
-                    }
-                    future.setValue(t);
-                }
-            }, timeout, unit);
-        future.addListener(new SshFutureListener<IoWriteFuture>() {
-                @Override
-                public void operationComplete(IoWriteFuture future) {
-                    sched.cancel(false);
-                }
-            });
+        final ScheduledFuture<?> sched = executor.schedule(() -> {
+            Throwable t = new TimeoutException("Timeout writing packet: " + timeout + " " + unit);
+            if (log.isDebugEnabled()) {
+                log.debug("writePacket({}): {}", AbstractSession.this, t.getMessage());
+            }
+            future.setValue(t);
+        }, timeout, unit);
+        future.addListener(future1 -> sched.cancel(false));
         return writeFuture;
     }
 
@@ -1485,21 +1475,21 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected Map<KexProposalOption, String> createProposal(String hostKeyTypes) {
         Map<KexProposalOption, String> proposal = new EnumMap<>(KexProposalOption.class);
         proposal.put(KexProposalOption.ALGORITHMS,
-                NamedResource.Utils.getNames(
+                NamedResource.getNames(
                         ValidateUtils.checkNotNullAndNotEmpty(getKeyExchangeFactories(), "No KEX factories")));
         proposal.put(KexProposalOption.SERVERKEYS, hostKeyTypes);
 
-        String ciphers = NamedResource.Utils.getNames(
+        String ciphers = NamedResource.getNames(
                 ValidateUtils.checkNotNullAndNotEmpty(getCipherFactories(), "No cipher factories"));
         proposal.put(KexProposalOption.S2CENC, ciphers);
         proposal.put(KexProposalOption.C2SENC, ciphers);
 
-        String macs = NamedResource.Utils.getNames(
+        String macs = NamedResource.getNames(
                 ValidateUtils.checkNotNullAndNotEmpty(getMacFactories(), "No MAC factories"));
         proposal.put(KexProposalOption.S2CMAC, macs);
         proposal.put(KexProposalOption.C2SMAC, macs);
 
-        String compressions = NamedResource.Utils.getNames(
+        String compressions = NamedResource.getNames(
                 ValidateUtils.checkNotNullAndNotEmpty(getCompressionFactories(), "No compression factories"));
         proposal.put(KexProposalOption.S2CCOMP, compressions);
         proposal.put(KexProposalOption.C2SCOMP, compressions);
@@ -1672,12 +1662,12 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         byte[] mac_s2c = hash.digest();
 
         String value = getNegotiatedKexParameter(KexProposalOption.S2CENC);
-        Cipher s2ccipher = ValidateUtils.checkNotNull(NamedFactory.Utils.create(getCipherFactories(), value), "Unknown s2c cipher: %s", value);
+        Cipher s2ccipher = ValidateUtils.checkNotNull(NamedFactory.create(getCipherFactories(), value), "Unknown s2c cipher: %s", value);
         e_s2c = resizeKey(e_s2c, s2ccipher.getBlockSize(), hash, k, h);
         s2ccipher.init(isServer ? Cipher.Mode.Encrypt : Cipher.Mode.Decrypt, e_s2c, iv_s2c);
 
         value = getNegotiatedKexParameter(KexProposalOption.S2CMAC);
-        Mac s2cmac = NamedFactory.Utils.create(getMacFactories(), value);
+        Mac s2cmac = NamedFactory.create(getMacFactories(), value);
         if (s2cmac == null) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_MAC_ERROR, "Unknown s2c MAC: " + value);
         }
@@ -1685,18 +1675,18 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         s2cmac.init(mac_s2c);
 
         value = getNegotiatedKexParameter(KexProposalOption.S2CCOMP);
-        Compression s2ccomp = NamedFactory.Utils.create(getCompressionFactories(), value);
+        Compression s2ccomp = NamedFactory.create(getCompressionFactories(), value);
         if (s2ccomp == null) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_COMPRESSION_ERROR, "Unknown s2c compression: " + value);
         }
 
         value = getNegotiatedKexParameter(KexProposalOption.C2SENC);
-        Cipher c2scipher = ValidateUtils.checkNotNull(NamedFactory.Utils.create(getCipherFactories(), value), "Unknown c2s cipher: %s", value);
+        Cipher c2scipher = ValidateUtils.checkNotNull(NamedFactory.create(getCipherFactories(), value), "Unknown c2s cipher: %s", value);
         e_c2s = resizeKey(e_c2s, c2scipher.getBlockSize(), hash, k, h);
         c2scipher.init(isServer ? Cipher.Mode.Decrypt : Cipher.Mode.Encrypt, e_c2s, iv_c2s);
 
         value = getNegotiatedKexParameter(KexProposalOption.C2SMAC);
-        Mac c2smac = NamedFactory.Utils.create(getMacFactories(), value);
+        Mac c2smac = NamedFactory.create(getMacFactories(), value);
         if (c2smac == null) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_MAC_ERROR, "Unknown c2s MAC: " + value);
         }
@@ -1704,7 +1694,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         c2smac.init(mac_c2s);
 
         value = getNegotiatedKexParameter(KexProposalOption.C2SCOMP);
-        Compression c2scomp = NamedFactory.Utils.create(getCompressionFactories(), value);
+        Compression c2scomp = NamedFactory.create(getCompressionFactories(), value);
         if (c2scomp == null) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_COMPRESSION_ERROR, "Unknown c2s compression: " + value);
         }
@@ -1797,30 +1787,26 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         // Write the packet with a timeout to ensure a timely close of the session
         // in case the consumer does not read packets anymore.
         long disconnectTimeoutMs = PropertyResolverUtils.getLongProperty(this, FactoryManager.DISCONNECT_TIMEOUT, FactoryManager.DEFAULT_DISCONNECT_TIMEOUT);
-        writePacket(buffer, disconnectTimeoutMs, TimeUnit.MILLISECONDS).addListener(new SshFutureListener<IoWriteFuture>() {
-            @Override
-            @SuppressWarnings("synthetic-access")
-            public void operationComplete(IoWriteFuture future) {
-                Throwable t = future.getException();
-                if (log.isDebugEnabled()) {
-                    if (t == null) {
-                        log.debug("disconnect({}) operation successfully completed for reason={} [{}]",
-                                  AbstractSession.this, SshConstants.getDisconnectReasonName(reason), msg);
-                    } else {
-                        log.debug("disconnect({}) operation failed ({}) for reason={} [{}]: {}",
-                                   AbstractSession.this, t.getClass().getSimpleName(),
-                                   SshConstants.getDisconnectReasonName(reason), msg, t.getMessage());
-                    }
+        writePacket(buffer, disconnectTimeoutMs, TimeUnit.MILLISECONDS).addListener(future -> {
+            Throwable t = future.getException();
+            if (log.isDebugEnabled()) {
+                if (t == null) {
+                    log.debug("disconnect({}) operation successfully completed for reason={} [{}]",
+                              AbstractSession.this, SshConstants.getDisconnectReasonName(reason), msg);
+                } else {
+                    log.debug("disconnect({}) operation failed ({}) for reason={} [{}]: {}",
+                               AbstractSession.this, t.getClass().getSimpleName(),
+                               SshConstants.getDisconnectReasonName(reason), msg, t.getMessage());
                 }
-
-                if (t != null) {
-                    if (log.isTraceEnabled()) {
-                        log.trace("disconnect(" + AbstractSession.this + ") reason=" + SshConstants.getDisconnectReasonName(reason) + " failure details", t);
-                    }
-                }
-
-                close(true);
             }
+
+            if (t != null) {
+                if (log.isTraceEnabled()) {
+                    log.trace("disconnect(" + AbstractSession.this + ") reason=" + SshConstants.getDisconnectReasonName(reason) + " failure details", t);
+                }
+            }
+
+            close(true);
         });
     }
 
@@ -1988,7 +1974,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     @Override
     public <T> T resolveAttribute(AttributeKey<T> key) {
-        return AttributeStore.Utils.resolveAttribute(this, key);
+        return AttributeStore.resolveAttribute(this, key);
     }
 
     @Override

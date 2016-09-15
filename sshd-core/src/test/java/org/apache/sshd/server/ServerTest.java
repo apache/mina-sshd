@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -515,46 +514,43 @@ public class ServerTest extends BaseTestSupport {
     @Test   // see SSHD-645
     public void testChannelStateChangeNotifications() throws Exception {
         final Semaphore exitSignal = new Semaphore(0);
-        sshd.setCommandFactory(new CommandFactory() {
-            @Override
-            public Command createCommand(final String command) {
-                ValidateUtils.checkTrue(String.CASE_INSENSITIVE_ORDER.compare(command, getCurrentTestName()) == 0, "Unexpected command: %s", command);
+        sshd.setCommandFactory(command -> {
+            ValidateUtils.checkTrue(String.CASE_INSENSITIVE_ORDER.compare(command, getCurrentTestName()) == 0, "Unexpected command: %s", command);
 
-                return new Command() {
-                    private ExitCallback cb;
+            return new Command() {
+                private ExitCallback cb;
 
-                    @Override
-                    public void setOutputStream(OutputStream out) {
-                        // ignored
-                    }
+                @Override
+                public void setOutputStream(OutputStream out) {
+                    // ignored
+                }
 
-                    @Override
-                    public void setInputStream(InputStream in) {
-                        // ignored
-                    }
+                @Override
+                public void setInputStream(InputStream in) {
+                    // ignored
+                }
 
-                    @Override
-                    public void setExitCallback(ExitCallback callback) {
-                        cb = callback;
-                    }
+                @Override
+                public void setExitCallback(ExitCallback callback) {
+                    cb = callback;
+                }
 
-                    @Override
-                    public void setErrorStream(OutputStream err) {
-                        // ignored
-                    }
+                @Override
+                public void setErrorStream(OutputStream err) {
+                    // ignored
+                }
 
-                    @Override
-                    public void destroy() {
-                        // ignored
-                    }
+                @Override
+                public void destroy() {
+                    // ignored
+                }
 
-                    @Override
-                    public void start(Environment env) throws IOException {
-                        exitSignal.release();
-                        cb.onExit(0, command);
-                    }
-                };
-            }
+                @Override
+                public void start(Environment env) throws IOException {
+                    exitSignal.release();
+                    cb.onExit(0, command);
+                }
+            };
         });
         sshd.start();
         client.start();
@@ -591,49 +587,46 @@ public class ServerTest extends BaseTestSupport {
     @Test
     public void testEnvironmentVariablesPropagationToServer() throws Exception {
         final AtomicReference<Environment> envHolder = new AtomicReference<>(null);
-        sshd.setCommandFactory(new CommandFactory() {
-            @Override
-            public Command createCommand(final String command) {
-                ValidateUtils.checkTrue(String.CASE_INSENSITIVE_ORDER.compare(command, getCurrentTestName()) == 0, "Unexpected command: %s", command);
+        sshd.setCommandFactory(command -> {
+            ValidateUtils.checkTrue(String.CASE_INSENSITIVE_ORDER.compare(command, getCurrentTestName()) == 0, "Unexpected command: %s", command);
 
-                return new Command() {
-                    private ExitCallback cb;
+            return new Command() {
+                private ExitCallback cb;
 
-                    @Override
-                    public void setOutputStream(OutputStream out) {
-                        // ignored
+                @Override
+                public void setOutputStream(OutputStream out) {
+                    // ignored
+                }
+
+                @Override
+                public void setInputStream(InputStream in) {
+                    // ignored
+                }
+
+                @Override
+                public void setExitCallback(ExitCallback callback) {
+                    cb = callback;
+                }
+
+                @Override
+                public void setErrorStream(OutputStream err) {
+                    // ignored
+                }
+
+                @Override
+                public void destroy() {
+                    // ignored
+                }
+
+                @Override
+                public void start(Environment env) throws IOException {
+                    if (envHolder.getAndSet(env) != null) {
+                        throw new StreamCorruptedException("Multiple starts for command=" + command);
                     }
 
-                    @Override
-                    public void setInputStream(InputStream in) {
-                        // ignored
-                    }
-
-                    @Override
-                    public void setExitCallback(ExitCallback callback) {
-                        cb = callback;
-                    }
-
-                    @Override
-                    public void setErrorStream(OutputStream err) {
-                        // ignored
-                    }
-
-                    @Override
-                    public void destroy() {
-                        // ignored
-                    }
-
-                    @Override
-                    public void start(Environment env) throws IOException {
-                        if (envHolder.getAndSet(env) != null) {
-                            throw new StreamCorruptedException("Multiple starts for command=" + command);
-                        }
-
-                        cb.onExit(0, command);
-                    }
-                };
-            }
+                    cb.onExit(0, command);
+                }
+            };
         });
 
         TestChannelListener channelListener = new TestChannelListener();
@@ -641,15 +634,12 @@ public class ServerTest extends BaseTestSupport {
         sshd.start();
 
         @SuppressWarnings("synthetic-access")
-        Map<String, String> expected = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER) {
-            private static final long serialVersionUID = 1L;    // we're not serializing it
-
-            {
-                put("test", getCurrentTestName());
-                put("port", Integer.toString(sshd.getPort()));
-                put("user", OsUtils.getCurrentUser());
-            }
-        };
+        Map<String, String> expected =
+                GenericUtils.<String, String>mapBuilder(String.CASE_INSENSITIVE_ORDER)
+                    .put("test", getCurrentTestName())
+                    .put("port", Integer.toString(sshd.getPort()))
+                    .put("user", OsUtils.getCurrentUser())
+                    .build();
 
         client.start();
         try (ClientSession s = createTestClientSession(sshd);

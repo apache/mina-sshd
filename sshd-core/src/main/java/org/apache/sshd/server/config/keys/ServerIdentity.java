@@ -57,12 +57,7 @@ public final class ServerIdentity {
     public static final String HOST_KEY_CONFIG_PROP = "HostKey";
 
     public static final Transformer<String, String> ID_GENERATOR =
-        new Transformer<String, String>() {
-            @Override
-            public String transform(String input) {
-                return getIdentityFileName(input);
-            }
-        };
+            ServerIdentity::getIdentityFileName;
 
     private ServerIdentity() {
         throw new UnsupportedOperationException("No instance");

@@ -105,16 +105,13 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
             }
         }
         final IoConnectFuture future = new Future(null);
-        getConnector().connect(address).addListener(new IoFutureListener<ConnectFuture>() {
-            @Override
-            public void operationComplete(ConnectFuture cf) {
-                if (cf.getException() != null) {
-                    future.setException(cf.getException());
-                } else if (cf.isCanceled()) {
-                    future.cancel();
-                } else {
-                    future.setSession(getSession(cf.getSession()));
-                }
+        getConnector().connect(address).addListener((IoFutureListener<ConnectFuture>) cf -> {
+            if (cf.getException() != null) {
+                future.setException(cf.getException());
+            } else if (cf.isCanceled()) {
+                future.cancel();
+            } else {
+                future.setSession(getSession(cf.getSession()));
             }
         });
         return future;

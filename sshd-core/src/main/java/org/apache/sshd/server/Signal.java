@@ -19,11 +19,11 @@
 package org.apache.sshd.server;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
+import java.util.function.Function;
 
 import org.apache.sshd.common.util.GenericUtils;
 
@@ -75,15 +75,8 @@ public enum Signal {
      * @see #SIGNALS
      */
     public static final Map<String, Signal> NAME_LOOKUP_TABLE =
-            Collections.unmodifiableMap(new TreeMap<String, Signal>(String.CASE_INSENSITIVE_ORDER) {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
-
-                {
-                    for (Signal s : SIGNALS) {
-                        put(s.name(), s);
-                    }
-                }
-            });
+            Collections.unmodifiableMap(
+                    GenericUtils.toSortedMap(SIGNALS, Signal::name, Function.identity(), String.CASE_INSENSITIVE_ORDER));
 
     /**
      * An un-modifiable {@link Map} of the numeric values of all available {@link Signal}s
@@ -91,15 +84,8 @@ public enum Signal {
      * @see #getNumeric()
      */
     public static final Map<Integer, Signal> NUMERIC_LOOKUP_TABLE =
-            Collections.unmodifiableMap(new HashMap<Integer, Signal>(SIGNALS.size()) {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
-
-                {
-                    for (Signal s : SIGNALS) {
-                        put(s.getNumeric(), s);
-                    }
-                }
-            });
+            Collections.unmodifiableMap(
+                    GenericUtils.toSortedMap(SIGNALS, Signal::getNumeric, Function.identity(), Comparator.naturalOrder()));
 
     private final int numeric;
 

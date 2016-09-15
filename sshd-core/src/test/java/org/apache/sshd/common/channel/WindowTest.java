@@ -342,9 +342,7 @@ public class WindowTest extends BaseTestSupport {
 
         @Override
         public void destroy() {
-            if (LATCH != null) {
-                LATCH.countDown();
-            }
+            LATCH.countDown();
             super.destroy();
         }
     }

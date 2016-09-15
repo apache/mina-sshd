@@ -26,11 +26,8 @@ import java.nio.charset.StandardCharsets;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.channel.BufferedIoOutputStream;
 import org.apache.sshd.common.channel.Window;
-import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
-import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.AsyncCommand;
@@ -122,13 +119,7 @@ public class AsyncEchoShellFactory implements Factory<Command> {
 
         @Override
         public void close() throws IOException {
-            out.close(false).addListener(new SshFutureListener<CloseFuture>() {
-                @SuppressWarnings("synthetic-access")
-                @Override
-                public void operationComplete(CloseFuture future) {
-                    callback.onExit(0);
-                }
-            });
+            out.close(false).addListener(future -> callback.onExit(0));
         }
 
         @Override
@@ -143,21 +134,18 @@ public class AsyncEchoShellFactory implements Factory<Command> {
                 if (buffer.charAt(i) == '\n') {
                     final String s = buffer.substring(0, i + 1);
                     final byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
-                    out.write(new ByteArrayBuffer(bytes)).addListener(new SshFutureListener<IoWriteFuture>() {
-                        @Override
-                        public void operationComplete(IoWriteFuture future) {
-                            Session session = channel.getSession();
-                            if (future.isWritten()) {
-                                try {
-                                    Window wLocal = channel.getLocalWindow();
-                                    wLocal.consumeAndCheck(bytes.length);
-                                } catch (IOException e) {
-                                    session.exceptionCaught(e);
-                                }
-                            } else {
-                                Throwable t = future.getException();
-                                session.exceptionCaught(t);
+                    out.write(new ByteArrayBuffer(bytes)).addListener(future -> {
+                        Session session1 = channel.getSession();
+                        if (future.isWritten()) {
+                            try {
+                                Window wLocal = channel.getLocalWindow();
+                                wLocal.consumeAndCheck(bytes.length);
+                            } catch (IOException e) {
+                                session1.exceptionCaught(e);
                             }
+                        } else {
+                            Throwable t = future.getException();
+                            session1.exceptionCaught(t);
                         }
                     });
                     buffer = new StringBuilder(buffer.substring(i + 1));

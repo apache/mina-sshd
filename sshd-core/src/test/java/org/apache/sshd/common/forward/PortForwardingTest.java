@@ -32,7 +32,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +41,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
-
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandlerAdapter;
@@ -166,14 +164,11 @@ public class PortForwardingTest extends BaseTestSupport {
         final TcpipForwarderFactory factory = ValidateUtils.checkNotNull(sshd.getTcpipForwarderFactory(), "No TcpipForwarderFactory");
         sshd.setTcpipForwarderFactory(new TcpipForwarderFactory() {
             private final Class<?>[] interfaces = {TcpipForwarder.class};
-            private final Map<String, String> method2req = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER) {
-                private static final long serialVersionUID = 1L;    // we're not serializing it...
-
-                {
-                    put("localPortForwardingRequested", TcpipForwardHandler.REQUEST);
-                    put("localPortForwardingCancelled", CancelTcpipForwardHandler.REQUEST);
-                }
-            };
+            private final Map<String, String> method2req =
+                    GenericUtils.<String, String>mapBuilder(String.CASE_INSENSITIVE_ORDER)
+                        .put("localPortForwardingRequested", TcpipForwardHandler.REQUEST)
+                        .put("localPortForwardingCancelled", CancelTcpipForwardHandler.REQUEST)
+                        .build();
 
             @Override
             public TcpipForwarder create(ConnectionService service) {
@@ -773,16 +768,16 @@ public class PortForwardingTest extends BaseTestSupport {
                 return false;
             }
             // does it have 'org.apache.sshd.server.session.TcpipForwardSupport.close'?
-            for (int i = 0; i < stack.length; ++i) {
-                String clazzName = stack[i].getClassName();
-                String methodName = stack[i].getMethodName();
+            for (StackTraceElement aStack : stack) {
+                String clazzName = aStack.getClassName();
+                String methodName = aStack.getMethodName();
                 // log.debug("Class: " + clazzName);
                 // log.debug("Method: " + methodName);
                 if (clazzName.equals("org.apache.sshd.server.session.TcpipForwardSupport")
                         && (methodName.equals("close") || methodName.equals("sessionCreated"))) {
                     log.warn(thread.getName() + " stuck at " + clazzName
-                           + "." + methodName + ": "
-                           + stack[i].getLineNumber());
+                            + "." + methodName + ": "
+                            + aStack.getLineNumber());
                     return true;
                 }
             }

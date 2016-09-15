@@ -142,14 +142,11 @@ public class CloseableUtilsTest extends BaseTestSupport {
         };
         ExecutorService service = ThreadUtils.newSingleThreadExecutor(getCurrentTestName());
         try {
-            Future<?> task = service.submit(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        closeable.close();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+            Future<?> task = service.submit((Runnable) () -> {
+                try {
+                    closeable.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
             });
             future.setClosed();  // signal close complete

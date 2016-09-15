@@ -109,12 +109,12 @@ public class WelcomeBannerTest extends BaseTestSupport {
 
     @Test
     public void testFileBanner() throws Exception {
-        testFileContentBanner(path -> path.toFile());
+        testFileContentBanner(Path::toFile);
     }
 
     @Test
     public void testURIBanner() throws Exception {
-        testFileContentBanner(path -> path.toUri());
+        testFileContentBanner(Path::toUri);
     }
 
     @Test

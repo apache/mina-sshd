@@ -22,8 +22,9 @@ package org.apache.sshd.common.keyprovider;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Arrays;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.function.Function;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -57,15 +58,12 @@ public class KeyPairProviderTest extends BaseTestSupport {
         final PublicKey pubKey = Mockito.mock(PublicKey.class);
         final PrivateKey prvKey = Mockito.mock(PrivateKey.class);
         final String[] testKeys = {getCurrentTestName(), getClass().getSimpleName()};
-        Map<String, KeyPair> pairsMap = new TreeMap<String, KeyPair>(String.CASE_INSENSITIVE_ORDER) {
-            private static final long serialVersionUID = 1L;    // we're not serializing it
+        Map<String, KeyPair> pairsMap = GenericUtils.toSortedMap(
+            Arrays.asList(testKeys),
+            Function.identity(),
+            k -> new KeyPair(pubKey, prvKey),
+            String.CASE_INSENSITIVE_ORDER);
 
-            {
-                for (String keyType : testKeys) {
-                    put(keyType, new KeyPair(pubKey, prvKey));
-                }
-            }
-        };
         KeyPairProvider provider = MappedKeyPairProvider.MAP_TO_KEY_PAIR_PROVIDER.transform(pairsMap);
         assertEquals("Key types", pairsMap.keySet(), provider.getKeyTypes());
         assertEquals("Key pairs", pairsMap.values(), provider.loadKeys());

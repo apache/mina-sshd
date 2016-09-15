@@ -143,6 +143,14 @@ public interface ServerAuthenticationManager {
      */
     String AUTH_METHODS = "auth-methods";
 
+    UserAuthPublicKeyFactory DEFAULT_USER_AUTH_PUBLIC_KEY_FACTORY = UserAuthPublicKeyFactory.INSTANCE;
+
+    UserAuthGSSFactory DEFAULT_USER_AUTH_GSS_FACTORY = UserAuthGSSFactory.INSTANCE;
+
+    UserAuthPasswordFactory DEFAULT_USER_AUTH_PASSWORD_FACTORY = UserAuthPasswordFactory.INSTANCE;
+
+    UserAuthKeyboardInteractiveFactory DEFAULT_USER_AUTH_KB_INTERACTIVE_FACTORY = UserAuthKeyboardInteractiveFactory.INSTANCE;
+
     /**
      * Retrieve the list of named factories for <code>UserAuth</code> objects.
      *
@@ -150,10 +158,10 @@ public interface ServerAuthenticationManager {
      */
     List<NamedFactory<UserAuth>> getUserAuthFactories();
     default String getUserAuthFactoriesNameList() {
-        return NamedResource.Utils.getNames(getUserAuthFactories());
+        return NamedResource.getNames(getUserAuthFactories());
     }
     default List<String> getUserAuthFactoriesNames() {
-        return NamedResource.Utils.getNameList(getUserAuthFactories());
+        return NamedResource.getNameList(getUserAuthFactories());
     }
 
     void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories);
@@ -228,78 +236,89 @@ public interface ServerAuthenticationManager {
     void setHostBasedAuthenticator(HostBasedAuthenticator hostBasedAuthenticator);
 
     // CHECKSTYLE:OFF
+    @Deprecated
     final class Utils {
     // CHECKSTYLE:ON
+
         public static final UserAuthPublicKeyFactory DEFAULT_USER_AUTH_PUBLIC_KEY_FACTORY =
-                UserAuthPublicKeyFactory.INSTANCE;
+            ServerAuthenticationManager.DEFAULT_USER_AUTH_PUBLIC_KEY_FACTORY;
 
         public static final UserAuthGSSFactory DEFAULT_USER_AUTH_GSS_FACTORY =
-                UserAuthGSSFactory.INSTANCE;
+                ServerAuthenticationManager.DEFAULT_USER_AUTH_GSS_FACTORY;
 
         public static final UserAuthPasswordFactory DEFAULT_USER_AUTH_PASSWORD_FACTORY =
-                UserAuthPasswordFactory.INSTANCE;
+                ServerAuthenticationManager.DEFAULT_USER_AUTH_PASSWORD_FACTORY;
 
         public static final UserAuthKeyboardInteractiveFactory DEFAULT_USER_AUTH_KB_INTERACTIVE_FACTORY =
-                UserAuthKeyboardInteractiveFactory.INSTANCE;
+                ServerAuthenticationManager.DEFAULT_USER_AUTH_KB_INTERACTIVE_FACTORY;
 
         private Utils() {
             throw new UnsupportedOperationException("No instance allowed");
         }
 
-        /**
-         * If user authentication factories already set, then simply returns them. Otherwise,
-         * builds the factories list from the individual authenticators available for
-         * the manager - password public key, keyboard-interactive, GSS, etc...
-         *
-         * @param manager The {@link ServerAuthenticationManager} - ignored if {@code null}
-         * @return The resolved {@link List} of {@link NamedFactory} for the {@link UserAuth}s
-         * @see #resolveUserAuthFactories(ServerAuthenticationManager, List)
-         */
         public static List<NamedFactory<UserAuth>> resolveUserAuthFactories(ServerAuthenticationManager manager) {
-            if (manager == null) {
-                return Collections.emptyList();
-            } else {
-                return resolveUserAuthFactories(manager, manager.getUserAuthFactories());
-            }
+            return ServerAuthenticationManager.resolveUserAuthFactories(manager);
         }
 
-        /**
-         * If user authentication factories already set, then simply returns them. Otherwise,
-         * builds the factories list from the individual authenticators available for
-         * the manager - password public key, keyboard-interactive, GSS, etc...
-         *
-         * @param manager The {@link ServerAuthenticationManager} - ignored if {@code null}
-         * @param userFactories The currently available {@link UserAuth} factories - if not
-         * {@code null}/empty then they are used as-is.
-         * @return The resolved {@link List} of {@link NamedFactory} for the {@link UserAuth}s
-         */
         public static List<NamedFactory<UserAuth>> resolveUserAuthFactories(
                 ServerAuthenticationManager manager, List<NamedFactory<UserAuth>> userFactories) {
-            if (GenericUtils.size(userFactories) > 0) {
-                return userFactories;   // use whatever the user decided
-            }
-
-            if (manager == null) {
-                return Collections.emptyList();
-            }
-
-            List<NamedFactory<UserAuth>> factories = new ArrayList<>();
-            if (manager.getPasswordAuthenticator() != null) {
-                factories.add(DEFAULT_USER_AUTH_PASSWORD_FACTORY);
-                factories.add(DEFAULT_USER_AUTH_KB_INTERACTIVE_FACTORY);
-            } else if (manager.getKeyboardInteractiveAuthenticator() != null) {
-                factories.add(DEFAULT_USER_AUTH_KB_INTERACTIVE_FACTORY);
-            }
-
-            if (manager.getPublickeyAuthenticator() != null) {
-                factories.add(DEFAULT_USER_AUTH_PUBLIC_KEY_FACTORY);
-            }
-
-            if (manager.getGSSAuthenticator() != null) {
-                factories.add(DEFAULT_USER_AUTH_GSS_FACTORY);
-            }
-
-            return factories;
+            return ServerAuthenticationManager.resolveUserAuthFactories(manager, userFactories);
         }
+    }
+
+    /**
+     * If user authentication factories already set, then simply returns them. Otherwise,
+     * builds the factories list from the individual authenticators available for
+     * the manager - password public key, keyboard-interactive, GSS, etc...
+     *
+     * @param manager The {@link ServerAuthenticationManager} - ignored if {@code null}
+     * @return The resolved {@link List} of {@link NamedFactory} for the {@link UserAuth}s
+     * @see #resolveUserAuthFactories(ServerAuthenticationManager, List)
+     */
+    static List<NamedFactory<UserAuth>> resolveUserAuthFactories(ServerAuthenticationManager manager) {
+        if (manager == null) {
+            return Collections.emptyList();
+        } else {
+            return resolveUserAuthFactories(manager, manager.getUserAuthFactories());
+        }
+    }
+
+    /**
+     * If user authentication factories already set, then simply returns them. Otherwise,
+     * builds the factories list from the individual authenticators available for
+     * the manager - password public key, keyboard-interactive, GSS, etc...
+     *
+     * @param manager The {@link ServerAuthenticationManager} - ignored if {@code null}
+     * @param userFactories The currently available {@link UserAuth} factories - if not
+     * {@code null}/empty then they are used as-is.
+     * @return The resolved {@link List} of {@link NamedFactory} for the {@link UserAuth}s
+     */
+    static List<NamedFactory<UserAuth>> resolveUserAuthFactories(
+            ServerAuthenticationManager manager, List<NamedFactory<UserAuth>> userFactories) {
+        if (GenericUtils.size(userFactories) > 0) {
+            return userFactories;   // use whatever the user decided
+        }
+
+        if (manager == null) {
+            return Collections.emptyList();
+        }
+
+        List<NamedFactory<UserAuth>> factories = new ArrayList<>();
+        if (manager.getPasswordAuthenticator() != null) {
+            factories.add(DEFAULT_USER_AUTH_PASSWORD_FACTORY);
+            factories.add(DEFAULT_USER_AUTH_KB_INTERACTIVE_FACTORY);
+        } else if (manager.getKeyboardInteractiveAuthenticator() != null) {
+            factories.add(DEFAULT_USER_AUTH_KB_INTERACTIVE_FACTORY);
+        }
+
+        if (manager.getPublickeyAuthenticator() != null) {
+            factories.add(DEFAULT_USER_AUTH_PUBLIC_KEY_FACTORY);
+        }
+
+        if (manager.getGSSAuthenticator() != null) {
+            factories.add(DEFAULT_USER_AUTH_GSS_FACTORY);
+        }
+
+        return factories;
     }
 }

@@ -37,7 +37,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
-import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -50,7 +49,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Supplier;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -71,14 +69,12 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
-import org.apache.sshd.client.config.hosts.KnownHostEntry;
 import org.apache.sshd.client.config.keys.ClientIdentityLoader;
 import org.apache.sshd.client.config.keys.DefaultClientIdentitiesWatcher;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
 import org.apache.sshd.client.keyverifier.DefaultKnownHostsServerKeyVerifier;
 import org.apache.sshd.client.keyverifier.KnownHostsServerKeyVerifier;
-import org.apache.sshd.client.keyverifier.ModifiedServerKeyAcceptor;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.AbstractClientSession;
 import org.apache.sshd.client.session.ClientConnectionServiceFactory;
@@ -177,12 +173,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  */
 public class SshClient extends AbstractFactoryManager implements ClientFactoryManager, ClientSessionCreator, Closeable {
 
-    public static final Factory<SshClient> DEFAULT_SSH_CLIENT_FACTORY = new Factory<SshClient>() {
-        @Override
-        public SshClient create() {
-            return new SshClient();
-        }
-    };
+    public static final Factory<SshClient> DEFAULT_SSH_CLIENT_FACTORY = SshClient::new;
 
     /**
      * Command line option used to indicate non-default target port
@@ -222,7 +213,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     private final AuthenticationIdentitiesProvider identitiesProvider;
 
     public SshClient() {
-        identitiesProvider = AuthenticationIdentitiesProvider.Utils.wrap(identities);
+        identitiesProvider = AuthenticationIdentitiesProvider.wrap(identities);
     }
 
     public SessionFactory getSessionFactory() {
@@ -342,8 +333,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             return null;
         }
 
-        int index = AuthenticationIdentitiesProvider.Utils.findIdentityIndex(
-                identities, AuthenticationIdentitiesProvider.Utils.PASSWORD_IDENTITY_COMPARATOR, password);
+        int index = AuthenticationIdentitiesProvider.findIdentityIndex(
+                identities, AuthenticationIdentitiesProvider.PASSWORD_IDENTITY_COMPARATOR, password);
         if (index >= 0) {
             return (String) identities.remove(index);
         } else {
@@ -370,8 +361,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             return null;
         }
 
-        int index = AuthenticationIdentitiesProvider.Utils.findIdentityIndex(
-                identities, AuthenticationIdentitiesProvider.Utils.KEYPAIR_IDENTITY_COMPARATOR, kp);
+        int index = AuthenticationIdentitiesProvider.findIdentityIndex(
+                identities, AuthenticationIdentitiesProvider.KEYPAIR_IDENTITY_COMPARATOR, kp);
         if (index >= 0) {
             return (KeyPair) identities.remove(index);
         } else {
@@ -393,18 +384,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         KeyPairProvider defaultIdentities = getKeyPairProvider();
         if (defaultIdentities == null) {
             setKeyPairProvider(new DefaultClientIdentitiesWatcher(
-                    new Supplier<ClientIdentityLoader>() {
-                        @Override
-                        public ClientIdentityLoader get() {
-                            return getClientIdentityLoader();
-                        }
-                    },
-                    new Supplier<FilePasswordProvider>() {
-                        @Override
-                        public FilePasswordProvider get() {
-                            return getFilePasswordProvider();
-                        }
-                    }));
+                    this::getClientIdentityLoader,
+                    this::getFilePasswordProvider));
         }
 
         // Register the additional agent forwarding channel if needed
@@ -466,26 +447,16 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .run(new Runnable() {
-                    @SuppressWarnings("synthetic-access")
-                    @Override
-                    public void run() {
-                        removeSessionTimeout(sessionFactory);
-                    }
-                })
+                .run(() -> removeSessionTimeout(sessionFactory))
                 .sequential(connector, ioServiceFactory)
-                .run(new Runnable() {
-                    @SuppressWarnings("synthetic-access")
-                    @Override
-                    public void run() {
-                        connector = null;
-                        ioServiceFactory = null;
-                        if (shutdownExecutor && (executor != null) && (!executor.isShutdown())) {
-                            try {
-                                executor.shutdownNow();
-                            } finally {
-                                executor = null;
-                            }
+                .run(() -> {
+                    connector = null;
+                    ioServiceFactory = null;
+                    if (shutdownExecutor && (executor != null) && (!executor.isShutdown())) {
+                        try {
+                            executor.shutdownNow();
+                        } finally {
+                            executor = null;
                         }
                     }
                 })
@@ -610,25 +581,21 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     protected SshFutureListener<IoConnectFuture> createConnectCompletionListener(
             final ConnectFuture connectFuture, final String username, final SocketAddress address,
             final Collection<? extends KeyPair> identities, final boolean useDefaultIdentities) {
-        return new SshFutureListener<IoConnectFuture>() {
-            @Override
-            @SuppressWarnings("synthetic-access")
-            public void operationComplete(IoConnectFuture future) {
-                if (future.isCanceled()) {
-                    connectFuture.cancel();
-                    return;
-                }
+        return future -> {
+            if (future.isCanceled()) {
+                connectFuture.cancel();
+                return;
+            }
 
-                Throwable t = future.getException();
-                if (t != null) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("operationComplete({}@{}) failed ({}): {}",
-                                  username, address, t.getClass().getSimpleName(), t.getMessage());
-                    }
-                    connectFuture.setException(t);
-                } else {
-                    onConnectOperationComplete(future.getSession(), connectFuture, username, address, identities, useDefaultIdentities);
+            Throwable t = future.getException();
+            if (t != null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("operationComplete({}@{}) failed ({}): {}",
+                              username, address, t.getClass().getSimpleName(), t.getMessage());
                 }
+                connectFuture.setException(t);
+            } else {
+                onConnectOperationComplete(future.getSession(), connectFuture, username, address, identities, useDefaultIdentities);
             }
         };
     }
@@ -1021,12 +988,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     public static AbstractFileKeyPairProvider setupSessionIdentities(ClientFactoryManager client, Collection<File> identities,
             final BufferedReader stdin, final PrintStream stdout, final PrintStream stderr)
                 throws Throwable {
-        client.setFilePasswordProvider(new FilePasswordProvider() {
-            @Override
-            public String getPassword(String file) throws IOException {
-                stdout.print("Enter password for private key file=" + file + ": ");
-                return stdin.readLine();
-            }
+        client.setFilePasswordProvider(file -> {
+            stdout.print("Enter password for private key file=" + file + ": ");
+            return stdin.readLine();
         });
 
         if (GenericUtils.isEmpty(identities)) {
@@ -1109,24 +1073,20 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             current = new DefaultKnownHostsServerKeyVerifier(current, false, Paths.get(filePath));
         }
 
-        ((KnownHostsServerKeyVerifier) current).setModifiedServerKeyAcceptor(new ModifiedServerKeyAcceptor() {
-            @Override
-            public boolean acceptModifiedServerKey(ClientSession clientSession, SocketAddress remoteAddress,
-                    KnownHostEntry entry, PublicKey expected, PublicKey actual) throws Exception {
-                stderr.append("Mismatched keys presented by ").append(Objects.toString(remoteAddress))
-                      .append(" for entry=").println(entry);
-                stderr.append('\t').append("Expected=").append(KeyUtils.getKeyType(expected))
-                      .append('-').println(KeyUtils.getFingerPrint(expected));
-                stderr.append('\t').append("Actual=").append(KeyUtils.getKeyType(actual))
-                      .append('-').println(KeyUtils.getFingerPrint(actual));
-                stderr.flush(); // just making sure
+        ((KnownHostsServerKeyVerifier) current).setModifiedServerKeyAcceptor((clientSession, remoteAddress, entry, expected, actual) -> {
+            stderr.append("Mismatched keys presented by ").append(Objects.toString(remoteAddress))
+                  .append(" for entry=").println(entry);
+            stderr.append('\t').append("Expected=").append(KeyUtils.getKeyType(expected))
+                  .append('-').println(KeyUtils.getFingerPrint(expected));
+            stderr.append('\t').append("Actual=").append(KeyUtils.getKeyType(actual))
+                  .append('-').println(KeyUtils.getFingerPrint(actual));
+            stderr.flush(); // just making sure
 
-                stdout.append("Accept key and update known hosts: y/[N]");
-                stdout.flush(); // just making sure
+            stdout.append("Accept key and update known hosts: y/[N]");
+            stdout.flush(); // just making sure
 
-                String ans = GenericUtils.trimToEmpty(stdin.readLine());
-                return (GenericUtils.length(ans) > 0) && (Character.toLowerCase(ans.charAt(0)) == 'y');
-            }
+            String ans = GenericUtils.trimToEmpty(stdin.readLine());
+            return (GenericUtils.length(ans) > 0) && (Character.toLowerCase(ans.charAt(0)) == 'y');
         });
 
         manager.setServerKeyVerifier(current);
@@ -1201,7 +1161,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     public static List<NamedFactory<Compression>> setupCompressions(
             String argName, String argVal, List<NamedFactory<Compression>> current, PrintStream stderr) {
         if (GenericUtils.size(current) > 0) {
-            showError(stderr, argName + " option value re-specified: " + NamedResource.Utils.getNames(current));
+            showError(stderr, argName + " option value re-specified: " + NamedResource.getNames(current));
             return null;
         }
 
@@ -1229,7 +1189,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     public static List<NamedFactory<Mac>> setupMacs(String argName, String argVal, List<NamedFactory<Mac>> current, PrintStream stderr) {
         if (GenericUtils.size(current) > 0) {
-            showError(stderr, argName + " option value re-specified: " + NamedResource.Utils.getNames(current));
+            showError(stderr, argName + " option value re-specified: " + NamedResource.getNames(current));
             return null;
         }
 
@@ -1258,7 +1218,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     // returns null - e.g., re-specified or no supported cipher found
     public static List<NamedFactory<Cipher>> setupCiphers(String argName, String argVal, List<NamedFactory<Cipher>> current, PrintStream stderr) {
         if (GenericUtils.size(current) > 0) {
-            showError(stderr, argName + " option value re-specified: " + NamedResource.Utils.getNames(current));
+            showError(stderr, argName + " option value re-specified: " + NamedResource.getNames(current));
             return null;
         }
 
@@ -1437,12 +1397,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                             ((ChannelShell) channel).setAgentForwarding(agentForward);
                             channel.setIn(new NoCloseInputStream(System.in));
                         } else {
-                            StringBuilder w = new StringBuilder(command.size() * Integer.SIZE);
-                            for (String cmd : command) {
-                                w.append(cmd).append(' ');
-                            }
-
-                            channel = session.createExecChannel(w.toString().trim());
+                            channel = session.createExecChannel(String.join(" ", command).trim());
                         }
 
                         try (OutputStream channelOut = new NoCloseOutputStream(System.out);
@@ -1463,7 +1418,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 session.close();
             }
         } finally {
-            if ((logStream != stdout) && (logStream != stderr)) {
+            if (logStream != null && logStream != stdout && logStream != stderr) {
                 logStream.close();
             }
         }

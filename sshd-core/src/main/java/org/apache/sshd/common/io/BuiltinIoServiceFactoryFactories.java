@@ -68,7 +68,7 @@ public enum BuiltinIoServiceFactoryFactories implements NamedFactory<IoServiceFa
     }
 
     public static BuiltinIoServiceFactoryFactories fromFactoryName(String name) {
-        return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
+        return NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 
     public static BuiltinIoServiceFactoryFactories fromFactoryClass(Class<?> clazz) {

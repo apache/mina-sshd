@@ -113,7 +113,7 @@ public class ServerAuthenticationManagerTest extends BaseTestSupport {
         };
         assertEquals("Mismatched initial factories list", "", manager.getUserAuthFactoriesNameList());
 
-        String expected = NamedResource.Utils.getNames(BuiltinUserAuthFactories.VALUES);
+        String expected = NamedResource.getNames(BuiltinUserAuthFactories.VALUES);
         manager.setUserAuthFactoriesNameList(expected);
         assertEquals("Mismatched updated factories names", expected, manager.getUserAuthFactoriesNameList());
 

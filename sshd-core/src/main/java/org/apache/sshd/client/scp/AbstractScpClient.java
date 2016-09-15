@@ -144,23 +144,21 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
     @Override
     public void upload(String[] local, String remote, Collection<Option> options) throws IOException {
         final Collection<String> paths = Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", (Object) local));
-        runUpload(remote, options, paths, new ScpOperationExecutor<String>() {
-            @Override
-            public void execute(ScpHelper helper, Collection<String> local, Collection<Option> sendOptions) throws IOException {
-                helper.send(local, sendOptions.contains(Option.Recursive), sendOptions.contains(Option.PreserveAttributes), ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
-            }
-        });
+        runUpload(remote, options, paths, (helper, local1, sendOptions) ->
+                helper.send(local1,
+                            sendOptions.contains(Option.Recursive),
+                            sendOptions.contains(Option.PreserveAttributes),
+                            ScpHelper.DEFAULT_SEND_BUFFER_SIZE));
     }
 
     @Override
     public void upload(Path[] local, String remote, Collection<Option> options) throws IOException {
         final Collection<Path> paths = Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", (Object) local));
-        runUpload(remote, options, paths, new ScpOperationExecutor<Path>() {
-            @Override
-            public void execute(ScpHelper helper, Collection<Path> local, Collection<Option> sendOptions) throws IOException {
-                helper.sendPaths(local, sendOptions.contains(Option.Recursive), sendOptions.contains(Option.PreserveAttributes), ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
-            }
-        });
+        runUpload(remote, options, paths, (helper, local1, sendOptions) ->
+                helper.sendPaths(local1,
+                                 sendOptions.contains(Option.Recursive),
+                                 sendOptions.contains(Option.PreserveAttributes),
+                                 ScpHelper.DEFAULT_SEND_BUFFER_SIZE));
     }
 
     protected abstract <T> void runUpload(String remote, Collection<Option> options, Collection<T> local, AbstractScpClient.ScpOperationExecutor<T> executor) throws IOException;

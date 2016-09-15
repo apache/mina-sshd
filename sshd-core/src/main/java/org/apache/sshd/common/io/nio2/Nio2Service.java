@@ -40,7 +40,6 @@ import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
-import org.apache.sshd.common.util.closeable.CloseableUtils;
 
 /**
  */
@@ -76,7 +75,7 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
 
     public void dispose() {
         try {
-            long maxWait = CloseableUtils.getMaxCloseWaitTime(getFactoryManager());
+            long maxWait = Closeable.getMaxCloseWaitTime(getFactoryManager());
             boolean successful = close(true).await(maxWait);
             if (!successful) {
                 throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");

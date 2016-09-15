@@ -21,11 +21,13 @@ package org.apache.sshd.client.simple;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.Channel;
 import java.security.KeyPair;
 
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * A simplified <U>synchronous</U> API for obtaining SFTP sessions.
@@ -43,7 +45,9 @@ public interface SimpleSftpClient extends SimpleClientConfigurator, Channel {
      * underlying session
      * @throws IOException If failed to login or authenticate
      */
-    SftpClient sftpLogin(String host, String username, String password) throws IOException;
+    default SftpClient sftpLogin(String host, String username, String password) throws IOException {
+        return sftpLogin(host, DEFAULT_PORT, username, password);
+    }
 
     /**
      * Creates an SFTP session using the provided credentials
@@ -56,7 +60,9 @@ public interface SimpleSftpClient extends SimpleClientConfigurator, Channel {
      * underlying session
      * @throws IOException If failed to login or authenticate
      */
-    SftpClient sftpLogin(String host, int port, String username, String password) throws IOException;
+    default SftpClient sftpLogin(String host, int port, String username, String password) throws IOException {
+        return sftpLogin(InetAddress.getByName(ValidateUtils.checkNotNullAndNotEmpty(host, "No host")), port, username, password);
+    }
 
     /**
      * Creates an SFTP session on the default port and logs in using the provided credentials
@@ -68,7 +74,9 @@ public interface SimpleSftpClient extends SimpleClientConfigurator, Channel {
      * underlying session
      * @throws IOException If failed to login or authenticate
      */
-    SftpClient sftpLogin(String host, String username, KeyPair identity) throws IOException;
+    default SftpClient sftpLogin(String host, String username, KeyPair identity) throws IOException {
+        return sftpLogin(host, DEFAULT_PORT, username, identity);
+    }
 
     /**
      * Creates an SFTP session using the provided credentials
@@ -81,7 +89,9 @@ public interface SimpleSftpClient extends SimpleClientConfigurator, Channel {
      * underlying session
      * @throws IOException If failed to login or authenticate
      */
-    SftpClient sftpLogin(String host, int port, String username, KeyPair identity) throws IOException;
+    default SftpClient sftpLogin(String host, int port, String username, KeyPair identity) throws IOException {
+        return sftpLogin(InetAddress.getByName(ValidateUtils.checkNotNullAndNotEmpty(host, "No host")), port, username, identity);
+    }
 
     /**
      * Creates an SFTP session on the default port and logs in using the provided credentials
@@ -93,7 +103,9 @@ public interface SimpleSftpClient extends SimpleClientConfigurator, Channel {
      * underlying session
      * @throws IOException If failed to login or authenticate
      */
-    SftpClient sftpLogin(InetAddress host, String username, String password) throws IOException;
+    default SftpClient sftpLogin(InetAddress host, String username, String password) throws IOException {
+        return sftpLogin(host, DEFAULT_PORT, username, password);
+    }
 
     /**
      * Creates an SFTP session using the provided credentials
@@ -106,7 +118,9 @@ public interface SimpleSftpClient extends SimpleClientConfigurator, Channel {
      * underlying session
      * @throws IOException If failed to login or authenticate
      */
-    SftpClient sftpLogin(InetAddress host, int port, String username, String password) throws IOException;
+    default SftpClient sftpLogin(InetAddress host, int port, String username, String password) throws IOException {
+        return sftpLogin(new InetSocketAddress(ValidateUtils.checkNotNull(host, "No host address"), port), username, password);
+    }
 
     /**
      * Creates an SFTP session on the default port and logs in using the provided credentials
@@ -118,7 +132,9 @@ public interface SimpleSftpClient extends SimpleClientConfigurator, Channel {
      * underlying session
      * @throws IOException If failed to login or authenticate
      */
-    SftpClient sftpLogin(InetAddress host, String username, KeyPair identity) throws IOException;
+    default SftpClient sftpLogin(InetAddress host, String username, KeyPair identity) throws IOException {
+        return sftpLogin(host, DEFAULT_PORT, username, identity);
+    }
 
     /**
      * Creates an SFTP session using the provided credentials
@@ -131,7 +147,9 @@ public interface SimpleSftpClient extends SimpleClientConfigurator, Channel {
      * underlying session
      * @throws IOException If failed to login or authenticate
      */
-    SftpClient sftpLogin(InetAddress host, int port, String username, KeyPair identity) throws IOException;
+    default SftpClient sftpLogin(InetAddress host, int port, String username, KeyPair identity) throws IOException {
+        return sftpLogin(new InetSocketAddress(ValidateUtils.checkNotNull(host, "No host address"), port), username, identity);
+    }
 
     /**
      * Creates an SFTP session using the provided credentials

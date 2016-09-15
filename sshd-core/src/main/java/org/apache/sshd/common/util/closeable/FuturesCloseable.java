@@ -50,17 +50,13 @@ public class FuturesCloseable<T extends SshFuture> extends SimpleCloseable {
             future.setClosed();
         } else {
             final AtomicInteger count = new AtomicInteger(1);
-            SshFutureListener<T> listener = new SshFutureListener<T>() {
-                @SuppressWarnings("synthetic-access")
-                @Override
-                public void operationComplete(T f) {
-                    int pendingCount = count.decrementAndGet();
-                    if (log.isTraceEnabled()) {
-                        log.trace("doClose(" + immediately + ") complete pending: " + pendingCount);
-                    }
-                    if (pendingCount == 0) {
-                        future.setClosed();
-                    }
+            SshFutureListener<T> listener = f -> {
+                int pendingCount = count.decrementAndGet();
+                if (log.isTraceEnabled()) {
+                    log.trace("doClose(" + immediately + ") complete pending: " + pendingCount);
+                }
+                if (pendingCount == 0) {
+                    future.setClosed();
                 }
             };
             for (SshFuture<T> f : futures) {

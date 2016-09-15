@@ -33,24 +33,16 @@ public interface Transformer<I, O> extends Function<I, O> {
      * Invokes {@link Objects#toString(Object, String)} on the argument
      * with {@code null} as the value to return if argument is {@code null}
      */
-    Transformer<Object, String> TOSTRING = new Transformer<Object, String>() {
-        @Override
-        public String transform(Object input) {
-            return Objects.toString(input, null);
-        }
-    };
+    Transformer<Object, String> TOSTRING = input -> Objects.toString(input, null);
 
     /**
      * Returns {@link Enum#name()} or {@code null} if argument is {@code null}
      */
-    Transformer<Enum<?>, String> ENUM_NAME_EXTRACTOR = new Transformer<Enum<?>, String>() {
-        @Override
-        public String transform(Enum<?> input) {
-            if (input == null) {
-                return null;
-            } else {
-                return input.name();
-            }
+    Transformer<Enum<?>, String> ENUM_NAME_EXTRACTOR = input -> {
+        if (input == null) {
+            return null;
+        } else {
+            return input.name();
         }
     };
 
@@ -65,24 +57,21 @@ public interface Transformer<I, O> extends Function<I, O> {
     O transform(I input);
 
     // CHECKSTYLE:OFF
+    @Deprecated
     final class Utils {
     // CHECKSTYLE:ON
-
-        @SuppressWarnings("rawtypes")
-        private static final Transformer IDENTITY = new Transformer() {
-            @Override
-            public Object transform(Object input) {
-                return input;
-            }
-        };
 
         private Utils() {
             throw new UnsupportedOperationException("No instance allowed");
         }
 
-        @SuppressWarnings({ "unchecked" })
         public static <U extends V, V> Transformer<U, V> identity() {
-            return IDENTITY;
+            return Transformer.identity();
         }
     }
+
+    static <U extends V, V> Transformer<U, V> identity() {
+        return input -> input;
+    }
+
 }

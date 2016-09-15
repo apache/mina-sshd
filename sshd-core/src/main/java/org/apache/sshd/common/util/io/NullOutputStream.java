@@ -64,6 +64,7 @@ public class NullOutputStream extends OutputStream implements Channel {
     @Override
     public void close() throws IOException {
         if (open.getAndSet(false)) {
+            //noinspection UnnecessaryReturnStatement
             return; // debug breakpoint
         }
     }

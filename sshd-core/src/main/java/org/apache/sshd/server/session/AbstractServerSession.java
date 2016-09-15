@@ -36,7 +36,6 @@ import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.auth.AbstractUserAuthServiceFactory;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -205,7 +204,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     @Override
     public void startService(String name) throws Exception {
         FactoryManager factoryManager = getFactoryManager();
-        currentService = ServiceFactory.Utils.create(
+        currentService = ServiceFactory.create(
                         factoryManager.getServiceFactories(),
                         ValidateUtils.checkNotNullAndNotEmpty(name, "No service name"),
                         this);
@@ -246,7 +245,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         ValidateUtils.checkTrue(proposedManager == getFactoryManager(), "Mismatched signatures proposed factory manager");
 
         KeyPairProvider kpp = getKeyPairProvider();
-        Collection<String> supported = NamedResource.Utils.getNameList(getSignatureFactories());
+        Collection<String> supported = NamedResource.getNameList(getSignatureFactories());
         Iterable<String> provided;
         try {
             provided = (kpp == null) ? null : kpp.getKeyTypes();
@@ -363,12 +362,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
         if (GenericUtils.length(errorMessage) > 0) {
             ioSession.write(new ByteArrayBuffer((errorMessage + "\n").getBytes(StandardCharsets.UTF_8)))
-                     .addListener(new SshFutureListener<IoWriteFuture>() {
-                         @Override
-                         public void operationComplete(IoWriteFuture future) {
-                             close(true);
-                         }
-                     });
+                     .addListener(future -> close(true));
             throw new SshException(errorMessage);
         }
 

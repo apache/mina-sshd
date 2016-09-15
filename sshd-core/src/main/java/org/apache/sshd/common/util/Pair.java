@@ -20,7 +20,6 @@ package org.apache.sshd.common.util;
 
 import java.util.Comparator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 
 /**
@@ -31,16 +30,11 @@ import java.util.Objects;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class Pair<F, S> implements Map.Entry<F, S> {
-    @SuppressWarnings("rawtypes")
-    private static final Comparator<Map.Entry<Comparable, ?>> BY_KEY_COMPARATOR =
-        new Comparator<Map.Entry<Comparable, ?>>() {
-            @SuppressWarnings("unchecked")
-            @Override
-            public int compare(Entry<Comparable, ?> o1, Entry<Comparable, ?> o2) {
-                Comparable k1 = o1.getKey();
-                Comparable k2 = o2.getKey();
-                return k1.compareTo(k2);
-            }
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static final Comparator<Map.Entry<Comparable, ?>> BY_KEY_COMPARATOR = (o1, o2) -> {
+        Comparable k1 = o1.getKey();
+        Comparable k2 = o2.getKey();
+        return k1.compareTo(k2);
     };
 
     private final F first;

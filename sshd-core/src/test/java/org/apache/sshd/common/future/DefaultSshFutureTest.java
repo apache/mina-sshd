@@ -62,13 +62,10 @@ public class DefaultSshFutureTest extends BaseTestSupport {
         final DefaultSshFuture future = new DefaultSshFuture(null);
         final AtomicInteger listenerCount = new AtomicInteger(0);
         final Object expected = new Object();
-        final SshFutureListener listener = new SshFutureListener() {
-            @Override
-            public void operationComplete(SshFuture f) {
-                assertSame("Mismatched future instance", future, f);
-                assertSame("Mismatched value object", expected, future.getValue());
-                listenerCount.incrementAndGet();
-            }
+        final SshFutureListener listener = f -> {
+            assertSame("Mismatched future instance", future, f);
+            assertSame("Mismatched value object", expected, future.getValue());
+            listenerCount.incrementAndGet();
         };
 
         final int numListeners = Byte.SIZE;
@@ -86,13 +83,10 @@ public class DefaultSshFutureTest extends BaseTestSupport {
         final DefaultSshFuture future = new DefaultSshFuture(null);
         final AtomicInteger listenerCount = new AtomicInteger(0);
         final Object expected = new Object();
-        final SshFutureListener listener = new SshFutureListener() {
-            @Override
-            public void operationComplete(SshFuture f) {
-                assertSame("Mismatched future instance", future, f);
-                assertSame("Mismatched value object", expected, future.getValue());
-                listenerCount.incrementAndGet();
-            }
+        final SshFutureListener listener = f -> {
+            assertSame("Mismatched future instance", future, f);
+            assertSame("Mismatched value object", expected, future.getValue());
+            listenerCount.incrementAndGet();
         };
         future.setValue(expected);
 
@@ -123,13 +117,10 @@ public class DefaultSshFutureTest extends BaseTestSupport {
         final DefaultSshFuture future = new DefaultSshFuture(null);
         final AtomicInteger listenerCount = new AtomicInteger(0);
         final Object expected = new Object();
-        final SshFutureListener listener = new SshFutureListener() {
-            @Override
-            public void operationComplete(SshFuture f) {
-                assertSame("Mismatched future instance", future, f);
-                assertSame("Mismatched value object", expected, future.getValue());
-                listenerCount.incrementAndGet();
-            }
+        final SshFutureListener listener = f -> {
+            assertSame("Mismatched future instance", future, f);
+            assertSame("Mismatched value object", expected, future.getValue());
+            listenerCount.incrementAndGet();
         };
         future.addListener(listener);
         future.setValue(expected);

@@ -19,7 +19,6 @@
 
 package org.apache.sshd.client;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -48,29 +47,22 @@ import org.apache.sshd.server.forward.ForwardedTcpipFactory;
  * SshClient builder
  */
 public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
-    public static final Transformer<DHFactory, NamedFactory<KeyExchange>> DH2KEX =
-        new Transformer<DHFactory, NamedFactory<KeyExchange>>() {
-            @Override
-            public NamedFactory<KeyExchange> transform(DHFactory factory) {
-                if (factory == null) {
-                    return null;
-                } else if (factory.isGroupExchange()) {
-                    return DHGEXClient.newFactory(factory);
-                } else {
-                    return DHGClient.newFactory(factory);
-                }
-            }
-        };
+
+    public static final Transformer<DHFactory, NamedFactory<KeyExchange>> DH2KEX = factory ->
+            factory == null
+                ? null
+                : factory.isGroupExchange()
+                    ? DHGEXClient.newFactory(factory)
+                    : DHGClient.newFactory(factory);
 
     // Compression is not enabled by default for the client
     public static final List<CompressionFactory> DEFAULT_COMPRESSION_FACTORIES =
-            Collections.unmodifiableList(Arrays.<CompressionFactory>asList(BuiltinCompressions.none));
+            Collections.unmodifiableList(Collections.singletonList(BuiltinCompressions.none));
 
     public static final List<NamedFactory<Channel>> DEFAULT_CHANNEL_FACTORIES =
-            Collections.unmodifiableList(Arrays.<NamedFactory<Channel>>asList(ForwardedTcpipFactory.INSTANCE));
+            Collections.unmodifiableList(Collections.singletonList(ForwardedTcpipFactory.INSTANCE));
     public static final List<RequestHandler<ConnectionService>> DEFAULT_GLOBAL_REQUEST_HANDLERS =
-            Collections.unmodifiableList(Arrays.<RequestHandler<ConnectionService>>asList(
-                    OpenSshHostKeysHandler.INSTANCE));
+            Collections.unmodifiableList(Collections.singletonList(OpenSshHostKeysHandler.INSTANCE));
 
     public static final ServerKeyVerifier DEFAULT_SERVER_KEY_VERIFIER = AcceptAllServerKeyVerifier.INSTANCE;
     public static final HostConfigEntryResolver DEFAULT_HOST_CONFIG_ENTRY_RESOLVER = DefaultConfigFileHostEntryResolver.INSTANCE;
@@ -111,7 +103,7 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
         super.fillWithDefaultValues();
 
         if (compressionFactories == null) {
-            compressionFactories = NamedFactory.Utils.setUpBuiltinFactories(false, DEFAULT_COMPRESSION_FACTORIES);
+            compressionFactories = NamedFactory.setUpBuiltinFactories(false, DEFAULT_COMPRESSION_FACTORIES);
         }
 
         if (keyExchangeFactories == null) {
@@ -172,7 +164,7 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
      * @see org.apache.sshd.common.kex.BuiltinDHFactories#isSupported()
      */
     public static List<NamedFactory<KeyExchange>> setUpDefaultKeyExchanges(boolean ignoreUnsupported) {
-        return NamedFactory.Utils.setUpTransformedFactories(ignoreUnsupported, DEFAULT_KEX_PREFERENCE, DH2KEX);
+        return NamedFactory.setUpTransformedFactories(ignoreUnsupported, DEFAULT_KEX_PREFERENCE, DH2KEX);
     }
 
     public static ClientBuilder builder() {

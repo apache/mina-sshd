@@ -60,6 +60,6 @@ public enum KnownHostDigest implements NamedFactory<Mac> {
     }
 
     public static KnownHostDigest fromName(String name) {
-        return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
+        return NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 }

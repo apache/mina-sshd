@@ -130,7 +130,7 @@ public enum BuiltinDigests implements DigestFactory {
      * (case <U>insensitive</U>) the provided name - {@code null} if no match
      */
     public static BuiltinDigests fromFactoryName(String name) {
-        return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
+        return NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 
     /**

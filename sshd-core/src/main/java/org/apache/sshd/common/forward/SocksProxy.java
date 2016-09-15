@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.ConnectionService;
@@ -154,12 +153,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 SshdSocketAddress remote = new SshdSocketAddress(host, port);
                 channel = new TcpipClientChannel(TcpipClientChannel.Type.Direct, session, remote);
                 service.registerChannel(channel);
-                channel.open().addListener(new SshFutureListener<OpenFuture>() {
-                    @Override
-                    public void operationComplete(OpenFuture future) {
-                        onChannelOpened(future);
-                    }
-                });
+                channel.open().addListener(this::onChannelOpened);
             } else {
                 super.onMessage(buffer);
             }
@@ -271,12 +265,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 SshdSocketAddress remote = new SshdSocketAddress(host, port);
                 channel = new TcpipClientChannel(TcpipClientChannel.Type.Direct, session, remote);
                 service.registerChannel(channel);
-                channel.open().addListener(new SshFutureListener<OpenFuture>() {
-                    @Override
-                    public void operationComplete(OpenFuture future) {
-                        onChannelOpened(future);
-                    }
-                });
+                channel.open().addListener(this::onChannelOpened);
             } else {
                 log.debug("Received socks5 connection message");
                 super.onMessage(buffer);

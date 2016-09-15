@@ -46,6 +46,7 @@ public abstract class Handle implements java.nio.channels.Channel {
     @Override
     public void close() throws IOException {
         if (!closed.getAndSet(true)) {
+            //noinspection UnnecessaryReturnStatement
             return; // debug breakpoint
         }
     }

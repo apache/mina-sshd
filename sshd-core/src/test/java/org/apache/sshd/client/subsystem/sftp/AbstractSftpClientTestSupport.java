@@ -88,7 +88,7 @@ public abstract class AbstractSftpClientTestSupport extends BaseTestSupport {
         sshd.setFileSystemFactory(fileSystemFactory);
     }
 
-    protected static final <E extends SftpClientExtension> E assertExtensionCreated(SftpClient sftp, Class<E> type) {
+    protected static <E extends SftpClientExtension> E assertExtensionCreated(SftpClient sftp, Class<E> type) {
         E instance = sftp.getExtension(type);
         assertNotNull("Extension not created: " + type.getSimpleName(), instance);
         assertTrue("Extension not supported: " + instance.getName(), instance.isSupported());

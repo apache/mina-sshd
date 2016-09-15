@@ -33,55 +33,19 @@ import java.util.Set;
  */
 public interface FileInfoExtractor<T> {
 
-    FileInfoExtractor<Boolean> EXISTS = new FileInfoExtractor<Boolean>() {
-            @Override
-            public Boolean infoOf(Path file, LinkOption... options) throws IOException {
-                return Files.exists(file, options);
-            }
-        };
+    FileInfoExtractor<Boolean> EXISTS = Files::exists;
 
-    FileInfoExtractor<Boolean> ISDIR = new FileInfoExtractor<Boolean>() {
-            @Override
-            public Boolean infoOf(Path file, LinkOption... options) throws IOException {
-                return Files.isDirectory(file, options);
-            }
-        };
+    FileInfoExtractor<Boolean> ISDIR = Files::isDirectory;
 
-    FileInfoExtractor<Boolean> ISREG = new FileInfoExtractor<Boolean>() {
-            @Override
-            public Boolean infoOf(Path file, LinkOption... options) throws IOException {
-                return Files.isRegularFile(file, options);
-            }
-        };
+    FileInfoExtractor<Boolean> ISREG = Files::isRegularFile;
 
-    FileInfoExtractor<Boolean> ISSYMLINK = new FileInfoExtractor<Boolean>() {
-            @Override
-            public Boolean infoOf(Path file, LinkOption... options) throws IOException {
-                return Files.isSymbolicLink(file);
-            }
-        };
+    FileInfoExtractor<Boolean> ISSYMLINK = (file, options) -> Files.isSymbolicLink(file);
 
-    FileInfoExtractor<Long> SIZE = new FileInfoExtractor<Long>() {
-            @Override
-            public Long infoOf(Path file, LinkOption... options) throws IOException {
-                return Files.size(file);
-            }
-        };
+    FileInfoExtractor<Long> SIZE = (file, options) -> Files.size(file);
 
-    FileInfoExtractor<Set<PosixFilePermission>> PERMISSIONS = new FileInfoExtractor<Set<PosixFilePermission>>() {
-            @Override
-            public Set<PosixFilePermission> infoOf(Path file, LinkOption... options) throws IOException {
-                return IoUtils.getPermissions(file, options);
-            }
-        };
+    FileInfoExtractor<Set<PosixFilePermission>> PERMISSIONS = IoUtils::getPermissions;
 
-    FileInfoExtractor<FileTime> LASTMODIFIED = new FileInfoExtractor<FileTime>() {
-        @Override
-        public FileTime infoOf(Path file, LinkOption... options) throws IOException {
-            return Files.getLastModifiedTime(file, options);
-        }
-
-    };
+    FileInfoExtractor<FileTime> LASTMODIFIED = Files::getLastModifiedTime;
 
     T infoOf(Path file, LinkOption ... options) throws IOException;
 

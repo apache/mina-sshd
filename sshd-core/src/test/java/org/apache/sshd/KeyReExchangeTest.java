@@ -23,8 +23,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -160,17 +158,14 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     @Override
                     public KeyExchange create() {
                         final KeyExchange proxiedInstance = factory.create();
-                        return (KeyExchange) Proxy.newProxyInstance(loader, interfaces, new InvocationHandler() {
-                            @Override
-                            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                                String name = method.getName();
-                                if ("init".equals(name) && (!successfulInit.get())) {
-                                    throw new UnsupportedOperationException("Intentionally failing 'init'");
-                                } else if ("next".equals(name) && (!successfulNext.get())) {
-                                    throw new UnsupportedOperationException("Intentionally failing 'next'");
-                                } else {
-                                    return method.invoke(proxiedInstance, args);
-                                }
+                        return (KeyExchange) Proxy.newProxyInstance(loader, interfaces, (proxy, method, args) -> {
+                            String name = method.getName();
+                            if ("init".equals(name) && (!successfulInit.get())) {
+                                throw new UnsupportedOperationException("Intentionally failing 'init'");
+                            } else if ("next".equals(name) && (!successfulNext.get())) {
+                                throw new UnsupportedOperationException("Intentionally failing 'next'");
+                            } else {
+                                return method.invoke(proxiedInstance, args);
                             }
                         });
                     }
@@ -484,12 +479,6 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
                     teeOut.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
-
-                    StringBuilder sb = new StringBuilder(101 * 10);
-                    for (int i = 0; i < 100; i++) {
-                        sb.append("0123456789");
-                    }
-                    sb.append('\n');
 
                     final AtomicInteger exchanges = new AtomicInteger();
                     session.addSessionListener(new SessionListener() {

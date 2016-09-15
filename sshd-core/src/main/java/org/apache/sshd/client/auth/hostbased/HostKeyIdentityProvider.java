@@ -21,7 +21,6 @@ package org.apache.sshd.client.auth.hostbased;
 
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -43,6 +42,7 @@ public interface HostKeyIdentityProvider {
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     // CHECKSTYLE:OFF
+    @Deprecated
     final class Utils {
     // CHECKSTYLE:ON
         private Utils() {
@@ -50,44 +50,30 @@ public interface HostKeyIdentityProvider {
         }
 
         public static Iterator<Pair<KeyPair, List<X509Certificate>>> iteratorOf(HostKeyIdentityProvider provider) {
-            return GenericUtils.iteratorOf((provider == null) ? null : provider.loadHostKeys());
+            return HostKeyIdentityProvider.iteratorOf(provider);
         }
 
         public static HostKeyIdentityProvider wrap(KeyPair ... pairs) {
-            return wrap(GenericUtils.isEmpty(pairs) ? Collections.emptyList() : Arrays.asList(pairs));
+            return HostKeyIdentityProvider.wrap(pairs);
         }
 
         public static HostKeyIdentityProvider wrap(final Iterable<? extends KeyPair> pairs) {
-            return new HostKeyIdentityProvider() {
-                @Override
-                public Iterable<Pair<KeyPair, List<X509Certificate>>> loadHostKeys() {
-                    return new Iterable<Pair<KeyPair, List<X509Certificate>>>() {
-                        @Override
-                        public Iterator<Pair<KeyPair, List<X509Certificate>>> iterator() {
-                            final Iterator<? extends KeyPair> iter = GenericUtils.iteratorOf(pairs);
-                            return new Iterator<Pair<KeyPair, List<X509Certificate>>>() {
-
-                                @Override
-                                public boolean hasNext() {
-                                    return iter.hasNext();
-                                }
-
-                                @Override
-                                public Pair<KeyPair, List<X509Certificate>> next() {
-                                    KeyPair kp = iter.next();
-                                    return new Pair<>(kp, Collections.emptyList());
-                                }
-
-                                @Override
-                                public void remove() {
-                                    throw new UnsupportedOperationException("No removal allowed");
-                                }
-                            };
-                        }
-                    };
-                }
-
-            };
+            return HostKeyIdentityProvider.wrap(pairs);
         }
+    }
+
+    static Iterator<Pair<KeyPair, List<X509Certificate>>> iteratorOf(HostKeyIdentityProvider provider) {
+        return GenericUtils.iteratorOf((provider == null) ? null : provider.loadHostKeys());
+    }
+
+    static HostKeyIdentityProvider wrap(KeyPair ... pairs) {
+        return wrap(GenericUtils.asList(pairs));
+    }
+
+    static HostKeyIdentityProvider wrap(final Iterable<? extends KeyPair> pairs) {
+        return () -> () -> {
+            final Iterator<? extends KeyPair> iter = GenericUtils.iteratorOf(pairs);
+            return GenericUtils.wrapIterator(iter, kp -> new Pair<>(kp, Collections.<X509Certificate>emptyList()));
+        };
     }
 }

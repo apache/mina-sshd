@@ -31,7 +31,6 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -103,13 +102,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
 
     @Override
     public CloseFuture close(boolean immediately) {
-        return super.close(immediately).addListener(new SshFutureListener<CloseFuture>() {
-            @Override
-            @SuppressWarnings("synthetic-access")
-            public void operationComplete(CloseFuture sshFuture) {
-                closeImmediately0();
-            }
-        });
+        return super.close(immediately).addListener(sshFuture -> closeImmediately0());
     }
 
     @Override

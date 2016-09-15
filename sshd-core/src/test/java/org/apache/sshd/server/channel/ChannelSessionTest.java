@@ -26,8 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.Window;
-import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -78,12 +76,9 @@ public class ChannelSessionTest extends BaseTestSupport {
                 wRemote.init(PropertyResolverUtils.toPropertyResolver(Collections.emptyMap()));
             }
         }) {
-            session.addCloseFutureListener(new SshFutureListener<CloseFuture>() {
-                @Override
-                public void operationComplete(CloseFuture future) {
-                    assertTrue("Future not marted as closed", future.isClosed());
-                    assertEquals("Unexpected multiple call to callback", 1, closeCount.incrementAndGet());
-                }
+            session.addCloseFutureListener(future -> {
+                assertTrue("Future not marted as closed", future.isClosed());
+                assertEquals("Unexpected multiple call to callback", 1, closeCount.incrementAndGet());
             });
             session.close();
         }

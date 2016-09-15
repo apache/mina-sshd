@@ -93,7 +93,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     protected AbstractClientSession(ClientFactoryManager factoryManager, IoSession ioSession) {
         super(false, factoryManager, ioSession);
-        identitiesProvider = AuthenticationIdentitiesProvider.Utils.wrap(identities);
+        identitiesProvider = AuthenticationIdentitiesProvider.wrap(identities);
     }
 
     @Override
@@ -179,8 +179,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
             return null;
         }
 
-        int index = AuthenticationIdentitiesProvider.Utils.findIdentityIndex(
-                identities, AuthenticationIdentitiesProvider.Utils.PASSWORD_IDENTITY_COMPARATOR, password);
+        int index = AuthenticationIdentitiesProvider.findIdentityIndex(
+                identities, AuthenticationIdentitiesProvider.PASSWORD_IDENTITY_COMPARATOR, password);
         if (index >= 0) {
             return (String) identities.remove(index);
         } else {
@@ -209,8 +209,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
             return null;
         }
 
-        int index = AuthenticationIdentitiesProvider.Utils.findIdentityIndex(
-                identities, AuthenticationIdentitiesProvider.Utils.KEYPAIR_IDENTITY_COMPARATOR, kp);
+        int index = AuthenticationIdentitiesProvider.findIdentityIndex(
+                identities, AuthenticationIdentitiesProvider.KEYPAIR_IDENTITY_COMPARATOR, kp);
         if (index >= 0) {
             return (KeyPair) identities.remove(index);
         } else {
@@ -355,7 +355,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     public FileSystem createSftpFileSystem(int version) throws IOException {
-        return createSftpFileSystem(SftpVersionSelector.Utils.fixedVersionSelector(version));
+        return createSftpFileSystem(SftpVersionSelector.fixedVersionSelector(version));
     }
 
     @Override
@@ -365,7 +365,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     public FileSystem createSftpFileSystem(int version, int readBufferSize, int writeBufferSize) throws IOException {
-        return createSftpFileSystem(SftpVersionSelector.Utils.fixedVersionSelector(version), readBufferSize, writeBufferSize);
+        return createSftpFileSystem(SftpVersionSelector.fixedVersionSelector(version), readBufferSize, writeBufferSize);
     }
 
     @Override
@@ -421,7 +421,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     protected String resolveAvailableSignaturesProposal(FactoryManager manager) {
         // the client does not have to provide keys for the available signatures
         ValidateUtils.checkTrue(manager == getFactoryManager(), "Mismatched factory manager instances");
-        return NamedResource.Utils.getNames(getSignatureFactories());
+        return NamedResource.getNames(getSignatureFactories());
     }
 
     @Override

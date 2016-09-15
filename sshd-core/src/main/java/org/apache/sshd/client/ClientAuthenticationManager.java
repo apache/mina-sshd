@@ -131,10 +131,10 @@ public interface ClientAuthenticationManager extends KeyPairProviderHolder {
      */
     List<NamedFactory<UserAuth>> getUserAuthFactories();
     default String getUserAuthFactoriesNameList() {
-        return NamedResource.Utils.getNames(getUserAuthFactories());
+        return NamedResource.getNames(getUserAuthFactories());
     }
     default List<String> getUserAuthFactoriesNames() {
-        return NamedResource.Utils.getNameList(getUserAuthFactories());
+        return NamedResource.getNameList(getUserAuthFactories());
     }
 
     void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories);

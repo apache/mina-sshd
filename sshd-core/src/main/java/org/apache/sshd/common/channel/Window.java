@@ -47,13 +47,9 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
     /**
      * Default {@link Predicate} used to test if space became available
      */
-    public static final Predicate<Window> SPACE_AVAILABLE_PREDICATE = new Predicate<Window>() {
-        @SuppressWarnings("synthetic-access")
-        @Override
-        public boolean test(Window input) {
-            // NOTE: we do not call "getSize()" on purpose in order to avoid the lock
-            return input.sizeHolder.get() > 0;
-        }
+    public static final Predicate<Window> SPACE_AVAILABLE_PREDICATE = input -> {
+        // NOTE: we do not call "getSize()" on purpose in order to avoid the lock
+        return input.sizeHolder.get() > 0;
     };
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
@@ -230,13 +226,9 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         checkInitialized("waitAndConsume");
 
         synchronized (lock) {
-            waitForCondition(new Predicate<Window>() {
-                @SuppressWarnings("synthetic-access")
-                @Override
-                public boolean test(Window input) {
-                    // NOTE: we do not call "getSize()" on purpose in order to avoid the lock
-                    return input.sizeHolder.get() >= len;
-                }
+            waitForCondition(input -> {
+                // NOTE: we do not call "getSize()" on purpose in order to avoid the lock
+                return input.sizeHolder.get() >= len;
             }, maxWaitTime);
 
             if (log.isDebugEnabled()) {

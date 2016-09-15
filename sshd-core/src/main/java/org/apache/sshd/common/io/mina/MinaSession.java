@@ -21,7 +21,6 @@ package org.apache.sshd.common.io.mina;
 import java.net.SocketAddress;
 
 import org.apache.mina.core.buffer.IoBuffer;
-import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.sshd.common.Closeable;
@@ -116,12 +115,7 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
             @Override
             public org.apache.sshd.common.future.CloseFuture close(boolean immediately) {
                 org.apache.mina.core.future.CloseFuture cf = immediately ? session.closeNow() : session.closeOnFlush();
-                cf.addListener(new IoFutureListener<IoFuture>() {
-                    @Override
-                    public void operationComplete(IoFuture f) {
-                        future.setValue(Boolean.TRUE);
-                    }
-                });
+                cf.addListener(f -> future.setValue(Boolean.TRUE));
                 return future;
             }
         };
@@ -145,15 +139,12 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
     // NOTE !!! data buffer may NOT be re-used when method returns - at least until IoWriteFuture is signalled
     public IoWriteFuture write(IoBuffer buffer) {
         final Future future = new Future(null);
-        session.write(buffer).addListener(new IoFutureListener<WriteFuture>() {
-            @Override
-            public void operationComplete(WriteFuture cf) {
-                Throwable t = cf.getException();
-                if (t != null) {
-                    future.setException(t);
-                } else {
-                    future.setWritten();
-                }
+        session.write(buffer).addListener((IoFutureListener<WriteFuture>) cf -> {
+            Throwable t = cf.getException();
+            if (t != null) {
+                future.setException(t);
+            } else {
+                future.setWritten();
             }
         });
         return future;

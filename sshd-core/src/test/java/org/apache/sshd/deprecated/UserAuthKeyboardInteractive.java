@@ -113,7 +113,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                         return Result.Failure;
                     }
                 default:
-                    log.debug("Received unknown packet {}", Integer.valueOf(cmd));
+                    log.debug("Received unknown packet {}", cmd);
                     return Result.Continued;
             }
         }

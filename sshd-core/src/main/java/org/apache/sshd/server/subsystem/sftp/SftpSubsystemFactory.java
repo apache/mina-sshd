@@ -19,7 +19,6 @@
 
 package org.apache.sshd.server.subsystem.sftp;
 
-import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
@@ -67,14 +66,7 @@ public class SftpSubsystemFactory extends AbstractSftpEventListenerManager imple
             factory.setExecutorService(executors);
             factory.setShutdownOnExit(shutdownExecutor);
             factory.setUnsupportedAttributePolicy(policy);
-
-            Collection<? extends SftpEventListener> listeners = getRegisteredListeners();
-            if (GenericUtils.size(listeners) > 0) {
-                for (SftpEventListener l : listeners) {
-                    factory.addSftpEventListener(l);
-                }
-            }
-
+            GenericUtils.forEach(getRegisteredListeners(), factory::addSftpEventListener);
             return factory;
         }
     }
@@ -136,13 +128,7 @@ public class SftpSubsystemFactory extends AbstractSftpEventListenerManager imple
     @Override
     public Command create() {
         SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy());
-        Collection<? extends SftpEventListener> listeners = getRegisteredListeners();
-        if (GenericUtils.size(listeners) > 0) {
-            for (SftpEventListener l : listeners) {
-                subsystem.addSftpEventListener(l);
-            }
-        }
-
+        GenericUtils.forEach(getRegisteredListeners(), subsystem::addSftpEventListener);
         return subsystem;
     }
 }

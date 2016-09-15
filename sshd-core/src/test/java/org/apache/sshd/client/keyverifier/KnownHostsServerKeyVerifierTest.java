@@ -63,7 +63,7 @@ import org.mockito.Mockito;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
     private static final String HASHED_HOST = "192.168.1.61";
-    private static final Map<String, PublicKey> HOST_KEYS = new TreeMap<String, PublicKey>(String.CASE_INSENSITIVE_ORDER);
+    private static final Map<String, PublicKey> HOST_KEYS = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private static Map<String, KnownHostEntry> hostsEntries;
     private static Path entriesFile;
 
@@ -91,13 +91,10 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
     @Test
     public void testNoUpdatesNoNewHostsAuthentication() throws Exception {
         final AtomicInteger delegateCount = new AtomicInteger(0);
-        ServerKeyVerifier delegate = new ServerKeyVerifier() {
-            @Override
-            public boolean verifyServerKey(ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey) {
-                delegateCount.incrementAndGet();
-                fail("verifyServerKey(" + clientSession + ")[" + remoteAddress + "] unexpected invocation");
-                return false;
-            }
+        ServerKeyVerifier delegate = (clientSession, remoteAddress, serverKey) -> {
+            delegateCount.incrementAndGet();
+            fail("verifyServerKey(" + clientSession + ")[" + remoteAddress + "] unexpected invocation");
+            return false;
         };
 
         final AtomicInteger updateCount = new AtomicInteger(0);
@@ -128,12 +125,9 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
     @Test
     public void testFileUpdatedOnEveryNewHost() throws Exception {
         final AtomicInteger delegateCount = new AtomicInteger(0);
-        ServerKeyVerifier delegate = new ServerKeyVerifier() {
-            @Override
-            public boolean verifyServerKey(ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey) {
-                delegateCount.incrementAndGet();
-                return true;
-            }
+        ServerKeyVerifier delegate = (clientSession, remoteAddress, serverKey) -> {
+            delegateCount.incrementAndGet();
+            return true;
         };
 
         Path path = getKnownHostCopyPath();
@@ -339,7 +333,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             return Collections.emptyMap();
         }
 
-        Map<String, KnownHostEntry> hostsMap = new TreeMap<String, KnownHostEntry>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, KnownHostEntry> hostsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (KnownHostEntry entry : entries) {
             String line = entry.getConfigLine();
             outputDebugMessage("loadTestLines(%s) processing %s", file, line);

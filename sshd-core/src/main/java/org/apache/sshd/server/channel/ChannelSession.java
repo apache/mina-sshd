@@ -20,7 +20,6 @@ package org.apache.sshd.server.channel;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -68,7 +67,6 @@ import org.apache.sshd.server.ChannelSessionAware;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.Environment;
-import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.Signal;
@@ -84,8 +82,7 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
  */
 public class ChannelSession extends AbstractServerChannel {
     public static final List<ChannelRequestHandler> DEFAULT_HANDLERS =
-            Collections.unmodifiableList(
-                    Arrays.<ChannelRequestHandler>asList(PuttyRequestHandler.INSTANCE));
+            Collections.<ChannelRequestHandler>singletonList(PuttyRequestHandler.INSTANCE);
 
     protected String type;
     protected ChannelAsyncOutputStream asyncOut;
@@ -179,12 +176,7 @@ public class ChannelSession extends AbstractServerChannel {
                 FactoryManager manager = ValidateUtils.checkNotNull(s.getFactoryManager(), "No factory manager");
                 ScheduledExecutorService scheduler = ValidateUtils.checkNotNull(manager.getScheduledExecutorService(), "No scheduling service");
                 scheduler.schedule(task, timeout, TimeUnit.MILLISECONDS);
-                commandExitFuture.addListener(new SshFutureListener<CloseFuture>() {
-                    @Override
-                    public void operationComplete(CloseFuture future) {
-                        task.cancel();
-                    }
-                });
+                commandExitFuture.addListener(future -> task.cancel());
             }
             return commandExitFuture;
         }
@@ -559,7 +551,7 @@ public class ChannelSession extends AbstractServerChannel {
         }
 
         try {
-            commandInstance = NamedFactory.Utils.create(factories, subsystem);
+            commandInstance = NamedFactory.create(factories, subsystem);
         } catch (RuntimeException | Error e) {
             log.warn("handleSubsystem({}) Failed ({}) to create command for subsystem={}: {}",
                       this, e.getClass().getSimpleName(), subsystem, e.getMessage());
@@ -680,19 +672,15 @@ public class ChannelSession extends AbstractServerChannel {
             tempBuffer = null;
             doWriteData(buffer.array(), buffer.rpos(), buffer.available());
         }
-        command.setExitCallback(new ExitCallback() {
-            @Override
-            @SuppressWarnings("synthetic-access")
-            public void onExit(int exitValue, String exitMessage) {
-                try {
-                    closeShell(exitValue);
-                    if (log.isDebugEnabled()) {
-                        log.debug("onExit({}) code={} message='{}' shell closed", ChannelSession.this, exitValue, exitMessage);
-                    }
-                } catch (IOException e) {
-                    log.warn("onExit({}) code={} message='{}' {} closing shell: {}",
-                             ChannelSession.this, exitValue, exitMessage, e.getClass().getSimpleName(), e.getMessage());
+        command.setExitCallback((exitValue, exitMessage) -> {
+            try {
+                closeShell(exitValue);
+                if (log.isDebugEnabled()) {
+                    log.debug("onExit({}) code={} message='{}' shell closed", ChannelSession.this, exitValue, exitMessage);
                 }
+            } catch (IOException e) {
+                log.warn("onExit({}) code={} message='{}' {} closing shell: {}",
+                         ChannelSession.this, exitValue, exitMessage, e.getClass().getSimpleName(), e.getMessage());
             }
         });
 

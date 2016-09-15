@@ -29,7 +29,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 public interface ConnectionServiceRequestHandler extends RequestHandler<ConnectionService> {
 
     // required because of generics issues
-    Transformer<ConnectionServiceRequestHandler, RequestHandler<ConnectionService>> SVC2HNDLR = Transformer.Utils.identity();
+    Transformer<ConnectionServiceRequestHandler, RequestHandler<ConnectionService>> SVC2HNDLR = Transformer.identity();
 
     @Override
     Result process(ConnectionService service, String request, boolean wantReply, Buffer buffer) throws Exception;

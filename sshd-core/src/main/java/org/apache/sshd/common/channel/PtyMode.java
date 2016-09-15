@@ -20,11 +20,12 @@ package org.apache.sshd.common.channel;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.apache.sshd.common.util.GenericUtils;
 
@@ -293,15 +294,8 @@ public enum PtyMode {
     public static final Set<PtyMode> MODES = Collections.unmodifiableSet(EnumSet.allOf(PtyMode.class));
 
     private static final Map<Integer, PtyMode> COMMANDS =
-            Collections.unmodifiableMap(new HashMap<Integer, PtyMode>(MODES.size()) {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
-
-                {
-                    for (PtyMode c : PtyMode.MODES) {
-                        put(c.toInt(), c);
-                    }
-                }
-            });
+            Collections.unmodifiableMap(
+                    GenericUtils.toSortedMap(MODES, PtyMode::toInt, Function.identity(), Comparator.naturalOrder()));
 
     private int v;
 

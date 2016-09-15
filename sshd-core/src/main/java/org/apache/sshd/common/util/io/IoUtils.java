@@ -122,6 +122,7 @@ public final class IoUtils {
      * suppressed exceptions to the first one
      * @see Throwable#getSuppressed()
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public static IOException closeQuietly(Closeable... closeables) {
         IOException err = null;
         for (Closeable c : closeables) {
@@ -130,7 +131,7 @@ public final class IoUtils {
                     c.close();
                 }
             } catch (IOException e) {
-                GenericUtils.accumulateException(err, e);
+                err = GenericUtils.accumulateException(err, e);
             }
         }
 

@@ -28,13 +28,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 public interface ChannelRequestHandler extends RequestHandler<Channel> {
 
     // required because of generics issues
-    Transformer<ChannelRequestHandler, RequestHandler<Channel>> CHANN2HNDLR =
-        new Transformer<ChannelRequestHandler, RequestHandler<Channel>>() {
-            @Override
-            public RequestHandler<Channel> transform(ChannelRequestHandler input) {
-                return input;
-            }
-        };
+    Transformer<ChannelRequestHandler, RequestHandler<Channel>> CHANN2HNDLR = Transformer.identity();
 
     @Override
     Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception;

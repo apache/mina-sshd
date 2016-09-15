@@ -85,6 +85,6 @@ public class KeyUtilsFingerprintCaseSensitivityTest extends BaseTestSupport {
 
     @Test
     public void testCase() throws Exception {
-        assertEquals("Check failed", new Pair<Boolean, String>(true, expected), KeyUtils.checkFingerPrint(test, key));
+        assertEquals("Check failed", new Pair<>(true, expected), KeyUtils.checkFingerPrint(test, key));
     }
 }

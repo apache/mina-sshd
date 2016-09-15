@@ -111,11 +111,6 @@ public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements 
             return Collections.emptyList();
         }
 
-        List<ClientIdentityProvider> providers = new ArrayList<>(paths.size());
-        for (Path p : paths) {
-            providers.add(new ClientIdentityFileWatcher(p, loader, provider, strict));
-        }
-
-        return providers;
+        return GenericUtils.map(paths, p -> new ClientIdentityFileWatcher(p, loader, provider, strict));
     }
 }

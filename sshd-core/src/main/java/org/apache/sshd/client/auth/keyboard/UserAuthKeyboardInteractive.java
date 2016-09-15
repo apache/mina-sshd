@@ -88,7 +88,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     @Override
     public void init(ClientSession session, String service) throws Exception {
         super.init(session, service);
-        passwords = PasswordIdentityProvider.Utils.iteratorOf(session);
+        passwords = PasswordIdentityProvider.iteratorOf(session);
         maxTrials = PropertyResolverUtils.getIntProperty(session, ClientAuthenticationManager.PASSWORD_PROMPTS, ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS);
         ValidateUtils.checkTrue(maxTrials > 0, "Non-positive max. trials: %d", maxTrials);
     }

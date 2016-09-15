@@ -56,12 +56,7 @@ public final class ClientIdentity {
     public static final String ID_FILE_SUFFIX = "";
 
     public static final Transformer<String, String> ID_GENERATOR =
-        new Transformer<String, String>() {
-            @Override
-            public String transform(String input) {
-                return getIdentityFileName(input);
-            }
-        };
+            ClientIdentity::getIdentityFileName;
 
     private ClientIdentity() {
         throw new UnsupportedOperationException("No instance");

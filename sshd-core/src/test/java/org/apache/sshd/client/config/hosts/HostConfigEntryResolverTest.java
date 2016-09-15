@@ -26,7 +26,6 @@ import java.net.SocketAddress;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
-import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,8 +47,6 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
-import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
-import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.Utils;
 import org.junit.After;
@@ -93,12 +90,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
     @Test
     public void testEffectiveHostConfigResolution() throws Exception {
         final HostConfigEntry entry = new HostConfigEntry(getCurrentTestName(), TEST_LOCALHOST, port, getCurrentTestName());
-        client.setHostConfigEntryResolver(new HostConfigEntryResolver() {
-            @Override
-            public HostConfigEntry resolveEffectiveHost(String host, int portValue, String username) throws IOException {
-                return entry;
-            }
-        });
+        client.setHostConfigEntryResolver((host, portValue, username) -> entry);
         client.start();
 
         try (ClientSession session = client.connect(
@@ -143,15 +135,12 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         final KeyPair identity = Utils.getFirstKeyPair(sshd);
         final String user = getCurrentTestName();
         // make sure authentication is achieved only via the identity public key
-        sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
-            @Override
-            public boolean authenticate(String username, PublicKey key, ServerSession session) {
-                if (user.equals(username)) {
-                    return KeyUtils.compareKeys(identity.getPublic(), key);
-                }
-
-                return false;
+        sshd.setPublickeyAuthenticator((username, key, session) -> {
+            if (user.equals(username)) {
+                return KeyUtils.compareKeys(identity.getPublic(), key);
             }
+
+            return false;
         });
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
 
@@ -177,12 +166,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         final String host = getClass().getSimpleName();
         final HostConfigEntry entry = new HostConfigEntry(host, TEST_LOCALHOST, port, user);
         entry.addIdentity(clientIdentity);
-        client.setHostConfigEntryResolver(new HostConfigEntryResolver() {
-            @Override
-            public HostConfigEntry resolveEffectiveHost(String host, int portValue, String username) throws IOException {
-                return entry;
-            }
-        });
+        client.setHostConfigEntryResolver((host1, portValue, username) -> entry);
 
         client.start();
         try (ClientSession session = client.connect(
@@ -209,19 +193,16 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         final String user = getCurrentTestName();
         final AtomicBoolean defaultClientIdentityAttempted = new AtomicBoolean(false);
         // make sure authentication is achieved only via the identity public key
-        sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
-            @Override
-            public boolean authenticate(String username, PublicKey key, ServerSession session) {
-                if (KeyUtils.compareKeys(defaultIdentity.getPublic(), key)) {
-                    defaultClientIdentityAttempted.set(true);
-                }
-
-                if (user.equals(username)) {
-                    return KeyUtils.compareKeys(specificIdentity.getPublic(), key);
-                }
-
-                return false;
+        sshd.setPublickeyAuthenticator((username, key, session) -> {
+            if (KeyUtils.compareKeys(defaultIdentity.getPublic(), key)) {
+                defaultClientIdentityAttempted.set(true);
             }
+
+            if (user.equals(username)) {
+                return KeyUtils.compareKeys(specificIdentity.getPublic(), key);
+            }
+
+            return false;
         });
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
 

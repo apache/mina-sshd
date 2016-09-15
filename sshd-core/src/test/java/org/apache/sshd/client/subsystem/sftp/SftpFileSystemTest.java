@@ -116,14 +116,10 @@ public class SftpFileSystemTest extends BaseTestSupport {
     @Test
     public void testFileSystem() throws Exception {
         try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
-                new TreeMap<String, Object>() {
-                    private static final long serialVersionUID = 1L;    // we're not serializing it
-
-                    {
-                        put(SftpFileSystemProvider.READ_BUFFER_PROP_NAME, Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE));
-                        put(SftpFileSystemProvider.WRITE_BUFFER_PROP_NAME, Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE));
-                    }
-                })) {
+                GenericUtils.<String, Object>mapBuilder()
+                        .put(SftpFileSystemProvider.READ_BUFFER_PROP_NAME, IoUtils.DEFAULT_COPY_SIZE)
+                        .put(SftpFileSystemProvider.WRITE_BUFFER_PROP_NAME, IoUtils.DEFAULT_COPY_SIZE)
+                        .build())) {
             assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
             testFileSystem(fs, ((SftpFileSystem) fs).getVersion());
         }
@@ -137,8 +133,8 @@ public class SftpFileSystemTest extends BaseTestSupport {
         params.put("test-name", getCurrentTestName());
 
         int expectedVersion = (SftpSubsystem.LOWER_SFTP_IMPL + SftpSubsystem.HIGHER_SFTP_IMPL) / 2;
-        params.put(SftpFileSystemProvider.VERSION_PARAM, Integer.valueOf(expectedVersion));
-        try (SftpFileSystem fs = (SftpFileSystem) FileSystems.newFileSystem(createDefaultFileSystemURI(params), Collections.emptyMap())) {
+        params.put(SftpFileSystemProvider.VERSION_PARAM, expectedVersion);
+        try (SftpFileSystem fs = (SftpFileSystem) FileSystems.newFileSystem(createDefaultFileSystemURI(params), Collections.<String, Object>emptyMap())) {
             try (SftpClient sftpClient = fs.getClient()) {
                 assertEquals("Mismatched negotiated version", expectedVersion, sftpClient.getVersion());
 
@@ -164,14 +160,10 @@ public class SftpFileSystemTest extends BaseTestSupport {
         Utils.deleteRecursive(lclSftp);
 
         try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
-                new TreeMap<String, Object>() {
-                    private static final long serialVersionUID = 1L;    // we're not serializing it
-
-                    {
-                        put(SftpFileSystemProvider.READ_BUFFER_PROP_NAME, Integer.valueOf(SftpClient.MIN_READ_BUFFER_SIZE));
-                        put(SftpFileSystemProvider.WRITE_BUFFER_PROP_NAME, Integer.valueOf(SftpClient.MIN_WRITE_BUFFER_SIZE));
-                    }
-                })) {
+                GenericUtils.<String, Object>mapBuilder()
+                    .put(SftpFileSystemProvider.READ_BUFFER_PROP_NAME, SftpClient.MIN_READ_BUFFER_SIZE)
+                    .put(SftpFileSystemProvider.WRITE_BUFFER_PROP_NAME, SftpClient.MIN_WRITE_BUFFER_SIZE)
+                    .build())) {
 
             Path parentPath = targetPath.getParent();
             Path clientFolder = lclSftp.resolve("client");
@@ -183,7 +175,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
             Map<String, Object> attrs = Files.readAttributes(file, "posix:*");
             assertNotNull("No attributes read for " + file, attrs);
 
-            Files.setAttribute(file, "basic:size", Long.valueOf(2L));
+            Files.setAttribute(file, "basic:size", 2L);
             Files.setAttribute(file, "posix:permissions", PosixFilePermissions.fromString("rwxr-----"));
             Files.setAttribute(file, "basic:lastModifiedTime", FileTime.fromMillis(100000L));
 
@@ -292,28 +284,14 @@ public class SftpFileSystemTest extends BaseTestSupport {
     @Test
     public void testSftpVersionSelector() throws Exception {
         final AtomicInteger selected = new AtomicInteger(-1);
-        SftpVersionSelector selector = new SftpVersionSelector() {
-            @Override
-            public int selectVersion(ClientSession session, int current, List<Integer> available) {
-                int numAvailable = GenericUtils.size(available);
-                Integer maxValue = null;
-                if (numAvailable == 1) {
-                    maxValue = available.get(0);
-                } else {
-                    for (Integer v : available) {
-                        if (v.intValue() == current) {
-                            continue;
-                        }
-
-                        if ((maxValue == null) || (maxValue.intValue() < v.intValue())) {
-                            maxValue = v;
-                        }
-                    }
-                }
-
-                selected.set(maxValue.intValue());
-                return selected.get();
-            }
+        SftpVersionSelector selector = (session, current, available) -> {
+            int value = GenericUtils.stream(available)
+                    .mapToInt(Integer::intValue)
+                    .filter(v -> v != current)
+                    .max()
+                    .orElseGet(() -> current);
+            selected.set(value);
+            return value;
         };
 
         try (SshClient client = setupTestClient()) {

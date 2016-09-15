@@ -127,9 +127,8 @@ public class AbstractSessionTest extends BaseTestSupport {
 
     @Test(expected = IllegalStateException.class)
     public void testReadIdentWithNullChar() {
-        StringBuilder sb = new StringBuilder(Session.MAX_VERSION_LINE_LENGTH + Integer.SIZE);
-        sb.append("SSH-2.0").append('\0').append("-software\r\n");
-        Buffer buf = new ByteArrayBuffer(sb.toString().getBytes(StandardCharsets.UTF_8));
+        String id = "SSH-2.0" + '\0' + "-software\r\n";
+        Buffer buf = new ByteArrayBuffer(id.getBytes(StandardCharsets.UTF_8));
         String ident = readIdentification(session, buf);
         fail("Unexpected success: " + ident);
     }
@@ -185,12 +184,9 @@ public class AbstractSessionTest extends BaseTestSupport {
     @Test   // see SSHD-652
     public void testCloseFutureListenerRegistration() throws Exception {
         final AtomicInteger closeCount = new AtomicInteger();
-        session.addCloseFutureListener(new SshFutureListener<CloseFuture>() {
-            @Override
-            public void operationComplete(CloseFuture future) {
-                assertTrue("Future not marted as closed", future.isClosed());
-                assertEquals("Unexpected multiple call to callback", 1, closeCount.incrementAndGet());
-            }
+        session.addCloseFutureListener(future -> {
+            assertTrue("Future not marted as closed", future.isClosed());
+            assertEquals("Unexpected multiple call to callback", 1, closeCount.incrementAndGet());
         });
         session.close();
         assertEquals("Close listener not called", 1, closeCount.get());

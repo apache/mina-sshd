@@ -27,12 +27,7 @@ import java.util.function.Predicate;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class ReflectionUtils {
-    public static final Transformer<Field, String> FIELD_NAME_EXTRACTOR = new Transformer<Field, String>() {
-        @Override
-        public String transform(Field f) {
-            return (f == null) ? null : f.getName();
-        }
-    };
+    public static final Transformer<Field, String> FIELD_NAME_EXTRACTOR = f -> (f == null) ? null : f.getName();
 
     private ReflectionUtils() {
         throw new UnsupportedOperationException("No instance");

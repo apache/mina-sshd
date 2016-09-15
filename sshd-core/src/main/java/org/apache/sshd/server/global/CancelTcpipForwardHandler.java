@@ -38,7 +38,7 @@ public class CancelTcpipForwardHandler extends AbstractConnectionServiceRequestH
     /**
      * Default growth factor function used to resize response buffers
      */
-    public static final Int2IntFunction RESPONSE_BUFFER_GROWTH_FACTOR = Int2IntFunction.Utils.add(Byte.SIZE);
+    public static final Int2IntFunction RESPONSE_BUFFER_GROWTH_FACTOR = Int2IntFunction.add(Byte.SIZE);
 
     public static final CancelTcpipForwardHandler INSTANCE = new CancelTcpipForwardHandler();
 

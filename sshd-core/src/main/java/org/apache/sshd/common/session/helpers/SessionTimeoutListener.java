@@ -64,6 +64,7 @@ public class SessionTimeoutListener extends AbstractLoggingBean implements Sessi
         sessionClosed(session);
     }
 
+    @SuppressWarnings("SuspiciousMethodCalls")
     @Override
     public void sessionClosed(Session s) {
         if (sessions.remove(s)) {

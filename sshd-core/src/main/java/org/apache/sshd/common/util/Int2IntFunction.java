@@ -28,12 +28,7 @@ public interface Int2IntFunction {
     /**
      * An {@link Int2IntFunction} that returns same value as input
      */
-    Int2IntFunction IDENTITY = new Int2IntFunction() {
-        @Override
-        public int apply(int value) {
-            return value;
-        }
-    };
+    Int2IntFunction IDENTITY = value -> value;
 
     /**
      * @param value Argument
@@ -42,6 +37,7 @@ public interface Int2IntFunction {
     int apply(int value);
 
     // CHECKSTYLE:OFF
+    @Deprecated
     final class Utils {
     // CHECKSTYLE:ON
 
@@ -50,47 +46,48 @@ public interface Int2IntFunction {
         }
 
         public static Int2IntFunction sub(int delta) {
-            return add(0 - delta);
+            return Int2IntFunction.sub(delta);
         }
 
         public static Int2IntFunction add(final int delta) {
-            if (delta == 0) {
-                return IDENTITY;
-            } else {
-                return new Int2IntFunction() {
-                    @Override
-                    public int apply(int value) {
-                        return value + delta;
-                    }
-                };
-            }
+            return Int2IntFunction.add(delta);
         }
 
         public static Int2IntFunction mul(final int factor) {
-            if (factor == 1) {
-                return IDENTITY;
-            } else {
-                return new Int2IntFunction() {
-                    @Override
-                    public int apply(int value) {
-                        return value * factor;
-                    }
-                };
-            }
+            return Int2IntFunction.mul(factor);
         }
 
         public static Int2IntFunction div(final int factor) {
-            if (factor == 1) {
-                return IDENTITY;
-            } else {
-                ValidateUtils.checkTrue(factor != 0, "Zero division factor");
-                return new Int2IntFunction() {
-                    @Override
-                    public int apply(int value) {
-                        return value / factor;
-                    }
-                };
-            }
+            return Int2IntFunction.div(factor);
+        }
+    }
+
+    static Int2IntFunction sub(int delta) {
+        return add(0 - delta);
+    }
+
+    static Int2IntFunction add(final int delta) {
+        if (delta == 0) {
+            return IDENTITY;
+        } else {
+            return value -> value + delta;
+        }
+    }
+
+    static Int2IntFunction mul(final int factor) {
+        if (factor == 1) {
+            return IDENTITY;
+        } else {
+            return value -> value * factor;
+        }
+    }
+
+    static Int2IntFunction div(final int factor) {
+        if (factor == 1) {
+            return IDENTITY;
+        } else {
+            ValidateUtils.checkTrue(factor != 0, "Zero division factor");
+            return value -> value / factor;
         }
     }
 }

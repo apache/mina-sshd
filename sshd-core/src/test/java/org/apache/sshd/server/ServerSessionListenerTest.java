@@ -43,7 +43,6 @@ import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
-import org.apache.sshd.server.auth.password.PasswordChangeRequiredException;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.Utils;
@@ -199,12 +198,9 @@ public class ServerSessionListenerTest extends BaseTestSupport {
     public void testSessionListenerCanModifyAuthentication() throws Exception {
         final AtomicInteger passCount = new AtomicInteger(0);
         final PasswordAuthenticator defaultPassAuth = sshd.getPasswordAuthenticator();
-        final PasswordAuthenticator passAuth = new PasswordAuthenticator() {
-            @Override
-            public boolean authenticate(String username, String password, ServerSession session) throws PasswordChangeRequiredException {
-                passCount.incrementAndGet();
-                return defaultPassAuth.authenticate(username, password, session);
-            }
+        final PasswordAuthenticator passAuth = (username, password, session) -> {
+            passCount.incrementAndGet();
+            return defaultPassAuth.authenticate(username, password, session);
         };
         SessionListener listener = new SessionListener() {
             @Override
@@ -214,7 +210,7 @@ public class ServerSessionListenerTest extends BaseTestSupport {
                     serverSession.setPasswordAuthenticator(passAuth);
                     serverSession.setUserAuthFactories(
                             Collections.singletonList(
-                                    ServerAuthenticationManager.Utils.DEFAULT_USER_AUTH_PASSWORD_FACTORY));
+                                    ServerAuthenticationManager.DEFAULT_USER_AUTH_PASSWORD_FACTORY));
                 }
             }
         };

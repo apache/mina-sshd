@@ -63,7 +63,7 @@ public class KeyUtilsTest extends BaseTestSupport {
     public void testGenerateRSAKeyPairs() throws GeneralSecurityException {
         GeneralSecurityException err = null;
         for (Integer size : RSA_SIZES) {
-            int keySize = size.intValue();
+            int keySize = size;
             try {
                 KeyPair kp = generateKeyPair(KeyPairProvider.SSH_RSA, keySize);
                 testKeyPairCloning(KeyPairProvider.SSH_RSA, keySize, kp);
@@ -81,7 +81,7 @@ public class KeyUtilsTest extends BaseTestSupport {
     public void testGenerateDSSKeyPairs() throws GeneralSecurityException {
         GeneralSecurityException err = null;
         for (Integer size : DSS_SIZES) {
-            int keySize = size.intValue();
+            int keySize = size;
             try {
                 KeyPair kp = generateKeyPair(KeyPairProvider.SSH_DSS, keySize);
                 testKeyPairCloning(KeyPairProvider.SSH_DSS, keySize, kp);

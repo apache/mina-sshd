@@ -144,7 +144,7 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
                         "No signature factories for session=%s",
                         session);
         Signature verifier = ValidateUtils.checkNotNull(
-                NamedFactory.Utils.create(factories, keyType),
+                NamedFactory.create(factories, keyType),
                 "No verifier located for algorithm=%s",
                 keyType);
         verifier.initVerifier(clientKey);

@@ -26,7 +26,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.sshd.common.cipher.ECCurves;
-import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.Utils;
@@ -74,13 +73,7 @@ public class KeyRandomArtTest extends BaseTestSupport {
 
     @AfterClass
     public static void dumpAllArts() throws Exception {
-        KeyRandomArt.combine(System.out, ' ', new KeyIdentityProvider() {
-            @Override
-            @SuppressWarnings("synthetic-access")
-            public Iterable<KeyPair> loadKeys() {
-                return KEYS;
-            }
-        });
+        KeyRandomArt.combine(System.out, ' ', () -> KEYS);
     }
 
     @Test
