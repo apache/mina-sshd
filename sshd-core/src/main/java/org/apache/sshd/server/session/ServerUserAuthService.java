@@ -239,7 +239,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
         if (authed == null) {
             handleAuthenticationInProgress(cmd, buffer);
-        } else if (authed.booleanValue()) {
+        } else if (authed) {
             handleAuthenticationSuccess(cmd, buffer);
         } else {
             handleAuthenticationFailure(cmd, buffer);

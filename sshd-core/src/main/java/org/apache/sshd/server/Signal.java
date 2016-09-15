@@ -96,7 +96,7 @@ public enum Signal {
 
                 {
                     for (Signal s : SIGNALS) {
-                        put(Integer.valueOf(s.getNumeric()), s);
+                        put(s.getNumeric(), s);
                     }
                 }
             });
@@ -132,6 +132,6 @@ public enum Signal {
      * @see #getNumeric()
      */
     public static Signal get(int num) {
-        return NUMERIC_LOOKUP_TABLE.get(Integer.valueOf(num));
+        return NUMERIC_LOOKUP_TABLE.get(num);
     }
 }

@@ -1849,7 +1849,7 @@ public class SftpSubsystem
                     dh.markDone();
                 }
 
-                Boolean indicator = SftpHelper.indicateEndOfNamesList(reply, getVersion(), session, Boolean.valueOf(dh.isDone()));
+                Boolean indicator = SftpHelper.indicateEndOfNamesList(reply, getVersion(), session, dh.isDone());
                 if (log.isDebugEnabled()) {
                     log.debug("doReadDir({})({})[{}] - seding {} entries - eol={}", session, handle, h, count, indicator);
                 }
@@ -2246,7 +2246,7 @@ public class SftpSubsystem
             if (handles.containsKey(handle)) {
                 if (log.isTraceEnabled()) {
                     log.trace("generateFileHandle({})[{}] handle={} in use at round {}",
-                              getServerSession(), file, handle, Integer.valueOf(index));
+                              getServerSession(), file, handle, index);
                 }
                 continue;
             }

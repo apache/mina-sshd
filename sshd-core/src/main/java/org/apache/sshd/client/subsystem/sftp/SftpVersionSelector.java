@@ -174,7 +174,7 @@ public interface SftpVersionSelector {
                         }
 
                         for (Integer avail : available) {
-                            if (version == avail.intValue()) {
+                            if (version == avail) {
                                 return version;
                             }
                         }

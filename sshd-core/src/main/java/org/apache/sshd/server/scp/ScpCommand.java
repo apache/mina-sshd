@@ -285,7 +285,7 @@ public class ScpCommand
                 if (e instanceof ScpException) {
                     statusCode = ((ScpException) e).getExitStatus();
                 }
-                exitValue = (statusCode == null) ? ScpHelper.ERROR : statusCode.intValue();
+                exitValue = (statusCode == null) ? ScpHelper.ERROR : statusCode;
                 // this is an exception so status cannot be OK/WARNING
                 if ((exitValue == ScpHelper.OK) || (exitValue == ScpHelper.WARNING)) {
                     if (log.isDebugEnabled()) {

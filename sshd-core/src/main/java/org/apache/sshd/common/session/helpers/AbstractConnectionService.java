@@ -618,7 +618,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
         boolean wantReply = buffer.getBoolean();
         if (log.isDebugEnabled()) {
             log.debug("globalRequest({}) received SSH_MSG_GLOBAL_REQUEST {} want-reply={}",
-                      this, req, Boolean.valueOf(wantReply));
+                      this, req, wantReply);
         }
 
         Session session = getSession();

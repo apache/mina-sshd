@@ -105,7 +105,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
                 throw new SshException("Target directory " + local.toString() + " is probaly inaccesible");
             }
 
-            if (!status.booleanValue()) {
+            if (!status) {
                 throw new SshException("Target directory " + local.toString() + " does not exist");
             }
 
@@ -220,7 +220,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
             return;
         }
 
-        int statusCode = exitStatus.intValue();
+        int statusCode = exitStatus;
         switch (statusCode) {
             case ScpHelper.OK:  // do nothing
                 break;

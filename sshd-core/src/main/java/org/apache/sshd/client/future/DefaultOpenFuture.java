@@ -37,7 +37,7 @@ public class DefaultOpenFuture extends DefaultVerifiableSshFuture<OpenFuture> im
     @Override
     public OpenFuture verify(long timeoutMillis) throws IOException {
         Boolean result = verifyResult(Boolean.class, timeoutMillis);
-        if (!result.booleanValue()) {
+        if (!result) {
             throw new SshException("Channel opening failed");
         }
 
@@ -57,7 +57,7 @@ public class DefaultOpenFuture extends DefaultVerifiableSshFuture<OpenFuture> im
     @Override
     public boolean isOpened() {
         Object value = getValue();
-        return (value instanceof Boolean) && ((Boolean) value).booleanValue();
+        return (value instanceof Boolean) && (Boolean) value;
     }
 
     @Override

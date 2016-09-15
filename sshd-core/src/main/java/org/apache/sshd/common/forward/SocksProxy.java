@@ -266,7 +266,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 }
                 int port = getUShort(buffer);
                 if (log.isDebugEnabled()) {
-                    log.debug("Received socks5 connection request to {}:{}", host, Integer.valueOf(port));
+                    log.debug("Received socks5 connection request to {}:{}", host, port);
                 }
                 SshdSocketAddress remote = new SshdSocketAddress(host, port);
                 channel = new TcpipClientChannel(TcpipClientChannel.Type.Direct, session, remote);

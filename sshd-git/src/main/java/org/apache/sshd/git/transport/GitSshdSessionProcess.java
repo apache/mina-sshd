@@ -87,7 +87,7 @@ public class GitSshdSessionProcess extends Process {
             log.trace("exitValue({}) channel={}, timeout={} millis.: {}",
                       commandName, channel, waitTimeout, status);
         }
-        return status.intValue();
+        return status;
     }
 
     @Override

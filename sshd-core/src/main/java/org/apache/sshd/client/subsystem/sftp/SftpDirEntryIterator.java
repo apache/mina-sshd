@@ -156,7 +156,7 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterato
         try {
             // check if previous call yielded an end-of-list indication
             Boolean eolReached = eolIndicator.getAndSet(null);
-            if ((eolReached != null) && eolReached.booleanValue()) {
+            if ((eolReached != null) && eolReached) {
                 if (log.isTraceEnabled()) {
                     log.trace("load({})[{}] exhausted all entries on previous call", getPath(), handle);
                 }
@@ -165,7 +165,7 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterato
 
             List<DirEntry> entries = client.readDir(handle, eolIndicator);
             eolReached = eolIndicator.get();
-            if ((entries == null) || ((eolReached != null) && eolReached.booleanValue())) {
+            if ((entries == null) || ((eolReached != null) && eolReached)) {
                 if (log.isTraceEnabled()) {
                     log.trace("load({})[{}] exhausted all entries - EOL={}", getPath(), handle, eolReached);
                 }

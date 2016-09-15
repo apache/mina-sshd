@@ -91,7 +91,7 @@ public final class SftpHelper {
      * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.3">SFTP v6 - section 9.3</A>
      */
     public static Boolean getEndOfFileIndicatorValue(Buffer buffer, int version) {
-        return (version <  SftpConstants.SFTP_V6) || (buffer.available() < 1) ? null : Boolean.valueOf(buffer.getBoolean());
+        return (version <  SftpConstants.SFTP_V6) || (buffer.available() < 1) ? null : buffer.getBoolean();
     }
 
     /**
@@ -105,7 +105,7 @@ public final class SftpHelper {
      * @see #indicateEndOfNamesList(Buffer, int, PropertyResolver, Boolean)
      */
     public static Boolean getEndOfListIndicatorValue(Buffer buffer, int version) {
-        return (version <  SftpConstants.SFTP_V6) || (buffer.available() < 1) ? null : Boolean.valueOf(buffer.getBoolean());
+        return (version <  SftpConstants.SFTP_V6) || (buffer.available() < 1) ? null : buffer.getBoolean();
     }
 
     /**
@@ -144,7 +144,7 @@ public final class SftpHelper {
             return null;
         }
 
-        buffer.putBoolean(indicatorValue.booleanValue());
+        buffer.putBoolean(indicatorValue);
         return indicatorValue;
     }
 

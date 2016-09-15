@@ -172,7 +172,7 @@ public class ChannelSession extends AbstractServerChannel {
                 long timeout = PropertyResolverUtils.getLongProperty(
                         channel, ServerFactoryManager.COMMAND_EXIT_TIMEOUT, ServerFactoryManager.DEFAULT_COMMAND_EXIT_TIMEOUT);
                 if (log.isDebugEnabled()) {
-                    log.debug("Wait {} ms for shell to exit cleanly on {}", Long.valueOf(timeout), channel);
+                    log.debug("Wait {} ms for shell to exit cleanly on {}", timeout, channel);
                 }
 
                 Session s = channel.getSession();

@@ -34,7 +34,7 @@ public class DefaultKeyExchangeFuture extends DefaultVerifiableSshFuture<KeyExch
     @Override
     public KeyExchangeFuture verify(long timeoutMillis) throws IOException {
         Boolean result = verifyResult(Boolean.class, timeoutMillis);
-        if (!result.booleanValue()) {
+        if (!result) {
             throw new SshException("Key exchange failed");
         }
 

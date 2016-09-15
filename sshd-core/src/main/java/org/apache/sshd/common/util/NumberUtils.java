@@ -49,7 +49,7 @@ public final class NumberUtils {
                 {
                     long value = 1L;
                     for (int power = 0; power < Long.SIZE; power++, value <<= 1) {
-                        add(Long.valueOf(value));
+                        add(value);
                     }
                 }
             });
@@ -60,7 +60,7 @@ public final class NumberUtils {
 
     public static boolean isPowerOf2(long value) {
         for (Long l : POWERS_OF_TWO) {
-            if (value == l.longValue()) {
+            if (value == l) {
                 return true;
             }
         }
@@ -140,7 +140,7 @@ public final class NumberUtils {
         } else if (n instanceof Integer) {
             return (Integer) n;
         } else {
-            return Integer.valueOf(n.intValue());
+            return n.intValue();
         }
     }
 
@@ -272,7 +272,7 @@ public final class NumberUtils {
 
         List<Integer> l = new ArrayList<>(len);
         for (int v : values) {
-            l.add(Integer.valueOf(v));
+            l.add(v);
         }
 
         return l;

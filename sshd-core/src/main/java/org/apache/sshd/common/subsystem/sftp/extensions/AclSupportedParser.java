@@ -155,7 +155,7 @@ public class AclSupportedParser extends AbstractParser<AclCapabilities> {
             for (Map.Entry<Integer, String> ae : map.entrySet()) {
                 Integer value = ae.getKey();
                 String name = ae.getValue();
-                if ((mask & value.intValue()) != 0) {
+                if ((mask & value) != 0) {
                     caps.add(name);
                 }
             }
@@ -170,7 +170,7 @@ public class AclSupportedParser extends AbstractParser<AclCapabilities> {
 
             int mask = 0;
             for (Integer v : maskValues) {
-                mask |= v.intValue();
+                mask |= v;
             }
 
             return mask;
@@ -184,7 +184,7 @@ public class AclSupportedParser extends AbstractParser<AclCapabilities> {
             Map<Integer, String> map = getAclCapabilityValuesMap();
             Set<Integer> caps = new HashSet<Integer>(map.size());
             for (Integer v : map.keySet()) {
-                if ((mask & v.intValue()) != 0) {
+                if ((mask & v) != 0) {
                     caps.add(v);
                 }
             }

@@ -71,7 +71,7 @@ public class ClientConnectionService extends AbstractConnectionService<AbstractC
                 }
             }, interval, interval, TimeUnit.MILLISECONDS);
             if (log.isDebugEnabled()) {
-                log.debug("startHeartbeat - started at interval={}", Long.valueOf(interval));
+                log.debug("startHeartbeat - started at interval={}", interval);
             }
         }
     }

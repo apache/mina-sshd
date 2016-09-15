@@ -284,8 +284,8 @@ public enum PtyMode {
     public static final byte TTY_OP_END = 0x00;
 
     // objects that can be used to set {@link PtyMode}s as {@code true} or {@code false}
-    public static final Integer FALSE_SETTING = Integer.valueOf(0);
-    public static final Integer TRUE_SETTING = Integer.valueOf(1);
+    public static final Integer FALSE_SETTING = 0;
+    public static final Integer TRUE_SETTING = 1;
 
     /**
      * An un-modifiable {@link Set} of all defined {@link PtyMode}s

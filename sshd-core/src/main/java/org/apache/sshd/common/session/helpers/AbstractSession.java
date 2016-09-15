@@ -528,7 +528,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 if ((cmd >= SshConstants.SSH_MSG_KEX_FIRST) && (cmd <= SshConstants.SSH_MSG_KEX_LAST)) {
                     if (firstKexPacketFollows != null) {
                         try {
-                            if (!handleFirstKexPacketFollows(cmd, buffer, firstKexPacketFollows.booleanValue())) {
+                            if (!handleFirstKexPacketFollows(cmd, buffer, firstKexPacketFollows)) {
                                 break;
                             }
                         } finally {

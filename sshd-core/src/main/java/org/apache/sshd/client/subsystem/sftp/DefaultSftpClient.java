@@ -434,7 +434,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
             return current;
         }
 
-        if (!available.contains(Integer.valueOf(selected))) {
+        if (!available.contains(selected)) {
             throw new StreamCorruptedException("Selected version (" + selected + ") not part of available: " + available);
         }
 

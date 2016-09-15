@@ -209,12 +209,12 @@ public class FileHandle extends Handle {
     public static FileAttribute<?> toFileAttribute(final String key, final Object val) {
         // Some ignored attributes sent by the SFTP client
         if ("isOther".equals(key)) {
-            if (((Boolean) val).booleanValue()) {
+            if ((Boolean) val) {
                 throw new IllegalArgumentException("Not allowed to use " + key + "=" + val);
             }
             return null;
         } else if ("isRegular".equals(key)) {
-            if (!((Boolean) val).booleanValue()) {
+            if (!(Boolean) val) {
                 throw new IllegalArgumentException("Not allowed to use " + key + "=" + val);
             }
             return null;

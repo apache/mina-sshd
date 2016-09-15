@@ -50,6 +50,6 @@ public class ExitStatusChannelRequestHandler extends AbstractChannelExitRequestH
             log.debug("processRequestValue({}) status={}", channel, exitStatus);
         }
 
-        return Integer.valueOf(exitStatus);
+        return exitStatus;
     }
 }

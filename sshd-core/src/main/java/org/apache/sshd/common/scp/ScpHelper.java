@@ -292,7 +292,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             throw new AccessDeniedException("Receive directory file existence status cannot be determined: " + file);
         }
 
-        if (!(status.booleanValue() && Files.isDirectory(file, options))) {
+        if (!(status && Files.isDirectory(file, options))) {
             Files.createDirectory(file);
         }
 
@@ -664,7 +664,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             case WARNING:
                 break;
             default:
-                throw new ScpException("Bad reply code (" + statusCode + ") for command='" + command + "' on " + location, Integer.valueOf(statusCode));
+                throw new ScpException("Bad reply code (" + statusCode + ") for command='" + command + "' on " + location, statusCode);
         }
     }
 
@@ -867,7 +867,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             return "null";
         }
 
-        switch (exitStatus.intValue()) {
+        switch (exitStatus) {
             case OK:
                 return "OK";
             case WARNING:
@@ -917,7 +917,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                 if (log.isDebugEnabled()) {
                     log.debug("readAck({})[EOF={}] received error: {}", this, canEof, line);
                 }
-                throw new ScpException("Received nack: " + line, Integer.valueOf(c));
+                throw new ScpException("Received nack: " + line, c);
             }
             default:
                 break;

@@ -249,11 +249,11 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * @return {@code true} if must use only the identities in this entry
      */
     public boolean isIdentitiesOnly() {
-        return (exclusiveIdentites == null) ? DEFAULT_EXCLUSIVE_IDENTITIES : exclusiveIdentites.booleanValue();
+        return (exclusiveIdentites == null) ? DEFAULT_EXCLUSIVE_IDENTITIES : exclusiveIdentites;
     }
 
     public void setIdentitiesOnly(boolean identitiesOnly) {
-        exclusiveIdentites = Boolean.valueOf(identitiesOnly);
+        exclusiveIdentites = identitiesOnly;
     }
 
     /**
@@ -560,7 +560,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         appendNonEmptyProperty(sb, USER_CONFIG_PROP, getUsername());
         appendNonEmptyValues(sb, IDENTITY_FILE_CONFIG_PROP, getIdentities());
         if (exclusiveIdentites != null) {
-            appendNonEmptyProperty(sb, EXCLUSIVE_IDENTITIES_CONFIG_PROP, SshConfigFileReader.yesNoValueOf(exclusiveIdentites.booleanValue()));
+            appendNonEmptyProperty(sb, EXCLUSIVE_IDENTITIES_CONFIG_PROP, SshConfigFileReader.yesNoValueOf(exclusiveIdentites));
         }
         appendNonEmptyProperties(sb, getProperties());
         return sb;

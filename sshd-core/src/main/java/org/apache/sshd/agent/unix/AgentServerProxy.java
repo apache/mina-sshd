@@ -169,7 +169,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
 
                     if (connectResult != Status.APR_SUCCESS) {
                         if (isDebug) {
-                            log.debug("Unable to connect to socket PIPE {}. APR errcode {}", authSocket, Long.valueOf(connectResult));
+                            log.debug("Unable to connect to socket PIPE {}. APR errcode {}", authSocket, connectResult);
                         }
                     }
 
@@ -177,7 +177,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
                     int sendResult = Socket.send(tmpSocket, END_OF_STREAM_MESSAGE, 0, 1);
                     if (sendResult != 1) {
                         if (isDebug) {
-                            log.debug("Unable to send signal the EOS for {}. APR retcode {} != 1", authSocket, Integer.valueOf(sendResult));
+                            log.debug("Unable to send signal the EOS for {}. APR retcode {} != 1", authSocket, sendResult);
                         }
                     }
                 } catch (Exception e) {
@@ -190,7 +190,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
 
             final int closeCode = Socket.close(handle);
             if (closeCode != Status.APR_SUCCESS) {
-                log.warn("Exceptions closing the PIPE: {}. APR error code: {} ", authSocket, Integer.valueOf(closeCode));
+                log.warn("Exceptions closing the PIPE: {}. APR error code: {} ", authSocket, closeCode);
             }
         }
 

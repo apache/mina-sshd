@@ -154,7 +154,7 @@ public class EmbeddedCommandRunner {
         set(cmd, "errs", err);
         
         Boolean success = (Boolean) call(cmd, "requiresRepository"); 
-        if (success.booleanValue()) {
+        if (success) {
             call(cmd, "init", new Class[] {Repository.class, String.class}, new Object[] {openGitDir(gitdir), gitdir});
         } else {
             call(cmd, "init", new Class[] {Repository.class, String.class}, new Object[] {null, gitdir});

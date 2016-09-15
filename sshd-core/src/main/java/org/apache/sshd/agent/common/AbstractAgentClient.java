@@ -48,7 +48,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
         if (avail < 4) {
             if (log.isTraceEnabled()) {
                 log.trace("Received message total length ({}) below minuimum ({})",
-                          Integer.valueOf(avail), Integer.valueOf(4));
+                        avail, 4);
             }
             return;
         }
@@ -61,7 +61,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
         if (avail < (len + 4)) {
             if (log.isTraceEnabled()) {
                 log.trace("Received request length ({}) below minuimum ({})",
-                          Integer.valueOf(avail), Integer.valueOf(len + 4));
+                        avail, len + 4);
             }
             return;
         }

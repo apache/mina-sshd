@@ -38,7 +38,7 @@ public class DefaultAuthFuture extends DefaultVerifiableSshFuture<AuthFuture> im
     @Override
     public AuthFuture verify(long timeoutMillis) throws IOException {
         Boolean result = verifyResult(Boolean.class, timeoutMillis);
-        if (!result.booleanValue()) {
+        if (!result) {
             throw new SshException("Authentication failed");
         }
 
@@ -58,14 +58,14 @@ public class DefaultAuthFuture extends DefaultVerifiableSshFuture<AuthFuture> im
     @Override
     public boolean isSuccess() {
         Object v = getValue();
-        return (v instanceof Boolean) && ((Boolean) v).booleanValue();
+        return (v instanceof Boolean) && (Boolean) v;
     }
 
     @Override
     public boolean isFailure() {
         Object v = getValue();
         if (v instanceof Boolean) {
-            return !((Boolean) v).booleanValue();
+            return !(Boolean) v;
         } else {
             return true;
         }

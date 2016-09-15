@@ -167,7 +167,7 @@ public abstract class HostPatternsHolder {
             /*
              * If already found a match we are interested only in negations
              */
-            if (matchFound && (!negated.booleanValue())) {
+            if (matchFound && (!negated)) {
                 continue;
             }
 
@@ -181,7 +181,7 @@ public abstract class HostPatternsHolder {
              *      If a negated entry is matched, then the Host entry is ignored,
              *      regardless of whether any other patterns on the line match.
              */
-            if (negated.booleanValue()) {
+            if (negated) {
                 return false;
             }
 
@@ -266,7 +266,7 @@ public abstract class HostPatternsHolder {
             }
         }
 
-        return new Pair<Pattern, Boolean>(Pattern.compile(sb.toString(), Pattern.CASE_INSENSITIVE), Boolean.valueOf(negated));
+        return new Pair<Pattern, Boolean>(Pattern.compile(sb.toString(), Pattern.CASE_INSENSITIVE), negated);
     }
 
     /**

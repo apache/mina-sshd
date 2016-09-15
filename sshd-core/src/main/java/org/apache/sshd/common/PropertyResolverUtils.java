@@ -133,7 +133,7 @@ public final class PropertyResolverUtils {
         } else if (value instanceof Long) {
             return (Long) value;
         } else if (value instanceof Number) {
-            return Long.valueOf(((Number) value).longValue());
+            return ((Number) value).longValue();
         } else {    // we parse the string in case it is not a valid long value
             return Long.valueOf(value.toString());
         }
@@ -233,7 +233,7 @@ public final class PropertyResolverUtils {
         } else if (value instanceof Integer) {
             return (Integer) value;
         } else if (value instanceof Number) {
-            return Integer.valueOf(((Number) value).intValue());
+            return ((Number) value).intValue();
         } else {    // we parse the string in case this is NOT an integer
             return Integer.valueOf(value.toString());
         }
@@ -259,7 +259,7 @@ public final class PropertyResolverUtils {
         if (value == null) {
             return defaultValue;
         } else {
-            return toBoolean(value).booleanValue();
+            return toBoolean(value);
         }
     }
 

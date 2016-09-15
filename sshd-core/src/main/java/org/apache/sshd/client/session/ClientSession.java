@@ -217,7 +217,7 @@ public interface ClientSession
             }
 
             Integer exitStatus = channel.getExitStatus();
-            if ((exitStatus != null) && (exitStatus.intValue() != 0)) {
+            if ((exitStatus != null) && (exitStatus != 0)) {
                 throw new RemoteException("Remote command failed (" + exitStatus + "): " + command, new ServerException(exitStatus.toString()));
             }
 

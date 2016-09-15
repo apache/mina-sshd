@@ -83,7 +83,7 @@ public final class OsUtils {
         synchronized (OS_TYPE_HOLDER) {
             typeValue = OS_TYPE_HOLDER.get();
             if (typeValue != null) {    // is it the 1st time
-                return typeValue.booleanValue();
+                return typeValue;
             }
 
             String value = System.getProperty(OS_TYPE_OVERRIDE_PROP, System.getProperty("os.name"));
@@ -91,7 +91,7 @@ public final class OsUtils {
             OS_TYPE_HOLDER.set(typeValue);
         }
 
-        return typeValue.booleanValue();
+        return typeValue;
     }
 
     /**
