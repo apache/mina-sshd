@@ -810,7 +810,7 @@ public final class SelectorUtils {
         }
 
         // make sure path does not contain the target separator
-        if (path.indexOf(fsSeparator) >= 0) {
+        if (path.contains(fsSeparator)) {
             ValidateUtils.throwIllegalArgumentException("File system replacement may yield ambiguous result for %s with separator=%s", path, fsSeparator);
         }
 
@@ -855,7 +855,7 @@ public final class SelectorUtils {
      * @return a String that has had all whitespace removed.
      */
     public static String removeWhitespace(String input) {
-        StringBuffer result = new StringBuffer();
+        StringBuilder result = new StringBuilder();
         if (input != null) {
             StringTokenizer st = new StringTokenizer(input);
             while (st.hasMoreTokens()) {
