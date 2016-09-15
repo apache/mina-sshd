@@ -43,7 +43,7 @@ public class DefaultTcpipForwarderFactory implements TcpipForwarderFactory, Port
     };
 
     private final Collection<PortForwardingEventListener> listeners =
-            EventListenerUtils.<PortForwardingEventListener>synchronizedListenersSet();
+            EventListenerUtils.synchronizedListenersSet();
     private final PortForwardingEventListener listenerProxy;
 
     public DefaultTcpipForwarderFactory() {

@@ -24,10 +24,8 @@ import java.util.Collections;
 
 import com.jcraft.jsch.JSch;
 
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.git.transport.GitSshdSessionFactory;
-import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.AcceptAllPasswordAuthenticator;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
@@ -73,7 +71,7 @@ public class GitPackCommandTest extends BaseTestSupport {
 
         try (SshServer sshd = setupTestServer()) {
             Path serverRootDir = gitRootDir.resolve("server");
-            sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(new SftpSubsystemFactory()));
+            sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
             sshd.setCommandFactory(new GitPackCommandFactory(Utils.resolveRelativeRemotePath(targetParent, serverRootDir)));
             sshd.start();
 

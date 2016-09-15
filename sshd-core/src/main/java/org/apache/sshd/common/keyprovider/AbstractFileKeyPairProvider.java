@@ -54,7 +54,7 @@ public abstract class AbstractFileKeyPairProvider extends AbstractResourceKeyPai
 
     public void setFiles(Collection<File> files) {
         if (GenericUtils.isEmpty(files)) {
-            setPaths(Collections.<Path>emptyList());
+            setPaths(Collections.emptyList());
         } else {
             List<Path> paths = new ArrayList<>(files.size());
             for (File f : files) {
@@ -66,7 +66,7 @@ public abstract class AbstractFileKeyPairProvider extends AbstractResourceKeyPai
 
     public void setPaths(Collection<? extends Path> paths) {
         int numPaths = GenericUtils.size(paths);
-        Collection<Path> resolved = (numPaths <= 0) ? Collections.<Path>emptyList() : new ArrayList<Path>(paths.size());
+        Collection<Path> resolved = (numPaths <= 0) ? Collections.emptyList() : new ArrayList<Path>(paths.size());
         // use absolute path in order to have unique cache keys
         if (numPaths > 0) {
             for (Path p : paths) {

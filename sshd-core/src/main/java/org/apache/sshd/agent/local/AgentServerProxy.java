@@ -59,7 +59,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
                 throw (IOException) t;
             }
 
-            throw (IOException) new IOException("Failed (" + t.getClass().getSimpleName() + ") to create client: " + t.getMessage()).initCause(t);
+            throw (IOException) new IOException("Failed (" + t.getClass().getSimpleName() + ") to create client: " + t.getMessage(), t);
         }
     }
 

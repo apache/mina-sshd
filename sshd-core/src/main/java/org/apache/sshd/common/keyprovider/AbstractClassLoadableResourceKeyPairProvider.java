@@ -49,7 +49,7 @@ public abstract class AbstractClassLoadableResourceKeyPairProvider extends Abstr
     }
 
     public void setResources(Collection<String> resources) {
-        this.resources = (resources == null) ? Collections.<String>emptyList() : resources;
+        this.resources = (resources == null) ? Collections.emptyList() : resources;
     }
 
     public ClassLoader getResourceLoader() {

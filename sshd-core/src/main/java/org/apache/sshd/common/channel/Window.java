@@ -65,7 +65,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
 
     private int maxSize;
     private int packetSize;
-    private Map<String, Object> props = Collections.<String, Object>emptyMap();
+    private Map<String, Object> props = Collections.emptyMap();
 
     public Window(AbstractChannel channel, Object lock, boolean client, boolean local) {
         this.channelInstance = ValidateUtils.checkNotNull(channel, "No channel provided");
@@ -115,7 +115,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         synchronized (lock) {
             this.maxSize = size;
             this.packetSize = packetSize;
-            this.props = (props == null) ? Collections.<String, Object>emptyMap() : props;
+            this.props = (props == null) ? Collections.emptyMap() : props;
             updateSize(size);
         }
 

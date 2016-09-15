@@ -129,7 +129,7 @@ public class CipherTest extends BaseTestSupport {
     @Test
     public void testBuiltinCipherSession() throws Exception {
         Assume.assumeTrue("No internal support for " + builtInCipher.getName(), builtInCipher.isSupported() && checkCipher(jschCipher.getName()));
-        sshd.setCipherFactories(Collections.<NamedFactory<org.apache.sshd.common.cipher.Cipher>>singletonList(builtInCipher));
+        sshd.setCipherFactories(Collections.singletonList(builtInCipher));
         runJschTest(port);
     }
 

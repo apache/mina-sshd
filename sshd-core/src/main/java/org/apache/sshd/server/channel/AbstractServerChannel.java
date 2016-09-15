@@ -48,7 +48,7 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
     protected final AtomicBoolean exitStatusSent = new AtomicBoolean(false);
 
     protected AbstractServerChannel() {
-        this(Collections.<RequestHandler<Channel>>emptyList());
+        this(Collections.emptyList());
     }
 
     protected AbstractServerChannel(Collection<? extends RequestHandler<Channel>> handlers) {

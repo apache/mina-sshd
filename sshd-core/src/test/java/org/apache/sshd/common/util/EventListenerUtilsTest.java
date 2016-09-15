@@ -91,7 +91,7 @@ public class EventListenerUtilsTest extends BaseTestSupport {
     @Test
     public void testSynchronizedListenersSetOnProxies() {
         ProxyListener p1 = EventListenerUtils.proxyWrapper(ProxyListener.class, Collections.singletonList(new ProxyListenerImpl()));
-        Set<ProxyListener> s = EventListenerUtils.<ProxyListener>synchronizedListenersSet();
+        Set<ProxyListener> s = EventListenerUtils.synchronizedListenersSet();
         for (int index = 1; index <= Byte.SIZE; index++) {
             boolean modified = s.add(p1);
             assertEquals("Mismatched p1 modification indicator at attempt #" + index, index == 1, modified);

@@ -166,7 +166,7 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
             } else if (v instanceof Error) {
                 throw (Error) v;
             } else if (v instanceof Throwable) {
-                throw (RuntimeSshException) new RuntimeSshException("Error reading from channel.").initCause((Throwable) v);
+                throw (RuntimeSshException) new RuntimeSshException("Error reading from channel.", (Throwable) v);
             } else if (v instanceof Number) {
                 return ((Number) v).intValue();
             } else {

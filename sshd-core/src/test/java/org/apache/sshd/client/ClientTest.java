@@ -48,7 +48,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive;
 import org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractiveFactory;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
@@ -67,14 +66,12 @@ import org.apache.sshd.client.subsystem.SubsystemClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.ChannelListenerManager;
@@ -196,7 +193,7 @@ public class ClientTest extends BaseTestSupport {
                 },
                 ServerConnectionServiceFactory.INSTANCE
         ));
-        sshd.setChannelFactories(Arrays.<NamedFactory<Channel>>asList(
+        sshd.setChannelFactories(Arrays.asList(
                 new ChannelSessionFactory() {
                     @Override
                     public Channel create() {
@@ -444,7 +441,7 @@ public class ClientTest extends BaseTestSupport {
                 assertSame("Mismatched closed channel instances", channel, channelHolder.getAndSet(null));
             }
         });
-        sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(new SftpSubsystemFactory()));
+        sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
 
         client.start();
 
@@ -958,7 +955,7 @@ public class ClientTest extends BaseTestSupport {
     public void testPublicKeyAuth() throws Exception {
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPublicKeyFactory.INSTANCE));
+        client.setUserAuthFactories(Arrays.asList(UserAuthPublicKeyFactory.INSTANCE));
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -983,7 +980,7 @@ public class ClientTest extends BaseTestSupport {
                 return key.equals(pair.getPublic());
             }
         });
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPublicKeyFactory.INSTANCE));
+        client.setUserAuthFactories(Arrays.asList(UserAuthPublicKeyFactory.INSTANCE));
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -999,7 +996,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testPasswordAuthNew() throws Exception {
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPasswordFactory.INSTANCE));
+        client.setUserAuthFactories(Arrays.asList(UserAuthPasswordFactory.INSTANCE));
         client.start();
 
         try (ClientSession session = createTestClientSession()) {
@@ -1012,7 +1009,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testPasswordAuthNewWithFailureOnFirstIdentity() throws Exception {
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPasswordFactory.INSTANCE));
+        client.setUserAuthFactories(Arrays.asList(UserAuthPasswordFactory.INSTANCE));
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -1028,7 +1025,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testKeyboardInteractiveAuthNew() throws Exception {
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractiveFactory.INSTANCE));
+        client.setUserAuthFactories(Arrays.asList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
         try (ClientSession session = createTestClientSession()) {
@@ -1041,7 +1038,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testKeyboardInteractiveAuthNewWithFailureOnFirstIdentity() throws Exception {
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractiveFactory.INSTANCE));
+        client.setUserAuthFactories(Arrays.asList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -1058,7 +1055,7 @@ public class ClientTest extends BaseTestSupport {
     @Test   // see SSHD-504
     public void testDefaultKeyboardInteractivePasswordPromptLocationIndependence() throws Exception {
         final Collection<String> mismatchedPrompts = new LinkedList<>();
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractiveFactory() {
+        client.setUserAuthFactories(Arrays.asList(new UserAuthKeyboardInteractiveFactory() {
             @Override
             public UserAuthKeyboardInteractive create() {
                 return new UserAuthKeyboardInteractive() {
@@ -1089,7 +1086,7 @@ public class ClientTest extends BaseTestSupport {
             }
         };
         final List<Transformer<String, String>> xformers =
-                Collections.unmodifiableList(Arrays.<Transformer<String, String>>asList(
+                Collections.unmodifiableList(Arrays.asList(
                         new Transformer<String, String>() {  // prefixed
                             @Override
                             public String transform(String input) {
@@ -1153,7 +1150,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testDefaultKeyboardInteractiveWithFailures() throws Exception {
-        client.setUserAuthFactories(Collections.<NamedFactory<UserAuth>>singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
+        client.setUserAuthFactories(Collections.singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
 
         final AtomicInteger count = new AtomicInteger();
         final AtomicReference<ClientSession> interactionSessionHolder = new AtomicReference<>(null);
@@ -1220,7 +1217,7 @@ public class ClientTest extends BaseTestSupport {
         final int maxPrompts = 3;
         PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PASSWORD_PROMPTS, maxPrompts);
 
-        client.setUserAuthFactories(Collections.<NamedFactory<UserAuth>>singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
+        client.setUserAuthFactories(Collections.singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
         try (final ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -1271,7 +1268,7 @@ public class ClientTest extends BaseTestSupport {
         final AtomicInteger count = new AtomicInteger();
         final int maxPrompts = 3;
         PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PASSWORD_PROMPTS, maxPrompts);
-        client.setUserAuthFactories(Collections.<NamedFactory<UserAuth>>singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
+        client.setUserAuthFactories(Collections.singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
         try (final ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -1396,7 +1393,7 @@ public class ClientTest extends BaseTestSupport {
 
             Set<Integer> ids = new HashSet<>(channels.size());
             for (ClientChannel c : channels) {
-                int id = ((AbstractChannel) c).getId();
+                int id = c.getId();
                 assertTrue("Channel ID repeated: " + id, ids.add(Integer.valueOf(id)));
             }
         } finally {

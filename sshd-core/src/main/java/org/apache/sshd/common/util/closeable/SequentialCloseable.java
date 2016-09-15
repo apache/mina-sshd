@@ -37,7 +37,7 @@ public class SequentialCloseable extends SimpleCloseable {
 
     public SequentialCloseable(Object lock, Iterable<? extends Closeable> closeables) {
         super(lock);
-        this.closeables = (closeables == null) ? Collections.<Closeable>emptyList() : closeables;
+        this.closeables = (closeables == null) ? Collections.emptyList() : closeables;
     }
 
     @Override

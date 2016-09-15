@@ -36,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
-import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.hostbased.HostKeyIdentityProvider;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
@@ -172,7 +171,7 @@ public class AuthenticationTest extends BaseTestSupport {
         });
 
         final AtomicInteger changesCount = new AtomicInteger(0);
-        sshd.setUserAuthFactories(Collections.<NamedFactory<org.apache.sshd.server.auth.UserAuth>>singletonList(
+        sshd.setUserAuthFactories(Collections.singletonList(
             new org.apache.sshd.server.auth.password.UserAuthPasswordFactory() {
                 @Override
                 public org.apache.sshd.server.auth.password.UserAuthPassword create() {
@@ -217,7 +216,7 @@ public class AuthenticationTest extends BaseTestSupport {
             });
 
             final AtomicInteger sentCount = new AtomicInteger(0);
-            client.setUserAuthFactories(Collections.<NamedFactory<org.apache.sshd.client.auth.UserAuth>>singletonList(
+            client.setUserAuthFactories(Collections.singletonList(
                 new org.apache.sshd.client.auth.password.UserAuthPasswordFactory() {
                     @Override
                     public org.apache.sshd.client.auth.password.UserAuthPassword create() {
@@ -611,7 +610,7 @@ public class AuthenticationTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             // force server to use only the RSA key
             final NamedFactory<Signature> kexSignature = BuiltinSignatures.rsa;
-            client.setSignatureFactories(Collections.<NamedFactory<Signature>>singletonList(kexSignature));
+            client.setSignatureFactories(Collections.singletonList(kexSignature));
             client.setServerKeyVerifier(new ServerKeyVerifier() {
                 @Override
                 public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
@@ -627,8 +626,8 @@ public class AuthenticationTest extends BaseTestSupport {
 
             // allow only EC keys for public key authentication
             org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory factory = new org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory();
-            factory.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(BuiltinSignatures.nistp256, BuiltinSignatures.nistp384, BuiltinSignatures.nistp521));
-            client.setUserAuthFactories(Collections.<NamedFactory<UserAuth>>singletonList(factory));
+            factory.setSignatureFactories(Arrays.asList(BuiltinSignatures.nistp256, BuiltinSignatures.nistp384, BuiltinSignatures.nistp521));
+            client.setUserAuthFactories(Collections.singletonList(factory));
 
             client.start();
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -643,7 +642,7 @@ public class AuthenticationTest extends BaseTestSupport {
     @Test   // see SSHD-624
     public void testMismatchedUserAuthPkOkData() throws Exception {
         final AtomicInteger challengeCounter = new AtomicInteger(0);
-        sshd.setUserAuthFactories(Collections.<NamedFactory<org.apache.sshd.server.auth.UserAuth>>singletonList(
+        sshd.setUserAuthFactories(Collections.singletonList(
                 new org.apache.sshd.server.auth.pubkey.UserAuthPublicKeyFactory() {
                     @Override
                     public org.apache.sshd.server.auth.pubkey.UserAuthPublicKey create() {
@@ -717,7 +716,7 @@ public class AuthenticationTest extends BaseTestSupport {
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
         sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
         sshd.setUserAuthFactories(
-                Collections.<NamedFactory<org.apache.sshd.server.auth.UserAuth>>singletonList(
+                Collections.singletonList(
                         org.apache.sshd.server.auth.hostbased.UserAuthHostBasedFactory.INSTANCE));
 
         try (SshClient client = setupTestClient()) {
@@ -727,7 +726,7 @@ public class AuthenticationTest extends BaseTestSupport {
             factory.setClientUsername(hostClienUser);
             factory.setClientHostKeys(HostKeyIdentityProvider.Utils.wrap(hostClientKey));
 
-            client.setUserAuthFactories(Collections.<NamedFactory<org.apache.sshd.client.auth.UserAuth>>singletonList(factory));
+            client.setUserAuthFactories(Collections.singletonList(factory));
             client.start();
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.auth().verify(11L, TimeUnit.SECONDS);

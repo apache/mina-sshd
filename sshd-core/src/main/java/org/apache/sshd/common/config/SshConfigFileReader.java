@@ -599,7 +599,7 @@ public final class SshConfigFileReader {
         CompressionFactory factory = CompressionConfigValue.fromName(value);
         ValidateUtils.checkTrue(lenient || (factory != null), "Unsupported compression value: %s", value);
         if ((factory != null) && factory.isSupported()) {
-            manager.setCompressionFactories(Collections.<NamedFactory<Compression>>singletonList(factory));
+            manager.setCompressionFactories(Collections.singletonList(factory));
         }
 
         return manager;
@@ -613,7 +613,7 @@ public final class SshConfigFileReader {
         if (factory != null) {
             // SSH can work without compression
             if (ignoreUnsupported || factory.isSupported()) {
-                manager.setCompressionFactories(Collections.<NamedFactory<Compression>>singletonList(factory));
+                manager.setCompressionFactories(Collections.singletonList(factory));
             }
         } else {
             BuiltinCompressions.ParseResult result = BuiltinCompressions.parseCompressionsList(value);

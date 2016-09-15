@@ -25,10 +25,8 @@ import java.util.Collections;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
-import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
@@ -58,7 +56,7 @@ public abstract class AbstractSftpClientTestSupport extends BaseTestSupport {
     public static void setupClientAndServer() throws Exception {
         JSchLogger.init();
         sshd = Utils.setupTestServer(AbstractSftpClientTestSupport.class);
-        sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(new SftpSubsystemFactory()));
+        sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.start();
         port = sshd.getPort();

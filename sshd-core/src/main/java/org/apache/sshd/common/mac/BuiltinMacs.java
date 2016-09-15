@@ -201,7 +201,7 @@ public enum BuiltinMacs implements MacFactory {
     }
 
     public static ParseResult parseMacsList(String... macs) {
-        return parseMacsList(GenericUtils.isEmpty((Object[]) macs) ? Collections.<String>emptyList() : Arrays.asList(macs));
+        return parseMacsList(GenericUtils.isEmpty((Object[]) macs) ? Collections.emptyList() : Arrays.asList(macs));
     }
 
     public static ParseResult parseMacsList(Collection<String> macs) {
@@ -248,7 +248,7 @@ public enum BuiltinMacs implements MacFactory {
     }
 
     public static final class ParseResult extends NamedFactoriesListParseResult<Mac, MacFactory> {
-        public static final ParseResult EMPTY = new ParseResult(Collections.<MacFactory>emptyList(), Collections.<String>emptyList());
+        public static final ParseResult EMPTY = new ParseResult(Collections.emptyList(), Collections.emptyList());
 
         public ParseResult(List<MacFactory> parsed, List<String> unsupported) {
             super(parsed, unsupported);

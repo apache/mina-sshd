@@ -59,7 +59,7 @@ public class ConfigFileHostEntryResolverTest extends BaseTestSupport {
 
         HostConfigEntry expected = new HostConfigEntry(getCurrentTestName(), getCurrentTestName(), 7365, getCurrentTestName());
         testConfigFileReload("Non-existing", path, reloadCount, null, resolver, expected, null);
-        testConfigFileReload("Empty", path, reloadCount, Collections.<HostConfigEntry>emptyList(), resolver, expected, null);
+        testConfigFileReload("Empty", path, reloadCount, Collections.emptyList(), resolver, expected, null);
         testConfigFileReload("Global", path, reloadCount,
                 Collections.singletonList(new HostConfigEntry(HostPatternsHolder.ALL_HOSTS_PATTERN, expected.getHost(), expected.getPort(), expected.getUsername())),
                 resolver, expected, expected);

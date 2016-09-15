@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.mina.MinaServiceFactory;
@@ -319,7 +318,7 @@ public final class SshFsMounter {
         sshd.setPasswordAuthenticator(AcceptAllPasswordAuthenticator.INSTANCE);
         sshd.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(MounterCommandFactory.INSTANCE).build());
-        sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(new SftpSubsystemFactory()));
+        sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
         sshd.start();
 
         Thread.sleep(Long.MAX_VALUE);

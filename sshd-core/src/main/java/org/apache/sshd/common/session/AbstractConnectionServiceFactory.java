@@ -32,7 +32,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  */
 public abstract class AbstractConnectionServiceFactory extends AbstractLoggingBean implements PortForwardingEventListenerManager {
     private final Collection<PortForwardingEventListener> listeners =
-            EventListenerUtils.<PortForwardingEventListener>synchronizedListenersSet();
+            EventListenerUtils.synchronizedListenersSet();
     private final PortForwardingEventListener listenerProxy;
 
     protected AbstractConnectionServiceFactory() {

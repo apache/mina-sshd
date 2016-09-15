@@ -67,7 +67,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
 
     @Override
     public Iterable<Path> getRootDirectories() {
-        return Collections.<Path>singleton(create("/"));
+        return Collections.singleton(create("/"));
     }
 
     @Override

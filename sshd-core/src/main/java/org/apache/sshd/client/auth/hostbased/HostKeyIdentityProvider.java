@@ -54,7 +54,7 @@ public interface HostKeyIdentityProvider {
         }
 
         public static HostKeyIdentityProvider wrap(KeyPair ... pairs) {
-            return wrap(GenericUtils.isEmpty(pairs) ? Collections.<KeyPair>emptyList() : Arrays.asList(pairs));
+            return wrap(GenericUtils.isEmpty(pairs) ? Collections.emptyList() : Arrays.asList(pairs));
         }
 
         public static HostKeyIdentityProvider wrap(final Iterable<? extends KeyPair> pairs) {
@@ -75,7 +75,7 @@ public interface HostKeyIdentityProvider {
                                 @Override
                                 public Pair<KeyPair, List<X509Certificate>> next() {
                                     KeyPair kp = iter.next();
-                                    return new Pair<KeyPair, List<X509Certificate>>(kp, Collections.<X509Certificate>emptyList());
+                                    return new Pair<KeyPair, List<X509Certificate>>(kp, Collections.emptyList());
                                 }
 
                                 @Override

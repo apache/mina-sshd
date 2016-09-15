@@ -35,11 +35,9 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
-import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -127,7 +125,7 @@ public class LoadTest extends BaseTestSupport {
             PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024 * 8);
             client.setKeyExchangeFactories(Arrays.asList(
                     ClientBuilder.DH2KEX.transform(BuiltinDHFactories.dhg1)));
-            client.setCipherFactories(Arrays.<NamedFactory<Cipher>>asList(BuiltinCiphers.blowfishcbc));
+            client.setCipherFactories(Arrays.asList(BuiltinCiphers.blowfishcbc));
             client.start();
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());

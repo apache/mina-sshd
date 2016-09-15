@@ -135,21 +135,21 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * Session listeners container
      */
     protected final Collection<SessionListener> sessionListeners =
-            EventListenerUtils.<SessionListener>synchronizedListenersSet();
+            EventListenerUtils.synchronizedListenersSet();
     protected final SessionListener sessionListenerProxy;
 
     /**
      * Channel events listener container
      */
     protected final Collection<ChannelListener> channelListeners =
-            EventListenerUtils.<ChannelListener>synchronizedListenersSet();
+            EventListenerUtils.synchronizedListenersSet();
     protected final ChannelListener channelListenerProxy;
 
     /**
      * Port forwarding events listener container
      */
     protected final Collection<PortForwardingEventListener> tunnelListeners =
-            EventListenerUtils.<PortForwardingEventListener>synchronizedListenersSet();
+            EventListenerUtils.synchronizedListenersSet();
     protected final PortForwardingEventListener tunnelListenerProxy;
 
     /*
@@ -897,7 +897,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected List<Service> getServices() {
         return (currentService != null)
               ? Collections.singletonList(currentService)
-              : Collections.<Service>emptyList();
+              : Collections.emptyList();
     }
 
     @Override

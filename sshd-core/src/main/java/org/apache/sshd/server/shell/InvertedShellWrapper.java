@@ -113,7 +113,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
         this.executor = (executor == null) ? ThreadUtils.newSingleThreadExecutor("shell[0x" + Integer.toHexString(shell.hashCode()) + "]") : executor;
         ValidateUtils.checkTrue(bufferSize > Byte.SIZE, "Copy buffer size too small: %d", bufferSize);
         this.bufferSize = bufferSize;
-        this.shutdownExecutor = (executor == null) ? true : shutdownExecutor;
+        this.shutdownExecutor = (executor == null) || shutdownExecutor;
     }
 
     @Override

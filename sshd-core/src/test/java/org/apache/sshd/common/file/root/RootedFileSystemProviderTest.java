@@ -67,7 +67,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
                 Utils.detectTargetFolder(RootedFileSystemProviderTest.class), "Failed to detect target folder").toPath();
         rootSandbox = FileHelper.createTestSandbox(targetFolder.resolve(TEMP_SUBFOLDER_NAME));
         fileSystem = (RootedFileSystem) new RootedFileSystemProvider().newFileSystem(rootSandbox,
-                Collections.<String, Object> emptyMap());
+                Collections.emptyMap());
     }
 
     @Test
@@ -217,8 +217,8 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         RootedFileSystemProvider provider = new RootedFileSystemProvider();
         Path tempFolder = assertHierarchyTargetFolderExists(getTempTargetFolder());
         Path file = Files.createTempFile(tempFolder, getCurrentTestName(), ".txt");
-        try (FileSystem fs = provider.newFileSystem(tempFolder, Collections.<String, Object>emptyMap());
-             Channel channel = provider.newByteChannel(fs.getPath(file.getFileName().toString()), Collections.<OpenOption>emptySet())) {
+        try (FileSystem fs = provider.newFileSystem(tempFolder, Collections.emptyMap());
+             Channel channel = provider.newByteChannel(fs.getPath(file.getFileName().toString()), Collections.emptySet())) {
             assertTrue("Channel not open", channel.isOpen());
         }
     }

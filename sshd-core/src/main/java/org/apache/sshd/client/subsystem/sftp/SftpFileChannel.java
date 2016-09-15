@@ -199,7 +199,7 @@ public class SftpFileChannel extends FileChannel {
 
     @Override
     public long position() throws IOException {
-        ensureOpen(Collections.<SftpClient.OpenMode>emptySet());
+        ensureOpen(Collections.emptySet());
         return posTracker.get();
     }
 
@@ -209,27 +209,27 @@ public class SftpFileChannel extends FileChannel {
             throw new IllegalArgumentException("position(" + p + ") illegal file channel position: " + newPosition);
         }
 
-        ensureOpen(Collections.<SftpClient.OpenMode>emptySet());
+        ensureOpen(Collections.emptySet());
         posTracker.set(newPosition);
         return this;
     }
 
     @Override
     public long size() throws IOException {
-        ensureOpen(Collections.<SftpClient.OpenMode>emptySet());
+        ensureOpen(Collections.emptySet());
         return sftp.stat(handle).getSize();
     }
 
     @Override
     public FileChannel truncate(long size) throws IOException {
-        ensureOpen(Collections.<SftpClient.OpenMode>emptySet());
+        ensureOpen(Collections.emptySet());
         sftp.setStat(handle, new SftpClient.Attributes().size(size));
         return this;
     }
 
     @Override
     public void force(boolean metaData) throws IOException {
-        ensureOpen(Collections.<SftpClient.OpenMode>emptySet());
+        ensureOpen(Collections.emptySet());
     }
 
     @Override
@@ -317,7 +317,7 @@ public class SftpFileChannel extends FileChannel {
 
     @Override
     public FileLock tryLock(final long position, final long size, boolean shared) throws IOException {
-        ensureOpen(Collections.<SftpClient.OpenMode>emptySet());
+        ensureOpen(Collections.emptySet());
 
         try {
             sftp.lock(handle, position, size, 0);

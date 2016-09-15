@@ -82,7 +82,7 @@ public interface Session
     enum TimeoutStatus {
         NoTimeout,
         AuthTimeout,
-        IdleTimeout;
+        IdleTimeout
     }
 
     /**

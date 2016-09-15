@@ -104,7 +104,7 @@ public class DefaultTcpipForwarder
         }
     };
     private final Collection<PortForwardingEventListener> listeners =
-            EventListenerUtils.<PortForwardingEventListener>synchronizedListenersSet();
+            EventListenerUtils.synchronizedListenersSet();
     private final PortForwardingEventListener listenerProxy;
 
     private IoAcceptor acceptor;

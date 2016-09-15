@@ -63,7 +63,7 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
     public AgentServer(SshAgent agent, ExecutorService executor, boolean shutdownOnExit) {
         this.agent = agent;
         this.service = (executor == null) ? ThreadUtils.newSingleThreadExecutor("AgentServer[" + agent + "]") : executor;
-        this.shutdownExecutor = (service == executor) ? shutdownOnExit : true;
+        this.shutdownExecutor = service != executor || shutdownOnExit;
     }
 
     public SshAgent getAgent() {

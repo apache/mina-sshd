@@ -89,7 +89,7 @@ public interface ClientSession
         TIMEOUT,
         CLOSED,
         WAIT_AUTH,
-        AUTHED;
+        AUTHED
     }
 
     Set<ClientChannelEvent> REMOTE_COMMAND_WAIT_EVENTS =

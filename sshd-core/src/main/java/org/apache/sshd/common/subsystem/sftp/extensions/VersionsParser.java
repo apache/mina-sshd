@@ -78,6 +78,6 @@ public class VersionsParser extends AbstractParser<Versions> {
 
     public Versions parse(String value) {
         String[] comps = GenericUtils.split(value, Versions.SEP);
-        return new Versions(GenericUtils.isEmpty(comps) ? Collections.<String>emptyList() : Arrays.asList(comps));
+        return new Versions(GenericUtils.isEmpty(comps) ? Collections.emptyList() : Arrays.asList(comps));
     }
 }

@@ -200,7 +200,7 @@ public class MacVectorsTest extends BaseTestSupport {
                     */
 
                     // mark end
-                    new VectorTestData("", false, "", false, Collections.<Pair<String, String>>emptyList())))) {
+                    new VectorTestData("", false, "", false, Collections.emptyList())))) {
             for (Pair<String, String> tc : vector.getResults()) {
                 ret.add(new Object[]{vector, tc.getFirst(), tc.getSecond()});
             }

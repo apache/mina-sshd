@@ -65,7 +65,7 @@ public class BuiltinSignaturesTest extends BaseTestSupport {
             for (int bIndex = 0, uIndex = 0; (bIndex < builtin.size()) || (uIndex < unknown.size());) {
                 boolean useBuiltin = false;
                 if (bIndex < builtin.size()) {
-                    useBuiltin = (uIndex < unknown.size()) ? rnd.nextBoolean() : true;
+                    useBuiltin = uIndex >= unknown.size() || rnd.nextBoolean();
                 }
 
                 if (useBuiltin) {

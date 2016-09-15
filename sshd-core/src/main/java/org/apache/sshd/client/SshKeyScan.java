@@ -438,9 +438,9 @@ public class SshKeyScan extends AbstractSimplifiedLog
         }
 
         if (BuiltinIdentities.Constants.RSA.equalsIgnoreCase(keyType)) {
-            return Collections.singletonList((NamedFactory<Signature>) BuiltinSignatures.rsa);
+            return Collections.singletonList(BuiltinSignatures.rsa);
         } else if (BuiltinIdentities.Constants.DSA.equalsIgnoreCase(keyType)) {
-            return Collections.singletonList((NamedFactory<Signature>) BuiltinSignatures.dsa);
+            return Collections.singletonList(BuiltinSignatures.dsa);
         } else if (BuiltinIdentities.Constants.ECDSA.equalsIgnoreCase(keyType)) {
             List<NamedFactory<Signature>> factories = new ArrayList<>(ECCurves.NAMES.size());
             for (String n : ECCurves.NAMES) {

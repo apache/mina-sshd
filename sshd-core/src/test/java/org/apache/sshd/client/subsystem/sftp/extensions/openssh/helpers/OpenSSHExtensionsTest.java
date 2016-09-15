@@ -41,7 +41,6 @@ import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHFsyncExte
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatExtensionInfo;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatHandleExtension;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatPathExtension;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.AbstractOpenSSHExtensionParser.OpenSSHExtension;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FstatVfsExtensionParser;
@@ -122,7 +121,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
         expected.f_fsid = 1L;
         expected.f_namemax = 256;
 
-        sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(new SftpSubsystemFactory() {
+        sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory() {
             @Override
             public Command create() {
                 return new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy()) {

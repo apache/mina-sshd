@@ -270,7 +270,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         int numInvoked = 0;
 
         List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();
-        sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(factory));
+        sshd.setSubsystemFactories(Collections.singletonList(factory));
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
@@ -390,7 +390,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         int numInvoked = 0;
 
         List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();
-        sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(factory));
+        sshd.setSubsystemFactories(Collections.singletonList(factory));
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);

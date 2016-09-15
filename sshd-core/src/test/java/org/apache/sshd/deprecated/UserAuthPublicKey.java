@@ -89,7 +89,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             } catch (IOException e) {
                 throw e;
             } catch (Exception e) {
-                throw (IOException) new IOException("Error performing public key authentication").initCause(e);
+                throw (IOException) new IOException("Error performing public key authentication", e);
             }
         } else {
             int cmd = buffer.getUByte();

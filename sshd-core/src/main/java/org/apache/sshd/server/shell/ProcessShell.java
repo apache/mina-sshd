@@ -57,7 +57,7 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell, 
      *                   create the full command to be executed by the shell
      */
     public ProcessShell(String ... command) {
-        this(GenericUtils.isEmpty(command) ? Collections.<String>emptyList() : Arrays.asList(command));
+        this(GenericUtils.isEmpty(command) ? Collections.emptyList() : Arrays.asList(command));
     }
 
     public ProcessShell(Collection<String> command) {

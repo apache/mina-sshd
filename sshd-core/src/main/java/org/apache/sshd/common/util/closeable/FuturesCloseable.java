@@ -36,7 +36,7 @@ public class FuturesCloseable<T extends SshFuture> extends SimpleCloseable {
 
     public FuturesCloseable(Object lock, Iterable<? extends SshFuture<T>> futures) {
         super(lock);
-        this.futures = (futures == null) ? Collections.<SshFuture<T>>emptyList() : futures;
+        this.futures = (futures == null) ? Collections.emptyList() : futures;
     }
 
     @Override

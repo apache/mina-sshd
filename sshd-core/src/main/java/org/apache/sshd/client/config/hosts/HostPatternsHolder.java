@@ -208,7 +208,7 @@ public abstract class HostPatternsHolder {
     }
 
     public static List<Pair<Pattern, Boolean>> parsePatterns(CharSequence ... patterns) {
-        return parsePatterns(GenericUtils.isEmpty(patterns) ? Collections.<CharSequence>emptyList() : Arrays.asList(patterns));
+        return parsePatterns(GenericUtils.isEmpty(patterns) ? Collections.emptyList() : Arrays.asList(patterns));
     }
 
     public static List<Pair<Pattern, Boolean>> parsePatterns(Collection<? extends CharSequence> patterns) {
@@ -302,9 +302,6 @@ public abstract class HostPatternsHolder {
         if ("-_.".indexOf(ch) >= 0) {
             return true;
         }
-        if (PATTERN_CHARS.indexOf(ch) >= 0) {
-            return true;
-        }
-        return false;
+        return PATTERN_CHARS.indexOf(ch) >= 0;
     }
 }

@@ -303,7 +303,7 @@ public class SftpSubsystem
     private ServerSession serverSession;
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final Collection<SftpEventListener> sftpEventListeners =
-            EventListenerUtils.<SftpEventListener>synchronizedListenersSet();
+            EventListenerUtils.synchronizedListenersSet();
     private final SftpEventListener sftpEventListenerProxy;
 
     /**
@@ -1502,8 +1502,8 @@ public class SftpSubsystem
 
         doCopyFile(id, srcFile, dstFile,
                 overwriteDestination
-                        ? Collections.<CopyOption>singletonList(StandardCopyOption.REPLACE_EXISTING)
-                        : Collections.<CopyOption>emptyList());
+                        ? Collections.singletonList(StandardCopyOption.REPLACE_EXISTING)
+                        : Collections.emptyList());
     }
 
     protected void doCopyFile(int id, String srcFile, String dstFile, Collection<CopyOption> opts) throws IOException {
@@ -1549,7 +1549,7 @@ public class SftpSubsystem
             path = ".";
         }
 
-        Map<String, ?> attrs = Collections.<String, Object>emptyMap();
+        Map<String, ?> attrs = Collections.emptyMap();
         Pair<Path, Boolean> result;
         try {
             LinkOption[] options = IoUtils.getLinkOptions(false);
@@ -2298,7 +2298,7 @@ public class SftpSubsystem
 
         Map<String, OptionalFeature> extensions = getSupportedClientExtensions();
         int numExtensions = GenericUtils.size(extensions);
-        List<String> extras = (numExtensions <= 0) ? Collections.<String>emptyList() : new ArrayList<>(numExtensions);
+        List<String> extras = (numExtensions <= 0) ? Collections.emptyList() : new ArrayList<>(numExtensions);
         if (numExtensions > 0) {
             for (Map.Entry<String, OptionalFeature> ee : extensions.entrySet()) {
                 String name = ee.getKey();
@@ -2637,7 +2637,7 @@ public class SftpSubsystem
          *      The server will respond with a SSH_FXP_NAME packet containing only
          *      one name and a dummy attributes value.
          */
-        Map<String, Object> attrs = Collections.<String, Object>emptyMap();
+        Map<String, Object> attrs = Collections.emptyMap();
         if (version == SftpConstants.SFTP_V3) {
             buffer.putString(SftpHelper.getLongName(normalizedPath, attrs));
         }

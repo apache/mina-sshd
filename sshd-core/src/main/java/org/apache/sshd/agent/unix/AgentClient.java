@@ -57,7 +57,7 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
         this.authSocket = authSocket;
 
         setExecutorService((executor == null) ? ThreadUtils.newSingleThreadExecutor("AgentClient[" + authSocket + "]") : executor);
-        setShutdownOnExit((executor == null) ? true : shutdownOnExit);
+        setShutdownOnExit((executor == null) || shutdownOnExit);
 
         try {
             pool = Pool.create(AprLibrary.getInstance().getRootPool());

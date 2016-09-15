@@ -100,7 +100,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
     private final AtomicReference<TcpipForwarder> tcpipForwarderHolder = new AtomicReference<>();
     private final AtomicBoolean allowMoreSessions = new AtomicBoolean(true);
     private final Collection<PortForwardingEventListener> listeners =
-            EventListenerUtils.<PortForwardingEventListener>synchronizedListenersSet();
+            EventListenerUtils.synchronizedListenersSet();
     private final PortForwardingEventListener listenerProxy;
 
     private final S sessionInstance;

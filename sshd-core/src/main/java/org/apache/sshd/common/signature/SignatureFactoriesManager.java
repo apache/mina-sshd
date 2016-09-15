@@ -51,7 +51,7 @@ public interface SignatureFactoriesManager {
         setSignatureFactoriesNames(GenericUtils.split(names, ','));
     }
     default void setSignatureFactoriesNames(String ... names) {
-        setSignatureFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.<String>emptyList() : Arrays.asList(names));
+        setSignatureFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.emptyList() : Arrays.asList(names));
     }
     default void setSignatureFactoriesNames(Collection<String> names) {
         BuiltinSignatures.ParseResult result = BuiltinSignatures.parseSignatureList(names);

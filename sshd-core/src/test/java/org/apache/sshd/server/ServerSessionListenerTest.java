@@ -41,7 +41,6 @@ import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.server.auth.UserAuth;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordChangeRequiredException;
@@ -214,7 +213,7 @@ public class ServerSessionListenerTest extends BaseTestSupport {
                     ServerSession serverSession = (ServerSession) session;
                     serverSession.setPasswordAuthenticator(passAuth);
                     serverSession.setUserAuthFactories(
-                            Collections.<NamedFactory<UserAuth>>singletonList(
+                            Collections.singletonList(
                                     ServerAuthenticationManager.Utils.DEFAULT_USER_AUTH_PASSWORD_FACTORY));
                 }
             }

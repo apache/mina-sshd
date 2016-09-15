@@ -140,7 +140,7 @@ public class StandardEnvironment extends AbstractLoggingBean implements Environm
             synchronized (listeners) {
                 ls = listeners.get(signal);
                 if (ls == null) {
-                    ls =  EventListenerUtils.<SignalListener>synchronizedListenersSet();
+                    ls =  EventListenerUtils.synchronizedListenersSet();
                     listeners.put(signal, ls);
                 }
             }

@@ -284,7 +284,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     // NOTE: URI parameters override environment ones
     public static Map<String, Object> resolveFileSystemParameters(Map<String, ?> env, Map<String, Object> uriParams) {
         if (GenericUtils.isEmpty(env)) {
-            return GenericUtils.isEmpty(uriParams) ? Collections.<String, Object>emptyMap() : uriParams;
+            return GenericUtils.isEmpty(uriParams) ? Collections.emptyMap() : uriParams;
         } else if (GenericUtils.isEmpty(uriParams)) {
             return Collections.unmodifiableMap(env);
         }
@@ -1235,7 +1235,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     }
 
     public static URI createFileSystemURI(String host, int port, String username, String password) {
-        return createFileSystemURI(host, port, username, password, Collections.<String, Object>emptyMap());
+        return createFileSystemURI(host, port, username, password, Collections.emptyMap());
     }
 
     public static URI createFileSystemURI(String host, int port, String username, String password, Map<String, ?> params) {

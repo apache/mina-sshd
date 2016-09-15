@@ -79,13 +79,13 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     protected SessionTimeoutListener sessionTimeoutListener;
     protected ScheduledFuture<?> timeoutListenerFuture;
     protected final Collection<SessionListener> sessionListeners =
-            EventListenerUtils.<SessionListener>synchronizedListenersSet();
+            EventListenerUtils.synchronizedListenersSet();
     protected final SessionListener sessionListenerProxy;
     protected final Collection<ChannelListener> channelListeners =
-            EventListenerUtils.<ChannelListener>synchronizedListenersSet();
+            EventListenerUtils.synchronizedListenersSet();
     protected final ChannelListener channelListenerProxy;
     protected final Collection<PortForwardingEventListener> tunnelListeners =
-            EventListenerUtils.<PortForwardingEventListener>synchronizedListenersSet();
+            EventListenerUtils.synchronizedListenersSet();
     protected final PortForwardingEventListener tunnelListenerProxy;
 
     private final Map<String, Object> properties = new ConcurrentHashMap<>();

@@ -179,7 +179,7 @@ public class LdapPublickeyAuthenticator extends LdapAuthenticator implements Pub
         }
 
         PublicKey k = parsePublicKeyValue(username, expected, session, attrs, keyData);
-        return (k == null) ? Collections.<PublicKey>emptyList() : Collections.singletonList(k);
+        return (k == null) ? Collections.emptyList() : Collections.singletonList(k);
     }
 
     /**

@@ -104,7 +104,7 @@ public class WelcomeBannerTest extends BaseTestSupport {
 
     @Test
     public void testPathBanner() throws Exception {
-        testFileContentBanner(Function.<Path>identity());
+        testFileContentBanner(Function.identity());
     }
 
     @Test

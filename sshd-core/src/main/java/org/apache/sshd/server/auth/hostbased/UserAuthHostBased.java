@@ -83,7 +83,7 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
 
         Buffer buf = new ByteArrayBuffer(buffer.array(), keyOffset, keyLen, true);
         PublicKey clientKey = buf.getRawPublicKey();
-        List<X509Certificate> certs = Collections.<X509Certificate>emptyList();
+        List<X509Certificate> certs = Collections.emptyList();
         if (buf.available() > 0) {
             CertificateFactory cf = SecurityUtils.getCertificateFactory("X.509");
             certs = new ArrayList<>();

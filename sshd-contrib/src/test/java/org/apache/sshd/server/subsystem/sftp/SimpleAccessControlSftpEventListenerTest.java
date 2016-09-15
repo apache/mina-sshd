@@ -30,12 +30,10 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.OpenMode;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
-import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -68,7 +66,7 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
                 new SftpSubsystemFactory.Builder();
         builder.addSftpEventListener(SimpleAccessControlSftpEventListener.READ_ONLY_ACCESSOR);
         sshd.setSubsystemFactories(
-                Collections.<NamedFactory<Command>>singletonList(builder.build()));
+                Collections.singletonList(builder.build()));
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.setFileSystemFactory(fileSystemFactory);
         sshd.start();

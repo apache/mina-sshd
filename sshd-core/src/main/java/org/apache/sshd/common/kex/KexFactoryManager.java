@@ -68,7 +68,7 @@ public interface KexFactoryManager extends KeyPairProviderHolder, SignatureFacto
         setCipherFactoriesNames(GenericUtils.split(names, ','));
     }
     default void setCipherFactoriesNames(String ... names) {
-        setCipherFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.<String>emptyList() : Arrays.asList(names));
+        setCipherFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.emptyList() : Arrays.asList(names));
     }
     default void setCipherFactoriesNames(Collection<String> names) {
         BuiltinCiphers.ParseResult result = BuiltinCiphers.parseCiphersList(names);
@@ -98,7 +98,7 @@ public interface KexFactoryManager extends KeyPairProviderHolder, SignatureFacto
         setCompressionFactoriesNames(GenericUtils.split(names, ','));
     }
     default void setCompressionFactoriesNames(String ... names) {
-        setCompressionFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.<String>emptyList() : Arrays.asList(names));
+        setCompressionFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.emptyList() : Arrays.asList(names));
     }
     default void setCompressionFactoriesNames(Collection<String> names) {
         BuiltinCompressions.ParseResult result = BuiltinCompressions.parseCompressionsList(names);
@@ -128,7 +128,7 @@ public interface KexFactoryManager extends KeyPairProviderHolder, SignatureFacto
         setMacFactoriesNames(GenericUtils.split(names, ','));
     }
     default void setMacFactoriesNames(String ... names) {
-        setMacFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.<String>emptyList() : Arrays.asList(names));
+        setMacFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.emptyList() : Arrays.asList(names));
     }
     default void setMacFactoriesNames(Collection<String> names) {
         BuiltinMacs.ParseResult result = BuiltinMacs.parseMacsList(names);

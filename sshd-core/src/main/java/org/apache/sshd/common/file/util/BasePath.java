@@ -275,7 +275,7 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
         }
         int extraNamesInThis = Math.max(0, p1.names.size() - sharedSubsequenceLength);
         List<String> extraNamesInOther = (p2.names.size() <= sharedSubsequenceLength)
-                ? Collections.<String>emptyList()
+                ? Collections.emptyList()
                 : p2.names.subList(sharedSubsequenceLength, p2.names.size());
         List<String> parts = new ArrayList<>(extraNamesInThis + extraNamesInOther.size());
         // add .. for each extra name in this path

@@ -27,13 +27,11 @@ import java.util.Collections;
 import java.util.EnumSet;
 
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.server.Command;
 import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.Utils;
@@ -59,7 +57,7 @@ public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(new SftpSubsystemFactory()));
+        sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.setFileSystemFactory(fileSystemFactory);
         client.start();

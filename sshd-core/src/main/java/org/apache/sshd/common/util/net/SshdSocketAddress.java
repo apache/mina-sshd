@@ -225,11 +225,8 @@ public class SshdSocketAddress extends SocketAddress {
             return false;
         }
 
-        if (isLoopback(addr)) {
-            return false;
-        }
+        return !isLoopback(addr);
 
-        return true;
     }
 
     /**

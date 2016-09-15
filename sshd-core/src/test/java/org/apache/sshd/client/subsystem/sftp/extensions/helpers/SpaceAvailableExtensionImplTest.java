@@ -68,7 +68,7 @@ public class SpaceAvailableExtensionImplTest extends AbstractSftpClientTestSuppo
         final SpaceAvailableExtensionInfo expected = new SpaceAvailableExtensionInfo(store);
 
         List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();
-        sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(new SftpSubsystemFactory() {
+        sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory() {
             @Override
             public Command create() {
                 return new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy()) {

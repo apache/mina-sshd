@@ -166,7 +166,7 @@ public enum BuiltinCompressions implements CompressionFactory {
     }
 
     public static ParseResult parseCompressionsList(String... compressions) {
-        return parseCompressionsList(GenericUtils.isEmpty((Object[]) compressions) ? Collections.<String>emptyList() : Arrays.asList(compressions));
+        return parseCompressionsList(GenericUtils.isEmpty((Object[]) compressions) ? Collections.emptyList() : Arrays.asList(compressions));
     }
 
     public static ParseResult parseCompressionsList(Collection<String> compressions) {
@@ -218,7 +218,7 @@ public enum BuiltinCompressions implements CompressionFactory {
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     public static class ParseResult extends NamedFactoriesListParseResult<Compression, CompressionFactory> {
-        public static final ParseResult EMPTY = new ParseResult(Collections.<CompressionFactory>emptyList(), Collections.<String>emptyList());
+        public static final ParseResult EMPTY = new ParseResult(Collections.emptyList(), Collections.emptyList());
 
         public ParseResult(List<CompressionFactory> parsed, List<String> unsupported) {
             super(parsed, unsupported);

@@ -232,7 +232,7 @@ public enum BuiltinSignatures implements SignatureFactory {
     }
 
     public static ParseResult parseSignatureList(String... sigs) {
-        return parseSignatureList(GenericUtils.isEmpty((Object[]) sigs) ? Collections.<String>emptyList() : Arrays.asList(sigs));
+        return parseSignatureList(GenericUtils.isEmpty((Object[]) sigs) ? Collections.emptyList() : Arrays.asList(sigs));
     }
 
     public static ParseResult parseSignatureList(Collection<String> sigs) {
@@ -284,7 +284,7 @@ public enum BuiltinSignatures implements SignatureFactory {
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     public static final class ParseResult extends NamedFactoriesListParseResult<Signature, SignatureFactory> {
-        public static final ParseResult EMPTY = new ParseResult(Collections.<SignatureFactory>emptyList(), Collections.<String>emptyList());
+        public static final ParseResult EMPTY = new ParseResult(Collections.emptyList(), Collections.emptyList());
 
         public ParseResult(List<SignatureFactory> parsed, List<String> unsupported) {
             super(parsed, unsupported);

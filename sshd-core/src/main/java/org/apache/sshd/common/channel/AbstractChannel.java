@@ -85,7 +85,7 @@ public abstract class AbstractChannel
      * Channel events listener
      */
     protected final Collection<ChannelListener> channelListeners =
-            EventListenerUtils.<ChannelListener>synchronizedListenersSet();
+            EventListenerUtils.synchronizedListenersSet();
     protected final ChannelListener channelListenerProxy;
 
     private int id = -1;
@@ -113,7 +113,7 @@ public abstract class AbstractChannel
     }
 
     protected AbstractChannel(String discriminator, boolean client) {
-        this(discriminator, client, Collections.<RequestHandler<Channel>>emptyList());
+        this(discriminator, client, Collections.emptyList());
     }
 
     protected AbstractChannel(String discriminator, boolean client, Collection<? extends RequestHandler<Channel>> handlers) {

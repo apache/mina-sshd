@@ -142,7 +142,7 @@ public interface ClientAuthenticationManager extends KeyPairProviderHolder {
         setUserAuthFactoriesNames(GenericUtils.split(names, ','));
     }
     default void setUserAuthFactoriesNames(String ... names) {
-        setUserAuthFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.<String>emptyList() : Arrays.asList(names));
+        setUserAuthFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.emptyList() : Arrays.asList(names));
     }
     default void setUserAuthFactoriesNames(Collection<String> names) {
         BuiltinUserAuthFactories.ParseResult result = BuiltinUserAuthFactories.parseFactoriesList(names);

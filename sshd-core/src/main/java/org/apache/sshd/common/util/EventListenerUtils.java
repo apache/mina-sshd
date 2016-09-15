@@ -104,7 +104,7 @@ public final class EventListenerUtils {
      * instance is actually contained
      */
     public static <L extends EventListener> Set<L> synchronizedListenersSet(Collection<? extends L> listeners) {
-        Set<L> s = EventListenerUtils.<L>synchronizedListenersSet();
+        Set<L> s = EventListenerUtils.synchronizedListenersSet();
         if (GenericUtils.size(listeners) > 0) {
             s.addAll(listeners);
         }

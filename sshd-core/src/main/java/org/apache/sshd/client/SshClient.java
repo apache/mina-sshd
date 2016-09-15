@@ -528,7 +528,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     log.debug("connect({}@{}:{}) no overrides", username, host, port);
                 }
 
-                return doConnect(username, address, Collections.<KeyPair>emptyList(), true);
+                return doConnect(username, address, Collections.emptyList(), true);
             } else {
                 if (log.isDebugEnabled()) {
                     log.debug("connect({}@{}:{}) effective: {}", username, host, port, entry);
@@ -540,7 +540,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             if (log.isDebugEnabled()) {
                 log.debug("connect({}@{}) not an InetSocketAddress: {}", username, address, address.getClass().getName());
             }
-            return doConnect(username, address, Collections.<KeyPair>emptyList(), true);
+            return doConnect(username, address, Collections.emptyList(), true);
         }
     }
 
@@ -1186,7 +1186,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     public static List<NamedFactory<Compression>> setupCompressions(Map<String, ?> options, PrintStream stderr) {
         String argVal = PropertyResolverUtils.getString(options, SshConfigFileReader.COMPRESSION_PROP);
         if (GenericUtils.isEmpty(argVal)) {
-            return Collections.<NamedFactory<Compression>>emptyList();
+            return Collections.emptyList();
         }
 
         NamedFactory<Compression> value = CompressionConfigValue.fromName(argVal);
@@ -1223,7 +1223,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     public static List<NamedFactory<Mac>> setupMacs(Map<String, ?> options, PrintStream stderr) {
         String argVal = PropertyResolverUtils.getString(options, SshConfigFileReader.MACS_CONFIG_PROP);
         return GenericUtils.isEmpty(argVal)
-             ? Collections.<NamedFactory<Mac>>emptyList()
+             ? Collections.emptyList()
              : setupMacs(SshConfigFileReader.MACS_CONFIG_PROP, argVal, null, stderr);
     }
 
@@ -1251,7 +1251,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     public static List<NamedFactory<Cipher>> setupCiphers(Map<String, ?> options, PrintStream stderr) {
         String argVal = PropertyResolverUtils.getString(options, SshConfigFileReader.CIPHERS_CONFIG_PROP);
         return GenericUtils.isEmpty(argVal)
-             ? Collections.<NamedFactory<Cipher>>emptyList()
+             ? Collections.emptyList()
              : setupCiphers(SshConfigFileReader.CIPHERS_CONFIG_PROP, argVal, null, stderr);
     }
 

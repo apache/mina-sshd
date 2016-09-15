@@ -245,11 +245,9 @@ public final class SttySupport {
      */
     public static String exec(final String cmd)
             throws IOException, InterruptedException {
-        return exec(new String[] {
-            "sh",
-            "-c",
-            cmd
-        });
+        return exec("sh",
+                "-c",
+                cmd);
     }
 
     /**

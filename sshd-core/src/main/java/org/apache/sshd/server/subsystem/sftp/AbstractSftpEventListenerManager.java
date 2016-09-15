@@ -29,7 +29,7 @@ import org.apache.sshd.common.util.ValidateUtils;
  */
 public abstract class AbstractSftpEventListenerManager implements SftpEventListenerManager {
     private final Collection<SftpEventListener> sftpEventListeners =
-            EventListenerUtils.<SftpEventListener>synchronizedListenersSet();
+            EventListenerUtils.synchronizedListenersSet();
     private final SftpEventListener sftpEventListenerProxy;
 
     protected AbstractSftpEventListenerManager() {

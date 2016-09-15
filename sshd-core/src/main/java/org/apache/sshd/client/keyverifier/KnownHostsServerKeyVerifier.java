@@ -117,7 +117,7 @@ public class KnownHostsServerKeyVerifier
     protected final Object updateLock = new Object();
     private final ServerKeyVerifier delegate;
     private final AtomicReference<Collection<HostEntryPair>> keysHolder =
-            new AtomicReference<Collection<HostEntryPair>>(Collections.<HostEntryPair>emptyList());
+            new AtomicReference<Collection<HostEntryPair>>(Collections.emptyList());
     private ModifiedServerKeyAcceptor modKeyAcceptor;
 
     public KnownHostsServerKeyVerifier(ServerKeyVerifier delegate, Path file) {
@@ -164,7 +164,7 @@ public class KnownHostsServerKeyVerifier
                         log.debug("verifyServerKey({})[{}] missing known hosts file {}",
                                   clientSession, remoteAddress, file);
                     }
-                    knownHosts = Collections.<HostEntryPair>emptyList();
+                    knownHosts = Collections.emptyList();
                 }
 
                 setLoadedHostsEntries(knownHosts);

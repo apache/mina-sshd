@@ -96,7 +96,7 @@ public enum TimeValueConfig {
      * @throws NumberFormatException    If bad numbers found - e.g., negative counts
      * @throws IllegalArgumentException If bad format - e.g., unknown unit
      */
-    public static Map<TimeValueConfig, Long> parse(String s) throws NumberFormatException, IllegalArgumentException {
+    public static Map<TimeValueConfig, Long> parse(String s) throws IllegalArgumentException {
         if (GenericUtils.isEmpty(s)) {
             return Collections.emptyMap();
         }

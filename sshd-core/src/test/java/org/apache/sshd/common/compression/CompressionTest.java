@@ -29,7 +29,6 @@ import java.util.List;
 
 import com.jcraft.jsch.JSch;
 
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.mac.MacTest;
@@ -113,7 +112,7 @@ public class CompressionTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd.setCompressionFactories(Arrays.<NamedFactory<org.apache.sshd.common.compression.Compression>>asList(factory));
+        sshd.setCompressionFactories(Arrays.asList(factory));
         sshd.addSessionListener(listener);
 
         String name = factory.getName();

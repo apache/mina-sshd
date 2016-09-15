@@ -56,12 +56,12 @@ public class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
     @Test
     public void testExecutorServiceInitialization() throws IOException {
         ExecutorService service = Mockito.mock(ExecutorService.class);
-        Mockito.when(service.shutdownNow()).thenReturn(Collections.<Runnable>emptyList());
+        Mockito.when(service.shutdownNow()).thenReturn(Collections.emptyList());
         Mockito.when(service.isShutdown()).thenReturn(Boolean.TRUE);
         Mockito.when(service.isTerminated()).thenReturn(Boolean.TRUE);
 
         FactoryManager manager = Mockito.mock(FactoryManager.class);
-        Mockito.when(manager.getProperties()).thenReturn(Collections.<String, Object>emptyMap());
+        Mockito.when(manager.getProperties()).thenReturn(Collections.emptyMap());
 
         String propName = IoServiceFactoryFactory.class.getName();
         for (BuiltinIoServiceFactoryFactories f : BuiltinIoServiceFactoryFactories.VALUES) {

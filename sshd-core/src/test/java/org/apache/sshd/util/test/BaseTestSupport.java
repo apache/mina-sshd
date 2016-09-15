@@ -137,7 +137,7 @@ public abstract class BaseTestSupport extends Assert {
      * @see #getTargetRelativeFile(Collection)
      */
     protected Path getTempTargetRelativeFile(String ... comps) {
-        return getTempTargetRelativeFile(GenericUtils.isEmpty(comps) ? Collections.<String>emptyList() : Arrays.asList(comps));
+        return getTempTargetRelativeFile(GenericUtils.isEmpty(comps) ? Collections.emptyList() : Arrays.asList(comps));
     }
 
     /**
@@ -176,7 +176,7 @@ public abstract class BaseTestSupport extends Assert {
      * @return The {@link Path} representing the result - same as target folder if no components
      */
     protected Path getTargetRelativeFile(String ... comps) {
-        return getTargetRelativeFile(GenericUtils.isEmpty(comps) ? Collections.<String>emptyList() : Arrays.asList(comps));
+        return getTargetRelativeFile(GenericUtils.isEmpty(comps) ? Collections.emptyList() : Arrays.asList(comps));
     }
 
     /**

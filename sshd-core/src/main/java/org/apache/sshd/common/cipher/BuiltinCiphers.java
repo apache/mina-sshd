@@ -251,7 +251,7 @@ public enum BuiltinCiphers implements CipherFactory {
     }
 
     public static ParseResult parseCiphersList(String... ciphers) {
-        return parseCiphersList(GenericUtils.isEmpty((Object[]) ciphers) ? Collections.<String>emptyList() : Arrays.asList(ciphers));
+        return parseCiphersList(GenericUtils.isEmpty((Object[]) ciphers) ? Collections.emptyList() : Arrays.asList(ciphers));
     }
 
     public static ParseResult parseCiphersList(Collection<String> ciphers) {
@@ -303,7 +303,7 @@ public enum BuiltinCiphers implements CipherFactory {
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     public static class ParseResult extends NamedFactoriesListParseResult<Cipher, CipherFactory> {
-        public static final ParseResult EMPTY = new ParseResult(Collections.<CipherFactory>emptyList(), Collections.<String>emptyList());
+        public static final ParseResult EMPTY = new ParseResult(Collections.emptyList(), Collections.emptyList());
 
         public ParseResult(List<CipherFactory> parsed, List<String> unsupported) {
             super(parsed, unsupported);

@@ -251,7 +251,7 @@ public final class GenericUtils {
 
     @SafeVarargs    // there is no EnumSet.of(...) so we have to provide our own
     public static <E extends Enum<E>> Set<E> of(E... values) {
-        return of(isEmpty(values) ? Collections.<E>emptySet() : Arrays.asList(values));
+        return of(isEmpty(values) ? Collections.emptySet() : Arrays.asList(values));
     }
 
     public static <E extends Enum<E>> Set<E> of(Collection<? extends E> values) {
@@ -311,7 +311,7 @@ public final class GenericUtils {
      */
     @SafeVarargs
     public static <V> SortedSet<V> asSortedSet(Comparator<? super V> comp, V ... values) {
-        return asSortedSet(comp, isEmpty(values) ? Collections.<V>emptyList() : Arrays.asList(values));
+        return asSortedSet(comp, isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
     }
 
     /**
@@ -355,7 +355,7 @@ public final class GenericUtils {
     @SafeVarargs
     public static <K, V> Map<K, V> mapValues(
             Transformer<? super V, ? extends K> keyMapper, Factory<? extends Map<K, V>> mapCreator, V ... values) {
-        return mapValues(keyMapper, mapCreator, isEmpty(values) ? Collections.<V>emptyList() : Arrays.asList(values));
+        return mapValues(keyMapper, mapCreator, isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
     }
 
     /**
@@ -399,7 +399,7 @@ public final class GenericUtils {
      */
     @SafeVarargs
     public static <T> List<T> selectMatchingMembers(Predicate<? super T> acceptor, T ... values) {
-        return selectMatchingMembers(acceptor, isEmpty(values) ? Collections.<T>emptyList() : Arrays.asList(values));
+        return selectMatchingMembers(acceptor, isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
     }
 
     /**
@@ -594,7 +594,7 @@ public final class GenericUtils {
      * @see Collections#emptyIterator()
      */
     public static <T> Iterator<T> iteratorOf(Iterator<T> iter) {
-        return (iter == null) ? Collections.<T>emptyIterator() : iter;
+        return (iter == null) ? Collections.emptyIterator() : iter;
     }
 
     /**
@@ -608,7 +608,7 @@ public final class GenericUtils {
      * @return The wrapping instance
      */
     public static <T> Iterable<T> multiIterableSuppliers(final Iterable<? extends Supplier<? extends Iterable<? extends T>>> providers) {
-        return (providers == null) ? Collections.<T>emptyList() : new Iterable<T>() {
+        return (providers == null) ? Collections.emptyList() : new Iterable<T>() {
             @Override
             public Iterator<T> iterator() {
                 return new Iterator<T>() {

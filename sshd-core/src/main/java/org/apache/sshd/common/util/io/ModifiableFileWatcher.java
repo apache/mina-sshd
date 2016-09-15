@@ -144,11 +144,8 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
         }
 
         long timestamp = modifiedTime.toMillis();
-        if (timestamp != lastModified.getAndSet(timestamp)) {
-            return true;
-        }
+        return timestamp != lastModified.getAndSet(timestamp);
 
-        return false;
     }
 
     /**

@@ -103,7 +103,7 @@ public class AclSupportedParser extends AbstractParser<AclCapabilities> {
             private static final String ACL_CAP_NAME_PREFIX = "SSH_ACL_CAP_";
             private static final Map<Integer, String> ACL_VALUES_MAP = LoggingUtils.generateMnemonicMap(SftpConstants.class, ACL_CAP_NAME_PREFIX);
             private static final Map<String, Integer> ACL_NAMES_MAP =
-                    Collections.unmodifiableMap(GenericUtils.flipMap(ACL_VALUES_MAP, GenericUtils.<Integer>caseInsensitiveMap(), false));
+                    Collections.unmodifiableMap(GenericUtils.flipMap(ACL_VALUES_MAP, GenericUtils.caseInsensitiveMap(), false));
         }
 
         @SuppressWarnings("synthetic-access")

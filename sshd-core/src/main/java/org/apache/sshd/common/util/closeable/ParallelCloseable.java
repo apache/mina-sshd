@@ -37,7 +37,7 @@ public class ParallelCloseable extends SimpleCloseable {
 
     public ParallelCloseable(Object lock, Iterable<? extends Closeable> closeables) {
         super(lock);
-        this.closeables = (closeables == null) ? Collections.<Closeable>emptyList() : closeables;
+        this.closeables = (closeables == null) ? Collections.emptyList() : closeables;
     }
 
     @Override

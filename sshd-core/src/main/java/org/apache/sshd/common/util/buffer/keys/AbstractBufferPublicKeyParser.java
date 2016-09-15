@@ -41,7 +41,7 @@ public abstract class AbstractBufferPublicKeyParser<PUB extends PublicKey> imple
     private final Collection<String> supported;
 
     protected AbstractBufferPublicKeyParser(Class<PUB> keyClass, String ... supported) {
-        this(keyClass, GenericUtils.isEmpty(supported) ? Collections.<String>emptyList() : Arrays.asList(supported));
+        this(keyClass, GenericUtils.isEmpty(supported) ? Collections.emptyList() : Arrays.asList(supported));
     }
 
     protected AbstractBufferPublicKeyParser(Class<PUB> keyClass, Collection<String> supported) {

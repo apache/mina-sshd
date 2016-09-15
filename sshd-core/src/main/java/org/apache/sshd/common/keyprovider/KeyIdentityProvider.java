@@ -74,7 +74,7 @@ public interface KeyIdentityProvider {
             new Transformer<KeyIdentityProvider, Iterable<KeyPair>>() {
                 @Override
                 public Iterable<KeyPair> transform(KeyIdentityProvider p) {
-                    return (p == null) ? Collections.<KeyPair>emptyList() : p.loadKeys();
+                    return (p == null) ? Collections.emptyList() : p.loadKeys();
                 }
             };
 
@@ -94,7 +94,7 @@ public interface KeyIdentityProvider {
          * @see ClientSession#getKeyPairProvider()
          */
         public static Iterator<KeyPair> iteratorOf(ClientSession session) {
-            return (session == null) ? Collections.<KeyPair>emptyIterator() : iteratorOf(session.getRegisteredIdentities(), session.getKeyPairProvider());
+            return (session == null) ? Collections.emptyIterator() : iteratorOf(session.getRegisteredIdentities(), session.getKeyPairProvider());
         }
 
         /**

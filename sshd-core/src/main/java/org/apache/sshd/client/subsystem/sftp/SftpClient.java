@@ -460,7 +460,7 @@ public interface SftpClient extends SubsystemClient {
      * @see #open(String, Collection)
      */
     default CloseableHandle open(String path) throws IOException {
-        return open(path, Collections.<OpenMode>emptySet());
+        return open(path, Collections.emptySet());
     }
 
     /**
@@ -503,7 +503,7 @@ public interface SftpClient extends SubsystemClient {
     void remove(String path) throws IOException;
 
     default void rename(String oldPath, String newPath) throws IOException {
-        rename(oldPath, newPath, Collections.<CopyMode>emptySet());
+        rename(oldPath, newPath, Collections.emptySet());
     }
 
     default void rename(String oldPath, String newPath, CopyMode... options) throws IOException {

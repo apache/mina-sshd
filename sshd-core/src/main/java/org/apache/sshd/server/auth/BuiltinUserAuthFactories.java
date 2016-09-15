@@ -93,7 +93,7 @@ public enum BuiltinUserAuthFactories implements NamedFactory<UserAuthFactory> {
     }
 
     public static ParseResult parseFactoriesList(String... factories) {
-        return parseFactoriesList(GenericUtils.isEmpty((Object[]) factories) ? Collections.<String>emptyList() : Arrays.asList(factories));
+        return parseFactoriesList(GenericUtils.isEmpty((Object[]) factories) ? Collections.emptyList() : Arrays.asList(factories));
     }
 
     public static ParseResult parseFactoriesList(Collection<String> factories) {
@@ -133,7 +133,7 @@ public enum BuiltinUserAuthFactories implements NamedFactory<UserAuthFactory> {
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     public static class ParseResult extends NamedFactoriesListParseResult<UserAuth, UserAuthFactory> {
-        public static final ParseResult EMPTY = new ParseResult(Collections.<UserAuthFactory>emptyList(), Collections.<String>emptyList());
+        public static final ParseResult EMPTY = new ParseResult(Collections.emptyList(), Collections.emptyList());
 
         public ParseResult(List<UserAuthFactory> parsed, List<String> unsupported) {
             super(parsed, unsupported);

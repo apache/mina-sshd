@@ -388,7 +388,7 @@ public class BasePathTest extends BaseTestSupport {
         private final FileSystem fileSystem;
         private final String string;
         private String root;
-        private List<String> names = Collections.<String>emptyList();
+        private List<String> names = Collections.emptyList();
 
         public PathTester(FileSystem fileSystem, String string) {
             this.fileSystem = fileSystem;

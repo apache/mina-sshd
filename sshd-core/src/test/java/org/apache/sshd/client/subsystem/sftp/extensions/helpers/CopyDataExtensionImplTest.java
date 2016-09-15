@@ -60,7 +60,7 @@ import org.junit.runners.Parameterized.Parameters;
 public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
     private static final List<Object[]> PARAMETERS =
             Collections.unmodifiableList(
-                    Arrays.<Object[]>asList(
+                    Arrays.asList(
                             new Object[]{
                                     Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
                                     Integer.valueOf(0),

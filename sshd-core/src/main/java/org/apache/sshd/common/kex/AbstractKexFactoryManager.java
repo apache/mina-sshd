@@ -56,7 +56,7 @@ public abstract class AbstractKexFactoryManager
     @Override
     public List<NamedFactory<KeyExchange>> getKeyExchangeFactories() {
         return resolveEffectiveFactories(KeyExchange.class, keyExchangeFactories,
-                (parent == null) ? Collections.<NamedFactory<KeyExchange>>emptyList() : parent.getKeyExchangeFactories());
+                (parent == null) ? Collections.emptyList() : parent.getKeyExchangeFactories());
     }
 
     @Override
@@ -67,7 +67,7 @@ public abstract class AbstractKexFactoryManager
     @Override
     public List<NamedFactory<Cipher>> getCipherFactories() {
         return resolveEffectiveFactories(Cipher.class, cipherFactories,
-                (parent == null) ? Collections.<NamedFactory<Cipher>>emptyList() : parent.getCipherFactories());
+                (parent == null) ? Collections.emptyList() : parent.getCipherFactories());
     }
 
     @Override
@@ -78,7 +78,7 @@ public abstract class AbstractKexFactoryManager
     @Override
     public List<NamedFactory<Compression>> getCompressionFactories() {
         return resolveEffectiveFactories(Compression.class, compressionFactories,
-                (parent == null) ? Collections.<NamedFactory<Compression>>emptyList() : parent.getCompressionFactories());
+                (parent == null) ? Collections.emptyList() : parent.getCompressionFactories());
     }
 
     @Override
@@ -89,7 +89,7 @@ public abstract class AbstractKexFactoryManager
     @Override
     public List<NamedFactory<Mac>> getMacFactories() {
         return resolveEffectiveFactories(Mac.class, macFactories,
-                (parent == null) ? Collections.<NamedFactory<Mac>>emptyList() : parent.getMacFactories());
+                (parent == null) ? Collections.emptyList() : parent.getMacFactories());
     }
 
     @Override
@@ -100,7 +100,7 @@ public abstract class AbstractKexFactoryManager
     @Override
     public List<NamedFactory<Signature>> getSignatureFactories() {
         return resolveEffectiveFactories(Signature.class, signatureFactories,
-                (parent == null) ? Collections.<NamedFactory<Signature>>emptyList() : parent.getSignatureFactories());
+                (parent == null) ? Collections.emptyList() : parent.getSignatureFactories());
     }
 
     @Override

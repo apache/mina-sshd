@@ -72,7 +72,7 @@ public class VirtualFileSystemFactory implements FileSystemFactory {
             throw new InvalidPathException(username, "Cannot resolve home directory");
         }
 
-        return new RootedFileSystemProvider().newFileSystem(dir, Collections.<String, Object>emptyMap());
+        return new RootedFileSystemProvider().newFileSystem(dir, Collections.emptyMap());
     }
 
     protected Path computeRootDir(Session session) throws IOException  {

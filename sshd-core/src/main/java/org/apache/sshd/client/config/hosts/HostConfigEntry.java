@@ -242,7 +242,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     public void setIdentities(Collection<String> identities) {
-        this.identities = (identities == null) ? Collections.<String>emptyList() : identities;
+        this.identities = (identities == null) ? Collections.emptyList() : identities;
     }
 
     /**
@@ -550,7 +550,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * <U>case insensitive</U> key mapper.
      */
     public void setProperties(Map<String, String> properties) {
-        this.properties = (properties == null) ? Collections.<String, String>emptyMap() : properties;
+        this.properties = (properties == null) ? Collections.emptyMap() : properties;
     }
 
     public <A extends Appendable> A append(A sb) throws IOException {
@@ -639,7 +639,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * @see #appendNonEmptyValues(Appendable, String, Collection)
      */
     public static <A extends Appendable> A appendNonEmptyValues(A sb, String name, Object ... values) throws IOException {
-        return appendNonEmptyValues(sb, name, GenericUtils.isEmpty(values) ? Collections.<Object>emptyList() : Arrays.asList(values));
+        return appendNonEmptyValues(sb, name, GenericUtils.isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
     }
 
     /**
@@ -725,7 +725,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
             return normal;
         }
 
-        normal.setIdentities(Collections.<String>emptyList());  // start fresh
+        normal.setIdentities(Collections.emptyList());  // start fresh
         for (String id : ids) {
             String path = resolveIdentityFilePath(id, host, port, username);
             normal.addIdentity(path);

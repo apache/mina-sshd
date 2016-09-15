@@ -47,11 +47,11 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
     private final boolean supported;
 
     protected AbstractSftpClientExtension(String name, SftpClient client, RawSftpClient raw, Collection<String> extras) {
-        this(name, client, raw, GenericUtils.isEmpty(extras) ? false : extras.contains(name));
+        this(name, client, raw, !GenericUtils.isEmpty(extras) && extras.contains(name));
     }
 
     protected AbstractSftpClientExtension(String name, SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions) {
-        this(name, client, raw, GenericUtils.isEmpty(extensions) ? false : extensions.containsKey(name));
+        this(name, client, raw, !GenericUtils.isEmpty(extensions) && extensions.containsKey(name));
     }
 
     protected AbstractSftpClientExtension(String name, SftpClient client, RawSftpClient raw, boolean supported) {

@@ -57,7 +57,7 @@ public class DefaultConnectFuture extends DefaultVerifiableSshFuture<ConnectFutu
         } else if (v instanceof Error) {
             throw (Error) v;
         } else if (v instanceof Throwable) {
-            throw (RuntimeSshException) new RuntimeSshException("Failed to get the session.").initCause((Throwable) v);
+            throw (RuntimeSshException) new RuntimeSshException("Failed to get the session.", (Throwable) v);
         } else if (v instanceof ClientSession) {
             return (ClientSession) v;
         } else {

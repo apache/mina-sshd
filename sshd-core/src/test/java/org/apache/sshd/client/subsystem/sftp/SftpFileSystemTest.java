@@ -54,7 +54,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
@@ -63,7 +62,6 @@ import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
@@ -93,7 +91,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
     @BeforeClass
     public static void setupServerInstance() throws Exception {
         sshd = Utils.setupTestServer(SftpFileSystemTest.class);
-        sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(new SftpSubsystemFactory()));
+        sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.start();
         port = sshd.getPort();
@@ -140,7 +138,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
         int expectedVersion = (SftpSubsystem.LOWER_SFTP_IMPL + SftpSubsystem.HIGHER_SFTP_IMPL) / 2;
         params.put(SftpFileSystemProvider.VERSION_PARAM, Integer.valueOf(expectedVersion));
-        try (SftpFileSystem fs = (SftpFileSystem) FileSystems.newFileSystem(createDefaultFileSystemURI(params), Collections.<String, Object>emptyMap())) {
+        try (SftpFileSystem fs = (SftpFileSystem) FileSystems.newFileSystem(createDefaultFileSystemURI(params), Collections.emptyMap())) {
             try (SftpClient sftpClient = fs.getClient()) {
                 assertEquals("Mismatched negotiated version", expectedVersion, sftpClient.getVersion());
 
@@ -223,7 +221,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
     @Test
     public void testFileStore() throws IOException {
-        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.<String, Object>emptyMap())) {
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap())) {
             Iterable<FileStore> iter = fs.getFileStores();
             assertTrue("Not a list", iter instanceof List<?>);
 
@@ -253,7 +251,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
             Collection<SftpFileSystem> fsList = new LinkedList<>();
             try {
                 Collection<String> idSet = new HashSet<>();
-                Map<String, Object> empty = Collections.<String, Object>emptyMap();
+                Map<String, Object> empty = Collections.emptyMap();
                 for (int index = 0; index < 4; index++) {
                     String credentials = getCurrentTestName() + "-user-" + index;
                     SftpFileSystem expected = provider.newFileSystem(createFileSystemURI(credentials, empty), empty);
@@ -464,7 +462,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
     }
 
     private URI createDefaultFileSystemURI() {
-        return createDefaultFileSystemURI(Collections.<String, Object>emptyMap());
+        return createDefaultFileSystemURI(Collections.emptyMap());
     }
 
     private URI createDefaultFileSystemURI(Map<String, ?> params) {

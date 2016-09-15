@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.jcraft.jsch.JSch;
 
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.SshServer;
@@ -145,7 +144,7 @@ public class MacTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd.setMacFactories(Arrays.<NamedFactory<Mac>>asList(factory));
+        sshd.setMacFactories(Arrays.asList(factory));
     }
 
     @Test

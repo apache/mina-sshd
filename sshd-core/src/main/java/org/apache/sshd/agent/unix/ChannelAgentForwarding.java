@@ -88,7 +88,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
 
             ExecutorService service = getExecutorService();
             forwardService = (service == null) ? ThreadUtils.newSingleThreadExecutor("ChannelAgentForwarding[" + authSocket + "]") : service;
-            shutdownForwarder = (service == forwardService) ? isShutdownOnExit() : true;
+            shutdownForwarder = service != forwardService || isShutdownOnExit();
 
             final int copyBufSize = PropertyResolverUtils.getIntProperty(this, FORWARDER_BUFFER_SIZE, DEFAULT_FORWARDER_BUF_SIZE);
             ValidateUtils.checkTrue(copyBufSize >= MIN_FORWARDER_BUF_SIZE, "Copy buf size below min.: %d", copyBufSize);

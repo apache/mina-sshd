@@ -257,7 +257,7 @@ public enum BuiltinDHFactories implements DHFactory {
     }
 
     public static ParseResult parseDHFactoriesList(String... dhList) {
-        return parseDHFactoriesList(GenericUtils.isEmpty((Object[]) dhList) ? Collections.<String>emptyList() : Arrays.asList(dhList));
+        return parseDHFactoriesList(GenericUtils.isEmpty((Object[]) dhList) ? Collections.emptyList() : Arrays.asList(dhList));
     }
 
     public static ParseResult parseDHFactoriesList(Collection<String> dhList) {
@@ -309,7 +309,7 @@ public enum BuiltinDHFactories implements DHFactory {
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     public static final class ParseResult extends NamedResourceListParseResult<DHFactory> {
-        public static final ParseResult EMPTY = new ParseResult(Collections.<DHFactory>emptyList(), Collections.<String>emptyList());
+        public static final ParseResult EMPTY = new ParseResult(Collections.emptyList(), Collections.emptyList());
 
         public ParseResult(List<DHFactory> parsed, List<String> unsupported) {
             super(parsed, unsupported);

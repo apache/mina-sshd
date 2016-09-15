@@ -34,7 +34,7 @@ public class KeySetPublickeyAuthenticator extends AbstractLoggingBean implements
     private final Collection<? extends PublicKey> keySet;
 
     public KeySetPublickeyAuthenticator(Collection<? extends PublicKey> keySet) {
-        this.keySet = (keySet == null) ? Collections.<PublicKey>emptyList() : keySet;
+        this.keySet = (keySet == null) ? Collections.emptyList() : keySet;
     }
 
     public final Collection<? extends PublicKey> getKeySet() {

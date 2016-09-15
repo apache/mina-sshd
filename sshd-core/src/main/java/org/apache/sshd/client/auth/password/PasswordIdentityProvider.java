@@ -70,7 +70,7 @@ public interface PasswordIdentityProvider {
             new Transformer<PasswordIdentityProvider, Iterable<String>>() {
                 @Override
                 public Iterable<String> transform(PasswordIdentityProvider p) {
-                    return (p == null) ? Collections.<String>emptyList() : p.loadPasswords();
+                    return (p == null) ? Collections.emptyList() : p.loadPasswords();
                 }
             };
 
@@ -89,7 +89,7 @@ public interface PasswordIdentityProvider {
          * @see ClientSession#getPasswordIdentityProvider()
          */
         public static Iterator<String> iteratorOf(ClientSession session) {
-            return (session == null) ? Collections.<String>emptyIterator() : iteratorOf(session.getRegisteredIdentities(), session.getPasswordIdentityProvider());
+            return (session == null) ? Collections.emptyIterator() : iteratorOf(session.getRegisteredIdentities(), session.getPasswordIdentityProvider());
         }
 
         /**

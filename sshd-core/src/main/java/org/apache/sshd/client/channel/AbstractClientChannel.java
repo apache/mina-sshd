@@ -83,7 +83,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     protected OpenFuture openFuture;
 
     protected AbstractClientChannel(String type) {
-        this(type, Collections.<RequestHandler<Channel>>emptyList());
+        this(type, Collections.emptyList());
     }
 
     protected AbstractClientChannel(String type, Collection<? extends RequestHandler<Channel>> handlers) {

@@ -188,7 +188,7 @@ public class PtyCapableChannelSession extends ChannelSession {
     }
 
     public void setPtyModes(Map<PtyMode, Integer> ptyModes) {
-        this.ptyModes = (ptyModes == null) ? Collections.<PtyMode, Integer>emptyMap() : ptyModes;
+        this.ptyModes = (ptyModes == null) ? Collections.emptyMap() : ptyModes;
     }
 
     public void setEnv(String key, String value) {

@@ -296,11 +296,8 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         }
 
         int sepPos = value.lastIndexOf(':');
-        if (sepPos <= passPos) {    // no prompt separator or separator before the password keyword
-            return false;
-        }
+        return sepPos > passPos;
 
-        return true;
     }
 
     public static String getAuthCommandName(int cmd) {

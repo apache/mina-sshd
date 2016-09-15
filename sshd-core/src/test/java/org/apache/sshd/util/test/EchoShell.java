@@ -35,10 +35,7 @@ public class EchoShell extends CommandExecutionHelper {
         out.write((command + "\n").getBytes(StandardCharsets.UTF_8));
         out.flush();
 
-        if ("exit".equals(command)) {
-            return false;
-        }
+        return !"exit".equals(command);
 
-        return true;
     }
 }

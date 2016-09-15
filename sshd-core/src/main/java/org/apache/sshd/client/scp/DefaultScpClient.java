@@ -78,7 +78,7 @@ public class DefaultScpClient extends AbstractScpClient {
 
     @Override
     public void download(String remote, OutputStream local) throws IOException {
-        String cmd = ScpClient.createReceiveCommand(remote, Collections.<Option>emptyList());
+        String cmd = ScpClient.createReceiveCommand(remote, Collections.emptyList());
         ClientSession session = getClientSession();
         ChannelExec channel = openCommandChannel(session, cmd);
         try (InputStream invOut = channel.getInvertedOut();
@@ -117,7 +117,7 @@ public class DefaultScpClient extends AbstractScpClient {
         final String name = (namePos < 0)
                 ? remote
                 : ValidateUtils.checkNotNullAndNotEmpty(remote.substring(namePos + 1), "No name value in remote=%s", remote);
-        final String cmd = ScpClient.createSendCommand(remote, (time != null) ? EnumSet.of(Option.PreserveAttributes) : Collections.<Option>emptySet());
+        final String cmd = ScpClient.createSendCommand(remote, (time != null) ? EnumSet.of(Option.PreserveAttributes) : Collections.emptySet());
         ClientSession session = getClientSession();
         ChannelExec channel = openCommandChannel(session, cmd);
         try (InputStream invOut = channel.getInvertedOut();

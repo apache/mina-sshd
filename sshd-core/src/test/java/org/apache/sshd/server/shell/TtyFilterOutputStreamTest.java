@@ -77,9 +77,9 @@ public class TtyFilterOutputStreamTest extends BaseTestSupport {
                     }
                 }
             };
-            TtyFilterOutputStream ttyOut = new TtyFilterOutputStream(
-                    output, null, PtyMode.ECHO.equals(mode) ? Collections.<PtyMode>emptySet() : EnumSet.of(mode));
-            Writer writer = new OutputStreamWriter(ttyOut, StandardCharsets.UTF_8)) {
+             TtyFilterOutputStream ttyOut = new TtyFilterOutputStream(
+                    output, null, PtyMode.ECHO.equals(mode) ? Collections.emptySet() : EnumSet.of(mode));
+             Writer writer = new OutputStreamWriter(ttyOut, StandardCharsets.UTF_8)) {
 
             for (String l : lines) {
                 writer.append(l).append("\r\n");

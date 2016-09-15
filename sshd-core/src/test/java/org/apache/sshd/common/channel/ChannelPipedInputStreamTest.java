@@ -69,7 +69,7 @@ public class ChannelPipedInputStreamTest extends BaseTestSupport {
     private static ChannelPipedInputStream createTestStream() {
         AbstractChannel channel = new BogusChannel();
         Window window = new Window(channel, null, true, true);
-        window.init(PropertyResolverUtils.toPropertyResolver(Collections.<String, Object>emptyMap()));
+        window.init(PropertyResolverUtils.toPropertyResolver(Collections.emptyMap()));
         return new ChannelPipedInputStream(channel, window);
     }
 

@@ -38,11 +38,11 @@ public class ProcessShellFactory extends AbstractLoggingBean implements Factory<
     private List<String> command;
 
     public ProcessShellFactory() {
-        this(Collections.<String>emptyList());
+        this(Collections.emptyList());
     }
 
     public ProcessShellFactory(String ... command) {
-        this(GenericUtils.isEmpty(command) ? Collections.<String>emptyList() : Arrays.asList(command));
+        this(GenericUtils.isEmpty(command) ? Collections.emptyList() : Arrays.asList(command));
     }
 
     public ProcessShellFactory(List<String> command) {
@@ -54,7 +54,7 @@ public class ProcessShellFactory extends AbstractLoggingBean implements Factory<
     }
 
     public void setCommand(String ... command) {
-        setCommand(GenericUtils.isEmpty(command) ? Collections.<String>emptyList() : Arrays.asList(command));
+        setCommand(GenericUtils.isEmpty(command) ? Collections.emptyList() : Arrays.asList(command));
     }
 
     public void setCommand(List<String> command) {

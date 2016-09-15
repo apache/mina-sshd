@@ -314,7 +314,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
                 ? ThreadUtils.newSingleThreadExecutor("TcpIpServerChannel-ConnectorCleanup[" + getSession() + "]")
                 : service;
         // shutdown the temporary executor service if had to create it
-        final boolean shutdown = (executors == service) ? isShutdownOnExit() : true;
+        final boolean shutdown = executors != service || isShutdownOnExit();
         executors.submit(new Runnable() {
             @SuppressWarnings("synthetic-access")
             @Override

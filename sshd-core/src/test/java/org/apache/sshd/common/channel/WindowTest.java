@@ -36,7 +36,6 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
@@ -106,7 +105,7 @@ public class WindowTest extends BaseTestSupport {
                 },
                 ServerConnectionServiceFactory.INSTANCE
         ));
-        sshd.setChannelFactories(Arrays.<NamedFactory<Channel>>asList(
+        sshd.setChannelFactories(Arrays.asList(
                 new ChannelSessionFactory() {
                     @Override
                     public Channel create() {
