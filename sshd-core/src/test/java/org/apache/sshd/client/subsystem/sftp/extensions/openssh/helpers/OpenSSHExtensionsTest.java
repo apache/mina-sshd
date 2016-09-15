@@ -27,7 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -122,7 +122,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
         expected.f_fsid = 1L;
         expected.f_namemax = 256;
 
-        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory() {
+        sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(new SftpSubsystemFactory() {
             @Override
             public Command create() {
                 return new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy()) {

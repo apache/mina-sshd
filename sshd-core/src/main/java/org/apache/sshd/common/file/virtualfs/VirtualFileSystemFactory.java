@@ -37,7 +37,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 public class VirtualFileSystemFactory implements FileSystemFactory {
 
     private Path defaultHomeDir;
-    private final Map<String, Path> homeDirs = new ConcurrentHashMap<String, Path>();
+    private final Map<String, Path> homeDirs = new ConcurrentHashMap<>();
 
     public VirtualFileSystemFactory() {
         super();
@@ -67,7 +67,7 @@ public class VirtualFileSystemFactory implements FileSystemFactory {
     @Override
     public FileSystem createFileSystem(Session session) throws IOException {
         String username = session.getUsername();
-        Path dir = computeRootDir(username);
+        Path dir = computeRootDir(session);
         if (dir == null) {
             throw new InvalidPathException(username, "Cannot resolve home directory");
         }
@@ -75,8 +75,9 @@ public class VirtualFileSystemFactory implements FileSystemFactory {
         return new RootedFileSystemProvider().newFileSystem(dir, Collections.<String, Object>emptyMap());
     }
 
-    protected Path computeRootDir(String userName) throws IOException  {
-        Path homeDir = getUserHomeDir(userName);
+    protected Path computeRootDir(Session session) throws IOException  {
+        String username = session.getUsername();
+        Path homeDir = getUserHomeDir(username);
         if (homeDir == null) {
             homeDir = getDefaultHomeDir();
         }

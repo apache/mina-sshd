@@ -601,7 +601,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 return new ProcessShellFactory(GenericUtils.split(command, ' ')).create();
             }
         }).build());
-        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
+        sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(new SftpSubsystemFactory()));
         sshd.start();
 
         Thread.sleep(Long.MAX_VALUE);

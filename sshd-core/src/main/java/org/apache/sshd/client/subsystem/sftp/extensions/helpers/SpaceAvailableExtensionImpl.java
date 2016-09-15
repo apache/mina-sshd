@@ -31,6 +31,9 @@ import org.apache.sshd.common.subsystem.sftp.extensions.SpaceAvailableExtensionI
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
+ * Implements &quot;space-available&quot; extension
+ *
+ * @see <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09 - section 9.3</A>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SpaceAvailableExtensionImpl extends AbstractSftpClientExtension implements SpaceAvailableExtension {

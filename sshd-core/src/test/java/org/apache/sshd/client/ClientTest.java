@@ -444,7 +444,7 @@ public class ClientTest extends BaseTestSupport {
                 assertSame("Mismatched closed channel instances", channel, channelHolder.getAndSet(null));
             }
         });
-        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
+        sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(new SftpSubsystemFactory()));
 
         client.start();
 

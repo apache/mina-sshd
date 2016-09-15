@@ -29,6 +29,9 @@ import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.Pair;
 
 /**
+ * Implements &quot;check-file-name&quot; extension
+ *
+ * @see <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09 - section 9.1.2</A>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class CheckFileNameExtensionImpl extends AbstractCheckFileExtension implements CheckFileNameExtension {

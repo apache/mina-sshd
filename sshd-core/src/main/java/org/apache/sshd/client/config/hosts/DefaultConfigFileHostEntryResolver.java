@@ -38,7 +38,6 @@ import org.apache.sshd.common.util.io.IoUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DefaultConfigFileHostEntryResolver extends ConfigFileHostEntryResolver {
-
     /**
      * The default instance that enforces the same permissions regime as {@code OpenSSH}
      */
@@ -93,5 +92,4 @@ public class DefaultConfigFileHostEntryResolver extends ConfigFileHostEntryResol
 
         return super.reloadHostConfigEntries(path, host, port, username);
     }
-
 }

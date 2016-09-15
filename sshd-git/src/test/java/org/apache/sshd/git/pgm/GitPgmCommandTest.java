@@ -20,8 +20,8 @@ package org.apache.sshd.git.pgm;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
@@ -60,7 +60,7 @@ public class GitPgmCommandTest extends BaseTestSupport {
         //
 
         try (SshServer sshd = setupTestServer()) {
-            sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
+            sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(new SftpSubsystemFactory()));
             sshd.setCommandFactory(new GitPgmCommandFactory(Utils.resolveRelativeRemotePath(targetParent, serverDir)));
             sshd.start();
 

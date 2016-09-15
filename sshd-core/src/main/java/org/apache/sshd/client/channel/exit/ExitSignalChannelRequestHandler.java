@@ -26,7 +26,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://tools.ietf.org/html/rfc4254#page-15">RFC4254 section 6.10</A>
+ * @see <A HREF="https://tools.ietf.org/html/rfc4254#section-6.10">RFC4254 section 6.10</A>
  */
 public class ExitSignalChannelRequestHandler extends AbstractChannelExitRequestHandler<String> {
     public static final String NAME = "exit-signal";

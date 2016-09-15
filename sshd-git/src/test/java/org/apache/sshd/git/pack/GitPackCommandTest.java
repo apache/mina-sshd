@@ -20,7 +20,7 @@ package org.apache.sshd.git.pack;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.Collections;
 
 import com.jcraft.jsch.JSch;
 
@@ -73,7 +73,7 @@ public class GitPackCommandTest extends BaseTestSupport {
 
         try (SshServer sshd = setupTestServer()) {
             Path serverRootDir = gitRootDir.resolve("server");
-            sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
+            sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(new SftpSubsystemFactory()));
             sshd.setCommandFactory(new GitPackCommandFactory(Utils.resolveRelativeRemotePath(targetParent, serverRootDir)));
             sshd.start();
 

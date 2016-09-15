@@ -24,7 +24,7 @@ import java.io.StreamCorruptedException;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -68,7 +68,7 @@ public class SpaceAvailableExtensionImplTest extends AbstractSftpClientTestSuppo
         final SpaceAvailableExtensionInfo expected = new SpaceAvailableExtensionInfo(store);
 
         List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();
-        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory() {
+        sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(new SftpSubsystemFactory() {
             @Override
             public Command create() {
                 return new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy()) {

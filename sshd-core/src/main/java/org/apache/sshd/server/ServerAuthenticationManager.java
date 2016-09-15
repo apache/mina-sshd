@@ -87,7 +87,7 @@ public interface ServerAuthenticationManager {
      *      will be used as the banner contents.
      *      </LI></P>
      * </UL>
-     * @see <A HREF="https://www.ietf.org/rfc/rfc4252.txt">RFC-4252 section 5.4</A>
+     * @see <A HREF="https://tools.ietf.org/html/rfc4252#section-5.4">RFC-4252 section 5.4</A>
      */
     String WELCOME_BANNER = "welcome-banner";
 

@@ -115,5 +115,4 @@ public class AgentForwardedChannel extends AbstractClientChannel {
             }
         }
     }
-
 }

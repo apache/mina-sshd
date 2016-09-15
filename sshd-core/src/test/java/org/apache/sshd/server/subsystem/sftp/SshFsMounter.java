@@ -25,7 +25,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -82,7 +81,7 @@ public final class SshFsMounter {
             int numComps = GenericUtils.length(comps);
             cmdName = GenericUtils.trimToEmpty(ValidateUtils.checkNotNullAndNotEmpty(comps[0], "No command name"));
             if (numComps > 1) {
-                args = new ArrayList<String>(numComps - 1);
+                args = new ArrayList<>(numComps - 1);
                 for (int index = 1; index < numComps; index++) {
                     String c = GenericUtils.trimToEmpty(comps[index]);
                     if (GenericUtils.isEmpty(c)) {
@@ -245,7 +244,7 @@ public final class SshFsMounter {
     public static void main(String[] args) throws Exception {
         int port = SshConfigFileReader.DEFAULT_PORT;
         boolean error = false;
-        Map<String, String> options = new LinkedHashMap<String, String>();
+        Map<String, String> options = new LinkedHashMap<>();
 
         int numArgs = GenericUtils.length(args);
         for (int i = 0; i < numArgs; i++) {
@@ -320,7 +319,7 @@ public final class SshFsMounter {
         sshd.setPasswordAuthenticator(AcceptAllPasswordAuthenticator.INSTANCE);
         sshd.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(MounterCommandFactory.INSTANCE).build());
-        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
+        sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(new SftpSubsystemFactory()));
         sshd.start();
 
         Thread.sleep(Long.MAX_VALUE);

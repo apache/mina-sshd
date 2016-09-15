@@ -30,6 +30,9 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
+ * Implements the &quot;copy-file&quot; extension
+ *
+ * @see <A HREF="http://tools.ietf.org/id/draft-ietf-secsh-filexfer-extensions-00.txt">DRFAT 00 - section 6</A>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class CopyFileExtensionImpl extends AbstractSftpClientExtension implements CopyFileExtension {
