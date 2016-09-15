@@ -54,7 +54,7 @@ public class ClientConnectionServiceFactory extends AbstractConnectionServiceFac
 
     @Override
     public Service create(Session session) throws IOException {
-        ValidateUtils.checkTrue(session instanceof AbstractClientSession, "Not a client sesssion: %s", session);
+        ValidateUtils.checkTrue(session instanceof AbstractClientSession, "Not a client session: %s", session);
         ClientConnectionService service = new ClientConnectionService((AbstractClientSession) session);
         service.addPortForwardingEventListener(getPortForwardingEventListenerProxy());
         return service;

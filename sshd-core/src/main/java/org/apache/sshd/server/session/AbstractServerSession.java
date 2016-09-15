@@ -268,7 +268,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         for (String keyType : provided) {
             if (!supported.contains(keyType)) {
                 if (log.isDebugEnabled()) {
-                    log.debug("resolveAvailableSignaturesProposal({})[{}] {} not in suppored list: {}",
+                    log.debug("resolveAvailableSignaturesProposal({})[{}] {} not in supported list: {}",
                               this, provided, keyType, supported);
                 }
                 continue;

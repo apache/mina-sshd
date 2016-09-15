@@ -156,7 +156,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
     }
 
     protected String globToRegex(String pattern) {
-        StringBuilder sb = new StringBuilder(ValidateUtils.checkNotNull(pattern, "No patern").length());
+        StringBuilder sb = new StringBuilder(ValidateUtils.checkNotNull(pattern, "No pattern").length());
         int inGroup = 0;
         int inClass = 0;
         int firstIndexInClass = -1;

@@ -102,7 +102,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
         if (options.contains(Option.TargetIsDirectory)) {
             Boolean status = IoUtils.checkFileExists(local, opts);
             if (status == null) {
-                throw new SshException("Target directory " + local.toString() + " is probaly inaccesible");
+                throw new SshException("Target directory " + local.toString() + " is probably inaccesible");
             }
 
             if (!status) {

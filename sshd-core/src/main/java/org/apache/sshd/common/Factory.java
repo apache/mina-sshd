@@ -20,7 +20,7 @@ package org.apache.sshd.common;
 
 
 /**
- * Fatory is a simple interface that is used to create other objects.
+ * Factory is a simple interface that is used to create other objects.
  *
  * @param <T> type of objets this factory will create
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

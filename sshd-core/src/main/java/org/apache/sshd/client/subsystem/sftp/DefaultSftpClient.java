@@ -340,7 +340,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
                         remainingTimeout -= sleepMillis;
                     }
                 } catch (InterruptedException e) {
-                    throw (IOException) new InterruptedIOException("Interruppted init()").initCause(e);
+                    throw (IOException) new InterruptedIOException("Interrupted init()").initCause(e);
                 }
             }
 

@@ -52,7 +52,7 @@ public class DSSPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<DSAP
     @Override
     public DSAPublicKey decodePublicKey(String keyType, InputStream keyData) throws IOException, GeneralSecurityException {
         if (!KeyPairProvider.SSH_DSS.equals(keyType)) { // just in case we were invoked directly
-            throw new InvalidKeySpecException("Unepected key type: " + keyType);
+            throw new InvalidKeySpecException("Unexpected key type: " + keyType);
         }
 
         BigInteger p = decodeBigInt(keyData);

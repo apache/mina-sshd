@@ -74,7 +74,7 @@ public abstract class AbstractSftpFileAttributeView extends AbstractLoggingBean 
         try (SftpClient client = fs.getClient()) {
             try {
                 if (log.isDebugEnabled()) {
-                    log.debug("writeRemotAttributes({})[{}]: {}", fs, p, attrs);
+                    log.debug("writeRemoteAttributes({})[{}]: {}", fs, p, attrs);
                 }
                 client.setStat(p.toString(), attrs);
             } catch (SftpException e) {

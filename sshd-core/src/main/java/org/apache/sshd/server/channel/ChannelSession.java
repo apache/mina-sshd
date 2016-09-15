@@ -547,7 +547,7 @@ public class ChannelSession extends AbstractServerChannel {
     protected RequestHandler.Result handleSubsystem(String request, Buffer buffer, boolean wantReply) throws IOException {
         String subsystem = buffer.getString();
         if (log.isDebugEnabled()) {
-            log.debug("handleSubsystem({})[want-reply={}] sybsystem={}",
+            log.debug("handleSubsystem({})[want-reply={}] subsystem={}",
                       this, wantReply, subsystem);
         }
 

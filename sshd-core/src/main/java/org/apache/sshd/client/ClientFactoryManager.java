@@ -49,7 +49,7 @@ public interface ClientFactoryManager
     /**
      * Key used to set the heartbeat interval in milliseconds (0 to disable = default)
      */
-    String HEARTBEAT_INTERVAL = "hearbeat-interval";
+    String HEARTBEAT_INTERVAL = "heartbeat-interval";
 
     /**
      * Default value for {@link #HEARTBEAT_INTERVAL} if none configured

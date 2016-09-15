@@ -60,13 +60,13 @@ public class SshConstantsTest extends BaseTestSupport {
 
         for (int cmd : knownAmbiguities) {
             assertEquals("Mismatched mnemonic for known ambiguity=" + cmd, Integer.toString(cmd), SshConstants.getCommandMessageName(cmd));
-            assertTrue("Known ambiguity not reported as such: " + cmd, SshConstants.isAmbigouosOpcode(cmd));
+            assertTrue("Known ambiguity not reported as such: " + cmd, SshConstants.isAmbiguousOpcode(cmd));
             assertTrue("Known ambiguity=" + cmd + " not listed: " + opcodes, opcodes.contains(cmd));
         }
 
         for (Integer cmd : opcodes) {
             assertEquals("Mismatched mnemonic for " + cmd, cmd.toString(), SshConstants.getCommandMessageName(cmd));
-            assertTrue("Opcode not detected as ambiguous: " + cmd, SshConstants.isAmbigouosOpcode(cmd));
+            assertTrue("Opcode not detected as ambiguous: " + cmd, SshConstants.isAmbiguousOpcode(cmd));
         }
     }
 }

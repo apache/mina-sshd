@@ -157,7 +157,7 @@ public class KnownHostHashValue {
 
         NamedFactory<Mac> factory =
                 ValidateUtils.checkNotNull(KnownHostDigest.fromName(components[1]),
-                        "Invalid hash pattern (unknwon digest): %s", pattern);
+                        "Invalid hash pattern (unknown digest): %s", pattern);
         value.setDigester(factory);
         value.setSaltValue(Base64.decodeString(components[2]));
         value.setDigestValue(Base64.decodeString(components[3]));

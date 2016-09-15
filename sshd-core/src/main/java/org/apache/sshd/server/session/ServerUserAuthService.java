@@ -232,7 +232,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                               session, e.getClass().getSimpleName(), currentAuth.getName(), e.getMessage());
                 }
                 if (log.isTraceEnabled()) {
-                    log.trace("process(" + session + ") current authentiaction=" + currentAuth.getName() + " failure details", e);
+                    log.trace("process(" + session + ") current authentication=" + currentAuth.getName() + " failure details", e);
                 }
             }
         }

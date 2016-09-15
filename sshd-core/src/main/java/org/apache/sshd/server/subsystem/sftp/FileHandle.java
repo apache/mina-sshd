@@ -200,7 +200,7 @@ public class FileHandle extends Handle {
         }
         if (lock == null) {
             throw new SftpException(SftpConstants.SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK,
-                    "No mtahcing lock found on range [" + offset + "-" + (offset + length));
+                    "No matching lock found on range [" + offset + "-" + (offset + length));
         }
 
         lock.release();

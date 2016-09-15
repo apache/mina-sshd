@@ -64,7 +64,7 @@ public class KeyExchangeTest extends BaseTestSupport {
             String actual = xformer.transform(cmd);
             assertSame("Mismatched results for cmd=" + cmd, expected, actual);
 
-            if (SshConstants.isAmbigouosOpcode(cmd)) {
+            if (SshConstants.isAmbiguousOpcode(cmd)) {
                 assertEquals("Unexpected ambiguous command resolution for " + cmd, cmd.toString(), SshConstants.getCommandMessageName(cmd));
             }
         }

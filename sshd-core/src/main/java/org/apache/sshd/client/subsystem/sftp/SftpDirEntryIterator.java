@@ -53,7 +53,7 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterato
     /**
      * @param client The {@link SftpClient} instance to use for the iteration
      * @param path The remote directory path
-     * @throws IOException If failed to gain access to the remote directory patj
+     * @throws IOException If failed to gain access to the remote directory path
      */
     public SftpDirEntryIterator(SftpClient client, String path) throws IOException {
         this(client, path, client.openDir(path), true);
@@ -72,7 +72,7 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterato
      * @param path A hint as to the remote directory path - used only for logging
      * @param dirHandle The directory {@link Handle} to use for listing the entries
      * @param closeOnFinished If {@code true} then close the directory handle when
-     * all entries have been exahusted
+     * all entries have been exhausted
      */
     public SftpDirEntryIterator(SftpClient client, String path, Handle dirHandle, boolean closeOnFinished) {
         this.client = Objects.requireNonNull(client, "No SFTP client instance");

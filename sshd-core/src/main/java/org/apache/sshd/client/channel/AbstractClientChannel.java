@@ -191,8 +191,8 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                         // Close inverted streams after
                         // If the inverted stream is closed before, there's a small time window
                         // in which we have:
-                        //    ChannePipedInputStream#closed = true
-                        //    ChannePipedInputStream#writerClosed = false
+                        //    ChannelPipedInputStream#closed = true
+                        //    ChannelPipedInputStream#writerClosed = false
                         // which leads to an IOException("Pipe closed") when reading.
                         IoUtils.closeQuietly(in, out, err);
                         IoUtils.closeQuietly(invertedIn, invertedOut, invertedErr);

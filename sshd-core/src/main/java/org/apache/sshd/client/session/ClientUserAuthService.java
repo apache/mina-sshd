@@ -84,7 +84,7 @@ public class ClientUserAuthService
             }
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("ClientUserAuthService({}) use configured preferrences: {}", s, prefs);
+                log.debug("ClientUserAuthService({}) use configured preferences: {}", s, prefs);
             }
 
             for (String pref : GenericUtils.split(prefs, ',')) {

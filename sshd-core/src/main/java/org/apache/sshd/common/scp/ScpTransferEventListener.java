@@ -50,7 +50,7 @@ public interface ScpTransferEventListener extends SshdEventListener {
     /**
      * @param op     The {@link FileOperation}
      * @param file   The <U>local</U> referenced file {@link Path}
-     * @param length Size (in bytes) of transfered data
+     * @param length Size (in bytes) of transferred data
      * @param perms  A {@link Set} of {@link PosixFilePermission}s to be applied
      *               once transfer is complete
      * @throws IOException If failed to handle the event
@@ -62,7 +62,7 @@ public interface ScpTransferEventListener extends SshdEventListener {
     /**
      * @param op     The {@link FileOperation}
      * @param file   The <U>local</U> referenced file {@link Path}
-     * @param length Size (in bytes) of transfered data
+     * @param length Size (in bytes) of transferred data
      * @param perms  A {@link Set} of {@link PosixFilePermission}s to be applied
      *               once transfer is complete
      * @param thrown The result of the operation attempt - if {@code null} then

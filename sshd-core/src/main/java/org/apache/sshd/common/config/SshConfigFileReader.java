@@ -358,7 +358,7 @@ public final class SshConfigFileReader {
      * @param v Checks if the value is &quot;yes&quot;, &quot;y&quot;
      *          or &quot;on&quot; or &quot;true&quot;.
      * @return The result - <B>Note:</B> {@code null}/empty values are
-     * intrepreted as {@code false}
+     * interpreted as {@code false}
      */
     public static boolean parseBooleanValue(String v) {
         return "yes".equalsIgnoreCase(v)

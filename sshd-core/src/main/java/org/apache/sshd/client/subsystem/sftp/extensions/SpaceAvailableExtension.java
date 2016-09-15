@@ -24,7 +24,7 @@ import java.io.IOException;
 import org.apache.sshd.common.subsystem.sftp.extensions.SpaceAvailableExtensionInfo;
 
 /**
- * Implements the &quot;space-availble&quot; extension
+ * Implements the &quot;space-available&quot; extension
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09 section 9.2</A>

@@ -76,7 +76,7 @@ public class KnownHostsServerKeyVerifier
     public static final String KNOWN_HOSTS_FILE_OPTION = "UserKnownHostsFile";
 
     /**
-     * Represents an entry in the internal verifier's cach
+     * Represents an entry in the internal verifier's cache
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     public static class HostEntryPair {
@@ -325,7 +325,7 @@ public class KnownHostsServerKeyVerifier
 
         if (matchLine.equals(newLine)) {
             if (log.isDebugEnabled()) {
-                log.debug("updateModifiedServerKey({})[{}] unmodified upodated lline for {}",
+                log.debug("updateModifiedServerKey({})[{}] unmodified updated line for {}",
                           clientSession, remoteAddress, matchLine);
             }
             return;

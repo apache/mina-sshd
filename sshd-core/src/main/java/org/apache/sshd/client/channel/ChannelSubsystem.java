@@ -106,7 +106,7 @@ public class ChannelSubsystem extends ChannelSession {
         String systemName = getSubsystem();
         Date pending = removePendingRequest(Channel.CHANNEL_SUBSYSTEM);
         if (pending != null) {
-            log.warn("handleFailure({}) susbsystem={}, pending since={}", this, systemName, pending);
+            log.warn("handleFailure({}) subsystem={}, pending since={}", this, systemName, pending);
             close(true);
         }
     }

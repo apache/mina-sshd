@@ -121,8 +121,8 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
                    + " failed to allocate internet-domain X11 display socket in range {}-{}",
                      authenticationProtocol, authenticationCookie, screen,
                      minDisplayNumber, maxDisplayNumber);
-            Collection<SocketAddress> boundAddressess = acceptor.getBoundAddresses();
-            if (GenericUtils.isEmpty(boundAddressess)) {
+            Collection<SocketAddress> boundAddresses = acceptor.getBoundAddresses();
+            if (GenericUtils.isEmpty(boundAddresses)) {
                 if (log.isDebugEnabled()) {
                     log.debug("createDisplay(auth={}, cookie={}, screen={}) closing - no more bound addresses",
                               authenticationProtocol, authenticationCookie, screen);
@@ -131,7 +131,7 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
             } else {
                 if (log.isDebugEnabled()) {
                     log.debug("createDisplay(auth={}, cookie={}, screen={}) closing - remaining bound addresses: {}",
-                              authenticationProtocol, authenticationCookie, screen, boundAddressess);
+                              authenticationProtocol, authenticationCookie, screen, boundAddresses);
                 }
             }
 

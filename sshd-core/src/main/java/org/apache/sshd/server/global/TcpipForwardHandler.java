@@ -56,7 +56,7 @@ public class TcpipForwardHandler extends AbstractConnectionServiceRequestHandler
         String address = buffer.getString();
         int port = buffer.getInt();
         SshdSocketAddress socketAddress = new SshdSocketAddress(address, port);
-        TcpipForwarder forwarder = ValidateUtils.checkNotNull(connectionService.getTcpipForwarder(), "No TCP/IP forwader");
+        TcpipForwarder forwarder = ValidateUtils.checkNotNull(connectionService.getTcpipForwarder(), "No TCP/IP forwarder");
         SshdSocketAddress bound = forwarder.localPortForwardingRequested(socketAddress);
         if (log.isDebugEnabled()) {
             log.debug("process({})[{}][want-reply-{}] {} => {}",

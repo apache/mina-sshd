@@ -139,7 +139,7 @@ public final class SshConstants {
      * @return {@code true} if this value is used by several <U>different</U> messages
      * @see #getAmbiguousOpcodes()
      */
-    public static boolean isAmbigouosOpcode(int cmd) {
+    public static boolean isAmbiguousOpcode(int cmd) {
         return getAmbiguousOpcodes().contains(cmd);
     }
 
@@ -162,7 +162,7 @@ public final class SshConstants {
                         }
 
                         try {
-                            return !isAmbigouosOpcode(f.getByte(null));
+                            return !isAmbiguousOpcode(f.getByte(null));
                         } catch (Exception e) {
                             return false;
                         }
