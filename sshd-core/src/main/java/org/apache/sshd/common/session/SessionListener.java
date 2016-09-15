@@ -18,17 +18,17 @@
  */
 package org.apache.sshd.common.session;
 
-import java.util.EventListener;
 import java.util.Map;
 
 import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.util.SshdEventListener;
 
 /**
  * Represents an interface receiving session events.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SessionListener extends EventListener {
+public interface SessionListener extends SshdEventListener {
     enum Event {
         KeyEstablished, Authenticated, KexCompleted
     }

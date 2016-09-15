@@ -23,9 +23,9 @@ import java.io.IOException;
 import java.nio.file.CopyOption;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.EventListener;
 import java.util.Map;
 
+import org.apache.sshd.common.util.SshdEventListener;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -35,7 +35,7 @@ import org.apache.sshd.server.session.ServerSession;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SftpEventListener extends EventListener {
+public interface SftpEventListener extends SshdEventListener {
     /**
      * Called when the SFTP protocol has been initialized
      *

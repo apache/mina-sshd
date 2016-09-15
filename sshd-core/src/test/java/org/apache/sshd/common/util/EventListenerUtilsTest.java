@@ -111,7 +111,7 @@ public class EventListenerUtilsTest extends BaseTestSupport {
         assertEquals("Mismatched post p2-remove size", 0, s.size());
     }
 
-    interface ProxyListener extends EventListener {
+    interface ProxyListener extends SshdEventListener {
         void callMeWithString(String s);
 
         void callMeWithNumber(Number n);

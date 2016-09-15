@@ -19,7 +19,7 @@
 
 package org.apache.sshd.common.channel;
 
-import java.util.EventListener;
+import org.apache.sshd.common.util.SshdEventListener;
 
 /**
  * Provides a simple listener for client / server channels being established
@@ -29,7 +29,7 @@ import java.util.EventListener;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ChannelListener extends EventListener {
+public interface ChannelListener extends SshdEventListener {
     ChannelListener EMPTY = new ChannelListener() {
         @Override
         public String toString() {

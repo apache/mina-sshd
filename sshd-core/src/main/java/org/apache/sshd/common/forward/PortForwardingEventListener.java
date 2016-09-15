@@ -20,15 +20,15 @@
 package org.apache.sshd.common.forward;
 
 import java.io.IOException;
-import java.util.EventListener;
 
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.SshdEventListener;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface PortForwardingEventListener extends EventListener {
+public interface PortForwardingEventListener extends SshdEventListener {
     PortForwardingEventListener EMPTY = new PortForwardingEventListener() {
         @Override
         public String toString() {

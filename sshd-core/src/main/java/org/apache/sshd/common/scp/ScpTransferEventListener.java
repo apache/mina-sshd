@@ -22,15 +22,16 @@ package org.apache.sshd.common.scp;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
-import java.util.EventListener;
 import java.util.Set;
+
+import org.apache.sshd.common.util.SshdEventListener;
 
 /**
  * Can be registered in order to receive events about SCP transfers
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ScpTransferEventListener extends EventListener {
+public interface ScpTransferEventListener extends SshdEventListener {
     enum FileOperation {
         SEND,
         RECEIVE
