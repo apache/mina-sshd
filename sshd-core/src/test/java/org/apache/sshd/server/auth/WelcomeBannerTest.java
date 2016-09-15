@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.server.auth;
 
+import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -119,6 +120,17 @@ public class WelcomeBannerTest extends BaseTestSupport {
     @Test
     public void testURIStringBanner() throws Exception {
         testFileContentBanner(path -> Objects.toString(path.toUri()));
+    }
+
+    @Test
+    public void testURLBanner() throws Exception {
+        testFileContentBanner(path -> {
+                try {
+                    return path.toUri().toURL();
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException(e);
+                }
+        });
     }
 
     @Test

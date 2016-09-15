@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.util.io;
 
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.EOFException;
 import java.io.File;
@@ -458,5 +459,12 @@ public final class IoUtils {
         }
 
         return sb.toString();
+    }
+
+    public static byte[] toByteArray(InputStream inStream) throws IOException {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream(DEFAULT_COPY_SIZE)) {
+            copy(inStream, baos);
+            return baos.toByteArray();
+        }
     }
 }

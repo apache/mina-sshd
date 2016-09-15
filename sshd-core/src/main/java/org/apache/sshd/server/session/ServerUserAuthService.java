@@ -20,15 +20,17 @@ package org.apache.sshd.server.session;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,9 +46,11 @@ import org.apache.sshd.common.config.keys.KeyRandomArt;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.ServerAuthenticationManager;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.auth.UserAuth;
@@ -420,7 +424,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 }
             }
 
-            if (!message.startsWith("file:/")) {
+            if (!message.contains("://")) {
                 return message;
             }
 
@@ -428,12 +432,12 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 bannerValue = new URI(message);
             } catch (URISyntaxException e) {
                 log.error("resolveWelcomeBanner({}) bad path URI {}: {}", session, message, e.getMessage());
-                throw new IOException(e);
+                throw new MalformedURLException(e.getClass().getSimpleName() + " - bad URI (" + message + "): " + e.getMessage());
             }
-        }
 
-        if (bannerValue instanceof URI) {
-            bannerValue = Paths.get((URI) bannerValue);
+            if (message.startsWith("file:/")) {
+                bannerValue = Paths.get((URI) bannerValue);
+            }
         }
 
         if (bannerValue instanceof File) {
@@ -448,13 +452,26 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 }
                 return null;
             }
+            bannerValue = path.toUri();
+        }
 
+        if (bannerValue instanceof URI) {
+            bannerValue = ((URI) bannerValue).toURL();
+        }
+
+        if (bannerValue instanceof URL) {
             Charset cs = PropertyResolverUtils.getCharset(session, ServerAuthenticationManager.WELCOME_BANNER_CHARSET, Charset.defaultCharset());
-            Collection<String> lines = Files.readAllLines((Path) bannerValue, cs);
-            return GenericUtils.join(lines, '\n');
+            return loadWelcomeBanner(session, (URL) bannerValue, cs);
         }
 
         return bannerValue.toString();
+    }
+
+    protected String loadWelcomeBanner(ServerSession session, URL url, Charset cs) throws IOException {
+        try (InputStream stream = url.openStream()) {
+            byte[] bytes = IoUtils.toByteArray(stream);
+            return NumberUtils.isEmpty(bytes) ? "" : new String(bytes, cs);
+        }
     }
 
     public ServerFactoryManager getFactoryManager() {
