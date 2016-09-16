@@ -23,6 +23,7 @@ import java.security.KeyPair;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.function.Supplier;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
@@ -209,7 +210,9 @@ public interface KeyIdentityProvider {
      * @return The wrapping iterable
      */
     static Iterable<KeyPair> iterableOf(Collection<? extends KeyIdentityProvider> providers) {
-        return GenericUtils.multiIterableSuppliers(GenericUtils.wrapIterable(providers, p -> p::loadKeys));
+        Iterable<Supplier<Iterable<KeyPair>>> keysSuppliers =
+                GenericUtils.<KeyIdentityProvider, Supplier<Iterable<KeyPair>>>wrapIterable(providers, p -> p::loadKeys);
+        return GenericUtils.multiIterableSuppliers(keysSuppliers);
     }
 
     /**

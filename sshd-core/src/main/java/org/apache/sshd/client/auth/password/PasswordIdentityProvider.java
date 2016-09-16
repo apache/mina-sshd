@@ -22,6 +22,7 @@ package org.apache.sshd.client.auth.password;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.function.Supplier;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
@@ -205,7 +206,9 @@ public interface PasswordIdentityProvider {
      * @return The wrapping iterable
      */
     static Iterable<String> iterableOf(Collection<? extends PasswordIdentityProvider> providers) {
-        return GenericUtils.multiIterableSuppliers(GenericUtils.wrapIterable(providers, p -> p::loadPasswords));
+        Iterable<Supplier<Iterable<String>>> passwordSuppliers =
+                GenericUtils.<PasswordIdentityProvider, Supplier<Iterable<String>>>wrapIterable(providers, p -> p::loadPasswords);
+        return GenericUtils.multiIterableSuppliers(passwordSuppliers);
     }
 
     /**

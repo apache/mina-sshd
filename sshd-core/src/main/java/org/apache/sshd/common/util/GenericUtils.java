@@ -696,7 +696,7 @@ public final class GenericUtils {
      * @param providers The providers - ignored if {@code null} (i.e., return an empty iterable instance)
      * @return The wrapping instance
      */
-    public static <T> Iterable<T> multiIterableSuppliers(final Iterable<? extends Supplier<? extends Iterable<? extends T>>> providers) {
+    public static <T> Iterable<T> multiIterableSuppliers(Iterable<? extends Supplier<? extends Iterable<? extends T>>> providers) {
         return (providers == null) ? Collections.emptyList() : () -> new Iterator<T>() {
             private final Iterator<? extends Supplier<? extends Iterable<? extends T>>> iter = iteratorOf(providers);
             private Iterator<? extends T> current = nextIterator();
