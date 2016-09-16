@@ -44,6 +44,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -107,6 +108,71 @@ public abstract class Buffer implements Readable {
     }
 
     public abstract void clear();
+
+    public boolean isValidMessageStructure(Class<?>... fieldTypes) {
+        return isValidMessageStructure(GenericUtils.isEmpty(fieldTypes) ? Collections.emptyList() : Arrays.asList(fieldTypes));
+    }
+
+    public boolean isValidMessageStructure(Collection<Class<?>> fieldTypes) {
+        if (GenericUtils.isEmpty(fieldTypes)) {
+            return true;
+        }
+
+        int remainLen = available();
+        int readOffset = 0;
+        for (Class<?> ft : fieldTypes) {
+            if ((ft == boolean.class) || (ft == Boolean.class)
+                    || (ft == byte.class) || (ft == Byte.class)) {
+                if (remainLen < Byte.BYTES) {
+                    return false;
+                }
+
+                remainLen -= Byte.BYTES;
+                readOffset += Byte.BYTES;
+            } else if ((ft == short.class) || (ft == Short.class)) {
+                if (remainLen < Short.BYTES) {
+                    return false;
+                }
+
+                remainLen -= Short.BYTES;
+                readOffset += Short.BYTES;
+            } else if ((ft == int.class) || (ft == Integer.class)) {
+                if (remainLen < Integer.BYTES) {
+                    return false;
+                }
+
+                remainLen -= Integer.BYTES;
+                readOffset += Integer.BYTES;
+            } else if ((ft == long.class) || (ft == Long.class)) {
+                if (remainLen < Long.BYTES) {
+                    return false;
+                }
+
+                remainLen -= Long.BYTES;
+                readOffset += Long.BYTES;
+            } else if ((ft == byte[].class) || (ft == String.class)) {
+                if (remainLen < Integer.BYTES) {
+                    return false;
+                }
+
+                copyRawBytes(readOffset, workBuf, 0, Integer.BYTES);
+                remainLen -= Integer.BYTES;
+                readOffset += Integer.BYTES;
+
+                long length = BufferUtils.getUInt(workBuf, 0, Integer.BYTES);
+                if (length > remainLen) {
+                    return false;
+                }
+
+                remainLen -= (int) length;
+                readOffset += (int) length;
+            }
+        }
+
+        return true;
+    }
+
+    protected abstract void copyRawBytes(int offset, byte[] buf, int pos, int len);
 
     public String toHex() {
         return BufferUtils.toHex(array(), rpos(), available());

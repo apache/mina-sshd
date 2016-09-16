@@ -606,6 +606,14 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     protected void handleIgnore(Buffer buffer) throws Exception {
+        // malformed ignore message - ignore (even though we don't have to, but we can be tolerant in this case)
+        if (!buffer.isValidMessageStructure(byte[].class)) {
+            if (log.isTraceEnabled()) {
+                log.trace("handleDebug({}) ignore malformed message", this);
+            }
+            return;
+        }
+
         ReservedSessionMessagesHandler handler = resolveReservedSessionMessagesHandler();
         handler.handleIgnoreMessage(this, buffer);
     }
@@ -626,7 +634,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     @Override
     public IoWriteFuture sendDebugMessage(boolean display, Object msg, String lang) throws IOException {
-        String text = Objects.toString(msg);
+        String text = Objects.toString(msg, "");
         lang = (lang == null) ? "" : lang;
 
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_DEBUG,
@@ -638,6 +646,14 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     protected void handleDebug(Buffer buffer) throws Exception {
+        // malformed ignore message - ignore (even though we don't have to, but we can be tolerant in this case)
+        if (!buffer.isValidMessageStructure(boolean.class, String.class, String.class)) {
+            if (log.isTraceEnabled()) {
+                log.trace("handleDebug({}) ignore malformed message", this);
+            }
+            return;
+        }
+
         ReservedSessionMessagesHandler handler = resolveReservedSessionMessagesHandler();
         handler.handleDebugMessage(this, buffer);
     }

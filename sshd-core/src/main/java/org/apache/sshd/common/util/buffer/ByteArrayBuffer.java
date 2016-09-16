@@ -168,8 +168,13 @@ public class ByteArrayBuffer extends Buffer {
     @Override
     public void getRawBytes(byte[] buf, int off, int len) {
         ensureAvailable(len);
-        System.arraycopy(data, rpos, buf, off, len);
+        copyRawBytes(0, buf, off, len);
         rpos += len;
+    }
+
+    @Override
+    protected void copyRawBytes(int offset, byte[] buf, int pos, int len) {
+        System.arraycopy(data, rpos + offset, buf, pos, len);
     }
 
     @Override

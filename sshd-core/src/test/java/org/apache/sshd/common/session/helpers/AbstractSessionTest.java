@@ -39,6 +39,7 @@ import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -190,6 +191,82 @@ public class AbstractSessionTest extends BaseTestSupport {
         });
         session.close();
         assertEquals("Close listener not called", 1, closeCount.get());
+    }
+
+    @Test   // see SSHD-699
+    public void testMalformedIgnoreMessageBadLength() throws Exception {
+        session.setReservedSessionMessagesHandler(new ReservedSessionMessagesHandler() {
+            @Override
+            public void handleIgnoreMessage(Session session, Buffer buffer) throws Exception {
+                fail("Unexpected invocation: available=" + buffer.available());
+            }
+        });
+
+        Buffer buffer = new ByteArrayBuffer(Long.SIZE);
+        for (int index = 0; index < Integer.BYTES; index++) {
+            buffer.putByte((byte) index);
+            session.handleIgnore(buffer);
+        }
+    }
+
+    @Test   // see SSHD-699
+    public void testMalformedIgnoreMessageCorruptedData() throws Exception {
+        session.setReservedSessionMessagesHandler(new ReservedSessionMessagesHandler() {
+            @Override
+            public void handleIgnoreMessage(Session session, Buffer buffer) throws Exception {
+                fail("Unexpected invocation: available=" + buffer.available());
+            }
+        });
+
+        Buffer buffer = new ByteArrayBuffer(Long.SIZE + Byte.MAX_VALUE);
+        buffer.putInt(Byte.MAX_VALUE + 1);  // bad message length
+        for (int index = 0; index < Byte.MAX_VALUE; index++) {
+            buffer.putByte((byte) index);
+            session.handleIgnore(buffer);
+        }
+    }
+
+    @Test
+    public void testMalformedDebugMessageContent() throws Exception {
+        session.setReservedSessionMessagesHandler(new ReservedSessionMessagesHandler() {
+            @Override
+            public void handleDebugMessage(Session session, Buffer buffer) throws Exception {
+                fail("Unexpected invocation: available=" + buffer.available());
+            }
+        });
+
+        Buffer buffer = new ByteArrayBuffer(Long.SIZE + Byte.MAX_VALUE);
+        session.handleDebug(buffer);    // no boolean field
+
+        buffer.putBoolean(true);
+        session.handleDebug(buffer);    // no message field
+
+        buffer.putInt(Byte.MAX_VALUE + 1);  // bad message field length
+        for (int index = 0; index < Byte.MAX_VALUE; index++) {
+            buffer.putByte((byte) index);
+            session.handleDebug(buffer);
+        }
+    }
+
+    @Test
+    public void testMalformedDebugMessageLanguage() throws Exception {
+        session.setReservedSessionMessagesHandler(new ReservedSessionMessagesHandler() {
+            @Override
+            public void handleDebugMessage(Session session, Buffer buffer) throws Exception {
+                fail("Unexpected invocation: available=" + buffer.available());
+            }
+        });
+
+        Buffer buffer = new ByteArrayBuffer(Long.SIZE);
+        buffer.putBoolean(true);
+        buffer.putString(getCurrentTestName());
+        session.handleDebug(buffer);    // no language tag
+
+        buffer.putInt(Byte.SIZE + 1);   // bad language tag length
+        for (int index = 0; index < Byte.SIZE; index++) {
+            buffer.putByte((byte) index);
+            session.handleDebug(buffer);
+        }
     }
 
     private static String readIdentification(MySession session, Buffer buf) {
