@@ -37,7 +37,9 @@ public interface ReservedSessionMessagesHandler extends SshdEventListener {
      * @throws Exception If failed to handle the message
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-11.2">RFC 4253 - section 11.2</A>
      */
-    void handleIgnoreMessage(Session session, Buffer buffer) throws Exception;
+    default void handleIgnoreMessage(Session session, Buffer buffer) throws Exception {
+        // ignored
+    }
 
     /**
      * Invoked when an {@code SSH_MSG_DEBUG} packet is received
@@ -47,5 +49,7 @@ public interface ReservedSessionMessagesHandler extends SshdEventListener {
      * @throws Exception If failed to handle the message
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-11.3">RFC 4253 - section 11.3</A>
      */
-    void handleDebugMessage(Session session, Buffer buffer) throws Exception;
+    default void handleDebugMessage(Session session, Buffer buffer) throws Exception {
+        // ignored
+    }
 }
