@@ -66,4 +66,15 @@ public class ReservedSessionMessagesHandlerAdapter
                       session, display, lang, msg);
         }
     }
+
+    @Override
+    public void handleUnimplementedMessage(Session session, Buffer buffer) throws Exception {
+        handleUnimplementedMessage(session, buffer, buffer.getUInt());
+    }
+
+    public void handleUnimplementedMessage(Session session, Buffer buffer, long seqNo) throws Exception {
+        if (log.isDebugEnabled()) {
+            log.debug("handleUnimplementedMessage({}) SSH_MSG_UNIMPLEMENTED - seqNo={}", session, seqNo);
+        }
+    }
 }

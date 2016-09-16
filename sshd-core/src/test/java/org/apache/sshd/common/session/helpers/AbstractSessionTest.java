@@ -194,6 +194,22 @@ public class AbstractSessionTest extends BaseTestSupport {
     }
 
     @Test   // see SSHD-699
+    public void testMalformedUnimplementedMessage() throws Exception {
+        session.setReservedSessionMessagesHandler(new ReservedSessionMessagesHandler() {
+            @Override
+            public void handleUnimplementedMessage(Session session, Buffer buffer) throws Exception {
+                fail("Unexpected invocation: available=" + buffer.available());
+            }
+        });
+
+        Buffer buffer = new ByteArrayBuffer(Long.SIZE);
+        for (int index = 0; index < (Integer.BYTES - 1); index++) {
+            buffer.putByte((byte) index);
+            session.handleUnimplemented(buffer);
+        }
+    }
+
+    @Test   // see SSHD-699
     public void testMalformedIgnoreMessageBadLength() throws Exception {
         session.setReservedSessionMessagesHandler(new ReservedSessionMessagesHandler() {
             @Override
@@ -203,7 +219,7 @@ public class AbstractSessionTest extends BaseTestSupport {
         });
 
         Buffer buffer = new ByteArrayBuffer(Long.SIZE);
-        for (int index = 0; index < Integer.BYTES; index++) {
+        for (int index = 0; index < (Integer.BYTES - 1); index++) {
             buffer.putByte((byte) index);
             session.handleIgnore(buffer);
         }

@@ -52,4 +52,16 @@ public interface ReservedSessionMessagesHandler extends SshdEventListener {
     default void handleDebugMessage(Session session, Buffer buffer) throws Exception {
         // ignored
     }
+
+    /**
+     * Invoked when an {@code SSH_MSG_UNIMPLEMENTED} packet is received
+     *
+     * @param session The {@code Session} through which the message was received
+     * @param buffer The {@code Buffer} containing the data
+     * @throws Exception If failed to handle the message
+     * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-11.4">RFC 4253 - section 11.4</A>
+     */
+    default void handleUnimplementedMessage(Session session, Buffer buffer) throws Exception {
+        // ignored
+    }
 }

@@ -609,7 +609,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         // malformed ignore message - ignore (even though we don't have to, but we can be tolerant in this case)
         if (!buffer.isValidMessageStructure(byte[].class)) {
             if (log.isTraceEnabled()) {
-                log.trace("handleDebug({}) ignore malformed message", this);
+                log.trace("handleIgnore({}) ignore malformed message", this);
             }
             return;
         }
@@ -619,17 +619,15 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     protected void handleUnimplemented(Buffer buffer) throws Exception {
-        handleUnimplemented(buffer.getInt(), buffer);
-    }
-
-    protected void handleUnimplemented(int seqNo, Buffer buffer) throws Exception {
-        if (log.isDebugEnabled()) {
-            log.debug("handleUnimplented({}) SSH_MSG_UNIMPLEMENTED #{}", this, seqNo);
+        if (!buffer.isValidMessageStructure(int.class)) {
+            if (log.isTraceEnabled()) {
+                log.trace("handleUnimplemented({}) ignore malformed message", this);
+            }
+            return;
         }
 
-        if (log.isTraceEnabled()) {
-            log.trace("handleUnimplemented({}) data: {}", this, buffer.toHex());
-        }
+        ReservedSessionMessagesHandler handler = resolveReservedSessionMessagesHandler();
+        handler.handleUnimplementedMessage(this, buffer);
     }
 
     @Override
