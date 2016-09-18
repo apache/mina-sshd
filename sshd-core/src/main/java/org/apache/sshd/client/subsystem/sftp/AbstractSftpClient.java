@@ -19,8 +19,6 @@
 package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -1120,48 +1118,5 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         buffer.putLong(offset);
         buffer.putLong(length);
         checkCommandStatus(SftpConstants.SSH_FXP_UNBLOCK, buffer);
-    }
-
-    @Override
-    public Iterable<DirEntry> readDir(final String path) throws IOException {
-        if (!isOpen()) {
-            throw new IOException("readDir(" + path + ") client is closed");
-        }
-        return new SftpIterableDirEntry(this, path);
-    }
-
-    @Override
-    public Iterable<DirEntry> listDir(Handle handle) throws IOException {
-        if (!isOpen()) {
-            throw new IOException("listDir(" + handle + ") client is closed");
-        }
-
-        return new StfpIterableDirHandle(this, handle);
-    }
-
-    @Override
-    public InputStream read(final String path, final int bufferSize, final Collection<OpenMode> mode) throws IOException {
-        if (bufferSize < MIN_READ_BUFFER_SIZE) {
-            throw new IllegalArgumentException("Insufficient read buffer size: " + bufferSize + ", min.=" + MIN_READ_BUFFER_SIZE);
-        }
-
-        if (!isOpen()) {
-            throw new IOException("read(" + path + ")[" + mode + "] size=" + bufferSize + ": client is closed");
-        }
-
-        return new SftpInputStreamWithChannel(this, bufferSize, path, mode);
-    }
-
-    @Override
-    public OutputStream write(final String path, final int bufferSize, final Collection<OpenMode> mode) throws IOException {
-        if (bufferSize < MIN_WRITE_BUFFER_SIZE) {
-            throw new IllegalArgumentException("Insufficient write buffer size: " + bufferSize + ", min.=" + MIN_WRITE_BUFFER_SIZE);
-        }
-
-        if (!isOpen()) {
-            throw new IOException("write(" + path + ")[" + mode + "] size=" + bufferSize + ": client is closed");
-        }
-
-        return new SftpOutputStreamWithChannel(this, bufferSize, path, mode);
     }
 }

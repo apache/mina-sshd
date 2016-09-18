@@ -25,7 +25,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.nio.channels.FileChannel;
-import java.nio.channels.SeekableByteChannel;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.AccessMode;
 import java.nio.file.CopyOption;
@@ -42,7 +41,6 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.ProviderMismatchException;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributeView;
@@ -400,46 +398,18 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     }
 
     @Override
-    public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+    public FileChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
         return newFileChannel(path, options, attrs);
     }
 
     @Override
     public FileChannel newFileChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
-        Collection<SftpClient.OpenMode> modes = EnumSet.noneOf(SftpClient.OpenMode.class);
-        for (OpenOption option : options) {
-            if (option == StandardOpenOption.READ) {
-                modes.add(SftpClient.OpenMode.Read);
-            } else if (option == StandardOpenOption.APPEND) {
-                modes.add(SftpClient.OpenMode.Append);
-            } else if (option == StandardOpenOption.CREATE) {
-                modes.add(SftpClient.OpenMode.Create);
-            } else if (option == StandardOpenOption.TRUNCATE_EXISTING) {
-                modes.add(SftpClient.OpenMode.Truncate);
-            } else if (option == StandardOpenOption.WRITE) {
-                modes.add(SftpClient.OpenMode.Write);
-            } else if (option == StandardOpenOption.CREATE_NEW) {
-                modes.add(SftpClient.OpenMode.Create);
-                modes.add(SftpClient.OpenMode.Exclusive);
-            } else if (option == StandardOpenOption.SPARSE) {
-                /*
-                 * As per the Javadoc:
-                 *
-                 *      The option is ignored when the file system does not
-                 *  support the creation of sparse files
-                 */
-                //noinspection UnnecessaryContinue
-                continue;
-            } else {
-                throw new IllegalArgumentException("newFileChannel(" + path + ") unsupported open option: " + option);
-            }
-        }
+        Collection<SftpClient.OpenMode> modes = SftpClient.OpenMode.fromOpenOptions(options);
         if (modes.isEmpty()) {
-            modes.add(SftpClient.OpenMode.Read);
-            modes.add(SftpClient.OpenMode.Write);
+            modes = EnumSet.of(SftpClient.OpenMode.Read, SftpClient.OpenMode.Write);
         }
-        // TODO: attrs
-        return new SftpFileChannel(toSftpPath(path), modes);
+        // TODO: process file attributes
+        return new SftpFileSystemChannel(toSftpPath(path), modes);
     }
 
     @Override

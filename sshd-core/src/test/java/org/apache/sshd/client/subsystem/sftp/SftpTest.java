@@ -27,6 +27,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
 import java.nio.file.FileSystem;
@@ -34,9 +36,11 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -51,6 +55,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
+
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
@@ -1249,6 +1254,41 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         }
 
         assertNotNull("No symlink signalled", linkDataHolder.getAndSet(null));
+    }
+
+    @Test   // see SSHD-697
+    public void testFileChannel() throws IOException {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclFile = lclSftp.resolve(getCurrentTestName() + ".txt");
+        Files.deleteIfExists(lclFile);
+        byte[] expected = (getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")").getBytes(StandardCharsets.UTF_8);
+
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(5L, TimeUnit.SECONDS);
+
+            try (SftpClient sftp = session.createSftpClient()) {
+                Path parentPath = targetPath.getParent();
+                String remFilePath = Utils.resolveRelativeRemotePath(parentPath, lclFile);
+
+                try (FileChannel fc = sftp.openRemotePathChannel(remFilePath, EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
+                    int writeLen = fc.write(ByteBuffer.wrap(expected));
+                    assertEquals("Mismatched written length", expected.length, writeLen);
+
+                    FileChannel fcPos = fc.position(0L);
+                    assertSame("Mismatched positioned file channel", fc, fcPos);
+
+                    byte[] actual = new byte[expected.length];
+                    int readLen = fc.read(ByteBuffer.wrap(actual));
+                    assertEquals("Mismatched read len", writeLen, readLen);
+                    assertArrayEquals("Mismatched read data", expected, actual);
+                }
+            }
+        }
+
+        byte[] actual = Files.readAllBytes(lclFile);
+        assertArrayEquals("Mismatched persisted data", expected, actual);
     }
 
     protected String readFile(String path) throws Exception {

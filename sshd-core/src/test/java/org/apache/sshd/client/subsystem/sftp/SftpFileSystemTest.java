@@ -20,6 +20,7 @@ package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
@@ -34,6 +35,7 @@ import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.FileAttributeView;
@@ -42,8 +44,11 @@ import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.attribute.UserPrincipalNotFoundException;
+import java.nio.file.spi.FileSystemProvider;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -209,6 +214,37 @@ public class SftpFileSystemTest extends BaseTestSupport {
             Path dir = assertHierarchyTargetFolderExists(fs.getPath("test/foo"));
             outputDebugMessage("Created %s", dir);
         }
+    }
+
+    @Test   // see SSHD-697
+    public void testFileChannel() throws IOException {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclFile = lclSftp.resolve(getCurrentTestName() + ".txt");
+        Files.deleteIfExists(lclFile);
+        byte[] expected = (getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")").getBytes(StandardCharsets.UTF_8);
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap())) {
+            Path parentPath = targetPath.getParent();
+            String remFilePath = Utils.resolveRelativeRemotePath(parentPath, lclFile);
+            Path file = fs.getPath(remFilePath);
+
+            FileSystemProvider provider = fs.provider();
+            try (FileChannel fc = provider.newFileChannel(file, EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
+                int writeLen = fc.write(ByteBuffer.wrap(expected));
+                assertEquals("Mismatched written length", expected.length, writeLen);
+
+                FileChannel fcPos = fc.position(0L);
+                assertSame("Mismatched positioned file channel", fc, fcPos);
+
+                byte[] actual = new byte[expected.length];
+                int readLen = fc.read(ByteBuffer.wrap(actual));
+                assertEquals("Mismatched read len", writeLen, readLen);
+                assertArrayEquals("Mismatched read data", expected, actual);
+            }
+        }
+
+        byte[] actual = Files.readAllBytes(lclFile);
+        assertArrayEquals("Mismatched persisted data", expected, actual);
     }
 
     @Test

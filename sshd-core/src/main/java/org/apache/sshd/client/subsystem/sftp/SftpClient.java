@@ -23,8 +23,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.Channel;
+import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.FileTime;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -42,7 +45,6 @@ import org.apache.sshd.common.subsystem.sftp.SftpUniversalOwnerAndGroup;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
-import org.bouncycastle.util.Arrays;
 
 /**
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
@@ -54,7 +56,62 @@ public interface SftpClient extends SubsystemClient {
         Append,
         Create,
         Truncate,
-        Exclusive
+        Exclusive;
+
+        /**
+         * The {@link Set} of {@link OpenOption}-s supported by {@link #fromOpenOptions(Collection)}
+         */
+        public static final Set<OpenOption> SUPPORTED_OPTIONS =
+                Collections.unmodifiableSet(
+                        EnumSet.of(
+                                StandardOpenOption.READ, StandardOpenOption.APPEND,
+                                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
+                                StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW,
+                                StandardOpenOption.SPARSE));
+
+        /**
+         * Converts {@link StandardOpenOption}-s into {@link OpenMode}-s
+         *
+         * @param options The original options - ignored if {@code null}/empty
+         * @return A {@link Set} of the equivalent modes
+         * @throws IllegalArgumentException If an unsupported option is requested
+         * @see #SUPPORTED_OPTIONS
+         */
+        public static Set<OpenMode> fromOpenOptions(Collection<? extends OpenOption> options) {
+            if (GenericUtils.isEmpty(options)) {
+                return Collections.emptySet();
+            }
+
+            Set<OpenMode> modes = EnumSet.noneOf(OpenMode.class);
+            for (OpenOption option : options) {
+                if (option == StandardOpenOption.READ) {
+                    modes.add(Read);
+                } else if (option == StandardOpenOption.APPEND) {
+                    modes.add(Append);
+                } else if (option == StandardOpenOption.CREATE) {
+                    modes.add(Create);
+                } else if (option == StandardOpenOption.TRUNCATE_EXISTING) {
+                    modes.add(Truncate);
+                } else if (option == StandardOpenOption.WRITE) {
+                    modes.add(Write);
+                } else if (option == StandardOpenOption.CREATE_NEW) {
+                    modes.add(Create);
+                    modes.add(Exclusive);
+                } else if (option == StandardOpenOption.SPARSE) {
+                    /*
+                     * As per the Javadoc:
+                     *
+                     *      The option is ignored when the file system does not
+                     *  support the creation of sparse files
+                     */
+                    continue;
+                } else {
+                    throw new IllegalArgumentException("Unsupported open option: " + option);
+                }
+            }
+
+            return modes;
+        }
     }
 
     enum CopyMode {
@@ -123,7 +180,7 @@ public interface SftpClient extends SubsystemClient {
                 return false;
             }
 
-            return Arrays.areEqual(id, ((Handle) obj).id);
+            return Arrays.equals(id, ((Handle) obj).id);
         }
 
         @Override
@@ -432,6 +489,12 @@ public interface SftpClient extends SubsystemClient {
     long DEFAULT_CHANNEL_OPEN_TIMEOUT = DEFAULT_WAIT_TIMEOUT;
 
     /**
+     * Default modes for opening a channel if no specific modes specified
+     */
+    Set<OpenMode> DEFAULT_CHANNEL_MODES =
+            Collections.unmodifiableSet(EnumSet.of(OpenMode.Read, OpenMode.Write));
+
+    /**
      * @return The negotiated SFTP protocol version
      */
     int getVersion();
@@ -641,7 +704,13 @@ public interface SftpClient extends SubsystemClient {
      * only <U>once</U>
      * @throws IOException If failed to access the directory
      */
-    Iterable<DirEntry> listDir(Handle handle) throws IOException;
+    default Iterable<DirEntry> listDir(Handle handle) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("listDir(" + handle + ") client is closed");
+        }
+
+        return new StfpIterableDirHandle(this, handle);
+    }
 
     /**
      * The effective &quot;normalized&quot; remote path
@@ -738,6 +807,34 @@ public interface SftpClient extends SubsystemClient {
     // High level API
     //
 
+    default SftpRemotePathChannel openRemotePathChannel(String path, OpenOption ... options) throws IOException {
+        return openRemotePathChannel(path, GenericUtils.isEmpty(options) ? Collections.emptyList() : Arrays.asList(options));
+    }
+
+    default SftpRemotePathChannel openRemotePathChannel(String path, Collection<? extends OpenOption> options) throws IOException {
+        return openRemoteFileChannel(path, OpenMode.fromOpenOptions(options));
+    }
+
+    default SftpRemotePathChannel openRemoteFileChannel(String path, OpenMode ... modes) throws IOException {
+        return openRemoteFileChannel(path, GenericUtils.isEmpty(modes) ? Collections.emptyList() : Arrays.asList(modes));
+    }
+
+    /**
+     * Opens an {@link SftpRemotePathChannel} on the specified remote path
+     *
+     * @param path The remote path
+     * @param modes The access mode(s) - if {@code null}/empty then the {@link #DEFAULT_CHANNEL_MODES} are used
+     * @return The open {@link SftpRemotePathChannel} - <B>Note:</B> do not close this
+     * owner client instance until the channel is no longer needed since it uses the client
+     * for providing the channel's functionality.
+     * @throws IOException If failed to open the channel
+     * @see java.nio.channels.Channels#newInputStream(java.nio.channels.ReadableByteChannel)
+     * @see java.nio.channels.Channels#newOutputStream(java.nio.channels.WritableByteChannel)
+     */
+    default SftpRemotePathChannel openRemoteFileChannel(String path, Collection<OpenMode> modes) throws IOException {
+        return new SftpRemotePathChannel(path, this, false, GenericUtils.isEmpty(modes) ? DEFAULT_CHANNEL_MODES : modes);
+    }
+
     /**
      * @param path The remote directory path
      * @return An {@link Iterable} that can be used to iterate over all the
@@ -745,7 +842,13 @@ public interface SftpClient extends SubsystemClient {
      * @throws IOException If failed to access the remote site
      * @see #readDir(Handle)
      */
-    Iterable<DirEntry> readDir(String path) throws IOException;
+    default Iterable<DirEntry> readDir(String path) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("readDir(" + path + ") client is closed");
+        }
+
+        return new SftpIterableDirEntry(this, path);
+    }
 
     default InputStream read(String path) throws IOException {
         return read(path, DEFAULT_READ_BUFFER_SIZE);
@@ -776,7 +879,17 @@ public interface SftpClient extends SubsystemClient {
      * @return An {@link InputStream} for reading the remote file data
      * @throws IOException If failed to execute
      */
-    InputStream read(String path, int bufferSize, Collection<OpenMode> mode) throws IOException;
+    default InputStream read(String path, int bufferSize, Collection<OpenMode> mode) throws IOException {
+        if (bufferSize < MIN_READ_BUFFER_SIZE) {
+            throw new IllegalArgumentException("Insufficient read buffer size: " + bufferSize + ", min.=" + MIN_READ_BUFFER_SIZE);
+        }
+
+        if (!isOpen()) {
+            throw new IOException("read(" + path + ")[" + mode + "] size=" + bufferSize + ": client is closed");
+        }
+
+        return new SftpInputStreamWithChannel(this, bufferSize, path, mode);
+    }
 
     default OutputStream write(String path) throws IOException {
         return write(path, DEFAULT_WRITE_BUFFER_SIZE);
@@ -807,7 +920,17 @@ public interface SftpClient extends SubsystemClient {
      * @return An {@link OutputStream} for writing the data
      * @throws IOException If failed to execute
      */
-    OutputStream write(String path, int bufferSize, Collection<OpenMode> mode) throws IOException;
+    default OutputStream write(String path, int bufferSize, Collection<OpenMode> mode) throws IOException {
+        if (bufferSize < MIN_WRITE_BUFFER_SIZE) {
+            throw new IllegalArgumentException("Insufficient write buffer size: " + bufferSize + ", min.=" + MIN_WRITE_BUFFER_SIZE);
+        }
+
+        if (!isOpen()) {
+            throw new IOException("write(" + path + ")[" + mode + "] size=" + bufferSize + ": client is closed");
+        }
+
+        return new SftpOutputStreamWithChannel(this, bufferSize, path, mode);
+    }
 
     /**
      * @param <E>           The generic extension type
