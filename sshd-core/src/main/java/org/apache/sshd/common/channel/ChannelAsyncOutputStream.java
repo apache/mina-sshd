@@ -85,7 +85,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
         if (total > 0) {
             Channel channel = getChannel();
             Window remoteWindow = channel.getRemoteWindow();
-            final int length = Math.min(Math.min(remoteWindow.getSize(), total), remoteWindow.getPacketSize());
+            long length = Math.min(Math.min(remoteWindow.getSize(), total), remoteWindow.getPacketSize());
             if (log.isTraceEnabled()) {
                 log.trace("doWriteIfPossible({})[resume={}] attempting to write {} out of {}", this, resume, length, total);
             }
@@ -97,15 +97,19 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                     }
                 }
 
+                if (length >= (Integer.MAX_VALUE - 12)) {
+                    throw new IllegalArgumentException("Command " + SshConstants.getCommandMessageName(cmd) + " length (" + length + " exceeds int boundaries");
+                }
                 Session s = channel.getSession();
-                Buffer buf = s.createBuffer(cmd, length + 12);
+
+                Buffer buf = s.createBuffer(cmd, (int) length + 12);
                 buf.putInt(channel.getRecipient());
                 if (cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) {
                     buf.putInt(SshConstants.SSH_EXTENDED_DATA_STDERR);
                 }
                 buf.putInt(length);
-                buf.putRawBytes(buffer.array(), buffer.rpos(), length);
-                buffer.rpos(buffer.rpos() + length);
+                buf.putRawBytes(buffer.array(), buffer.rpos(), (int) length);
+                buffer.rpos(buffer.rpos() + (int) length);
                 remoteWindow.consume(length);
                 try {
                     final ChannelAsyncOutputStream stream = this;

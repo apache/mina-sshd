@@ -112,7 +112,7 @@ public class WindowTest extends BaseTestSupport {
                         return new ChannelSession() {
                             @SuppressWarnings("synthetic-access")
                             @Override
-                            public OpenFuture open(int recipient, int rwsize, int rmpsize, Buffer buffer) {
+                            public OpenFuture open(int recipient, long rwsize, long rmpsize, Buffer buffer) {
                                 try {
                                     channelLatch.await();
                                 } catch (InterruptedException e) {

@@ -33,6 +33,7 @@ import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
@@ -158,7 +159,9 @@ public class ChannelSession extends AbstractClientChannel {
         try {
             Session session = getSession();
             Window wRemote = getRemoteWindow();
-            byte[] buffer = new byte[wRemote.getPacketSize()];
+            long packetSize = wRemote.getPacketSize();
+            ValidateUtils.checkTrue(packetSize < Integer.MAX_VALUE, "Remote packet size exceeds int boundary: %d", packetSize);
+            byte[] buffer = new byte[(int) packetSize];
             while (!closeFuture.isClosed()) {
                 int len = securedRead(in, buffer, 0, buffer.length);
                 if (len < 0) {

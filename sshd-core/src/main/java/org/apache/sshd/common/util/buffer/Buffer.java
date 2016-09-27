@@ -506,6 +506,7 @@ public abstract class Buffer implements Readable {
      * @param i The 32-bit value
      */
     public void putInt(long i) {
+        BufferUtils.validateInt32Value(i, "Invalid 32-bit value: %d");
         ensureCapacity(Integer.BYTES);
         BufferUtils.putUInt(i, workBuf, 0, Integer.BYTES);
         putRawBytes(workBuf, 0, Integer.BYTES);

@@ -328,20 +328,21 @@ public class TcpipServerChannel extends AbstractServerChannel {
     }
 
     @Override
-    protected void doWriteData(byte[] data, int off, final int len) throws IOException {
+    protected void doWriteData(byte[] data, int off, long len) throws IOException {
+        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
         // Make sure we copy the data as the incoming buffer may be reused
-        final Buffer buf = ByteArrayBuffer.getCompactClone(data, off, len);
+        Buffer buf = ByteArrayBuffer.getCompactClone(data, off, (int) len);
         ioSession.write(buf).addListener(future -> {
             if (future.isWritten()) {
-                handleWriteDataSuccess(SshConstants.SSH_MSG_CHANNEL_DATA, buf.array(), 0, len);
+                handleWriteDataSuccess(SshConstants.SSH_MSG_CHANNEL_DATA, buf.array(), 0, (int) len);
             } else {
-                handleWriteDataFailure(SshConstants.SSH_MSG_CHANNEL_DATA, buf.array(), 0, len, future.getException());
+                handleWriteDataFailure(SshConstants.SSH_MSG_CHANNEL_DATA, buf.array(), 0, (int) len, future.getException());
             }
         });
     }
 
     @Override
-    protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
+    protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
         throw new UnsupportedOperationException(type + "Tcpip channel does not support extended data");
     }
 

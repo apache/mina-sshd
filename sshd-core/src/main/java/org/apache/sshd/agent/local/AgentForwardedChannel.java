@@ -94,15 +94,17 @@ public class AgentForwardedChannel extends AbstractClientChannel {
     }
 
     @Override
-    protected void doWriteData(byte[] data, int off, int len) throws IOException {
+    protected void doWriteData(byte[] data, int off, long len) throws IOException {
+        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
+
         Buffer message = null;
         synchronized (receiveBuffer) {
-            receiveBuffer.putBuffer(new ByteArrayBuffer(data, off, len));
+            receiveBuffer.putBuffer(new ByteArrayBuffer(data, off, (int) len));
             if (receiveBuffer.available() >= 4) {
                 off = receiveBuffer.rpos();
                 len = receiveBuffer.getInt();
                 receiveBuffer.rpos(off);
-                if (receiveBuffer.available() >= 4 + len) {
+                if (receiveBuffer.available() >= (4 + len)) {
                     message = new ByteArrayBuffer(receiveBuffer.getBytes());
                     receiveBuffer.compact();
                 }

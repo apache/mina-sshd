@@ -33,6 +33,7 @@ import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
@@ -108,12 +109,12 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
     }
 
     @Override
-    protected void doWriteData(byte[] data, int off, int len) throws IOException {
-        pipe.write(data, off, len);
+    protected void doWriteData(byte[] data, int off, long len) throws IOException {
+        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
+        pipe.write(data, off, (int) len);
         pipe.flush();
 
         Window wLocal = getLocalWindow();
         wLocal.consumeAndCheck(len);
     }
-
 }

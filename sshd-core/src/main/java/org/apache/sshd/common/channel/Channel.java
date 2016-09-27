@@ -154,30 +154,30 @@ public interface Channel
      * For a server channel, this method will actually open the channel
      *
      * @param recipient  Recipient identifier
-     * @param rwSize     Read/Write window size
-     * @param packetSize Preferred maximum packet size
+     * @param rwSize     Read/Write window size ({@code uint32})
+     * @param packetSize Preferred maximum packet size ({@code uint32})
      * @param buffer     Incoming {@link Buffer} that triggered the call.
      *                   <B>Note:</B> the buffer's read position is exactly
      *                   <U>after</U> the information that read to this call
      *                   was decoded
      * @return An {@link OpenFuture} for the channel open request
      */
-    OpenFuture open(int recipient, int rwSize, int packetSize, Buffer buffer);
+    OpenFuture open(int recipient, long rwSize, long packetSize, Buffer buffer);
 
     /**
      * For a client channel, this method will be called internally by the
      * session when the confirmation has been received.
      *
      * @param recipient  Recipient identifier
-     * @param rwSize     Read/Write window size
-     * @param packetSize Preferred maximum packet size
+     * @param rwSize     Read/Write window size ({@code uint32})
+     * @param packetSize Preferred maximum packet size ({@code uint32})
      * @param buffer     Incoming {@link Buffer} that triggered the call.
      *                   <B>Note:</B> the buffer's read position is exactly
      *                   <U>after</U> the information that read to this call
      *                   was decoded
      * @throws IOException If failed to handle the success
      */
-    void handleOpenSuccess(int recipient, int rwSize, int packetSize, Buffer buffer) throws IOException;
+    void handleOpenSuccess(int recipient, long rwSize, long packetSize, Buffer buffer) throws IOException;
 
     /**
      * For a client channel, this method will be called internally by the

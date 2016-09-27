@@ -32,6 +32,7 @@ import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
@@ -89,11 +90,12 @@ public class ChannelForwardedX11 extends AbstractClientChannel {
     }
 
     @Override
-    protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {
+    protected synchronized void doWriteData(byte[] data, int off, long len) throws IOException {
+        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
         Window wLocal = getLocalWindow();
         wLocal.consumeAndCheck(len);
         // use a clone in case data buffer is re-used
-        serverSession.write(ByteArrayBuffer.getCompactClone(data, off, len));
+        serverSession.write(ByteArrayBuffer.getCompactClone(data, off, (int) len));
     }
 
     @Override

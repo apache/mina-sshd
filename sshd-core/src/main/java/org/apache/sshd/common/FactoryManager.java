@@ -62,7 +62,7 @@ public interface FactoryManager
     /**
      * Default {@link #WINDOW_SIZE} if none set
      */
-    int DEFAULT_WINDOW_SIZE = 0x200000;
+    long DEFAULT_WINDOW_SIZE = 0x200000L;   // actually a UINT32
 
     /**
      * Key used to retrieve timeout (msec.) to wait for data to
@@ -87,7 +87,19 @@ public interface FactoryManager
     /**
      * Default {@link #MAX_PACKET_SIZE} if none set
      */
-    int DEFAULT_MAX_PACKET_SIZE = 0x8000;
+    long DEFAULT_MAX_PACKET_SIZE = 0x8000L;   // actually a UINT32
+
+    /**
+     * A safety value that is designed to avoid an attack that
+     * uses large channel packet sizes
+     * @see #DEFAULT_LIMIT_PACKET_SIZE
+     */
+    String LIMIT_PACKET_SIZE = "max-packet-size";
+
+    /**
+     * Default {@link #LIMIT_PACKET_SIZE} if none set
+     */
+    long DEFAULT_LIMIT_PACKET_SIZE = Integer.MAX_VALUE / 4L;
 
     /**
      * Number of NIO worker threads to use.

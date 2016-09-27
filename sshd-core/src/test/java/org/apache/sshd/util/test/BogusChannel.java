@@ -31,27 +31,27 @@ public class BogusChannel extends AbstractChannel {
     }
 
     @Override
-    protected void doWriteData(byte[] data, int off, int len) throws IOException {
+    protected void doWriteData(byte[] data, int off, long len) throws IOException {
         // ignored
     }
 
     @Override
-    protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
+    protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
         // ignored
     }
 
     @Override
-    protected void sendWindowAdjust(int len) throws IOException {
+    protected void sendWindowAdjust(long len) throws IOException {
         // ignored
     }
 
     @Override
-    public OpenFuture open(int recipient, int rwsize, int rmpsize, Buffer buffer) {
+    public OpenFuture open(int recipient, long rwsize, long rmpsize, Buffer buffer) {
         return new DefaultOpenFuture(this.lock);
     }
 
     @Override
-    public void handleOpenSuccess(int recipient, int rwsize, int rmpsize, Buffer buffer) throws IOException {
+    public void handleOpenSuccess(int recipient, long rwsize, long rmpsize, Buffer buffer) throws IOException {
         // ignored
     }
 

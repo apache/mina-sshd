@@ -314,12 +314,12 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     }
 
     @Override
-    public OpenFuture open(int recipient, int rwSize, int packetSize, Buffer buffer) {
+    public OpenFuture open(int recipient, long rwSize, long packetSize, Buffer buffer) {
         throw new UnsupportedOperationException("open(" + recipient + "," + rwSize + "," + packetSize + ") N/A");
     }
 
     @Override
-    public void handleOpenSuccess(int recipient, int rwSize, int packetSize, Buffer buffer) {
+    public void handleOpenSuccess(int recipient, long rwSize, long packetSize, Buffer buffer) {
         setRecipient(recipient);
 
         Session session = getSession();
@@ -387,15 +387,17 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     }
 
     @Override
-    protected void doWriteData(byte[] data, int off, int len) throws IOException {
+    protected void doWriteData(byte[] data, int off, long len) throws IOException {
         // If we're already closing, ignore incoming data
         if (isClosing()) {
             return;
         }
+        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
+
         if (asyncOut != null) {
-            asyncOut.write(new ByteArrayBuffer(data, off, len));
+            asyncOut.write(new ByteArrayBuffer(data, off, (int) len));
         } else if (out != null) {
-            out.write(data, off, len);
+            out.write(data, off, (int) len);
             out.flush();
 
             if (invertedOut == null) {
@@ -408,15 +410,17 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     }
 
     @Override
-    protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
+    protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
         // If we're already closing, ignore incoming data
         if (isClosing()) {
             return;
         }
+        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Extended data length exceeds int boundaries: %d", len);
+
         if (asyncErr != null) {
-            asyncErr.write(new ByteArrayBuffer(data, off, len));
+            asyncErr.write(new ByteArrayBuffer(data, off, (int) len));
         } else if (err != null) {
-            err.write(data, off, len);
+            err.write(data, off, (int) len);
             err.flush();
 
             if (invertedErr == null) {

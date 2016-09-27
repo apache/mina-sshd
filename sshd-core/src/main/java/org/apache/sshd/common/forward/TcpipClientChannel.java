@@ -32,6 +32,7 @@ import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
@@ -126,16 +127,17 @@ public class TcpipClientChannel extends AbstractClientChannel {
     }
 
     @Override
-    protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {
+    protected synchronized void doWriteData(byte[] data, int off, long len) throws IOException {
+        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
         // Make sure we copy the data as the incoming buffer may be reused
-        Buffer buf = ByteArrayBuffer.getCompactClone(data, off, len);
+        Buffer buf = ByteArrayBuffer.getCompactClone(data, off, (int) len);
         Window wLocal = getLocalWindow();
         wLocal.consumeAndCheck(len);
         serverSession.write(buf);
     }
 
     @Override
-    protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
+    protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
         throw new UnsupportedOperationException(type + "Tcpip channel does not support extended data");
     }
 }

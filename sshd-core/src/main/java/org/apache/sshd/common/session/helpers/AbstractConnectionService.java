@@ -367,8 +367,8 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
     public void channelOpenConfirmation(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
         int sender = buffer.getInt();
-        int rwsize = buffer.getInt();
-        int rmpsize = buffer.getInt();
+        long rwsize = buffer.getUInt();
+        long rmpsize = buffer.getUInt();
         if (log.isDebugEnabled()) {
             log.debug("channelOpenConfirmation({}) SSH_MSG_CHANNEL_OPEN_CONFIRMATION sender={}, window-size={}, packet-size={}",
                       channel, sender, rwsize, rmpsize);
@@ -514,8 +514,8 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
     protected void channelOpen(Buffer buffer) throws Exception {
         String type = buffer.getString();
         final int sender = buffer.getInt();
-        final int rwsize = buffer.getInt();
-        final int rmpsize = buffer.getInt();
+        final long rwsize = buffer.getUInt();
+        final long rmpsize = buffer.getUInt();
         /*
          * NOTE: the 'sender' is the identifier assigned by the remote side - the server in this case
          */

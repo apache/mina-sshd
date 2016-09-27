@@ -633,13 +633,13 @@ public abstract class AbstractChannel
 
     @Override
     public void handleData(Buffer buffer) throws IOException {
-        int len = validateIncomingDataSize(SshConstants.SSH_MSG_CHANNEL_DATA, buffer.getInt());
+        long len = validateIncomingDataSize(SshConstants.SSH_MSG_CHANNEL_DATA, buffer.getUInt());
         if (log.isDebugEnabled()) {
             log.debug("handleData({}) SSH_MSG_CHANNEL_DATA len={}", this, len);
         }
         if (log.isTraceEnabled()) {
             BufferUtils.dumpHex(getSimplifiedLogger(), BufferUtils.DEFAULT_HEXDUMP_LEVEL, "handleData(" + this + ")",
-                    this, BufferUtils.DEFAULT_HEX_SEPARATOR, buffer.array(), buffer.rpos(), len);
+                    this, BufferUtils.DEFAULT_HEX_SEPARATOR, buffer.array(), buffer.rpos(), (int) len);
         }
         if (isEofSignalled()) {
             // TODO consider throwing an exception
@@ -663,13 +663,13 @@ public abstract class AbstractChannel
             return;
         }
 
-        int len = validateIncomingDataSize(SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA, buffer.getInt());
+        long len = validateIncomingDataSize(SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA, buffer.getUInt());
         if (log.isDebugEnabled()) {
             log.debug("handleExtendedData({}) SSH_MSG_CHANNEL_EXTENDED_DATA len={}", this, len);
         }
         if (log.isTraceEnabled()) {
             BufferUtils.dumpHex(getSimplifiedLogger(), BufferUtils.DEFAULT_HEXDUMP_LEVEL, "handleExtendedData(" + this + ")",
-                    this, BufferUtils.DEFAULT_HEX_SEPARATOR, buffer.array(), buffer.rpos(), len);
+                    this, BufferUtils.DEFAULT_HEX_SEPARATOR, buffer.array(), buffer.rpos(), (int) len);
         }
         if (isEofSignalled()) {
             // TODO consider throwing an exception
@@ -678,7 +678,11 @@ public abstract class AbstractChannel
         doWriteExtendedData(buffer.array(), buffer.rpos(), len);
     }
 
-    protected int validateIncomingDataSize(int cmd, int len) {
+    protected long validateIncomingDataSize(int cmd, long len /* actually a uint32 */) {
+        if (!BufferUtils.isValidUint32Value(len)) {
+            throw new IllegalArgumentException("Non UINT32 length (" + len + ") for command=" +  SshConstants.getCommandMessageName(cmd));
+        }
+
         /*
          * According to RFC 4254 section 5.1
          *
@@ -689,13 +693,13 @@ public abstract class AbstractChannel
          * should send at most
          */
         Window wLocal = getLocalWindow();
-        int maxLocalSize = wLocal.getPacketSize();
+        long maxLocalSize = wLocal.getPacketSize();
 
         /*
          * The reason for the +4 is that there seems to be some confusion whether
          * the max. packet size includes the length field or not
          */
-        if ((len < 0) || (len > (maxLocalSize + 4))) {
+        if (len > (maxLocalSize + 4L)) {
             throw new IllegalStateException("Bad length (" + len + ") "
                     + " for cmd=" + SshConstants.getCommandMessageName(cmd)
                     + " - max. allowed=" + maxLocalSize);
@@ -748,9 +752,9 @@ public abstract class AbstractChannel
         // TODO: do something to report failed requests?
     }
 
-    protected abstract void doWriteData(byte[] data, int off, int len) throws IOException;
+    protected abstract void doWriteData(byte[] data, int off, long len) throws IOException;
 
-    protected abstract void doWriteExtendedData(byte[] data, int off, int len) throws IOException;
+    protected abstract void doWriteExtendedData(byte[] data, int off, long len) throws IOException;
 
     protected void sendEof() throws IOException {
         if (eofSent.getAndSet(true)) {
@@ -815,7 +819,7 @@ public abstract class AbstractChannel
         localWindow.init(this);
     }
 
-    protected void sendWindowAdjust(int len) throws IOException {
+    protected void sendWindowAdjust(long len) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("sendWindowAdjust({}) SSH_MSG_CHANNEL_WINDOW_ADJUST len={}", this, len);
         }

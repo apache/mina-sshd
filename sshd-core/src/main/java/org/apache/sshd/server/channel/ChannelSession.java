@@ -236,27 +236,30 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     @Override
-    protected void doWriteData(byte[] data, int off, int len) throws IOException {
+    protected void doWriteData(byte[] data, int off, long len) throws IOException {
         // If we're already closing, ignore incoming data
         if (isClosing()) {
             return;
         }
+        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
+
         if (receiver != null) {
-            int r = receiver.data(this, data, off, len);
+            int r = receiver.data(this, data, off, (int) len);
             if (r > 0) {
                 Window wLocal = getLocalWindow();
                 wLocal.consumeAndCheck(r);
             }
         } else {
+            ValidateUtils.checkTrue(len <= (Integer.MAX_VALUE - Long.SIZE), "Temporary data length exceeds int boundaries: %d", len);
             if (tempBuffer == null) {
-                tempBuffer = new ByteArrayBuffer(len + Long.SIZE, false);
+                tempBuffer = new ByteArrayBuffer((int) len + Long.SIZE, false);
             }
-            tempBuffer.putRawBytes(data, off, len);
+            tempBuffer.putRawBytes(data, off, (int) len);
         }
     }
 
     @Override
-    protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
+    protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
         throw new UnsupportedOperationException("Server channel does not support extended data");
     }
 

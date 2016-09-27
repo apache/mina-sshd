@@ -47,8 +47,17 @@ public final class BufferUtils {
     public static final int DEFAULT_HEXDUMP_CHUNK_SIZE = 64;
     public static final Level DEFAULT_HEXDUMP_LEVEL = Level.FINEST;
 
-    public static final Int2IntFunction DEFAULT_BUFFER_GROWTH_FACTOR =
-            BufferUtils::getNextPowerOf2;
+    public static final Int2IntFunction DEFAULT_BUFFER_GROWTH_FACTOR = BufferUtils::getNextPowerOf2;
+
+    /**
+     * Maximum value of a {@code uint32} field
+     */
+    public static final long MAX_UINT32_VALUE = 0x0FFFFFFFFL;
+
+    /**
+     * Maximum value of a {@code uint8} field
+     */
+    public static final int MAX_UINT8_VALUE = 0x0FF;
 
     /**
      * Private Constructor
@@ -530,5 +539,43 @@ public final class BufferUtils {
         }
 
         return buffer;
+    }
+
+    public static long validateInt32Value(long value, String message) {
+        ValidateUtils.checkTrue(isValidInt32Value(value), message, value);
+        return value;
+    }
+
+    public static long validateInt32Value(long value, String format, Object arg) {
+        ValidateUtils.checkTrue(isValidInt32Value(value), format, arg);
+        return value;
+    }
+
+    public static long validateInt32Value(long value, String format, Object ... args) {
+        ValidateUtils.checkTrue(isValidInt32Value(value), format, args);
+        return value;
+    }
+
+    public static boolean isValidInt32Value(long value) {
+        return (value >= Integer.MIN_VALUE) && (value <= Integer.MAX_VALUE);
+    }
+
+    public static long validateUint32Value(long value, String message) {
+        ValidateUtils.checkTrue(isValidUint32Value(value), message, value);
+        return value;
+    }
+
+    public static long validateUint32Value(long value, String format, Object arg) {
+        ValidateUtils.checkTrue(isValidUint32Value(value), format, arg);
+        return value;
+    }
+
+    public static long validateUint32Value(long value, String format, Object ... args) {
+        ValidateUtils.checkTrue(isValidUint32Value(value), format, args);
+        return value;
+    }
+
+    public static boolean isValidUint32Value(long value) {
+        return (value >= 0L) && (value <= MAX_UINT32_VALUE);
     }
 }

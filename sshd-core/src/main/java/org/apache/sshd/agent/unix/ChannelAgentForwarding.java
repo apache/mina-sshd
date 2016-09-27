@@ -174,15 +174,16 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     }
 
     @Override
-    protected void doWriteData(byte[] data, int off, int len) throws IOException {
-        int result = Socket.send(handle, data, off, len);
+    protected void doWriteData(byte[] data, int off, long len) throws IOException {
+        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
+        int result = Socket.send(handle, data, off, (int) len);
         if (result < Status.APR_SUCCESS) {
             throwException(result);
         }
     }
 
     @Override
-    protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
+    protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
         throw new UnsupportedOperationException("AgentForward channel does not support extended data");
     }
 

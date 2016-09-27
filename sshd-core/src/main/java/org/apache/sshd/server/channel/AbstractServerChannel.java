@@ -65,7 +65,7 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
     }
 
     @Override
-    public OpenFuture open(int recipient, int rwSize, int packetSize, Buffer buffer) {
+    public OpenFuture open(int recipient, long rwSize, long packetSize, Buffer buffer) {
         setRecipient(recipient);
 
         Session s = getSession();
@@ -77,7 +77,7 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
     }
 
     @Override
-    public void handleOpenSuccess(int recipient, int rwSize, int packetSize, Buffer buffer) throws IOException {
+    public void handleOpenSuccess(int recipient, long rwSize, long packetSize, Buffer buffer) throws IOException {
         throw new UnsupportedOperationException("handleOpenSuccess(" + recipient + "," + rwSize + "," + packetSize + ") N/A");
     }
 

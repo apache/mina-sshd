@@ -21,6 +21,7 @@ package org.apache.sshd.common.channel;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
+import java.io.StreamCorruptedException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -113,14 +114,14 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
             // packet we sent to allow the producer to race ahead and fill
             // out the next packet before we block and wait for space to
             // become available again.
-            int l2 = Math.min(l, Math.min(remoteWindow.getSize() + lastSize, remoteWindow.getPacketSize()) - bufferLength);
+            long l2 = Math.min(l, Math.min(remoteWindow.getSize() + lastSize, remoteWindow.getPacketSize()) - bufferLength);
             if (l2 <= 0) {
                 if (bufferLength > 0) {
                     flush();
                 } else {
                     session.resetIdleTimeout();
                     try {
-                        int available = remoteWindow.waitForSpace(maxWaitTimeout);
+                        long available = remoteWindow.waitForSpace(maxWaitTimeout);
                         if (log.isTraceEnabled()) {
                             log.trace("write({}) len={} - available={}", this, l, available);
                         }
@@ -144,7 +145,9 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                 session.resetIdleTimeout();
                 continue;
             }
-            buffer.putRawBytes(buf, s, l2);
+
+            ValidateUtils.checkTrue(l2 <= Integer.MAX_VALUE, "Accumulated bytes length exceeds int boundary: %d", l2);
+            buffer.putRawBytes(buf, s, (int) l2);
             bufferLength += l2;
             s += l2;
             l -= l2;
@@ -170,8 +173,8 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                 session.resetIdleTimeout();
 
                 Buffer buf = buffer;
-                int total = bufferLength;
-                int available;
+                long total = bufferLength;
+                long available;
                 try {
                     available = remoteWindow.waitForSpace(maxWaitTimeout);
                     if (log.isTraceEnabled()) {
@@ -186,21 +189,26 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                     throw e;
                 }
 
-                int lenToSend = Math.min(available, total);
-                int length = Math.min(lenToSend, remoteWindow.getPacketSize());
+                long lenToSend = Math.min(available, total);
+                long length = Math.min(lenToSend, remoteWindow.getPacketSize());
+                if (length > Integer.MAX_VALUE) {
+                    throw new StreamCorruptedException("Accumulated " + SshConstants.getCommandMessageName(cmd)
+                        + " command bytes size (" + length + ") exceeds int boundaries");
+                }
+
                 int pos = buf.wpos();
                 buf.wpos((cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) ? 14 : 10);
                 buf.putInt(length);
-                buf.wpos(buf.wpos() + length);
+                buf.wpos(buf.wpos() + (int) length);
                 if (total == length) {
-                    newBuffer(length);
+                    newBuffer((int) length);
                 } else {
-                    int leftover = total - length;
-                    newBuffer(Math.max(leftover, length));
-                    buffer.putRawBytes(buf.array(), pos - leftover, leftover);
-                    bufferLength = leftover;
+                    long leftover = total - length;
+                    newBuffer((int) Math.max(leftover, length));
+                    buffer.putRawBytes(buf.array(), pos - (int) leftover, (int) leftover);
+                    bufferLength = (int) leftover;
                 }
-                lastSize = length;
+                lastSize = (int) length;
 
                 session.resetIdleTimeout();
                 remoteWindow.waitAndConsume(length, maxWaitTimeout);

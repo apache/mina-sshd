@@ -25,13 +25,14 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -54,13 +55,13 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final AtomicBoolean initialized = new AtomicBoolean(false);
-    private final AtomicInteger sizeHolder = new AtomicInteger(0);
+    private final AtomicLong sizeHolder = new AtomicLong(0L);
     private final AbstractChannel channelInstance;
     private final Object lock;
     private final String suffix;
 
-    private int maxSize;
-    private int packetSize;
+    private long maxSize;   // actually uint32
+    private long packetSize;   // actually uint32
     private Map<String, Object> props = Collections.emptyMap();
 
     public Window(AbstractChannel channel, Object lock, boolean client, boolean local) {
@@ -84,29 +85,34 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         return channelInstance;
     }
 
-    public int getSize() {
+    public long getSize() {
         synchronized (lock) {
             return sizeHolder.get();
         }
     }
 
-    public int getMaxSize() {
+    public long getMaxSize() {
         return maxSize;
     }
 
-    public int getPacketSize() {
+    public long getPacketSize() {
         return packetSize;
     }
 
     public void init(PropertyResolver resolver) {
-        init(PropertyResolverUtils.getIntProperty(resolver, FactoryManager.WINDOW_SIZE, FactoryManager.DEFAULT_WINDOW_SIZE),
-             PropertyResolverUtils.getIntProperty(resolver, FactoryManager.MAX_PACKET_SIZE, FactoryManager.DEFAULT_MAX_PACKET_SIZE),
+        init(PropertyResolverUtils.getLongProperty(resolver, FactoryManager.WINDOW_SIZE, FactoryManager.DEFAULT_WINDOW_SIZE),
+             PropertyResolverUtils.getLongProperty(resolver, FactoryManager.MAX_PACKET_SIZE, FactoryManager.DEFAULT_MAX_PACKET_SIZE),
              resolver.getProperties());
     }
 
-    public void init(int size, int packetSize, Map<String, Object> props) {
-        ValidateUtils.checkTrue(size >= 0, "Illegal initial size: %d", size);
-        ValidateUtils.checkTrue(packetSize > 0, "Illegal packet size: %d", packetSize);
+    public void init(long size, long packetSize, Map<String, Object> props) {
+        BufferUtils.validateUint32Value(size, "Illegal initial size: %d");
+        BufferUtils.validateUint32Value(packetSize, "Illegal packet size: %d");
+        ValidateUtils.checkTrue(packetSize > 0L, "Packet size must be positive: %d", packetSize);
+        long limitPacketSize = PropertyResolverUtils.getLongProperty(props, FactoryManager.LIMIT_PACKET_SIZE, FactoryManager.DEFAULT_LIMIT_PACKET_SIZE);
+        if (packetSize > limitPacketSize) {
+            throw new IllegalArgumentException("Requested packet size (" + packetSize + ") exceeds max. allowed: " + limitPacketSize);
+        }
 
         synchronized (lock) {
             this.maxSize = size;
@@ -138,10 +144,10 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
              *      2^32 - 1 bytes.
              */
             expandedSize = sizeHolder.get() + window;
-            if (expandedSize > Integer.MAX_VALUE) {
-                updateSize(Integer.MAX_VALUE);
+            if (expandedSize > BufferUtils.MAX_UINT32_VALUE) {
+                updateSize(BufferUtils.MAX_UINT32_VALUE);
             } else {
-                updateSize((int) expandedSize);
+                updateSize(expandedSize);
             }
         }
 
@@ -152,19 +158,19 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         }
     }
 
-    public void consume(int len) {
-        ValidateUtils.checkTrue(len >= 0, "Negative consumption length: %d", len);
+    public void consume(long len) {
+        BufferUtils.validateUint32Value(len, "Invalid consumption length: %d");
         checkInitialized("consume");
 
-        int remainLen;
+        long remainLen;
         synchronized (lock) {
             remainLen = sizeHolder.get() - len;
-            if (remainLen >= 0) {
+            if (remainLen >= 0L) {
                 updateSize(remainLen);
             }
         }
 
-        if (remainLen < 0) {
+        if (remainLen < 0L) {
             throw new IllegalStateException("consume(" + this + ") required length (" + len + ") above available: " + (remainLen + len));
         }
 
@@ -173,7 +179,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         }
     }
 
-    public void consumeAndCheck(int len) throws IOException {
+    public void consumeAndCheck(long len) throws IOException {
         synchronized (lock) {
             try {
                 consume(len);
@@ -187,15 +193,15 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         }
     }
 
-    public void check(int maxFree) throws IOException {
-        ValidateUtils.checkTrue(maxFree >= 0, "Negative check size: %d", maxFree);
+    public void check(long maxFree) throws IOException {
+        BufferUtils.validateUint32Value(maxFree, "Invalid check size: %d");
         checkInitialized("check");
 
-        int adjustSize = -1;
+        long adjustSize = -1L;
         AbstractChannel channel = getChannel();
         synchronized (lock) {
             // TODO make the adjust factor configurable via FactoryManager property
-            int size = sizeHolder.get();
+            long size = sizeHolder.get();
             if (size < (maxFree / 2)) {
                 adjustSize = maxFree - size;
                 channel.sendWindowAdjust(adjustSize);
@@ -203,7 +209,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
             }
         }
 
-        if (adjustSize >= 0) {
+        if (adjustSize >= 0L) {
             if (log.isDebugEnabled()) {
                 log.debug("Increase {} by {} up to {}", this, adjustSize, maxFree);
             }
@@ -221,8 +227,8 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
      * @see #waitForCondition(Predicate, long)
      * @see #consume(int)
      */
-    public void waitAndConsume(final int len, long maxWaitTime) throws InterruptedException, WindowClosedException, SocketTimeoutException {
-        ValidateUtils.checkTrue(len >= 0, "Negative wait consume length: %d", len);
+    public void waitAndConsume(long len, long maxWaitTime) throws InterruptedException, WindowClosedException, SocketTimeoutException {
+        BufferUtils.validateUint32Value(len, "Invalid wait consume length: %d", len);
         checkInitialized("waitAndConsume");
 
         synchronized (lock) {
@@ -249,7 +255,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
      * @throws SocketTimeoutException If timeout expired before space became available
      * @see #waitForCondition(Predicate, long)
      */
-    public int waitForSpace(long maxWaitTime) throws InterruptedException, WindowClosedException, SocketTimeoutException {
+    public long waitForSpace(long maxWaitTime) throws InterruptedException, WindowClosedException, SocketTimeoutException {
         checkInitialized("waitForSpace");
 
         synchronized (lock) {
@@ -306,8 +312,8 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         throw new SocketTimeoutException("waitForCondition(" + this + ") timeout exceeded: " + maxWaitTime);
     }
 
-    protected void updateSize(int size) {
-        ValidateUtils.checkTrue(size >= 0, "Invalid size: %d", size);
+    protected void updateSize(long size) {
+        BufferUtils.validateUint32Value(size, "Invalid updated size: %d", size);
         this.sizeHolder.set(size);
         lock.notifyAll();
     }

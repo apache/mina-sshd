@@ -51,12 +51,12 @@ public class WindowTimeoutTest extends BaseTestSupport {
     public void setUp() throws Exception {
         channel = new AbstractChannel(getCurrentTestName(), true) {
             @Override
-            public OpenFuture open(int recipient, int rwSize, int packetSize, Buffer buffer) {
+            public OpenFuture open(int recipient, long rwSize, long packetSize, Buffer buffer) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public void handleOpenSuccess(int recipient, int rwSize, int packetSize, Buffer buffer) throws IOException {
+            public void handleOpenSuccess(int recipient, long rwSize, long packetSize, Buffer buffer) throws IOException {
                 throw new UnsupportedOperationException();
             }
 
@@ -66,12 +66,12 @@ public class WindowTimeoutTest extends BaseTestSupport {
             }
 
             @Override
-            protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
+            protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            protected void doWriteData(byte[] data, int off, int len) throws IOException {
+            protected void doWriteData(byte[] data, int off, long len) throws IOException {
                 throw new UnsupportedOperationException();
             }
         };
@@ -93,7 +93,7 @@ public class WindowTimeoutTest extends BaseTestSupport {
 
             long waitStart = System.nanoTime();
             try {
-                int len = window.waitForSpace(MAX_WAIT_TIME);
+                long len = window.waitForSpace(MAX_WAIT_TIME);
                 fail("Unexpected timed wait success - len=" + len);
             } catch (SocketTimeoutException e) {
                 long waitEnd = System.nanoTime();
@@ -105,7 +105,7 @@ public class WindowTimeoutTest extends BaseTestSupport {
             window.close();
             assertFalse("Window not closed", window.isOpen());
             try {
-                int len = window.waitForSpace(MAX_WAIT_TIME);
+                long len = window.waitForSpace(MAX_WAIT_TIME);
                 fail("Unexpected closed wait success - len=" + len);
             } catch (WindowClosedException e) {
                 // expected
