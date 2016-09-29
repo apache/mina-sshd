@@ -463,6 +463,59 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     }
 
     @Test
+    public void testInputStreamSkipAndReset() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path parentPath = targetPath.getParent();
+        Path localFile = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Files.createDirectories(localFile.getParent());
+        byte[] data = (getClass().getName() + "#" + getCurrentTestName() + "[" + localFile + "]").getBytes(StandardCharsets.UTF_8);
+        Files.write(localFile, data, StandardOpenOption.CREATE);
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(5L, TimeUnit.SECONDS);
+
+            try (SftpClient sftp = session.createSftpClient();
+                 InputStream stream = sftp.read(Utils.resolveRelativeRemotePath(parentPath, localFile), OpenMode.Read)) {
+                assertFalse("Stream reported mark supported", stream.markSupported());
+                try {
+                    stream.mark(data.length);
+                    fail("Unexpected success to mark the read limit");
+                } catch (UnsupportedOperationException e) {
+                    // expected - ignored
+                }
+
+                byte[] expected = new byte[data.length / 4];
+                int readLen = stream.read(expected);
+                assertEquals("Failed to read fully initial data", expected.length, readLen);
+
+                byte[] actual = new byte[readLen];
+                stream.reset();
+                readLen = stream.read(actual);
+                assertEquals("Failed to read fully reset data", actual.length, readLen);
+                assertArrayEquals("Mismatched re-read data contents", expected, actual);
+
+                System.arraycopy(data, 0, expected, 0, expected.length);
+                assertArrayEquals("Mismatched original data contents", expected, actual);
+
+                long skipped = stream.skip(readLen);
+                assertEquals("Mismatched skipped forward size", readLen, skipped);
+
+                readLen = stream.read(actual);
+                assertEquals("Failed to read fully skipped forward data", actual.length, readLen);
+
+                System.arraycopy(data, expected.length + readLen, expected, 0, expected.length);
+                assertArrayEquals("Mismatched skipped forward data contents", expected, actual);
+
+                skipped = stream.skip(0 - readLen);
+                assertEquals("Mismatched backward skip size", readLen, skipped);
+                readLen = stream.read(actual);
+                assertEquals("Failed to read fully skipped backward data", actual.length, readLen);
+                assertArrayEquals("Mismatched skipped backward data contents", expected, actual);
+            }
+        }
+    }
+
+    @Test
     @SuppressWarnings({"checkstyle:anoninnerlength", "checkstyle:methodlength"})
     public void testClient() throws Exception {
         List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();

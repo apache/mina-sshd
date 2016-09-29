@@ -73,6 +73,57 @@ public class SftpInputStreamWithChannel extends InputStreamWithChannel {
     }
 
     @Override
+    public boolean markSupported() {
+        return false;
+    }
+
+    @Override
+    public synchronized void mark(int readlimit) {
+        throw new UnsupportedOperationException("mark(" + readlimit + ") N/A");
+    }
+
+    @Override
+    public long skip(long n) throws IOException {
+        long skipLen;
+        long newIndex = index + n;
+        long bufLen = Math.max(0L, available);
+        if (newIndex > bufLen) {
+            // exceeded current buffer
+            long extraLen = newIndex - bufLen;
+            offset += extraLen;
+            skipLen = Math.max(0, bufLen - index) + extraLen;
+            // force re-fill of read buffer
+            index = 0;
+            available = 0;
+        } else if (newIndex < 0) {
+            // went back - check how far back
+            long startOffset = offset - bufLen;
+            long newOffset = startOffset + newIndex; // actually a subtraction since newIndex is negative
+            newOffset = Math.max(0L, newOffset);
+            skipLen = index - newIndex; // actually a adding it since newIndex is negative
+            offset = newOffset;
+            // force re-fill of read buffer
+            index = 0;
+            available = 0;
+        } else {
+            // still within current buffer
+            index = (int) newIndex;
+            // need to use absolute value since skip size may have been negative
+            skipLen = Math.abs(n);
+        }
+
+        return skipLen;
+    }
+
+    @Override
+    public synchronized void reset() throws IOException {
+        offset = 0L;
+        // force re-fill of read buffer
+        index = 0;
+        available = 0;
+    }
+
+    @Override
     public int read() throws IOException {
         int read = read(bb, 0, 1);
         if (read > 0) {

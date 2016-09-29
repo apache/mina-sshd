@@ -47,7 +47,6 @@ public class FileHandle extends Handle {
 
     private final int access;
     private final FileChannel fileChannel;
-    private long pos;
     private final List<FileLock> locks = new ArrayList<>();
 
     public FileHandle(SftpSubsystem sftpSubsystem, Path file, int flags, int access, Map<String, Object> attrs) throws IOException {
@@ -108,7 +107,6 @@ public class FileHandle extends Handle {
             sftpSubsystem.doSetAttributes(file, attrs);
         }
         this.fileChannel = channel;
-        this.pos = 0;
     }
 
     public final FileChannel getFileChannel() {
@@ -129,13 +127,21 @@ public class FileHandle extends Handle {
 
     public int read(byte[] data, int doff, int length, long offset) throws IOException {
         FileChannel channel = getFileChannel();
-        if (pos != offset) {
-            channel.position(offset);
-            pos = offset;
+        channel.position(offset);
+
+        long size = channel.size();
+        long curPos = channel.position();
+        long available = size - curPos;
+        if (available <= 0) {
+            return -1;
         }
-        int read = channel.read(ByteBuffer.wrap(data, doff, length));
-        pos += read;
-        return read;
+
+        int bufLen = length;
+        if (bufLen > available) {
+            bufLen = (int) available;   // debug breakpoint
+        }
+
+        return channel.read(ByteBuffer.wrap(data, doff, bufLen));
     }
 
     public void append(byte[] data) throws IOException {
@@ -153,13 +159,8 @@ public class FileHandle extends Handle {
 
     public void write(byte[] data, int doff, int length, long offset) throws IOException {
         FileChannel channel = getFileChannel();
-        if (pos != offset) {
-            channel.position(offset);
-            pos = offset;
-        }
-
+        channel.position(offset);
         channel.write(ByteBuffer.wrap(data, doff, length));
-        pos += length;
     }
 
     @Override
