@@ -28,7 +28,7 @@ public interface SimplifiedLog {
     /**
      * An &quot;empty&quot; {@link SimplifiedLog} that does nothing
      */
-    SimplifiedLog EMPTY = new AbstractSimplifiedLog() {
+    SimplifiedLog EMPTY = new SimplifiedLog() {
         @Override
         public boolean isEnabled(Level level) {
             return false;
@@ -36,6 +36,7 @@ public interface SimplifiedLog {
 
         @Override
         public void log(Level level, Object message, Throwable t) {
+            // ignored
         }
 
         @Override
@@ -46,7 +47,9 @@ public interface SimplifiedLog {
 
     boolean isEnabled(Level level);
 
-    void log(Level level, Object message);
+    default void log(Level level, Object message) {
+        log(level, message, null);
+    }
 
     void log(Level level, Object message, Throwable t);
 }

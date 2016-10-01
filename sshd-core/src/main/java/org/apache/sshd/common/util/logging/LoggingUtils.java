@@ -238,7 +238,7 @@ public final class LoggingUtils {
         if (logger == null) {
             return SimplifiedLog.EMPTY;
         } else {
-            return new AbstractSimplifiedLog() {
+            return new SimplifiedLog() {
                 @Override
                 public void log(Level level, Object message, Throwable t) {
                     if (isEnabled(level)) {
@@ -256,10 +256,9 @@ public final class LoggingUtils {
     }
 
     // NOTE: assume that level enabled has been checked !!!
-    @SuppressWarnings("StatementWithEmptyBody")
     public static void logMessage(Logger logger, Level level, Object message, Throwable t) {
         if ((logger == null) || (level == null) || Level.OFF.equals(level)) {
-            // ignore
+            return;
         } else if (Level.SEVERE.equals(level)) {
             logger.error(Objects.toString(message), t);
         } else if (Level.WARNING.equals(level)) {

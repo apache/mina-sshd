@@ -75,8 +75,8 @@ import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
-import org.apache.sshd.common.util.logging.AbstractSimplifiedLog;
 import org.apache.sshd.common.util.logging.LoggingUtils;
+import org.apache.sshd.common.util.logging.SimplifiedLog;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
@@ -84,8 +84,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SshKeyScan extends AbstractSimplifiedLog
-        implements Channel, Callable<Void>, ServerKeyVerifier, SessionListener {
+public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, SessionListener, SimplifiedLog {
     /**
      * Default key types if not overridden from the command line
      */
