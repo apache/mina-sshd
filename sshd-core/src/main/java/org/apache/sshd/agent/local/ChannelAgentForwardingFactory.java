@@ -21,20 +21,25 @@ package org.apache.sshd.agent.local;
 
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelFactory;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelAgentForwardingFactory implements ChannelFactory {
-    public static final ChannelAgentForwardingFactory INSTANCE = new ChannelAgentForwardingFactory();
+    public static final ChannelAgentForwardingFactory OPENSSH = new ChannelAgentForwardingFactory("auth-agent@openssh.com");
+    // see https://tools.ietf.org/html/draft-ietf-secsh-agent-02
+    public static final ChannelAgentForwardingFactory IETF = new ChannelAgentForwardingFactory("auth-agent");
 
-    public ChannelAgentForwardingFactory() {
-        super();
+    private final String name;
+
+    public ChannelAgentForwardingFactory(String name) {
+        this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No channel factory name specified");
     }
 
     @Override
     public String getName() {
-        return "auth-agent@openssh.com";
+        return name;
     }
 
     @Override

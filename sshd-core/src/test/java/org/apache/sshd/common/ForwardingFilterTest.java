@@ -71,8 +71,8 @@ public class ForwardingFilterTest extends BaseTestSupport {
         assertEquals("Mismatched acceptance status", expected, filter.isAccepted());
 
         Session session = Mockito.mock(Session.class);
-        assertEquals("Mismatched 'canForwardAgent' result", expected, filter.canForwardAgent(session));
-        assertEquals("Mismatched 'canForwardX11' result", expected, filter.canForwardX11(session));
+        assertEquals("Mismatched 'canForwardAgent' result", expected, filter.canForwardAgent(session, "auth-agent-req"));
+        assertEquals("Mismatched 'canForwardX11' result", expected, filter.canForwardX11(session, "x11-req"));
         assertEquals("Mismatched 'canListen' result", expected, filter.canListen(SshdSocketAddress.LOCALHOST_ADDRESS, session));
 
         for (ForwardingFilter.Type t : ForwardingFilter.Type.VALUES) {

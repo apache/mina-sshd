@@ -24,6 +24,8 @@ import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.sshd.agent.SshAgentFactory;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.channel.SttySupport;
@@ -225,9 +227,10 @@ public class PtyCapableChannelSession extends ChannelSession {
                 log.debug("doOpenPty({}) Send agent forwarding request", this);
             }
 
+            String channelType = PropertyResolverUtils.getStringProperty(session, SshAgentFactory.PROXY_AUTH_CHANNEL_TYPE, SshAgentFactory.DEFAULT_PROXY_AUTH_CHANNEL_TYPE);
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
             buffer.putInt(getRecipient());
-            buffer.putString("auth-agent-req@openssh.com");
+            buffer.putString(channelType);
             buffer.putBoolean(false);   // want-reply
             writePacket(buffer);
         }

@@ -19,6 +19,10 @@
 package org.apache.sshd.agent.unix;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.agent.SshAgent;
@@ -26,6 +30,7 @@ import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
@@ -40,20 +45,12 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UnixAgentFactory implements SshAgentFactory, ExecutorServiceConfigurer {
+    public static final List<NamedFactory<Channel>> DEFAULT_FORWARDING_CHANNELS =
+            Collections.unmodifiableList(
+                    Arrays.<NamedFactory<Channel>>asList(ChannelAgentForwardingFactory.OPENSSH, ChannelAgentForwardingFactory.IETF));
+
     private ExecutorService executor;
     private boolean shutdownExecutor;
-    private final NamedFactory<Channel> factory = new ChannelAgentForwardingFactory() {
-        @Override
-        public ExecutorService getExecutorService() {
-            return UnixAgentFactory.this.getExecutorService();
-        }
-
-        @Override
-        public boolean isShutdownOnExit() {
-            return UnixAgentFactory.this.isShutdownOnExit();
-        }
-
-    };
 
     public UnixAgentFactory() {
         super();
@@ -85,8 +82,29 @@ public class UnixAgentFactory implements SshAgentFactory, ExecutorServiceConfigu
     }
 
     @Override
-    public NamedFactory<Channel> getChannelForwardingFactory() {
-        return factory;
+    public List<NamedFactory<Channel>> getChannelForwardingFactories(FactoryManager manager) {
+        final ExecutorServiceConfigurer configurer = this;
+        return Collections.unmodifiableList(new ArrayList<NamedFactory<Channel>>(DEFAULT_FORWARDING_CHANNELS.size()) {
+            // Not serializing it
+            private static final long serialVersionUID = 1L;
+
+            {
+                for (NamedResource r : DEFAULT_FORWARDING_CHANNELS) {
+                    String channelType = r.getName();
+                    add(new ChannelAgentForwardingFactory(channelType) {
+                            @Override
+                            public ExecutorService getExecutorService() {
+                                return configurer.getExecutorService();
+                            }
+
+                            @Override
+                            public boolean isShutdownOnExit() {
+                                return configurer.isShutdownOnExit();
+                            }
+                    });
+                }
+            }
+        });
     }
 
     @Override

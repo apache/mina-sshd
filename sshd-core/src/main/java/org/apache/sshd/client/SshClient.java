@@ -383,21 +383,24 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         // if no client identities override use the default
         KeyPairProvider defaultIdentities = getKeyPairProvider();
         if (defaultIdentities == null) {
-            setKeyPairProvider(new DefaultClientIdentitiesWatcher(
-                    this::getClientIdentityLoader,
-                    this::getFilePasswordProvider));
+            setKeyPairProvider(new DefaultClientIdentitiesWatcher(this::getClientIdentityLoader, this::getFilePasswordProvider));
         }
 
         // Register the additional agent forwarding channel if needed
         SshAgentFactory agentFactory = getAgentFactory();
         if (agentFactory != null) {
+            List<NamedFactory<Channel>> forwarders =
+                    ValidateUtils.checkNotNullAndNotEmpty(
+                            agentFactory.getChannelForwardingFactories(this), "No agent channel forwarding factories for %s", agentFactory);
             List<NamedFactory<Channel>> factories = getChannelFactories();
             if (GenericUtils.isEmpty(factories)) {
-                factories = new ArrayList<>();
+                factories = forwarders;
             } else {
-                factories = new ArrayList<>(factories);
+                // create a copy in case un-modifiable original
+                factories = new ArrayList<>(factories.size() + forwarders.size());
+                factories.addAll(factories);
+                factories.addAll(forwarders);
             }
-            factories.add(ValidateUtils.checkNotNull(agentFactory.getChannelForwardingFactory(), "No agent channel forwarding factory for %s", agentFactory));
 
             setChannelFactories(factories);
         }

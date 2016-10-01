@@ -19,6 +19,9 @@
 package org.apache.sshd.agent.local;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
@@ -30,6 +33,9 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.session.ConnectionService;
 
 public class LocalAgentFactory implements SshAgentFactory {
+    public static final List<NamedFactory<Channel>> DEFAULT_FORWARDING_CHANNELS =
+            Collections.unmodifiableList(
+                    Arrays.<NamedFactory<Channel>>asList(ChannelAgentForwardingFactory.OPENSSH, ChannelAgentForwardingFactory.IETF));
 
     private final SshAgent agent;
 
@@ -46,8 +52,8 @@ public class LocalAgentFactory implements SshAgentFactory {
     }
 
     @Override
-    public NamedFactory<Channel> getChannelForwardingFactory() {
-        return ChannelAgentForwardingFactory.INSTANCE;
+    public List<NamedFactory<Channel>> getChannelForwardingFactories(FactoryManager manager) {
+        return DEFAULT_FORWARDING_CHANNELS;
     }
 
     @Override

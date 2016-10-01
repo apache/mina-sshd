@@ -19,6 +19,7 @@
 package org.apache.sshd.agent.local;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.agent.SshAgentServer;
+import org.apache.sshd.agent.unix.UnixAgentFactory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
@@ -39,7 +41,6 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ProxyAgentFactory implements SshAgentFactory {
-
     private final Map<String, AgentServerProxy> proxies = new ConcurrentHashMap<>();
 
     public ProxyAgentFactory() {
@@ -47,8 +48,8 @@ public class ProxyAgentFactory implements SshAgentFactory {
     }
 
     @Override
-    public NamedFactory<Channel> getChannelForwardingFactory() {
-        return ChannelAgentForwardingFactory.INSTANCE;
+    public List<NamedFactory<Channel>> getChannelForwardingFactories(FactoryManager manager) {
+        return UnixAgentFactory.DEFAULT_FORWARDING_CHANNELS;
     }
 
     @Override

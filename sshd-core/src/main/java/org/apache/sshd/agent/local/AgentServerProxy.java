@@ -26,6 +26,7 @@ import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
@@ -44,7 +45,9 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
 
     public SshAgent createClient() throws IOException {
         try {
-            AgentForwardedChannel channel = new AgentForwardedChannel();
+            Session session = this.service.getSession();
+            String channelType = PropertyResolverUtils.getStringProperty(session, PROXY_CHANNEL_TYPE, DEFAULT_PROXY_CHANNEL_TYPE);
+            AgentForwardedChannel channel = new AgentForwardedChannel(channelType);
             this.service.registerChannel(channel);
             channel.open().verify(PropertyResolverUtils.getLongProperty(channel, CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
             return channel.getAgent();
@@ -59,7 +62,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
                 throw (IOException) t;
             }
 
-            throw (IOException) new IOException("Failed (" + t.getClass().getSimpleName() + ") to create client: " + t.getMessage(), t);
+            throw new IOException("Failed (" + t.getClass().getSimpleName() + ") to create client: " + t.getMessage(), t);
         }
     }
 

@@ -36,12 +36,11 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 public class AgentForwardedChannel extends AbstractClientChannel {
-
     private final Queue<Buffer> messages = new ArrayBlockingQueue<>(10);
     private final Buffer receiveBuffer = new ByteArrayBuffer();
 
-    public AgentForwardedChannel() {
-        super("auth-agent@openssh.com");
+    public AgentForwardedChannel(String channelType) {
+        super(channelType);
     }
 
     public SshAgent getAgent() {

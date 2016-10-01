@@ -45,9 +45,10 @@ public interface ForwardingFilter {
      * </p>
      *
      * @param session The {@link Session} requesting permission to forward the agent.
+     * @param requestType The request type string that triggered this call
      * @return true if the agent forwarding is permitted, false if denied.
      */
-    boolean canForwardAgent(Session session);
+    boolean canForwardAgent(Session session, String requestType);
 
     /**
      * <p>
@@ -61,9 +62,10 @@ public interface ForwardingFilter {
      * </p>
      *
      * @param session The {@link Session} requesting permission to forward X11 connections.
+     * @param requestType The request type string that triggered this call
      * @return true if the X11 forwarding is permitted, false if denied.
      */
-    boolean canForwardX11(Session session);
+    boolean canForwardX11(Session session, String requestType);
 
     /**
      * <p>

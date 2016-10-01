@@ -41,7 +41,7 @@ import org.apache.tomcat.jni.Pool;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-final class AprLibrary {
+public final class AprLibrary {
 
     // is APR library was initialized (load of native libraries)
     private static AprLibrary library;
@@ -76,7 +76,7 @@ final class AprLibrary {
      *
      * @return the current APR library singleton
      */
-    static synchronized AprLibrary getInstance() {
+    public static synchronized AprLibrary getInstance() {
         if (!isInitialized()) {
             initialize();
         }
@@ -98,7 +98,7 @@ final class AprLibrary {
      *
      * @return true if the Library is initialized, false otherwise
      */
-    static synchronized boolean isInitialized() {
+    public static synchronized boolean isInitialized() {
         return library != null;
     }
 

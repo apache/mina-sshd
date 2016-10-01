@@ -318,10 +318,11 @@ public class ChannelSession extends AbstractServerChannel {
                     }
                     return RequestHandler.Result.ReplyFailure;
                 }
+            case "auth-agent-req":  // see https://tools.ietf.org/html/draft-ietf-secsh-agent-02
             case "auth-agent-req@openssh.com":
-                return handleAgentForwarding(buffer, wantReply);
+                return handleAgentForwarding(requestType, buffer, wantReply);
             case "x11-req":
-                return handleX11Forwarding(buffer, wantReply);
+                return handleX11Forwarding(requestType, buffer, wantReply);
             default:
                 return super.handleInternalRequest(requestType, wantReply, buffer);
         }
@@ -695,23 +696,23 @@ public class ChannelSession extends AbstractServerChannel {
         return v != null ? v.intValue() : 0;
     }
 
-    protected RequestHandler.Result handleAgentForwarding(Buffer buffer, boolean wantReply) throws IOException {
+    protected RequestHandler.Result handleAgentForwarding(String requestType, Buffer buffer, boolean wantReply) throws IOException {
         ServerSession session = getServerSession();
         FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No session factory manager");
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
         SshAgentFactory factory = manager.getAgentFactory();
         try {
-            if ((factory == null) || (filter == null) || (!filter.canForwardAgent(session))) {
+            if ((factory == null) || (filter == null) || (!filter.canForwardAgent(session, requestType))) {
                 if (log.isDebugEnabled()) {
-                    log.debug("handleAgentForwarding(" + this + ")[haveFactory=" + (factory != null) + ",haveFilter=" + (filter != null) + "] filtered out");
+                    log.debug("handleAgentForwarding(" + this + ")[haveFactory=" + (factory != null) + ",haveFilter=" + (filter != null) + "] filtered out request=" + requestType);
                 }
                 return RequestHandler.Result.ReplyFailure;
             }
         } catch (Error e) {
-            log.warn("handleAgentForwarding({}) failed ({}) to consult forwarding filter: {}",
-                     this, e.getClass().getSimpleName(), e.getMessage());
+            log.warn("handleAgentForwarding({}) failed ({}) to consult forwarding filter for '{}': {}",
+                     this, e.getClass().getSimpleName(), requestType, e.getMessage());
             if (log.isDebugEnabled()) {
-                log.debug("handleAgentForwarding(" + this + ") filter consultation failure details", e);
+                log.debug("handleAgentForwarding(" + this + ")[" + requestType + "] filter consultation failure details", e);
             }
             throw new RuntimeSshException(e);
         }
@@ -729,7 +730,7 @@ public class ChannelSession extends AbstractServerChannel {
         return RequestHandler.Result.ReplySuccess;
     }
 
-    protected RequestHandler.Result handleX11Forwarding(Buffer buffer, boolean wantReply) throws IOException {
+    protected RequestHandler.Result handleX11Forwarding(String requestType, Buffer buffer, boolean wantReply) throws IOException {
         ServerSession session = getServerSession();
         boolean singleConnection = buffer.getBoolean();
         String authProtocol = buffer.getString();
@@ -739,18 +740,18 @@ public class ChannelSession extends AbstractServerChannel {
         FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
         try {
-            if ((filter == null) || (!filter.canForwardX11(session))) {
+            if ((filter == null) || (!filter.canForwardX11(session, requestType))) {
                 if (log.isDebugEnabled()) {
-                    log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={}, filter={}: filtered",
-                              this, singleConnection, authProtocol, authCookie, screenId, filter);
+                    log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={}, filter={}: filtered request={}",
+                              this, singleConnection, authProtocol, authCookie, screenId, filter, requestType);
                 }
                 return RequestHandler.Result.ReplyFailure;
             }
         } catch (Error e) {
-            log.warn("handleX11Forwarding({}) failed ({}) to consult forwarding filter: {}",
-                     this, e.getClass().getSimpleName(), e.getMessage());
+            log.warn("handleX11Forwarding({}) failed ({}) to consult forwarding filter for '{}': {}",
+                     this, e.getClass().getSimpleName(), requestType, e.getMessage());
             if (log.isDebugEnabled()) {
-                log.debug("handleX11Forwarding(" + this + ") filter consultation failure details", e);
+                log.debug("handleX11Forwarding(" + this + ")[" + requestType + "] filter consultation failure details", e);
             }
             throw new RuntimeSshException(e);
         }

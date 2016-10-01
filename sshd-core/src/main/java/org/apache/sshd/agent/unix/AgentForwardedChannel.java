@@ -33,8 +33,8 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
 
     private final long socket;
 
-    public AgentForwardedChannel(long socket) {
-        super("auth-agent@openssh.com");
+    public AgentForwardedChannel(long socket, String channelType) {
+        super(channelType);
         this.socket = socket;
     }
 

@@ -31,6 +31,7 @@ import org.apache.sshd.agent.local.LocalAgentFactory;
 import org.apache.sshd.agent.local.ProxyAgentFactory;
 import org.apache.sshd.agent.unix.AgentClient;
 import org.apache.sshd.agent.unix.AgentServer;
+import org.apache.sshd.agent.unix.AprLibrary;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.session.ClientSession;
@@ -46,6 +47,7 @@ import org.apache.sshd.util.test.EchoShell;
 import org.apache.sshd.util.test.EchoShellFactory;
 import org.apache.sshd.util.test.Utils;
 import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -56,25 +58,29 @@ public class AgentTest extends BaseTestSupport {
         super();
     }
 
-    @Test
-    public void testAgentServer() throws Exception {
+    @BeforeClass
+    public static void checkTestAssumptions() {
         // TODO: revisit this test to work without BC
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
+        AprLibrary library = null;
+        try {
+            library = AprLibrary.getInstance();
+        } catch (RuntimeException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof UnsatisfiedLinkError) {
+                library = null;
+            } else {
+                throw e;
+            }
+        }
+        Assume.assumeTrue("Native library N/A", library != null);
+    }
+
+    @Test
+    public void testAgentServer() throws Exception {
 
         try (AgentServer agent = new AgentServer()) {
-            String authSocket;
-            try {
-                authSocket = agent.start();
-            } catch (RuntimeException e) {
-                Throwable cause = e.getCause();
-                if (cause instanceof UnsatisfiedLinkError) {
-                    // the native library is not available, so these tests should be skipped
-                    authSocket = null;
-                } else {
-                    throw e;
-                }
-            }
-            Assume.assumeTrue("Native library N/A", authSocket != null);
+            String authSocket = agent.start();
 
             try (SshAgent client = new AgentClient(authSocket)) {
                 List<Pair<PublicKey, String>> keys = client.getIdentities();
@@ -100,9 +106,6 @@ public class AgentTest extends BaseTestSupport {
     @Test
     @SuppressWarnings("checkstyle:nestedtrydepth")
     public void testAgentForwarding() throws Exception {
-        // TODO: revisit this test to work without BC
-        Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
-
         TestEchoShellFactory shellFactory = new TestEchoShellFactory();
         ProxyAgentFactory agentFactory = new ProxyAgentFactory();
         LocalAgentFactory localAgentFactory = new LocalAgentFactory();

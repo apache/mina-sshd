@@ -103,7 +103,8 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
 
                             Session session = AgentServerProxy.this.service.getSession();
                             Socket.timeoutSet(clientSock, PropertyResolverUtils.getIntProperty(session, AUTH_SOCKET_TIMEOUT, DEFAULT_AUTH_SOCKET_TIMEOUT));
-                            AgentForwardedChannel channel = new AgentForwardedChannel(clientSock);
+                            String channelType = PropertyResolverUtils.getStringProperty(session, PROXY_CHANNEL_TYPE, DEFAULT_PROXY_CHANNEL_TYPE);
+                            AgentForwardedChannel channel = new AgentForwardedChannel(clientSock, channelType);
                             AgentServerProxy.this.service.registerChannel(channel);
                             channel.open().verify(PropertyResolverUtils.getLongProperty(session, CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
                         } catch (Exception e) {

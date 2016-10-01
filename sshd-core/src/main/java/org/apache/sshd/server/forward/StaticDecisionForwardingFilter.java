@@ -41,13 +41,13 @@ public class StaticDecisionForwardingFilter extends AbstractLoggingBean implemen
     }
 
     @Override
-    public boolean canForwardAgent(Session session) {
-        return checkAcceptance("auth-agent-req@openssh.com", session, SshdSocketAddress.LOCALHOST_ADDRESS);
+    public boolean canForwardAgent(Session session, String requestType) {
+        return checkAcceptance(requestType, session, SshdSocketAddress.LOCALHOST_ADDRESS);
     }
 
     @Override
-    public boolean canForwardX11(Session session) {
-        return checkAcceptance("x11-req", session, SshdSocketAddress.LOCALHOST_ADDRESS);
+    public boolean canForwardX11(Session session, String requestType) {
+        return checkAcceptance(requestType, session, SshdSocketAddress.LOCALHOST_ADDRESS);
     }
 
     @Override
