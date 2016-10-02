@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
+
 import org.apache.commons.httpclient.HostConfiguration;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpVersion;
@@ -192,7 +193,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
         final String payload = sb.toString();
 
         Session session = createSession();
-        try (final ServerSocket ss = new ServerSocket()) {
+        try (ServerSocket ss = new ServerSocket()) {
             ss.setReuseAddress(true);
             ss.bind(new InetSocketAddress((InetAddress) null, 0));
             int forwardedPort = ss.getLocalPort();
@@ -299,7 +300,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                 + "longer Test Data. This is significantly longer Test Data. This is significantly "
                 + "longer Test Data. ";
         Session session = createSession();
-        try (final ServerSocket ss = new ServerSocket()) {
+        try (ServerSocket ss = new ServerSocket()) {
             ss.setReuseAddress(true);
             ss.bind(new InetSocketAddress((InetAddress) null, 0));
             int forwardedPort = ss.getLocalPort();

@@ -522,7 +522,7 @@
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>7.0</version>
+                            <version>7.1.2</version>
                             <exclusions>
                                 <!-- MCHECKSTYLE-156 -->
                                 <exclusion>

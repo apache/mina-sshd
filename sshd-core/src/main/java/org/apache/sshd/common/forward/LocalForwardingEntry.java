@@ -55,6 +55,11 @@ public class LocalForwardingEntry extends SshdSocketAddress {
     }
 
     @Override
+    public boolean equals(Object o) {
+        return super.equals(o);
+    }
+
+    @Override
     public int hashCode() {
         return super.hashCode() + Objects.hashCode(getAlias());
     }

@@ -169,11 +169,11 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
         final String inputContent = "shellInput";
         final String outputContent = "shellOutput";
         final String errorContent = "shellError";
-        try (final InputStream stdin = newDelayedInputStream(Long.SIZE, inputContent);
-             final ByteArrayOutputStream shellIn = new ByteArrayOutputStream(Byte.MAX_VALUE);
-             final InputStream shellOut = newDelayedInputStream(Byte.SIZE, outputContent);
+        try (InputStream stdin = newDelayedInputStream(Long.SIZE, inputContent);
+             ByteArrayOutputStream shellIn = new ByteArrayOutputStream(Byte.MAX_VALUE);
+             InputStream shellOut = newDelayedInputStream(Byte.SIZE, outputContent);
              ByteArrayOutputStream stdout = new ByteArrayOutputStream(outputContent.length() + Byte.SIZE);
-             final InputStream shellErr = newDelayedInputStream(Short.SIZE, errorContent);
+             InputStream shellErr = newDelayedInputStream(Short.SIZE, errorContent);
              ByteArrayOutputStream stderr = new ByteArrayOutputStream(errorContent.length() + Byte.SIZE)) {
 
             InvertedShell shell = new InvertedShell() {

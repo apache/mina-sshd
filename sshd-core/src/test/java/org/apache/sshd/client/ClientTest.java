@@ -441,7 +441,7 @@ public class ClientTest extends BaseTestSupport {
 
         client.start();
 
-        try (final ClientSession session = createTestClientSession()) {
+        try (ClientSession session = createTestClientSession()) {
             testClientListener(channelHolder, ChannelShell.class, () -> {
                 try {
                     return session.createShellChannel();
@@ -497,7 +497,7 @@ public class ClientTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = createTestClientSession();
-             final ChannelShell channel = session.createShellChannel()) {
+             ChannelShell channel = session.createShellChannel()) {
 
             channel.setStreaming(ClientChannel.Streaming.Async);
             channel.open().verify(5L, TimeUnit.SECONDS);
@@ -505,9 +505,9 @@ public class ClientTest extends BaseTestSupport {
             final byte[] message = "0123456789\n".getBytes(StandardCharsets.UTF_8);
             final int nbMessages = 1000;
 
-            try (final ByteArrayOutputStream baosOut = new ByteArrayOutputStream();
-                final ByteArrayOutputStream baosErr = new ByteArrayOutputStream()) {
-                final AtomicInteger writes = new AtomicInteger(nbMessages);
+            try (ByteArrayOutputStream baosOut = new ByteArrayOutputStream();
+                 ByteArrayOutputStream baosErr = new ByteArrayOutputStream()) {
+                AtomicInteger writes = new AtomicInteger(nbMessages);
 
                 channel.getAsyncIn().write(new ByteArrayBuffer(message)).addListener(new SshFutureListener<IoWriteFuture>() {
                     @Override
@@ -1184,7 +1184,7 @@ public class ClientTest extends BaseTestSupport {
         client.setUserAuthFactories(Collections.singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
-        try (final ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.setUserInteraction(new UserInteraction() {
                 @Override
@@ -1235,7 +1235,7 @@ public class ClientTest extends BaseTestSupport {
         client.setUserAuthFactories(Collections.singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
-        try (final ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.setUserInteraction(new UserInteraction() {
                 @Override

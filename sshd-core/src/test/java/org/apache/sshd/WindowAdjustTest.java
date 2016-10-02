@@ -106,11 +106,11 @@ public class WindowAdjustTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             client.start();
 
-            try (final ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(11L, TimeUnit.SECONDS);
 
-                try (final ClientChannel channel = session.createShellChannel()) {
+                try (ClientChannel channel = session.createShellChannel()) {
                     channel.setOut(new VerifyingOutputStream(channel, END_FILE));
                     channel.setErr(new NoCloseOutputStream(System.err));
                     channel.open().verify(15L, TimeUnit.SECONDS);
@@ -264,7 +264,7 @@ public class WindowAdjustTest extends BaseTestSupport {
         private IoOutputStream asyncIn;
 
         // Order has to be preserved for queued writes
-        private final Deque<Buffer> pending = new LinkedList<Buffer>();
+        private final Deque<Buffer> pending = new LinkedList<>();
 
         AsyncInPendingWrapper(IoOutputStream out) {
             this.asyncIn = out;
