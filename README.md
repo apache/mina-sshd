@@ -589,7 +589,8 @@ The code implements a [SOCKS](https://en.wikipedia.org/wiki/SOCKS) proxy for ver
 
 ### Proxy agent
 
-The code provides to some extent an SSH proxy agent via the available `SshAgentFactory` implementations.
+The code provides to some extent an SSH proxy agent via the available `SshAgentFactory` implementations. As of latest version both [ Secure Shell Authentication Agent Protocol Draft 02](https://tools.ietf.org/html/draft-ietf-secsh-agent-02) and its [OpenSSH](https://www.libssh.org/features/) equivalent are supported.
+
 
 # Advanced configuration and interaction
 
@@ -801,12 +802,26 @@ Inform about SCP related events. `ScpTransferEventListener`(s) can be registered
 ```
 
 
-### `ReservedSessionMessagesHandler`
+### Reserved messages
 
-The implementation can be used to intercept and process the [SSH_MSG_IGNORE](https://tools.ietf.org/html/rfc4253#section-11.2)
-and [SSH_MSG_DEBUG](https://tools.ietf.org/html/rfc4253#section-11.3) messages. The handler can be registered on either side - server
-or client, as well as on the session
+The implementation can be used to intercept and process the [SSH_MSG_IGNORE](https://tools.ietf.org/html/rfc4253#section-11.2), [SSH_MSG_DEBUG](https://tools.ietf.org/html/rfc4253#section-11.3) and [SSH_MSG_UNIMPLEMENTED](https://tools.ietf.org/html/rfc4253#section-11.4) messages. The handler can be registered on either side - server
+or client, as well as on the session. A special [patch](https://issues.apache.org/jira/browse/SSHD-699) has been introduced
+that automatically ignores such messages if they are malformed - i.e., they never reach the handler.
 
+#### SSH message stream "stuffing" and keys re-exchange
+
+[RFC 4253 - section 9](https://tools.ietf.org/html/rfc4253#section-9) recommends re-exchanging keys every once in a while
+based on the amount of traffic and the selected cipher - the matter is further clarified in [RFC 4251 - section 9.3.2](https://tools.ietf.org/html/rfc4251#section-9.3.2). These recommendations are mirrored in the code via the `FactoryManager`
+related `REKEY_TIME_LIMIT`, `REKEY_PACKETS_LIMIT` and `REKEY_BLOCKS_LIMIT` configuration properties that
+can be used to configure said behavior - please be sure to read the relevant _Javadoc_ as well the aforementioned RFC section(s) when
+manipulating them. This behavior can also be controlled programmatically by overriding the `AbstractSession#isRekeyRequired()` method.
+
+As an added security mechanism [RFC 4251 - section 9.3.1](https://tools.ietf.org/html/rfc4251#section-9.3.1) recommends adding
+"spurious" [SSH_MSG_IGNORE](https://tools.ietf.org/html/rfc4253#section-11.2) messages. This functionality is mirrored in the
+`FactoryManager` related `IGNORE_MESSAGE_FREQUENCY`, `IGNORE_MESSAGE_VARIANCE` and `IGNORE_MESSAGE_SIZE`
+configuration properties that can be used to configure said behavior - please be sure to read the relevant _Javadoc_ as well the aforementioned RFC section when manipulating them. This behavior can also be controlled programmatically by overriding the `AbstractSession#resolveIgnoreBufferDataLength()` method.
+
+#### `ReservedSessionMessagesHandler`
 
 ```java
 
@@ -855,6 +870,89 @@ or client, as well as on the session
 **NOTE:** Unlike "regular" event listeners, the handler is not cumulative - i.e., setting it overrides the previous instance
 rather than being accumulated. However, one can use the `EventListenerUtils` and create a cumulative listener - see how
 `SessionListener` or `ChannelListener` proxies were implemented.
+
+
+### `RequestHandler`(s)
+
+The code supports both [global](https://tools.ietf.org/html/rfc4254#section-4) and [channel-specific](https://tools.ietf.org/html/rfc4254#section-5.4) requests via the registration of `RequestHandler`(s).
+The global handlers are derived from `ConnectionServiceRequestHandler`(s) whereas the channel-specific
+ones are derived from `ChannelRequestHandler`(s). In order to add a handler one need only register the correct
+implementation and handle the request when it is detected:
+
+```java
+
+    // NOTE: the following code can be employed on BOTH client and server - the example is for the server
+    SshServer server = SshServer.setUpDefaultServer();
+    List<RequestHandler<ConnectionService>> oldGlobals = server.getGlobalRequestHandlers();
+    // Create a copy in case current one is null/empty/un-modifiable
+    List<RequestHandler<ConnectionService>> newGlobals = new ArrayList<>();
+    if (GenericUtils.size(oldGlobals) > 0) {
+        newGlobals.addAll(oldGLobals);
+    }
+    newGlobals.add(new MyGlobalRequestHandler());
+    server.setGlobalRequestHandlers(newGlobals);
+    
+    // Similar code can be done with the server's channelRequestHandlers();
+```
+
+The way request handlers are invoked when a global/channel-specific request is received  is as follows:
+
+* All currently registered handlers' `process` method is invoked with the request type string parameter (among others).
+The implementation should examine the request parameters and decide whether it is able to process it.
+
+
+* If the handler returns `Result.Unsupported` then the next registered handler is invoked.
+In other words, processing stops at the **first** handler that returned a valid response. Thus the importance of
+the `List<RequestHandler<...>>` that defines the **order** in which the handlers are invoked. **Note**: while
+it is possible to register multiple handlers for the same request and rely on their order, it is highly recommended
+to avoid this situation as it makes debugging the code and diagnosing problems much more difficult.
+
+
+* If no handler reported a valid result value then a failure message is sent back to the peer. Otherwise, the returned
+result is translated into the appropriate success/failure response (if the sender asked for a response). In this context,
+the handler may choose to build and send the response within its own code, in which case it should return the
+`Result.Replied` value indicating that it has done so. 
+
+
+```java
+
+    public class MySpecialChannelRequestHandler implements ChannelRequestHandler {
+        ...
+        
+        @Override
+        public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
+            if (!"my-special-request".equals(request)) {
+               return Result.Unsupported;   // Not mine - maybe someone else can handle it
+            }
+            
+            ...handle the request - can read more parameters from the message buffer...
+            
+            return Result.ReplySuccess/Failure/Replied; // signal processing result
+        }
+    }
+```
+
+
+#### Default registered handlers
+
+* `exit-signal`, `exit-status` - As described in [RFC4254 section 6.10](https://tools.ietf.org/html/rfc4254#section-6.10)
+
+
+* `*@putty.projects.tartarus.org` - As described in [Appendix F: SSH-2 names specified for PuTTY](http://tartarus.org/~simon/putty-snapshots/htmldoc/AppendixF.html)
+
+
+* `hostkeys-prove-00@openssh.com`, `hostkeys-00@openssh.com` - As described in [OpenSSH protocol - section 2.5](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL)
+
+
+* `tcpip-forward`, `cancel-tcpip-forward` - As described in [RFC4254 section 7](https://tools.ietf.org/html/rfc4254#section-7)
+
+
+* `keepalive@*` - Used by many implementations (including this one) to "ping" the peer and make sure the connection is still alive.
+In this context, the SSHD code allows the user to configure both the frequency and content of the heartbeat request (including whether to send this request at all) via the `ClientFactoryManager`-s `HEARTBEAT_INTERVAL`, `HEARTBEAT_REQUEST` and `DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING` configuration properties.
+
+
+* `no-more-sessions@*` - As described in [OpenSSH protocol section 2.2](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL). In this context, the code consults the `ServerFactoryManagder.MAX_CONCURRENT_SESSIONS` server-side configuration property in order to
+decide whether to accept a successfully authentication session. 
 
 
 # Extension modules

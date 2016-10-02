@@ -182,57 +182,57 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
         return me();
     }
 
-    public S signatureFactories(final List<NamedFactory<Signature>> signatureFactories) {
+    public S signatureFactories(List<NamedFactory<Signature>> signatureFactories) {
         this.signatureFactories = signatureFactories;
         return me();
     }
 
-    public S randomFactory(final Factory<Random> randomFactory) {
+    public S randomFactory(Factory<Random> randomFactory) {
         this.randomFactory = randomFactory;
         return me();
     }
 
-    public S cipherFactories(final List<NamedFactory<Cipher>> cipherFactories) {
+    public S cipherFactories(List<NamedFactory<Cipher>> cipherFactories) {
         this.cipherFactories = cipherFactories;
         return me();
     }
 
-    public S compressionFactories(final List<NamedFactory<Compression>> compressionFactories) {
+    public S compressionFactories(List<NamedFactory<Compression>> compressionFactories) {
         this.compressionFactories = compressionFactories;
         return me();
     }
 
-    public S macFactories(final List<NamedFactory<Mac>> macFactories) {
+    public S macFactories(List<NamedFactory<Mac>> macFactories) {
         this.macFactories = macFactories;
         return me();
     }
 
-    public S channelFactories(final List<NamedFactory<Channel>> channelFactories) {
+    public S channelFactories(List<NamedFactory<Channel>> channelFactories) {
         this.channelFactories = channelFactories;
         return me();
     }
 
-    public S fileSystemFactory(final FileSystemFactory fileSystemFactory) {
+    public S fileSystemFactory(FileSystemFactory fileSystemFactory) {
         this.fileSystemFactory = fileSystemFactory;
         return me();
     }
 
-    public S forwardingFilter(final ForwardingFilter filter) {
+    public S forwardingFilter(ForwardingFilter filter) {
         this.forwardingFilter = filter;
         return me();
     }
 
-    public S tcpipForwarderFactory(final TcpipForwarderFactory tcpipForwarderFactory) {
+    public S tcpipForwarderFactory(TcpipForwarderFactory tcpipForwarderFactory) {
         this.tcpipForwarderFactory = tcpipForwarderFactory;
         return me();
     }
 
-    public S globalRequestHandlers(final List<RequestHandler<ConnectionService>> globalRequestHandlers) {
+    public S globalRequestHandlers(List<RequestHandler<ConnectionService>> globalRequestHandlers) {
         this.globalRequestHandlers = globalRequestHandlers;
         return me();
     }
 
-    public S factory(final Factory<T> factory) {
+    public S factory(Factory<T> factory) {
         this.factory = factory;
         return me();
     }

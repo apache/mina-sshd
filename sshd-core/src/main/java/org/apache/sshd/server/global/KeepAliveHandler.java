@@ -23,7 +23,7 @@ import org.apache.sshd.common.session.helpers.AbstractConnectionServiceRequestHa
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
- * Handler for keepalive@xxx global request.
+ * Handler for &quot;keepalive@xxx&quot; global request.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
