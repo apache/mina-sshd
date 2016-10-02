@@ -19,6 +19,8 @@
 package org.apache.sshd.common.channel;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
 
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.AttributeStore;
@@ -26,6 +28,7 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -62,6 +65,18 @@ public interface Channel
     Window getLocalWindow();
 
     Window getRemoteWindow();
+
+    List<RequestHandler<Channel>> getRequestHandlers();
+
+    void addRequestHandler(RequestHandler<Channel> handler);
+    default void addRequestHandlers(Collection<? extends RequestHandler<Channel>> handlers) {
+        GenericUtils.forEach(handlers, this::addRequestHandler);
+    }
+
+    void removeRequestHandler(RequestHandler<Channel> handler);
+    default void removeRequestHandlers(Collection<? extends RequestHandler<Channel>> handlers) {
+        GenericUtils.forEach(handlers, this::removeRequestHandler);
+    }
 
     /**
      * Invoked when <code>SSH_MSG_CHANNEL_CLOSE</code> received

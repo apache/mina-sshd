@@ -892,7 +892,8 @@ rather than being accumulated. However, one can use the `EventListenerUtils` and
 The code supports both [global](https://tools.ietf.org/html/rfc4254#section-4) and [channel-specific](https://tools.ietf.org/html/rfc4254#section-5.4) requests via the registration of `RequestHandler`(s).
 The global handlers are derived from `ConnectionServiceRequestHandler`(s) whereas the channel-specific
 ones are derived from `ChannelRequestHandler`(s). In order to add a handler one need only register the correct
-implementation and handle the request when it is detected:
+implementation and handle the request when it is detected. For global request handlers this is done by registering
+them on the server:
 
 ```java
 
@@ -907,10 +908,9 @@ implementation and handle the request when it is detected:
     newGlobals.add(new MyGlobalRequestHandler());
     server.setGlobalRequestHandlers(newGlobals);
     
-    // Similar code can be done with the server's channelRequestHandlers();
 ```
 
-The way request handlers are invoked when a global/channel-specific request is received  is as follows:
+For channel-specific requests, one uses the channel's `add/removeRequestHandler` method to manage its handlers. The way request handlers are invoked when a global/channel-specific request is received  is as follows:
 
 * All currently registered handlers' `process` method is invoked with the request type string parameter (among others).
 The implementation should examine the request parameters and decide whether it is able to process it.

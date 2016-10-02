@@ -20,13 +20,14 @@ package org.apache.sshd.common.channel;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -80,7 +81,6 @@ public abstract class AbstractChannel
     protected final AtomicBoolean eofSent = new AtomicBoolean(false);
     protected AtomicReference<GracefulState> gracefulState = new AtomicReference<>(GracefulState.Opened);
     protected final DefaultCloseFuture gracefulFuture = new DefaultCloseFuture(lock);
-    protected final List<RequestHandler<Channel>> handlers = new ArrayList<>();
     /**
      * Channel events listener
      */
@@ -93,6 +93,7 @@ public abstract class AbstractChannel
     private Session sessionInstance;
     private ExecutorService executor;
     private boolean shutdownExecutor;
+    private final List<RequestHandler<Channel>> requestHandlers = new CopyOnWriteArrayList<>();
 
     private final Window localWindow;
     private final Window remoteWindow;
@@ -124,12 +125,19 @@ public abstract class AbstractChannel
         addRequestHandlers(handlers);
     }
 
-    public void addRequestHandlers(Collection<? extends RequestHandler<Channel>> handlers) {
-        GenericUtils.forEach(handlers, this::addRequestHandler);
+    @Override
+    public List<RequestHandler<Channel>> getRequestHandlers() {
+        return requestHandlers;
     }
 
+    @Override
     public void addRequestHandler(RequestHandler<Channel> handler) {
-        handlers.add(ValidateUtils.checkNotNull(handler, "No handler instance"));
+        requestHandlers.add(Objects.requireNonNull(handler, "No handler instance"));
+    }
+
+    @Override
+    public void removeRequestHandler(RequestHandler<Channel> handler) {
+        requestHandlers.remove(Objects.requireNonNull(handler, "No handler instance"));
     }
 
     @Override
@@ -240,6 +248,7 @@ public abstract class AbstractChannel
             log.debug("handleChannelRequest({}) SSH_MSG_CHANNEL_REQUEST {} wantReply={}", this, req, wantReply);
         }
 
+        Collection<? extends RequestHandler<Channel>> handlers = getRequestHandlers();
         for (RequestHandler<Channel> handler : handlers) {
             RequestHandler.Result result;
             try {
