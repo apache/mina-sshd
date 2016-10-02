@@ -20,9 +20,10 @@ package org.apache.sshd.server.subsystem.sftp;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
+
+import org.apache.sshd.server.session.ServerSession;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -36,11 +37,14 @@ public class DirectoryHandle extends Handle implements Iterator<Path> {
     private DirectoryStream<Path> ds;
     private Iterator<Path> fileList;
 
-    public DirectoryHandle(Path file) throws IOException {
-        super(file);
-        ds = Files.newDirectoryStream(file);
+    public DirectoryHandle(SftpSubsystem subsystem, Path dir, String handle) throws IOException {
+        super(dir, handle);
 
-        Path parent = file.getParent();
+        SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
+        ServerSession session = subsystem.getServerSession();
+        ds = accessor.openDirectory(session, subsystem, dir, handle);
+
+        Path parent = dir.getParent();
         if (parent == null) {
             sendDotDot = false;  // if no parent then no need to send ".."
         }

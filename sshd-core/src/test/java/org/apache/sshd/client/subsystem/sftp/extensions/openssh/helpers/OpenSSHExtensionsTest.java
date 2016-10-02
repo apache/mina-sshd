@@ -124,7 +124,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory() {
             @Override
             public Command create() {
-                return new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy()) {
+                return new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy(), getFileSystemAccessor()) {
                     @Override
                     protected List<OpenSSHExtension> resolveOpenSSHExtensions(ServerSession session) {
                         List<OpenSSHExtension> original = super.resolveOpenSSHExtensions(session);

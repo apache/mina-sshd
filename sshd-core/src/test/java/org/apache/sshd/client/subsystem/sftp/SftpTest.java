@@ -29,14 +29,18 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,6 +49,7 @@ import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.Vector;
@@ -58,7 +63,9 @@ import com.jcraft.jsch.JSch;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
+import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.OpenMode;
 import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensions;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
@@ -92,6 +99,8 @@ import org.apache.sshd.server.subsystem.sftp.DirectoryHandle;
 import org.apache.sshd.server.subsystem.sftp.FileHandle;
 import org.apache.sshd.server.subsystem.sftp.Handle;
 import org.apache.sshd.server.subsystem.sftp.SftpEventListener;
+import org.apache.sshd.server.subsystem.sftp.SftpEventListenerManager;
+import org.apache.sshd.server.subsystem.sftp.SftpFileSystemAccessor;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.SimpleUserInfo;
@@ -512,6 +521,91 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 assertEquals("Failed to read fully skipped backward data", actual.length, readLen);
                 assertArrayEquals("Mismatched skipped backward data contents", expected, actual);
             }
+        }
+    }
+
+    @Test
+    public void testSftpFileSystemAccessor() throws Exception {
+        List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();
+        assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
+
+        NamedFactory<Command> f = factories.get(0);
+        assertObjectInstanceOf("Not an SFTP subsystem factory", SftpSubsystemFactory.class, f);
+
+        SftpSubsystemFactory factory = (SftpSubsystemFactory) f;
+        SftpFileSystemAccessor accessor = factory.getFileSystemAccessor();
+        try {
+            AtomicReference<Path> fileHolder = new AtomicReference<>();
+            AtomicReference<Path> dirHolder = new AtomicReference<>();
+            factory.setFileSystemAccessor(new SftpFileSystemAccessor() {
+                @Override
+                public SeekableByteChannel openFile(ServerSession session, SftpEventListenerManager subsystem, Path file,
+                        String handle, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
+                                throws IOException {
+                    fileHolder.set(file);
+                    return SftpFileSystemAccessor.super.openFile(session, subsystem, file, handle, options, attrs);
+                }
+
+                @Override
+                public DirectoryStream<Path> openDirectory(
+                        ServerSession session, SftpEventListenerManager subsystem, Path dir, String handle) throws IOException {
+                    dirHolder.set(dir);
+                    return SftpFileSystemAccessor.super.openDirectory(session, subsystem, dir, handle);
+                }
+
+                @Override
+                public String toString() {
+                    return SftpFileSystemAccessor.class.getSimpleName() + "[" + getCurrentTestName() + "]";
+                }
+            });
+
+            Path targetPath = detectTargetFolder();
+            Path parentPath = targetPath.getParent();
+            Path localFile = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+            Files.createDirectories(localFile.getParent());
+            byte[] expected = (getClass().getName() + "#" + getCurrentTestName() + "[" + localFile + "]").getBytes(StandardCharsets.UTF_8);
+            Files.write(localFile, expected, StandardOpenOption.CREATE);
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                try (SftpClient sftp = session.createSftpClient()) {
+                    byte[] actual = new byte[expected.length];
+                    try (InputStream stream = sftp.read(Utils.resolveRelativeRemotePath(parentPath, localFile), OpenMode.Read)) {
+                        IoUtils.readFully(stream, actual);
+                    }
+
+                    Path remoteFile = fileHolder.getAndSet(null);
+                    assertNotNull("No remote file holder value", remoteFile);
+                    assertEquals("Mismatched opened local files", localFile.toFile(), remoteFile.toFile());
+                    assertArrayEquals("Mismatched retrieved file contents", expected, actual);
+
+                    Path localParent = localFile.getParent();
+                    String localName = Objects.toString(localFile.getFileName(), null);
+                    try (CloseableHandle handle = sftp.openDir(Utils.resolveRelativeRemotePath(parentPath, localParent))) {
+                        List<DirEntry> entries = sftp.readDir(handle);
+                        Path remoteParent = dirHolder.getAndSet(null);
+                        assertNotNull("No remote folder holder value", remoteParent);
+                        assertEquals("Mismatched opened folder", localParent.toFile(), remoteParent.toFile());
+                        assertFalse("No dir entries", GenericUtils.isEmpty(entries));
+
+                        for (DirEntry de : entries) {
+                            Attributes attrs = de.getAttributes();
+                            if (!attrs.isRegularFile()) {
+                                continue;
+                            }
+
+                            if (localName.equals(de.getFilename())) {
+                                return;
+                            }
+                        }
+
+                        fail("Cannot find listing of " + localName);
+                    }
+                }
+            }
+        } finally {
+            factory.setFileSystemAccessor(accessor);    // restore original
         }
     }
 

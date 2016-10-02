@@ -23,19 +23,27 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.sshd.common.util.ValidateUtils;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class Handle implements java.nio.channels.Channel {
     private final AtomicBoolean closed = new AtomicBoolean(false);
-    private Path file;
+    private final Path file;
+    private final String handle;
 
-    protected Handle(Path file) {
-        this.file = file;
+    protected Handle(Path file, String handle) {
+        this.file = Objects.requireNonNull(file, "No local file path");
+        this.handle = ValidateUtils.checkNotNullAndNotEmpty(handle, "No assigned handle for %s", file);
     }
 
     public Path getFile() {
         return file;
+    }
+
+    public String getFileHandle() {
+        return handle;
     }
 
     @Override

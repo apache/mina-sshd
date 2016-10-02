@@ -19,12 +19,12 @@
 
 package org.apache.sshd.server.subsystem.sftp;
 
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
@@ -32,7 +32,9 @@ import org.apache.sshd.server.subsystem.SubsystemFactory;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SftpSubsystemFactory extends AbstractSftpEventListenerManager implements SubsystemFactory, ExecutorServiceConfigurer, SftpEventListenerManager {
+public class SftpSubsystemFactory
+    extends AbstractSftpEventListenerManager
+    implements SubsystemFactory, ExecutorServiceConfigurer, SftpEventListenerManager, SftpFileSystemAccessorManager {
     public static final String NAME = SftpConstants.SFTP_SUBSYSTEM_NAME;
     public static final UnsupportedAttributePolicy DEFAULT_POLICY = UnsupportedAttributePolicy.Warn;
 
@@ -40,6 +42,7 @@ public class SftpSubsystemFactory extends AbstractSftpEventListenerManager imple
         private ExecutorService executors;
         private boolean shutdownExecutor;
         private UnsupportedAttributePolicy policy = DEFAULT_POLICY;
+        private SftpFileSystemAccessor fileSystemAccessor = SftpFileSystemAccessor.DEFAULT;
 
         public Builder() {
             super();
@@ -56,7 +59,12 @@ public class SftpSubsystemFactory extends AbstractSftpEventListenerManager imple
         }
 
         public Builder withUnsupportedAttributePolicy(UnsupportedAttributePolicy p) {
-            policy = ValidateUtils.checkNotNull(p, "No policy");
+            policy = Objects.requireNonNull(p, "No policy");
+            return this;
+        }
+
+        public Builder withFileSystemAccessor(SftpFileSystemAccessor accessor) {
+            fileSystemAccessor = Objects.requireNonNull(accessor, "No accessor");
             return this;
         }
 
@@ -66,6 +74,7 @@ public class SftpSubsystemFactory extends AbstractSftpEventListenerManager imple
             factory.setExecutorService(executors);
             factory.setShutdownOnExit(shutdownExecutor);
             factory.setUnsupportedAttributePolicy(policy);
+            factory.setFileSystemAccessor(fileSystemAccessor);
             GenericUtils.forEach(getRegisteredListeners(), factory::addSftpEventListener);
             return factory;
         }
@@ -74,6 +83,7 @@ public class SftpSubsystemFactory extends AbstractSftpEventListenerManager imple
     private ExecutorService executors;
     private boolean shutdownExecutor;
     private UnsupportedAttributePolicy policy = DEFAULT_POLICY;
+    private SftpFileSystemAccessor fileSystemAccessor = SftpFileSystemAccessor.DEFAULT;
 
     public SftpSubsystemFactory() {
         super();
@@ -91,7 +101,7 @@ public class SftpSubsystemFactory extends AbstractSftpEventListenerManager imple
 
     /**
      * @param service The {@link ExecutorService} to be used by the {@link SftpSubsystem}
-     *                command when starting execution. If {@code null} then a single-threaded ad-hoc service is used.
+     * command when starting execution. If {@code null} then a single-threaded ad-hoc service is used.
      */
     @Override
     public void setExecutorService(ExecutorService service) {
@@ -105,7 +115,7 @@ public class SftpSubsystemFactory extends AbstractSftpEventListenerManager imple
 
     /**
      * @param shutdownOnExit If {@code true} the {@link ExecutorService#shutdownNow()}
-     *                       will be called when subsystem terminates - unless it is the ad-hoc service, which
+     * will be called when subsystem terminates - unless it is the ad-hoc service, which
      *                       will be shutdown regardless
      */
     @Override
@@ -119,15 +129,26 @@ public class SftpSubsystemFactory extends AbstractSftpEventListenerManager imple
 
     /**
      * @param p The {@link UnsupportedAttributePolicy} to use if failed to access
-     *          some local file attributes - never {@code null}
+     * some local file attributes - never {@code null}
      */
     public void setUnsupportedAttributePolicy(UnsupportedAttributePolicy p) {
-        policy = ValidateUtils.checkNotNull(p, "No policy");
+        policy = Objects.requireNonNull(p, "No policy");
+    }
+
+    @Override
+    public SftpFileSystemAccessor getFileSystemAccessor() {
+        return fileSystemAccessor;
+    }
+
+    @Override
+    public void setFileSystemAccessor(SftpFileSystemAccessor accessor) {
+        fileSystemAccessor = Objects.requireNonNull(accessor, "No accessor");
     }
 
     @Override
     public Command create() {
-        SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy());
+        SftpSubsystem subsystem =
+                new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy(), getFileSystemAccessor());
         GenericUtils.forEach(getRegisteredListeners(), subsystem::addSftpEventListener);
         return subsystem;
     }

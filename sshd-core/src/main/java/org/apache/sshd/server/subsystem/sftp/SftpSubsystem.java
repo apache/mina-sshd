@@ -26,7 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.CopyOption;
@@ -57,6 +57,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -280,6 +281,7 @@ public class SftpSubsystem
     private final Collection<SftpEventListener> sftpEventListeners =
             EventListenerUtils.synchronizedListenersSet();
     private final SftpEventListener sftpEventListenerProxy;
+    private final SftpFileSystemAccessor fileSystemAccessor;
 
     /**
      * @param executorService The {@link ExecutorService} to be used by
@@ -290,9 +292,10 @@ public class SftpSubsystem
      *                        service, which will be shutdown regardless
      * @param policy          The {@link UnsupportedAttributePolicy} to use if failed to access
      *                        some local file attributes
+     * @param accessor        The {@link SftpFileSystemAccessor} to use for opening files and directories
      * @see ThreadUtils#newSingleThreadExecutor(String)
      */
-    public SftpSubsystem(ExecutorService executorService, boolean shutdownOnExit, UnsupportedAttributePolicy policy) {
+    public SftpSubsystem(ExecutorService executorService, boolean shutdownOnExit, UnsupportedAttributePolicy policy, SftpFileSystemAccessor accessor) {
         if (executorService == null) {
             executors = ThreadUtils.newSingleThreadExecutor(getClass().getSimpleName());
             shutdownExecutor = true;    // we always close the ad-hoc executor service
@@ -301,7 +304,8 @@ public class SftpSubsystem
             shutdownExecutor = shutdownOnExit;
         }
 
-        unsupportedAttributePolicy = ValidateUtils.checkNotNull(policy, "No policy provided");
+        unsupportedAttributePolicy = Objects.requireNonNull(policy, "No policy provided");
+        fileSystemAccessor = Objects.requireNonNull(accessor, "No accessor");
         sftpEventListenerProxy = EventListenerUtils.proxyWrapper(SftpEventListener.class, getClass().getClassLoader(), sftpEventListeners);
     }
 
@@ -311,6 +315,10 @@ public class SftpSubsystem
 
     public final UnsupportedAttributePolicy getUnsupportedAttributePolicy() {
         return unsupportedAttributePolicy;
+    }
+
+    public final SftpFileSystemAccessor getFileSystemAccessor() {
+        return fileSystemAccessor;
     }
 
     @Override
@@ -689,8 +697,9 @@ public class SftpSubsystem
         }
 
         FileHandle fileHandle = validateHandle(handle, h, FileHandle.class);
-        FileChannel channel = fileHandle.getFileChannel();
-        channel.force(false);
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        ServerSession session = getServerSession();
+        accessor.syncFileData(session, this, fileHandle.getFile(), fileHandle.getFileHandle(), fileHandle.getFileChannel());
     }
 
     protected void doCheckFileHash(Buffer buffer, int id, String targetType) throws IOException {
@@ -794,7 +803,8 @@ public class SftpSubsystem
                 ? new byte[Math.min((int) effectiveLength, IoUtils.DEFAULT_COPY_SIZE)]
                 : new byte[Math.min((int) effectiveLength, blockSize)];
         ByteBuffer wb = ByteBuffer.wrap(digestBuf);
-        try (FileChannel channel = FileChannel.open(file, IoUtils.EMPTY_OPEN_OPTIONS)) {
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        try (SeekableByteChannel channel = accessor.openFile(getServerSession(), this, file, "", Collections.emptySet())) {
             channel.position(startOffset);
 
             Digest digest = factory.create();
@@ -948,8 +958,8 @@ public class SftpSubsystem
         ByteBuffer wb = ByteBuffer.wrap(digestBuf);
         boolean hashMatches = false;
         byte[] hashValue = null;
-
-        try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        try (SeekableByteChannel channel = accessor.openFile(getServerSession(), this, path, null, EnumSet.of(StandardOpenOption.READ))) {
             channel.position(startOffset);
 
             /*
@@ -1878,7 +1888,7 @@ public class SftpSubsystem
             throw new AccessDeniedException("Not readable: " + p);
         } else {
             String handle = generateFileHandle(p);
-            DirectoryHandle dirHandle = new DirectoryHandle(p);
+            DirectoryHandle dirHandle = new DirectoryHandle(this, p, handle);
             SftpEventListener listener = getSftpEventListenerProxy();
             listener.open(getServerSession(), handle, dirHandle);
             handles.put(handle, dirHandle);
@@ -2205,7 +2215,7 @@ public class SftpSubsystem
 
         Path file = resolveFile(path);
         String handle = generateFileHandle(file);
-        FileHandle fileHandle = new FileHandle(this, file, pflags, access, attrs);
+        FileHandle fileHandle = new FileHandle(this, file, handle, pflags, access, attrs);
         SftpEventListener listener = getSftpEventListenerProxy();
         listener.open(getServerSession(), handle, fileHandle);
         handles.put(handle, fileHandle);
@@ -2985,7 +2995,8 @@ public class SftpSubsystem
             switch (attribute) {
                 case "size": {
                     long newSize = ((Number) value).longValue();
-                    try (FileChannel channel = FileChannel.open(file, StandardOpenOption.WRITE)) {
+                    SftpFileSystemAccessor accessor = getFileSystemAccessor();
+                    try (SeekableByteChannel channel = accessor.openFile(getServerSession(), this, file, null, EnumSet.of(StandardOpenOption.WRITE))) {
                         channel.truncate(newSize);
                     }
                     continue;

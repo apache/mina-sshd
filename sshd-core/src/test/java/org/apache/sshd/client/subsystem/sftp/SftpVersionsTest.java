@@ -196,7 +196,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         SftpSubsystemFactory factory = new SftpSubsystemFactory() {
             @Override
             public Command create() {
-                SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy()) {
+                SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy(), getFileSystemAccessor()) {
                     @Override
                     protected Map<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options) throws IOException {
                         Map<String, Object> attrs = super.resolveFileAttributes(file, flags, options);
@@ -314,7 +314,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         SftpSubsystemFactory factory = new SftpSubsystemFactory() {
             @Override
             public Command create() {
-                SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy()) {
+                SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy(), getFileSystemAccessor()) {
                     @Override
                     protected Map<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options) throws IOException {
                         Map<String, Object> attrs = super.resolveFileAttributes(file, flags, options);

@@ -406,6 +406,7 @@ the version, and all we can do at the server is require a **specific** version v
 configuration key. For more advanced restrictions on needs to sub-class `SftpSubSystem` and provide a non-default
 `SftpSubsystemFactory` that uses the sub-classed code.
 
+
 ### Using `SftpFileSystemProvider` to create an `SftpFileSystem`
 
 
@@ -492,6 +493,20 @@ configuration keys and values.
     // The value of 'param1' is overridden in the URI
     FileSystem fs = FileSystems.newFileSystem(new URI("sftp://user:password@host/some/remote/path?param1=otherValue1", params);
     Path remotePath = fs.getPath("/some/remote/path");
+
+```
+
+#### Tracking accessed location via `SftpFileSystemAccessor`
+
+One can override the default `SftpFileSystemAccessor` and thus be able to track all opened files and folders
+throughout the SFTP server subsystem code. The accessor is registered/overwritten in via the `SftpSubSystemFactory`:
+
+```java
+
+    SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
+        .withFileSystemAccessor(new MySftpFileSystemAccessor())
+        .build();
+    server.setSubsystemFactories(Collections.singletonList(factory));
 
 ```
 

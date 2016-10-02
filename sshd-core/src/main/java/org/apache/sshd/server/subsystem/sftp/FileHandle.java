@@ -20,8 +20,8 @@ package org.apache.sshd.server.subsystem.sftp;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
@@ -32,12 +32,14 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.server.session.ServerSession;
 
 
 /**
@@ -46,11 +48,13 @@ import org.apache.sshd.common.util.io.IoUtils;
 public class FileHandle extends Handle {
 
     private final int access;
-    private final FileChannel fileChannel;
+    private final SeekableByteChannel fileChannel;
     private final List<FileLock> locks = new ArrayList<>();
+    private final SftpSubsystem subsystem;
 
-    public FileHandle(SftpSubsystem sftpSubsystem, Path file, int flags, int access, Map<String, Object> attrs) throws IOException {
-        super(file);
+    public FileHandle(SftpSubsystem subsystem, Path file, String handle, int flags, int access, Map<String, Object> attrs) throws IOException {
+        super(file, handle);
+        this.subsystem = Objects.requireNonNull(subsystem, "No subsystem instance provided");
         this.access = access;
 
         Set<StandardOpenOption> options = EnumSet.noneOf(StandardOpenOption.class);
@@ -99,17 +103,19 @@ public class FileHandle extends Handle {
         FileAttribute<?>[] fileAttrs = GenericUtils.isEmpty(attributes)
                 ? IoUtils.EMPTY_FILE_ATTRIBUTES
                 : attributes.toArray(new FileAttribute<?>[attributes.size()]);
-        FileChannel channel;
+        SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
+        ServerSession session = subsystem.getServerSession();
+        SeekableByteChannel channel;
         try {
-            channel = FileChannel.open(file, options, fileAttrs);
+            channel = accessor.openFile(session, subsystem, file, handle, options, fileAttrs);
         } catch (UnsupportedOperationException e) {
-            channel = FileChannel.open(file, options);
-            sftpSubsystem.doSetAttributes(file, attrs);
+            channel = accessor.openFile(session, subsystem, file, handle, options, IoUtils.EMPTY_FILE_ATTRIBUTES);
+            subsystem.doSetAttributes(file, attrs);
         }
         this.fileChannel = channel;
     }
 
-    public final FileChannel getFileChannel() {
+    public final SeekableByteChannel getFileChannel() {
         return fileChannel;
     }
 
@@ -126,7 +132,7 @@ public class FileHandle extends Handle {
     }
 
     public int read(byte[] data, int doff, int length, long offset) throws IOException {
-        FileChannel channel = getFileChannel();
+        SeekableByteChannel channel = getFileChannel();
         channel.position(offset);
 
         long size = channel.size();
@@ -149,7 +155,7 @@ public class FileHandle extends Handle {
     }
 
     public void append(byte[] data, int doff, int length) throws IOException {
-        FileChannel channel = getFileChannel();
+        SeekableByteChannel channel = getFileChannel();
         write(data, doff, length, channel.size());
     }
 
@@ -158,7 +164,7 @@ public class FileHandle extends Handle {
     }
 
     public void write(byte[] data, int doff, int length, long offset) throws IOException {
-        FileChannel channel = getFileChannel();
+        SeekableByteChannel channel = getFileChannel();
         channel.position(offset);
         channel.write(ByteBuffer.wrap(data, doff, length));
     }
@@ -167,16 +173,18 @@ public class FileHandle extends Handle {
     public void close() throws IOException {
         super.close();
 
-        FileChannel channel = getFileChannel();
+        SeekableByteChannel channel = getFileChannel();
         if (channel.isOpen()) {
             channel.close();
         }
     }
 
     public void lock(long offset, long length, int mask) throws IOException {
-        FileChannel channel = getFileChannel();
+        SeekableByteChannel channel = getFileChannel();
         long size = (length == 0L) ? channel.size() - offset : length;
-        FileLock lock = channel.tryLock(offset, size, false);
+        SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
+        ServerSession session = subsystem.getServerSession();
+        FileLock lock = accessor.tryLock(session, subsystem, getFile(), getFileHandle(), channel, offset, size, false);
         if (lock == null) {
             throw new SftpException(SftpConstants.SSH_FX_BYTE_RANGE_LOCK_REFUSED,
                 "Overlapping lock held by another program on range [" + offset + "-" + (offset + length));
@@ -188,7 +196,7 @@ public class FileHandle extends Handle {
     }
 
     public void unlock(long offset, long length) throws IOException {
-        FileChannel channel = getFileChannel();
+        SeekableByteChannel channel = getFileChannel();
         long size = (length == 0L) ? channel.size() - offset : length;
         FileLock lock = null;
         for (Iterator<FileLock> iterator = locks.iterator(); iterator.hasNext();) {
