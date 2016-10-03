@@ -235,37 +235,6 @@ public interface ServerAuthenticationManager {
     HostBasedAuthenticator getHostBasedAuthenticator();
     void setHostBasedAuthenticator(HostBasedAuthenticator hostBasedAuthenticator);
 
-    // CHECKSTYLE:OFF
-    @Deprecated
-    final class Utils {
-    // CHECKSTYLE:ON
-
-        public static final UserAuthPublicKeyFactory DEFAULT_USER_AUTH_PUBLIC_KEY_FACTORY =
-            ServerAuthenticationManager.DEFAULT_USER_AUTH_PUBLIC_KEY_FACTORY;
-
-        public static final UserAuthGSSFactory DEFAULT_USER_AUTH_GSS_FACTORY =
-                ServerAuthenticationManager.DEFAULT_USER_AUTH_GSS_FACTORY;
-
-        public static final UserAuthPasswordFactory DEFAULT_USER_AUTH_PASSWORD_FACTORY =
-                ServerAuthenticationManager.DEFAULT_USER_AUTH_PASSWORD_FACTORY;
-
-        public static final UserAuthKeyboardInteractiveFactory DEFAULT_USER_AUTH_KB_INTERACTIVE_FACTORY =
-                ServerAuthenticationManager.DEFAULT_USER_AUTH_KB_INTERACTIVE_FACTORY;
-
-        private Utils() {
-            throw new UnsupportedOperationException("No instance allowed");
-        }
-
-        public static List<NamedFactory<UserAuth>> resolveUserAuthFactories(ServerAuthenticationManager manager) {
-            return ServerAuthenticationManager.resolveUserAuthFactories(manager);
-        }
-
-        public static List<NamedFactory<UserAuth>> resolveUserAuthFactories(
-                ServerAuthenticationManager manager, List<NamedFactory<UserAuth>> userFactories) {
-            return ServerAuthenticationManager.resolveUserAuthFactories(manager, userFactories);
-        }
-    }
-
     /**
      * If user authentication factories already set, then simply returns them. Otherwise,
      * builds the factories list from the individual authenticators available for

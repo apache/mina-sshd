@@ -62,59 +62,6 @@ public interface PasswordIdentityProvider {
     Iterable<String> loadPasswords();
 
     /**
-     * A helper class for password identity provider related operations
-     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
-     */
-    // CHECKSTYLE:OFF
-    @Deprecated
-    final class Utils {
-    // CHECKSTYLE:ON
-
-        public static final Transformer<PasswordIdentityProvider, Iterable<String>> LOADER =
-                PasswordIdentityProvider.LOADER;
-
-        private Utils() {
-            throw new UnsupportedOperationException("No instance allowed");
-        }
-
-        public static Iterator<String> iteratorOf(ClientSession session) {
-            return PasswordIdentityProvider.iteratorOf(session);
-        }
-
-        public static Iterator<String> iteratorOf(PasswordIdentityProvider identities, PasswordIdentityProvider passwords) {
-            return PasswordIdentityProvider.iteratorOf(identities, passwords);
-        }
-
-        public static Iterator<String> iteratorOf(PasswordIdentityProvider provider) {
-            return PasswordIdentityProvider.iteratorOf(provider);
-        }
-
-        public static PasswordIdentityProvider resolvePasswordIdentityProvider(PasswordIdentityProvider identities, PasswordIdentityProvider passwords) {
-            return PasswordIdentityProvider.resolvePasswordIdentityProvider(identities, passwords);
-        }
-
-        public static PasswordIdentityProvider multiProvider(PasswordIdentityProvider ... providers) {
-            return PasswordIdentityProvider.multiProvider(providers);
-        }
-
-        public static PasswordIdentityProvider multiProvider(Collection<? extends PasswordIdentityProvider> providers) {
-            return PasswordIdentityProvider.multiProvider(providers);
-        }
-
-        public static Iterable<String> iterableOf(Collection<? extends PasswordIdentityProvider> providers) {
-            return PasswordIdentityProvider.iterableOf(providers);
-        }
-
-        public static PasswordIdentityProvider wrap(String ... passwords) {
-            return PasswordIdentityProvider.wrap(passwords);
-        }
-
-        public static PasswordIdentityProvider wrap(final Iterable<String> passwords) {
-            return PasswordIdentityProvider.wrap(passwords);
-        }
-    }
-
-    /**
      * Creates a &quot;unified&quot; {@link Iterator} of passwords out of the registered
      * passwords and the extra available ones as a single iterator of passwords
      *

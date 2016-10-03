@@ -68,32 +68,6 @@ public interface AuthenticationIdentitiesProvider extends KeyIdentityProvider, P
      */
     Iterable<?> loadIdentities();
 
-    /**
-     * A helper class for identity provider related operations
-     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
-     */
-    // CHECKSTYLE:OFF
-    @Deprecated
-    final class Utils {
-    // CHECKSTYLE:ON
-
-        public static final Comparator<Object> PASSWORD_IDENTITY_COMPARATOR = AuthenticationIdentitiesProvider.PASSWORD_IDENTITY_COMPARATOR;
-
-        public static final Comparator<Object> KEYPAIR_IDENTITY_COMPARATOR = AuthenticationIdentitiesProvider.KEYPAIR_IDENTITY_COMPARATOR;
-
-        private Utils() {
-            throw new UnsupportedOperationException("No instance allowed");
-        }
-
-        public static int findIdentityIndex(List<?> identities, Comparator<? super Object> comp, Object target) {
-            return AuthenticationIdentitiesProvider.findIdentityIndex(identities, comp, target);
-        }
-
-        public static AuthenticationIdentitiesProvider wrap(final Iterable<?> identities) {
-            return AuthenticationIdentitiesProvider.wrap(identities);
-        }
-    }
-
     static int findIdentityIndex(List<?> identities, Comparator<? super Object> comp, Object target) {
         for (int index = 0; index < identities.size(); index++) {
             Object value = identities.get(index);

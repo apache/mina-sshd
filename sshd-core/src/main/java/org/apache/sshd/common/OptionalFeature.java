@@ -54,36 +54,11 @@ public interface OptionalFeature {
 
     boolean isSupported();
 
-    /**
-     * Utility class to help using {@link OptionalFeature}s
-     */
-    // CHECKSTYLE:OFF
-    @Deprecated
-    final class Utils {
-    // CHECKSTYLE:ON
-
-        private Utils() {
-            throw new UnsupportedOperationException("No instance allowed");
-        }
-
-        public static OptionalFeature of(boolean supported) {
-            return OptionalFeature.of(supported);
-        }
-
-        public static OptionalFeature all(final Collection<? extends OptionalFeature> features) {
-            return OptionalFeature.all(features);
-        }
-
-        public static OptionalFeature any(final Collection<? extends OptionalFeature> features) {
-            return OptionalFeature.any(features);
-        }
-    }
-
     static OptionalFeature of(boolean supported) {
         return supported ? TRUE : FALSE;
     }
 
-    static OptionalFeature all(final Collection<? extends OptionalFeature> features) {
+    static OptionalFeature all(Collection<? extends OptionalFeature> features) {
         return () -> {
             if (GenericUtils.isEmpty(features)) {
                 return false;
@@ -99,7 +74,7 @@ public interface OptionalFeature {
         };
     }
 
-    static OptionalFeature any(final Collection<? extends OptionalFeature> features) {
+    static OptionalFeature any(Collection<? extends OptionalFeature> features) {
         return () -> {
             if (GenericUtils.isEmpty(features)) {
                 return false;

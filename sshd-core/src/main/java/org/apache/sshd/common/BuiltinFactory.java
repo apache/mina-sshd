@@ -31,27 +31,10 @@ import org.apache.sshd.common.util.GenericUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface BuiltinFactory<T> extends NamedFactory<T>, OptionalFeature {
-
-    // CHECKSTYLE:OFF
-    @Deprecated
-    final class Utils {
-    // CHECKSTYLE:ON
-
-        private Utils() {
-            throw new UnsupportedOperationException("No instance allowed");
-        }
-
-        public static <T, E extends BuiltinFactory<T>> List<NamedFactory<T>> setUpFactories(
-                boolean ignoreUnsupported, Collection<? extends E> preferred) {
-            return BuiltinFactory.setUpFactories(ignoreUnsupported, preferred);
-        }
-    }
-
     static <T, E extends BuiltinFactory<T>> List<NamedFactory<T>> setUpFactories(
             boolean ignoreUnsupported, Collection<? extends E> preferred) {
         return GenericUtils.stream(preferred)
                 .filter(f -> ignoreUnsupported || f.isSupported())
                 .collect(Collectors.toList());
     }
-
 }

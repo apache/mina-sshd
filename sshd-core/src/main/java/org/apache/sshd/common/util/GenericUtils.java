@@ -331,15 +331,14 @@ public final class GenericUtils {
         };
     }
 
-    public static <T>
-    Collector<T, ?, SortedSet<T>> toSortedSet(Comparator<T> comparator) {
+    public static <T> Collector<T, ?, SortedSet<T>> toSortedSet(Comparator<T> comparator) {
         return Collectors.toCollection(() -> new TreeSet<>(comparator));
     }
 
     public static <T> Stream<T> stream(Iterable<T> values) {
         if (isEmpty(values)) {
             return Stream.empty();
-        } else if (values instanceof Collection) {
+        } else if (values instanceof Collection<?>) {
             return ((Collection<T>) values).stream();
         } else {
             return StreamSupport.stream(values.spliterator(), false);

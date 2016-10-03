@@ -37,31 +37,6 @@ public interface HostKeyIdentityProvider {
      */
     Iterable<Pair<KeyPair, List<X509Certificate>>> loadHostKeys();
 
-    /**
-     * A helper class for key identity provider related operations
-     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
-     */
-    // CHECKSTYLE:OFF
-    @Deprecated
-    final class Utils {
-    // CHECKSTYLE:ON
-        private Utils() {
-            throw new UnsupportedOperationException("No instance allowed");
-        }
-
-        public static Iterator<Pair<KeyPair, List<X509Certificate>>> iteratorOf(HostKeyIdentityProvider provider) {
-            return HostKeyIdentityProvider.iteratorOf(provider);
-        }
-
-        public static HostKeyIdentityProvider wrap(KeyPair ... pairs) {
-            return HostKeyIdentityProvider.wrap(pairs);
-        }
-
-        public static HostKeyIdentityProvider wrap(final Iterable<? extends KeyPair> pairs) {
-            return HostKeyIdentityProvider.wrap(pairs);
-        }
-    }
-
     static Iterator<Pair<KeyPair, List<X509Certificate>>> iteratorOf(HostKeyIdentityProvider provider) {
         return GenericUtils.iteratorOf((provider == null) ? null : provider.loadHostKeys());
     }
@@ -70,9 +45,9 @@ public interface HostKeyIdentityProvider {
         return wrap(GenericUtils.asList(pairs));
     }
 
-    static HostKeyIdentityProvider wrap(final Iterable<? extends KeyPair> pairs) {
+    static HostKeyIdentityProvider wrap(Iterable<? extends KeyPair> pairs) {
         return () -> () -> {
-            final Iterator<? extends KeyPair> iter = GenericUtils.iteratorOf(pairs);
+            Iterator<? extends KeyPair> iter = GenericUtils.iteratorOf(pairs);
             return GenericUtils.wrapIterator(iter, kp -> new Pair<>(kp, Collections.<X509Certificate>emptyList()));
         };
     }

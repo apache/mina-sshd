@@ -38,40 +38,20 @@ public interface Transformer<I, O> extends Function<I, O> {
     /**
      * Returns {@link Enum#name()} or {@code null} if argument is {@code null}
      */
-    Transformer<Enum<?>, String> ENUM_NAME_EXTRACTOR = input -> {
-        if (input == null) {
-            return null;
-        } else {
-            return input.name();
-        }
-    };
+    Transformer<Enum<?>, String> ENUM_NAME_EXTRACTOR = input -> (input == null) ? null : input.name();
 
     @Override
     default O apply(I input) {
         return transform(input);
     }
+
     /**
      * @param input Input value
      * @return Transformed output value
      */
     O transform(I input);
 
-    // CHECKSTYLE:OFF
-    @Deprecated
-    final class Utils {
-    // CHECKSTYLE:ON
-
-        private Utils() {
-            throw new UnsupportedOperationException("No instance allowed");
-        }
-
-        public static <U extends V, V> Transformer<U, V> identity() {
-            return Transformer.identity();
-        }
-    }
-
     static <U extends V, V> Transformer<U, V> identity() {
         return input -> input;
     }
-
 }

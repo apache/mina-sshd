@@ -27,23 +27,6 @@ public interface ServiceFactory extends NamedResource {
     Service create(Session session) throws IOException;
 
     /**
-     * Utility class to help using NamedFactories
-     */
-    // CHECKSTYLE:OFF
-    @Deprecated
-    final class Utils {
-    // CHECKSTYLE:ON
-
-        private Utils() {
-            throw new UnsupportedOperationException("No instance allowed");
-        }
-
-        public static Service create(Collection<? extends ServiceFactory> factories, String name, Session session) throws IOException {
-            return ServiceFactory.create(factories, name, session);
-        }
-    }
-
-    /**
      * Create an instance of the specified name by looking up the needed factory
      * in the list (case <U>insensitive</U>.
      *

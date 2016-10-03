@@ -61,32 +61,6 @@ public interface SftpVersionSelector {
     int selectVersion(ClientSession session, int current, List<Integer> available);
 
     /**
-     * Utility class to help using {@link SftpVersionSelector}s
-     */
-    // CHECKSTYLE:OFF
-    @Deprecated
-    final class Utils {
-    // CHECKSTYLE:ON
-
-        private Utils() {
-            throw new UnsupportedOperationException("No instance allowed");
-        }
-
-        public static SftpVersionSelector fixedVersionSelector(final int version) {
-            return SftpVersionSelector.fixedVersionSelector(version);
-        }
-
-        public static SftpVersionSelector preferredVersionSelector(final int ... preferred) {
-            return SftpVersionSelector.preferredVersionSelector(preferred);
-
-        }
-
-        public static SftpVersionSelector preferredVersionSelector(final Iterable<? extends Number> preferred) {
-            return SftpVersionSelector.preferredVersionSelector(preferred);
-        }
-    }
-
-    /**
      * Creates a selector the always returns the requested (fixed version) regardless
      * of what the current or reported available versions are. If the requested version
      * is not reported as available then an exception will be eventually thrown by the

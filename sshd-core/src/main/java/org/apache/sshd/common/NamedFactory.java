@@ -33,33 +33,6 @@ import org.apache.sshd.common.util.Transformer;
  */
 public interface NamedFactory<T> extends Factory<T>, NamedResource {
     /**
-     * Utility class to help using NamedFactories
-     */
-    // CHECKSTYLE:OFF
-    @Deprecated
-    final class Utils {
-    // CHECKSTYLE:ON
-
-        private Utils() {
-            throw new UnsupportedOperationException("No instance allowed");
-        }
-
-        public static <T> T create(Collection<? extends NamedFactory<T>> factories, String name) {
-            return NamedFactory.create(factories, name);
-        }
-
-        public static <S extends OptionalFeature, T, E extends NamedFactory<T>> List<NamedFactory<T>> setUpTransformedFactories(
-                boolean ignoreUnsupported, Collection<? extends S> preferred, Transformer<? super S, ? extends E> xform) {
-            return NamedFactory.setUpTransformedFactories(ignoreUnsupported, preferred, xform);
-        }
-
-        public static <T, E extends NamedFactory<T> & OptionalFeature> List<NamedFactory<T>> setUpBuiltinFactories(
-                boolean ignoreUnsupported, Collection<? extends E> preferred) {
-            return NamedFactory.setUpBuiltinFactories(ignoreUnsupported, preferred);
-        }
-    }
-
-    /**
      * Create an instance of the specified name by looking up the needed factory
      * in the list.
      *

@@ -36,32 +36,6 @@ public interface Int2IntFunction {
      */
     int apply(int value);
 
-    // CHECKSTYLE:OFF
-    @Deprecated
-    final class Utils {
-    // CHECKSTYLE:ON
-
-        private Utils() {
-            throw new UnsupportedOperationException("No instance allowed");
-        }
-
-        public static Int2IntFunction sub(int delta) {
-            return Int2IntFunction.sub(delta);
-        }
-
-        public static Int2IntFunction add(final int delta) {
-            return Int2IntFunction.add(delta);
-        }
-
-        public static Int2IntFunction mul(final int factor) {
-            return Int2IntFunction.mul(factor);
-        }
-
-        public static Int2IntFunction div(final int factor) {
-            return Int2IntFunction.div(factor);
-        }
-    }
-
     static Int2IntFunction sub(int delta) {
         return add(0 - delta);
     }

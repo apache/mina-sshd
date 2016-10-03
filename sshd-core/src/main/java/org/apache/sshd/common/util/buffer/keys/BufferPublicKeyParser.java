@@ -73,27 +73,7 @@ public interface BufferPublicKeyParser<PUB extends PublicKey> {
      */
     PUB getRawPublicKey(String keyType, Buffer buffer) throws GeneralSecurityException;
 
-    /**
-     * A helper class for {@link BufferPublicKeyParser} related operations
-     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
-     */
-    // CHECKSTYLE:OFF
-    @Deprecated
-    final class Utils {
-    // CHECKSTYLE:ON
-
-        public static final BufferPublicKeyParser<PublicKey> DEFAULT = BufferPublicKeyParser.DEFAULT;
-
-        private Utils() {
-            throw new UnsupportedOperationException("No instance");
-        }
-
-        public static BufferPublicKeyParser<PublicKey> aggregate(final Collection<? extends BufferPublicKeyParser<? extends PublicKey>> parsers) {
-            return BufferPublicKeyParser.aggregate(parsers);
-        }
-    }
-
-    static BufferPublicKeyParser<PublicKey> aggregate(final Collection<? extends BufferPublicKeyParser<? extends PublicKey>> parsers) {
+    static BufferPublicKeyParser<PublicKey> aggregate(Collection<? extends BufferPublicKeyParser<? extends PublicKey>> parsers) {
         if (GenericUtils.isEmpty(parsers)) {
             return EMPTY;
         }

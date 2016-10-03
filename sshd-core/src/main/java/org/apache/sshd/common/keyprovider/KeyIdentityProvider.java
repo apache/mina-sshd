@@ -65,59 +65,6 @@ public interface KeyIdentityProvider {
     Iterable<KeyPair> loadKeys();
 
     /**
-     * A helper class for key identity provider related operations
-     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
-     */
-    // CHECKSTYLE:OFF
-    @Deprecated
-    final class Utils {
-    // CHECKSTYLE:ON
-
-        public static final Transformer<KeyIdentityProvider, Iterable<KeyPair>> LOADER =
-                KeyIdentityProvider.LOADER;
-
-        private Utils() {
-            throw new UnsupportedOperationException("No instance allowed");
-        }
-
-        public static Iterator<KeyPair> iteratorOf(ClientSession session) {
-            return KeyIdentityProvider.iteratorOf(session);
-        }
-
-        public static Iterator<KeyPair> iteratorOf(KeyIdentityProvider identities, KeyIdentityProvider keys) {
-            return KeyIdentityProvider.iteratorOf(identities, keys);
-        }
-
-        public static Iterator<KeyPair> iteratorOf(KeyIdentityProvider provider) {
-            return KeyIdentityProvider.iteratorOf(provider);
-        }
-
-        public static KeyIdentityProvider resolveKeyIdentityProvider(KeyIdentityProvider identities, KeyIdentityProvider keys) {
-            return KeyIdentityProvider.resolveKeyIdentityProvider(identities, keys);
-        }
-
-        public static KeyIdentityProvider multiProvider(KeyIdentityProvider ... providers) {
-            return KeyIdentityProvider.multiProvider(providers);
-        }
-
-        public static KeyIdentityProvider multiProvider(Collection<? extends KeyIdentityProvider> providers) {
-            return KeyIdentityProvider.multiProvider(providers);
-        }
-
-        public static Iterable<KeyPair> iterableOf(Collection<? extends KeyIdentityProvider> providers) {
-            return KeyIdentityProvider.iterableOf(providers);
-        }
-
-        public static KeyIdentityProvider wrap(KeyPair ... pairs) {
-            return KeyIdentityProvider.wrap(pairs);
-        }
-
-        public static KeyIdentityProvider wrap(final Iterable<KeyPair> pairs) {
-            return KeyIdentityProvider.wrap(pairs);
-        }
-    }
-
-    /**
      * Creates a &quot;unified&quot; {@link Iterator} of key pairs out of the registered
      * {@link KeyPair} identities and the extra available ones as a single iterator
      * of key pairs

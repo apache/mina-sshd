@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.subsystem.sftp;
 
+import java.util.Collections;
 import java.util.Map;
 
 import org.apache.sshd.common.util.GenericUtils;
@@ -277,14 +278,15 @@ public final class SftpConstants {
 
     private static class LazyCommandNameHolder {
         private static final Map<Integer, String> NAMES_MAP =
-                LoggingUtils.generateMnemonicMap(SftpConstants.class, f -> {
-                    String name = f.getName();
-                    return name.startsWith("SSH_FXP_")
-                        // exclude the rename modes which are not opcodes
-                        && (!name.startsWith("SSH_FXP_RENAME_"))
-                        // exclude the realpath modes wich are not opcodes
-                        && (!name.startsWith("SSH_FXP_REALPATH_"));
-                });
+                Collections.unmodifiableMap(
+                    LoggingUtils.generateMnemonicMap(SftpConstants.class, f -> {
+                        String name = f.getName();
+                        return name.startsWith("SSH_FXP_")
+                            // exclude the rename modes which are not opcodes
+                            && (!name.startsWith("SSH_FXP_RENAME_"))
+                            // exclude the realpath modes wich are not opcodes
+                            && (!name.startsWith("SSH_FXP_REALPATH_"));
+                    }));
     }
 
     /**
@@ -305,7 +307,8 @@ public final class SftpConstants {
     }
 
     private static class LazyStatusNameHolder {
-        private static final Map<Integer, String> STATUS_MAP = LoggingUtils.generateMnemonicMap(SftpConstants.class, "SSH_FX_");
+        private static final Map<Integer, String> STATUS_MAP =
+                Collections.unmodifiableMap(LoggingUtils.generateMnemonicMap(SftpConstants.class, "SSH_FX_"));
     }
 
     /**

@@ -96,6 +96,7 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
         try {
             final Semaphore signal = new Semaphore(0);
             sshd.addSessionListener(new SessionListener() {
+                @SuppressWarnings("synthetic-access")
                 @Override
                 public void sessionEvent(final Session session, Event event) {
                     if (Event.Authenticated.equals(event)) {
@@ -127,6 +128,7 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
             }
         }
     }
+
     private void testReservedSessionMessagesHandler(Session session, AccumulatingHandler handler) throws Exception {
         testIgnoredMessages(session, handler);
         testDebugMessages(session, handler);

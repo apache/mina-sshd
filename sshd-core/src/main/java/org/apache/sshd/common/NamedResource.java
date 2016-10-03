@@ -49,35 +49,6 @@ public interface NamedResource {
     String getName();
 
     /**
-     * Utility class to help using {@link NamedResource}s
-     */
-    // CHECKSTYLE:OFF
-    @Deprecated
-    final class Utils {
-    // CHECKSTYLE:ON
-
-        private Utils() {
-            throw new UnsupportedOperationException("No instance allowed");
-        }
-
-        public static List<String> getNameList(Collection<? extends NamedResource> resources) {
-            return NamedResource.getNameList(resources);
-        }
-
-        public static String getNames(Collection<? extends NamedResource> resources) {
-            return NamedResource.getNames(resources);
-        }
-
-        public static <R extends NamedResource> R removeByName(String name, Comparator<? super String> c, Collection<? extends R> resources) {
-            return NamedResource.removeByName(name, c, resources);
-        }
-
-        public static <R extends NamedResource> R findByName(String name, Comparator<? super String> c, Collection<? extends R> resources) {
-            return NamedResource.findByName(name, c, resources);
-        }
-    }
-
-    /**
      * @param resources The named resources
      * @return A {@link List} of all the factories names - in same order
      * as they appear in the input collection

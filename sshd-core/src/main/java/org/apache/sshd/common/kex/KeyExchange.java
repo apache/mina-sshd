@@ -19,6 +19,7 @@
 package org.apache.sshd.common.kex;
 
 import java.security.PublicKey;
+import java.util.Collections;
 import java.util.Map;
 
 import org.apache.sshd.common.NamedResource;
@@ -35,12 +36,11 @@ import org.apache.sshd.common.util.logging.LoggingUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface KeyExchange extends NamedResource {
-
     Map<Integer, String> GROUP_KEX_OPCODES_MAP =
-            LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_MSG_KEX_DH_GEX_");
+            Collections.unmodifiableMap(LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_MSG_KEX_DH_GEX_"));
 
     Map<Integer, String> SIMPLE_KEX_OPCODES_MAP =
-            LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_MSG_KEXDH_");
+            Collections.unmodifiableMap(LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_MSG_KEXDH_"));
 
     /**
      * Initialize the key exchange algorithm.
@@ -48,8 +48,8 @@ public interface KeyExchange extends NamedResource {
      * @param session the session using this algorithm
      * @param v_s     the server identification string
      * @param v_c     the client identification string
-     * @param i_s     the server key init packet
-     * @param i_c     the client key init packet
+     * @param i_s     the server key initialization packet
+     * @param i_c     the client key initialization packet
      * @throws Exception if an error occurs
      */
     void init(Session session, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception;
@@ -91,34 +91,6 @@ public interface KeyExchange extends NamedResource {
      * @return The server's {@link PublicKey}
      */
     PublicKey getServerKey();
-
-    /**
-     * A helper class for key exchange related operations
-     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
-     */
-    // CHECKSTYLE:OFF
-    @Deprecated
-    final class Utils {
-    // CHECKSTYLE:ON
-
-        public static final Map<Integer, String> GROUP_KEX_OPCODES_MAP =
-                KeyExchange.GROUP_KEX_OPCODES_MAP;
-
-        public static final Map<Integer, String> SIMPLE_KEX_OPCODES_MAP =
-                KeyExchange.SIMPLE_KEX_OPCODES_MAP;
-
-        private Utils() {
-            throw new UnsupportedOperationException("No instance allowed");
-        }
-
-        public static String getGroupKexOpcodeName(int cmd) {
-            return KeyExchange.getGroupKexOpcodeName(cmd);
-        }
-
-        public static String getSimpleKexOpcodeName(int cmd) {
-            return KeyExchange.getSimpleKexOpcodeName(cmd);
-        }
-    }
 
     static String getGroupKexOpcodeName(int cmd) {
         String name = GROUP_KEX_OPCODES_MAP.get(cmd);

@@ -66,23 +66,6 @@ public interface Cipher extends CipherInformation {
     void update(byte[] input, int inputOffset, int inputLen) throws Exception;
 
     /**
-     * Utility class to help using {@link Cipher}s
-     */
-    // CHECKSTYLE:OFF
-    @Deprecated
-    final class Utils {
-    // CHECKSTYLE:ON
-
-        private Utils() {
-            throw new UnsupportedOperationException("No instance allowed");
-        }
-
-        public static boolean checkSupported(String xform, int keyLength) {
-            return Cipher.checkSupported(xform, keyLength);
-        }
-    }
-
-    /**
      * @param xform The full cipher transformation - e.g., AES/CBC/NoPadding -
      * never {@code null}/empty
      * @param keyLength The required key length in bits - always positive

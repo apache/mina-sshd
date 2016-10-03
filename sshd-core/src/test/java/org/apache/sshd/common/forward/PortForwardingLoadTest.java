@@ -73,7 +73,8 @@ import org.slf4j.LoggerFactory;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class PortForwardingLoadTest extends BaseTestSupport {
     private final Logger log;
-    @SuppressWarnings("checkstyle:anoninnerlength")
+
+    @SuppressWarnings({ "checkstyle:anoninnerlength", "synthetic-access" })
     private final PortForwardingEventListener serverSideListener = new PortForwardingEventListener() {
         @Override
         public void establishingExplicitTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress local,

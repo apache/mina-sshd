@@ -122,27 +122,6 @@ public interface KeyPairProvider extends KeyIdentityProvider {
     }
 
     /**
-     * A helper class for key-pair providers
-     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
-     */
-    // CHECKSTYLE:OFF
-    @Deprecated
-    final class Utils {
-    // CHECKSTYLE:ON
-        private Utils() {
-            throw new UnsupportedOperationException("No instance allowed");
-        }
-
-        public static KeyPairProvider wrap(KeyPair ... pairs) {
-            return KeyPairProvider.wrap(pairs);
-        }
-
-        public static KeyPairProvider wrap(final Iterable<KeyPair> pairs) {
-            return KeyPairProvider.wrap(pairs);
-        }
-    }
-
-    /**
      * Wrap the provided {@link KeyPair}s into a {@link KeyPairProvider}
      *
      * @param pairs The available pairs - ignored if {@code null}/empty (i.e.,
