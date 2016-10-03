@@ -607,7 +607,7 @@ public final class SelectorUtils {
      * @see #translateToLocalFileSystemPath(String, char, String)
      */
     public static String translateToLocalFileSystemPath(String path, char pathSeparator, FileSystem fs) {
-        return translateToLocalFileSystemPath(path, pathSeparator,  ValidateUtils.checkNotNull(fs, "No target file system").getSeparator());
+        return translateToLocalFileSystemPath(path, pathSeparator,  Objects.requireNonNull(fs, "No target file system").getSeparator());
     }
 
     /**
@@ -785,7 +785,7 @@ public final class SelectorUtils {
      * @see #translateToFileSystemPath(String, String, String)
      */
     public static String translateToFileSystemPath(String path, String pathSeparator, FileSystem fs) {
-        return translateToFileSystemPath(path, pathSeparator, ValidateUtils.checkNotNull(fs, "No target file system").getSeparator());
+        return translateToFileSystemPath(path, pathSeparator, Objects.requireNonNull(fs, "No target file system").getSeparator());
     }
 
     /**

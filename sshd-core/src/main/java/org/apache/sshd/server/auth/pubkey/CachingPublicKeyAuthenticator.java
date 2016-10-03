@@ -20,13 +20,13 @@ package org.apache.sshd.server.auth.pubkey;
 
 import java.security.PublicKey;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -41,7 +41,7 @@ public class CachingPublicKeyAuthenticator extends AbstractLoggingBean implement
     protected final Map<Session, Map<PublicKey, Boolean>> cache = new ConcurrentHashMap<>();
 
     public CachingPublicKeyAuthenticator(PublickeyAuthenticator authenticator) {
-        this.authenticator = ValidateUtils.checkNotNull(authenticator, "No delegate authenticator");
+        this.authenticator = Objects.requireNonNull(authenticator, "No delegate authenticator");
     }
 
     @Override

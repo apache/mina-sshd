@@ -18,10 +18,11 @@
  */
 package org.apache.sshd.common.session.helpers;
 
+import java.util.Objects;
+
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -34,7 +35,7 @@ public class PendingWriteFuture extends AbstractIoWriteFuture implements SshFutu
 
     public PendingWriteFuture(Buffer buffer) {
         super(null);
-        this.buffer = ValidateUtils.checkNotNull(buffer, "No buffer provided");
+        this.buffer = Objects.requireNonNull(buffer, "No buffer provided");
     }
 
     public Buffer getBuffer() {
@@ -46,7 +47,7 @@ public class PendingWriteFuture extends AbstractIoWriteFuture implements SshFutu
     }
 
     public void setException(Throwable cause) {
-        ValidateUtils.checkNotNull(cause, "No cause specified");
+        Objects.requireNonNull(cause, "No cause specified");
         setValue(cause);
     }
 

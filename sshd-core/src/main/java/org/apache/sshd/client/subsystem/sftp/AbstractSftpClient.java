@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.channel.ClientChannel;
@@ -433,7 +434,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
     protected void writeAttributes(Buffer buffer, Attributes attributes) throws IOException {
         int version = getVersion();
         int flagsMask = 0;
-        Collection<Attribute> flags = ValidateUtils.checkNotNull(attributes, "No attributes").getFlags();
+        Collection<Attribute> flags = Objects.requireNonNull(attributes, "No attributes").getFlags();
         if (version == SftpConstants.SFTP_V3) {
             for (Attribute a : flags) {
                 switch (a) {
@@ -634,7 +635,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             log.trace("close({}) {}", getClientSession(), handle);
         }
 
-        byte[] id = ValidateUtils.checkNotNull(handle, "No handle").getIdentifier();
+        byte[] id = Objects.requireNonNull(handle, "No handle").getIdentifier();
         Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* some extra fields */, false);
         buffer.putBytes(id);
         checkCommandStatus(SftpConstants.SSH_FXP_CLOSE, buffer);
@@ -704,7 +705,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             throw new IOException("read(" + handle + "/" + fileOffset + ")[" + dstOffset + "/" + len + "] client is closed");
         }
 
-        byte[] id = ValidateUtils.checkNotNull(handle, "No handle").getIdentifier();
+        byte[] id = Objects.requireNonNull(handle, "No handle").getIdentifier();
         Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* some extra fields */, false);
         buffer.putBytes(id);
         buffer.putLong(fileOffset);
@@ -796,7 +797,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
                       getClientChannel(), handle, fileOffset, srcOffset, len);
         }
 
-        byte[] id = ValidateUtils.checkNotNull(handle, "No handle").getIdentifier();
+        byte[] id = Objects.requireNonNull(handle, "No handle").getIdentifier();
         Buffer buffer = new ByteArrayBuffer(id.length + len + Long.SIZE /* some extra fields */, false);
         buffer.putBytes(id);
         buffer.putLong(fileOffset);
@@ -867,7 +868,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             throw new IOException("readDir(" + handle + ") client is closed");
         }
 
-        byte[] id = ValidateUtils.checkNotNull(handle, "No handle").getIdentifier();
+        byte[] id = Objects.requireNonNull(handle, "No handle").getIdentifier();
         Buffer buffer = new ByteArrayBuffer(id.length + Byte.SIZE /* some extra fields */, false);
         buffer.putBytes(id);
 
@@ -1000,7 +1001,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             throw new IOException("stat(" + handle + ") client is closed");
         }
 
-        byte[] id = ValidateUtils.checkNotNull(handle, "No handle").getIdentifier();
+        byte[] id = Objects.requireNonNull(handle, "No handle").getIdentifier();
         Buffer buffer = new ByteArrayBuffer(id.length + Byte.SIZE /* a bit extra */, false);
         buffer.putBytes(id);
 
@@ -1037,7 +1038,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         if (log.isDebugEnabled()) {
             log.debug("setStat({})[{}]: {}", getClientSession(), handle, attributes);
         }
-        byte[] id = ValidateUtils.checkNotNull(handle, "No handle").getIdentifier();
+        byte[] id = Objects.requireNonNull(handle, "No handle").getIdentifier();
         Buffer buffer = new ByteArrayBuffer(id.length + (2 * Long.SIZE) /* some extras */, false);
         buffer.putBytes(id);
         writeAttributes(buffer, attributes);
@@ -1093,7 +1094,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
                       getClientSession(), handle, offset, length, Integer.toHexString(mask));
         }
 
-        byte[] id = ValidateUtils.checkNotNull(handle, "No handle").getIdentifier();
+        byte[] id = Objects.requireNonNull(handle, "No handle").getIdentifier();
         Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* a bit extra */, false);
         buffer.putBytes(id);
         buffer.putLong(offset);
@@ -1112,7 +1113,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             log.debug("unlock({})[{}] offset={}, length={}", getClientSession(), handle, offset, length);
         }
 
-        byte[] id = ValidateUtils.checkNotNull(handle, "No handle").getIdentifier();
+        byte[] id = Objects.requireNonNull(handle, "No handle").getIdentifier();
         Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* a bit extra */, false);
         buffer.putBytes(id);
         buffer.putLong(offset);

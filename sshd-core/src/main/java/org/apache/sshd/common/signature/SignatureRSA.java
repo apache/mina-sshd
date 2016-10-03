@@ -21,6 +21,7 @@ package org.apache.sshd.common.signature;
 import java.math.BigInteger;
 import java.security.PublicKey;
 import java.security.interfaces.RSAKey;
+import java.util.Objects;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.Pair;
@@ -47,7 +48,7 @@ public class SignatureRSA extends AbstractSignature {
 
     @Override
     public byte[] sign() throws Exception {
-        java.security.Signature signature = ValidateUtils.checkNotNull(getSignature(), "Signature not initialized");
+        java.security.Signature signature = Objects.requireNonNull(getSignature(), "Signature not initialized");
         return signature.sign();
     }
 

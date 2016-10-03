@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -171,7 +172,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
             try {
                 // Create a session
                 IoHandler handler = getIoHandler();
-                session = ValidateUtils.checkNotNull(createSession(Nio2Acceptor.this, address, result, handler), "No NIO2 session created");
+                session = Objects.requireNonNull(createSession(Nio2Acceptor.this, address, result, handler), "No NIO2 session created");
                 handler.sessionCreated(session);
                 sessions.put(session.getId(), session);
                 session.startReading();

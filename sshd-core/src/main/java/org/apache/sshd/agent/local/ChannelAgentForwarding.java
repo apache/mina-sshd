@@ -20,6 +20,7 @@ package org.apache.sshd.agent.local;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Objects;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
@@ -58,8 +59,8 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
             out = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
 
             Session session = getSession();
-            FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
-            SshAgentFactory factory = ValidateUtils.checkNotNull(manager.getAgentFactory(), "No agent factory");
+            FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
+            SshAgentFactory factory = Objects.requireNonNull(manager.getAgentFactory(), "No agent factory");
             agent = factory.createClient(manager);
             client = new AgentClient();
 

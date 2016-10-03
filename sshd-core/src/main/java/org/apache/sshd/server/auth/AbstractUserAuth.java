@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.server.auth;
 
+import java.util.Objects;
+
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -62,7 +64,7 @@ public abstract class AbstractUserAuth extends AbstractLoggingBean implements Us
 
     @Override
     public Boolean auth(ServerSession session, String username, String service, Buffer buffer) throws Exception {
-        this.session = ValidateUtils.checkNotNull(session, "No server session");
+        this.session = Objects.requireNonNull(session, "No server session");
         this.username = username;
         this.service = service;
         return doAuth(buffer, true);

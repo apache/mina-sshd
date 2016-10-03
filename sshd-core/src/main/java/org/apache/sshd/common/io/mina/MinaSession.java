@@ -19,6 +19,7 @@
 package org.apache.sshd.common.io.mina;
 
 import java.net.SocketAddress;
+import java.util.Objects;
 
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.IoFutureListener;
@@ -32,7 +33,6 @@ import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.NumberUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 import org.apache.sshd.common.util.closeable.IoBaseCloseable;
@@ -160,7 +160,7 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
         }
 
         public void setException(Throwable exception) {
-            setValue(ValidateUtils.checkNotNull(exception, "No exception specified"));
+            setValue(Objects.requireNonNull(exception, "No exception specified"));
         }
     }
 

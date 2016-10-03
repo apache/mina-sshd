@@ -23,11 +23,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ClientChannelEvent;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +41,7 @@ public class GitSshdSessionProcess extends Process {
     protected final Logger log;
 
     public GitSshdSessionProcess(ChannelExec channel, String commandName, int timeoutSec) {
-        this.channel = ValidateUtils.checkNotNull(channel, "No exec channel");
+        this.channel = Objects.requireNonNull(channel, "No exec channel");
         this.commandName = commandName;
         this.waitTimeout = (timeoutSec > 0) ? TimeUnit.SECONDS.toMillis(timeoutSec) : Long.MAX_VALUE;
         this.log = LoggerFactory.getLogger(getClass());

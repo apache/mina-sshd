@@ -29,13 +29,13 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
@@ -60,7 +60,7 @@ public class TtyFilterInputStreamTest extends BaseTestSupport {
     private final PtyMode mode;
 
     public TtyFilterInputStreamTest(PtyMode mode) {
-        this.mode = ValidateUtils.checkNotNull(mode, "No test modes");
+        this.mode = Objects.requireNonNull(mode, "No test modes");
     }
 
     @Parameters(name = "mode={0}")

@@ -25,6 +25,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.Channel;
 import java.security.KeyPair;
+import java.util.Objects;
 
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -119,7 +120,7 @@ public interface SimpleSftpClient extends SimpleClientConfigurator, Channel {
      * @throws IOException If failed to login or authenticate
      */
     default SftpClient sftpLogin(InetAddress host, int port, String username, String password) throws IOException {
-        return sftpLogin(new InetSocketAddress(ValidateUtils.checkNotNull(host, "No host address"), port), username, password);
+        return sftpLogin(new InetSocketAddress(Objects.requireNonNull(host, "No host address"), port), username, password);
     }
 
     /**
@@ -148,7 +149,7 @@ public interface SimpleSftpClient extends SimpleClientConfigurator, Channel {
      * @throws IOException If failed to login or authenticate
      */
     default SftpClient sftpLogin(InetAddress host, int port, String username, KeyPair identity) throws IOException {
-        return sftpLogin(new InetSocketAddress(ValidateUtils.checkNotNull(host, "No host address"), port), username, identity);
+        return sftpLogin(new InetSocketAddress(Objects.requireNonNull(host, "No host address"), port), username, identity);
     }
 
     /**

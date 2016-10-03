@@ -20,6 +20,7 @@
 package org.apache.sshd.agent.common;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.agent.SshAgentFactory;
@@ -28,7 +29,6 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
 /**
@@ -40,7 +40,7 @@ public class DefaultAgentForwardSupport extends AbstractCloseable implements Age
     private final AtomicReference<SshAgentServer> agentServerHolder = new AtomicReference<>();
 
     public DefaultAgentForwardSupport(ConnectionService service) {
-        serviceInstance = ValidateUtils.checkNotNull(service, "No connection service");
+        serviceInstance = Objects.requireNonNull(service, "No connection service");
     }
 
     @Override
@@ -54,7 +54,7 @@ public class DefaultAgentForwardSupport extends AbstractCloseable implements Age
                     return agentServer.getId();
                 }
 
-                agentServer = ValidateUtils.checkNotNull(createSshAgentServer(serviceInstance, session), "No agent server created");
+                agentServer = Objects.requireNonNull(createSshAgentServer(serviceInstance, session), "No agent server created");
                 agentServerHolder.set(agentServer);
             }
 
@@ -81,8 +81,8 @@ public class DefaultAgentForwardSupport extends AbstractCloseable implements Age
     }
 
     protected SshAgentServer createSshAgentServer(ConnectionService service, Session session) throws Throwable {
-        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No session factory manager");
-        SshAgentFactory factory = ValidateUtils.checkNotNull(manager.getAgentFactory(), "No agent factory");
+        FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No session factory manager");
+        SshAgentFactory factory = Objects.requireNonNull(manager.getAgentFactory(), "No agent factory");
         return factory.createServer(service);
     }
 

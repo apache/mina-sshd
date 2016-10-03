@@ -18,13 +18,13 @@
  */
 package org.apache.sshd.client.channel.exit;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.channel.AbstractChannelRequestHandler;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.util.EventNotifier;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -48,8 +48,8 @@ public abstract class AbstractChannelExitRequestHandler<V> extends AbstractChann
      *                 with the processed request data
      */
     protected AbstractChannelExitRequestHandler(AtomicReference<V> holder, EventNotifier<? super String> notifier) {
-        this.holder = ValidateUtils.checkNotNull(holder, "No exit status holder");
-        this.notifier = ValidateUtils.checkNotNull(notifier, "No event notifier");
+        this.holder = Objects.requireNonNull(holder, "No exit status holder");
+        this.notifier = Objects.requireNonNull(notifier, "No event notifier");
     }
 
     @Override   // see RFC4254 section 6.10

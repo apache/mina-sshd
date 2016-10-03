@@ -45,12 +45,12 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.SshServer;
@@ -161,7 +161,7 @@ public abstract class BaseTestSupport extends Assert {
     protected Path getTempTargetFolder() {
         synchronized (TEMP_SUBFOLDER_NAME) {
             if (tempFolder == null) {
-                tempFolder = ValidateUtils.checkNotNull(detectTargetFolder(), "No target folder detected").resolve(TEMP_SUBFOLDER_NAME);
+                tempFolder = Objects.requireNonNull(detectTargetFolder(), "No target folder detected").resolve(TEMP_SUBFOLDER_NAME);
             }
         }
 
@@ -202,7 +202,7 @@ public abstract class BaseTestSupport extends Assert {
     protected Path detectTargetFolder() throws IllegalArgumentException {
         synchronized (TEMP_SUBFOLDER_NAME) {
             if (targetFolder == null) {
-                targetFolder = ValidateUtils.checkNotNull(Utils.detectTargetFolder(getClass()), "Failed to detect target folder").toPath();
+                targetFolder = Objects.requireNonNull(Utils.detectTargetFolder(getClass()), "Failed to detect target folder").toPath();
             }
         }
 

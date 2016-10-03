@@ -24,10 +24,10 @@ import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttributeView;
+import java.util.Objects;
 
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -39,8 +39,8 @@ public abstract class AbstractSftpFileAttributeView extends AbstractLoggingBean 
     protected final LinkOption[] options;
 
     protected AbstractSftpFileAttributeView(SftpFileSystemProvider provider, Path path, LinkOption... options) {
-        this.provider = ValidateUtils.checkNotNull(provider, "No file system provider instance");
-        this.path = ValidateUtils.checkNotNull(path, "No path");
+        this.provider = Objects.requireNonNull(provider, "No file system provider instance");
+        this.path = Objects.requireNonNull(path, "No path");
         this.options = options;
     }
 

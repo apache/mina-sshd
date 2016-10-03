@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -140,7 +141,7 @@ public enum ECCurves implements NamedResource, OptionalFeature {
         this.params = ValidateUtils.checkNotNull(params, "No EC params for %s", name);
         this.keySize = getCurveSize(params);
         this.numOctets = numOctets;
-        this.digestFactory = ValidateUtils.checkNotNull(digestFactory, "No digestFactory");
+        this.digestFactory = Objects.requireNonNull(digestFactory, "No digestFactory");
     }
 
     @Override   // The curve name
@@ -253,9 +254,9 @@ public enum ECCurves implements NamedResource, OptionalFeature {
      * @throws IllegalArgumentException if invalid parameters provided
      */
     public static int getCurveSize(ECParameterSpec params) {
-        EllipticCurve curve = ValidateUtils.checkNotNull(params, "No EC params").getCurve();
-        ECField field = ValidateUtils.checkNotNull(curve, "No EC curve").getField();
-        return ValidateUtils.checkNotNull(field, "No EC field").getFieldSize();
+        EllipticCurve curve = Objects.requireNonNull(params, "No EC params").getCurve();
+        ECField field = Objects.requireNonNull(curve, "No EC curve").getField();
+        return Objects.requireNonNull(field, "No EC field").getFieldSize();
     }
 
     public static byte[] encodeECPoint(ECPoint group, ECParameterSpec params) {

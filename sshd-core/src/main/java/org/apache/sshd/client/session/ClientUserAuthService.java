@@ -23,6 +23,7 @@ import java.io.InterruptedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.ClientAuthenticationManager;
@@ -226,7 +227,7 @@ public class ClientUserAuthService
             session.setAuthenticated();
             ((ClientSessionImpl) session).switchToNextService();
 
-            AuthFuture authFuture = ValidateUtils.checkNotNull(authFutureHolder.get(), "No current future");
+            AuthFuture authFuture = Objects.requireNonNull(authFutureHolder.get(), "No current future");
             // Will wake up anyone sitting in waitFor
             authFuture.setAuthed(true);
             return;
@@ -313,7 +314,7 @@ public class ClientUserAuthService
                 }
 
                 // also wake up anyone sitting in waitFor
-                AuthFuture authFuture = ValidateUtils.checkNotNull(authFutureHolder.get(), "No current future");
+                AuthFuture authFuture = Objects.requireNonNull(authFutureHolder.get(), "No current future");
                 authFuture.setException(new SshException(SshConstants.SSH2_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE, "No more authentication methods available"));
                 return;
             }

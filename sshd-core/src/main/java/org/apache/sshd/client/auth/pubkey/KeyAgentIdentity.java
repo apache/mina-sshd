@@ -19,10 +19,10 @@
 package org.apache.sshd.client.auth.pubkey;
 
 import java.security.PublicKey;
+import java.util.Objects;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Uses an {@link SshAgent} to generate the identity signature
@@ -35,8 +35,8 @@ public class KeyAgentIdentity implements PublicKeyIdentity {
     private final String comment;
 
     public KeyAgentIdentity(SshAgent agent, PublicKey key, String comment) {
-        this.agent = ValidateUtils.checkNotNull(agent, "No signing agent");
-        this.key = ValidateUtils.checkNotNull(key, "No public key");
+        this.agent = Objects.requireNonNull(agent, "No signing agent");
+        this.key = Objects.requireNonNull(key, "No public key");
         this.comment = comment;
     }
 

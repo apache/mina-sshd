@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Objects;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.util.Base64;
@@ -121,7 +122,7 @@ public final class DigestUtils {
      * @throws Exception If failed to calculate the digest
      */
     public static String getFingerPrint(Factory<? extends Digest> f, String s, Charset charset) throws Exception {
-        return getFingerPrint(ValidateUtils.checkNotNull(f, "No factory").create(), s, charset);
+        return getFingerPrint(Objects.requireNonNull(f, "No factory").create(), s, charset);
     }
 
     /**
@@ -172,7 +173,7 @@ public final class DigestUtils {
      * @throws Exception If failed to calculate the fingerprint
      */
     public static String getFingerPrint(Factory<? extends Digest> f, byte[] buf, int offset, int len) throws Exception {
-        return getFingerPrint(ValidateUtils.checkNotNull(f, "No factory").create(), buf, offset, len);
+        return getFingerPrint(Objects.requireNonNull(f, "No factory").create(), buf, offset, len);
     }
 
     /**
@@ -218,7 +219,7 @@ public final class DigestUtils {
             return null;
         }
 
-        ValidateUtils.checkNotNull(d, "No digest").init();
+        Objects.requireNonNull(d, "No digest").init();
         d.update(buf, offset, len);
 
         return d.digest();

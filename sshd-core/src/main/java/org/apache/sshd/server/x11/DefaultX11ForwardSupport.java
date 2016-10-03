@@ -25,6 +25,7 @@ import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Collection;
+import java.util.Objects;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
@@ -37,7 +38,6 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.Readable;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
@@ -51,7 +51,7 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
     private IoAcceptor acceptor;
 
     public DefaultX11ForwardSupport(ConnectionService service) {
-        this.service = ValidateUtils.checkNotNull(service, "No connection service");
+        this.service = Objects.requireNonNull(service, "No connection service");
     }
 
     @Override
@@ -85,10 +85,10 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
             return null;
         }
 
-        Session session = ValidateUtils.checkNotNull(service.getSession(), "No session");
+        Session session = Objects.requireNonNull(service.getSession(), "No session");
         if (acceptor == null) {
-            FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
-            IoServiceFactory factory = ValidateUtils.checkNotNull(manager.getIoServiceFactory(), "No I/O service factory");
+            FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
+            IoServiceFactory factory = Objects.requireNonNull(manager.getIoServiceFactory(), "No I/O service factory");
             acceptor = factory.createAcceptor(this);
         }
 

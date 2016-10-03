@@ -19,9 +19,9 @@
 package org.apache.sshd.common.io.nio2;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -43,6 +43,6 @@ public class Nio2DefaultIoWriteFuture extends AbstractIoWriteFuture {
     }
 
     public void setException(Throwable exception) {
-        setValue(ValidateUtils.checkNotNull(exception, "No exception specified"));
+        setValue(Objects.requireNonNull(exception, "No exception specified"));
     }
 }

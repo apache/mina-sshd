@@ -19,9 +19,9 @@
 package org.apache.sshd.common;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Represents an SSH related exception
@@ -39,7 +39,7 @@ public class SshException extends IOException {
     }
 
     public SshException(Throwable cause) {
-        this(ValidateUtils.checkNotNull(cause, "No cause").getMessage(), cause);
+        this(Objects.requireNonNull(cause, "No cause").getMessage(), cause);
     }
 
     public SshException(String message, Throwable cause) {

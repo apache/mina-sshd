@@ -30,13 +30,13 @@ import java.security.PublicKey;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.ModifiableFileWatcher;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
@@ -67,7 +67,7 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
             new AtomicReference<>(RejectAllPublickeyAuthenticator.INSTANCE);
 
     public AuthorizedKeysAuthenticator(File file) {
-        this(ValidateUtils.checkNotNull(file, "No file to watch").toPath());
+        this(Objects.requireNonNull(file, "No file to watch").toPath());
     }
 
     public AuthorizedKeysAuthenticator(Path file) {
@@ -89,7 +89,7 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
 
         try {
             PublickeyAuthenticator delegate =
-                    ValidateUtils.checkNotNull(resolvePublickeyAuthenticator(username, session), "No delegate");
+                    Objects.requireNonNull(resolvePublickeyAuthenticator(username, session), "No delegate");
             boolean accepted = delegate.authenticate(username, key, session);
             if (log.isDebugEnabled()) {
                 log.debug("authenticate(" + username + ")[" + session + "][" + key.getAlgorithm() + "] accepted " + accepted + " from " + getPath());

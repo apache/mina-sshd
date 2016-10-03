@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.directory.server.constants.ServerDNConstants;
 import org.apache.directory.server.core.CoreSession;
@@ -97,7 +98,7 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
     @SuppressWarnings("checkstyle:avoidnestedblocks")
     public static Pair<LdapServer, DirectoryService> startApacheDs(Class<?> anchor) throws Exception {
         Logger log = LoggerFactory.getLogger(anchor);
-        File targetFolder = ValidateUtils.checkNotNull(Utils.detectTargetFolder(anchor), "Failed to detect target folder");
+        File targetFolder = Objects.requireNonNull(Utils.detectTargetFolder(anchor), "Failed to detect target folder");
         File workingDirectory = assertHierarchyTargetFolderExists(Utils.deleteRecursive(Utils.resolve(targetFolder, anchor.getSimpleName(), "apacheds-work")));
 
         DirectoryService directoryService = new DefaultDirectoryService();
@@ -177,9 +178,9 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
     // see http://users.directory.apache.narkive.com/GkyqAkot/how-to-import-ldif-file-programmatically
     public static Map<String, String> populateUsers(DirectoryService service, Class<?> anchor, String credentialName) throws Exception {
         Logger log = LoggerFactory.getLogger(anchor);
-        CoreSession session = ValidateUtils.checkNotNull(service.getAdminSession(), "No core session");
+        CoreSession session = Objects.requireNonNull(service.getAdminSession(), "No core session");
         Map<String, String> usersMap = new HashMap<>();
-        try (LdifReader reader = new LdifReader(ValidateUtils.checkNotNull(anchor.getResourceAsStream("/auth-users.ldif"), "No users ldif"))) {
+        try (LdifReader reader = new LdifReader(Objects.requireNonNull(anchor.getResourceAsStream("/auth-users.ldif"), "No users ldif"))) {
             int id = 1;
             for (LdifEntry entry : reader) {
                 if (log.isDebugEnabled()) {

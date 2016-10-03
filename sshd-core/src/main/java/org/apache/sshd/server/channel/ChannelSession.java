@@ -173,8 +173,8 @@ public class ChannelSession extends AbstractServerChannel {
                 }
 
                 Session s = channel.getSession();
-                FactoryManager manager = ValidateUtils.checkNotNull(s.getFactoryManager(), "No factory manager");
-                ScheduledExecutorService scheduler = ValidateUtils.checkNotNull(manager.getScheduledExecutorService(), "No scheduling service");
+                FactoryManager manager = Objects.requireNonNull(s.getFactoryManager(), "No factory manager");
+                ScheduledExecutorService scheduler = Objects.requireNonNull(manager.getScheduledExecutorService(), "No scheduling service");
                 scheduler.schedule(task, timeout, TimeUnit.MILLISECONDS);
                 commandExitFuture.addListener(future -> task.cancel());
             }
@@ -472,8 +472,8 @@ public class ChannelSession extends AbstractServerChannel {
             return RequestHandler.Result.ReplyFailure;
         }
 
-        ServerFactoryManager manager = ValidateUtils.checkNotNull(getServerSession(), "No server session").getFactoryManager();
-        Factory<Command> factory = ValidateUtils.checkNotNull(manager, "No server factory manager").getShellFactory();
+        ServerFactoryManager manager = Objects.requireNonNull(getServerSession(), "No server session").getFactoryManager();
+        Factory<Command> factory = Objects.requireNonNull(manager, "No server factory manager").getShellFactory();
         if (factory == null) {
             if (log.isDebugEnabled()) {
                 log.debug("handleShell({}) - no shell factory", this);
@@ -509,8 +509,8 @@ public class ChannelSession extends AbstractServerChannel {
         }
 
         String commandLine = buffer.getString();
-        ServerFactoryManager manager = ValidateUtils.checkNotNull(getServerSession(), "No server session").getFactoryManager();
-        CommandFactory factory = ValidateUtils.checkNotNull(manager, "No server factory manager").getCommandFactory();
+        ServerFactoryManager manager = Objects.requireNonNull(getServerSession(), "No server session").getFactoryManager();
+        CommandFactory factory = Objects.requireNonNull(manager, "No server factory manager").getCommandFactory();
         if (factory == null) {
             log.warn("handleExec({}) No command factory for command: {}", this, commandLine);
             return RequestHandler.Result.ReplyFailure;
@@ -547,8 +547,8 @@ public class ChannelSession extends AbstractServerChannel {
                       this, wantReply, subsystem);
         }
 
-        ServerFactoryManager manager = ValidateUtils.checkNotNull(getServerSession(), "No server session").getFactoryManager();
-        List<NamedFactory<Command>> factories = ValidateUtils.checkNotNull(manager, "No server factory manager").getSubsystemFactories();
+        ServerFactoryManager manager = Objects.requireNonNull(getServerSession(), "No server session").getFactoryManager();
+        List<NamedFactory<Command>> factories = Objects.requireNonNull(manager, "No server factory manager").getSubsystemFactories();
         if (GenericUtils.isEmpty(factories)) {
             log.warn("handleSubsystem({}) No factories for subsystem: {}", this, subsystem);
             return RequestHandler.Result.ReplyFailure;
@@ -698,7 +698,7 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected RequestHandler.Result handleAgentForwarding(String requestType, Buffer buffer, boolean wantReply) throws IOException {
         ServerSession session = getServerSession();
-        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No session factory manager");
+        FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No session factory manager");
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
         SshAgentFactory factory = manager.getAgentFactory();
         try {
@@ -737,7 +737,7 @@ public class ChannelSession extends AbstractServerChannel {
         String authCookie = buffer.getString();
         int screenId = buffer.getInt();
 
-        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
+        FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
         try {
             if ((filter == null) || (!filter.canForwardX11(session, requestType))) {

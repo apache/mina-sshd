@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
@@ -307,7 +308,7 @@ public final class SshFsMounter {
         props.putAll(options);
         sshd.setPort(port);
 
-        File targetFolder = ValidateUtils.checkNotNull(Utils.detectTargetFolder(MounterCommandFactory.class), "Failed to detect target folder");
+        File targetFolder = Objects.requireNonNull(Utils.detectTargetFolder(MounterCommandFactory.class), "Failed to detect target folder");
         if (SecurityUtils.isBouncyCastleRegistered()) {
             sshd.setKeyPairProvider(SecurityUtils.createGeneratorHostKeyProvider(new File(targetFolder, "key.pem").toPath()));
         } else {

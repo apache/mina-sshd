@@ -82,7 +82,7 @@ public class UnknownCommand implements Command {
 
     @Override
     public void start(Environment env) throws IOException {
-        ValidateUtils.checkNotNull(err, "No error stream");
+        Objects.requireNonNull(err, "No error stream");
         String errorMessage = getMessage();
         try {
             err.write(errorMessage.getBytes(StandardCharsets.UTF_8));

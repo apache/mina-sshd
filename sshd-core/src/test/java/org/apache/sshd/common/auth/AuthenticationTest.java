@@ -29,6 +29,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -463,7 +464,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test   // see SSHD-196
     public void testAuthPasswordChangeRequest() throws Exception {
-        final PasswordAuthenticator delegate = ValidateUtils.checkNotNull(sshd.getPasswordAuthenticator(), "No password authenticator");
+        final PasswordAuthenticator delegate = Objects.requireNonNull(sshd.getPasswordAuthenticator(), "No password authenticator");
         final AtomicInteger attemptsCount = new AtomicInteger(0);
         sshd.setPasswordAuthenticator((username, password, session) -> {
             if (attemptsCount.incrementAndGet() == 1) {

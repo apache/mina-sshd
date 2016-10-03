@@ -26,6 +26,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.sshd.client.ClientFactoryManager;
@@ -219,7 +220,7 @@ public class ClientSessionImpl extends AbstractClientSession {
 
     @Override
     public Set<ClientSessionEvent> waitFor(Collection<ClientSessionEvent> mask, long timeout) {
-        ValidateUtils.checkNotNull(mask, "No mask specified");
+        Objects.requireNonNull(mask, "No mask specified");
         long t = 0L;
         synchronized (lock) {
             for (Set<ClientSessionEvent> cond = EnumSet.noneOf(ClientSessionEvent.class);; cond.clear()) {

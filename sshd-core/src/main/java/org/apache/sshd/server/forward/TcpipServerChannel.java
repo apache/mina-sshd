@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.ConnectException;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.client.future.DefaultOpenFuture;
@@ -129,9 +130,9 @@ public class TcpipServerChannel extends AbstractServerChannel {
         }
 
         Session session = getSession();
-        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
+        FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
-        final OpenFuture f = new DefaultOpenFuture(this);
+        OpenFuture f = new DefaultOpenFuture(this);
         try {
             if ((address == null) || (filter == null) || (!filter.canConnect(type, address, session))) {
                 if (log.isDebugEnabled()) {

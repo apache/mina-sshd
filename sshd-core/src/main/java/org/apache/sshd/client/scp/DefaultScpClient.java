@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Level;
 
@@ -66,7 +67,7 @@ public class DefaultScpClient extends AbstractScpClient {
     private final ClientSession clientSession;
 
     public DefaultScpClient(ClientSession clientSession, ScpFileOpener fileOpener, ScpTransferEventListener eventListener) {
-        this.clientSession = ValidateUtils.checkNotNull(clientSession, "No client session");
+        this.clientSession = Objects.requireNonNull(clientSession, "No client session");
         this.opener = (fileOpener == null) ? DefaultScpFileOpener.INSTANCE : fileOpener;
         this.listener = (eventListener == null) ? ScpTransferEventListener.EMPTY : eventListener;
     }

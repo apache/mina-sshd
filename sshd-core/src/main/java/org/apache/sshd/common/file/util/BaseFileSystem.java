@@ -29,11 +29,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +43,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
 
     public BaseFileSystem(FileSystemProvider fileSystemProvider) {
         this.log = LoggerFactory.getLogger(getClass());
-        this.fileSystemProvider = ValidateUtils.checkNotNull(fileSystemProvider, "No file system provider");
+        this.fileSystemProvider = Objects.requireNonNull(fileSystemProvider, "No file system provider");
     }
 
     public T getDefaultDir() {
@@ -123,7 +123,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
 
     @Override
     public PathMatcher getPathMatcher(String syntaxAndPattern) {
-        int colonIndex = ValidateUtils.checkNotNull(syntaxAndPattern, "No argument").indexOf(':');
+        int colonIndex = Objects.requireNonNull(syntaxAndPattern, "No argument").indexOf(':');
         if ((colonIndex <= 0) || (colonIndex == syntaxAndPattern.length() - 1)) {
             throw new IllegalArgumentException("syntaxAndPattern must have form \"syntax:pattern\" but was \"" + syntaxAndPattern + "\"");
         }
@@ -153,7 +153,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
     }
 
     protected String globToRegex(String pattern) {
-        StringBuilder sb = new StringBuilder(ValidateUtils.checkNotNull(pattern, "No pattern").length());
+        StringBuilder sb = new StringBuilder(Objects.requireNonNull(pattern, "No pattern").length());
         int inGroup = 0;
         int inClass = 0;
         int firstIndexInClass = -1;

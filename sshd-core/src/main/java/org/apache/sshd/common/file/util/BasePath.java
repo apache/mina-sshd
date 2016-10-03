@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Objects;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 
 public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSystem<T>> implements Path {
 
@@ -49,7 +48,7 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
     private int hashValue;
 
     public BasePath(FS fileSystem, String root, List<String> names) {
-        this.fileSystem = ValidateUtils.checkNotNull(fileSystem, "No file system provided");
+        this.fileSystem = Objects.requireNonNull(fileSystem, "No file system provided");
         this.root = root;
         this.names = names;
     }
@@ -241,7 +240,7 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
 
     @Override
     public Path resolveSibling(Path other) {
-        ValidateUtils.checkNotNull(other, "Missing sibling path argument");
+        Objects.requireNonNull(other, "Missing sibling path argument");
         T parent = getParent();
         return parent == null ? other : parent.resolve(other);
     }
@@ -358,7 +357,7 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
 
     @SuppressWarnings("unchecked")
     protected T checkPath(Path paramPath) {
-        ValidateUtils.checkNotNull(paramPath, "Missing path argument");
+        Objects.requireNonNull(paramPath, "Missing path argument");
         if (paramPath.getClass() != getClass()) {
             throw new ProviderMismatchException("Path is not of this class: " + paramPath + "[" + paramPath.getClass().getSimpleName() + "]");
         }

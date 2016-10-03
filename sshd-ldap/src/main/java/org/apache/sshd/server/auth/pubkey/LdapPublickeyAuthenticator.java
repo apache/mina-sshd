@@ -199,7 +199,7 @@ public class LdapPublickeyAuthenticator extends LdapAuthenticator implements Pub
         }
 
         AuthorizedKeyEntry entry = AuthorizedKeyEntry.parseAuthorizedKeyEntry(Objects.toString(keyData, null));
-        PublicKey key = ValidateUtils.checkNotNull(entry, "No key extracted").resolvePublicKey(PublicKeyEntryResolver.FAILING);
+        PublicKey key = Objects.requireNonNull(entry, "No key extracted").resolvePublicKey(PublicKeyEntryResolver.FAILING);
         if (log.isTraceEnabled()) {
             log.trace("parsePublicKeyValue({}@{}) {}-{}",
                       username, session, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));

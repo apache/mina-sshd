@@ -104,7 +104,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
     private final S sessionInstance;
 
     protected AbstractConnectionService(S session) {
-        sessionInstance = ValidateUtils.checkNotNull(session, "No session");
+        sessionInstance = Objects.requireNonNull(session, "No session");
         listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, getClass().getClassLoader(), listeners);
     }
 
@@ -163,9 +163,9 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
 
     protected TcpipForwarder createTcpipForwarder(S session) {
         FactoryManager manager =
-                ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
+                Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         TcpipForwarderFactory factory =
-                ValidateUtils.checkNotNull(manager.getTcpipForwarderFactory(), "No forwarder factory");
+                Objects.requireNonNull(manager.getTcpipForwarderFactory(), "No forwarder factory");
         TcpipForwarder forwarder = factory.create(this);
         forwarder.addPortForwardingEventListener(getPortForwardingEventListenerProxy());
         forwarder.addPortForwardingEventListener(session.getPortForwardingEventListenerProxy());
@@ -537,7 +537,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
         }
 
         final Session session = getSession();
-        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
+        FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         final Channel channel = NamedFactory.create(manager.getChannelFactories(), type);
         if (channel == null) {
             // TODO add language tag
@@ -617,7 +617,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
 
         Session session = getSession();
         FactoryManager manager =
-                ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
+                Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         List<RequestHandler<ConnectionService>> handlers = manager.getGlobalRequestHandlers();
         if (GenericUtils.size(handlers) > 0) {
             for (RequestHandler<ConnectionService> handler : handlers) {

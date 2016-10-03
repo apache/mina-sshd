@@ -88,7 +88,6 @@ import org.apache.sshd.common.subsystem.sftp.extensions.VersionsParser.Versions;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.AbstractOpenSSHExtensionParser.OpenSSHExtension;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -1481,8 +1480,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         private final boolean symLink;
 
         LinkData(Path src, Path target, boolean symLink) {
-            this.source = ValidateUtils.checkNotNull(src, "No source");
-            this.target = ValidateUtils.checkNotNull(target, "No target");
+            this.source = Objects.requireNonNull(src, "No source");
+            this.target = Objects.requireNonNull(target, "No target");
             this.symLink = symLink;
         }
 

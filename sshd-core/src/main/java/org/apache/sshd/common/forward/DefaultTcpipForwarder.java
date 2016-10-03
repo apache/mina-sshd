@@ -98,8 +98,8 @@ public class DefaultTcpipForwarder
     private IoAcceptor acceptor;
 
     public DefaultTcpipForwarder(ConnectionService service) {
-        this.service = ValidateUtils.checkNotNull(service, "No connection service");
-        this.sessionInstance = ValidateUtils.checkNotNull(service.getSession(), "No session");
+        this.service = Objects.requireNonNull(service, "No connection service");
+        this.sessionInstance = Objects.requireNonNull(service.getSession(), "No session");
         this.listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, getClass().getClassLoader(), listeners);
     }
 
@@ -137,9 +137,9 @@ public class DefaultTcpipForwarder
 
     @Override
     public synchronized SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
-        ValidateUtils.checkNotNull(local, "Local address is null");
+        Objects.requireNonNull(local, "Local address is null");
         ValidateUtils.checkTrue(local.getPort() >= 0, "Invalid local port: %s", local);
-        ValidateUtils.checkNotNull(remote, "Remote address is null");
+        Objects.requireNonNull(remote, "Remote address is null");
 
         if (isClosed()) {
             throw new IllegalStateException("TcpipForwarder is closed");
@@ -188,7 +188,7 @@ public class DefaultTcpipForwarder
 
     @Override
     public synchronized void stopLocalPortForwarding(SshdSocketAddress local) throws IOException {
-        ValidateUtils.checkNotNull(local, "Local address is null");
+        Objects.requireNonNull(local, "Local address is null");
 
         SshdSocketAddress bound;
         synchronized (localToRemote) {
@@ -219,8 +219,8 @@ public class DefaultTcpipForwarder
 
     @Override
     public synchronized SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws IOException {
-        ValidateUtils.checkNotNull(local, "Local address is null");
-        ValidateUtils.checkNotNull(remote, "Remote address is null");
+        Objects.requireNonNull(local, "Local address is null");
+        Objects.requireNonNull(remote, "Remote address is null");
 
         String remoteHost = remote.getHostName();
         int remotePort = remote.getPort();
@@ -314,7 +314,7 @@ public class DefaultTcpipForwarder
 
     @Override
     public synchronized SshdSocketAddress startDynamicPortForwarding(SshdSocketAddress local) throws IOException {
-        ValidateUtils.checkNotNull(local, "Local address is null");
+        Objects.requireNonNull(local, "Local address is null");
         ValidateUtils.checkTrue(local.getPort() >= 0, "Invalid local port: %s", local);
 
         if (isClosed()) {
@@ -403,11 +403,11 @@ public class DefaultTcpipForwarder
 
     @Override
     public synchronized SshdSocketAddress localPortForwardingRequested(SshdSocketAddress local) throws IOException {
-        ValidateUtils.checkNotNull(local, "Local address is null");
+        Objects.requireNonNull(local, "Local address is null");
         ValidateUtils.checkTrue(local.getPort() >= 0, "Invalid local port: %s", local);
 
         Session session = getSession();
-        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
+        FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
         try {
             if ((filter == null) || (!filter.canListen(local, session))) {
@@ -508,8 +508,8 @@ public class DefaultTcpipForwarder
     private InetSocketAddress doBind(SshdSocketAddress address, Factory<? extends IoHandler> handlerFactory) throws IOException {
         if (acceptor == null) {
             Session session = getSession();
-            FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
-            IoServiceFactory factory = ValidateUtils.checkNotNull(manager.getIoServiceFactory(), "No I/O service factory");
+            FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
+            IoServiceFactory factory = Objects.requireNonNull(manager.getIoServiceFactory(), "No I/O service factory");
             IoHandler handler = handlerFactory.create();
             acceptor = factory.createAcceptor(handler);
         }

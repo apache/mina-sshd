@@ -18,9 +18,10 @@
  */
 package org.apache.sshd.common.session.helpers;
 
+import java.util.Objects;
+
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * An abstract base factory of sessions.
@@ -33,7 +34,7 @@ public abstract class AbstractSessionFactory<M extends FactoryManager, S extends
     private final M manager;
 
     protected AbstractSessionFactory(M manager) {
-        this.manager = ValidateUtils.checkNotNull(manager, "No factory manager instance");
+        this.manager = Objects.requireNonNull(manager, "No factory manager instance");
     }
 
     public M getFactoryManager() {

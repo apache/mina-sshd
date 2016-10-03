@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.agent.SshAgent;
@@ -119,7 +120,7 @@ public class UnixAgentFactory implements SshAgentFactory, ExecutorServiceConfigu
 
     @Override
     public SshAgentServer createServer(ConnectionService service) throws IOException {
-        Session session = ValidateUtils.checkNotNull(service.getSession(), "No session");
+        Session session = Objects.requireNonNull(service.getSession(), "No session");
         ValidateUtils.checkTrue(session instanceof ServerSession,
                 "The session used to create an agent server proxy must be a server session");
         return new AgentServerProxy(service, getExecutorService(), isShutdownOnExit());

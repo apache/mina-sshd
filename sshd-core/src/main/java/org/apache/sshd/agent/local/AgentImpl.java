@@ -27,6 +27,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.SshAgent;
@@ -71,7 +72,7 @@ public class AgentImpl implements SshAgent {
         }
 
         try {
-            Pair<KeyPair, String> pp = ValidateUtils.checkNotNull(getKeyPair(keys, key), "Key not found");
+            Pair<KeyPair, String> pp = Objects.requireNonNull(getKeyPair(keys, key), "Key not found");
             KeyPair kp = ValidateUtils.checkNotNull(pp.getFirst(), "No key pair for agent=%s", pp.getSecond());
             PublicKey pubKey = ValidateUtils.checkNotNull(kp.getPublic(), "No public key for agent=%s", pp.getSecond());
 
@@ -101,7 +102,7 @@ public class AgentImpl implements SshAgent {
         if (!isOpen()) {
             throw new SshException("Agent closed");
         }
-        keys.add(new Pair<>(ValidateUtils.checkNotNull(key, "No key"), comment));
+        keys.add(new Pair<>(Objects.requireNonNull(key, "No key"), comment));
     }
 
     @Override

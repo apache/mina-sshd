@@ -19,8 +19,9 @@
 
 package org.apache.sshd.common.channel;
 
+import java.util.Objects;
+
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -31,7 +32,7 @@ public class IoWriteFutureImpl extends AbstractIoWriteFuture {
 
     public IoWriteFutureImpl(Buffer buffer) {
         super(null);
-        this.buffer = ValidateUtils.checkNotNull(buffer, "No buffer provided");
+        this.buffer = Objects.requireNonNull(buffer, "No buffer provided");
     }
 
     public Buffer getBuffer() {

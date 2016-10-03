@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -328,7 +329,7 @@ public interface SftpClient extends SubsystemClient {
         }
 
         public void setAccessTime(FileTime atime) {
-            accessTime = ValidateUtils.checkNotNull(atime, "No access time");
+            accessTime = Objects.requireNonNull(atime, "No access time");
             addFlag(Attribute.AccessTime);
         }
 
@@ -350,7 +351,7 @@ public interface SftpClient extends SubsystemClient {
         }
 
         public void setCreateTime(FileTime ctime) {
-            createTime = ValidateUtils.checkNotNull(ctime, "No create time");
+            createTime = Objects.requireNonNull(ctime, "No create time");
             addFlag(Attribute.CreateTime);
         }
 
@@ -372,7 +373,7 @@ public interface SftpClient extends SubsystemClient {
         }
 
         public void setModifyTime(FileTime mtime) {
-            modifyTime = ValidateUtils.checkNotNull(mtime, "No modify time");
+            modifyTime = Objects.requireNonNull(mtime, "No modify time");
             addFlag(Attribute.ModifyTime);
         }
 
@@ -386,7 +387,7 @@ public interface SftpClient extends SubsystemClient {
         }
 
         public void setAcl(List<AclEntry> acl) {
-            this.acl = ValidateUtils.checkNotNull(acl, "No ACLs");
+            this.acl = Objects.requireNonNull(acl, "No ACLs");
             addFlag(Attribute.Acl);
         }
 
@@ -404,7 +405,7 @@ public interface SftpClient extends SubsystemClient {
         }
 
         public void setExtensions(Map<String, byte[]> extensions) {
-            this.extensions = ValidateUtils.checkNotNull(extensions, "No extensions");
+            this.extensions = Objects.requireNonNull(extensions, "No extensions");
             addFlag(Attribute.Extensions);
         }
 

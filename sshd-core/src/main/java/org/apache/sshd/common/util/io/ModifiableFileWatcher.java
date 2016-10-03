@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.Pair;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -66,7 +65,7 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
     private final AtomicLong lastModified = new AtomicLong(-1L);
 
     public ModifiableFileWatcher(File file) {
-        this(ValidateUtils.checkNotNull(file, "No file to watch").toPath());
+        this(Objects.requireNonNull(file, "No file to watch").toPath());
     }
 
     public ModifiableFileWatcher(Path file) {
@@ -74,7 +73,7 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
     }
 
     public ModifiableFileWatcher(Path file, LinkOption... options) {
-        this.file = ValidateUtils.checkNotNull(file, "No path to watch");
+        this.file = Objects.requireNonNull(file, "No path to watch");
         // use a clone to avoid being sensitive to changes in the passed array
         this.options = (options == null) ? IoUtils.EMPTY_LINK_OPTIONS : options.clone();
     }

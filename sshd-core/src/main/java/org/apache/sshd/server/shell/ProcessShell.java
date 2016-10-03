@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.util.GenericUtils;
@@ -73,7 +74,7 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell, 
 
     @Override
     public void setSession(ServerSession session) {
-        this.session = ValidateUtils.checkNotNull(session, "No server session");
+        this.session = Objects.requireNonNull(session, "No server session");
         ValidateUtils.checkTrue(process == null, "Session set after process started");
     }
 

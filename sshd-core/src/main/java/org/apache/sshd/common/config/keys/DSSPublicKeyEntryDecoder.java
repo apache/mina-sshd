@@ -34,10 +34,10 @@ import java.security.spec.DSAPrivateKeySpec;
 import java.security.spec.DSAPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Collections;
+import java.util.Objects;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -65,9 +65,9 @@ public class DSSPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<DSAP
 
     @Override
     public String encodePublicKey(OutputStream s, DSAPublicKey key) throws IOException {
-        ValidateUtils.checkNotNull(key, "No public key provided");
+        Objects.requireNonNull(key, "No public key provided");
 
-        DSAParams keyParams = ValidateUtils.checkNotNull(key.getParams(), "No DSA params available");
+        DSAParams keyParams = Objects.requireNonNull(key.getParams(), "No DSA params available");
         encodeString(s, KeyPairProvider.SSH_DSS);
         encodeBigInt(s, keyParams.getP());
         encodeBigInt(s, keyParams.getQ());

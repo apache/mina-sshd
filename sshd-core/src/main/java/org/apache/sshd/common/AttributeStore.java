@@ -19,9 +19,10 @@
 
 package org.apache.sshd.common;
 
+import java.util.Objects;
+
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Provides the capability to attach in-memory attributes to the entity
@@ -95,34 +96,8 @@ public interface AttributeStore {
      * @param <T> The generic attribute type
      * @param key The key of the attribute; must not be {@code null}.
      * @return <tt>null</tt> if there is no value associated with the specified key
-     * @see Utils
      */
     <T> T resolveAttribute(AttributeKey<T> key);
-
-    /**
-     * A helper class for attribute store related operations
-     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
-     */
-    // CHECKSTYLE:OFF
-    @Deprecated
-    final class Utils {
-    // CHECKSTYLE:ON
-        private Utils() {
-            throw new UnsupportedOperationException("No instance allowed");
-        }
-
-        public static <T> T resolveAttribute(FactoryManager manager, AttributeKey<T> key) {
-            return AttributeStore.resolveAttribute(manager, key);
-        }
-
-        public static <T> T resolveAttribute(Session session, AttributeKey<T> key) {
-            return AttributeStore.resolveAttribute(session, key);
-        }
-
-        public static <T> T resolveAttribute(Channel channel, AttributeKey<T> key) {
-            return AttributeStore.resolveAttribute(channel, key);
-        }
-    }
 
     /**
      * @param <T> The generic attribute type
@@ -131,7 +106,7 @@ public interface AttributeStore {
      * @return Associated value - {@code null} if not found
      */
     static <T> T resolveAttribute(FactoryManager manager, AttributeKey<T> key) {
-        ValidateUtils.checkNotNull(key, "No key");
+        Objects.requireNonNull(key, "No key");
         return (manager == null) ? null : manager.getAttribute(key);
     }
 
@@ -146,7 +121,7 @@ public interface AttributeStore {
      * @see #resolveAttribute(FactoryManager, AttributeKey)
      */
     static <T> T resolveAttribute(Session session, AttributeKey<T> key) {
-        ValidateUtils.checkNotNull(key, "No key");
+        Objects.requireNonNull(key, "No key");
         if (session == null) {
             return null;
         }
@@ -166,7 +141,7 @@ public interface AttributeStore {
      * @see #resolveAttribute(Session, AttributeKey)
      */
     static <T> T resolveAttribute(Channel channel, AttributeKey<T> key) {
-        ValidateUtils.checkNotNull(key, "No key");
+        Objects.requireNonNull(key, "No key");
         if (channel == null) {
             return null;
         }

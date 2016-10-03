@@ -25,7 +25,6 @@ import org.apache.sshd.common.future.CloseFuture;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractInnerCloseable extends AbstractCloseable {
-
     protected AbstractInnerCloseable() {
         this("");
     }

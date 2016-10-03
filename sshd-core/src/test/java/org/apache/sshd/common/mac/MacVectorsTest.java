@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.util.GenericUtils;
@@ -50,7 +51,7 @@ public class MacVectorsTest extends BaseTestSupport {
     private final byte[] expected;
 
     public MacVectorsTest(VectorSeed seed, String factoryName, String expected) {
-        this.seed = ValidateUtils.checkNotNull(seed, "No seed");
+        this.seed = Objects.requireNonNull(seed, "No seed");
         this.macFactory = ValidateUtils.checkNotNull(BuiltinMacs.fromFactoryName(factoryName), "Unknown MAC: %s", factoryName);
         this.expected = BufferUtils.decodeHex(BufferUtils.EMPTY_HEX_SEPARATOR, expected);
     }

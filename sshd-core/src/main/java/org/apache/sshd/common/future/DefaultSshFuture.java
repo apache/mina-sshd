@@ -20,6 +20,7 @@ package org.apache.sshd.common.future;
 
 import java.io.InterruptedIOException;
 import java.lang.reflect.Array;
+import java.util.Objects;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -135,7 +136,7 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
 
     @Override
     public T addListener(SshFutureListener<T> listener) {
-        ValidateUtils.checkNotNull(listener, "Missing listener argument");
+        Objects.requireNonNull(listener, "Missing listener argument");
         boolean notifyNow = false;
         synchronized (lock) {
             // if already have a result don't register the listener and invoke it directly
@@ -163,7 +164,7 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
 
     @Override
     public T removeListener(SshFutureListener<T> listener) {
-        ValidateUtils.checkNotNull(listener, "No listener provided");
+        Objects.requireNonNull(listener, "No listener provided");
 
         synchronized (lock) {
             if (result != null) {

@@ -187,9 +187,9 @@ public final class EventListenerUtils {
      * @see #proxyWrapper(Class, ClassLoader, Iterable)
      */
     public static <T extends EventListener> T proxyWrapper(Class<T> listenerType, ClassLoader loader, final Iterable<? extends T> listeners) {
-        ValidateUtils.checkNotNull(listenerType, "No listener type specified");
+        Objects.requireNonNull(listenerType, "No listener type specified");
         ValidateUtils.checkTrue(listenerType.isInterface(), "Target proxy is not an interface: %s", listenerType.getSimpleName());
-        ValidateUtils.checkNotNull(listeners, "No listeners container provided");
+        Objects.requireNonNull(listeners, "No listeners container provided");
 
         Object wrapper = Proxy.newProxyInstance(loader, new Class<?>[]{listenerType}, (proxy, method, args) -> {
             Throwable err = null;

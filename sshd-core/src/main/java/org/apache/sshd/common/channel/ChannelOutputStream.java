@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -61,11 +62,11 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
     }
 
     public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, long maxWaitTimeout, Logger log, byte cmd, boolean eofOnClose) {
-        this.channelInstance = ValidateUtils.checkNotNull(channel, "No channel");
-        this.remoteWindow = ValidateUtils.checkNotNull(remoteWindow, "No remote window");
+        this.channelInstance = Objects.requireNonNull(channel, "No channel");
+        this.remoteWindow = Objects.requireNonNull(remoteWindow, "No remote window");
         ValidateUtils.checkTrue(maxWaitTimeout > 0L, "Non-positive max. wait time: %d", maxWaitTimeout);
         this.maxWaitTimeout = maxWaitTimeout;
-        this.log = ValidateUtils.checkNotNull(log, "No logger");
+        this.log = Objects.requireNonNull(log, "No logger");
         this.cmd = cmd;
         this.eofOnClose = eofOnClose;
         newBuffer(0);

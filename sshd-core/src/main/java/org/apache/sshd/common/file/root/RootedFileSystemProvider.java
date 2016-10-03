@@ -46,6 +46,7 @@ import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
@@ -416,7 +417,7 @@ public class RootedFileSystemProvider extends FileSystemProvider {
      * @throws ProviderMismatchException if not a {@link RootedPath}
      */
     protected Path unroot(Path path) {
-        ValidateUtils.checkNotNull(path, "No path to unroot");
+        Objects.requireNonNull(path, "No path to unroot");
         if (!(path instanceof RootedPath)) {
             throw new ProviderMismatchException("unroot(" + path + ") is not a " + RootedPath.class.getSimpleName()
                     + " but rather a " + path.getClass().getSimpleName());
@@ -433,7 +434,7 @@ public class RootedFileSystemProvider extends FileSystemProvider {
      * of the rooted file system
      */
     protected Path resolveLocalPath(RootedPath path) {
-        RootedPath absPath = ValidateUtils.checkNotNull(path, "No rooted path to resolve").toAbsolutePath();
+        RootedPath absPath = Objects.requireNonNull(path, "No rooted path to resolve").toAbsolutePath();
         RootedFileSystem rfs = absPath.getFileSystem();
         Path root = rfs.getRoot();
         FileSystem lfs = root.getFileSystem();

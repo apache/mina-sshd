@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -256,7 +257,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     }
 
     protected void handleAuthenticationSuccess(int cmd, Buffer buffer) throws Exception {
-        String username = ValidateUtils.checkNotNull(currentAuth, "No current auth").getUsername();
+        String username = Objects.requireNonNull(currentAuth, "No current auth").getUsername();
         ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
             log.debug("handleAuthenticationSuccess({}@{}) {}",

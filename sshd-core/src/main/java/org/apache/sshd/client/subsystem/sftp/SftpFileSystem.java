@@ -45,7 +45,6 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.file.util.BaseFileSystem;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSessionHolder {
@@ -72,7 +71,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
     public SftpFileSystem(SftpFileSystemProvider provider, String id, ClientSession session, SftpVersionSelector selector) throws IOException {
         super(provider);
         this.id = id;
-        this.clientSession = ValidateUtils.checkNotNull(session, "No client session");
+        this.clientSession = Objects.requireNonNull(session, "No client session");
         this.selector = selector;
         this.stores = Collections.unmodifiableList(Collections.<FileStore>singletonList(new SftpFileStore(id, this)));
         this.pool = new LinkedBlockingQueue<>(PropertyResolverUtils.getIntProperty(session, POOL_SIZE_PROP, DEFAULT_POOL_SIZE));
@@ -547,7 +546,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
         private final String name;
 
         public DefaultUserPrincipal(String name) {
-            this.name = ValidateUtils.checkNotNull(name, "name is null");
+            this.name = Objects.requireNonNull(name, "name is null");
         }
 
         @Override

@@ -20,6 +20,7 @@
 package org.apache.sshd.client.kex;
 
 import java.math.BigInteger;
+import java.util.Objects;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
@@ -53,7 +54,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
     protected byte[] g;
 
     protected DHGEXClient(DHFactory factory) {
-        this.factory = ValidateUtils.checkNotNull(factory, "No factory");
+        this.factory = Objects.requireNonNull(factory, "No factory");
         this.max = SecurityUtils.getMaxDHGroupExchangeKeySize();
         this.prf = Math.min(SecurityUtils.PREFERRED_DHGEX_KEY_SIZE, max);
     }

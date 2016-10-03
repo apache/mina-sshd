@@ -34,10 +34,10 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Collections;
+import java.util.Objects;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -63,7 +63,7 @@ public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder<RSAPublic
 
     @Override
     public String encodePublicKey(OutputStream s, RSAPublicKey key) throws IOException {
-        ValidateUtils.checkNotNull(key, "No public key provided");
+        Objects.requireNonNull(key, "No public key provided");
         encodeString(s, KeyPairProvider.SSH_RSA);
         encodeBigInt(s, key.getPublicExponent());
         encodeBigInt(s, key.getModulus());

@@ -19,6 +19,7 @@
 package org.apache.sshd.common.channel;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshException;
@@ -29,7 +30,6 @@ import org.apache.sshd.common.io.IoReadFuture;
 import org.apache.sshd.common.io.ReadPendingException;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.Readable;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
@@ -43,7 +43,7 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
     private IoReadFutureImpl pending;
 
     public ChannelAsyncInputStream(Channel channel) {
-        this.channelInstance = ValidateUtils.checkNotNull(channel, "No channel");
+        this.channelInstance = Objects.requireNonNull(channel, "No channel");
     }
 
     @Override
@@ -166,7 +166,7 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
             } else if (v instanceof Error) {
                 throw (Error) v;
             } else if (v instanceof Throwable) {
-                throw (RuntimeSshException) new RuntimeSshException("Error reading from channel.", (Throwable) v);
+                throw new RuntimeSshException("Error reading from channel.", (Throwable) v);
             } else if (v instanceof Number) {
                 return ((Number) v).intValue();
             } else {

@@ -45,6 +45,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -123,7 +124,7 @@ public final class Utils {
             return provider;
         }
 
-        File targetFolder = ValidateUtils.checkNotNull(detectTargetFolder(anchor), "Failed to detect target folder");
+        File targetFolder = Objects.requireNonNull(detectTargetFolder(anchor), "Failed to detect target folder");
         File file = new File(targetFolder, "hostkey." + DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM.toLowerCase());
         provider = createTestHostKeyProvider(file);
 
@@ -136,26 +137,26 @@ public final class Utils {
     }
 
     public static KeyPairProvider createTestHostKeyProvider(File file) {
-        return createTestHostKeyProvider(ValidateUtils.checkNotNull(file, "No file").toPath());
+        return createTestHostKeyProvider(Objects.requireNonNull(file, "No file").toPath());
     }
 
     public static KeyPairProvider createTestHostKeyProvider(Path path) {
         SimpleGeneratorHostKeyProvider keyProvider = new SimpleGeneratorHostKeyProvider();
-        keyProvider.setPath(ValidateUtils.checkNotNull(path, "No path"));
+        keyProvider.setPath(Objects.requireNonNull(path, "No path"));
         keyProvider.setAlgorithm(DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM);
         return validateKeyPairProvider(keyProvider);
     }
 
     public static KeyPair getFirstKeyPair(KeyPairProviderHolder holder) {
-        return getFirstKeyPair(ValidateUtils.checkNotNull(holder, "No holder").getKeyPairProvider());
+        return getFirstKeyPair(Objects.requireNonNull(holder, "No holder").getKeyPairProvider());
     }
 
     public static KeyPair getFirstKeyPair(KeyIdentityProvider provider) {
-        ValidateUtils.checkNotNull(provider, "No key pair provider");
-        Iterable<? extends KeyPair> pairs = ValidateUtils.checkNotNull(provider.loadKeys(), "No loaded keys");
-        Iterator<? extends KeyPair> iter = ValidateUtils.checkNotNull(pairs.iterator(), "No keys iterator");
+        Objects.requireNonNull(provider, "No key pair provider");
+        Iterable<? extends KeyPair> pairs = Objects.requireNonNull(provider.loadKeys(), "No loaded keys");
+        Iterator<? extends KeyPair> iter = Objects.requireNonNull(pairs.iterator(), "No keys iterator");
         ValidateUtils.checkTrue(iter.hasNext(), "Empty loaded kyes iterator");
-        return ValidateUtils.checkNotNull(iter.next(), "No key pair in iterator");
+        return Objects.requireNonNull(iter.next(), "No key pair in iterator");
     }
 
     public static KeyPair generateKeyPair(String algorithm, int keySize) throws GeneralSecurityException {
@@ -194,10 +195,10 @@ public final class Utils {
     }
 
     private static <P extends KeyIdentityProvider> P validateKeyPairProvider(P provider) {
-        ValidateUtils.checkNotNull(provider, "No provider");
+        Objects.requireNonNull(provider, "No provider");
 
         // get the I/O out of the way
-        Iterable<KeyPair> keys = ValidateUtils.checkNotNull(provider.loadKeys(), "No keys loaded");
+        Iterable<KeyPair> keys = Objects.requireNonNull(provider.loadKeys(), "No keys loaded");
         if (keys instanceof Collection<?>) {
             ValidateUtils.checkNotNullAndNotEmpty((Collection<?>) keys, "Empty keys loaded");
         }

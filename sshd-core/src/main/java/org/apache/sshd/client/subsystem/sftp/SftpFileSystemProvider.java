@@ -974,7 +974,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     }
 
     public SftpPath toSftpPath(Path path) {
-        ValidateUtils.checkNotNull(path, "No path provided");
+        Objects.requireNonNull(path, "No path provided");
         if (!(path instanceof SftpPath)) {
             throw new ProviderMismatchException("Path is not SFTP: " + path);
         }

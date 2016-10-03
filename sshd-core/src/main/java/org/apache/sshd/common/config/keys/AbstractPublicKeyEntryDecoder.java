@@ -37,6 +37,7 @@ import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.util.Collection;
+import java.util.Objects;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
@@ -52,14 +53,13 @@ import org.apache.sshd.common.util.io.IoUtils;
  */
 public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey, PRV extends PrivateKey>
         implements PublicKeyEntryDecoder<PUB, PRV> {
-
     private final Class<PUB> pubType;
     private final Class<PRV> prvType;
     private final Collection<String> names;
 
     protected AbstractPublicKeyEntryDecoder(Class<PUB> pubType, Class<PRV> prvType, Collection<String> names) {
-        this.pubType = ValidateUtils.checkNotNull(pubType, "No public key type specified");
-        this.prvType = ValidateUtils.checkNotNull(prvType, "No private key type specified");
+        this.pubType = Objects.requireNonNull(pubType, "No public key type specified");
+        this.prvType = Objects.requireNonNull(prvType, "No private key type specified");
         this.names = ValidateUtils.checkNotNullAndNotEmpty(names, "No type names provided");
     }
 

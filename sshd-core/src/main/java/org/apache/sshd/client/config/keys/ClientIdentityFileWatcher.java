@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -31,7 +32,6 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Pair;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.ModifiableFileWatcher;
 
@@ -53,8 +53,8 @@ public class ClientIdentityFileWatcher extends ModifiableFileWatcher implements 
 
     public ClientIdentityFileWatcher(Path path, ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
         this(path,
-             GenericUtils.supplierOf(ValidateUtils.checkNotNull(loader, "No client identity loader")),
-             GenericUtils.supplierOf(ValidateUtils.checkNotNull(provider, "No password provider")),
+             GenericUtils.supplierOf(Objects.requireNonNull(loader, "No client identity loader")),
+             GenericUtils.supplierOf(Objects.requireNonNull(provider, "No password provider")),
              strict);
     }
 
@@ -64,8 +64,8 @@ public class ClientIdentityFileWatcher extends ModifiableFileWatcher implements 
 
     public ClientIdentityFileWatcher(Path path, Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider, boolean strict) {
         super(path);
-        this.loaderHolder = ValidateUtils.checkNotNull(loader, "No client identity loader");
-        this.providerHolder = ValidateUtils.checkNotNull(provider, "No password provider");
+        this.loaderHolder = Objects.requireNonNull(loader, "No client identity loader");
+        this.providerHolder = Objects.requireNonNull(provider, "No password provider");
         this.strict = strict;
     }
 
@@ -115,9 +115,9 @@ public class ClientIdentityFileWatcher extends ModifiableFileWatcher implements 
         }
 
         String location = path.toString();
-        ClientIdentityLoader idLoader = ValidateUtils.checkNotNull(getClientIdentityLoader(), "No client identity loader");
+        ClientIdentityLoader idLoader = Objects.requireNonNull(getClientIdentityLoader(), "No client identity loader");
         if (idLoader.isValidLocation(location)) {
-            KeyPair kp = idLoader.loadClientIdentity(location, ValidateUtils.checkNotNull(getFilePasswordProvider(), "No file password provider"));
+            KeyPair kp = idLoader.loadClientIdentity(location, Objects.requireNonNull(getFilePasswordProvider(), "No file password provider"));
             if (log.isTraceEnabled()) {
                 PublicKey key = (kp == null) ? null : kp.getPublic();
                 if (key != null) {

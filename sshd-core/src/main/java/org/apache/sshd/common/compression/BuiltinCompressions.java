@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
@@ -115,7 +116,7 @@ public enum BuiltinCompressions implements CompressionFactory {
      *                                  with the same name (case <U>insensitive</U>).
      */
     public static void registerExtension(CompressionFactory extension) {
-        String name = ValidateUtils.checkNotNull(extension, "No extension provided").getName();
+        String name = Objects.requireNonNull(extension, "No extension provided").getName();
         ValidateUtils.checkTrue(fromFactoryName(name) == null, "Extension overrides built-in: %s", name);
 
         synchronized (EXTENSIONS) {

@@ -26,6 +26,7 @@ import java.nio.channels.NetworkChannel;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -38,7 +39,6 @@ import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 
 /**
@@ -54,9 +54,9 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
         if (log.isTraceEnabled()) {
             log.trace("Creating {}", getClass().getSimpleName());
         }
-        this.manager = ValidateUtils.checkNotNull(manager, "No factory manager provided");
-        this.handler = ValidateUtils.checkNotNull(handler, "No I/O handler provided");
-        this.group = ValidateUtils.checkNotNull(group, "No async. channel group provided");
+        this.manager = Objects.requireNonNull(manager, "No factory manager provided");
+        this.handler = Objects.requireNonNull(handler, "No I/O handler provided");
+        this.group = Objects.requireNonNull(group, "No async. channel group provided");
         this.sessions = new ConcurrentHashMap<>();
     }
 

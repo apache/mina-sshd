@@ -18,13 +18,14 @@
  */
 package org.apache.sshd.server.global;
 
+import java.util.Objects;
+
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.forward.TcpipForwarder;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.helpers.AbstractConnectionServiceRequestHandler;
 import org.apache.sshd.common.util.Int2IntFunction;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
@@ -60,7 +61,7 @@ public class CancelTcpipForwardHandler extends AbstractConnectionServiceRequestH
             log.debug("process({})[{}] {} reply={}", connectionService, request, socketAddress, wantReply);
         }
 
-        TcpipForwarder forwarder = ValidateUtils.checkNotNull(connectionService.getTcpipForwarder(), "No TCP/IP forwarder");
+        TcpipForwarder forwarder = Objects.requireNonNull(connectionService.getTcpipForwarder(), "No TCP/IP forwarder");
         forwarder.localPortForwardingCancelled(socketAddress);
 
         if (wantReply) {

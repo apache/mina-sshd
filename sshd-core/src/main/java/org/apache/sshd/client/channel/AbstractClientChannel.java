@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -197,7 +198,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
     @Override
     public Set<ClientChannelEvent> waitFor(Collection<ClientChannelEvent> mask, long timeout) {
-        ValidateUtils.checkNotNull(mask, "No mask specified");
+        Objects.requireNonNull(mask, "No mask specified");
         long t = 0;
         synchronized (lock) {
             for (Set<ClientChannelEvent> cond = EnumSet.noneOf(ClientChannelEvent.class);; cond.clear()) {
@@ -323,7 +324,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         setRecipient(recipient);
 
         Session session = getSession();
-        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
+        FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         Window wRemote = getRemoteWindow();
         wRemote.init(rwSize, packetSize, manager.getProperties());
 

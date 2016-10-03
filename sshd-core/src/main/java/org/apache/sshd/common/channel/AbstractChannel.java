@@ -802,21 +802,21 @@ public abstract class AbstractChannel
     @Override
     @SuppressWarnings("unchecked")
     public <T> T getAttribute(AttributeKey<T> key) {
-        return (T) attributes.get(ValidateUtils.checkNotNull(key, "No key"));
+        return (T) attributes.get(Objects.requireNonNull(key, "No key"));
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T> T setAttribute(AttributeKey<T> key, T value) {
         return (T) attributes.put(
-                ValidateUtils.checkNotNull(key, "No key"),
-                ValidateUtils.checkNotNull(value, "No value"));
+                Objects.requireNonNull(key, "No key"),
+                Objects.requireNonNull(value, "No value"));
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T> T removeAttribute(AttributeKey<T> key) {
-        return (T) attributes.remove(ValidateUtils.checkNotNull(key, "No key"));
+        return (T) attributes.remove(Objects.requireNonNull(key, "No key"));
     }
 
     @Override

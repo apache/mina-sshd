@@ -27,6 +27,7 @@ import java.security.PublicKey;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.sshd.client.ClientFactoryManager;
@@ -190,9 +191,9 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     public void addPublicKeyIdentity(KeyPair kp) {
-        ValidateUtils.checkNotNull(kp, "No key-pair to add");
-        ValidateUtils.checkNotNull(kp.getPublic(), "No public key");
-        ValidateUtils.checkNotNull(kp.getPrivate(), "No private key");
+        Objects.requireNonNull(kp, "No key-pair to add");
+        Objects.requireNonNull(kp.getPublic(), "No public key");
+        Objects.requireNonNull(kp.getPrivate(), "No private key");
 
         identities.add(kp);
 
@@ -413,8 +414,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     protected TcpipForwarder getTcpipForwarder() {
-        ConnectionService service = ValidateUtils.checkNotNull(getConnectionService(), "No connection service");
-        return ValidateUtils.checkNotNull(service.getTcpipForwarder(), "No forwarder");
+        ConnectionService service = Objects.requireNonNull(getConnectionService(), "No connection service");
+        return Objects.requireNonNull(service.getTcpipForwarder(), "No forwarder");
     }
 
     @Override
@@ -506,7 +507,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     protected void checkKeys() throws SshException {
-        ServerKeyVerifier serverKeyVerifier = ValidateUtils.checkNotNull(getServerKeyVerifier(), "No server key verifier");
+        ServerKeyVerifier serverKeyVerifier = Objects.requireNonNull(getServerKeyVerifier(), "No server key verifier");
         SocketAddress remoteAddress = ioSession.getRemoteAddress();
         PublicKey serverKey = kex.getServerKey();
         boolean verified = serverKeyVerifier.verifyServerKey(this, remoteAddress, serverKey);
@@ -577,7 +578,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
                 setKexSeed(seed);
             }
 
-            return ValidateUtils.checkNotNull(kexFutureHolder.get(), "No current KEX future");
+            return Objects.requireNonNull(kexFutureHolder.get(), "No current KEX future");
         } else {
             throw new SshException("In flight key exchange");
         }

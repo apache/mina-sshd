@@ -21,6 +21,7 @@ package org.apache.sshd.server.shell;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
@@ -109,7 +110,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
      * @param bufferSize       Buffer size to use - must be above min. size ({@link Byte#SIZE})
      */
     public InvertedShellWrapper(InvertedShell shell, Executor executor, boolean shutdownExecutor, int bufferSize) {
-        this.shell = ValidateUtils.checkNotNull(shell, "No shell");
+        this.shell = Objects.requireNonNull(shell, "No shell");
         this.executor = (executor == null) ? ThreadUtils.newSingleThreadExecutor("shell[0x" + Integer.toHexString(shell.hashCode()) + "]") : executor;
         ValidateUtils.checkTrue(bufferSize > Byte.SIZE, "Copy buffer size too small: %d", bufferSize);
         this.bufferSize = bufferSize;

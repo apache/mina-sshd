@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.apache.sshd.common.NamedResource;
@@ -33,7 +34,6 @@ import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -49,8 +49,8 @@ public class BuiltinClientIdentitiesWatcher extends ClientIdentitiesWatcher {
     public BuiltinClientIdentitiesWatcher(Path keysFolder, Collection<String> ids, boolean supportedOnly,
             ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
         this(keysFolder, ids, supportedOnly,
-             GenericUtils.supplierOf(ValidateUtils.checkNotNull(loader, "No client identity loader")),
-             GenericUtils.supplierOf(ValidateUtils.checkNotNull(provider, "No password provider")),
+             GenericUtils.supplierOf(Objects.requireNonNull(loader, "No client identity loader")),
+             GenericUtils.supplierOf(Objects.requireNonNull(provider, "No password provider")),
              strict);
     }
 
@@ -104,7 +104,7 @@ public class BuiltinClientIdentitiesWatcher extends ClientIdentitiesWatcher {
     }
 
     public static List<Path> getBuiltinIdentitiesPaths(Path keysFolder, Collection<String> ids) {
-        ValidateUtils.checkNotNull(keysFolder, "No keys folder");
+        Objects.requireNonNull(keysFolder, "No keys folder");
         if (GenericUtils.isEmpty(ids)) {
             return Collections.emptyList();
         }

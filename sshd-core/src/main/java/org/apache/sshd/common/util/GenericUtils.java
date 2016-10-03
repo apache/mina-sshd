@@ -419,7 +419,7 @@ public final class GenericUtils {
             return Collections.emptyMap();
         }
 
-        Map<V, K> result = ValidateUtils.checkNotNull(mapCreator.create(), "No map created");
+        Map<V, K> result = Objects.requireNonNull(mapCreator.create(), "No map created");
         for (Map.Entry<? extends K, ? extends V> ee : map.entrySet()) {
             K key = ee.getKey();
             V value = ee.getValue();
@@ -625,22 +625,12 @@ public final class GenericUtils {
 
     /**
      * Wraps a value into a {@link Supplier}
-     * @param <T>   Type of value being supplied
+     * @param <T> Type of value being supplied
      * @param value The value to be supplied
      * @return The supplier wrapper
      */
-    public static <T> Supplier<T> supplierOf(final T value) {
-        return new Supplier<T>() {
-            @Override
-            public T get() {
-                return value;
-            }
-
-            @Override
-            public String toString() {
-                return Supplier.class.getSimpleName() + "[" + value + "]";
-            }
-        };
+    public static <T> Supplier<T> supplierOf(T value) {
+        return () -> value;
     }
 
     /**

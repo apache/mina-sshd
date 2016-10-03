@@ -21,6 +21,7 @@ package org.apache.sshd.server.channel;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.client.future.DefaultOpenFuture;
@@ -34,7 +35,6 @@ import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -69,7 +69,7 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
         setRecipient(recipient);
 
         Session s = getSession();
-        FactoryManager manager = ValidateUtils.checkNotNull(s.getFactoryManager(), "No factory manager");
+        FactoryManager manager = Objects.requireNonNull(s.getFactoryManager(), "No factory manager");
         Window wRemote = getRemoteWindow();
         wRemote.init(rwSize, packetSize, manager.getProperties());
         configureWindow();

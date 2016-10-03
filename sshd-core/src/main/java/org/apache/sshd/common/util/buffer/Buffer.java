@@ -49,6 +49,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 
 import org.apache.sshd.common.PropertyResolver;
@@ -62,7 +63,6 @@ import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.Transformer;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.keys.BufferPublicKeyParser;
 import org.apache.sshd.common.util.logging.SimplifiedLog;
 
@@ -382,7 +382,7 @@ public abstract class Buffer implements Readable {
      * @throws SshException If failed to extract the key
      */
     public PublicKey getRawPublicKey(BufferPublicKeyParser<? extends PublicKey> parser) throws SshException {
-        ValidateUtils.checkNotNull(parser, "No key data parser");
+        Objects.requireNonNull(parser, "No key data parser");
         try {
             String keyType = getString();
             if (!parser.isKeyTypeSupported(keyType)) {

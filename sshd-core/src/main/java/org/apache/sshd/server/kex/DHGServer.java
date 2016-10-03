@@ -19,6 +19,7 @@
 package org.apache.sshd.server.kex;
 
 import java.security.KeyPair;
+import java.util.Objects;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
@@ -45,7 +46,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
     protected AbstractDH dh;
 
     protected DHGServer(DHFactory factory) {
-        this.factory = ValidateUtils.checkNotNull(factory, "No factory");
+        this.factory = Objects.requireNonNull(factory, "No factory");
     }
 
     @Override
@@ -99,7 +100,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         dh.setF(e);
         k = dh.getK();
 
-        KeyPair kp = ValidateUtils.checkNotNull(session.getHostKey(), "No server key pair available");
+        KeyPair kp = Objects.requireNonNull(session.getHostKey(), "No server key pair available");
         String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
         Signature sig = ValidateUtils.checkNotNull(
                 NamedFactory.create(session.getSignatureFactories(), algo),

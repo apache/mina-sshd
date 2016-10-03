@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.StreamCorruptedException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.sshd.client.subsystem.sftp.RawSftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
@@ -56,8 +57,8 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
 
     protected AbstractSftpClientExtension(String name, SftpClient client, RawSftpClient raw, boolean supported) {
         this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No extension name");
-        this.client = ValidateUtils.checkNotNull(client, "No client instance");
-        this.raw = ValidateUtils.checkNotNull(raw, "No raw access");
+        this.client = Objects.requireNonNull(client, "No client instance");
+        this.raw = Objects.requireNonNull(raw, "No raw access");
         this.supported = supported;
     }
 

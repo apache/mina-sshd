@@ -23,6 +23,7 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
@@ -100,7 +101,7 @@ public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler imple
 
         Buffer buf = new ByteArrayBuffer();
         byte[] sessionId = session.getSessionId();
-        KeyPairProvider kpp = ValidateUtils.checkNotNull(session.getKeyPairProvider(), "No server keys provider");
+        KeyPairProvider kpp = Objects.requireNonNull(session.getKeyPairProvider(), "No server keys provider");
         for (PublicKey k : keys) {
             String keyType = KeyUtils.getKeyType(k);
             Signature verifier = ValidateUtils.checkNotNull(

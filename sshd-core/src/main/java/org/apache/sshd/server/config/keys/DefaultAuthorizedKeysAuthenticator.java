@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 
 import org.apache.sshd.common.auth.UsernameHolder;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
@@ -69,11 +70,11 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
     }
 
     public DefaultAuthorizedKeysAuthenticator(File file, boolean strict) {
-        this(ValidateUtils.checkNotNull(file, "No file provided").toPath(), strict, IoUtils.getLinkOptions(false));
+        this(Objects.requireNonNull(file, "No file provided").toPath(), strict, IoUtils.getLinkOptions(false));
     }
 
     public DefaultAuthorizedKeysAuthenticator(String user, File file, boolean strict) {
-        this(user, ValidateUtils.checkNotNull(file, "No file provided").toPath(), strict, IoUtils.getLinkOptions(false));
+        this(user, Objects.requireNonNull(file, "No file provided").toPath(), strict, IoUtils.getLinkOptions(false));
     }
 
     public DefaultAuthorizedKeysAuthenticator(Path path, boolean strict, LinkOption... options) {

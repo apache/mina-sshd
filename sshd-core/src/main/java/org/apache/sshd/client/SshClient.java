@@ -251,7 +251,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     @Override
     public void setServerKeyVerifier(ServerKeyVerifier serverKeyVerifier) {
-        this.serverKeyVerifier = ValidateUtils.checkNotNull(serverKeyVerifier, "No server key verifier");
+        this.serverKeyVerifier = Objects.requireNonNull(serverKeyVerifier, "No server key verifier");
     }
 
     @Override
@@ -261,7 +261,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     @Override
     public void setHostConfigEntryResolver(HostConfigEntryResolver resolver) {
-        this.hostConfigEntryResolver = ValidateUtils.checkNotNull(resolver, "No host configuration entry resolver");
+        this.hostConfigEntryResolver = Objects.requireNonNull(resolver, "No host configuration entry resolver");
     }
 
     @Override
@@ -271,7 +271,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     @Override
     public void setFilePasswordProvider(FilePasswordProvider provider) {
-        this.filePasswordProvider = ValidateUtils.checkNotNull(provider, "No file password provider");
+        this.filePasswordProvider = Objects.requireNonNull(provider, "No file password provider");
     }
 
     @Override
@@ -281,7 +281,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     @Override
     public void setClientIdentityLoader(ClientIdentityLoader loader) {
-        this.clientIdentityLoader = ValidateUtils.checkNotNull(loader, "No client identity loader");
+        this.clientIdentityLoader = Objects.requireNonNull(loader, "No client identity loader");
     }
 
     @Override
@@ -344,9 +344,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     @Override
     public void addPublicKeyIdentity(KeyPair kp) {
-        ValidateUtils.checkNotNull(kp, "No key-pair to add");
-        ValidateUtils.checkNotNull(kp.getPublic(), "No public key");
-        ValidateUtils.checkNotNull(kp.getPrivate(), "No private key");
+        Objects.requireNonNull(kp, "No key-pair to add");
+        Objects.requireNonNull(kp.getPublic(), "No public key");
+        Objects.requireNonNull(kp.getPrivate(), "No private key");
 
         identities.add(kp);
 
@@ -374,11 +374,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     protected void checkConfig() {
         super.checkConfig();
 
-        ValidateUtils.checkNotNull(getTcpipForwarderFactory(), "TcpipForwarderFactory not set");
-        ValidateUtils.checkNotNull(getServerKeyVerifier(), "ServerKeyVerifier not set");
-        ValidateUtils.checkNotNull(getHostConfigEntryResolver(), "HostConfigEntryResolver not set");
-        ValidateUtils.checkNotNull(getClientIdentityLoader(), "ClientIdentityLoader not set");
-        ValidateUtils.checkNotNull(getFilePasswordProvider(), "FilePasswordProvider not set");
+        Objects.requireNonNull(getTcpipForwarderFactory(), "TcpipForwarderFactory not set");
+        Objects.requireNonNull(getServerKeyVerifier(), "ServerKeyVerifier not set");
+        Objects.requireNonNull(getHostConfigEntryResolver(), "HostConfigEntryResolver not set");
+        Objects.requireNonNull(getClientIdentityLoader(), "ClientIdentityLoader not set");
+        Objects.requireNonNull(getFilePasswordProvider(), "FilePasswordProvider not set");
 
         // if no client identities override use the default
         KeyPairProvider defaultIdentities = getKeyPairProvider();
@@ -488,7 +488,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     @Override
     public ConnectFuture connect(String username, SocketAddress address) throws IOException {
-        ValidateUtils.checkNotNull(address, "No target address");
+        Objects.requireNonNull(address, "No target address");
         if (address instanceof InetSocketAddress) {
             InetSocketAddress inetAddress = (InetSocketAddress) address;
             String host = ValidateUtils.checkNotNullAndNotEmpty(inetAddress.getHostString(), "No host");
@@ -520,7 +520,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     @Override
     public ConnectFuture connect(HostConfigEntry hostConfig) throws IOException {
-        ValidateUtils.checkNotNull(hostConfig, "No host configuration");
+        Objects.requireNonNull(hostConfig, "No host configuration");
         String host = ValidateUtils.checkNotNullAndNotEmpty(hostConfig.getHostName(), "No target host");
         int port = hostConfig.getPort();
         ValidateUtils.checkTrue(port > 0, "Invalid port: %d", port);
@@ -536,8 +536,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
         List<KeyPair> ids = new ArrayList<>(locations.size());
         boolean ignoreNonExisting = PropertyResolverUtils.getBooleanProperty(this, IGNORE_INVALID_IDENTITIES, DEFAULT_IGNORE_INVALID_IDENTITIES);
-        ClientIdentityLoader loader = ValidateUtils.checkNotNull(getClientIdentityLoader(), "No ClientIdentityLoader");
-        FilePasswordProvider provider = ValidateUtils.checkNotNull(getFilePasswordProvider(), "No FilePasswordProvider");
+        ClientIdentityLoader loader = Objects.requireNonNull(getClientIdentityLoader(), "No ClientIdentityLoader");
+        FilePasswordProvider provider = Objects.requireNonNull(getFilePasswordProvider(), "No FilePasswordProvider");
         for (String l : locations) {
             if (!loader.isValidLocation(l)) {
                 if (ignoreNonExisting) {
@@ -716,7 +716,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
      * wrapper is closed the client is also stopped
      */
     public static SimpleClient wrapAsSimpleClient(final SshClient client) {
-        ValidateUtils.checkNotNull(client, "No client instance");
+        Objects.requireNonNull(client, "No client instance");
         // wrap the client so that close() is also stop()
         final java.nio.channels.Channel channel = new java.nio.channels.Channel() {
             @Override

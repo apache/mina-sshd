@@ -18,10 +18,11 @@
  */
 package org.apache.sshd.deprecated;
 
+import java.util.Objects;
+
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.session.SessionHolder;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -33,7 +34,7 @@ public abstract class AbstractUserAuth
     private final String service;
 
     protected AbstractUserAuth(ClientSession session, String service) {
-        this.session = ValidateUtils.checkNotNull(session, "No client session");
+        this.session = Objects.requireNonNull(session, "No client session");
         this.service = service;
     }
 

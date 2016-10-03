@@ -25,6 +25,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.Channel;
 import java.security.KeyPair;
+import java.util.Objects;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -113,7 +114,7 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
      * @throws IOException If failed to login or authenticate
      */
     default ClientSession sessionLogin(InetAddress host, int port, String username, String password) throws IOException {
-        return sessionLogin(new InetSocketAddress(ValidateUtils.checkNotNull(host, "No host address"), port), username, password);
+        return sessionLogin(new InetSocketAddress(Objects.requireNonNull(host, "No host address"), port), username, password);
     }
 
     /**
@@ -140,7 +141,7 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
      * @throws IOException If failed to login or authenticate
      */
     default ClientSession sessionLogin(InetAddress host, int port, String username, KeyPair identity) throws IOException {
-        return sessionLogin(new InetSocketAddress(ValidateUtils.checkNotNull(host, "No host address"), port), username, identity);
+        return sessionLogin(new InetSocketAddress(Objects.requireNonNull(host, "No host address"), port), username, identity);
     }
 
     /**

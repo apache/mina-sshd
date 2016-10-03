@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -37,7 +38,6 @@ import org.apache.sshd.common.subsystem.sftp.extensions.openssh.HardLinkExtensio
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.PosixRenameExtensionParser;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.StatVfsExtensionParser;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -80,7 +80,7 @@ public final class ParserUtils {
      * for this extension name
      */
     public static ExtensionParser<?> registerParser(ExtensionParser<?> parser) {
-        ValidateUtils.checkNotNull(parser, "No parser instance");
+        Objects.requireNonNull(parser, "No parser instance");
 
         synchronized (PARSERS_MAP) {
             return PARSERS_MAP.put(parser.getName(), parser);

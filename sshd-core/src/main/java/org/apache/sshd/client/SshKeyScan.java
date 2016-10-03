@@ -620,7 +620,7 @@ public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, S
 
     public static <S extends SshKeyScan> S setInputStream(S scanner, Collection<String> hosts) throws IOException {
         if (GenericUtils.isEmpty(hosts)) {
-            ValidateUtils.checkNotNull(scanner.getInputStream(), "No hosts or file specified");
+            Objects.requireNonNull(scanner.getInputStream(), "No hosts or file specified");
         } else {
             ValidateUtils.checkTrue(scanner.getInputStream() == null, "Both hosts and file specified");
 

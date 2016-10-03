@@ -24,12 +24,12 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -50,7 +50,7 @@ public class PropertyResolverUtilsTest extends BaseTestSupport {
         final String propName = getCurrentTestName();
         final String rootValue = getClass().getPackage().getName();
         Session resolver = createMockSession();
-        FactoryManager root = ValidateUtils.checkNotNull(resolver.getFactoryManager(), "No manager");
+        FactoryManager root = Objects.requireNonNull(resolver.getFactoryManager(), "No manager");
         assertNull("Unexpected root previous value", PropertyResolverUtils.updateProperty(root, propName, rootValue));
         assertSame("Mismatched root value", rootValue, PropertyResolverUtils.getString(resolver, propName));
 

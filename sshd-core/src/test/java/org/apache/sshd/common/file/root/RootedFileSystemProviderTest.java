@@ -33,10 +33,10 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Random;
 import java.util.TreeSet;
 
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.util.test.Utils;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -62,18 +62,20 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     }
 
     @BeforeClass
-    public static void onlyOnce() throws IOException {
-        Path targetFolder = ValidateUtils.checkNotNull(
+    public static void initializeFileSystem() throws IOException {
+        Path targetFolder = Objects.requireNonNull(
                 Utils.detectTargetFolder(RootedFileSystemProviderTest.class), "Failed to detect target folder").toPath();
         rootSandbox = FileHelper.createTestSandbox(targetFolder.resolve(TEMP_SUBFOLDER_NAME));
-        fileSystem = (RootedFileSystem) new RootedFileSystemProvider().newFileSystem(rootSandbox,
-                Collections.emptyMap());
+        fileSystem = (RootedFileSystem) new RootedFileSystemProvider().newFileSystem(rootSandbox, Collections.emptyMap());
     }
 
     @Test
     public void testRoot() {
-        assertTrue(exists(fileSystem.getRoot()) && isDir(fileSystem.getRoot()) && isReadable(fileSystem.getRoot())
-                && isRootedAt(rootSandbox, fileSystem.getRoot()));
+        Path root = fileSystem.getRoot();
+        assertTrue("Exists? " + root, exists(root));
+        assertTrue("Dir? " + root, isDir(root));
+        assertTrue("Readable? " + root, isReadable(root));
+        assertTrue(root + " rooted at " + rootSandbox + " ?", isRootedAt(rootSandbox, root));
     }
 
     /* mkdir */

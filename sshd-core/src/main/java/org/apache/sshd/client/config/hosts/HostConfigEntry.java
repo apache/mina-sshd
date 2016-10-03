@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+
 import org.apache.sshd.common.auth.MutableUserHolder;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.config.keys.IdentityUtils;
@@ -217,7 +218,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * @param file A {@link File} that contains an identity key - never {@code null}
      */
     public void addIdentity(File file) {
-        addIdentity(ValidateUtils.checkNotNull(file, "No file").toPath());
+        addIdentity(Objects.requireNonNull(file, "No file").toPath());
     }
 
     /**
@@ -225,7 +226,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * - never {@code null}
      */
     public void addIdentity(Path path) {
-        addIdentity(ValidateUtils.checkNotNull(path, "No path").toAbsolutePath().normalize().toString());
+        addIdentity(Objects.requireNonNull(path, "No path").toAbsolutePath().normalize().toString());
     }
 
     /**
@@ -1005,7 +1006,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     public static void writeHostConfigEntries(File file, Collection<? extends HostConfigEntry> entries) throws IOException {
-        writeHostConfigEntries(ValidateUtils.checkNotNull(file, "No file").toPath(), entries, IoUtils.EMPTY_OPEN_OPTIONS);
+        writeHostConfigEntries(Objects.requireNonNull(file, "No file").toPath(), entries, IoUtils.EMPTY_OPEN_OPTIONS);
     }
 
     public static void writeHostConfigEntries(Path path, Collection<? extends HostConfigEntry> entries, OpenOption ... options) throws IOException {
@@ -1103,7 +1104,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
                             break;
                         case LOCAL_HOST_MACRO:
                         {
-                            InetAddress address = ValidateUtils.checkNotNull(InetAddress.getLocalHost(), "No local address");
+                            InetAddress address = Objects.requireNonNull(InetAddress.getLocalHost(), "No local address");
                             sb.append(ValidateUtils.checkNotNullAndNotEmpty(address.getHostName(), "No local name"));
                             break;
                         }
@@ -1134,7 +1135,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     public static StringBuilder appendUserHome(StringBuilder sb, Path userHome) {
-        return appendUserHome(sb, ValidateUtils.checkNotNull(userHome, "No user home folder").toString());
+        return appendUserHome(sb, Objects.requireNonNull(userHome, "No user home folder").toString());
     }
 
     public static StringBuilder appendUserHome(StringBuilder sb, String userHome) {

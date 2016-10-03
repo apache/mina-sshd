@@ -286,7 +286,7 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
     }
 
     public void setAuthenticationMode(String mode) {
-        ldapEnv.put(Context.SECURITY_AUTHENTICATION, ValidateUtils.checkNotNull(mode, "No authentication mode"));
+        ldapEnv.put(Context.SECURITY_AUTHENTICATION, Objects.requireNonNull(mode, "No authentication mode"));
     }
 
     /**
@@ -427,12 +427,12 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
         if (!anonymous) {
             Object[] bindParams = {username, password};
             if (!env.containsKey(Context.SECURITY_PRINCIPAL)) {
-                String bindDN = ValidateUtils.checkNotNull(bindDNPattern, "No bind DN pattern").format(bindParams);
+                String bindDN = Objects.requireNonNull(bindDNPattern, "No bind DN pattern").format(bindParams);
                 env.put(Context.SECURITY_PRINCIPAL, ValidateUtils.checkNotNullAndNotEmpty(bindDN, "No bind DN"));
             }
 
             if (!env.containsKey(Context.SECURITY_CREDENTIALS)) {
-                String bindPassword = ValidateUtils.checkNotNull(bindPasswordPattern, "No bind password pattern").format(bindParams);
+                String bindPassword = Objects.requireNonNull(bindPasswordPattern, "No bind password pattern").format(bindParams);
                 env.put(Context.SECURITY_CREDENTIALS, ValidateUtils.checkNotNullAndNotEmpty(bindPassword, "No bind password"));
             }
         }
@@ -442,12 +442,12 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
 
     protected String resolveBaseDN(C queryContext, Map<?, ?> ldapConfig, String username, String password) throws NamingException {
         Object[] bindParams = {username, password};
-        return ValidateUtils.checkNotNull(baseDNPattern, "No base DN pattern").format(bindParams);
+        return Objects.requireNonNull(baseDNPattern, "No base DN pattern").format(bindParams);
     }
 
     protected String resolveSearchFilter(C queryContext, Map<?, ?> ldapConfig, String username, String password) throws NamingException {
         Object[] bindParams = {username, password};
-        return ValidateUtils.checkNotNull(searchFilterPattern, "No search filter pattern").format(bindParams);
+        return Objects.requireNonNull(searchFilterPattern, "No search filter pattern").format(bindParams);
     }
 
     protected void processSearchResult(C queryContext, Map<?, ?> ldapConfig, Map<String, Object> attrsMap,

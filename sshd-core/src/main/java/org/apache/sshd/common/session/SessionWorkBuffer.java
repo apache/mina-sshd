@@ -19,7 +19,8 @@
 
 package org.apache.sshd.common.session;
 
-import org.apache.sshd.common.util.ValidateUtils;
+import java.util.Objects;
+
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
@@ -29,7 +30,7 @@ public class SessionWorkBuffer extends ByteArrayBuffer implements SessionHolder<
     private final Session session;
 
     public SessionWorkBuffer(Session session) {
-        this.session = ValidateUtils.checkNotNull(session, "No session");
+        this.session = Objects.requireNonNull(session, "No session");
     }
 
     @Override

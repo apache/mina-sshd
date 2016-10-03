@@ -21,6 +21,7 @@ package org.apache.sshd.client.config.hosts;
 
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.sshd.common.Factory;
@@ -46,7 +47,7 @@ public enum KnownHostDigest implements NamedFactory<Mac> {
 
     KnownHostDigest(String name, Factory<Mac> factory) {
         this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No name");
-        this.factory = ValidateUtils.checkNotNull(factory, "No factory");
+        this.factory = Objects.requireNonNull(factory, "No factory");
     }
 
     @Override

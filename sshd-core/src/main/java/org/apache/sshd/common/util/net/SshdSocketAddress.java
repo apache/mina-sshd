@@ -95,7 +95,7 @@ public class SshdSocketAddress extends SocketAddress {
     }
 
     public SshdSocketAddress(String hostName, int port) {
-        ValidateUtils.checkNotNull(hostName, "Host name may not be null");
+        Objects.requireNonNull(hostName, "Host name may not be null");
         this.hostName = GenericUtils.isEmpty(hostName) ? IP_ANYADDR : hostName;
 
         ValidateUtils.checkTrue(port >= 0, "Port must be >= 0: %d", port);

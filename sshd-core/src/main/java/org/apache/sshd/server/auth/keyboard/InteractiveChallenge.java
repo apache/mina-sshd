@@ -22,9 +22,9 @@ package org.apache.sshd.server.auth.keyboard;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -72,7 +72,7 @@ public class InteractiveChallenge implements Cloneable {
     }
 
     public void addPrompt(PromptEntry entry) {
-        this.prompts.add(ValidateUtils.checkNotNull(entry, "No entry"));
+        this.prompts.add(Objects.requireNonNull(entry, "No entry"));
     }
 
     public List<PromptEntry> getPrompts() {

@@ -18,9 +18,10 @@
  */
 package org.apache.sshd.common.random;
 
+import java.util.Objects;
+
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.OptionalFeature;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * A random factory wrapper that uses a single random instance.
@@ -34,8 +35,8 @@ public class SingletonRandomFactory extends AbstractRandom implements RandomFact
     private final Random random;
 
     public SingletonRandomFactory(NamedFactory<Random> factory) {
-        this.factory = ValidateUtils.checkNotNull(factory, "No factory");
-        this.random = factory.create();
+        this.factory = Objects.requireNonNull(factory, "No factory");
+        this.random = Objects.requireNonNull(factory.create(), "No random instance created");
     }
 
     @Override

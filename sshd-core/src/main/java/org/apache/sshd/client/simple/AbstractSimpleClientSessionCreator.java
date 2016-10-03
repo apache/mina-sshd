@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.Channel;
 import java.security.KeyPair;
+import java.util.Objects;
 
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
 import org.apache.sshd.client.future.AuthFuture;
@@ -136,8 +137,8 @@ public abstract class AbstractSimpleClientSessionCreator extends AbstractSimpleC
      * also closes the underlying sessions creator.
      */
     public static SimpleClient wrap(final ClientSessionCreator creator, final Channel channel) {
-        ValidateUtils.checkNotNull(creator, "No sessions creator");
-        ValidateUtils.checkNotNull(channel, "No channel");
+        Objects.requireNonNull(creator, "No sessions creator");
+        Objects.requireNonNull(channel, "No channel");
         return new AbstractSimpleClientSessionCreator() {
             @Override
             public ConnectFuture connect(String username, String host, int port) throws IOException {

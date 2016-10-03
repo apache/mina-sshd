@@ -21,6 +21,7 @@ package org.apache.sshd.common.helpers;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -135,21 +136,21 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     @Override
     @SuppressWarnings("unchecked")
     public <T> T getAttribute(AttributeKey<T> key) {
-        return (T) attributes.get(ValidateUtils.checkNotNull(key, "No key"));
+        return (T) attributes.get(Objects.requireNonNull(key, "No key"));
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T> T setAttribute(AttributeKey<T> key, T value) {
         return (T) attributes.put(
-                ValidateUtils.checkNotNull(key, "No key"),
-                ValidateUtils.checkNotNull(value, "No value"));
+                Objects.requireNonNull(key, "No key"),
+                Objects.requireNonNull(value, "No value"));
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T> T removeAttribute(AttributeKey<T> key) {
-        return (T) attributes.remove(ValidateUtils.checkNotNull(key, "No key"));
+        return (T) attributes.remove(Objects.requireNonNull(key, "No key"));
     }
 
     @Override
@@ -420,7 +421,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
         ValidateUtils.checkNotNullAndNotEmpty(getCompressionFactories(), "CompressionFactories not set");
         ValidateUtils.checkNotNullAndNotEmpty(getMacFactories(), "MacFactories not set");
 
-        ValidateUtils.checkNotNull(getRandomFactory(), "RandomFactory not set");
+        Objects.requireNonNull(getRandomFactory(), "RandomFactory not set");
 
         if (getIoServiceFactoryFactory() == null) {
             setIoServiceFactoryFactory(new DefaultIoServiceFactoryFactory());

@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.server.auth.gss;
 
+import java.util.Objects;
+
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.NumberUtils;
@@ -59,7 +61,7 @@ public class UserAuthGSS extends AbstractUserAuth {
     @Override
     protected Boolean doAuth(Buffer buffer, boolean initial) throws Exception {
         ServerSession session = getServerSession();
-        GSSAuthenticator auth = ValidateUtils.checkNotNull(session.getGSSAuthenticator(), "No GSSAuthenticator configured");
+        GSSAuthenticator auth = Objects.requireNonNull(session.getGSSAuthenticator(), "No GSSAuthenticator configured");
 
         if (initial) {
             // Get mechanism count from buffer and look for Kerberos 5.

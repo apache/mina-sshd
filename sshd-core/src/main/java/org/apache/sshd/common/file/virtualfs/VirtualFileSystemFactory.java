@@ -24,6 +24,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.sshd.common.file.FileSystemFactory;
@@ -57,7 +58,7 @@ public class VirtualFileSystemFactory implements FileSystemFactory {
 
     public void setUserHomeDir(String userName, Path userHomeDir) {
         homeDirs.put(ValidateUtils.checkNotNullAndNotEmpty(userName, "No username"),
-                     ValidateUtils.checkNotNull(userHomeDir, "No home dir"));
+                     Objects.requireNonNull(userHomeDir, "No home dir"));
     }
 
     public Path getUserHomeDir(String userName) {

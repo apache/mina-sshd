@@ -21,6 +21,7 @@ package org.apache.sshd.server;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.sshd.common.channel.PtyMode;
@@ -60,7 +61,7 @@ public class StandardEnvironment extends AbstractLoggingBean implements Environm
      */
     @Override
     public void addSignalListener(SignalListener listener, Collection<Signal> signals) {
-        ValidateUtils.checkNotNull(listener, "No listener instance");
+        Objects.requireNonNull(listener, "No listener instance");
         ValidateUtils.checkNotNullAndNotEmpty(signals, "No signals");
 
         for (Signal s : signals) {
@@ -80,7 +81,7 @@ public class StandardEnvironment extends AbstractLoggingBean implements Environm
 
     @Override
     public void removeSignalListener(SignalListener listener) {
-        ValidateUtils.checkNotNull(listener, "No listener instance");
+        Objects.requireNonNull(listener, "No listener instance");
         for (Signal s : Signal.SIGNALS) {
             Collection<SignalListener> ls = getSignalListeners(s, false);
             if (ls != null) {

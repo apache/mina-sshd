@@ -32,11 +32,11 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseReader;
@@ -74,7 +74,7 @@ public abstract class AuthorizedKeysTestSupport extends BaseTestSupport {
 
     protected List<String> loadDefaultSupportedKeys() throws IOException {
         return loadSupportedKeys(
-                ValidateUtils.checkNotNull(
+                Objects.requireNonNull(
                         getClass().getResource(AuthorizedKeysAuthenticator.STD_AUTHORIZED_KEYS_FILENAME),
                         "Missing resource=" + AuthorizedKeysAuthenticator.STD_AUTHORIZED_KEYS_FILENAME));
     }

@@ -75,7 +75,7 @@ public class BaseDigest implements Digest {
 
     @Override
     public void update(byte[] data, int start, int len) throws Exception {
-        ValidateUtils.checkNotNull(md, "Digest not initialized").update(data, start, len);
+        Objects.requireNonNull(md, "Digest not initialized").update(data, start, len);
     }
 
     /**
@@ -87,7 +87,7 @@ public class BaseDigest implements Digest {
 
     @Override
     public byte[] digest() throws Exception {
-        return ValidateUtils.checkNotNull(md, "Digest not initialized").digest();
+        return Objects.requireNonNull(md, "Digest not initialized").digest();
     }
 
     @Override

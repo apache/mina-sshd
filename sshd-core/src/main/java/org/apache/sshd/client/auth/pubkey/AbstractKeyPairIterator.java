@@ -20,10 +20,11 @@
 package org.apache.sshd.client.auth.pubkey;
 
 import java.util.Iterator;
+import java.util.Objects;
+
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.session.SessionHolder;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @param <I> Type of {@link PublicKeyIdentity} being iterated
@@ -35,7 +36,7 @@ public abstract class AbstractKeyPairIterator<I extends PublicKeyIdentity>
     private final ClientSession session;
 
     protected AbstractKeyPairIterator(ClientSession session) {
-        this.session = ValidateUtils.checkNotNull(session, "No session");
+        this.session = Objects.requireNonNull(session, "No session");
     }
 
     @Override

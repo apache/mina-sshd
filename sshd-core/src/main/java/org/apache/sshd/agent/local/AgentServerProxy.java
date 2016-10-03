@@ -19,6 +19,7 @@
 package org.apache.sshd.agent.local;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -27,7 +28,6 @@ import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -39,7 +39,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
     private final AtomicBoolean open = new AtomicBoolean(true);
 
     public AgentServerProxy(ConnectionService service) throws IOException {
-        this.service = ValidateUtils.checkNotNull(service, "No connection service provided");
+        this.service = Objects.requireNonNull(service, "No connection service provided");
         this.id = UUID.randomUUID().toString();
     }
 

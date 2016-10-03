@@ -93,6 +93,7 @@ public interface Closeable extends Channel {
      */
     boolean isClosing();
 
+    @Override
     default boolean isOpen() {
         return !(isClosed() || isClosing());
     }
@@ -111,6 +112,7 @@ public interface Closeable extends Channel {
         if (closeable == null) {
             return;
         }
+
         if ((!closeable.isClosed()) && (!closeable.isClosing())) {
             CloseFuture future = closeable.close(true);
             long maxWait = (closeable instanceof PropertyResolver)

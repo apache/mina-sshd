@@ -25,9 +25,9 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.sshd.common.util.Pair;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 
 /**
@@ -56,7 +56,7 @@ public class DefaultConfigFileHostEntryResolver extends ConfigFileHostEntryResol
     }
 
     public DefaultConfigFileHostEntryResolver(File file, boolean strict) {
-        this(ValidateUtils.checkNotNull(file, "No file provided").toPath(), strict, IoUtils.getLinkOptions(false));
+        this(Objects.requireNonNull(file, "No file provided").toPath(), strict, IoUtils.getLinkOptions(false));
     }
 
     public DefaultConfigFileHostEntryResolver(Path path, boolean strict, LinkOption ... options) {

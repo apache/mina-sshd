@@ -26,10 +26,10 @@ import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.sshd.client.config.hosts.KnownHostEntry;
 import org.apache.sshd.common.util.Pair;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 
 /**
@@ -51,7 +51,7 @@ public class DefaultKnownHostsServerKeyVerifier extends KnownHostsServerKeyVerif
     }
 
     public DefaultKnownHostsServerKeyVerifier(ServerKeyVerifier delegate, boolean strict, File file) {
-        this(delegate, strict, ValidateUtils.checkNotNull(file, "No file provided").toPath(), IoUtils.getLinkOptions(false));
+        this(delegate, strict, Objects.requireNonNull(file, "No file provided").toPath(), IoUtils.getLinkOptions(false));
     }
 
     public DefaultKnownHostsServerKeyVerifier(ServerKeyVerifier delegate, boolean strict, Path file, LinkOption... options) {

@@ -182,7 +182,7 @@ public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
      * @throws IllegalArgumentException if invalid specification
      */
     public static <L extends ScpLocation> L update(String locSpec, L location) {
-        ValidateUtils.checkNotNull(location, "No location to update");
+        Objects.requireNonNull(location, "No location to update");
         if (GenericUtils.isEmpty(locSpec)) {
             return location;
         }

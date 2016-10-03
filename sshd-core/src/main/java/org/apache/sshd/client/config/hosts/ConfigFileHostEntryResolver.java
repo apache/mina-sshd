@@ -25,10 +25,10 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.ModifiableFileWatcher;
 
@@ -42,7 +42,7 @@ public class ConfigFileHostEntryResolver extends ModifiableFileWatcher implement
             new AtomicReference<>(HostConfigEntryResolver.EMPTY);
 
     public ConfigFileHostEntryResolver(File file) {
-        this(ValidateUtils.checkNotNull(file, "No file to watch").toPath());
+        this(Objects.requireNonNull(file, "No file to watch").toPath());
     }
 
     public ConfigFileHostEntryResolver(Path file) {
@@ -56,7 +56,7 @@ public class ConfigFileHostEntryResolver extends ModifiableFileWatcher implement
     @Override
     public HostConfigEntry resolveEffectiveHost(String host, int port, String username) throws IOException {
         try {
-            HostConfigEntryResolver delegate = ValidateUtils.checkNotNull(resolveEffectiveResolver(host, port, username), "No delegate");
+            HostConfigEntryResolver delegate = Objects.requireNonNull(resolveEffectiveResolver(host, port, username), "No delegate");
             HostConfigEntry entry = delegate.resolveEffectiveHost(host, port, username);
             if (log.isDebugEnabled()) {
                 log.debug("resolveEffectiveHost({}@{}:{}) => {}", username, host, port, entry);

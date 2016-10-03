@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.math.BigInteger;
+import java.util.Objects;
 
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -49,11 +50,11 @@ public class DERWriter extends FilterOutputStream {
     }
 
     public DERWriter(OutputStream stream) {
-        super(ValidateUtils.checkNotNull(stream, "No output stream"));
+        super(Objects.requireNonNull(stream, "No output stream"));
     }
 
     public void writeBigInteger(BigInteger value) throws IOException {
-        writeBigInteger(ValidateUtils.checkNotNull(value, "No value").toByteArray());
+        writeBigInteger(Objects.requireNonNull(value, "No value").toByteArray());
     }
 
     public void writeBigInteger(byte... bytes) throws IOException {

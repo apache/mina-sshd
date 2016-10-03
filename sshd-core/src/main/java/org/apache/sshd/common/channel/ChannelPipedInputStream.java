@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.net.SocketException;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
@@ -31,7 +32,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
@@ -64,7 +64,7 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
     }
 
     public ChannelPipedInputStream(Window localWindow, long windowTimeout) {
-        this.localWindow = ValidateUtils.checkNotNull(localWindow, "No local window provided");
+        this.localWindow = Objects.requireNonNull(localWindow, "No local window provided");
         this.timeout = windowTimeout;
     }
 

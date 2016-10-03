@@ -328,7 +328,7 @@ public class SftpSubsystem
 
     @Override
     public boolean addSftpEventListener(SftpEventListener listener) {
-        return sftpEventListeners.add(ValidateUtils.checkNotNull(listener, "No listener"));
+        return sftpEventListeners.add(Objects.requireNonNull(listener, "No listener"));
     }
 
     @Override
@@ -338,7 +338,7 @@ public class SftpSubsystem
 
     @Override
     public void setSession(ServerSession session) {
-        this.serverSession = ValidateUtils.checkNotNull(session, "No session");
+        this.serverSession = Objects.requireNonNull(session, "No session");
 
         FactoryManager manager = session.getFactoryManager();
         Factory<? extends Random> factory = manager.getRandomFactory();
@@ -367,8 +367,8 @@ public class SftpSubsystem
         if (fileSystem != this.fileSystem) {
             this.fileSystem = fileSystem;
 
-            Iterable<Path> roots = ValidateUtils.checkNotNull(fileSystem.getRootDirectories(), "No root directories");
-            Iterator<Path> available = ValidateUtils.checkNotNull(roots.iterator(), "No roots iterator");
+            Iterable<Path> roots = Objects.requireNonNull(fileSystem.getRootDirectories(), "No root directories");
+            Iterator<Path> available = Objects.requireNonNull(roots.iterator(), "No roots iterator");
             ValidateUtils.checkTrue(available.hasNext(), "No available root");
             this.defaultDir = available.next();
         }
@@ -779,12 +779,12 @@ public class SftpSubsystem
     }
 
     protected void doCheckFileHash(int id, Path file, NamedFactory<? extends Digest> factory,
-                                   long startOffset, long length, int blockSize, Buffer buffer)
-            throws Exception {
+            long startOffset, long length, int blockSize, Buffer buffer)
+                    throws Exception {
         ValidateUtils.checkTrue(startOffset >= 0L, "Invalid start offset: %d", startOffset);
         ValidateUtils.checkTrue(length >= 0L, "Invalid length: %d", length);
         ValidateUtils.checkTrue((blockSize == 0) || (blockSize >= SftpConstants.MIN_CHKFILE_BLOCKSIZE), "Invalid block size: %d", blockSize);
-        ValidateUtils.checkNotNull(factory, "No digest factory provided");
+        Objects.requireNonNull(factory, "No digest factory provided");
         buffer.putString(factory.getName());
 
         long effectiveLength = length;
@@ -1845,7 +1845,7 @@ public class SftpSubsystem
                 return;
             }
 
-            ValidateUtils.checkNotNull(reply, "No reply buffer created");
+            Objects.requireNonNull(reply, "No reply buffer created");
         } catch (IOException | RuntimeException e) {
             sendStatus(BufferUtils.clear(buffer), id, e);
             return;

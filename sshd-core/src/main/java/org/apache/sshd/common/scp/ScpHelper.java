@@ -40,6 +40,7 @@ import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -53,7 +54,6 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SelectorUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.DirectoryScanner;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.LimitInputStream;
@@ -107,9 +107,9 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
 
     public ScpHelper(Session session, InputStream in, OutputStream out,
             FileSystem fileSystem, ScpFileOpener opener, ScpTransferEventListener eventListener) {
-        this.sessionInstance = ValidateUtils.checkNotNull(session, "No session");
-        this.in = ValidateUtils.checkNotNull(in, "No input stream");
-        this.out = ValidateUtils.checkNotNull(out, "No output stream");
+        this.sessionInstance = Objects.requireNonNull(session, "No session");
+        this.in = Objects.requireNonNull(in, "No input stream");
+        this.out = Objects.requireNonNull(out, "No output stream");
         this.fileSystem = fileSystem;
         this.opener = (opener == null) ? DefaultScpFileOpener.INSTANCE : opener;
         this.listener = (eventListener == null) ? ScpTransferEventListener.EMPTY : eventListener;
@@ -162,7 +162,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     }
 
     public void receive(Path local, final boolean recursive, boolean shouldBeDir, final boolean preserve, final int bufferSize) throws IOException {
-        final Path path = ValidateUtils.checkNotNull(local, "No local path").normalize().toAbsolutePath();
+        final Path path = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
         if (shouldBeDir) {
             LinkOption[] options = IoUtils.getLinkOptions(false);
             Boolean status = IoUtils.checkFileExists(path, options);
@@ -238,7 +238,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     }
 
     public void receiveDir(String header, Path local, ScpTimestamp time, boolean preserve, int bufferSize) throws IOException {
-        Path path = ValidateUtils.checkNotNull(local, "No local path").normalize().toAbsolutePath();
+        Path path = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
         if (log.isDebugEnabled()) {
             log.debug("receiveDir({})[{}] Receiving directory {} - preserve={}, time={}, buffer-size={}",
                       this, header, path, preserve, time, bufferSize);
@@ -329,7 +329,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     }
 
     public void receiveFile(String header, Path local, ScpTimestamp time, boolean preserve, int bufferSize) throws IOException {
-        Path path = ValidateUtils.checkNotNull(local, "No local path").normalize().toAbsolutePath();
+        Path path = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
         if (log.isDebugEnabled()) {
             log.debug("receiveFile({})[{}] Receiving file {} - preserve={}, time={}, buffer-size={}",
                       this, header, path, preserve, time, bufferSize);
@@ -501,7 +501,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     }
 
     protected void send(Path local, boolean recursive, boolean preserve, int bufferSize, LinkOption... options) throws IOException {
-        Path file = ValidateUtils.checkNotNull(local, "No local path").normalize().toAbsolutePath();
+        Path file = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
         Boolean status = IoUtils.checkFileExists(file, options);
         if (status == null) {
             throw new AccessDeniedException("Send file existence status cannot be determined: " + file);
@@ -550,7 +550,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     }
 
     public void sendFile(Path local, boolean preserve, int bufferSize) throws IOException {
-        Path path = ValidateUtils.checkNotNull(local, "No local path").normalize().toAbsolutePath();
+        Path path = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
         if (log.isDebugEnabled()) {
             log.debug("sendFile({})[preserve={},buffer-size={}] Sending file {}", this, preserve, bufferSize, path);
         }
@@ -664,7 +664,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     }
 
     public void sendDir(Path local, boolean preserve, int bufferSize) throws IOException {
-        Path path = ValidateUtils.checkNotNull(local, "No local path").normalize().toAbsolutePath();
+        Path path = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
         if (log.isDebugEnabled()) {
             log.debug("sendDir({}) Sending directory {} - preserve={}, buffer-size={}",
                       this, path, preserve, bufferSize);

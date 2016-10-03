@@ -26,6 +26,7 @@ import java.net.URL;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
@@ -65,7 +66,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
     protected boolean oldRequest;
 
     protected DHGEXServer(DHFactory factory) {
-        this.factory = ValidateUtils.checkNotNull(factory, "No factory");
+        this.factory = Objects.requireNonNull(factory, "No factory");
     }
 
     @Override
@@ -173,7 +174,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
 
 
             byte[] k_s;
-            KeyPair kp = ValidateUtils.checkNotNull(session.getHostKey(), "No server key pair available");
+            KeyPair kp = Objects.requireNonNull(session.getHostKey(), "No server key pair available");
             String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
             Signature sig = ValidateUtils.checkNotNull(
                     NamedFactory.create(session.getSignatureFactories(), algo),
@@ -262,9 +263,9 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             return getDH(new BigInteger(DHGroupData.getP1()), new BigInteger(DHGroupData.getG()));
         }
 
-        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
-        Factory<Random> factory = ValidateUtils.checkNotNull(manager.getRandomFactory(), "No random factory");
-        Random random = ValidateUtils.checkNotNull(factory.create(), "No random generator");
+        FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
+        Factory<Random> factory = Objects.requireNonNull(manager.getRandomFactory(), "No random factory");
+        Random random = Objects.requireNonNull(factory.create(), "No random generator");
         int which = random.random(selected.size());
         Moduli.DhGroup group = selected.get(which);
         return getDH(group.p, group.g);

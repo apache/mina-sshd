@@ -19,6 +19,8 @@
 
 package org.apache.sshd.client.auth;
 
+import java.util.Objects;
+
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -57,7 +59,7 @@ public abstract class AbstractUserAuth extends AbstractLoggingBean implements Us
 
     @Override
     public void init(ClientSession session, String service) throws Exception {
-        this.clientSession = ValidateUtils.checkNotNull(session, "No client session");
+        this.clientSession = Objects.requireNonNull(session, "No client session");
         this.service = ValidateUtils.checkNotNullAndNotEmpty(service, "No service");
     }
 

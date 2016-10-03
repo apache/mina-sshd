@@ -19,10 +19,10 @@
 package org.apache.sshd.client.future;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.DefaultVerifiableSshFuture;
-import org.apache.sshd.common.util.ValidateUtils;
 
 
 /**
@@ -78,7 +78,7 @@ public class DefaultAuthFuture extends DefaultVerifiableSshFuture<AuthFuture> im
 
     @Override
     public void setException(Throwable exception) {
-        ValidateUtils.checkNotNull(exception, "No exception provided");
+        Objects.requireNonNull(exception, "No exception provided");
         setValue(exception);
     }
 }

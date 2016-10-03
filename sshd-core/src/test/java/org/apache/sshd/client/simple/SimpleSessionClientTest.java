@@ -21,6 +21,7 @@ package org.apache.sshd.client.simple;
 
 import java.io.IOException;
 import java.security.KeyPair;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -28,7 +29,6 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
@@ -109,7 +109,7 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
     public void testAuthenticationTimeout() throws Exception {
         // make sure authentication occurs only for passwords
         sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
-        final PasswordAuthenticator delegate = ValidateUtils.checkNotNull(sshd.getPasswordAuthenticator(), "No password authenticator");
+        PasswordAuthenticator delegate = Objects.requireNonNull(sshd.getPasswordAuthenticator(), "No password authenticator");
         sshd.setPasswordAuthenticator((username, password, session) -> {
             try {
                 Thread.sleep(AUTH_TIMEOUT + 150L);

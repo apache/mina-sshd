@@ -250,7 +250,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @param ioSession      the underlying MINA session
      */
     protected AbstractSession(boolean isServer, FactoryManager factoryManager, IoSession ioSession) {
-        super(ValidateUtils.checkNotNull(factoryManager, "No factory manager provided"));
+        super(Objects.requireNonNull(factoryManager, "No factory manager provided"));
         this.isServer = isServer;
         this.factoryManager = factoryManager;
         this.ioSession = ioSession;
@@ -311,7 +311,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @param session   the session to attach
      */
     public static void attachSession(IoSession ioSession, AbstractSession session) {
-        ValidateUtils.checkNotNull(ioSession, "No I/O session").setAttribute(SESSION, ValidateUtils.checkNotNull(session, "No SSH session"));
+        Objects.requireNonNull(ioSession, "No I/O session").setAttribute(SESSION, Objects.requireNonNull(session, "No SSH session"));
     }
 
     @Override
@@ -1969,21 +1969,21 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     @Override
     @SuppressWarnings("unchecked")
     public <T> T getAttribute(AttributeKey<T> key) {
-        return (T) attributes.get(ValidateUtils.checkNotNull(key, "No key"));
+        return (T) attributes.get(Objects.requireNonNull(key, "No key"));
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T> T setAttribute(AttributeKey<T> key, T value) {
         return (T) attributes.put(
-                ValidateUtils.checkNotNull(key, "No key"),
-                ValidateUtils.checkNotNull(value, "No value"));
+                Objects.requireNonNull(key, "No key"),
+                Objects.requireNonNull(value, "No value"));
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T> T removeAttribute(AttributeKey<T> key) {
-        return (T) attributes.remove(ValidateUtils.checkNotNull(key, "No key"));
+        return (T) attributes.remove(Objects.requireNonNull(key, "No key"));
     }
 
     @Override

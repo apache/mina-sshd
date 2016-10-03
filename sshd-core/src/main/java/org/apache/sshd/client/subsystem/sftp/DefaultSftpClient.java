@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
@@ -68,7 +69,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
     private final Map<String, byte[]> exposedExtensions = Collections.unmodifiableMap(extensions);
 
     public DefaultSftpClient(ClientSession clientSession) throws IOException {
-        this.clientSession = ValidateUtils.checkNotNull(clientSession, "No client session");
+        this.clientSession = Objects.requireNonNull(clientSession, "No client session");
         this.channel = clientSession.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME);
         this.channel.setOut(new OutputStream() {
             private final byte[] singleByte = new byte[1];

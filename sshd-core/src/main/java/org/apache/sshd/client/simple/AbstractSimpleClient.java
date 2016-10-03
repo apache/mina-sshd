@@ -25,6 +25,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.KeyPair;
+import java.util.Objects;
 
 import org.apache.sshd.client.scp.CloseableScpClient;
 import org.apache.sshd.client.scp.ScpClient;
@@ -167,7 +168,7 @@ public abstract class AbstractSimpleClient extends AbstractLoggingBean implement
 
     @Override
     public CloseableScpClient scpLogin(InetAddress host, int port, String username, String password) throws IOException {
-        return scpLogin(new InetSocketAddress(ValidateUtils.checkNotNull(host, "No host address"), port), username, password);
+        return scpLogin(new InetSocketAddress(Objects.requireNonNull(host, "No host address"), port), username, password);
     }
 
     @Override
@@ -177,7 +178,7 @@ public abstract class AbstractSimpleClient extends AbstractLoggingBean implement
 
     @Override
     public CloseableScpClient scpLogin(InetAddress host, int port, String username, KeyPair identity) throws IOException {
-        return scpLogin(new InetSocketAddress(ValidateUtils.checkNotNull(host, "No host address"), port), username, identity);
+        return scpLogin(new InetSocketAddress(Objects.requireNonNull(host, "No host address"), port), username, identity);
     }
 
     @Override
@@ -192,7 +193,7 @@ public abstract class AbstractSimpleClient extends AbstractLoggingBean implement
 
     protected CloseableScpClient createScpClient(final ClientSession session) throws IOException {
         try {
-            final ScpClient client = ValidateUtils.checkNotNull(session, "No client session").createScpClient();
+            ScpClient client = Objects.requireNonNull(session, "No client session").createScpClient();
             ClassLoader loader = getClass().getClassLoader();
             Class<?>[] interfaces = {CloseableScpClient.class};
             return (CloseableScpClient) Proxy.newProxyInstance(loader, interfaces, (proxy, method, args) -> {

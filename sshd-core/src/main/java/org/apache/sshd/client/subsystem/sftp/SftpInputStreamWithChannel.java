@@ -20,10 +20,10 @@ package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Objects;
 
 import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.OpenMode;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.InputStreamWithChannel;
 
 /**
@@ -42,7 +42,7 @@ public class SftpInputStreamWithChannel extends InputStreamWithChannel {
     private long offset;
 
     public SftpInputStreamWithChannel(SftpClient client, int bufferSize, String path, Collection<OpenMode> mode) throws IOException {
-        this.client = ValidateUtils.checkNotNull(client, "No SFTP client instance");
+        this.client = Objects.requireNonNull(client, "No SFTP client instance");
         this.path = path;
         bb = new byte[1];
         buffer = new byte[bufferSize];

@@ -20,9 +20,9 @@
 package org.apache.sshd.server.subsystem.sftp;
 
 import java.util.Collection;
+import java.util.Objects;
 
 import org.apache.sshd.common.util.EventListenerUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -48,7 +48,7 @@ public abstract class AbstractSftpEventListenerManager implements SftpEventListe
 
     @Override
     public boolean addSftpEventListener(SftpEventListener listener) {
-        return sftpEventListeners.add(ValidateUtils.checkNotNull(listener, "No listener"));
+        return sftpEventListeners.add(Objects.requireNonNull(listener, "No listener"));
     }
 
     @Override

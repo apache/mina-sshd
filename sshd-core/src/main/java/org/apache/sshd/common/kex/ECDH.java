@@ -26,6 +26,7 @@ import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.ECPublicKeySpec;
+import java.util.Objects;
 
 import javax.crypto.KeyAgreement;
 
@@ -59,7 +60,7 @@ public class ECDH extends AbstractDH {
     }
 
     public ECDH(ECCurves curve) throws Exception {
-        this(ValidateUtils.checkNotNull(curve, "No known curve instance provided").getParameters());
+        this(Objects.requireNonNull(curve, "No known curve instance provided").getParameters());
     }
 
     public ECDH(ECParameterSpec paramSpec) throws Exception {
@@ -71,7 +72,7 @@ public class ECDH extends AbstractDH {
     @Override
     public byte[] getE() throws Exception {
         if (e == null) {
-            ValidateUtils.checkNotNull(params, "No ECParameterSpec(s)");
+            Objects.requireNonNull(params, "No ECParameterSpec(s)");
             myKpairGen.initialize(params);
             KeyPair myKpair = myKpairGen.generateKeyPair();
             myKeyAgree.init(myKpair.getPrivate());
@@ -83,7 +84,7 @@ public class ECDH extends AbstractDH {
 
     @Override
     protected byte[] calculateK() throws Exception {
-        ValidateUtils.checkNotNull(params, "No ECParameterSpec(s)");
+        Objects.requireNonNull(params, "No ECParameterSpec(s)");
         KeyFactory myKeyFac = SecurityUtils.getKeyFactory(KeyUtils.EC_ALGORITHM);
         ECPublicKeySpec keySpec = new ECPublicKeySpec(f, params);
         PublicKey yourPubKey = myKeyFac.generatePublic(keySpec);
@@ -97,14 +98,14 @@ public class ECDH extends AbstractDH {
 
     @Override
     public void setF(byte[] f) {
-        ValidateUtils.checkNotNull(params, "No ECParameterSpec(s)");
+        Objects.requireNonNull(params, "No ECParameterSpec(s)");
         this.f = ECDSAPublicKeyEntryDecoder.octetStringToEcPoint(f);
     }
 
     @Override
     public Digest getHash() throws Exception {
-        ValidateUtils.checkNotNull(params, "No ECParameterSpec(s)");
-        ECCurves curve = ValidateUtils.checkNotNull(ECCurves.fromCurveParameters(params), "Unknown curve parameters");
+        Objects.requireNonNull(params, "No ECParameterSpec(s)");
+        ECCurves curve = Objects.requireNonNull(ECCurves.fromCurveParameters(params), "Unknown curve parameters");
         return curve.getDigestForParams();
     }
 }

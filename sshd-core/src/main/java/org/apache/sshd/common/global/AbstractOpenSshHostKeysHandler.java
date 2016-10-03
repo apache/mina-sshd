@@ -23,6 +23,7 @@ import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Objects;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.ConnectionService;
@@ -51,7 +52,7 @@ public abstract class AbstractOpenSshHostKeysHandler extends AbstractConnectionS
 
     protected AbstractOpenSshHostKeysHandler(String request, BufferPublicKeyParser<? extends PublicKey> parser) {
         this.request = ValidateUtils.checkNotNullAndNotEmpty(request, "No request identifier");
-        this.parser = ValidateUtils.checkNotNull(parser, "No public keys extractor");
+        this.parser = Objects.requireNonNull(parser, "No public keys extractor");
     }
 
     public final String getRequestName() {

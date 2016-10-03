@@ -25,13 +25,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Watches over a group of files that contains client identities
@@ -49,8 +49,8 @@ public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements 
     public ClientIdentitiesWatcher(Collection<? extends Path> paths,
             ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
         this(paths,
-             GenericUtils.supplierOf(ValidateUtils.checkNotNull(loader, "No client identity loader")),
-             GenericUtils.supplierOf(ValidateUtils.checkNotNull(provider, "No password provider")),
+             GenericUtils.supplierOf(Objects.requireNonNull(loader, "No client identity loader")),
+             GenericUtils.supplierOf(Objects.requireNonNull(provider, "No password provider")),
              strict);
     }
 
@@ -100,8 +100,8 @@ public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements 
     public static List<ClientIdentityProvider> buildProviders(
             Collection<? extends Path> paths, ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
         return buildProviders(paths,
-                GenericUtils.supplierOf(ValidateUtils.checkNotNull(loader, "No client identity loader")),
-                GenericUtils.supplierOf(ValidateUtils.checkNotNull(provider, "No password provider")),
+                GenericUtils.supplierOf(Objects.requireNonNull(loader, "No client identity loader")),
+                GenericUtils.supplierOf(Objects.requireNonNull(provider, "No password provider")),
                 strict);
     }
 

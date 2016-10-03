@@ -21,6 +21,7 @@ package org.apache.sshd.client.auth.pubkey;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Collection;
+import java.util.Objects;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
@@ -42,7 +43,7 @@ public class KeyPairIdentity implements PublicKeyIdentity {
         this.signatureFactories = ValidateUtils.checkNotNullAndNotEmpty(
                 SignatureFactoriesManager.resolveSignatureFactories(primary, secondary),
                 "No available signature factories");
-        this.pair = ValidateUtils.checkNotNull(pair, "No key pair");
+        this.pair = Objects.requireNonNull(pair, "No key pair");
     }
 
     @Override

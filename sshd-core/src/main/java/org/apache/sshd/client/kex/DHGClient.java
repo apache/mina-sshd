@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.client.kex;
 
+import java.util.Objects;
+
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -46,7 +48,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
     protected AbstractDH dh;
 
     protected DHGClient(DHFactory factory) {
-        this.factory = ValidateUtils.checkNotNull(factory, "No factory");
+        this.factory = Objects.requireNonNull(factory, "No factory");
     }
 
     @Override

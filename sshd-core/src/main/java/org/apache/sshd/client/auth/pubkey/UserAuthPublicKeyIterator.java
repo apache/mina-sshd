@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.SshAgent;
@@ -34,7 +35,6 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -52,11 +52,11 @@ public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKey
         Collection<Iterator<? extends PublicKeyIdentity>> identities = new LinkedList<>();
         identities.add(new SessionKeyPairIterator(session, signatureFactories, KeyIdentityProvider.iteratorOf(session)));
 
-        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No session factory manager");
+        FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No session factory manager");
         SshAgentFactory factory = manager.getAgentFactory();
         if (factory != null) {
             try {
-                agent = ValidateUtils.checkNotNull(factory.createClient(manager), "No agent created");
+                agent = Objects.requireNonNull(factory.createClient(manager), "No agent created");
                 identities.add(new SshAgentPublicKeyIterator(session, agent));
             } catch (Exception e) {
                 try {

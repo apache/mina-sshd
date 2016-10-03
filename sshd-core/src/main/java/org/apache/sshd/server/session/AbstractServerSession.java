@@ -380,7 +380,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     @Override
     public KeyPair getHostKey() {
         String keyType = getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
-        KeyPairProvider provider = ValidateUtils.checkNotNull(getKeyPairProvider(), "No host keys provider");
+        KeyPairProvider provider = Objects.requireNonNull(getKeyPairProvider(), "No host keys provider");
         try {
             return provider.loadKey(keyType);
         } catch (Error e) {

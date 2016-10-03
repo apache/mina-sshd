@@ -79,7 +79,7 @@ public class SftpCommand implements Channel {
 
     @SuppressWarnings("synthetic-access")
     public SftpCommand(SftpClient client) {
-        this.client = ValidateUtils.checkNotNull(client, "No client");
+        this.client = Objects.requireNonNull(client, "No client");
 
         Map<String, CommandExecutor> map = new TreeMap<>();
         for (CommandExecutor e : Arrays.asList(

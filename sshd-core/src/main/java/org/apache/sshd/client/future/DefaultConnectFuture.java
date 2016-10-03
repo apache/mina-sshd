@@ -25,7 +25,6 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.future.DefaultVerifiableSshFuture;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * A default implementation of {@link ConnectFuture}.
@@ -57,7 +56,7 @@ public class DefaultConnectFuture extends DefaultVerifiableSshFuture<ConnectFutu
         } else if (v instanceof Error) {
             throw (Error) v;
         } else if (v instanceof Throwable) {
-            throw (RuntimeSshException) new RuntimeSshException("Failed to get the session.", (Throwable) v);
+            throw new RuntimeSshException("Failed to get the session.", (Throwable) v);
         } else if (v instanceof ClientSession) {
             return (ClientSession) v;
         } else {
@@ -88,7 +87,7 @@ public class DefaultConnectFuture extends DefaultVerifiableSshFuture<ConnectFutu
 
     @Override
     public void setException(Throwable exception) {
-        ValidateUtils.checkNotNull(exception, "No exception provided");
+        Objects.requireNonNull(exception, "No exception provided");
         setValue(exception);
     }
 }

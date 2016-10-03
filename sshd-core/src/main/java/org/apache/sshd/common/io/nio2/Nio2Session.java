@@ -25,6 +25,7 @@ import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.ClosedChannelException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +41,6 @@ import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Readable;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
@@ -64,10 +64,10 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     private final AtomicReference<Nio2DefaultIoWriteFuture> currentWrite = new AtomicReference<>();
 
     public Nio2Session(Nio2Service service, FactoryManager manager, IoHandler handler, AsynchronousSocketChannel socket) throws IOException {
-        this.service = ValidateUtils.checkNotNull(service, "No service instance");
-        this.manager = ValidateUtils.checkNotNull(manager, "No factory manager");
-        this.ioHandler = ValidateUtils.checkNotNull(handler, "No IoHandler");
-        this.socketChannel = ValidateUtils.checkNotNull(socket, "No socket channel");
+        this.service = Objects.requireNonNull(service, "No service instance");
+        this.manager = Objects.requireNonNull(manager, "No factory manager");
+        this.ioHandler = Objects.requireNonNull(handler, "No IoHandler");
+        this.socketChannel = Objects.requireNonNull(socket, "No socket channel");
         this.localAddress = socket.getLocalAddress();
         this.remoteAddress = socket.getRemoteAddress();
         if (log.isDebugEnabled()) {
@@ -255,7 +255,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
     protected void doReadCycle(ByteBuffer buffer, Readable bufReader) {
         Nio2CompletionHandler<Integer, Object> completion =
-                ValidateUtils.checkNotNull(createReadCycleCompletionHandler(buffer, bufReader), "No completion handler created");
+                Objects.requireNonNull(createReadCycleCompletionHandler(buffer, bufReader), "No completion handler created");
         doReadCycle(buffer, completion);
     }
 
@@ -322,7 +322,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
                     AsynchronousSocketChannel socket = getSocket();
                     ByteBuffer buffer = future.getBuffer();
                     Nio2CompletionHandler<Integer, Object> handler =
-                            ValidateUtils.checkNotNull(createWriteCycleCompletionHandler(future, socket, buffer),
+                            Objects.requireNonNull(createWriteCycleCompletionHandler(future, socket, buffer),
                                                        "No write cycle completion handler created");
                     doWriteCycle(buffer, handler);
                 } catch (Throwable e) {

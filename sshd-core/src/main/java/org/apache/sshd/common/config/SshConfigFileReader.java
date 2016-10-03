@@ -35,6 +35,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -489,12 +490,12 @@ public final class SshConfigFileReader {
     }
 
     public static <M extends AbstractFactoryManager> M configureCiphers(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(props, "No properties to configure");
+        Objects.requireNonNull(props, "No properties to configure");
         return configureCiphers(manager, props.getProperty(CIPHERS_CONFIG_PROP, DEFAULT_CIPHERS), lenient, ignoreUnsupported);
     }
 
     public static <M extends AbstractFactoryManager> M configureCiphers(M manager, String value, boolean lenient, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(manager, "No manager to configure");
+        Objects.requireNonNull(manager, "No manager to configure");
 
         BuiltinCiphers.ParseResult result = BuiltinCiphers.parseCiphersList(value);
         Collection<String> unsupported = result.getUnsupportedFactories();
@@ -507,12 +508,12 @@ public final class SshConfigFileReader {
     }
 
     public static <M extends AbstractFactoryManager> M configureSignatures(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(props, "No properties to configure");
+        Objects.requireNonNull(props, "No properties to configure");
         return configureSignatures(manager, props.getProperty(HOST_KEY_ALGORITHMS_CONFIG_PROP, DEFAULT_HOST_KEY_ALGORITHMS), lenient, ignoreUnsupported);
     }
 
     public static <M extends AbstractFactoryManager> M configureSignatures(M manager, String value, boolean lenient, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(manager, "No manager to configure");
+        Objects.requireNonNull(manager, "No manager to configure");
 
         BuiltinSignatures.ParseResult result = BuiltinSignatures.parseSignatureList(value);
         Collection<String> unsupported = result.getUnsupportedFactories();
@@ -525,12 +526,12 @@ public final class SshConfigFileReader {
     }
 
     public static <M extends AbstractFactoryManager> M configureMacs(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(props, "No properties to configure");
+        Objects.requireNonNull(props, "No properties to configure");
         return configureMacs(manager, props.getProperty(MACS_CONFIG_PROP, DEFAULT_MACS), lenient, ignoreUnsupported);
     }
 
     public static <M extends AbstractFactoryManager> M configureMacs(M manager, String value, boolean lenient, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(manager, "No manager to configure");
+        Objects.requireNonNull(manager, "No manager to configure");
 
         BuiltinMacs.ParseResult result = BuiltinMacs.parseMacsList(value);
         Collection<String> unsupported = result.getUnsupportedFactories();
@@ -559,14 +560,14 @@ public final class SshConfigFileReader {
      */
     public static <M extends AbstractFactoryManager> M configureKeyExchanges(
             M manager, Properties props, boolean lenient, Transformer<? super DHFactory, ? extends NamedFactory<KeyExchange>> xformer, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(props, "No properties to configure");
+        Objects.requireNonNull(props, "No properties to configure");
         return configureKeyExchanges(manager, props.getProperty(KEX_ALGORITHMS_CONFIG_PROP, DEFAULT_KEX_ALGORITHMS), lenient, xformer, ignoreUnsupported);
     }
 
     public static <M extends AbstractFactoryManager> M configureKeyExchanges(
             M manager, String value, boolean lenient, Transformer<? super DHFactory, ? extends NamedFactory<KeyExchange>> xformer, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(manager, "No manager to configure");
-        ValidateUtils.checkNotNull(xformer, "No DHFactory transformer");
+        Objects.requireNonNull(manager, "No manager to configure");
+        Objects.requireNonNull(xformer, "No DHFactory transformer");
 
         BuiltinDHFactories.ParseResult result = BuiltinDHFactories.parseDHFactoriesList(value);
         Collection<String> unsupported = result.getUnsupportedFactories();
@@ -592,8 +593,8 @@ public final class SshConfigFileReader {
      * to lenient mode or ignored unsupported value is empty then no factories are set
      */
     public static <M extends AbstractFactoryManager> M configureCompression(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(manager, "No manager to configure");
-        ValidateUtils.checkNotNull(props, "No properties to configure");
+        Objects.requireNonNull(manager, "No manager to configure");
+        Objects.requireNonNull(props, "No properties to configure");
 
         String value = props.getProperty(COMPRESSION_PROP, DEFAULT_COMPRESSION);
         CompressionFactory factory = CompressionConfigValue.fromName(value);
@@ -607,7 +608,7 @@ public final class SshConfigFileReader {
 
     // accepts BOTH CompressionConfigValue(s) and/or BuiltinCompressions - including extensions
     public static <M extends AbstractFactoryManager> M configureCompression(M manager, String value, boolean lenient, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(manager, "No manager to configure");
+        Objects.requireNonNull(manager, "No manager to configure");
 
         CompressionFactory factory = CompressionConfigValue.fromName(value);
         if (factory != null) {

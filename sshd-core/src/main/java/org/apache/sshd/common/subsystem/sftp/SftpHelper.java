@@ -608,8 +608,8 @@ public final class SftpHelper {
         buffer.putInt(numExtensions);
         if (numExtensions > 0) {
             for (Map.Entry<?, ?> ee : extensions.entrySet()) {
-                Object key = ValidateUtils.checkNotNull(ee.getKey(), "No extension type");
-                Object value = ValidateUtils.checkNotNull(ee.getValue(), "No extension value");
+                Object key = Objects.requireNonNull(ee.getKey(), "No extension type");
+                Object value = Objects.requireNonNull(ee.getValue(), "No extension value");
                 buffer.putString(key.toString());
                 if (value instanceof byte[]) {
                     buffer.putBytes((byte[]) value);
@@ -803,7 +803,7 @@ public final class SftpHelper {
     }
 
     public static void encodeACLs(Buffer buffer, int version, Collection<? extends AclEntry> acl) {
-        ValidateUtils.checkNotNull(acl, "No ACL");
+        Objects.requireNonNull(acl, "No ACL");
         if (version >= SftpConstants.SFTP_V6) {
             buffer.putInt(0);   // TODO handle ACL flags
         }
@@ -818,7 +818,7 @@ public final class SftpHelper {
     }
 
     public static void writeAclEntry(Buffer buffer, AclEntry acl) {
-        ValidateUtils.checkNotNull(acl, "No ACL");
+        Objects.requireNonNull(acl, "No ACL");
 
         AclEntryType type = acl.type();
         int aclType = encodeAclEntryType(type);

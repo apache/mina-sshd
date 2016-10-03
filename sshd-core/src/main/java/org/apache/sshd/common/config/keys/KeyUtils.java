@@ -282,10 +282,10 @@ public final class KeyUtils {
      * @see PublicKeyEntryDecoder#getSupportedTypeNames()
      */
     public static void registerPublicKeyEntryDecoder(PublicKeyEntryDecoder<?, ?> decoder) {
-        ValidateUtils.checkNotNull(decoder, "No decoder specified");
+        Objects.requireNonNull(decoder, "No decoder specified");
 
-        Class<?> pubType = ValidateUtils.checkNotNull(decoder.getPublicKeyType(), "No public key type declared");
-        Class<?> prvType = ValidateUtils.checkNotNull(decoder.getPrivateKeyType(), "No private key type declared");
+        Class<?> pubType = Objects.requireNonNull(decoder.getPublicKeyType(), "No public key type declared");
+        Class<?> prvType = Objects.requireNonNull(decoder.getPrivateKeyType(), "No private key type declared");
         synchronized (BY_KEY_CLASS_DECODERS_MAP) {
             BY_KEY_CLASS_DECODERS_MAP.put(pubType, decoder);
             BY_KEY_CLASS_DECODERS_MAP.put(prvType, decoder);
@@ -416,7 +416,7 @@ public final class KeyUtils {
      */
     public static void setDefaultFingerPrintFactory(DigestFactory f) {
         synchronized (DEFAULT_DIGEST_HOLDER) {
-            DEFAULT_DIGEST_HOLDER.set(ValidateUtils.checkNotNull(f, "No digest factory"));
+            DEFAULT_DIGEST_HOLDER.set(Objects.requireNonNull(f, "No digest factory"));
         }
     }
 
@@ -584,7 +584,7 @@ public final class KeyUtils {
      * {@code null} if no key.
      */
     public static Pair<Boolean, String> checkFingerPrint(String expected, Factory<? extends Digest> f, PublicKey key) {
-        return checkFingerPrint(expected, ValidateUtils.checkNotNull(f, "No digest factory").create(), key);
+        return checkFingerPrint(expected, Objects.requireNonNull(f, "No digest factory").create(), key);
     }
 
     /**

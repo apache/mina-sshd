@@ -22,22 +22,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.util.ObjectBuilder;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class Builder implements ObjectBuilder<Closeable> {
-
     private final Object lock;
     private final List<Closeable> closeables = new ArrayList<>();
 
     public Builder(Object lock) {
-        this.lock = ValidateUtils.checkNotNull(lock, "No lock");
+        this.lock = Objects.requireNonNull(lock, "No lock");
     }
 
     public Builder run(final Runnable r) {

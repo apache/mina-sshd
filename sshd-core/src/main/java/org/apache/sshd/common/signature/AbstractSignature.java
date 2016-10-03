@@ -23,6 +23,7 @@ import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
+import java.util.Objects;
 
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.Pair;
@@ -74,15 +75,15 @@ public abstract class AbstractSignature implements Signature {
     @Override
     public void initVerifier(PublicKey key) throws Exception {
         String algo = getAlgorithm();
-        signatureInstance = ValidateUtils.checkNotNull(doInitSignature(algo, false), "No signature instance create");
-        signatureInstance.initVerify(ValidateUtils.checkNotNull(key, "No public key provided"));
+        signatureInstance = Objects.requireNonNull(doInitSignature(algo, false), "No signature instance create");
+        signatureInstance.initVerify(Objects.requireNonNull(key, "No public key provided"));
     }
 
     @Override
     public void initSigner(PrivateKey key) throws Exception {
         String algo = getAlgorithm();
-        signatureInstance = ValidateUtils.checkNotNull(doInitSignature(algo, true), "No signature instance create");
-        signatureInstance.initSign(ValidateUtils.checkNotNull(key, "No private key provided"));
+        signatureInstance = Objects.requireNonNull(doInitSignature(algo, true), "No signature instance create");
+        signatureInstance.initSign(Objects.requireNonNull(key, "No private key provided"));
     }
 
     @Override
@@ -92,7 +93,7 @@ public abstract class AbstractSignature implements Signature {
 
     @Override
     public void update(byte[] hash, int off, int len) throws Exception {
-        java.security.Signature signature = ValidateUtils.checkNotNull(getSignature(), "Signature not initialized");
+        java.security.Signature signature = Objects.requireNonNull(getSignature(), "Signature not initialized");
         signature.update(hash, off, len);
     }
 
@@ -137,7 +138,7 @@ public abstract class AbstractSignature implements Signature {
     }
 
     protected boolean doVerify(byte[] data) throws SignatureException {
-        java.security.Signature signature = ValidateUtils.checkNotNull(getSignature(), "Signature not initialized");
+        java.security.Signature signature = Objects.requireNonNull(getSignature(), "Signature not initialized");
         return signature.verify(data);
     }
 

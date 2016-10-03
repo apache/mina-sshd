@@ -27,6 +27,7 @@ import java.security.spec.KeySpec;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -45,7 +46,7 @@ public abstract class AbstractBufferPublicKeyParser<PUB extends PublicKey> imple
     }
 
     protected AbstractBufferPublicKeyParser(Class<PUB> keyClass, Collection<String> supported) {
-        this.keyClass = ValidateUtils.checkNotNull(keyClass, "No key class");
+        this.keyClass = Objects.requireNonNull(keyClass, "No key class");
         this.supported = ValidateUtils.checkNotNullAndNotEmpty(supported, "No supported types for %s", keyClass.getSimpleName());
     }
 

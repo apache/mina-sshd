@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -88,8 +89,8 @@ public class KnownHostsServerKeyVerifier
         }
 
         public HostEntryPair(KnownHostEntry entry, PublicKey key) {
-            this.hostEntry = ValidateUtils.checkNotNull(entry, "No entry");
-            this.serverKey = ValidateUtils.checkNotNull(key, "No key");
+            this.hostEntry = Objects.requireNonNull(entry, "No entry");
+            this.serverKey = Objects.requireNonNull(key, "No key");
         }
 
         public KnownHostEntry getHostEntry() {
@@ -126,7 +127,7 @@ public class KnownHostsServerKeyVerifier
 
     public KnownHostsServerKeyVerifier(ServerKeyVerifier delegate, Path file, LinkOption... options) {
         super(file, options);
-        this.delegate = ValidateUtils.checkNotNull(delegate, "No delegate");
+        this.delegate = Objects.requireNonNull(delegate, "No delegate");
     }
 
     public ServerKeyVerifier getDelegateVerifier() {
@@ -680,10 +681,10 @@ public class KnownHostsServerKeyVerifier
             if (digester != null) {
                 if (rnd == null) {
                     FactoryManager manager =
-                            ValidateUtils.checkNotNull(clientSession.getFactoryManager(), "No factory manager");
+                            Objects.requireNonNull(clientSession.getFactoryManager(), "No factory manager");
                     Factory<? extends Random> factory =
-                            ValidateUtils.checkNotNull(manager.getRandomFactory(), "No random factory");
-                    rnd = ValidateUtils.checkNotNull(factory.create(), "No randomizer created");
+                            Objects.requireNonNull(manager.getRandomFactory(), "No random factory");
+                    rnd = Objects.requireNonNull(factory.create(), "No randomizer created");
                 }
 
                 Mac mac = digester.create();

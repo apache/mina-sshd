@@ -25,10 +25,10 @@ import java.nio.file.Path;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.sshd.common.file.util.BaseFileSystem;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -40,7 +40,7 @@ public class RootedFileSystem extends BaseFileSystem<RootedPath> {
 
     public RootedFileSystem(RootedFileSystemProvider fileSystemProvider, Path root, Map<String, ?> env) {
         super(fileSystemProvider);
-        this.rootPath = ValidateUtils.checkNotNull(root, "No root path");
+        this.rootPath = Objects.requireNonNull(root, "No root path");
         this.rootFs = root.getFileSystem();
     }
 

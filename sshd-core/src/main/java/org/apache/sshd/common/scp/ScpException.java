@@ -20,8 +20,7 @@
 package org.apache.sshd.common.scp;
 
 import java.io.IOException;
-
-import org.apache.sshd.common.util.ValidateUtils;
+import java.util.Objects;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -35,7 +34,7 @@ public class ScpException extends IOException {
     }
 
     public ScpException(Integer exitStatus) {
-        this("Exit status=" + ScpHelper.getExitStatusName(ValidateUtils.checkNotNull(exitStatus, "No exit status")), exitStatus);
+        this("Exit status=" + ScpHelper.getExitStatusName(Objects.requireNonNull(exitStatus, "No exit status")), exitStatus);
     }
 
     public ScpException(String message, Integer exitStatus) {
@@ -43,7 +42,7 @@ public class ScpException extends IOException {
     }
 
     public ScpException(Throwable cause, Integer exitStatus) {
-        this(ValidateUtils.checkNotNull(cause, "No cause").getMessage(), cause, exitStatus);
+        this(Objects.requireNonNull(cause, "No cause").getMessage(), cause, exitStatus);
     }
 
     public ScpException(String message, Throwable cause, Integer exitStatus) {

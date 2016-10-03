@@ -22,6 +22,7 @@ package org.apache.sshd.server.auth.pubkey;
 import java.security.PublicKey;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.directory.server.core.DirectoryService;
@@ -31,7 +32,6 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Pair;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.auth.BaseAuthenticatorTest;
 import org.apache.sshd.server.session.ServerSession;
 import org.junit.AfterClass;
@@ -65,7 +65,7 @@ public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
         for (Map.Entry<String, String> ce : credentials.entrySet()) {
             String username = ce.getKey();
             AuthorizedKeyEntry entry = AuthorizedKeyEntry.parseAuthorizedKeyEntry(ce.getValue());
-            PublicKey key = ValidateUtils.checkNotNull(entry, "No key extracted").resolvePublicKey(PublicKeyEntryResolver.FAILING);
+            PublicKey key = Objects.requireNonNull(entry, "No key extracted").resolvePublicKey(PublicKeyEntryResolver.FAILING);
             KEYS_MAP.put(username, key);
         }
     }

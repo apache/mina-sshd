@@ -19,6 +19,7 @@
 package org.apache.sshd.common.channel;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.SshConstants;
@@ -28,7 +29,6 @@ import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.io.WritePendingException;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
@@ -39,7 +39,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
     private final AtomicReference<IoWriteFutureImpl> pendingWrite = new AtomicReference<>();
 
     public ChannelAsyncOutputStream(Channel channel, byte cmd) {
-        this.channelInstance = ValidateUtils.checkNotNull(channel, "No channel");
+        this.channelInstance = Objects.requireNonNull(channel, "No channel");
         this.cmd = cmd;
     }
 

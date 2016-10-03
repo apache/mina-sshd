@@ -22,12 +22,12 @@ package org.apache.sshd.client.auth.pubkey;
 import java.io.IOException;
 import java.security.PublicKey;
 import java.util.Iterator;
+import java.util.Objects;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Pair;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -38,7 +38,7 @@ public class SshAgentPublicKeyIterator extends AbstractKeyPairIterator<KeyAgentI
 
     public SshAgentPublicKeyIterator(ClientSession session, SshAgent agent) throws IOException {
         super(session);
-        this.agent = ValidateUtils.checkNotNull(agent, "No agent");
+        this.agent = Objects.requireNonNull(agent, "No agent");
         keys = GenericUtils.iteratorOf(agent.getIdentities());
     }
 

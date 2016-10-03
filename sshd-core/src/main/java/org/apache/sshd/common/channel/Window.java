@@ -23,6 +23,7 @@ import java.io.StreamCorruptedException;
 import java.net.SocketTimeoutException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -65,7 +66,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
     private Map<String, Object> props = Collections.emptyMap();
 
     public Window(AbstractChannel channel, Object lock, boolean client, boolean local) {
-        this.channelInstance = ValidateUtils.checkNotNull(channel, "No channel provided");
+        this.channelInstance = Objects.requireNonNull(channel, "No channel provided");
         this.lock = (lock != null) ? lock : this;
         this.suffix = (client ? "client" : "server") + "/" + (local ? "local" : "remote");
     }
@@ -225,7 +226,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
      * @throws WindowClosedException If window closed while waiting
      * @throws SocketTimeoutException If timeout expired before enough data became available
      * @see #waitForCondition(Predicate, long)
-     * @see #consume(int)
+     * @see #consume(long)
      */
     public void waitAndConsume(long len, long maxWaitTime) throws InterruptedException, WindowClosedException, SocketTimeoutException {
         BufferUtils.validateUint32Value(len, "Invalid wait consume length: %d", len);
@@ -282,7 +283,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
      */
     protected void waitForCondition(Predicate<? super Window> predicate, long maxWaitTime)
             throws WindowClosedException, InterruptedException, SocketTimeoutException {
-        ValidateUtils.checkNotNull(predicate, "No condition");
+        Objects.requireNonNull(predicate, "No condition");
         ValidateUtils.checkTrue(maxWaitTime > 0, "Non-positive max. wait time: %d", maxWaitTime);
 
         long maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(maxWaitTime);

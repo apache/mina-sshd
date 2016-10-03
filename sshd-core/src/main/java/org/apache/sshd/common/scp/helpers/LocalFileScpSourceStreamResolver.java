@@ -28,13 +28,13 @@ import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpSourceStreamResolver;
 import org.apache.sshd.common.scp.ScpTimestamp;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
@@ -50,7 +50,7 @@ public class LocalFileScpSourceStreamResolver extends AbstractLoggingBean implem
     protected final ScpTimestamp time;
 
     public LocalFileScpSourceStreamResolver(Path path, ScpFileOpener opener) throws IOException {
-        this.path = ValidateUtils.checkNotNull(path, "No path specified");
+        this.path = Objects.requireNonNull(path, "No path specified");
         this.opener = (opener == null) ? DefaultScpFileOpener.INSTANCE : opener;
         this.name = path.getFileName();
         this.perms = IoUtils.getPermissions(path);

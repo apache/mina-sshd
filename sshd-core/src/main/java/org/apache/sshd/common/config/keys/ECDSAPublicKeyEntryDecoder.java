@@ -41,12 +41,12 @@ import java.security.spec.ECPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
@@ -140,10 +140,10 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
 
     @Override
     public String encodePublicKey(OutputStream s, ECPublicKey key) throws IOException {
-        ValidateUtils.checkNotNull(key, "No public key provided");
+        Objects.requireNonNull(key, "No public key provided");
 
-        ECParameterSpec params = ValidateUtils.checkNotNull(key.getParams(), "No EC parameters available");
-        ECCurves curve = ValidateUtils.checkNotNull(ECCurves.fromCurveParameters(params), "Cannot determine curve");
+        ECParameterSpec params = Objects.requireNonNull(key.getParams(), "No EC parameters available");
+        ECCurves curve = Objects.requireNonNull(ECCurves.fromCurveParameters(params), "Cannot determine curve");
         String keyType = curve.getKeyType();
         String curveName = curve.getName();
         encodeString(s, keyType);
