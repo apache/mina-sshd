@@ -28,6 +28,9 @@
             <excludes>
                 <exclude>bin/sshd.sh</exclude>
                 <exclude>bin/ssh.sh</exclude>
+                <exclude>bin/scp.sh</exclude>
+                <exclude>bin/sftp.sh</exclude>
+                <exclude>bin/ssh-keyscan.sh</exclude>
             </excludes>
         </fileSet>
     </fileSets>
@@ -41,6 +44,24 @@
         </file>
         <file>
             <source>src/main/distribution/bin/ssh.sh</source>
+            <outputDirectory>/bin/</outputDirectory>
+            <fileMode>0755</fileMode>
+            <lineEnding>unix</lineEnding>
+        </file>
+        <file>
+            <source>src/main/distribution/bin/scp.sh</source>
+            <outputDirectory>/bin/</outputDirectory>
+            <fileMode>0755</fileMode>
+            <lineEnding>unix</lineEnding>
+        </file>
+        <file>
+            <source>src/main/distribution/bin/sftp.sh</source>
+            <outputDirectory>/bin/</outputDirectory>
+            <fileMode>0755</fileMode>
+            <lineEnding>unix</lineEnding>
+        </file>
+        <file>
+            <source>src/main/distribution/bin/ssh-keyscan.sh</source>
             <outputDirectory>/bin/</outputDirectory>
             <fileMode>0755</fileMode>
             <lineEnding>unix</lineEnding>

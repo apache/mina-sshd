@@ -54,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
+import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
@@ -201,6 +202,42 @@ public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, S
             client.setServerKeyVerifier(this);
 
             try (BufferedReader rdr = new BufferedReader(new InputStreamReader(getInputStream(), StandardCharsets.UTF_8))) {
+                client.setUserInteraction(new UserInteraction() {
+                    @Override
+                    public boolean isInteractionAllowed(ClientSession session) {
+                        return true;
+                    }
+
+                    @Override
+                    public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                        return null;
+                    }
+
+                    @Override
+                    public String getUpdatedPassword(ClientSession session, String prompt, String lang) {
+                        return null;
+                    }
+
+                    @Override
+                    public void serverVersionInfo(ClientSession session, List<String> lines) {
+                        if (isEnabled(Level.FINE) && GenericUtils.isNotEmpty(lines)) {
+                            for (String l : lines) {
+                                log(Level.FINE, "Server Info: " + l);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void welcome(ClientSession session, String banner, String lang) {
+                        if (isEnabled(Level.FINE) && GenericUtils.isNotEmpty(banner)) {
+                            String[] lines = GenericUtils.split(banner, '\n');
+                            for (String l : lines) {
+                                log(Level.FINE, "Welcome[" + lang + "]: " + l);
+                            }
+                        }
+                    }
+                });
+
                 client.start();
                 for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
                     String[] hosts = GenericUtils.split(GenericUtils.trimToEmpty(line), ',');
@@ -359,6 +396,20 @@ public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, S
     public void sessionNegotiationStart(
             Session session, Map<KexProposalOption, String> clientProposal, Map<KexProposalOption, String> serverProposal) {
         logSessionEvent(session, "sessionNegotiationStart");
+        logNegotiationProposal("c2s", clientProposal);
+        logNegotiationProposal("s2c", serverProposal);
+    }
+
+    protected void logNegotiationProposal(String type, Map<KexProposalOption, String> proposal) {
+        if (!isEnabled(Level.FINEST)) {
+            return;
+        }
+
+        for (Map.Entry<KexProposalOption, String> pe : proposal.entrySet()) {
+            KexProposalOption option = pe.getKey();
+            String value = pe.getValue();
+            log(Level.FINEST, option.getDescription() + "[" + type + "]: " + value);
+        }
     }
 
     @Override

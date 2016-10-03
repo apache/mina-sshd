@@ -967,7 +967,7 @@ In this context, the SSHD code allows the user to configure both the frequency a
 
 
 * `no-more-sessions@*` - As described in [OpenSSH protocol section 2.2](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL). In this context, the code consults the `ServerFactoryManagder.MAX_CONCURRENT_SESSIONS` server-side configuration property in order to
-decide whether to accept a successfully authentication session. 
+decide whether to accept a successfully authenticated session. 
 
 
 # Extension modules
@@ -976,9 +976,7 @@ There are several extension modules available
 
 ## Command line clients
 
-The _apache-sshd.zip_ distribution provides `Windows/Linux` scripts that use the MINA SSHD code base to implement the common _ssh, scp, sftp_ commands. The clients accept most useful switches from the original commands they mimic, where the `-o Option=Value` arguments can be used to configure the client/server in addition to the system properties mechanism. For more details, consult the _main_ methods code in the respective `SshClient`, `SftpCommand` and `DefaultScpClient` classes.
-
-The code includes `SshKeyScan#main` that is an equivalent for [ssh-keyscan(1)](https://www.freebsd.org/cgi/man.cgi?query=ssh-keyscan&sektion=1), though it is not wrapped inside a script.
+The _apache-sshd.zip_ distribution provides `Windows/Linux` scripts that use the MINA SSHD code base to implement the common _ssh, scp, sftp_ commands. The clients accept most useful switches from the original commands they mimic, where the `-o Option=Value` arguments can be used to configure the client/server in addition to the system properties mechanism. For more details, consult the _main_ methods code in the respective `SshClient`, `SftpCommand` and `DefaultScpClient` classes. The code also includes `SshKeyScan#main` that is a simple implementation for [ssh-keyscan(1)](https://www.freebsd.org/cgi/man.cgi?query=ssh-keyscan&sektion=1).
 
 The distribution also includes also an _sshd_ script that can be used to launch a server instance - see `SshServer#main` for activation command line arguments and options.
 
