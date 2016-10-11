@@ -24,6 +24,7 @@ import java.io.IOException;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface FilePasswordProvider {
     /**
      * An &quot;empty&quot; provider that returns {@code null} - i.e., unprotected key file

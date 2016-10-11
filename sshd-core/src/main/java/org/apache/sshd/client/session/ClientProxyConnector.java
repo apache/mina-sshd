@@ -28,6 +28,7 @@ package org.apache.sshd.client.session;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface ClientProxyConnector {
     /**
      * Invoked just before the client identification is sent so that the

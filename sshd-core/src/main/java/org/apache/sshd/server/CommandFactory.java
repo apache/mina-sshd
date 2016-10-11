@@ -25,6 +25,7 @@ package org.apache.sshd.server;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface CommandFactory {
 
     /**
@@ -36,5 +37,4 @@ public interface CommandFactory {
      * @return a non {@code null} {@link Command} instance
      */
     Command createCommand(String command);
-
 }

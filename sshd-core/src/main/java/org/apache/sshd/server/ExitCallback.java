@@ -21,6 +21,7 @@ package org.apache.sshd.server;
 /**
  * Callback used by the shell to notify the SSH server is has exited
  */
+@FunctionalInterface
 public interface ExitCallback {
 
     /**

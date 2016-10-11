@@ -25,6 +25,7 @@ package org.apache.sshd.common.util;
  * @param <E> type of event being notified
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface EventNotifier<E> {
     /**
      * @param event The event

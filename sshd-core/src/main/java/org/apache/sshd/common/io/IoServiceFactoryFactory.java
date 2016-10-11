@@ -23,6 +23,7 @@ import org.apache.sshd.common.FactoryManager;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface IoServiceFactoryFactory {
 
     IoServiceFactory create(FactoryManager manager);

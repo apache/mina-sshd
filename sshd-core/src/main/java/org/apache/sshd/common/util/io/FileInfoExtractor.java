@@ -31,6 +31,7 @@ import java.util.Set;
  * @param <T> Type of information being extracted
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface FileInfoExtractor<T> {
 
     FileInfoExtractor<Boolean> EXISTS = Files::exists;

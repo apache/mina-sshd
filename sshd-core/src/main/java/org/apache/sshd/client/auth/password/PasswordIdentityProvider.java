@@ -31,6 +31,7 @@ import org.apache.sshd.common.util.Transformer;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface PasswordIdentityProvider {
 
     /**

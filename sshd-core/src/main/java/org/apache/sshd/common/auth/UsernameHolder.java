@@ -22,6 +22,7 @@ package org.apache.sshd.common.auth;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface UsernameHolder {
     /**
      * @return The attached username - may be {@code null}/empty if holder

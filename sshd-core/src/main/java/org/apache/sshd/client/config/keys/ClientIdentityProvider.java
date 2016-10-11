@@ -26,6 +26,7 @@ import java.security.KeyPair;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface ClientIdentityProvider {
     /**
      * Provides a {@link KeyPair} representing the client identity

@@ -31,6 +31,7 @@ import org.apache.sshd.common.util.Pair;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface HostKeyIdentityProvider {
     /**
      * @return The host keys as a {@link Pair} of key + certificates (which can be {@code null}/empty)
