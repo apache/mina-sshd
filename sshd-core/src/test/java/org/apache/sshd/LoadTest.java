@@ -120,7 +120,7 @@ public class LoadTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             PropertyResolverUtils.updateProperty(client, FactoryManager.MAX_PACKET_SIZE, 1024 * 16);
             PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024 * 8);
-            client.setKeyExchangeFactories(Collections.singletonList(ClientBuilder.DH2KEX.transform(BuiltinDHFactories.dhg1)));
+            client.setKeyExchangeFactories(Collections.singletonList(ClientBuilder.DH2KEX.apply(BuiltinDHFactories.dhg1)));
             client.setCipherFactories(Collections.singletonList(BuiltinCiphers.blowfishcbc));
             client.start();
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {

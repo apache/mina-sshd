@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.function.Function;
 
 import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.Closeable;
@@ -186,9 +187,9 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     }
 
     private static <E extends Enum<E> & CompressionFactory> void testConfigureCompressionFromStringAcceptsCombinedValues(
-            Class<E> facs, Transformer<? super E, String> configValueXformer) {
+            Class<E> facs, Function<? super E, String> configValueXformer) {
         for (E expected : facs.getEnumConstants()) {
-            String value = configValueXformer.transform(expected);
+            String value = configValueXformer.apply(expected);
             String prefix = facs.getSimpleName() + "[" + expected.name() + "][" + value + "]";
             FactoryManager manager = SshConfigFileReader.configureCompression(
                     new AbstractFactoryManager() {

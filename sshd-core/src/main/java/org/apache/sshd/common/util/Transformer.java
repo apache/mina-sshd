@@ -33,12 +33,12 @@ public interface Transformer<I, O> extends Function<I, O> {
      * Invokes {@link Objects#toString(Object, String)} on the argument
      * with {@code null} as the value to return if argument is {@code null}
      */
-    Transformer<Object, String> TOSTRING = input -> Objects.toString(input, null);
+    Function<Object, String> TOSTRING = input -> Objects.toString(input, null);
 
     /**
      * Returns {@link Enum#name()} or {@code null} if argument is {@code null}
      */
-    Transformer<Enum<?>, String> ENUM_NAME_EXTRACTOR = input -> (input == null) ? null : input.name();
+    Function<Enum<?>, String> ENUM_NAME_EXTRACTOR = input -> (input == null) ? null : input.name();
 
     @Override
     default O apply(I input) {

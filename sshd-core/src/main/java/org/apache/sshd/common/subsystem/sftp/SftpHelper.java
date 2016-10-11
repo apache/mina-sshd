@@ -607,16 +607,16 @@ public final class SftpHelper {
         int numExtensions = GenericUtils.size(extensions);
         buffer.putInt(numExtensions);
         if (numExtensions > 0) {
-            for (Map.Entry<?, ?> ee : extensions.entrySet()) {
-                Object key = Objects.requireNonNull(ee.getKey(), "No extension type");
-                Object value = Objects.requireNonNull(ee.getValue(), "No extension value");
+            extensions.forEach((key, value) -> {
+                Objects.requireNonNull(key, "No extension type");
+                Objects.requireNonNull(value, "No extension value");
                 buffer.putString(key.toString());
                 if (value instanceof byte[]) {
                     buffer.putBytes((byte[]) value);
                 } else {
                     buffer.putString(value.toString());
                 }
-            }
+            });
         }
     }
 
@@ -627,12 +627,11 @@ public final class SftpHelper {
 
         // NOTE: even though extensions are probably case sensitive we do not allow duplicate name that differs only in case
         Map<String, String> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (Map.Entry<String, ?> ee : extensions.entrySet()) {
-            String key = ee.getKey();
-            Object value = ValidateUtils.checkNotNull(ee.getValue(), "No value for extension=%s", key);
+        extensions.forEach((key, value) -> {
+            ValidateUtils.checkNotNull(value, "No value for extension=%s", key);
             String prev = map.put(key, (value instanceof byte[]) ? new String((byte[]) value, StandardCharsets.UTF_8) : value.toString());
             ValidateUtils.checkTrue(prev == null, "Multiple values for extension=%s", key);
-        }
+        });
 
         return map;
     }
@@ -644,12 +643,11 @@ public final class SftpHelper {
 
         // NOTE: even though extensions are probably case sensitive we do not allow duplicate name that differs only in case
         Map<String, byte[]> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (Map.Entry<String, String> ee : extensions.entrySet()) {
-            String key = ee.getKey();
-            String value = ValidateUtils.checkNotNull(ee.getValue(), "No value for extension=%s", key);
+        extensions.forEach((key, value) -> {
+            ValidateUtils.checkNotNull(value, "No value for extension=%s", key);
             byte[] prev = map.put(key, value.getBytes(StandardCharsets.UTF_8));
             ValidateUtils.checkTrue(prev == null, "Multiple values for extension=%s", key);
-        }
+        });
 
         return map;
     }

@@ -38,21 +38,21 @@ public class TransformerTest extends BaseTestSupport {
 
     @Test
     public void testToString() {
-        assertNull("Invalid null result", Transformer.TOSTRING.transform(null));
+        assertNull("Invalid null result", Transformer.TOSTRING.apply(null));
         for (Object o : new Object[] {"", getClass(), new Date()}) {
             String expected = o.toString();
-            String actual = Transformer.TOSTRING.transform(o);
+            String actual = Transformer.TOSTRING.apply(o);
             assertEquals("Mismatched result for type=" + o.getClass().getSimpleName(), expected, actual);
         }
     }
 
     @Test
     public void testExtractEnumName() {
-        assertNull("Invalid null result", Transformer.ENUM_NAME_EXTRACTOR.transform(null));
+        assertNull("Invalid null result", Transformer.ENUM_NAME_EXTRACTOR.apply(null));
 
         for (TimeUnit u : TimeUnit.values()) {
             String expected = u.name();
-            String actual = Transformer.ENUM_NAME_EXTRACTOR.transform(u);
+            String actual = Transformer.ENUM_NAME_EXTRACTOR.apply(u);
             assertEquals("Mismatched name", expected, actual);
         }
     }

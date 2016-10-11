@@ -25,10 +25,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Function;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -43,7 +43,7 @@ public class MappedKeyPairProvider implements KeyPairProvider {
      * {@link KeyPairProvider} where map key is the type and value is the
      * associated {@link KeyPair}
      */
-    public static final Transformer<Map<String, KeyPair>, KeyPairProvider> MAP_TO_KEY_PAIR_PROVIDER =
+    public static final Function<Map<String, KeyPair>, KeyPairProvider> MAP_TO_KEY_PAIR_PROVIDER =
             MappedKeyPairProvider::new;
 
     private final Map<String, KeyPair> pairsMap;

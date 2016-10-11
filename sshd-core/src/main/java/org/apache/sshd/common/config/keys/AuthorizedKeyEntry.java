@@ -93,6 +93,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         Map<String, String> options = getLoginOptions();
         if (!GenericUtils.isEmpty(options)) {
             int index = 0;
+            // Cannot use forEach because the index value is not effectively final
             for (Map.Entry<String, String> oe : options.entrySet()) {
                 String key = oe.getKey();
                 String value = oe.getValue();

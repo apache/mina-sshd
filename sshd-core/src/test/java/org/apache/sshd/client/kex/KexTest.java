@@ -114,7 +114,7 @@ public class KexTest extends BaseTestSupport {
         }
 
         Assume.assumeTrue(factory.getName() + " not supported", factory.isSupported());
-        testClient(ClientBuilder.DH2KEX.transform(factory));
+        testClient(ClientBuilder.DH2KEX.apply(factory));
     }
 
     private void testClient(NamedFactory<KeyExchange> kex) throws Exception {

@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common;
 
+import java.util.function.Supplier;
 
 /**
  * Factory is a simple interface that is used to create other objects.
@@ -26,7 +27,12 @@ package org.apache.sshd.common;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FunctionalInterface
-public interface Factory<T> {
+public interface Factory<T> extends Supplier<T> {
+
+    @Override
+    default T get() {
+        return create();
+    }
 
     /**
      * @return A new instance

@@ -22,11 +22,11 @@ package org.apache.sshd.client.auth.password;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Transformer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -54,7 +54,7 @@ public interface PasswordIdentityProvider {
      * Invokes {@link PasswordIdentityProvider#loadPasswords()} and returns the result.
      * Ignores {@code null} providers (i.e., returns an empty iterable instance)
      */
-    Transformer<PasswordIdentityProvider, Iterable<String>> LOADER = p ->
+    Function<PasswordIdentityProvider, Iterable<String>> LOADER = p ->
             (p == null) ? Collections.emptyList() : p.loadPasswords();
 
     /**

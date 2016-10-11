@@ -62,6 +62,7 @@ public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
                 populateUsers(LDAP_CONTEX_HOLDER.get().getSecond(), LdapPublickeyAuthenticatorTest.class, TEST_ATTR_NAME);
         assertFalse("No keys retrieved", GenericUtils.isEmpty(credentials));
 
+        // Cannot use forEach because of the potential GeneraSecurityException being thrown
         for (Map.Entry<String, String> ce : credentials.entrySet()) {
             String username = ce.getKey();
             AuthorizedKeyEntry entry = AuthorizedKeyEntry.parseAuthorizedKeyEntry(ce.getValue());
@@ -87,12 +88,10 @@ public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
 
         ServerSession session = Mockito.mock(ServerSession.class);
         outputDebugMessage("%s: %s", getCurrentTestName(), auth);
-        for (Map.Entry<String, PublicKey> ke : KEYS_MAP.entrySet()) {
-            String username = ke.getKey();
-            PublicKey key = ke.getValue();
+        KEYS_MAP.forEach((username, key) -> {
             outputDebugMessage("Authenticate: user=%s, key-type=%s, fingerprint=%s",
                                username, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
             assertTrue("Failed to authenticate user=" + username, auth.authenticate(username, key, session));
-        }
+        });
     }
 }

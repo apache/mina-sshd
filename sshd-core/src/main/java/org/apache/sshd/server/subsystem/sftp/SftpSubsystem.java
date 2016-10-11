@@ -434,9 +434,7 @@ public class SftpSubsystem
                 }
             }
         } finally {
-            for (Map.Entry<String, Handle> entry : handles.entrySet()) {
-                String id = entry.getKey();
-                Handle handle = entry.getValue();
+            handles.forEach((id, handle) -> {
                 try {
                     handle.close();
                     if (log.isDebugEnabled()) {
@@ -447,7 +445,7 @@ public class SftpSubsystem
                     log.error("run({}) failed ({}) to close handle={}[{}]: {}",
                               getServerSession(), ioe.getClass().getSimpleName(), id, handle, ioe.getMessage());
                 }
-            }
+            });
 
             callback.onExit(0);
         }
@@ -2285,18 +2283,17 @@ public class SftpSubsystem
         int numExtensions = GenericUtils.size(extensions);
         List<String> extras = (numExtensions <= 0) ? Collections.emptyList() : new ArrayList<>(numExtensions);
         if (numExtensions > 0) {
-            for (Map.Entry<String, OptionalFeature> ee : extensions.entrySet()) {
-                String name = ee.getKey();
-                OptionalFeature f = ee.getValue();
+            ServerSession session = getServerSession();
+            extensions.forEach((name, f) -> {
                 if (!f.isSupported()) {
                     if (log.isDebugEnabled()) {
-                        log.debug("appendExtensions({}) skip unsupported extension={}", getServerSession(), name);
+                        log.debug("appendExtensions({}) skip unsupported extension={}", session, name);
                     }
-                    continue;
+                    return;
                 }
 
                 extras.add(name);
-            }
+            });
         }
         appendSupportedExtension(buffer, extras);
         appendSupported2Extension(buffer, extras);
@@ -2876,6 +2873,7 @@ public class SftpSubsystem
      */
     protected Map<String, Object> resolveMissingFileAttributes(Path file, int flags, Map<String, Object> current, LinkOption ... options) throws IOException {
         Map<String, Object> attrs = null;
+        // Cannot use forEach because the attrs variable is not effectively final
         for (Map.Entry<String, FileInfoExtractor<?>> re : FILEATTRS_RESOLVERS.entrySet()) {
             String name = re.getKey();
             Object value = GenericUtils.isEmpty(current) ? null : current.get(name);
@@ -2988,6 +2986,7 @@ public class SftpSubsystem
 
     protected void setFileAttributes(Path file, Map<String, ?> attributes, LinkOption ... options) throws IOException {
         Set<String> unsupported = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        // Cannot use forEach because of the potential IOException being thrown
         for (Map.Entry<String, ?> ae : attributes.entrySet()) {
             String attribute = ae.getKey();
             Object value = ae.getValue();

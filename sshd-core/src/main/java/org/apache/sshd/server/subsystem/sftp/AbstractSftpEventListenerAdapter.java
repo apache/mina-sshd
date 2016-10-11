@@ -72,9 +72,8 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
         }
 
         if ((numEntries > 0) && log.isTraceEnabled()) {
-            for (Map.Entry<String, Path> ee : entries.entrySet()) {
-                log.trace("read(" + session + ")[" + localHandle.getFile() + "] " + ee.getKey() + " - " + ee.getValue());
-            }
+            entries.forEach((key, value) ->
+                log.trace("read(" + session + ")[" + localHandle.getFile() + "] " + key + " - " + value));
         }
     }
 

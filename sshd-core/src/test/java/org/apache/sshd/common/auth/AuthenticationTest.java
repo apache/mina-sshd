@@ -400,6 +400,7 @@ public class AuthenticationTest extends BaseTestSupport {
                 assertEquals("Mismatched number of responses", GenericUtils.size(rspMap), GenericUtils.size(responses));
 
                 int index = 0;
+                // Cannot use forEach because the index is not effectively final
                 for (Map.Entry<String, String> re : rspMap.entrySet()) {
                     String prompt = re.getKey();
                     String expected = re.getValue();

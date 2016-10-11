@@ -644,6 +644,7 @@ public class ServerTest extends BaseTestSupport {
         client.start();
         try (ClientSession s = createTestClientSession(sshd);
              ChannelExec shell = s.createExecChannel(getCurrentTestName())) {
+            // Cannot use forEach because of the potential IOException(s) being thrown
             for (Map.Entry<String, String> ee : expected.entrySet()) {
                 shell.setEnv(ee.getKey(), ee.getValue());
             }
@@ -674,12 +675,10 @@ public class ServerTest extends BaseTestSupport {
 
         Map<String, String> vars = cmdEnv.getEnv();
         assertTrue("Mismatched vars count", GenericUtils.size(vars) >= GenericUtils.size(expected));
-        for (Map.Entry<String, String> ee : expected.entrySet()) {
-            String key = ee.getKey();
-            String expValue = ee.getValue();
+        expected.forEach((key, expValue) -> {
             String actValue = vars.get(key);
             assertEquals("Mismatched value for " + key, expValue, actValue);
-        }
+        });
     }
 
     @Test   // see SSHD-611

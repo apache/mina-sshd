@@ -379,12 +379,10 @@ public abstract class BaseTestSupport extends Assert {
         assertEquals(message + "[size]", numItems, GenericUtils.size(actual));
 
         if (numItems > 0) {
-            for (Map.Entry<? extends K, ? extends V> ee : expected.entrySet()) {
-                K key = ee.getKey();
-                V expValue = ee.getValue();
+            expected.forEach((key, expValue) -> {
                 V actValue = actual.get(key);
                 assertEquals(message + "[" + key + "]", expValue, actValue);
-            }
+            });
         }
     }
 

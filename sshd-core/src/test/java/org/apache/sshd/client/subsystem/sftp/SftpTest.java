@@ -699,9 +699,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 }
 
                 if ((numEntries > 0) && log.isTraceEnabled()) {
-                    for (Map.Entry<String, Path> ee : entries.entrySet()) {
-                        log.trace("read(" + session + ")[" + localHandle.getFile() + "] " + ee.getKey() + " - " + ee.getValue());
-                    }
+                    entries.forEach((key, value) ->
+                        log.trace("read(" + session + ")[" + localHandle.getFile() + "] " + key + " - " + value));
                 }
             }
 
@@ -1082,9 +1081,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 }
 
                 Map<String, ?> data = ParserUtils.parse(extensions);
-                for (Map.Entry<String, ?> de : data.entrySet()) {
-                    String extName = de.getKey();
-                    Object extValue = de.getValue();
+                data.forEach((extName, extValue) -> {
                     outputDebugMessage("%s: %s", extName, extValue);
                     if (SftpConstants.EXT_SUPPORTED.equalsIgnoreCase(extName)) {
                         assertSupportedExtensions(extName, ((Supported) extValue).extensionNames);
@@ -1097,7 +1094,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     } else if (SftpConstants.EXT_NEWLINE.equalsIgnoreCase(extName)) {
                         assertNewlineValue((Newline) extValue);
                     }
-                }
+                });
 
                 for (String extName : extensions.keySet()) {
                     if (!data.containsKey(extName)) {
@@ -1138,15 +1135,13 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     private static void assertSupportedExtensions(String extName, Collection<String> extensionNames) {
         assertEquals(extName + "[count]", EXPECTED_EXTENSIONS.size(), GenericUtils.size(extensionNames));
 
-        for (Map.Entry<String, OptionalFeature> ee : EXPECTED_EXTENSIONS.entrySet()) {
-            String name = ee.getKey();
-            OptionalFeature f = ee.getValue();
+        EXPECTED_EXTENSIONS.forEach((name, f) -> {
             if (!f.isSupported()) {
                 assertFalse(extName + " - unsupported feature reported: " + name, extensionNames.contains(name));
             } else {
                 assertTrue(extName + " - missing " + name, extensionNames.contains(name));
             }
-        }
+        });
     }
 
     private static void assertSupportedVersions(Versions vers) {

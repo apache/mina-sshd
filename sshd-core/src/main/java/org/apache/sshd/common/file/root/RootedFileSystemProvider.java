@@ -317,6 +317,7 @@ public class RootedFileSystemProvider extends FileSystemProvider {
         Path rootInstance = null;
         RootedFileSystem fsInstance = null;
         synchronized (fileSystems) {
+            // Cannot use forEach because the referenced variable are not effectively final
             for (Map.Entry<Path, RootedFileSystem> fse : fileSystems.entrySet()) {
                 Path root = fse.getKey();
                 RootedFileSystem fs = fse.getValue();

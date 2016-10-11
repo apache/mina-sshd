@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.client.SshClient;
@@ -58,7 +59,6 @@ import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
@@ -548,7 +548,7 @@ public final class SshConfigFileReader {
      * @param props             The (non-{@code null}) {@link Properties} containing the configuration
      * @param lenient           If {@code true} then any unknown/unsupported configuration
      *                          values are ignored. Otherwise an {@link IllegalArgumentException} is thrown
-     * @param xformer           A {@link Transformer} to convert the configured {@link DHFactory}-ies
+     * @param xformer           A {@link Function} to convert the configured {@link DHFactory}-ies
      *                          to {@link NamedFactory}-ies of {@link KeyExchange}
      * @param ignoreUnsupported Filter out any un-supported configurations - <B>Note:</B>
      *                          if after ignoring the unknown and un-supported values the result is an empty
@@ -558,13 +558,13 @@ public final class SshConfigFileReader {
      * @see #DEFAULT_KEX_ALGORITHMS
      */
     public static <M extends AbstractFactoryManager> M configureKeyExchanges(
-            M manager, Properties props, boolean lenient, Transformer<? super DHFactory, ? extends NamedFactory<KeyExchange>> xformer, boolean ignoreUnsupported) {
+            M manager, Properties props, boolean lenient, Function<? super DHFactory, ? extends NamedFactory<KeyExchange>> xformer, boolean ignoreUnsupported) {
         Objects.requireNonNull(props, "No properties to configure");
         return configureKeyExchanges(manager, props.getProperty(KEX_ALGORITHMS_CONFIG_PROP, DEFAULT_KEX_ALGORITHMS), lenient, xformer, ignoreUnsupported);
     }
 
     public static <M extends AbstractFactoryManager> M configureKeyExchanges(
-            M manager, String value, boolean lenient, Transformer<? super DHFactory, ? extends NamedFactory<KeyExchange>> xformer, boolean ignoreUnsupported) {
+            M manager, String value, boolean lenient, Function<? super DHFactory, ? extends NamedFactory<KeyExchange>> xformer, boolean ignoreUnsupported) {
         Objects.requireNonNull(manager, "No manager to configure");
         Objects.requireNonNull(xformer, "No DHFactory transformer");
 

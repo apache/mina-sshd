@@ -79,6 +79,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         outputDebugMessage("loadHostsEntries(%s)", entriesFile);
         hostsEntries = loadEntries(entriesFile);
 
+        // Cannot use forEach because of the potential IOException/GeneralSecurityException being thrown
         for (Map.Entry<String, KnownHostEntry> ke : hostsEntries.entrySet()) {
             String host = ke.getKey();
             KnownHostEntry entry = ke.getValue();
@@ -111,15 +112,13 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
         };
 
-        for (Map.Entry<String, PublicKey> ke : HOST_KEYS.entrySet()) {
-            String host = ke.getKey();
-            PublicKey serverKey = ke.getValue();
+        HOST_KEYS.forEach((host, serverKey) -> {
             KnownHostEntry entry = hostsEntries.get(host);
             outputDebugMessage("Verify host=%s", entry);
             assertTrue("Failed to verify server=" + entry, invokeVerifier(verifier, host, serverKey));
             assertEquals("Unexpected delegate invocation for host=" + entry, 0, delegateCount.get());
             assertEquals("Unexpected update invocation for host=" + entry, 0, updateCount.get());
-        }
+        });
     }
 
     @Test
@@ -146,6 +145,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         };
 
         int verificationCount = 0;
+        // Cannot use forEach because the verification count variable is not effectively final
         for (Map.Entry<String, PublicKey> ke : HOST_KEYS.entrySet()) {
             String host = ke.getKey();
             PublicKey serverKey = ke.getValue();
@@ -159,9 +159,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
         // make sure we have all the original entries and ONLY them
         Map<String, KnownHostEntry> updatedEntries = loadEntries(path);
-        for (Map.Entry<String, KnownHostEntry> ke : hostsEntries.entrySet()) {
-            String host = ke.getKey();
-            KnownHostEntry expected = ke.getValue();
+        hostsEntries.forEach((host, expected) -> {
             KnownHostEntry actual = updatedEntries.remove(host);
             assertNotNull("No updated entry for host=" + host, actual);
 
@@ -178,7 +176,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             }
 
             assertEquals("Mismatched entry data for host=" + host, expLine, actual.getConfigLine());
-        }
+        });
 
         assertTrue("Unexpected extra updated hosts: " + updatedEntries, updatedEntries.isEmpty());
     }
@@ -200,16 +198,14 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
         ClientSession session = Mockito.mock(ClientSession.class);
         Mockito.when(session.getFactoryManager()).thenReturn(manager);
-        for (Map.Entry<String, PublicKey> ke : HOST_KEYS.entrySet()) {
-            String host = ke.getKey();
-            PublicKey serverKey = ke.getValue();
+        HOST_KEYS.forEach((host, serverKey) -> {
             KnownHostEntry entry = hostsEntries.get(host);
             outputDebugMessage("Write host=%s", entry);
 
             SocketAddress address = new SshdSocketAddress(host, 7365);
             Mockito.when(session.getConnectAddress()).thenReturn(address);
             assertTrue("Failed to validate server=" + entry, verifier.verifyServerKey(session, address, serverKey));
-        }
+        });
 
         // force re-read to ensure all values are hashed
         Collection<HostEntryPair> keys = verifier.reloadKnownHosts(path);
@@ -220,16 +216,14 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         verifier.setLoadedHostsEntries(keys);
 
         // make sure can still validate the original hosts
-        for (Map.Entry<String, PublicKey> ke : HOST_KEYS.entrySet()) {
-            String host = ke.getKey();
-            PublicKey serverKey = ke.getValue();
+        HOST_KEYS.forEach((host, serverKey) -> {
             KnownHostEntry entry = hostsEntries.get(host);
             outputDebugMessage("Re-validate host=%s", entry);
 
             SocketAddress address = new SshdSocketAddress(host, 7365);
             Mockito.when(session.getConnectAddress()).thenReturn(address);
             assertTrue("Failed to re-validate server=" + entry, verifier.verifyServerKey(session, address, serverKey));
-        }
+        });
     }
 
     @Test
@@ -249,6 +243,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         };
 
         int validationCount = 0;
+        // Cannot use forEach because the validation count variable is not effectively final
         for (Map.Entry<String, KnownHostEntry> ke : hostsEntries.entrySet()) {
             String host = ke.getKey();
             KnownHostEntry entry = ke.getValue();
@@ -274,18 +269,14 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             }
         };
 
-        for (Map.Entry<String, KnownHostEntry> ke : hostsEntries.entrySet()) {
-            String host = ke.getKey();
-            KnownHostEntry entry = ke.getValue();
+        hostsEntries.forEach((host, entry) -> {
             outputDebugMessage("Verify host=%s", entry);
             assertTrue("Failed to verify " + entry, invokeVerifier(verifier, host, modifiedKey));
-        }
+        });
 
         String expected = PublicKeyEntry.toString(modifiedKey);
         Map<String, KnownHostEntry> updatedKeys = loadEntries(path);
-        for (Map.Entry<String, KnownHostEntry> ke : hostsEntries.entrySet()) {
-            String host = ke.getKey();
-            KnownHostEntry original = ke.getValue();
+        hostsEntries.forEach((host, original) -> {
             KnownHostEntry updated = updatedKeys.remove(host);
             assertNotNull("No updated entry for " + original, updated);
 
@@ -302,7 +293,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
             actual = GenericUtils.trimToEmpty(actual.substring(pos + 1));
             assertEquals("Mismatched updated value for host=" + host, expected, actual);
-        }
+        });
 
         assertTrue("Unexpected extra updated entries: " + updatedKeys, updatedKeys.isEmpty());
     }

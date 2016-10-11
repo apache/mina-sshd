@@ -21,13 +21,14 @@ package org.apache.sshd.common.util;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class ReflectionUtils {
-    public static final Transformer<Field, String> FIELD_NAME_EXTRACTOR = f -> (f == null) ? null : f.getName();
+    public static final Function<Field, String> FIELD_NAME_EXTRACTOR = f -> (f == null) ? null : f.getName();
 
     private ReflectionUtils() {
         throw new UnsupportedOperationException("No instance");

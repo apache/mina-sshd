@@ -21,6 +21,7 @@ package org.apache.sshd.client;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 import org.apache.sshd.client.config.hosts.DefaultConfigFileHostEntryResolver;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
@@ -40,7 +41,6 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.server.forward.ForwardedTcpipFactory;
 
 /**
@@ -48,7 +48,7 @@ import org.apache.sshd.server.forward.ForwardedTcpipFactory;
  */
 public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
 
-    public static final Transformer<DHFactory, NamedFactory<KeyExchange>> DH2KEX = factory ->
+    public static final Function<DHFactory, NamedFactory<KeyExchange>> DH2KEX = factory ->
             factory == null
                 ? null
                 : factory.isGroupExchange()

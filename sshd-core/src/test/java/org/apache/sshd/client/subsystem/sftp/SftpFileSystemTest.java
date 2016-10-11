@@ -144,16 +144,14 @@ public class SftpFileSystemTest extends BaseTestSupport {
                 assertEquals("Mismatched negotiated version", expectedVersion, sftpClient.getVersion());
 
                 Session session = sftpClient.getClientSession();
-                for (Map.Entry<String, ?> pe : params.entrySet()) {
-                    String key = pe.getKey();
-                    Object expected = pe.getValue();
+                params.forEach((key, expected) -> {
                     if (SftpFileSystemProvider.VERSION_PARAM.equalsIgnoreCase(key)) {
-                        continue;
+                        return;
                     }
 
                     Object actual = PropertyResolverUtils.getObject(session, key);
                     assertEquals("Mismatched value for param '" + key + "'", expected, actual);
-                }
+                });
             }
         }
     }

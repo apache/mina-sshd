@@ -173,14 +173,13 @@ public final class ParserUtils {
         }
 
         Map<String, Object> data = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (Map.Entry<String, byte[]> ee : extensions.entrySet()) {
-            String name = ee.getKey();
-            Object result = parse(name, ee.getValue());
+        extensions.forEach((name, value) -> {
+            Object result = parse(name, value);
             if (result == null) {
-                continue;
+                return;
             }
             data.put(name, result);
-        }
+        });
 
         return data;
     }

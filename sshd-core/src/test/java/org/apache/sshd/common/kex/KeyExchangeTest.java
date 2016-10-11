@@ -20,9 +20,9 @@
 package org.apache.sshd.common.kex;
 
 import java.util.Map;
+import java.util.function.Function;
 
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -47,16 +47,14 @@ public class KeyExchangeTest extends BaseTestSupport {
         testKexOpcodeName(KeyExchange.GROUP_KEX_OPCODES_MAP, KeyExchange::getGroupKexOpcodeName);
     }
 
-    private static void testKexOpcodeName(Map<Integer, String> opsMap, Transformer<Integer, String> xformer) {
-        for (Map.Entry<Integer, String> oe : opsMap.entrySet()) {
-            Integer cmd = oe.getKey();
-            String expected = oe.getValue();
-            String actual = xformer.transform(cmd);
+    private static void testKexOpcodeName(Map<Integer, String> opsMap, Function<Integer, String> xformer) {
+        opsMap.forEach((cmd, expected) -> {
+            String actual = xformer.apply(cmd);
             assertSame("Mismatched results for cmd=" + cmd, expected, actual);
 
             if (SshConstants.isAmbiguousOpcode(cmd)) {
                 assertEquals("Unexpected ambiguous command resolution for " + cmd, cmd.toString(), SshConstants.getCommandMessageName(cmd));
             }
-        }
+        });
     }
 }

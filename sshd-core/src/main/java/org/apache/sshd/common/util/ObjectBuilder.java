@@ -19,6 +19,8 @@
 
 package org.apache.sshd.common.util;
 
+import java.util.function.Supplier;
+
 /**
  * A generic builder interface
  *
@@ -26,6 +28,11 @@ package org.apache.sshd.common.util;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FunctionalInterface
-public interface ObjectBuilder<T> {
+public interface ObjectBuilder<T> extends Supplier<T> {
+    @Override
+    default T get() {
+        return build();
+    }
+
     T build();
 }

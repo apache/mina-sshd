@@ -64,15 +64,13 @@ public class KeyPairProviderTest extends BaseTestSupport {
             k -> new KeyPair(pubKey, prvKey),
             String.CASE_INSENSITIVE_ORDER);
 
-        KeyPairProvider provider = MappedKeyPairProvider.MAP_TO_KEY_PAIR_PROVIDER.transform(pairsMap);
+        KeyPairProvider provider = MappedKeyPairProvider.MAP_TO_KEY_PAIR_PROVIDER.apply(pairsMap);
         assertEquals("Key types", pairsMap.keySet(), provider.getKeyTypes());
         assertEquals("Key pairs", pairsMap.values(), provider.loadKeys());
 
-        for (Map.Entry<String, KeyPair> pairEntry : pairsMap.entrySet()) {
-            String keyType = pairEntry.getKey();
-            KeyPair expected = pairEntry.getValue();
+        pairsMap.forEach((keyType, expected) -> {
             KeyPair actual = provider.loadKey(keyType);
             assertSame(keyType, expected, actual);
-        }
+        });
     }
 }

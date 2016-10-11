@@ -69,11 +69,9 @@ public class LdapPasswordAuthenticatorTest extends BaseAuthenticatorTest {
 
         ServerSession session = Mockito.mock(ServerSession.class);
         outputDebugMessage("%s: %s", getCurrentTestName(), auth);
-        for (Map.Entry<String, String> ue : usersMap.entrySet()) {
-            String username = ue.getKey();
-            String password = ue.getValue();
+        usersMap.forEach((username, password) -> {
             outputDebugMessage("Authenticate: user=%s, password=%s", username, password);
             assertTrue("Failed to authenticate " + username, auth.authenticate(username, password, session));
-        }
+        });
     }
 }

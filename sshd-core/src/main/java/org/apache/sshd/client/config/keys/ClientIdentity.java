@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Function;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.common.NamedResource;
@@ -39,8 +40,8 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.FileInfoExtractor;
 import org.apache.sshd.common.util.io.IoUtils;
 
 /**
@@ -55,7 +56,7 @@ public final class ClientIdentity {
 
     public static final String ID_FILE_SUFFIX = "";
 
-    public static final Transformer<String, String> ID_GENERATOR =
+    public static final Function<String, String> ID_GENERATOR =
             ClientIdentity::getIdentityFileName;
 
     private ClientIdentity() {
@@ -235,7 +236,7 @@ public final class ClientIdentity {
      * <U>insensitive</U>), value=the {@link KeyPair} of the identity
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see #loadIdentities(Path, boolean, Collection, Transformer, FilePasswordProvider, LinkOption...)
+     * @see #loadIdentities(Path, boolean, Collection, Function, FilePasswordProvider, LinkOption...)
      * @see BuiltinIdentities
      */
     public static Map<String, KeyPair> loadDefaultIdentities(Path dir, boolean strict, FilePasswordProvider provider, LinkOption... options)
@@ -250,7 +251,7 @@ public final class ClientIdentity {
      * @param strict      If {@code true} then files that do not have the required
      *                    access rights are excluded from consideration
      * @param types       The identity types - ignored if {@code null}/empty
-     * @param idGenerator A {@link Transformer} to derive the file name
+     * @param idGenerator A {@link Function} to derive the file name
      *                    holding the specified type
      * @param provider    A {@link FilePasswordProvider} - may be {@code null}
      *                    if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
@@ -262,11 +263,11 @@ public final class ClientIdentity {
      * <U>insensitive</U>), value=the {@link KeyPair} of the identity
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see #scanIdentitiesFolder(Path, boolean, Collection, Transformer, LinkOption...)
+     * @see #scanIdentitiesFolder(Path, boolean, Collection, Function, LinkOption...)
      * @see IdentityUtils#loadIdentities(Map, FilePasswordProvider, java.nio.file.OpenOption...)
      */
     public static Map<String, KeyPair> loadIdentities(
-            Path dir, boolean strict, Collection<String> types, Transformer<String, String> idGenerator, FilePasswordProvider provider, LinkOption... options)
+            Path dir, boolean strict, Collection<String> types, Function<String, String> idGenerator, FilePasswordProvider provider, LinkOption... options)
             throws IOException, GeneralSecurityException {
         Map<String, Path> paths = scanIdentitiesFolder(dir, strict, types, idGenerator, options);
         return IdentityUtils.loadIdentities(paths, provider, IoUtils.EMPTY_OPEN_OPTIONS);
@@ -279,7 +280,7 @@ public final class ClientIdentity {
      * @param strict      If {@code true} then files that do not have the required
      *                    access rights are excluded from consideration
      * @param types       The identity types - ignored if {@code null}/empty
-     * @param idGenerator A {@link Transformer} to derive the file name
+     * @param idGenerator A {@link Function} to derive the file name
      *                    holding the specified type
      * @param options     The {@link LinkOption}s to apply when checking
      *                    for existence
@@ -289,7 +290,7 @@ public final class ClientIdentity {
      * @see KeyUtils#validateStrictKeyFilePermissions(Path, LinkOption...)
      */
     public static Map<String, Path> scanIdentitiesFolder(
-            Path dir, boolean strict, Collection<String> types, Transformer<String, String> idGenerator, LinkOption... options)
+            Path dir, boolean strict, Collection<String> types, Function<String, String> idGenerator, LinkOption... options)
             throws IOException {
         if (GenericUtils.isEmpty(types)) {
             return Collections.emptyMap();
@@ -299,11 +300,11 @@ public final class ClientIdentity {
             return Collections.emptyMap();
         }
 
-        ValidateUtils.checkTrue(Files.isDirectory(dir, options), "Not a directory: %s", dir);
+        ValidateUtils.checkTrue(FileInfoExtractor.ISDIR.infoOf(dir, options), "Not a directory: %s", dir);
 
         Map<String, Path> paths = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (String t : types) {
-            String fileName = idGenerator.transform(t);
+            String fileName = idGenerator.apply(t);
             Path p = dir.resolve(fileName);
             if (!Files.exists(p, options)) {
                 continue;

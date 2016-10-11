@@ -152,13 +152,11 @@ public class AclSupportedParser extends AbstractParser<AclCapabilities> {
 
             Set<String> caps = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
             Map<Integer, String> map = getAclCapabilityValuesMap();
-            for (Map.Entry<Integer, String> ae : map.entrySet()) {
-                Integer value = ae.getKey();
-                String name = ae.getValue();
+            map.forEach((value, name) -> {
                 if ((mask & value) != 0) {
                     caps.add(name);
                 }
-            }
+            });
 
             return caps;
         }

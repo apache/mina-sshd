@@ -91,28 +91,26 @@ public final class IdentityUtils {
         }
 
         Map<String, KeyPair> pairsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (Map.Entry<String, KeyPair> ide : ids.entrySet()) {
-            String type = ide.getKey();
-            KeyPair kp = ide.getValue();
+        ids.forEach((type, kp) -> {
             BuiltinIdentities id = BuiltinIdentities.fromName(type);
             if (id == null) {
                 id = BuiltinIdentities.fromKeyPair(kp);
             }
 
             if (supportedOnly && ((id == null) || (!id.isSupported()))) {
-                continue;
+                return;
             }
 
             String keyType = KeyUtils.getKeyType(kp);
             if (GenericUtils.isEmpty(keyType)) {
-                continue;
+                return;
             }
 
             KeyPair prev = pairsMap.put(keyType, kp);
             if (prev != null) {
-                continue;   // less of an offense if 2 pairs mapped to same key type
+                return;   // less of an offense if 2 pairs mapped to same key type
             }
-        }
+        });
 
         if (GenericUtils.isEmpty(pairsMap)) {
             return null;
@@ -142,6 +140,7 @@ public final class IdentityUtils {
         }
 
         Map<String, KeyPair> ids = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        // Cannot use forEach because the potential for IOExceptions being thrown
         for (Map.Entry<String, ? extends Path> pe : paths.entrySet()) {
             String type = pe.getKey();
             Path path = pe.getValue();

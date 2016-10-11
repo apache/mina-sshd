@@ -252,12 +252,10 @@ public class PtyCapableChannelSession extends ChannelSession {
             buffer.putInt(ptyWidth);
 
             Buffer modes = new ByteArrayBuffer(GenericUtils.size(ptyModes) * (1 + Integer.BYTES) + Long.SIZE, false);
-            for (Map.Entry<PtyMode, ? extends Number> modeEntry : ptyModes.entrySet()) {
-                PtyMode mode = modeEntry.getKey();
-                Number value = modeEntry.getValue();
+            ptyModes.forEach((mode, value) -> {
                 modes.putByte((byte) mode.toInt());
                 modes.putInt(value.longValue());
-            }
+            });
             modes.putByte(PtyMode.TTY_OP_END);
             buffer.putBytes(modes.getCompactData());
             writePacket(buffer);
@@ -268,6 +266,7 @@ public class PtyCapableChannelSession extends ChannelSession {
                 log.debug("doOpenPty({}) Send SSH_MSG_CHANNEL_REQUEST env: {}", this, env);
             }
 
+            // Cannot use forEach because of the IOException being thrown by writePacket
             for (Map.Entry<String, String> entry : env.entrySet()) {
                 String key = entry.getKey();
                 String value = entry.getValue();

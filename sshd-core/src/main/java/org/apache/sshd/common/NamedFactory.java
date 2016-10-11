@@ -20,9 +20,8 @@ package org.apache.sshd.common;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import org.apache.sshd.common.util.Transformer;
 
 /**
  * A named factory is a factory identified by a name.
@@ -51,10 +50,10 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
     }
 
     static <S extends OptionalFeature, T, E extends NamedFactory<T>> List<NamedFactory<T>> setUpTransformedFactories(
-            boolean ignoreUnsupported, Collection<? extends S> preferred, Transformer<? super S, ? extends E> xform) {
+            boolean ignoreUnsupported, Collection<? extends S> preferred, Function<? super S, ? extends E> xform) {
         return preferred.stream()
                 .filter(f -> ignoreUnsupported || f.isSupported())
-                .map(xform::transform)
+                .map(xform)
                 .collect(Collectors.toList());
     }
 

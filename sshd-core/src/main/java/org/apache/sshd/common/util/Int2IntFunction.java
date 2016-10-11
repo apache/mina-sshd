@@ -19,16 +19,23 @@
 
 package org.apache.sshd.common.util;
 
+import java.util.function.IntUnaryOperator;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FunctionalInterface
-public interface Int2IntFunction {
+public interface Int2IntFunction extends IntUnaryOperator {
 
     /**
      * An {@link Int2IntFunction} that returns same value as input
      */
     Int2IntFunction IDENTITY = value -> value;
+
+    @Override
+    default int applyAsInt(int operand) {
+        return apply(operand);
+    }
 
     /**
      * @param value Argument
@@ -40,7 +47,7 @@ public interface Int2IntFunction {
         return add(0 - delta);
     }
 
-    static Int2IntFunction add(final int delta) {
+    static Int2IntFunction add(int delta) {
         if (delta == 0) {
             return IDENTITY;
         } else {
@@ -48,7 +55,7 @@ public interface Int2IntFunction {
         }
     }
 
-    static Int2IntFunction mul(final int factor) {
+    static Int2IntFunction mul(int factor) {
         if (factor == 1) {
             return IDENTITY;
         } else {
@@ -56,7 +63,7 @@ public interface Int2IntFunction {
         }
     }
 
-    static Int2IntFunction div(final int factor) {
+    static Int2IntFunction div(int factor) {
         if (factor == 1) {
             return IDENTITY;
         } else {

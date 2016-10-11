@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.kex.KexProposalOption;
@@ -183,12 +182,11 @@ public class ServerSessionListenerTest extends BaseTestSupport {
         sshd.addSessionListener(listener);
 
         try (ClientSession session = createTestClientSession()) {
-            for (Map.Entry<KexProposalOption, ? extends NamedResource> ke : kexParams.entrySet()) {
-                KexProposalOption option = ke.getKey();
-                String expected = ke.getValue().getName();
+            kexParams.forEach((option, factory) -> {
+                String expected = factory.getName();
                 String actual = session.getNegotiatedKexParameter(option);
                 assertEquals("Mismatched values for KEX=" + option, expected, actual);
-            }
+            });
         } finally {
             sshd.removeSessionListener(listener);
         }

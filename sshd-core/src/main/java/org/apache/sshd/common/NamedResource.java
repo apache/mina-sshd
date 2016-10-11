@@ -22,9 +22,9 @@ package org.apache.sshd.common;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Transformer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -35,7 +35,7 @@ public interface NamedResource {
     /**
      * Returns the value of {@link #getName()} - or {@code null} if argument is {@code null}
      */
-    Transformer<NamedResource, String> NAME_EXTRACTOR = input -> input == null ? null : input.getName();
+    Function<NamedResource, String> NAME_EXTRACTOR = input -> input == null ? null : input.getName();
 
     /**
      * Compares 2 {@link NamedResource}s according to their {@link #getName()}

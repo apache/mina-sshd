@@ -198,6 +198,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                         .verify(PropertyResolverUtils.getLongProperty(resolver, CONNECT_TIME_PROP_NAME, DEFAULT_CONNECT_TIME))
                         .getSession();
                 if (GenericUtils.size(params) > 0) {
+                    // Cannot use forEach because the session is not effectively final
                     for (Map.Entry<String, ?> pe : params.entrySet()) {
                         String key = pe.getKey();
                         Object value = pe.getValue();
@@ -1214,6 +1215,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             .append('/');
         if (GenericUtils.size(params) > 0) {
             boolean firstParam = true;
+            // Cannot use forEach because firstParam is not effectively final
             for (Map.Entry<String, ?> pe : params.entrySet()) {
                 String key = pe.getKey();
                 Object value = pe.getValue();

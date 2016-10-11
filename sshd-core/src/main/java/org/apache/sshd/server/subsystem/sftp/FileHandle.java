@@ -89,6 +89,7 @@ public class FileHandle extends Handle {
         }
 
         Collection<FileAttribute<?>> attributes = null;
+        // Cannot use forEach because the referenced attributes variable is not effectively final
         for (Map.Entry<String, Object> attr : attrs.entrySet()) {
             FileAttribute<?> fileAttr = toFileAttribute(attr.getKey(), attr.getValue());
             if (fileAttr == null) {

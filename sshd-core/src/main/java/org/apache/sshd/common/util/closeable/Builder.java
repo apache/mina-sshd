@@ -39,7 +39,7 @@ public final class Builder implements ObjectBuilder<Closeable> {
         this.lock = Objects.requireNonNull(lock, "No lock");
     }
 
-    public Builder run(final Runnable r) {
+    public Builder run(Runnable r) {
         return close(new SimpleCloseable(lock) {
             @Override
             protected void doClose(boolean immediately) {
@@ -67,7 +67,7 @@ public final class Builder implements ObjectBuilder<Closeable> {
     }
 
     @SuppressWarnings("rawtypes")
-    public <T extends SshFuture> Builder when(final Iterable<? extends SshFuture<T>> futures) {
+    public <T extends SshFuture> Builder when(Iterable<? extends SshFuture<T>> futures) {
         return close(new FuturesCloseable<>(lock, futures));
     }
 

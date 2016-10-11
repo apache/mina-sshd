@@ -288,8 +288,9 @@ public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, S
     }
 
     protected void resolveServerKeys(SshClient client, String host,
-                                     Map<String, List<KeyPair>> pairsMap,
-                                     Map<String, List<NamedFactory<Signature>>> sigFactories) throws IOException {
+            Map<String, List<KeyPair>> pairsMap, Map<String, List<NamedFactory<Signature>>> sigFactories)
+                    throws IOException {
+        // Cannot use forEach because of the potential for throwing IOException by the invoked code
         for (Map.Entry<String, List<KeyPair>> pe : pairsMap.entrySet()) {
             String kt = pe.getKey();
             if (!isOpen()) {
@@ -409,11 +410,7 @@ public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, S
             return;
         }
 
-        for (Map.Entry<KexProposalOption, String> pe : proposal.entrySet()) {
-            KexProposalOption option = pe.getKey();
-            String value = pe.getValue();
-            log(Level.FINEST, option.getDescription() + "[" + type + "]: " + value);
-        }
+        proposal.forEach((option, value) -> log(Level.FINEST, option.getDescription() + "[" + type + "]: " + value));
     }
 
     @Override

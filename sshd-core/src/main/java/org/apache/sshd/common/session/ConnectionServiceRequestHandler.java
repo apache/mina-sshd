@@ -19,6 +19,8 @@
 
 package org.apache.sshd.common.session;
 
+import java.util.function.Function;
+
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -29,7 +31,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 public interface ConnectionServiceRequestHandler extends RequestHandler<ConnectionService> {
 
     // required because of generics issues
-    Transformer<ConnectionServiceRequestHandler, RequestHandler<ConnectionService>> SVC2HNDLR = Transformer.identity();
+    Function<ConnectionServiceRequestHandler, RequestHandler<ConnectionService>> SVC2HNDLR = Transformer.identity();
 
     @Override
     Result process(ConnectionService service, String request, boolean wantReply, Buffer buffer) throws Exception;

@@ -45,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive;
 import org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractiveFactory;
@@ -88,7 +89,6 @@ import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -1056,7 +1056,7 @@ public class ClientTest extends BaseTestSupport {
         }));
         client.start();
 
-        final Transformer<String, String> stripper = input -> {
+        Function<String, String> stripper = input -> {
             int pos = GenericUtils.isEmpty(input) ? -1 : input.lastIndexOf(':');
             if (pos < 0) {
                 return input;
@@ -1064,12 +1064,14 @@ public class ClientTest extends BaseTestSupport {
                 return input.substring(0, pos);
             }
         };
-        final List<Transformer<String, String>> xformers =
-            Collections.unmodifiableList(Arrays.<Transformer<String, String>>asList(
+
+        List<Function<String, String>> xformers =
+            Collections.unmodifiableList(Arrays.<Function<String, String>>asList(
                 input -> getCurrentTestName() + " " + input,
-                input -> stripper.transform(input) + " " + getCurrentTestName() + ":",
-                input -> getCurrentTestName() + " " + stripper.transform(input) + " " + getCurrentTestName() + ":"
+                input -> stripper.apply(input) + " " + getCurrentTestName() + ":",
+                input -> getCurrentTestName() + " " + stripper.apply(input) + " " + getCurrentTestName() + ":"
             ));
+
         sshd.setKeyboardInteractiveAuthenticator(new DefaultKeyboardInteractiveAuthenticator() {
             private int xformerIndex;
 
@@ -1077,9 +1079,9 @@ public class ClientTest extends BaseTestSupport {
             protected String getInteractionPrompt(ServerSession session) {
                 String original = super.getInteractionPrompt(session);
                 if (xformerIndex < xformers.size()) {
-                    Transformer<String, String> x = xformers.get(xformerIndex);
+                    Function<String, String> x = xformers.get(xformerIndex);
                     xformerIndex++;
-                    return x.transform(original);
+                    return x.apply(original);
                 } else {
                     return original;
                 }

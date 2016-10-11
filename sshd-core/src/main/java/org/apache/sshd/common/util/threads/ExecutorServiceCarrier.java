@@ -25,6 +25,9 @@ import java.util.concurrent.ExecutorService;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ExecutorServiceCarrier {
+    /**
+     * @return The {@link ExecutorService} to use
+     */
     ExecutorService getExecutorService();
 
     /**

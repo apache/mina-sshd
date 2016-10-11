@@ -162,6 +162,7 @@ public enum TimeValueConfig {
         }
 
         long total = 0L;
+        // Cannot use forEach because the total value is not effectively final
         for (Map.Entry<TimeValueConfig, ? extends Number> se : spec.entrySet()) {
             TimeValueConfig v = se.getKey();
             Number c = se.getValue();

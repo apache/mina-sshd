@@ -338,6 +338,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         }
 
         Map<String, String> updated = null;
+        // Cannot use forEach because of the modification of the updated map value (non-final)
         for (Map.Entry<String, String> pe : props.entrySet()) {
             String key = pe.getKey();
             String curValue = getProperty(key);
@@ -598,6 +599,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
             return sb;
         }
 
+        // Cannot use forEach because of the IOException being thrown by appendNonEmptyProperty
         for (Map.Entry<String, ?> pe : props.entrySet()) {
             String name = pe.getKey();
             if (EXPLICIT_PROPERTIES.contains(name)) {

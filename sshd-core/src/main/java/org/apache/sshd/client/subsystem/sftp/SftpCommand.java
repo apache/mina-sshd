@@ -357,9 +357,7 @@ public class SftpCommand implements Channel {
                 stdout.println();
             }
 
-            for (Map.Entry<String, byte[]> ee : extensions.entrySet()) {
-                String name = ee.getKey();
-                byte[] value = ee.getValue();
+            extensions.forEach((name, value) -> {
                 Object info = parsed.get(name);
 
                 stdout.append('\t').append(name).append(": ");
@@ -368,7 +366,8 @@ public class SftpCommand implements Channel {
                 } else {
                     stdout.println(info);
                 }
-            }
+            });
+
             return false;
         }
     }

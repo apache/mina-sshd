@@ -578,9 +578,7 @@ public abstract class Buffer implements Readable {
             return;
         }
 
-        for (Object o : objects) {
-            putString(Transformer.TOSTRING.transform(o), charset);
-        }
+        objects.forEach(o -> putString(Transformer.TOSTRING.apply(o), charset));
     }
 
     public void putString(String string) {

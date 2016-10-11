@@ -53,8 +53,6 @@ import java.util.stream.StreamSupport;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
 
-import org.apache.sshd.common.Factory;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -84,7 +82,7 @@ public final class GenericUtils {
     public static final String QUOTES = "\"'";
 
     @SuppressWarnings("rawtypes")
-    private static final Factory CASE_INSENSITIVE_MAP_FACTORY = () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private static final Supplier CASE_INSENSITIVE_MAP_FACTORY = () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private GenericUtils() {
         throw new UnsupportedOperationException("No instance");
@@ -408,32 +406,35 @@ public final class GenericUtils {
         return set;
     }
 
+    /**
+     * @param <V> Type of mapped value
+     * @return A {@link Supplier} that returns a <U>new</U> {@link SortedMap}
+     * whenever its {@code get()} method is invoked
+     */
     @SuppressWarnings("unchecked")
-    public static <V> Factory<SortedMap<String, V>> caseInsensitiveMap() {
+    public static <V> Supplier<SortedMap<String, V>> caseInsensitiveMap() {
         return CASE_INSENSITIVE_MAP_FACTORY;
     }
 
-    public static <K, V> Map<V, K> flipMap(Map<? extends K, ? extends V> map, Factory<? extends Map<V, K>> mapCreator, boolean allowDuplicates) {
+    public static <K, V> Map<V, K> flipMap(Map<? extends K, ? extends V> map, Supplier<? extends Map<V, K>> mapCreator, boolean allowDuplicates) {
         if (isEmpty(map)) {
             return Collections.emptyMap();
         }
 
-        Map<V, K> result = Objects.requireNonNull(mapCreator.create(), "No map created");
-        for (Map.Entry<? extends K, ? extends V> ee : map.entrySet()) {
-            K key = ee.getKey();
-            V value = ee.getValue();
+        Map<V, K> result = Objects.requireNonNull(mapCreator.get(), "No map created");
+        map.forEach((key, value) -> {
             K prev = result.put(value, key);
             if ((prev != null) && (!allowDuplicates)) {
                 ValidateUtils.throwIllegalArgumentException("Multiple values for key=%s: current=%s, previous=%s", value, key, prev);
             }
-        }
+        });
 
         return result;
     }
 
     @SafeVarargs
     public static <K, V> Map<K, V> mapValues(
-            Transformer<? super V, ? extends K> keyMapper, Factory<? extends Map<K, V>> mapCreator, V ... values) {
+            Function<? super V, ? extends K> keyMapper, Supplier<? extends Map<K, V>> mapCreator, V ... values) {
         return mapValues(keyMapper, mapCreator, isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
     }
 
@@ -442,23 +443,23 @@ public final class GenericUtils {
      *
      * @param <K> The key type
      * @param <V> The value type
-     * @param keyMapper The {@link Transformer} that generates a key for a given value.
+     * @param keyMapper The {@link Function} that generates a key for a given value.
      * If the returned key is {@code null} then the value is not mapped
-     * @param mapCreator The {@link Factory} used to create the result map - provided
+     * @param mapCreator The {@link Supplier} used to create/retrieve the result map - provided
      * non-empty group of values
      * @param values The values to be mapped
      * @return The resulting {@link Map} - <B>Note:</B> no validation is made to ensure
      * that 2 (or more) values are not mapped to the same key
      */
     public static <K, V> Map<K, V> mapValues(
-            Transformer<? super V, ? extends K> keyMapper, Factory<? extends Map<K, V>> mapCreator, Collection<V> values) {
+            Function<? super V, ? extends K> keyMapper, Supplier<? extends Map<K, V>> mapCreator, Collection<V> values) {
         if (isEmpty(values)) {
             return Collections.emptyMap();
         }
 
-        Map<K, V> map = mapCreator.create();
+        Map<K, V> map = mapCreator.get();
         for (V v : values) {
-            K k = keyMapper.transform(v);
+            K k = keyMapper.apply(v);
             if (k == null) {
                 continue;   // debug breakpoint
             }
@@ -541,6 +542,7 @@ public final class GenericUtils {
      * Attempts to get to the &quot;effective&quot; exception being thrown,
      * by taking care of some known exceptions that wrap the original thrown
      * one.
+     *
      * @param t The original {@link Throwable} - ignored if {@code null}
      * @return The effective exception - same as input if not a wrapper
      */
@@ -662,7 +664,7 @@ public final class GenericUtils {
     }
 
     public static <U, V> Iterator<V> wrapIterator(Iterator<? extends U> iter, Function<U, V> mapper) {
-        final Iterator<? extends U> iterator = iteratorOf(iter);
+        Iterator<? extends U> iterator = iteratorOf(iter);
         return new Iterator<V>() {
             @Override
             public boolean hasNext() {
@@ -746,9 +748,11 @@ public final class GenericUtils {
             map.put(k, v);
             return this;
         }
+
         public Map<K, V> build() {
             return map;
         }
+
         public Map<K, V> immutable() {
             return Collections.unmodifiableMap(map);
         }
