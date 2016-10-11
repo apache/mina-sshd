@@ -100,7 +100,7 @@
         <maven.compiler.target>${javac.target}</maven.compiler.target>
         <ant.build.javac.target>${javac.target}</ant.build.javac.target>
 
-        <min.required.maven.version>3.0</min.required.maven.version>
+        <min.required.maven.version>3.0.5</min.required.maven.version>
         <gmaven.plugin.version>2.0</gmaven.plugin.version>
         <groovy.major.version>2</groovy.major.version>
         <groovy.minor.version>4</groovy.minor.version>
@@ -116,6 +116,10 @@
         <surefire.plugin.version>2.19.1</surefire.plugin.version>
         <httpcomps.version>4.4.1</httpcomps.version>
     </properties>
+
+    <prerequisites>
+        <maven>${min.required.maven.version}</maven>
+    </prerequisites>
 
     <dependencyManagement>
         <dependencies>
@@ -413,7 +417,7 @@
                 <plugin>
                     <groupId>org.apache.rat</groupId>
                     <artifactId>apache-rat-plugin</artifactId>
-                    <version>0.11</version>
+                    <version>0.12</version>
                     <configuration>
                         <excludes>
                             <exclude>**/*.iml</exclude>
@@ -458,7 +462,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
-                    <version>2.5.1</version>
+                    <version>2.5.3</version>
                     <configuration>
                         <autoVersionSubmodules>true</autoVersionSubmodules>
                     </configuration>
@@ -466,7 +470,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>2.4</version>
+                    <version>3.0.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -481,7 +485,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.10.3</version>
+                    <version>2.10.4</version>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.gmaven</groupId>
@@ -716,7 +720,7 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>2.5.3</version>
+                <version>3.2.0</version>
                 <inherited>true</inherited>
                 <extensions>true</extensions>
                 <executions>
@@ -732,7 +736,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>2.6</version>
+                <version>3.0.2</version>
                 <inherited>true</inherited>
                 <configuration>
                     <archive>
@@ -781,7 +785,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>1.10</version>
+                <version>1.12</version>
                  <executions>
                       <execution>
                         <id>remove-previous-artifact</id>
