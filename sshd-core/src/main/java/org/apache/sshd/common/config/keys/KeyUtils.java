@@ -130,6 +130,9 @@ public final class KeyUtils {
         if (SecurityUtils.hasEcc()) {
             registerPublicKeyEntryDecoder(ECDSAPublicKeyEntryDecoder.INSTANCE);
         }
+        if (SecurityUtils.isEDDSACurveSupported()) {
+            registerPublicKeyEntryDecoder(SecurityUtils.getEDDSAPublicKeyEntryDecoder());
+        }
     }
 
     private KeyUtils() {
@@ -657,7 +660,9 @@ public final class KeyUtils {
      * @return the key type or {@code null} if cannot determine it
      */
     public static String getKeyType(Key key) {
-        if (key instanceof DSAKey) {
+        if (key == null) {
+            return null;
+        } else if (key instanceof DSAKey) {
             return KeyPairProvider.SSH_DSS;
         } else if (key instanceof RSAKey) {
             return KeyPairProvider.SSH_RSA;
@@ -670,6 +675,8 @@ public final class KeyUtils {
             } else {
                 return curve.getKeyType();
             }
+        } else if (SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm())) {
+            return KeyPairProvider.SSH_ED25519;
         }
 
         return null;
@@ -682,7 +689,9 @@ public final class KeyUtils {
      * @return The key size - non-positive value if cannot determine it
      */
     public static int getKeySize(Key key) {
-        if (key instanceof RSAKey) {
+        if (key == null) {
+            return -1;
+        } else if (key instanceof RSAKey) {
             BigInteger n = ((RSAKey) key).getModulus();
             return n.bitLength();
         } else if (key instanceof DSAKey) {
@@ -695,6 +704,8 @@ public final class KeyUtils {
             if (curve != null) {
                 return curve.getKeySize();
             }
+        } else if (SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm())) {
+            return SecurityUtils.getEDDSAKeySize(key);
         }
 
         return -1;
@@ -741,7 +752,7 @@ public final class KeyUtils {
             return false;   // both null is covered by Objects#equals
         } else {
             return compareKeys(k1.getPublic(), k2.getPublic())
-                    && compareKeys(k1.getPrivate(), k2.getPrivate());
+                && compareKeys(k1.getPrivate(), k2.getPrivate());
         }
     }
 
@@ -752,6 +763,9 @@ public final class KeyUtils {
             return compareDSAKeys(DSAPrivateKey.class.cast(k1), DSAPrivateKey.class.cast(k2));
         } else if ((k1 instanceof ECPrivateKey) && (k2 instanceof ECPrivateKey)) {
             return compareECKeys(ECPrivateKey.class.cast(k1), ECPrivateKey.class.cast(k2));
+        } else if ((k1 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k1.getAlgorithm())
+                    && (k2 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k2.getAlgorithm())) {
+            return SecurityUtils.compareEDDSAPrivateKeys(k1, k2);
         } else {
             return false;   // either key is null or not of same class
         }
@@ -764,7 +778,7 @@ public final class KeyUtils {
             return false;   // both null is covered by Objects#equals
         } else {
             return Objects.equals(k1.getModulus(), k2.getModulus())
-                    && Objects.equals(k1.getPrivateExponent(), k2.getPrivateExponent());
+                && Objects.equals(k1.getPrivateExponent(), k2.getPrivateExponent());
         }
     }
 
@@ -775,7 +789,7 @@ public final class KeyUtils {
             return false;   // both null is covered by Objects#equals
         } else {
             return Objects.equals(k1.getX(), k2.getX())
-                    && compareDSAParams(k1.getParams(), k2.getParams());
+                && compareDSAParams(k1.getParams(), k2.getParams());
         }
     }
 
@@ -786,7 +800,7 @@ public final class KeyUtils {
             return false;   // both null is covered by Objects#equals
         } else {
             return Objects.equals(k1.getS(), k2.getS())
-                    && compareECParams(k1.getParams(), k2.getParams());
+                && compareECParams(k1.getParams(), k2.getParams());
         }
     }
 
@@ -797,6 +811,9 @@ public final class KeyUtils {
             return compareDSAKeys(DSAPublicKey.class.cast(k1), DSAPublicKey.class.cast(k2));
         } else if ((k1 instanceof ECPublicKey) && (k2 instanceof ECPublicKey)) {
             return compareECKeys(ECPublicKey.class.cast(k1), ECPublicKey.class.cast(k2));
+        } else if ((k1 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k1.getAlgorithm())
+                    && (k2 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k2.getAlgorithm())) {
+            return SecurityUtils.compareEDDSAPPublicKeys(k1, k2);
         } else {
             return false;   // either key is null or not of same class
         }
@@ -809,7 +826,7 @@ public final class KeyUtils {
             return false;   // both null is covered by Objects#equals
         } else {
             return Objects.equals(k1.getPublicExponent(), k2.getPublicExponent())
-                    && Objects.equals(k1.getModulus(), k2.getModulus());
+                && Objects.equals(k1.getModulus(), k2.getModulus());
         }
     }
 
@@ -820,7 +837,7 @@ public final class KeyUtils {
             return false;   // both null is covered by Objects#equals
         } else {
             return Objects.equals(k1.getY(), k2.getY())
-                    && compareDSAParams(k1.getParams(), k2.getParams());
+                && compareDSAParams(k1.getParams(), k2.getParams());
         }
     }
 
@@ -831,8 +848,8 @@ public final class KeyUtils {
             return false;   // both null is covered by Objects#equals
         } else {
             return Objects.equals(p1.getG(), p2.getG())
-                    && Objects.equals(p1.getP(), p2.getP())
-                    && Objects.equals(p1.getQ(), p2.getQ());
+                && Objects.equals(p1.getP(), p2.getP())
+                && Objects.equals(p1.getQ(), p2.getQ());
         }
     }
 
@@ -843,7 +860,7 @@ public final class KeyUtils {
             return false;   // both null is covered by Objects#equals
         } else {
             return Objects.equals(k1.getW(), k2.getW())
-                    && compareECParams(k1.getParams(), k2.getParams());
+                && compareECParams(k1.getParams(), k2.getParams());
         }
     }
 
@@ -854,9 +871,9 @@ public final class KeyUtils {
             return false;   // both null is covered by Objects#equals
         } else {
             return Objects.equals(s1.getOrder(), s2.getOrder())
-                    && (s1.getCofactor() == s2.getCofactor())
-                    && Objects.equals(s1.getGenerator(), s2.getGenerator())
-                    && Objects.equals(s1.getCurve(), s2.getCurve());
+                && (s1.getCofactor() == s2.getCofactor())
+                && Objects.equals(s1.getGenerator(), s2.getGenerator())
+                && Objects.equals(s1.getCurve(), s2.getCurve());
         }
     }
 }

@@ -24,6 +24,7 @@ import java.security.PublicKey;
 import java.security.interfaces.DSAPublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -37,6 +38,7 @@ import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Pair;
+import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -84,8 +86,10 @@ public class AgentImpl implements SshAgent {
                 verif = BuiltinSignatures.getByCurveSize(ecKey.getParams());
             } else if (pubKey instanceof RSAPublicKey) {
                 verif = BuiltinSignatures.rsa.create();
+            } else if (SecurityUtils.EDDSA.equalsIgnoreCase(pubKey.getAlgorithm())) {
+                verif = BuiltinSignatures.ed25519.create();
             } else {
-                throw new SshException("Unsupported key type: " + pubKey.getClass().getSimpleName());
+                throw new InvalidKeySpecException("Unsupported key type: " + pubKey.getClass().getSimpleName());
             }
             verif.initSigner(kp.getPrivate());
             verif.update(data);

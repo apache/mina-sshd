@@ -20,10 +20,10 @@
 package org.apache.sshd.common.util.buffer.keys;
 
 import java.security.GeneralSecurityException;
-import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -32,13 +32,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ED25519BufferPublicKeyParser extends AbstractBufferPublicKeyParser<PublicKey> {
-    // TODO define a (public) static (final) INSTANCE once completed
-    public static final ED25519BufferPublicKeyParser IGNORING = new ED25519BufferPublicKeyParser() {
-        @Override
-        protected PublicKey generatePublicKey(byte[] octets) throws GeneralSecurityException {
-            return null;
-        }
-    };
+    public static final ED25519BufferPublicKeyParser INSTANCE = new ED25519BufferPublicKeyParser();
 
     public ED25519BufferPublicKeyParser() {
         super(PublicKey.class, KeyPairProvider.SSH_ED25519);
@@ -47,10 +41,7 @@ public class ED25519BufferPublicKeyParser extends AbstractBufferPublicKeyParser<
     @Override
     public PublicKey getRawPublicKey(String keyType, Buffer buffer) throws GeneralSecurityException {
         ValidateUtils.checkTrue(isKeyTypeSupported(keyType), "Unsupported key type: %s", keyType);
-        return generatePublicKey(buffer.getBytes());
-    }
-
-    protected PublicKey generatePublicKey(byte[] octets) throws GeneralSecurityException {
-        throw new NoSuchAlgorithmException("Unsupported curve: " + KeyPairProvider.SSH_ED25519);
+        byte[] seed = buffer.getBytes();
+        return SecurityUtils.generateEDDSAPublicKey(keyType, seed);
     }
 }

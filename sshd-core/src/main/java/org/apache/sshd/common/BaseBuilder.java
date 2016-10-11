@@ -124,6 +124,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
             BuiltinSignatures.nistp256,
             BuiltinSignatures.nistp384,
             BuiltinSignatures.nistp521,
+            BuiltinSignatures.ed25519,
             BuiltinSignatures.rsa,
             BuiltinSignatures.dsa
         ));

@@ -37,6 +37,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -217,10 +218,13 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
         if (kp == null) {
             return null;
         }
+
         PublicKey key = kp.getPublic();
         String keyAlgorithm = key.getAlgorithm();
-        if ("ECDSA".equalsIgnoreCase(keyAlgorithm)) {
+        if (BuiltinIdentities.Constants.ECDSA.equalsIgnoreCase(keyAlgorithm)) {
             keyAlgorithm = KeyUtils.EC_ALGORITHM;
+        } else if (BuiltinIdentities.Constants.ED25519.equalsIgnoreCase(keyAlgorithm)) {
+            keyAlgorithm = SecurityUtils.EDDSA;
         }
 
         if (Objects.equals(alg, keyAlgorithm)) {

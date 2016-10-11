@@ -49,15 +49,21 @@ public enum BuiltinIdentities implements Identity {
         public boolean isSupported() {
             return SecurityUtils.hasEcc();
         }
+    },
+    ED25119(Constants.ED25519, SecurityUtils.EDDSA, SecurityUtils.getEDDSAPublicKeyType(), SecurityUtils.getEDDSAPrivateKeyType()) {
+        @Override
+        public boolean isSupported() {
+            return SecurityUtils.isEDDSACurveSupported();
+        }
     };
 
     public static final Set<BuiltinIdentities> VALUES =
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinIdentities.class));
 
     public static final Set<String> NAMES =
-            Collections.unmodifiableSet(GenericUtils.asSortedSet(
-                        String.CASE_INSENSITIVE_ORDER,
-                        NamedResource.getNameList(VALUES)));
+            Collections.unmodifiableSet(
+                    GenericUtils.asSortedSet(
+                            String.CASE_INSENSITIVE_ORDER, NamedResource.getNameList(VALUES)));
 
     private final String name;
     private final String algorithm;
@@ -190,5 +196,6 @@ public enum BuiltinIdentities implements Identity {
         public static final String RSA = KeyUtils.RSA_ALGORITHM;
         public static final String DSA = KeyUtils.DSS_ALGORITHM;
         public static final String ECDSA = "ECDSA";
+        public static final String ED25519 = "ED25519";
     }
 }

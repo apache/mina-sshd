@@ -16,17 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.keyprovider;
 
-import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+package org.apache.sshd.client;
 
 /**
- * Provides a default implementation for some {@link KeyPairProvider} methods
+ * Just a test class used to invoke {@link SshKeyScan#main(String[])} in
+ * order to have logging - which is in {@code test} scope
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractKeyPairProvider extends AbstractLoggingBean implements KeyPairProvider {
-    protected AbstractKeyPairProvider() {
-        super();
+public final class SshKeyScanMain {
+    private SshKeyScanMain() {
+        throw new UnsupportedOperationException("No instance");
+    }
+
+    public static void main(String[] args) throws Exception {
+        SshKeyScan.main(args);
     }
 }

@@ -20,7 +20,6 @@ package org.apache.sshd.common.signature;
 
 import java.io.StreamCorruptedException;
 import java.math.BigInteger;
-import java.util.Objects;
 
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.util.Pair;
@@ -67,8 +66,7 @@ public class SignatureECDSA extends AbstractSignature {
 
     @Override
     public byte[] sign() throws Exception {
-        java.security.Signature signature = Objects.requireNonNull(getSignature(), "Signature not initialized");
-        byte[] sig = signature.sign();
+        byte[] sig = super.sign();
 
         try (DERParser parser = new DERParser(sig)) {
             int type = parser.read();

@@ -20,7 +20,6 @@
 package org.apache.sshd.common.global;
 
 import java.security.PublicKey;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Objects;
@@ -32,22 +31,16 @@ import org.apache.sshd.common.session.helpers.AbstractConnectionServiceRequestHa
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.keys.BufferPublicKeyParser;
-import org.apache.sshd.common.util.buffer.keys.ED25519BufferPublicKeyParser;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractOpenSshHostKeysHandler extends AbstractConnectionServiceRequestHandler {
-
     private final String request;
     private final BufferPublicKeyParser<? extends PublicKey> parser;
 
     protected AbstractOpenSshHostKeysHandler(String request) {
-        // TODO use only the default parser once ED25519 implementation is complete (see SSHD-440)
-        this(request, BufferPublicKeyParser.aggregate(Arrays.asList(
-                            BufferPublicKeyParser.DEFAULT,
-                            ED25519BufferPublicKeyParser.IGNORING
-                    )));
+        this(request, BufferPublicKeyParser.DEFAULT);
     }
 
     protected AbstractOpenSshHostKeysHandler(String request, BufferPublicKeyParser<? extends PublicKey> parser) {

@@ -127,7 +127,8 @@ public class DHGServer extends AbstractDHServerKeyExchange {
 
         buffer.clear();
         buffer.putString(algo);
-        buffer.putBytes(sig.sign());
+        byte[] sigBytes = sig.sign();
+        buffer.putBytes(sigBytes);
 
         byte[] sigH = buffer.getCompactData();
         if (log.isTraceEnabled()) {

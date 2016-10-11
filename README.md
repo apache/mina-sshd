@@ -7,17 +7,68 @@ Apache SSHD is a 100% pure java library to support the SSH protocols on both the
 
 * Java 8+ (as of version 1.3)
 
+
 * [Slf4j](http://www.slf4j.org/)
+
 
 The code only requires the core abstract [slf4j-api](https://mvnrepository.com/artifact/org.slf4j/slf4j-api) module. The actual implementation of the logging API can be selected from the many existing adaptors.
 
+
 * [Bouncy Castle](https://www.bouncycastle.org/)
 
-Required only for reading/writing keys from/to PEM files or for special keys/ciphers/etc. that are not part of the standard [Java Cryptography Extension](https://en.wikipedia.org/wiki/Java_Cryptography_Extension). See [Java Cryptography Architecture (JCA) Reference Guide](https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html) for key classes and explanations as to how _Bouncy Castle_ is plugged in (other security providers).
+
+Required only for reading/writing keys from/to PEM files or for special keys/ciphers/etc. that are not part of the standard [Java Cryptography Extension](https://en.wikipedia.org/wiki/Java_Cryptography_Extension). See [Java Cryptography Architecture (JCA) Reference Guide](https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html) for key classes and explanations as to how _Bouncy Castle_ is plugged in (other security providers). **Note:** the required Maven module(s) are defined as `optional` so must be added as an
+**explicit** dependency in order to be included in the classpath:
+
+
+```xml
+
+    <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcpg-jdk15on</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcpkix-jdk15on</artifactId>
+    </dependency>
+
+```
+
+**Caveat**: If _Bouncy Castle_ modules are available, then the code will use its implementation of the ciphers, keys, signatures, etc. rather than
+the default JCE provided in the JVM.
+
 
 * [MINA core](https://mina.apache.org/mina-project/)
 
-Optional dependency to enable choosing between NIO asynchronous sockets (the default - for improved performance), and "legacy" sockets. See `IoServiceFactoryFactory` implementations and specifically the `DefaultIoServiceFactoryFactory` for the available options and how it can be configured to select among them.
+
+Optional dependency to enable choosing between NIO asynchronous sockets (the default - for improved performance), and "legacy" sockets. See `IoServiceFactoryFactory` implementations and specifically the `DefaultIoServiceFactoryFactory` for the available options and how it can be configured to select among them. **Note:** the required Maven module(s) are defined as `optional` so must be added as an **explicit** dependency in order to be included in the classpath:
+
+
+```xml
+
+    <dependency>
+        <groupId>org.apache.mina</groupId>
+        <artifactId>mina-core</artifactId>
+    </dependency>
+
+```
+
+* [ed25519-java](https://github.com/str4d/ed25519-java)
+
+
+Required for supporting [ssh-ed25519](https://tools.ietf.org/html/draft-bjh21-ssh-ed25519-02) keys and [ed25519-sha-512](https://tools.ietf.org/html/draft-josefsson-eddsa-ed25519-02) signatures. **Note:** the required Maven module(s) are defined as `optional` so must be added as an **explicit** dependency in order to be included in the classpath:
+
+
+```xml
+
+        <!-- For ed25519 support -->
+    <dependency>
+        <groupId>net.i2p.crypto</groupId>
+        <artifactId>eddsa</artifactId>
+    </dependency>
+
+```
+
 
 # Set up an SSH client in 5 minutes
 
@@ -335,7 +386,7 @@ The provided message is simply logged at DEBUG level.
                     handleCommand(cmd, out);
                 } catch (Exception e) {
                     writeError(err, e);
-                    onExit(-1, e.getMessage());
+                    callback.onExit(-1, e.getMessage());
                     return;
             }
 
@@ -403,7 +454,7 @@ range.
 
 On the server side, version selection restriction is more complex - please remember that the **client** chooses
 the version, and all we can do at the server is require a **specific** version via the `SftpSubsystem#SFTP_VERSION`
-configuration key. For more advanced restrictions on needs to sub-class `SftpSubSystem` and provide a non-default
+configuration key. For more advanced restrictions one needs to sub-class `SftpSubSystem` and provide a non-default
 `SftpSubsystemFactory` that uses the sub-classed code.
 
 
@@ -420,18 +471,25 @@ system.
 
     // Direct URI
     Path remotePath = Paths.get(new URI("sftp://user:password@host/some/remote/path"));
-
+    // Releasing the file-system once no longer necessary
+    try (FileSystem fs = remotePath.getFileSystem()) {
+        ... work with the remote path...
+    }
+    
     // "Mounting" a file system
     URI uri = SftpFileSystemProvider.createFileSystemURI(host, port, username, password);
-    FileSystem fs = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap());
-    Path remotePath = fs.getPath("/some/remote/path");
+    try (FileSystem fs = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap())) {
+        Path remotePath = fs.getPath("/some/remote/path");
+        ...
+    }
 
     // Full programmatic control
     SshClient client = ...setup and start the SshClient instance...
     SftpFileSystemProvider provider = new SftpFileSystemProvider(client);
     URI uri = SftpFileSystemProvider.createFileSystemURI(host, port, username, password);
-    FileSystem fs = provider.newFileSystem(uri, Collections.<String, Object>emptyMap());
-    Path remotePath = fs.getPath("/some/remote/path");
+    try (FileSystem fs = provider.newFileSystem(uri, Collections.<String, Object>emptyMap())) {
+        Path remotePath = fs.getPath("/some/remote/path");
+    }
 
 ```
 
@@ -456,6 +514,9 @@ system.
     }
 ```
 
+It is highly recommended to `close()` the mounted file system once no longer necessary in order to release the
+associated SFTP session sooner rather than later - e.g., via a `try-with-resource` code block.
+
 #### Configuring the `SftpFileSystemProvider`
 
 When "mounting" a new file system one can provide configuration parameters using either the
@@ -473,12 +534,18 @@ configuration keys and values.
     ...etc...
 
     URI uri = SftpFileSystemProvider.createFileSystemURI(host, port, username, password);
-    FileSystem fs = FileSystems.newFileSystem(uri, params);
-    Path remotePath = fs.getPath("/some/remote/path");
-
+    try (FileSystem fs = FileSystems.newFileSystem(uri, params)) {
+        Path remotePath = fs.getPath("/some/remote/path");
+        ... work with the remote path...
+    }
+ 
     // Using URI parameters
     Path remotePath = Paths.get(new URI("sftp://user:password@host/some/remote/path?param1=value1&param2=value2..."));
-
+    // Releasing the file-system once no longer necessary
+    try (FileSystem fs = remotePath.getFileSystem()) {
+        ... work with the remote path...
+    }
+    
 ```
 
 **Note**: if **both** options are used then the URI parameters **override** the environment ones
@@ -491,8 +558,10 @@ configuration keys and values.
     params.put("param2", value2);
 
     // The value of 'param1' is overridden in the URI
-    FileSystem fs = FileSystems.newFileSystem(new URI("sftp://user:password@host/some/remote/path?param1=otherValue1", params);
-    Path remotePath = fs.getPath("/some/remote/path");
+    try (FileSystem fs = FileSystems.newFileSystem(new URI("sftp://user:password@host/some/remote/path?param1=otherValue1", params)) {
+        Path remotePath = fs.getPath("/some/remote/path");
+        ... work with the remote path...        
+    }
 
 ```
 
@@ -576,6 +645,7 @@ One can skip all the conditional code if a specific known extension is required:
 
 
 ```java
+
     try (ClientSession session = client.connect(username, host, port).verify(timeout).getSession()) {
         session.addPasswordIdentity(password);
         session.auth().verify(timeout);
@@ -588,6 +658,7 @@ One can skip all the conditional code if a specific known extension is required:
             }
         }
     }
+    
 ```
 
 ## Port forwarding
@@ -604,8 +675,20 @@ The code implements a [SOCKS](https://en.wikipedia.org/wiki/SOCKS) proxy for ver
 
 ### Proxy agent
 
-The code provides to some extent an SSH proxy agent via the available `SshAgentFactory` implementations. As of latest version both [ Secure Shell Authentication Agent Protocol Draft 02](https://tools.ietf.org/html/draft-ietf-secsh-agent-02) and its [OpenSSH](https://www.libssh.org/features/) equivalent are supported.
+The code provides to some extent an SSH proxy agent via the available `SshAgentFactory` implementations. As of latest version both [Secure Shell Authentication Agent Protocol Draft 02](https://tools.ietf.org/html/draft-ietf-secsh-agent-02) and its [OpenSSH](https://www.libssh.org/features/) equivalent are supported. **Note:** in order to support this feature the
+[Apache Portable Runtime Library](https://apr.apache.org/) needs to be added to the Maven dependencies:
 
+```xml
+
+    <dependency>
+        <groupId>tomcat</groupId>
+        <artifactId>tomcat-apr</artifactId>
+    </dependency>
+
+```
+
+**Note:** Since the portable runtime library uses **native** code, one needs to also make sure that the appropriate _.dll/.so_ library
+is available in the LD\_LIBRARY\_PATH. 
 
 # Advanced configuration and interaction
 
@@ -828,13 +911,13 @@ that automatically ignores such messages if they are malformed - i.e., they neve
 [RFC 4253 - section 9](https://tools.ietf.org/html/rfc4253#section-9) recommends re-exchanging keys every once in a while
 based on the amount of traffic and the selected cipher - the matter is further clarified in [RFC 4251 - section 9.3.2](https://tools.ietf.org/html/rfc4251#section-9.3.2). These recommendations are mirrored in the code via the `FactoryManager`
 related `REKEY_TIME_LIMIT`, `REKEY_PACKETS_LIMIT` and `REKEY_BLOCKS_LIMIT` configuration properties that
-can be used to configure said behavior - please be sure to read the relevant _Javadoc_ as well the aforementioned RFC section(s) when
+can be used to configure said behavior - please be sure to read the relevant _Javadoc_ as well as the aforementioned RFC section(s) when
 manipulating them. This behavior can also be controlled programmatically by overriding the `AbstractSession#isRekeyRequired()` method.
 
 As an added security mechanism [RFC 4251 - section 9.3.1](https://tools.ietf.org/html/rfc4251#section-9.3.1) recommends adding
 "spurious" [SSH_MSG_IGNORE](https://tools.ietf.org/html/rfc4253#section-11.2) messages. This functionality is mirrored in the
 `FactoryManager` related `IGNORE_MESSAGE_FREQUENCY`, `IGNORE_MESSAGE_VARIANCE` and `IGNORE_MESSAGE_SIZE`
-configuration properties that can be used to configure said behavior - please be sure to read the relevant _Javadoc_ as well the aforementioned RFC section when manipulating them. This behavior can also be controlled programmatically by overriding the `AbstractSession#resolveIgnoreBufferDataLength()` method.
+configuration properties that can be used to configure said behavior - please be sure to read the relevant _Javadoc_ as well as the aforementioned RFC section when manipulating them. This behavior can also be controlled programmatically by overriding the `AbstractSession#resolveIgnoreBufferDataLength()` method.
 
 #### `ReservedSessionMessagesHandler`
 
@@ -907,7 +990,7 @@ them on the server:
     }
     newGlobals.add(new MyGlobalRequestHandler());
     server.setGlobalRequestHandlers(newGlobals);
-    
+
 ```
 
 For channel-specific requests, one uses the channel's `add/removeRequestHandler` method to manage its handlers. The way request handlers are invoked when a global/channel-specific request is received  is as follows:
@@ -926,22 +1009,22 @@ to avoid this situation as it makes debugging the code and diagnosing problems m
 * If no handler reported a valid result value then a failure message is sent back to the peer. Otherwise, the returned
 result is translated into the appropriate success/failure response (if the sender asked for a response). In this context,
 the handler may choose to build and send the response within its own code, in which case it should return the
-`Result.Replied` value indicating that it has done so. 
+`Result.Replied` value indicating that it has done so.
 
 
 ```java
 
     public class MySpecialChannelRequestHandler implements ChannelRequestHandler {
         ...
-        
+
         @Override
         public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
             if (!"my-special-request".equals(request)) {
                return Result.Unsupported;   // Not mine - maybe someone else can handle it
             }
-            
+
             ...handle the request - can read more parameters from the message buffer...
-            
+
             return Result.ReplySuccess/Failure/Replied; // signal processing result
         }
     }
@@ -967,7 +1050,7 @@ In this context, the SSHD code allows the user to configure both the frequency a
 
 
 * `no-more-sessions@*` - As described in [OpenSSH protocol section 2.2](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL). In this context, the code consults the `ServerFactoryManagder.MAX_CONCURRENT_SESSIONS` server-side configuration property in order to
-decide whether to accept a successfully authenticated session. 
+decide whether to accept a successfully authenticated session.
 
 
 # Extension modules
@@ -1020,5 +1103,5 @@ Below is the list of builtin components:
 * **Macs**: hmacmd5, hmacmd596, hmacsha1, hmacsha196, hmacsha256, hmacsha512
 * **Key exchange**: dhg1, dhg14, dhgex, dhgex256, ecdhp256, ecdhp384, ecdhp521
 * **Compressions**: none, zlib, zlib@openssh.com
-* **Signatures**: ssh-dss, ssh-rsa, nistp256, nistp384, nistp521
+* **Signatures/Keys**: ssh-dss, ssh-rsa, nistp256, nistp384, nistp521, ed25519 (requires `eddsa` optional module)
 

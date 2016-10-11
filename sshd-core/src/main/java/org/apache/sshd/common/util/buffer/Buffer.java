@@ -421,6 +421,8 @@ public abstract class Buffer implements Readable {
                 KeyFactory keyFactory = SecurityUtils.getKeyFactory(KeyUtils.DSS_ALGORITHM);
                 pub = keyFactory.generatePublic(new DSAPublicKeySpec(y, p, q, g));
                 prv = keyFactory.generatePrivate(new DSAPrivateKeySpec(x, p, q, g));
+            } else if (KeyPairProvider.SSH_ED25519.equals(keyAlg)) {
+                return SecurityUtils.extractEDDSAKeyPair(this, keyAlg);
             } else {
                 ECCurves curve = ECCurves.fromKeyType(keyAlg);
                 if (curve == null) {
@@ -621,6 +623,7 @@ public abstract class Buffer implements Readable {
     }
 
     public void putRawPublicKey(PublicKey key) {
+        Objects.requireNonNull(key, "No key");
         if (key instanceof RSAPublicKey) {
             RSAPublicKey rsaPub = (RSAPublicKey) key;
 
@@ -647,6 +650,8 @@ public abstract class Buffer implements Readable {
             putString(curve.getKeyType());
             putString(curve.getName());
             putBytes(ECCurves.encodeECPoint(ecKey.getW(), ecParams));
+        } else if (SecurityUtils.EDDSA.equals(key.getAlgorithm())) {
+            SecurityUtils.putRawEDDSAPublicKey(this, key);
         } else {
             throw new BufferException("Unsupported raw public key algorithm: " + key.getAlgorithm());
         }
@@ -690,8 +695,10 @@ public abstract class Buffer implements Readable {
             putString(curve.getName());
             putBytes(ECCurves.encodeECPoint(ecPub.getW(), ecParams));
             putMPInt(ecPriv.getS());
+        } else if (SecurityUtils.EDDSA.equals(pubKey.getAlgorithm())) {
+            SecurityUtils.putEDDSAKeyPair(this, pubKey, prvKey);
         } else {
-            throw new BufferException("Unsupported key pair algorithm: " + kp.getPublic().getAlgorithm());
+            throw new BufferException("Unsupported key pair algorithm: " + pubKey.getAlgorithm());
         }
     }
 

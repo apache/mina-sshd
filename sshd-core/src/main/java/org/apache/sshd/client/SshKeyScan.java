@@ -37,6 +37,8 @@ import java.nio.channels.Channel;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
@@ -46,6 +48,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -180,7 +183,8 @@ public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, S
          * key types
          */
         Map<String, List<NamedFactory<Signature>>> sigFactories = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (String kt : new TreeSet<>(pairsMap.keySet())) {
+        SortedSet<String> sigTypes = new TreeSet<>(pairsMap.keySet());
+        for (String kt : sigTypes) {
             List<NamedFactory<Signature>> factories = resolveSignatureFactories(kt);
             if (GenericUtils.isEmpty(factories)) {
                 if (isEnabled(Level.FINEST)) {
@@ -500,8 +504,10 @@ public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, S
             }
 
             return factories;
+        } else if (BuiltinIdentities.Constants.ED25519.equalsIgnoreCase(keyType)) {
+            return Collections.singletonList(BuiltinSignatures.ed25519);
         } else {
-            throw new InvalidKeySpecException("Unknown key type: " + keyType);
+            throw new NoSuchAlgorithmException("Unknown key type: " + keyType);
         }
     }
 
@@ -512,6 +518,11 @@ public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, S
 
         Map<String, List<KeyPair>> pairsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (String kt : typeNames) {
+            if ("*".equalsIgnoreCase(kt) || "all".equalsIgnoreCase(kt)) {
+                ValidateUtils.checkTrue(typeNames.size() == 1, "Wildcard key type must be the only one specified: %s", typeNames);
+                return createKeyPairs(BuiltinIdentities.NAMES);
+            }
+
             if (pairsMap.containsKey(kt)) {
                 log(Level.WARNING, "Key type " + kt + " re-specified");
                 continue;
@@ -540,7 +551,7 @@ public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, S
             return Collections.singletonList(KeyUtils.generateKeyPair(KeyPairProvider.SSH_DSS, 512));
         } else if (BuiltinIdentities.Constants.ECDSA.equalsIgnoreCase(keyType)) {
             if (!SecurityUtils.hasEcc()) {
-                throw new InvalidKeySpecException("ECC not supported");
+                throw new NoSuchAlgorithmException("ECC not supported: " + keyType);
             }
 
             List<KeyPair> kps = new ArrayList<>(ECCurves.NAMES.size());
@@ -554,6 +565,13 @@ public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, S
             }
 
             return kps;
+        } else if (BuiltinIdentities.Constants.ED25519.equalsIgnoreCase(keyType)) {
+            if (!SecurityUtils.isEDDSACurveSupported()) {
+                throw new NoSuchAlgorithmException("EDDSA curves not supported: " + keyType);
+            }
+
+            KeyPairGenerator g = SecurityUtils.getKeyPairGenerator(SecurityUtils.EDDSA);
+            return Collections.singletonList(g.generateKeyPair());
         } else {
             throw new InvalidKeySpecException("Unknown key type: " + keyType);
         }

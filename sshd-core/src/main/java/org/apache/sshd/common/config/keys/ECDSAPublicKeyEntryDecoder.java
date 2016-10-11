@@ -53,14 +53,12 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<ECPublicKey, ECPrivateKey> {
-
     public static final ECDSAPublicKeyEntryDecoder INSTANCE = new ECDSAPublicKeyEntryDecoder();
 
     // see rfc5480 section 2.2
     public static final byte ECPOINT_UNCOMPRESSED_FORM_INDICATOR = 0x04;
     public static final byte ECPOINT_COMPRESSED_VARIANT_2 = 0x02;
     public static final byte ECPOINT_COMPRESSED_VARIANT_3 = 0x02;
-
 
     public ECDSAPublicKeyEntryDecoder() {
         super(ECPublicKey.class, ECPrivateKey.class, ECCurves.KEY_TYPES);
@@ -80,12 +78,12 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
         String keyCurveName = curve.getName();
         ECParameterSpec paramSpec = curve.getParameters();
         // see rfc5656 section 3.1
-        String encCurveName = decodeString(keyData);
+        String encCurveName = PublicKeyEntryDecoder.decodeString(keyData);
         if (!keyCurveName.equals(encCurveName)) {
             throw new InvalidKeySpecException("Mismatched key curve name (" + keyCurveName + ") vs. encoded one (" + encCurveName + ")");
         }
 
-        byte[] octets = readRLEBytes(keyData);
+        byte[] octets = PublicKeyEntryDecoder.readRLEBytes(keyData);
         final ECPoint w;
         try {
             w = octetStringToEcPoint(octets);
@@ -146,9 +144,9 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
         ECCurves curve = Objects.requireNonNull(ECCurves.fromCurveParameters(params), "Cannot determine curve");
         String keyType = curve.getKeyType();
         String curveName = curve.getName();
-        encodeString(s, keyType);
+        PublicKeyEntryDecoder.encodeString(s, keyType);
         // see rfc5656 section 3.1
-        encodeString(s, curveName);
+        PublicKeyEntryDecoder.encodeString(s, curveName);
         ECPointCompression.UNCOMPRESSED.writeECPoint(s, curveName, key.getW());
         return keyType;
     }
@@ -276,7 +274,7 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
                 }
 
                 int numElements = curve.getNumPointOctets();
-                AbstractPublicKeyEntryDecoder.encodeInt(s, 1 /* the indicator */ + 2 * numElements);
+                PublicKeyEntryDecoder.encodeInt(s, 1 /* the indicator */ + 2 * numElements);
                 s.write(getIndicatorValue());
                 writeCoordinate(s, "X", p.getAffineX(), numElements);
                 writeCoordinate(s, "Y", p.getAffineY(), numElements);

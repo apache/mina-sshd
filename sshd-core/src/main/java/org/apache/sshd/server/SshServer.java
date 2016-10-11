@@ -45,6 +45,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.config.SshConfigFileReader;
+import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.IoAcceptor;
@@ -426,9 +427,13 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             KeyPair kp = keys.get(0);
             PublicKey pubKey = kp.getPublic();
             String keyAlgorithm = pubKey.getAlgorithm();
-            if ("ECDSA".equalsIgnoreCase(keyAlgorithm)) {
+            if (BuiltinIdentities.Constants.ECDSA.equalsIgnoreCase(keyAlgorithm)) {
                 keyAlgorithm = KeyUtils.EC_ALGORITHM;
+            } else if (BuiltinIdentities.Constants.ED25519.equals(keyAlgorithm)) {
+                keyAlgorithm = SecurityUtils.EDDSA;
+                // TODO change the hostKeyProvider to one that supports read/write of EDDSA keys - see SSHD-703
             }
+
             // force re-generation of host key if not same algorithm
             if (!Objects.equals(keyAlgorithm, hostKeyType)) {
                 Files.deleteIfExists(hostKeyFile);

@@ -54,23 +54,6 @@
     </supplement>
     <supplement>
         <project>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <name>SLF4J JDK14 Binding</name>
-            <organization>
-                <name>QOS.ch</name>
-                <url>http://www.qos.ch</url>
-            </organization>
-            <licenses>
-                <license>
-                    <name>MIT style</name>
-                    <url>http://www.slf4j.org/license.html</url>
-                </license>
-            </licenses>
-        </project>
-    </supplement>
-    <supplement>
-        <project>
             <groupId>net.sf.jpam</groupId>
             <artifactId>jpam</artifactId>
             <name>Java-PAM bridge</name>
@@ -82,6 +65,23 @@
                 <license>
                     <name>Bouncy Castle License</name>
                     <url>http://www.bouncycastle.org/licence.html</url>
+                </license>
+            </licenses>
+        </project>
+    </supplement>
+    <supplement>
+        <project>
+            <groupId>net.i2p.crypto</groupId>
+            <artifactId>eddsa</artifactId>
+            <name>ed25519-java</name>
+            <organization>
+                <name>str4d</name>
+                <url>https://github.com/str4d/ed25519-java</url>
+            </organization>
+            <licenses>
+                <license>
+                    <name>Creative Commons</name>
+                    <url>https://github.com/str4d/ed25519-java/blob/master/LICENSE.txt</url>
                 </license>
             </licenses>
         </project>

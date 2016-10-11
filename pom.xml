@@ -134,6 +134,13 @@
                 <artifactId>tomcat-apr</artifactId>
                 <version>5.5.23</version>
             </dependency>
+            
+            <dependency>
+                <groupId>net.i2p.crypto</groupId>
+                <artifactId>eddsa</artifactId>
+                <version>0.1.0</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcpg-jdk15on</artifactId>
@@ -149,6 +156,7 @@
                 <artifactId>bcprov-jdk15on</artifactId>
                 <version>${bouncycastle.version}</version>
             </dependency>
+            
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>

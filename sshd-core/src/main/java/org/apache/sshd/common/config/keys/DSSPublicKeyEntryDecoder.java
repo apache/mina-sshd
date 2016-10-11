@@ -55,10 +55,10 @@ public class DSSPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<DSAP
             throw new InvalidKeySpecException("Unexpected key type: " + keyType);
         }
 
-        BigInteger p = decodeBigInt(keyData);
-        BigInteger q = decodeBigInt(keyData);
-        BigInteger g = decodeBigInt(keyData);
-        BigInteger y = decodeBigInt(keyData);
+        BigInteger p = PublicKeyEntryDecoder.decodeBigInt(keyData);
+        BigInteger q = PublicKeyEntryDecoder.decodeBigInt(keyData);
+        BigInteger g = PublicKeyEntryDecoder.decodeBigInt(keyData);
+        BigInteger y = PublicKeyEntryDecoder.decodeBigInt(keyData);
 
         return generatePublicKey(new DSAPublicKeySpec(y, p, q, g));
     }
@@ -68,11 +68,11 @@ public class DSSPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<DSAP
         Objects.requireNonNull(key, "No public key provided");
 
         DSAParams keyParams = Objects.requireNonNull(key.getParams(), "No DSA params available");
-        encodeString(s, KeyPairProvider.SSH_DSS);
-        encodeBigInt(s, keyParams.getP());
-        encodeBigInt(s, keyParams.getQ());
-        encodeBigInt(s, keyParams.getG());
-        encodeBigInt(s, key.getY());
+        PublicKeyEntryDecoder.encodeString(s, KeyPairProvider.SSH_DSS);
+        PublicKeyEntryDecoder.encodeBigInt(s, keyParams.getP());
+        PublicKeyEntryDecoder.encodeBigInt(s, keyParams.getQ());
+        PublicKeyEntryDecoder.encodeBigInt(s, keyParams.getG());
+        PublicKeyEntryDecoder.encodeBigInt(s, key.getY());
 
         return KeyPairProvider.SSH_DSS;
     }

@@ -137,8 +137,7 @@ public final class SshConfigFileReader {
     public static final String HOST_KEY_ALGORITHMS_CONFIG_PROP = "HostKeyAlgorithms";
     // see https://tools.ietf.org/html/rfc5656
     public static final String DEFAULT_HOST_KEY_ALGORITHMS =
-            KeyPairProvider.SSH_RSA
-                    + "," + KeyPairProvider.SSH_DSS;
+            KeyPairProvider.SSH_RSA + "," + KeyPairProvider.SSH_DSS;
     // see http://manpages.ubuntu.com/manpages/precise/en/man5/sshd_config.5.html
     public static final String LOG_LEVEL_CONFIG_PROP = "LogLevel";
     public static final LogLevelValue DEFAULT_LOG_LEVEL = LogLevelValue.INFO;

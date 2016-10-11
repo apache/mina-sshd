@@ -19,16 +19,27 @@
 
 package org.apache.sshd.common.config.keys;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StreamCorruptedException;
+import java.math.BigInteger;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Collection;
+
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 
 /**
  * Represents a decoder of an {@code OpenSSH} encoded key data
@@ -94,6 +105,17 @@ public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends Privat
      */
     KeyPairGenerator getKeyPairGenerator() throws GeneralSecurityException;
 
+    @Override
+    default PublicKey resolve(String keyType, byte[] keyData) throws IOException, GeneralSecurityException {
+        ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type provided");
+        Collection<String> supported = getSupportedTypeNames();
+        if ((GenericUtils.size(supported) > 0) && supported.contains(keyType)) {
+            return decodePublicKey(keyData);
+        }
+
+        throw new InvalidKeySpecException("resolve(" + keyType + ") not in listed supported types: " + supported);
+    }
+
     /**
      * @param keyData The key data bytes in {@code OpenSSH} format (after
      *                BASE64 decoding) - ignored if {@code null}/empty
@@ -101,11 +123,44 @@ public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends Privat
      * @throws IOException              If failed to decode the key
      * @throws GeneralSecurityException If failed to generate the key
      */
-    PUB decodePublicKey(byte... keyData) throws IOException, GeneralSecurityException;
+    default PUB decodePublicKey(byte... keyData) throws IOException, GeneralSecurityException {
+        return decodePublicKey(keyData, 0, NumberUtils.length(keyData));
+    }
 
-    PUB decodePublicKey(byte[] keyData, int offset, int length) throws IOException, GeneralSecurityException;
+    default PUB decodePublicKey(byte[] keyData, int offset, int length) throws IOException, GeneralSecurityException {
+        if (length <= 0) {
+            return null;
+        }
 
-    PUB decodePublicKey(InputStream keyData) throws IOException, GeneralSecurityException;
+        try (InputStream stream = new ByteArrayInputStream(keyData, offset, length)) {
+            return decodePublicKey(stream);
+        }
+    }
+
+    default PUB decodePublicKey(InputStream keyData) throws IOException, GeneralSecurityException {
+        // the actual data is preceded by a string that repeats the key type
+        String type = decodeString(keyData);
+        if (GenericUtils.isEmpty(type)) {
+            throw new StreamCorruptedException("Missing key type string");
+        }
+
+        Collection<String> supported = getSupportedTypeNames();
+        if (GenericUtils.isEmpty(supported) || (!supported.contains(type))) {
+            throw new InvalidKeySpecException("Reported key type (" + type + ") not in supported list: " + supported);
+        }
+
+        return decodePublicKey(type, keyData);
+    }
+
+    /**
+     * @param keyType The reported / encode key type
+     * @param keyData The key data bytes stream positioned after the key type decoding
+     *                and making sure it is one of the supported types
+     * @return The decoded {@link PublicKey}
+     * @throws IOException              If failed to read from the data stream
+     * @throws GeneralSecurityException If failed to generate the key
+     */
+    PUB decodePublicKey(String keyType, InputStream keyData) throws IOException, GeneralSecurityException;
 
     /**
      * Encodes the {@link PublicKey} using the {@code OpenSSH} format - same
@@ -123,4 +178,75 @@ public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends Privat
      * @throws GeneralSecurityException If failed to create one
      */
     KeyFactory getKeyFactoryInstance() throws GeneralSecurityException;
+
+    static int encodeString(OutputStream s, String v) throws IOException {
+        return encodeString(s, v, StandardCharsets.UTF_8);
+    }
+
+    static int encodeString(OutputStream s, String v, String charset) throws IOException {
+        return encodeString(s, v, Charset.forName(charset));
+    }
+
+    static int encodeString(OutputStream s, String v, Charset cs) throws IOException {
+        return writeRLEBytes(s, v.getBytes(cs));
+    }
+
+    static int encodeBigInt(OutputStream s, BigInteger v) throws IOException {
+        return writeRLEBytes(s, v.toByteArray());
+    }
+
+    static int writeRLEBytes(OutputStream s, byte... bytes) throws IOException {
+        return writeRLEBytes(s, bytes, 0, bytes.length);
+    }
+
+    static int writeRLEBytes(OutputStream s, byte[] bytes, int off, int len) throws IOException {
+        byte[] lenBytes = encodeInt(s, len);
+        s.write(bytes, off, len);
+        return lenBytes.length + len;
+    }
+
+    static byte[] encodeInt(OutputStream s, int v) throws IOException {
+        byte[] bytes = {
+            (byte) ((v >> 24) & 0xFF),
+            (byte) ((v >> 16) & 0xFF),
+            (byte) ((v >> 8) & 0xFF),
+            (byte) (v & 0xFF)
+        };
+        s.write(bytes);
+        return bytes;
+    }
+
+    static String decodeString(InputStream s) throws IOException {
+        return decodeString(s, StandardCharsets.UTF_8);
+    }
+
+    static String decodeString(InputStream s, String charset) throws IOException {
+        return decodeString(s, Charset.forName(charset));
+    }
+
+    static String decodeString(InputStream s, Charset cs) throws IOException {
+        byte[] bytes = readRLEBytes(s);
+        return new String(bytes, cs);
+    }
+
+    static BigInteger decodeBigInt(InputStream s) throws IOException {
+        return new BigInteger(readRLEBytes(s));
+    }
+
+    static byte[] readRLEBytes(InputStream s) throws IOException {
+        int len = decodeInt(s);
+        byte[] bytes = new byte[len];
+        IoUtils.readFully(s, bytes);
+        return bytes;
+    }
+
+    static int decodeInt(InputStream s) throws IOException {
+        byte[] bytes = {0, 0, 0, 0};
+        IoUtils.readFully(s, bytes);
+        return ((bytes[0] & 0xFF) << 24)
+                | ((bytes[1] & 0xFF) << 16)
+                | ((bytes[2] & 0xFF) << 8)
+                | (bytes[3] & 0xFF);
+    }
+
 }

@@ -27,6 +27,7 @@ import java.security.spec.InvalidKeySpecException;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FunctionalInterface
 public interface PublicKeyEntryResolver {
     /**
      * A resolver that ignores all input

@@ -91,6 +91,17 @@ public enum BuiltinSignatures implements SignatureFactory {
         public boolean isSupported() {
             return SecurityUtils.hasEcc();
         }
+    },
+    ed25519(KeyPairProvider.SSH_ED25519) {
+        @Override
+        public Signature create() {
+            return SecurityUtils.getEDDSASigner();
+        }
+
+        @Override
+        public boolean isSupported() {
+            return SecurityUtils.isEDDSACurveSupported();
+        }
     };
 
     public static final Set<BuiltinSignatures> VALUES =

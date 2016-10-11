@@ -55,8 +55,8 @@ public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder<RSAPublic
             throw new InvalidKeySpecException("Unexpected key type: " + keyType);
         }
 
-        BigInteger e = decodeBigInt(keyData);
-        BigInteger n = decodeBigInt(keyData);
+        BigInteger e = PublicKeyEntryDecoder.decodeBigInt(keyData);
+        BigInteger n = PublicKeyEntryDecoder.decodeBigInt(keyData);
 
         return generatePublicKey(new RSAPublicKeySpec(n, e));
     }
@@ -64,9 +64,9 @@ public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder<RSAPublic
     @Override
     public String encodePublicKey(OutputStream s, RSAPublicKey key) throws IOException {
         Objects.requireNonNull(key, "No public key provided");
-        encodeString(s, KeyPairProvider.SSH_RSA);
-        encodeBigInt(s, key.getPublicExponent());
-        encodeBigInt(s, key.getModulus());
+        PublicKeyEntryDecoder.encodeString(s, KeyPairProvider.SSH_RSA);
+        PublicKeyEntryDecoder.encodeBigInt(s, key.getPublicExponent());
+        PublicKeyEntryDecoder.encodeBigInt(s, key.getModulus());
 
         return KeyPairProvider.SSH_RSA;
     }

@@ -27,6 +27,7 @@ import java.security.interfaces.ECPublicKey;
 import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.ECGenParameterSpec;
 
+import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -38,8 +39,6 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -64,6 +63,7 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTestSupport {
     public void testECnistp256() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         Assume.assumeTrue("ECC not supported", SecurityUtils.hasEcc());
+        Assume.assumeTrue(ECCurves.nistp256 + " N/A", ECCurves.nistp256.isSupported());
         testPEMGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP256, -1, new ECGenParameterSpec("prime256v1"));
     }
 
@@ -71,6 +71,7 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTestSupport {
     public void testECnistp384() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         Assume.assumeTrue("ECC not supported", SecurityUtils.hasEcc());
+        Assume.assumeTrue(ECCurves.nistp384 + " N/A", ECCurves.nistp384.isSupported());
         testPEMGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP384, -1, new ECGenParameterSpec("P-384"));
     }
 
@@ -78,6 +79,7 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTestSupport {
     public void testECnistp521() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         Assume.assumeTrue("ECC not supported", SecurityUtils.hasEcc());
+        Assume.assumeTrue(ECCurves.nistp521 + " N/A", ECCurves.nistp521.isSupported());
         testPEMGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP521, -1, new ECGenParameterSpec("P-521"));
     }
 

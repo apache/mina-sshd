@@ -52,6 +52,7 @@
             <artifactId>tomcat-apr</artifactId>
             <optional>true</optional>
         </dependency>
+ 
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpg-jdk15on</artifactId>
@@ -62,6 +63,15 @@
             <artifactId>bcpkix-jdk15on</artifactId>
             <optional>true</optional>
         </dependency>
+
+            <!-- For ed25519 support -->
+        <dependency>
+            <groupId>net.i2p.crypto</groupId>
+            <artifactId>eddsa</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+            <!-- test dependencies -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jcl-over-slf4j</artifactId>
@@ -117,7 +127,7 @@
             </resource>
         </resources>
         <plugins>
-            <!-- publish the test-jar since it contains some classes used by other 
+            <!-- publish the test-jar since it contains some classes used by other
                 artifacts tests -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

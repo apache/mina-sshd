@@ -19,14 +19,6 @@
 
 package org.apache.sshd.common.config.keys;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.StreamCorruptedException;
-import java.math.BigInteger;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
@@ -34,15 +26,11 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.util.Collection;
 import java.util.Objects;
 
-import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.io.IoUtils;
 
 /**
  * Useful base class implementation for a decoder of an {@code OpenSSH} encoded key data
@@ -106,52 +94,9 @@ public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey, PRV e
         return new KeyPair(pubCloned, prvCloned);
     }
 
-    @Override   // TODO make this a default method in Java-8
-    public PublicKey resolve(String keyType, byte[] keyData) throws IOException, GeneralSecurityException {
-        ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type provided");
-        Collection<String> supported = getSupportedTypeNames();
-        if ((GenericUtils.size(supported) > 0) && supported.contains(keyType)) {
-            return decodePublicKey(keyData);
-        }
-
-        throw new InvalidKeySpecException("resolve(" + keyType + ") not in listed supported types: " + supported);
-    }
-
     @Override
     public Collection<String> getSupportedTypeNames() {
         return names;
-    }
-
-    @Override
-    public PUB decodePublicKey(byte... keyData) throws IOException, GeneralSecurityException {
-        return decodePublicKey(keyData, 0, NumberUtils.length(keyData));
-    }
-
-    @Override
-    public PUB decodePublicKey(byte[] keyData, int offset, int length) throws IOException, GeneralSecurityException {
-        if (length <= 0) {
-            return null;
-        }
-
-        try (InputStream stream = new ByteArrayInputStream(keyData, offset, length)) {
-            return decodePublicKey(stream);
-        }
-    }
-
-    @Override
-    public PUB decodePublicKey(InputStream keyData) throws IOException, GeneralSecurityException {
-        // the actual data is preceded by a string that repeats the key type
-        String type = decodeString(keyData);
-        if (GenericUtils.isEmpty(type)) {
-            throw new StreamCorruptedException("Missing key type string");
-        }
-
-        Collection<String> supported = getSupportedTypeNames();
-        if (GenericUtils.isEmpty(supported) || (!supported.contains(type))) {
-            throw new InvalidKeySpecException("Reported key type (" + type + ") not in supported list: " + supported);
-        }
-
-        return decodePublicKey(type, keyData);
     }
 
     public PUB generatePublicKey(KeySpec keySpec) throws GeneralSecurityException {
@@ -166,16 +111,6 @@ public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey, PRV e
         return keyType.cast(factory.generatePrivate(keySpec));
     }
 
-    /**
-     * @param keyType The reported / encode key type
-     * @param keyData The key data bytes stream positioned after the key type decoding
-     *                and making sure it is one of the supported types
-     * @return The decoded {@link PublicKey}
-     * @throws IOException              If failed to read from the data stream
-     * @throws GeneralSecurityException If failed to generate the key
-     */
-    public abstract PUB decodePublicKey(String keyType, InputStream keyData) throws IOException, GeneralSecurityException;
-
     @Override
     public KeyPair generateKeyPair(int keySize) throws GeneralSecurityException {
         KeyPairGenerator gen = getKeyPairGenerator();
@@ -186,75 +121,5 @@ public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey, PRV e
     @Override
     public String toString() {
         return getPublicKeyType().getSimpleName() + ": " + getSupportedTypeNames();
-    }
-
-    public static int encodeString(OutputStream s, String v) throws IOException {
-        return encodeString(s, v, StandardCharsets.UTF_8);
-    }
-
-    public static int encodeString(OutputStream s, String v, String charset) throws IOException {
-        return encodeString(s, v, Charset.forName(charset));
-    }
-
-    public static int encodeString(OutputStream s, String v, Charset cs) throws IOException {
-        return writeRLEBytes(s, v.getBytes(cs));
-    }
-
-    public static int encodeBigInt(OutputStream s, BigInteger v) throws IOException {
-        return writeRLEBytes(s, v.toByteArray());
-    }
-
-    public static int writeRLEBytes(OutputStream s, byte... bytes) throws IOException {
-        return writeRLEBytes(s, bytes, 0, bytes.length);
-    }
-
-    public static int writeRLEBytes(OutputStream s, byte[] bytes, int off, int len) throws IOException {
-        byte[] lenBytes = encodeInt(s, len);
-        s.write(bytes, off, len);
-        return lenBytes.length + len;
-    }
-
-    public static byte[] encodeInt(OutputStream s, int v) throws IOException {
-        byte[] bytes = {
-            (byte) ((v >> 24) & 0xFF),
-            (byte) ((v >> 16) & 0xFF),
-            (byte) ((v >> 8) & 0xFF),
-            (byte) (v & 0xFF)
-        };
-        s.write(bytes);
-        return bytes;
-    }
-
-    public static String decodeString(InputStream s) throws IOException {
-        return decodeString(s, StandardCharsets.UTF_8);
-    }
-
-    public static String decodeString(InputStream s, String charset) throws IOException {
-        return decodeString(s, Charset.forName(charset));
-    }
-
-    public static String decodeString(InputStream s, Charset cs) throws IOException {
-        byte[] bytes = readRLEBytes(s);
-        return new String(bytes, cs);
-    }
-
-    public static BigInteger decodeBigInt(InputStream s) throws IOException {
-        return new BigInteger(readRLEBytes(s));
-    }
-
-    public static byte[] readRLEBytes(InputStream s) throws IOException {
-        int len = decodeInt(s);
-        byte[] bytes = new byte[len];
-        IoUtils.readFully(s, bytes);
-        return bytes;
-    }
-
-    public static int decodeInt(InputStream s) throws IOException {
-        byte[] bytes = {0, 0, 0, 0};
-        IoUtils.readFully(s, bytes);
-        return ((bytes[0] & 0xFF) << 24)
-                | ((bytes[1] & 0xFF) << 16)
-                | ((bytes[2] & 0xFF) << 8)
-                | (bytes[3] & 0xFF);
     }
 }

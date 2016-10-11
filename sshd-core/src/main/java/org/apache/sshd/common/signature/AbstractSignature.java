@@ -32,12 +32,11 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
- * TODO Add javadoc
+ * Useful base class for {@link Signature} implementation
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractSignature implements Signature {
-
     private java.security.Signature signatureInstance;
     private final String algorithm;
 
@@ -73,6 +72,12 @@ public abstract class AbstractSignature implements Signature {
     }
 
     @Override
+    public byte[] sign() throws Exception {
+        java.security.Signature signature = Objects.requireNonNull(getSignature(), "Signature not initialized");
+        return signature.sign();
+    }
+
+    @Override
     public void initVerifier(PublicKey key) throws Exception {
         String algo = getAlgorithm();
         signatureInstance = Objects.requireNonNull(doInitSignature(algo, false), "No signature instance create");
@@ -84,11 +89,6 @@ public abstract class AbstractSignature implements Signature {
         String algo = getAlgorithm();
         signatureInstance = Objects.requireNonNull(doInitSignature(algo, true), "No signature instance create");
         signatureInstance.initSign(Objects.requireNonNull(key, "No private key provided"));
-    }
-
-    @Override
-    public void update(byte[] hash) throws Exception {
-        update(hash, 0, NumberUtils.length(hash));
     }
 
     @Override

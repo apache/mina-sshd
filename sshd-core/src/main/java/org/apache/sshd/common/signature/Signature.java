@@ -21,6 +21,8 @@ package org.apache.sshd.common.signature;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
+import org.apache.sshd.common.util.NumberUtils;
+
 /**
  * Signature interface for SSH used to sign or verify packets
  * Usually wraps a javax.crypto.Signature object
@@ -52,7 +54,9 @@ public interface Signature {
      * @throws Exception If failed to update
      * @see #update(byte[], int, int)
      */
-    void update(byte[] hash) throws Exception;
+    default void update(byte[] hash) throws Exception {
+        update(hash, 0, NumberUtils.length(hash));
+    }
 
     /**
      * Update the computed signature with the given data

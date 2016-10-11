@@ -40,4 +40,13 @@ public final class ReflectionUtils {
     public static Collection<Field> getMatchingDeclaredFields(Class<?> clazz, Predicate<? super Field> acceptor) {
         return GenericUtils.selectMatchingMembers(acceptor, clazz.getDeclaredFields());
     }
+
+    public static boolean isClassAvailable(ClassLoader cl, String className) {
+        try {
+            cl.loadClass(className);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
 }

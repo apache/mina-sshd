@@ -21,7 +21,6 @@ package org.apache.sshd.common.signature;
 import java.math.BigInteger;
 import java.security.PublicKey;
 import java.security.interfaces.RSAKey;
-import java.util.Objects;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.Pair;
@@ -46,12 +45,6 @@ public class SignatureRSA extends AbstractSignature {
         super(algorithm);
     }
 
-    @Override
-    public byte[] sign() throws Exception {
-        java.security.Signature signature = Objects.requireNonNull(getSignature(), "Signature not initialized");
-        return signature.sign();
-    }
-
     /**
      * @return The expected number of bytes in the signature - non-positive
      * if not initialized or not intended to be used for verification
@@ -63,8 +56,8 @@ public class SignatureRSA extends AbstractSignature {
     @Override
     public void initVerifier(PublicKey key) throws Exception {
         super.initVerifier(key);
-        ValidateUtils.checkTrue(key instanceof RSAKey, "Not an RSA key");
-        verifierSignatureSize = getVerifierSignatureSize((RSAKey) key);
+        RSAKey rsaKey = ValidateUtils.checkInstanceOf(key, RSAKey.class, "Not an RSA key");
+        verifierSignatureSize = getVerifierSignatureSize(rsaKey);
     }
 
     public static int getVerifierSignatureSize(RSAKey key) {

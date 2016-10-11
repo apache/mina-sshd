@@ -37,7 +37,6 @@ import org.apache.sshd.common.config.keys.DSSPublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.ECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.RSAPublicKeyDecoder;
-import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -83,9 +82,15 @@ public class SignatureFactoriesTest extends BaseTestSupport {
         addTests(list, KeyPairProvider.SSH_RSA, BuiltinSignatures.rsa, RSA_SIZES, RSAPublicKeyDecoder.INSTANCE);
         if (SecurityUtils.hasEcc()) {
             for (ECCurves curve : ECCurves.VALUES) {
+                if (!curve.isSupported()) {
+                    continue;
+                }
                 BuiltinSignatures factory = BuiltinSignatures.fromFactoryName(curve.getKeyType());
                 addTests(list, curve.getName(), factory, Collections.singletonList(curve.getKeySize()), ECDSAPublicKeyEntryDecoder.INSTANCE);
             }
+        }
+        if (SecurityUtils.isEDDSACurveSupported()) {
+            addTests(list, KeyPairProvider.SSH_ED25519, BuiltinSignatures.ed25519, ED25519_SIZES, SecurityUtils.getEDDSAPublicKeyEntryDecoder());
         }
         return Collections.unmodifiableList(list);
     }
@@ -156,7 +161,7 @@ public class SignatureFactoriesTest extends BaseTestSupport {
             final String keyName, final Factory<Iterable<KeyPair>> keyPairFactory, List<NamedFactory<Signature>> signatures)
                     throws Exception {
         final Iterable<KeyPair> iter = keyPairFactory.create();
-        testKeyPairProvider(new AbstractKeyPairProvider() {
+        testKeyPairProvider(new KeyPairProvider() {
             @Override
             public Iterable<KeyPair> loadKeys() {
                 return iter;

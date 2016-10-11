@@ -75,12 +75,12 @@ public abstract class BaseTestSupport extends Assert {
     public static final String RESOURCES_SUBFOLDER = "resources";
 
     // useful test sizes for keys
-    @SuppressWarnings("boxing")
     public static final List<Integer> DSS_SIZES =
             Collections.unmodifiableList(Arrays.asList(512, 768, 1024));
-    @SuppressWarnings("boxing")
     public static final List<Integer> RSA_SIZES =
             Collections.unmodifiableList(Arrays.asList(1024, 2048, 3072, 4096));
+    public static final List<Integer> ED25519_SIZES =
+            Collections.unmodifiableList(Arrays.asList(256));
 
     @Rule
     public final TestWatcher rule = new TestWatcher() {
