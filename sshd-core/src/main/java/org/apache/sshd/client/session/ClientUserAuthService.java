@@ -70,10 +70,7 @@ public class ClientUserAuthService
     private int currentMethod;
 
     public ClientUserAuthService(Session s) {
-        if (!(s instanceof ClientSessionImpl)) {
-            throw new IllegalStateException("Client side service used on server side");
-        }
-        clientSession = (ClientSessionImpl) s;
+        clientSession = ValidateUtils.checkInstanceOf(s, ClientSessionImpl.class, "Client side service used on server side: %s", s);
         authFactories = ValidateUtils.checkNotNullAndNotEmpty(
                 clientSession.getUserAuthFactories(), "No user auth factories for %s", s);
         clientMethods = new ArrayList<>();

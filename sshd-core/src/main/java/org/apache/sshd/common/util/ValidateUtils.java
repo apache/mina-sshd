@@ -116,6 +116,28 @@ public final class ValidateUtils {
         return t;
     }
 
+    public static <T> T checkInstanceOf(Object v, Class<T> expected, String message, long value) {
+        Class<?> actual = checkNotNull(v, message, value).getClass();
+        checkTrue(expected.isAssignableFrom(actual), message, value);
+        return expected.cast(v);
+    }
+
+    public static <T> T checkInstanceOf(Object v, Class<T> expected, String message) {
+        return checkInstanceOf(v, expected, message, GenericUtils.EMPTY_OBJECT_ARRAY);
+    }
+
+    public static <T> T checkInstanceOf(Object v, Class<T> expected, String message, Object arg) {
+        Class<?> actual = checkNotNull(v, message, arg).getClass();
+        checkTrue(expected.isAssignableFrom(actual), message, arg);
+        return expected.cast(v);
+    }
+
+    public static <T> T checkInstanceOf(Object v, Class<T> expected, String message, Object... args) {
+        Class<?> actual = checkNotNull(v, message, args).getClass();
+        checkTrue(expected.isAssignableFrom(actual), message, args);
+        return expected.cast(v);
+    }
+
     public static void checkTrue(boolean flag, String message) {
         if (!flag) {
             throwIllegalArgumentException(message, GenericUtils.EMPTY_OBJECT_ARRAY);

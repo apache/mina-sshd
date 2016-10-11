@@ -121,8 +121,8 @@ public class UnixAgentFactory implements SshAgentFactory, ExecutorServiceConfigu
     @Override
     public SshAgentServer createServer(ConnectionService service) throws IOException {
         Session session = Objects.requireNonNull(service.getSession(), "No session");
-        ValidateUtils.checkTrue(session instanceof ServerSession,
-                "The session used to create an agent server proxy must be a server session");
+        ValidateUtils.checkInstanceOf(session, ServerSession.class,
+                "The session used to create an agent server proxy must be a server session: %s", session);
         return new AgentServerProxy(service, getExecutorService(), isShutdownOnExit());
     }
 }

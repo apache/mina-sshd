@@ -77,12 +77,11 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     private int nbAuthRequests;
 
     public ServerUserAuthService(Session s) throws IOException {
-        ValidateUtils.checkTrue(s instanceof ServerSession, "Server side service used on client side");
+        serverSession = ValidateUtils.checkInstanceOf(s, ServerSession.class, "Server side service used on client side: %s", s);
         if (s.isAuthenticated()) {
             throw new SshException("Session already authenticated");
         }
 
-        serverSession = (ServerSession) s;
         Object phase = PropertyResolverUtils.getObject(s, ServerAuthenticationManager.WELCOME_BANNER_PHASE);
         phase = PropertyResolverUtils.toEnum(WelcomeBannerPhase.class, phase, true, WelcomeBannerPhase.VALUES);
         welcomePhase = (phase == null) ? ServerAuthenticationManager.DEFAULT_BANNER_PHASE : (WelcomeBannerPhase) phase;

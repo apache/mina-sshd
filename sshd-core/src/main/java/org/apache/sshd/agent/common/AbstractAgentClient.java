@@ -97,8 +97,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
             log.debug("process(cmd={})", SshAgentConstants.getCommandMessageName(cmd));
         }
         switch (cmd) {
-            case SshAgentConstants.SSH2_AGENTC_REQUEST_IDENTITIES:
-            {
+            case SshAgentConstants.SSH2_AGENTC_REQUEST_IDENTITIES: {
                 List<Pair<PublicKey, String>> keys = agent.getIdentities();
                 rep.putByte(SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSWER);
                 rep.putInt(keys.size());
@@ -108,8 +107,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
                 }
                 break;
             }
-            case SshAgentConstants.SSH2_AGENTC_SIGN_REQUEST:
-            {
+            case SshAgentConstants.SSH2_AGENTC_SIGN_REQUEST: {
                 PublicKey signingKey = req.getPublicKey();
                 byte[] data = req.getBytes();
                 int flags = req.getInt();
@@ -129,8 +127,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
                 rep.putBytes(sig.array(), sig.rpos(), sig.available());
                 break;
             }
-            case SshAgentConstants.SSH2_AGENTC_ADD_IDENTITY:
-            {
+            case SshAgentConstants.SSH2_AGENTC_ADD_IDENTITY: {
                 KeyPair keyToAdd = req.getKeyPair();
                 String comment = req.getString();
                 log.debug("SSH2_AGENTC_ADD_IDENTITY comment={}", comment);
@@ -138,8 +135,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
                 rep.putByte(SshAgentConstants.SSH_AGENT_SUCCESS);
                 break;
             }
-            case SshAgentConstants.SSH2_AGENTC_REMOVE_IDENTITY:
-            {
+            case SshAgentConstants.SSH2_AGENTC_REMOVE_IDENTITY: {
                 PublicKey keyToRemove = req.getPublicKey();
                 log.debug("SSH2_AGENTC_REMOVE_IDENTITY {}", keyToRemove.getClass().getSimpleName());
                 agent.removeIdentity(keyToRemove);

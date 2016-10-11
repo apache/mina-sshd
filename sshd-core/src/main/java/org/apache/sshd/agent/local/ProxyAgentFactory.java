@@ -35,6 +35,7 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -70,9 +71,8 @@ public class ProxyAgentFactory implements SshAgentFactory {
     @Override
     public SshAgentServer createServer(ConnectionService service) throws IOException {
         Session session = service.getSession();
-        if (!(session instanceof ServerSession)) {
-            throw new IllegalStateException("The session used to create an agent server proxy must be a server session: " + session);
-        }
+        ValidateUtils.checkInstanceOf(session, ServerSession.class,
+                "The session used to create an agent server proxy must be a server session: %s", session);
 
         final AgentServerProxy proxy = new AgentServerProxy(service);
         proxies.put(proxy.getId(), proxy);

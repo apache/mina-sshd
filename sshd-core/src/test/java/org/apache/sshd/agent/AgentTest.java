@@ -78,7 +78,6 @@ public class AgentTest extends BaseTestSupport {
 
     @Test
     public void testAgentServer() throws Exception {
-
         try (AgentServer agent = new AgentServer()) {
             String authSocket = agent.start();
 

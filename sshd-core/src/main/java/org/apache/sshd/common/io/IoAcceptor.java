@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface IoAcceptor extends IoService {
 
