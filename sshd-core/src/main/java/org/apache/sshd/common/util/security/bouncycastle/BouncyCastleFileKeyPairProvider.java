@@ -16,32 +16,27 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.sshd.common.util.security.bouncycastle;
 
-package org.apache.sshd.common.util.buffer.keys;
-
+import java.io.IOException;
+import java.io.InputStream;
 import java.security.GeneralSecurityException;
-import java.security.PublicKey;
+import java.security.KeyPair;
 
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.security.SecurityUtils;
+import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
 
 /**
- * TODO complete this when SSHD-440 is done
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ED25519BufferPublicKeyParser extends AbstractBufferPublicKeyParser<PublicKey> {
-    public static final ED25519BufferPublicKeyParser INSTANCE = new ED25519BufferPublicKeyParser();
-
-    public ED25519BufferPublicKeyParser() {
-        super(PublicKey.class, KeyPairProvider.SSH_ED25519);
+public class BouncyCastleFileKeyPairProvider extends AbstractFileKeyPairProvider {
+    public BouncyCastleFileKeyPairProvider() {
+        super();
     }
 
     @Override
-    public PublicKey getRawPublicKey(String keyType, Buffer buffer) throws GeneralSecurityException {
-        ValidateUtils.checkTrue(isKeyTypeSupported(keyType), "Unsupported key type: %s", keyType);
-        byte[] seed = buffer.getBytes();
-        return SecurityUtils.generateEDDSAPublicKey(keyType, seed);
+    protected KeyPair doLoadKey(String resourceKey, InputStream inputStream, FilePasswordProvider provider)
+            throws IOException, GeneralSecurityException {
+        return BouncyCastleInputStreamLoader.loadKeyPair(resourceKey, inputStream, provider);
     }
 }

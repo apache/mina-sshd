@@ -16,15 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.util;
+package org.apache.sshd.common.util.security;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
@@ -38,13 +34,12 @@ import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.cert.CertificateFactory;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -54,39 +49,27 @@ import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
 import javax.crypto.spec.DHParameterSpec;
 
-import net.i2p.crypto.eddsa.EdDSAKey;
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
-import net.i2p.crypto.eddsa.spec.EdDSAParameterSpec;
-import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
-import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
-
-import org.apache.sshd.common.config.keys.AbstractPublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.AbstractClassLoadableResourceKeyPairProvider;
 import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.random.AbstractRandom;
-import org.apache.sshd.common.random.AbstractRandomFactory;
 import org.apache.sshd.common.random.JceRandomFactory;
-import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.random.RandomFactory;
-import org.apache.sshd.common.signature.AbstractSignature;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ReflectionUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleClassLoadableResourceKeyPairProvider;
+import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleFileKeyPairProvider;
+import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleGeneratorHostKeyProvider;
+import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleInputStreamLoader;
+import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleRandomFactory;
+import org.apache.sshd.common.util.security.eddsa.EdDSASecurityProvider;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
-import org.bouncycastle.crypto.prng.RandomGenerator;
-import org.bouncycastle.crypto.prng.VMPCRandomGenerator;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.PEMDecryptorProvider;
-import org.bouncycastle.openssl.PEMEncryptedKeyPair;
-import org.bouncycastle.openssl.PEMKeyPair;
-import org.bouncycastle.openssl.PEMParser;
-import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
-import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -150,7 +133,7 @@ public final class SecurityUtils {
 
     private static final AtomicInteger MAX_DHG_KEY_SIZE_HOLDER = new AtomicInteger(0);
 
-    private static final Set<String> REGISTERED_PROVIDERS = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+    private static final Map<String, Provider> REGISTERED_PROVIDERS = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private static String defaultProvider;
     private static Boolean registerBouncyCastle;
@@ -288,7 +271,7 @@ public final class SecurityUtils {
 
         // returns a COPY of the providers in order to avoid modifications
         synchronized (REGISTERED_PROVIDERS) {
-            return new TreeSet<>(REGISTERED_PROVIDERS);
+            return new TreeSet<>(REGISTERED_PROVIDERS.keySet());
         }
     }
 
@@ -308,7 +291,7 @@ public final class SecurityUtils {
     private static boolean isProviderRegistered(String provider) {
         Objects.requireNonNull(provider, "No provider name specified");
         synchronized (REGISTERED_PROVIDERS) {
-            return REGISTERED_PROVIDERS.contains(provider);
+            return REGISTERED_PROVIDERS.containsKey(provider);
         }
     }
 
@@ -362,9 +345,11 @@ public final class SecurityUtils {
         public Void call() throws Exception {
             // no need for a logger specific to this class since this is a one-time call
             Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
-            if (java.security.Security.getProvider(BOUNCY_CASTLE) == null) {
+            Provider p = java.security.Security.getProvider(BOUNCY_CASTLE);
+            if (p == null) {
                 logger.info("Trying to register BouncyCastle as a JCE provider");
-                java.security.Security.addProvider(new BouncyCastleProvider());
+                p = new BouncyCastleProvider();
+                java.security.Security.addProvider(p);
                 MessageDigest.getInstance("MD5", BOUNCY_CASTLE);
                 KeyAgreement.getInstance("DH", BOUNCY_CASTLE);
                 logger.info("Registration succeeded");
@@ -373,41 +358,13 @@ public final class SecurityUtils {
             }
 
             synchronized (REGISTERED_PROVIDERS) {
-                REGISTERED_PROVIDERS.add(BOUNCY_CASTLE);
+                REGISTERED_PROVIDERS.put(BOUNCY_CASTLE, p);
             }
             return null;
         }
     }
 
     /* -------------------------------------------------------------------- */
-
-    private interface BouncyCastleInputStreamLoader {
-        static KeyPair loadKeyPair(String resourceKey, InputStream inputStream, FilePasswordProvider provider)
-                throws IOException, GeneralSecurityException {
-            try (PEMParser r = new PEMParser(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
-                Object o = r.readObject();
-
-                JcaPEMKeyConverter pemConverter = new JcaPEMKeyConverter();
-                pemConverter.setProvider(SecurityUtils.BOUNCY_CASTLE);
-                if (o instanceof PEMEncryptedKeyPair) {
-                    ValidateUtils.checkNotNull(provider, "No password provider for resource=%s", resourceKey);
-
-                    String password = ValidateUtils.checkNotNullAndNotEmpty(provider.getPassword(resourceKey), "No password provided for resource=%s", resourceKey);
-                    JcePEMDecryptorProviderBuilder decryptorBuilder = new JcePEMDecryptorProviderBuilder();
-                    PEMDecryptorProvider pemDecryptor = decryptorBuilder.build(password.toCharArray());
-                    o = ((PEMEncryptedKeyPair) o).decryptKeyPair(pemDecryptor);
-                }
-
-                if (o instanceof PEMKeyPair) {
-                    return pemConverter.getKeyPair((PEMKeyPair) o);
-                } else if (o instanceof KeyPair) {
-                    return (KeyPair) o;
-                } else {
-                    throw new IOException("Failed to read " + resourceKey + " - unknown result object: " + o);
-                }
-            }
-        }
-    }
 
     /**
      * @param resourceKey An identifier of the key being loaded - used as
@@ -433,162 +390,27 @@ public final class SecurityUtils {
 
     /* -------------------------------------------------------------------- */
 
-    // use a separate class in order to avoid direct dependency
-    private static final class BouncyCastleFileKeyPairProvider extends AbstractFileKeyPairProvider {
-        private BouncyCastleFileKeyPairProvider() {
-            ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
-        }
-
-        @Override
-        protected KeyPair doLoadKey(String resourceKey, InputStream inputStream, FilePasswordProvider provider)
-                throws IOException, GeneralSecurityException {
-            return BouncyCastleInputStreamLoader.loadKeyPair(resourceKey, inputStream, provider);
-        }
-    }
-
-    @SuppressWarnings("synthetic-access")
     public static AbstractFileKeyPairProvider createFileKeyPairProvider() {
+        ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
         return new BouncyCastleFileKeyPairProvider();
     }
 
-    /* -------------------------------------------------------------------- */
-
-    private static final class BouncyCastleClassLoadableResourceKeyPairProvider extends AbstractClassLoadableResourceKeyPairProvider {
-        private BouncyCastleClassLoadableResourceKeyPairProvider() {
-            ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
-        }
-
-        @Override
-        protected KeyPair doLoadKey(String resourceKey, InputStream inputStream, FilePasswordProvider provider)
-                throws IOException, GeneralSecurityException {
-            return BouncyCastleInputStreamLoader.loadKeyPair(resourceKey, inputStream, provider);
-        }
-    }
-
-    @SuppressWarnings("synthetic-access")
     public static AbstractClassLoadableResourceKeyPairProvider createClassLoadableResourceKeyPairProvider() {
+        ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
         return new BouncyCastleClassLoadableResourceKeyPairProvider();
     }
 
     /* -------------------------------------------------------------------- */
 
-    private static final class BouncyCastleGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProvider {
-        private BouncyCastleGeneratorHostKeyProvider(Path path) {
-            ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
-            setPath(path);
-        }
-
-        @Override
-        protected KeyPair doReadKeyPair(String resourceKey, InputStream inputStream) throws IOException, GeneralSecurityException {
-            return BouncyCastleInputStreamLoader.loadKeyPair(resourceKey, inputStream, null);
-        }
-
-        @SuppressWarnings("deprecation")
-        @Override
-        protected void doWriteKeyPair(String resourceKey, KeyPair kp, OutputStream outputStream) throws IOException, GeneralSecurityException {
-            try (org.bouncycastle.openssl.PEMWriter w =
-                         new org.bouncycastle.openssl.PEMWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8))) {
-                w.writeObject(kp);
-                w.flush();
-            }
-        }
-    }
-
-    @SuppressWarnings("synthetic-access")
     public static AbstractGeneratorHostKeyProvider createGeneratorHostKeyProvider(Path path) {
+        ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
         return new BouncyCastleGeneratorHostKeyProvider(path);
-    }
-
-    /* -------------------------------------------------------------------- */
-
-    /**
-     * Named factory for the BouncyCastle <code>Random</code>
-     */
-    public static final class BouncyCastleRandomFactory extends AbstractRandomFactory {
-        public static final String NAME = "bouncycastle";
-        private static final BouncyCastleRandomFactory INSTANCE = new BouncyCastleRandomFactory();
-
-        public BouncyCastleRandomFactory() {
-            super(NAME);
-        }
-
-        @Override
-        public boolean isSupported() {
-            return isBouncyCastleRegistered();
-        }
-
-        @Override
-        public Random create() {
-            return new BouncyCastleRandom();
-        }
-    }
-
-    /**
-     * BouncyCastle <code>Random</code>.
-     * This pseudo random number generator uses the a very fast PRNG from BouncyCastle.
-     * The JRE random will be used when creating a new generator to add some random
-     * data to the seed.
-     *
-     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
-     */
-    public static final class BouncyCastleRandom extends AbstractRandom {
-        public static final String NAME = BOUNCY_CASTLE;
-        private final RandomGenerator random;
-
-        BouncyCastleRandom() {
-            ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
-            this.random = new VMPCRandomGenerator();
-            byte[] seed = new SecureRandom().generateSeed(8);
-            this.random.addSeedMaterial(seed);
-        }
-
-        @Override
-        public String getName() {
-            return NAME;
-        }
-
-        @Override
-        public void fill(byte[] bytes, int start, int len) {
-            this.random.nextBytes(bytes, start, len);
-        }
-
-        /**
-         * Returns a pseudo-random uniformly distributed {@code int}
-         * in the half-open range [0, n).
-         */
-        @Override
-        public int random(int n) {
-            ValidateUtils.checkTrue(n > 0, "Limit must be positive: %d", n);
-            if ((n & -n) == n) {
-                return (int) ((n * (long) next(31)) >> 31);
-            }
-
-            int bits;
-            int val;
-            do {
-                bits = next(31);
-                val = bits % n;
-            } while (bits - val + (n - 1) < 0);
-            return val;
-        }
-
-        private int next(int numBits) {
-            int bytes = (numBits + 7) / 8;
-            byte next[] = new byte[bytes];
-            int ret = 0;
-            random.nextBytes(next);
-            for (int i = 0; i < bytes; i++) {
-                ret = (next[i] & 0xFF) | (ret << 8);
-            }
-            return ret >>> (bytes * 8 - numBits);
-        }
     }
 
     /**
      * @return If {@link #isBouncyCastleRegistered()} then a {@link BouncyCastleRandomFactory}
      * instance, otherwise a {@link JceRandomFactory} one
      */
-    @SuppressWarnings("synthetic-access")
     public static RandomFactory getRandomFactory() {
         if (isBouncyCastleRegistered()) {
             return BouncyCastleRandomFactory.INSTANCE;
@@ -602,7 +424,7 @@ public final class SecurityUtils {
     /**
      * @return {@code true} if EDDSA curves (e.g., {@code ed25519}) are supported
      */
-    public static boolean isEDDSACurveSupported() {
+    public static synchronized boolean isEDDSACurveSupported() {
         if (eddsaSupported == null) {
             String propValue = System.getProperty(EDDSA_SUPPORTED_PROP);
             if (GenericUtils.isEmpty(propValue) || "true".equals(propValue)) {
@@ -620,93 +442,6 @@ public final class SecurityUtils {
 
     /* -------------------------------------------------------------------- */
 
-    // see https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/HowToImplAProvider.html
-    private static class EdDSASecurityProvider extends Provider {
-        private static final long serialVersionUID = -6183277432144104981L;
-
-        EdDSASecurityProvider() {
-            super(EDDSA, 0.1, "net.i2p security provider wrapper");
-
-            put("KeyPairGenerator." + EDDSA, "net.i2p.crypto.eddsa.KeyPairGenerator");
-            put("KeyFactory." + EDDSA, "net.i2p.crypto.eddsa.KeyFactory");
-            put("Signature." + EdDSANamedCurveTable.CURVE_ED25519_SHA512, "net.i2p.crypto.eddsa.EdDSAEngine");
-        }
-
-        private static boolean compareEDDSAPPublicKeys(PublicKey k1, PublicKey k2) {
-            if ((k1 instanceof EdDSAPublicKey) && (k2 instanceof EdDSAPublicKey)) {
-                if (Objects.equals(k1, k2)) {
-                    return true;
-                } else if (k1 == null || k2 == null) {
-                    return false;   // both null is covered by Objects#equals
-                }
-
-                EdDSAPublicKey ed1 = (EdDSAPublicKey) k1;
-                EdDSAPublicKey ed2 = (EdDSAPublicKey) k2;
-                return Arrays.equals(ed1.getAbyte(), ed2.getAbyte())
-                    && compareEDDSAKeyParams(ed1.getParams(), ed2.getParams());
-            }
-
-            return false;
-        }
-
-        private static boolean compareEDDSAPrivateKeys(PrivateKey k1, PrivateKey k2) {
-            if (!isEDDSACurveSupported()) {
-                return false;
-            }
-
-            if ((k1 instanceof EdDSAPrivateKey) && (k2 instanceof EdDSAPrivateKey)) {
-                if (Objects.equals(k1, k2)) {
-                    return true;
-                } else if (k1 == null || k2 == null) {
-                    return false;   // both null is covered by Objects#equals
-                }
-
-                EdDSAPrivateKey ed1 = (EdDSAPrivateKey) k1;
-                EdDSAPrivateKey ed2 = (EdDSAPrivateKey) k2;
-                return Arrays.equals(ed1.getSeed(), ed2.getSeed())
-                    && compareEDDSAKeyParams(ed1.getParams(), ed2.getParams());
-            }
-
-            return false;
-        }
-
-        private static boolean compareEDDSAKeyParams(EdDSAParameterSpec s1, EdDSAParameterSpec s2) {
-            if (Objects.equals(s1, s2)) {
-                return true;
-            } else if (s1 == null || s2 == null) {
-                return false;   // both null is covered by Objects#equals
-            } else {
-                return Objects.equals(s1.getHashAlgorithm(), s2.getHashAlgorithm())
-                    && Objects.equals(s1.getCurve(), s2.getCurve())
-                    && Objects.equals(s1.getB(), s2.getB());
-            }
-        }
-
-        private static PublicKey generateEDDSAPublicKey(byte[] seed) throws GeneralSecurityException {
-            EdDSAParameterSpec params = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.CURVE_ED25519_SHA512);
-            EdDSAPublicKeySpec keySpec = new EdDSAPublicKeySpec(seed, params);
-            KeyFactory factory = SecurityUtils.getKeyFactory(EDDSA);
-            return factory.generatePublic(keySpec);
-        }
-
-        private static <B extends Buffer> B putRawEDDSAPublicKey(B buffer, PublicKey key) {
-            EdDSAPublicKey edKey = ValidateUtils.checkInstanceOf(key, EdDSAPublicKey.class, "Not an EDDSA public key: %s", key);
-            byte[] seed = Ed25519PublicKeyDecoder.getSeedValue(edKey);
-            ValidateUtils.checkNotNull(seed, "No seed extracted from key: %s", edKey.getA());
-            buffer.putString(KeyPairProvider.SSH_ED25519);
-            buffer.putBytes(seed);
-            return buffer;
-        }
-
-        private static <B extends Buffer> B putEDDSAKeyPair(B buffer, PublicKey pubKey, PrivateKey prvKey) {
-            ValidateUtils.checkInstanceOf(pubKey, EdDSAPublicKey.class, "Not an EDDSA public key: %s", pubKey);
-            ValidateUtils.checkInstanceOf(prvKey, EdDSAPrivateKey.class, "Not an EDDSA private key: %s", prvKey);
-            throw new UnsupportedOperationException("Full SSHD-440 implementation N/A");
-        }
-    }
-
-    /* -------------------------------------------------------------------- */
-
     private static class EdDSARegistration implements Callable<Void> {
         EdDSARegistration() {
             super();
@@ -717,9 +452,11 @@ public final class SecurityUtils {
         public Void call() throws Exception {
             // no need for a logger specific to this class since this is a one-time call
             Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
-            if (java.security.Security.getProvider(EDDSA) == null) {
+            Provider p = java.security.Security.getProvider(EDDSA);
+            if (p == null) {
                 logger.info("Trying to register " + EDDSA + " as a JCE provider");
-                java.security.Security.addProvider(new EdDSASecurityProvider());
+                p = new EdDSASecurityProvider();
+                java.security.Security.addProvider(p);
                 KeyFactory.getInstance(EDDSA, EDDSA);
                 logger.info("Registration succeeded");
             } else {
@@ -727,7 +464,7 @@ public final class SecurityUtils {
             }
 
             synchronized (REGISTERED_PROVIDERS) {
-                REGISTERED_PROVIDERS.add(EDDSA);
+                REGISTERED_PROVIDERS.put(EDDSA, p);
             }
 
             return null;
@@ -736,138 +473,42 @@ public final class SecurityUtils {
 
     /* -------------------------------------------------------------------- */
 
-    private static final class Ed25519PublicKeyDecoder extends AbstractPublicKeyEntryDecoder<EdDSAPublicKey, EdDSAPrivateKey> {
-        private static final Ed25519PublicKeyDecoder INSTANCE = new Ed25519PublicKeyDecoder();
-
-        private Ed25519PublicKeyDecoder() {
-            super(EdDSAPublicKey.class, EdDSAPrivateKey.class, Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_ED25519)));
-        }
-
-        @Override
-        public EdDSAPublicKey clonePublicKey(EdDSAPublicKey key) throws GeneralSecurityException {
-            if (key == null) {
-                return null;
-            } else {
-                return generatePublicKey(new EdDSAPublicKeySpec(key.getA(), key.getParams()));
-            }
-        }
-
-        @Override
-        public EdDSAPrivateKey clonePrivateKey(EdDSAPrivateKey key) throws GeneralSecurityException {
-            if (key == null) {
-                return null;
-            } else {
-                return generatePrivateKey(new EdDSAPrivateKeySpec(key.getSeed(), key.getParams()));
-            }
-        }
-
-        @Override
-        public KeyPairGenerator getKeyPairGenerator() throws GeneralSecurityException {
-            return SecurityUtils.getKeyPairGenerator(EDDSA);
-        }
-
-        @Override
-        public String encodePublicKey(OutputStream s, EdDSAPublicKey key) throws IOException {
-            Objects.requireNonNull(key, "No public key provided");
-            PublicKeyEntryDecoder.encodeString(s, KeyPairProvider.SSH_ED25519);
-            byte[] seed = getSeedValue(key);
-            PublicKeyEntryDecoder.writeRLEBytes(s, seed);
-            return KeyPairProvider.SSH_ED25519;
-        }
-
-        @Override
-        public KeyFactory getKeyFactoryInstance() throws GeneralSecurityException {
-            return SecurityUtils.getKeyFactory(EDDSA);
-        }
-
-        @Override
-        public EdDSAPublicKey decodePublicKey(String keyType, InputStream keyData) throws IOException, GeneralSecurityException {
-            byte[] seed = PublicKeyEntryDecoder.readRLEBytes(keyData);
-            return EdDSAPublicKey.class.cast(SecurityUtils.generateEDDSAPublicKey(keyType, seed));
-        }
-
-        public static byte[] getSeedValue(EdDSAPublicKey key) {
-            // a bit of reverse-engineering on the EdDSAPublicKeySpec
-            return (key == null) ? null : key.getAbyte();
-        }
-
-        private static EdDSAPublicKey fromPrivateKey(EdDSAPrivateKey prvKey) throws GeneralSecurityException {
-            if (prvKey == null) {
-                return null;
-            }
-
-            EdDSAPublicKeySpec keySpec = new EdDSAPublicKeySpec(prvKey.getSeed(), prvKey.getParams());
-            KeyFactory factory = SecurityUtils.getKeyFactory(EDDSA);
-            return EdDSAPublicKey.class.cast(factory.generatePublic(keySpec));
-        }
-    }
-
-    @SuppressWarnings("synthetic-access")
     public static PublicKeyEntryDecoder<? extends PublicKey, ? extends PrivateKey> getEDDSAPublicKeyEntryDecoder() {
         if (!isEDDSACurveSupported()) {
             throw new UnsupportedOperationException(EDDSA + " provider N/A");
         }
 
-        return Ed25519PublicKeyDecoder.INSTANCE;
+        return EdDSASecurityProvider.getEDDSAPublicKeyEntryDecoder();
     }
 
-    /* -------------------------------------------------------------------- */
-
-    private static final class SignatureEd25519 extends AbstractSignature {
-        private SignatureEd25519() {
-            super(EdDSANamedCurveTable.CURVE_ED25519_SHA512);
-        }
-
-        @Override
-        public boolean verify(byte[] sig) throws Exception {
-            byte[] data = sig;
-            Pair<String, byte[]> encoding = extractEncodedSignature(data);
-            if (encoding != null) {
-                String keyType = encoding.getFirst();
-                ValidateUtils.checkTrue(KeyPairProvider.SSH_ED25519.equals(keyType), "Mismatched key type: %s", keyType);
-                data = encoding.getSecond();
-            }
-
-            return doVerify(data);
-        }
-    }
-
-    @SuppressWarnings("synthetic-access")
     public static org.apache.sshd.common.signature.Signature getEDDSASigner() {
         if (isEDDSACurveSupported()) {
-            return new SignatureEd25519();
+            return EdDSASecurityProvider.getEDDSASignature();
         }
 
         throw new UnsupportedOperationException(EDDSA + " Signer not available");
     }
 
-    /* -------------------------------------------------------------------- */
-
     public static int getEDDSAKeySize(Key key) {
-        return (key instanceof EdDSAKey) ? 256 : -1;
+        return EdDSASecurityProvider.getEDDSAKeySize(key);
     }
 
     public static Class<? extends PublicKey> getEDDSAPublicKeyType() {
-        return isEDDSACurveSupported() ? EdDSAPublicKey.class : PublicKey.class;
+        return isEDDSACurveSupported() ? EdDSASecurityProvider.getEDDSAPublicKeyType() : PublicKey.class;
     }
 
     public static Class<? extends PrivateKey> getEDDSAPrivateKeyType() {
-        return isEDDSACurveSupported() ? EdDSAPrivateKey.class : PrivateKey.class;
+        return isEDDSACurveSupported() ? EdDSASecurityProvider.getEDDSAPrivateKeyType() : PrivateKey.class;
     }
 
-    @SuppressWarnings("synthetic-access")
     public static boolean compareEDDSAPPublicKeys(PublicKey k1, PublicKey k2) {
         return isEDDSACurveSupported() ? EdDSASecurityProvider.compareEDDSAPPublicKeys(k1, k2) : false;
     }
 
-    @SuppressWarnings("synthetic-access")
     public static boolean compareEDDSAPrivateKeys(PrivateKey k1, PrivateKey k2) {
         return isEDDSACurveSupported() ? EdDSASecurityProvider.compareEDDSAPrivateKeys(k1, k2) : false;
     }
 
-    /* -------------------------------------------------------------------- */
-
-    @SuppressWarnings("synthetic-access")
     public static PublicKey generateEDDSAPublicKey(String keyType, byte[] seed) throws GeneralSecurityException {
         if (!KeyPairProvider.SSH_ED25519.equals(keyType)) {
             throw new InvalidKeyException("Unsupported key type: " + keyType);
@@ -880,7 +521,6 @@ public final class SecurityUtils {
         return EdDSASecurityProvider.generateEDDSAPublicKey(seed);
     }
 
-    @SuppressWarnings("synthetic-access")
     public static <B extends Buffer> B putRawEDDSAPublicKey(B buffer, PublicKey key) {
         if (!isEDDSACurveSupported()) {
             throw new UnsupportedOperationException(EDDSA + " provider not supported");
@@ -893,7 +533,6 @@ public final class SecurityUtils {
         return putEDDSAKeyPair(buffer, Objects.requireNonNull(kp, "No key pair").getPublic(), kp.getPrivate());
     }
 
-    @SuppressWarnings("synthetic-access")
     public static <B extends Buffer> B putEDDSAKeyPair(B buffer, PublicKey pubKey, PrivateKey prvKey) {
         if (!isEDDSACurveSupported()) {
             throw new UnsupportedOperationException(EDDSA + " provider not supported");
@@ -920,7 +559,7 @@ public final class SecurityUtils {
         register();
 
         String providerName = getDefaultProvider();
-        if (EDDSA.equalsIgnoreCase(algorithm) && isEDDSACurveSupported()) {
+        if (isEDDSACurveSupported() && EdDSASecurityProvider.isEDDSAKeyFactoryAlgorithm(algorithm)) {
             providerName = EDDSA;
         }
 
@@ -957,7 +596,7 @@ public final class SecurityUtils {
         register();
 
         String providerName = getDefaultProvider();
-        if (EDDSA.equalsIgnoreCase(algorithm) && isEDDSACurveSupported()) {
+        if (isEDDSACurveSupported() && EdDSASecurityProvider.isEDDSAKeyPairGeneratorAlgorithm(algorithm)) {
             providerName = EDDSA;
         }
 
@@ -994,7 +633,7 @@ public final class SecurityUtils {
         register();
 
         String providerName = getDefaultProvider();
-        if (EdDSANamedCurveTable.CURVE_ED25519_SHA512.equalsIgnoreCase(algorithm) && isEDDSACurveSupported()) {
+        if (isEDDSACurveSupported() && EdDSASecurityProvider.isEDDSASignatureAlgorithm(algorithm)) {
             providerName = EDDSA;
         }
 

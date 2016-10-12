@@ -44,7 +44,7 @@ import org.apache.sshd.server.SshServer;
  * Loads server identity key files - e.g., {@code /etc/ssh/ssh_host_rsa_key}
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see org.apache.sshd.common.util.SecurityUtils#isBouncyCastleRegistered()
+ * @see org.apache.sshd.common.util.security.SecurityUtils#isBouncyCastleRegistered()
  */
 public final class ServerIdentity {
 

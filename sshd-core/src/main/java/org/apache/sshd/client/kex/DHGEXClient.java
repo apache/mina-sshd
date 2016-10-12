@@ -33,10 +33,10 @@ import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 
 /**

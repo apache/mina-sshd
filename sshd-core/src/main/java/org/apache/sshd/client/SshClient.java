@@ -114,12 +114,12 @@ import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
-import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * <P>

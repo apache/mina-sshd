@@ -34,6 +34,7 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.Assume;
 import org.junit.BeforeClass;

@@ -37,8 +37,8 @@ import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.NamedResourceListParseResult;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

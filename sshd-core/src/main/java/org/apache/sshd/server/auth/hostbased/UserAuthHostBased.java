@@ -35,11 +35,11 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.auth.AbstractUserAuth;
 import org.apache.sshd.server.session.ServerSession;
 

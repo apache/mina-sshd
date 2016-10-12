@@ -27,9 +27,9 @@ import java.util.Objects;
 
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.Pair;
-import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * Useful base class for {@link Signature} implementation

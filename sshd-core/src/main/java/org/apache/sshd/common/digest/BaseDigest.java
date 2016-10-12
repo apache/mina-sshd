@@ -23,8 +23,8 @@ import java.util.Objects;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
-import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * Base class for Digest algorithms based on the JCE provider.

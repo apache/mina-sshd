@@ -43,7 +43,7 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.ObjectBuilder;
-import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.forward.ForwardingFilter;
 import org.apache.sshd.server.forward.RejectAllForwardingFilter;
 

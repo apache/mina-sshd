@@ -36,7 +36,7 @@ import java.util.Set;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

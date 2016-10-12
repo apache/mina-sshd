@@ -75,13 +75,13 @@ import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.logging.LoggingUtils;
 import org.apache.sshd.common.util.logging.SimplifiedLog;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * A naive implementation of <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh-keyscan&sektion=1">ssh-keyscan(1)</A>

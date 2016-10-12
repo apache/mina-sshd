@@ -38,8 +38,8 @@ import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.NamedFactoriesListParseResult;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * Provides easy access to the currently implemented signatures

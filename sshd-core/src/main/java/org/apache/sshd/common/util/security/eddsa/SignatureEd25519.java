@@ -16,32 +16,33 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.sshd.common.util.security.eddsa;
 
-package org.apache.sshd.common.util.buffer.keys;
-
-import java.security.GeneralSecurityException;
-import java.security.PublicKey;
+import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.signature.AbstractSignature;
+import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
- * TODO complete this when SSHD-440 is done
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ED25519BufferPublicKeyParser extends AbstractBufferPublicKeyParser<PublicKey> {
-    public static final ED25519BufferPublicKeyParser INSTANCE = new ED25519BufferPublicKeyParser();
-
-    public ED25519BufferPublicKeyParser() {
-        super(PublicKey.class, KeyPairProvider.SSH_ED25519);
+public class SignatureEd25519 extends AbstractSignature {
+    public SignatureEd25519() {
+        super(EdDSANamedCurveTable.CURVE_ED25519_SHA512);
     }
 
     @Override
-    public PublicKey getRawPublicKey(String keyType, Buffer buffer) throws GeneralSecurityException {
-        ValidateUtils.checkTrue(isKeyTypeSupported(keyType), "Unsupported key type: %s", keyType);
-        byte[] seed = buffer.getBytes();
-        return SecurityUtils.generateEDDSAPublicKey(keyType, seed);
+    public boolean verify(byte[] sig) throws Exception {
+        byte[] data = sig;
+        Pair<String, byte[]> encoding = extractEncodedSignature(data);
+        if (encoding != null) {
+            String keyType = encoding.getFirst();
+            ValidateUtils.checkTrue(KeyPairProvider.SSH_ED25519.equals(keyType), "Mismatched key type: %s", keyType);
+            data = encoding.getSecond();
+        }
+
+        return doVerify(data);
     }
 }

@@ -22,8 +22,8 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * Base class for all Cipher implementations delegating to the JCE provider.

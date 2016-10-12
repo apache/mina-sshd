@@ -30,8 +30,8 @@ import java.util.List;
 
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;

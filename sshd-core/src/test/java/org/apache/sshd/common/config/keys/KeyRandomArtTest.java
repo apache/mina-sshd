@@ -27,7 +27,7 @@ import java.util.List;
 
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.Utils;
 import org.junit.AfterClass;

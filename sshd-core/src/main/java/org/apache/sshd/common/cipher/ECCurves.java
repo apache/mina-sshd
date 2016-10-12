@@ -38,8 +38,8 @@ import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.digest.DigestFactory;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * Utilities for working with elliptic curves.

@@ -61,10 +61,10 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.Readable;
-import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.common.util.buffer.keys.BufferPublicKeyParser;
 import org.apache.sshd.common.util.logging.SimplifiedLog;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * Provides an abstract message buffer for encoding SSH messages

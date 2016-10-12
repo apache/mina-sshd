@@ -37,7 +37,7 @@ import java.util.Collections;
 import java.util.Objects;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

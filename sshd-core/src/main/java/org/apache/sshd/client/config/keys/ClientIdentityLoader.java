@@ -28,9 +28,9 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
-import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

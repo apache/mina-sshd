@@ -30,7 +30,7 @@ import javax.crypto.spec.DHPublicKeySpec;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.digest.Digest;
-import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * Diffie-Hellman key generator.

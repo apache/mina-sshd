@@ -40,8 +40,8 @@ import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
-import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * Holds a <U>single</U> {@link KeyPair} which is generated the 1st time

@@ -29,7 +29,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.Base64;
 import org.apache.sshd.common.util.Pair;
-import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;

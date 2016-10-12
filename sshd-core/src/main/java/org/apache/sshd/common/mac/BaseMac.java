@@ -20,7 +20,7 @@ package org.apache.sshd.common.mac;
 
 import javax.crypto.spec.SecretKeySpec;
 
-import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * Base class for <code>Mac</code> implementations based on the JCE provider.

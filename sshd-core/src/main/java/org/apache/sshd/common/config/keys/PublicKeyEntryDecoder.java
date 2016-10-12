@@ -248,5 +248,4 @@ public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends Privat
                 | ((bytes[2] & 0xFF) << 8)
                 | (bytes[3] & 0xFF);
     }
-
 }

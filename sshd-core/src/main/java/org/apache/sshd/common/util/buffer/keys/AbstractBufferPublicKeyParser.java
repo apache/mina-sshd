@@ -30,8 +30,8 @@ import java.util.Collections;
 import java.util.Objects;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @param <PUB> Type of {@link PublicKey} being extracted
