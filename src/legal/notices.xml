@@ -80,8 +80,8 @@
             </organization>
             <licenses>
                 <license>
-                    <name>Creative Commons</name>
-                    <url>https://github.com/str4d/ed25519-java/blob/master/LICENSE.txt</url>
+                    <name>Public Domain</name>
+                    <url>http://en.wikipedia.org/wiki/Public_domain</url>
                 </license>
             </licenses>
         </project>
