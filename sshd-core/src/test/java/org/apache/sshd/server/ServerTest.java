@@ -226,7 +226,7 @@ public class ServerTest extends BaseTestSupport {
             }
         });
 
-        TestChannelListener channelListener = new TestChannelListener();
+        TestChannelListener channelListener = new TestChannelListener(getCurrentTestName());
         sshd.addChannelListener(channelListener);
         sshd.start();
 
@@ -239,10 +239,8 @@ public class ServerTest extends BaseTestSupport {
             shell.setErr(err);
             shell.open().verify(9L, TimeUnit.SECONDS);
 
-            assertTrue("No changes in activated channels", channelListener.waitForModification(5L, TimeUnit.SECONDS));
-            assertTrue("No activated server side channels", GenericUtils.size(channelListener.getActiveChannels()) > 0);
-            assertTrue("No changes in open channels", channelListener.waitForModification(5L, TimeUnit.SECONDS));
-            assertTrue("No open server side channels", GenericUtils.size(channelListener.getOpenChannels()) > 0);
+            assertTrue("No changes in activated channels", channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS));
+            assertTrue("No changes in open channels", channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS));
 
             Collection<ClientSession.ClientSessionEvent> res =
                     s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 2L * testIdleTimeout);
@@ -298,7 +296,7 @@ public class ServerTest extends BaseTestSupport {
             }
         });
 
-        TestChannelListener channelListener = new TestChannelListener();
+        TestChannelListener channelListener = new TestChannelListener(getCurrentTestName());
         sshd.addChannelListener(channelListener);
         sshd.start();
 
@@ -312,10 +310,8 @@ public class ServerTest extends BaseTestSupport {
             shell.setOut(pos);
             shell.open().verify(5L, TimeUnit.SECONDS);
 
-            assertTrue("No changes in activated channels", channelListener.waitForModification(5L, TimeUnit.SECONDS));
-            assertTrue("No activated server side channels", GenericUtils.size(channelListener.getActiveChannels()) > 0);
-            assertTrue("No changes in open channels", channelListener.waitForModification(5L, TimeUnit.SECONDS));
-            assertTrue("No open server side channels", GenericUtils.size(channelListener.getOpenChannels()) > 0);
+            assertTrue("No changes in activated channels", channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS));
+            assertTrue("No changes in open channels", channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS));
 
             try (AbstractSession serverSession = sshd.getActiveSessions().iterator().next()) {
                 AbstractConnectionService<?> service = serverSession.getService(AbstractConnectionService.class);
@@ -629,11 +625,10 @@ public class ServerTest extends BaseTestSupport {
             };
         });
 
-        TestChannelListener channelListener = new TestChannelListener();
+        TestChannelListener channelListener = new TestChannelListener(getCurrentTestName());
         sshd.addChannelListener(channelListener);
         sshd.start();
 
-        @SuppressWarnings("synthetic-access")
         Map<String, String> expected =
                 GenericUtils.<String, String>mapBuilder(String.CASE_INSENSITIVE_ORDER)
                     .put("test", getCurrentTestName())
@@ -651,10 +646,8 @@ public class ServerTest extends BaseTestSupport {
 
             shell.open().verify(5L, TimeUnit.SECONDS);
 
-            assertTrue("No changes in activated channels", channelListener.waitForModification(5L, TimeUnit.SECONDS));
-            assertTrue("No activated server side channels", GenericUtils.size(channelListener.getActiveChannels()) > 0);
-            assertTrue("No changes in open channels", channelListener.waitForModification(5L, TimeUnit.SECONDS));
-            assertTrue("No open server side channels", GenericUtils.size(channelListener.getOpenChannels()) > 0);
+            assertTrue("No changes in activated channels", channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS));
+            assertTrue("No changes in open channels", channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS));
 
             Collection<ClientChannelEvent> result =
                     shell.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(17L));
@@ -667,7 +660,7 @@ public class ServerTest extends BaseTestSupport {
             client.stop();
         }
 
-        assertTrue("No changes in closed channels", channelListener.waitForModification(5L, TimeUnit.SECONDS));
+        assertTrue("No changes in closed channels", channelListener.waitForClosedChannelsChange(5L, TimeUnit.SECONDS));
         assertTrue("Still activated server side channels", GenericUtils.isEmpty(channelListener.getActiveChannels()));
 
         Environment cmdEnv = envHolder.get();
@@ -787,8 +780,7 @@ public class ServerTest extends BaseTestSupport {
 
         String serverIdent = getCurrentTestName() + "-server";
         PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.SERVER_IDENTIFICATION, serverIdent);
-        final String expServerIdent = Session.DEFAULT_SSH_VERSION_PREFIX + serverIdent;
-
+        String expServerIdent = Session.DEFAULT_SSH_VERSION_PREFIX + serverIdent;
         SessionListener listener = new SessionListener() {
             @Override
             public void sessionException(Session session, Throwable t) {
@@ -840,8 +832,8 @@ public class ServerTest extends BaseTestSupport {
                 GenericUtils.join(expected, ServerFactoryManager.SERVER_EXTRA_IDENT_LINES_SEPARATOR));
         sshd.start();
 
-        final AtomicReference<List<String>> actualHolder = new AtomicReference<>();
-        final Semaphore signal = new Semaphore(0);
+        AtomicReference<List<String>> actualHolder = new AtomicReference<>();
+        Semaphore signal = new Semaphore(0);
         client.setUserInteraction(new UserInteraction() {
             @Override
             public void serverVersionInfo(ClientSession session, List<String> lines) {

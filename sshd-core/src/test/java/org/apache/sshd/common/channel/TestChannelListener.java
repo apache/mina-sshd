@@ -36,14 +36,15 @@ import org.junit.Assert;
 public class TestChannelListener extends AbstractLoggingBean implements ChannelListener, NamedResource {
     private final String name;
     private final Collection<Channel> activeChannels = new CopyOnWriteArraySet<>();
+    private final Semaphore activeChannelsCounter = new Semaphore(0);
     private final Collection<Channel> openChannels = new CopyOnWriteArraySet<>();
+    private final Semaphore openChannelsCounter = new Semaphore(0);
     private final Collection<Channel> failedChannels = new CopyOnWriteArraySet<>();
+    private final Semaphore failedChannelsCounter = new Semaphore(0);
     private final Map<Channel, Collection<String>> channelStateHints = new ConcurrentHashMap<>();
+    private final Semaphore chanelStateCounter = new Semaphore(0);
     private final Semaphore modificationsCounter = new Semaphore(0);
-
-    public TestChannelListener() {
-        this("");
-    }
+    private final Semaphore closedChannelsCounter = new Semaphore(0);
 
     public TestChannelListener(String discriminator) {
         super(discriminator);
@@ -66,8 +67,13 @@ public class TestChannelListener extends AbstractLoggingBean implements ChannelL
     @Override
     public void channelInitialized(Channel channel) {
         Assert.assertTrue("Same channel instance re-initialized: " + channel, activeChannels.add(channel));
+        activeChannelsCounter.release();
         modificationsCounter.release();
         log.info("channelInitialized({})", channel);
+    }
+
+    public boolean waitForActiveChannelsChange(long timeout, TimeUnit unit) throws InterruptedException {
+        return activeChannelsCounter.tryAcquire(timeout, unit);
     }
 
     public Collection<Channel> getOpenChannels() {
@@ -78,8 +84,13 @@ public class TestChannelListener extends AbstractLoggingBean implements ChannelL
     public void channelOpenSuccess(Channel channel) {
         Assert.assertTrue("Open channel not activated: " + channel, activeChannels.contains(channel));
         Assert.assertTrue("Same channel instance re-opened: " + channel, openChannels.add(channel));
+        openChannelsCounter.release();
         modificationsCounter.release();
         log.info("channelOpenSuccess({})", channel);
+    }
+
+    public boolean waitForOpenChannelsChange(long timeout, TimeUnit unit) throws InterruptedException {
+        return openChannelsCounter.tryAcquire(timeout, unit);
     }
 
     public Collection<Channel> getFailedChannels() {
@@ -90,6 +101,7 @@ public class TestChannelListener extends AbstractLoggingBean implements ChannelL
     public void channelOpenFailure(Channel channel, Throwable reason) {
         Assert.assertTrue("Failed channel not activated: " + channel, activeChannels.contains(channel));
         Assert.assertTrue("Same channel instance re-failed: " + channel, failedChannels.add(channel));
+        failedChannelsCounter.release();
         modificationsCounter.release();
         log.warn("channelOpenFailure({}) {} : {}", channel, reason.getClass().getSimpleName(), reason.getMessage());
         if (log.isDebugEnabled()) {
@@ -97,11 +109,21 @@ public class TestChannelListener extends AbstractLoggingBean implements ChannelL
         }
     }
 
+    public boolean waitForFailedChannelsChange(long timeout, TimeUnit unit) throws InterruptedException {
+        return failedChannelsCounter.tryAcquire(timeout, unit);
+    }
+
     @Override
     public void channelClosed(Channel channel, Throwable reason) {
         Assert.assertTrue("Unknown closed channel instance: " + channel, activeChannels.remove(channel));
+        activeChannelsCounter.release();
+        closedChannelsCounter.release();
         modificationsCounter.release();
         log.info("channelClosed({})", channel);
+    }
+
+    public boolean waitForClosedChannelsChange(long timeout, TimeUnit unit) throws InterruptedException {
+        return closedChannelsCounter.tryAcquire(timeout, unit);
     }
 
     public Map<Channel, Collection<String>> getChannelStateHints() {
@@ -120,6 +142,8 @@ public class TestChannelListener extends AbstractLoggingBean implements ChannelL
         }
 
         hints.add(hint);
+        chanelStateCounter.release();
+        modificationsCounter.release();
     }
 
     @Override
