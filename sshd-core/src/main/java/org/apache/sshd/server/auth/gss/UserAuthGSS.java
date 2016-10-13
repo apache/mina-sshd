@@ -131,7 +131,7 @@ public class UserAuthGSS extends AbstractUserAuth {
 
                 msgbuf.putBytes(ValidateUtils.checkNotNullAndNotEmpty(session.getSessionId(), "No current session ID"));
                 msgbuf.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
-                msgbuf.putString(getUsername());
+                msgbuf.putString(super.getUsername());
                 msgbuf.putString(getService());
                 msgbuf.putString(getName());
 
