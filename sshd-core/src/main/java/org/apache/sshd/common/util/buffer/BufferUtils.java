@@ -22,12 +22,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
+import java.util.function.IntUnaryOperator;
 import java.util.logging.Level;
 
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -47,7 +47,7 @@ public final class BufferUtils {
     public static final int DEFAULT_HEXDUMP_CHUNK_SIZE = 64;
     public static final Level DEFAULT_HEXDUMP_LEVEL = Level.FINEST;
 
-    public static final Int2IntFunction DEFAULT_BUFFER_GROWTH_FACTOR = BufferUtils::getNextPowerOf2;
+    public static final IntUnaryOperator DEFAULT_BUFFER_GROWTH_FACTOR = BufferUtils::getNextPowerOf2;
 
     /**
      * Maximum value of a {@code uint32} field

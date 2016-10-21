@@ -24,48 +24,40 @@ import java.util.function.IntUnaryOperator;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FunctionalInterface
-public interface Int2IntFunction extends IntUnaryOperator {
-
-    /**
-     * An {@link Int2IntFunction} that returns same value as input
-     */
-    Int2IntFunction IDENTITY = value -> value;
-
-    @Override
-    default int applyAsInt(int operand) {
-        return apply(operand);
+public final class Int2IntFunction {
+    private Int2IntFunction() {
+        throw new UnsupportedOperationException("No instance");
     }
 
-    /**
-     * @param value Argument
-     * @return Function result
-     */
-    int apply(int value);
-
-    static Int2IntFunction sub(int delta) {
+    public static IntUnaryOperator sub(int delta) {
         return add(0 - delta);
     }
 
-    static Int2IntFunction add(int delta) {
+    public static IntUnaryOperator add(int delta) {
         if (delta == 0) {
-            return IDENTITY;
+            return IntUnaryOperator.identity();
         } else {
             return value -> value + delta;
         }
     }
 
-    static Int2IntFunction mul(int factor) {
-        if (factor == 1) {
-            return IDENTITY;
+    public static IntUnaryOperator mul(int factor) {
+        if (factor == 0) {
+            return constant(0);
+        } else if (factor == 1) {
+            return IntUnaryOperator.identity();
         } else {
             return value -> value * factor;
         }
     }
 
-    static Int2IntFunction div(int factor) {
+    public static IntUnaryOperator constant(int v) {
+        return value -> v;
+    }
+
+    public static IntUnaryOperator div(int factor) {
         if (factor == 1) {
-            return IDENTITY;
+            return IntUnaryOperator.identity();
         } else {
             ValidateUtils.checkTrue(factor != 0, "Zero division factor");
             return value -> value / factor;

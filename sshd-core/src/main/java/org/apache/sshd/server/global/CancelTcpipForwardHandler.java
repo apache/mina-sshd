@@ -19,6 +19,7 @@
 package org.apache.sshd.server.global;
 
 import java.util.Objects;
+import java.util.function.IntUnaryOperator;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.forward.TcpipForwarder;
@@ -40,7 +41,7 @@ public class CancelTcpipForwardHandler extends AbstractConnectionServiceRequestH
     /**
      * Default growth factor function used to resize response buffers
      */
-    public static final Int2IntFunction RESPONSE_BUFFER_GROWTH_FACTOR = Int2IntFunction.add(Byte.SIZE);
+    public static final IntUnaryOperator RESPONSE_BUFFER_GROWTH_FACTOR = Int2IntFunction.add(Byte.SIZE);
 
     public static final CancelTcpipForwardHandler INSTANCE = new CancelTcpipForwardHandler();
 

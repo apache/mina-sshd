@@ -22,9 +22,9 @@ package org.apache.sshd.common.util.buffer;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.function.IntUnaryOperator;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -193,7 +193,7 @@ public class ByteArrayBuffer extends Buffer {
     }
 
     @Override
-    public void ensureCapacity(int capacity, Int2IntFunction growthFactor) {
+    public void ensureCapacity(int capacity, IntUnaryOperator growthFactor) {
         ValidateUtils.checkTrue(capacity >= 0, "Negative capacity requested: %d", capacity);
 
         int maxSize = size();
@@ -201,7 +201,7 @@ public class ByteArrayBuffer extends Buffer {
         int remaining = maxSize - curPos;
         if (remaining < capacity) {
             int minimum = curPos + capacity;
-            int actual = growthFactor.apply(minimum);
+            int actual = growthFactor.applyAsInt(minimum);
             if (actual < minimum) {
                 throw new IllegalStateException("ensureCapacity(" + capacity + ") actual (" + actual + ") below min. (" + minimum + ")");
             }

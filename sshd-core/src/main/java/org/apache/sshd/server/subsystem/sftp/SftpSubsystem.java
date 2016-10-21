@@ -72,6 +72,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.IntUnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -98,7 +99,6 @@ import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionPa
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.HardLinkExtensionParser;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.Pair;
@@ -2056,7 +2056,7 @@ public class SftpSubsystem
             ValidateUtils.checkTrue(readLen >= 0, "Illegal requested read length: %d", readLen);
 
             buffer.clear();
-            buffer.ensureCapacity(readLen + Long.SIZE /* the header */, Int2IntFunction.IDENTITY);
+            buffer.ensureCapacity(readLen + Long.SIZE /* the header */, IntUnaryOperator.identity());
 
             buffer.putByte((byte) SftpConstants.SSH_FXP_DATA);
             buffer.putInt(id);
