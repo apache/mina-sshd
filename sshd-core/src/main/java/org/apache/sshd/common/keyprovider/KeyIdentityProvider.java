@@ -23,11 +23,11 @@ import java.security.KeyPair;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Transformer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -54,7 +54,7 @@ public interface KeyIdentityProvider {
      * Invokes {@link KeyIdentityProvider#loadKeys()} and returns the result - ignores
      * {@code null} providers (i.e., returns an empty iterable instance)
      */
-    Transformer<KeyIdentityProvider, Iterable<KeyPair>> LOADER = p ->
+    Function<KeyIdentityProvider, Iterable<KeyPair>> LOADER = p ->
             (p == null) ? Collections.<KeyPair>emptyList() : p.loadKeys();
 
     /**

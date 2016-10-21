@@ -22,6 +22,7 @@ package org.apache.sshd.server;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.NamedFactory;
@@ -32,7 +33,6 @@ import org.apache.sshd.common.compression.CompressionFactory;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.server.auth.keyboard.DefaultKeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
@@ -52,7 +52,7 @@ import org.apache.sshd.server.kex.DHGServer;
  */
 public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
 
-    public static final Transformer<DHFactory, NamedFactory<KeyExchange>> DH2KEX = factory ->
+    public static final Function<DHFactory, NamedFactory<KeyExchange>> DH2KEX = factory ->
             factory == null
                 ? null
                 : factory.isGroupExchange()

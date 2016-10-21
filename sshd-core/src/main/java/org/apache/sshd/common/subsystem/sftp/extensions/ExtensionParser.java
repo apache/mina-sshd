@@ -19,15 +19,16 @@
 
 package org.apache.sshd.common.subsystem.sftp.extensions;
 
+import java.util.function.Function;
+
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.util.NumberUtils;
-import org.apache.sshd.common.util.Transformer;
 
 /**
  * @param <T> Result type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ExtensionParser<T> extends NamedResource, Transformer<byte[], T> {
+public interface ExtensionParser<T> extends NamedResource, Function<byte[], T> {
     default T parse(byte[] input) {
         return parse(input, 0, NumberUtils.length(input));
     }
@@ -35,7 +36,7 @@ public interface ExtensionParser<T> extends NamedResource, Transformer<byte[], T
     T parse(byte[] input, int offset, int len);
 
     @Override
-    default T transform(byte[] input) {
+    default T apply(byte[] input) {
         return parse(input);
     }
 }

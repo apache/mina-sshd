@@ -165,7 +165,7 @@ public final class ParserUtils {
      * decoded extension value. Extensions for which there is no registered
      * parser are <U>ignored</U>
      * @see #getRegisteredParser(String)
-     * @see ExtensionParser#transform(Object)
+     * @see ExtensionParser#parse(byte[])
      */
     public static Map<String, Object> parse(Map<String, byte[]> extensions) {
         if (GenericUtils.isEmpty(extensions)) {
@@ -189,8 +189,7 @@ public final class ParserUtils {
         if (parser == null) {
             return null;
         } else {
-            return parser.transform(encoded);
+            return parser.parse(encoded);
         }
     }
-
 }

@@ -39,6 +39,7 @@ public class TransformerTest extends BaseTestSupport {
     @Test
     public void testToString() {
         assertNull("Invalid null result", Transformer.TOSTRING.apply(null));
+
         for (Object o : new Object[] {"", getClass(), new Date()}) {
             String expected = o.toString();
             String actual = Transformer.TOSTRING.apply(o);

@@ -30,12 +30,12 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
+import java.util.function.Function;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.IdentityUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.SshServer;
@@ -56,7 +56,7 @@ public final class ServerIdentity {
      */
     public static final String HOST_KEY_CONFIG_PROP = "HostKey";
 
-    public static final Transformer<String, String> ID_GENERATOR =
+    public static final Function<String, String> ID_GENERATOR =
             ServerIdentity::getIdentityFileName;
 
     private ServerIdentity() {
