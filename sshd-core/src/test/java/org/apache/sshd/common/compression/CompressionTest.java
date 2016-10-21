@@ -27,6 +27,7 @@ import java.util.EnumSet;
 import java.util.List;
 
 import com.jcraft.jsch.JSch;
+
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.mac.MacTest;
@@ -65,6 +66,7 @@ public class CompressionTest extends BaseTestSupport {
 
     private final CompressionFactory factory;
     private final SessionListener listener;
+
     public CompressionTest(CompressionFactory factory) {
         this.factory = factory;
         listener = new SessionListener() {

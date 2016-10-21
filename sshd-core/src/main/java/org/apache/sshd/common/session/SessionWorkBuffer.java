@@ -39,11 +39,11 @@ public class SessionWorkBuffer extends ByteArrayBuffer implements SessionHolder<
     }
 
     @Override
-    public void clear() {
+    public void clear(boolean wipeData) {
         throw new UnsupportedOperationException("Not allowed to clear session work buffer of " + getSession());
     }
 
-    public void forceClear() {
-        super.clear();
+    public void forceClear(boolean wipeData) {
+        super.clear(wipeData);
     }
 }

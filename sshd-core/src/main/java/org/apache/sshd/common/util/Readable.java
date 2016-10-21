@@ -18,6 +18,9 @@
  */
 package org.apache.sshd.common.util;
 
+import java.nio.ByteBuffer;
+import java.util.Objects;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -27,4 +30,24 @@ public interface Readable {
 
     void getRawBytes(byte[] data, int offset, int len);
 
+    /**
+     * Wrap a {@link ByteBuffer} as a {@link Readable} instance
+     *
+     * @param buffer The {@link ByteBuffer} to wrap - never {@code null}
+     * @return The {@link Readable} wrapper
+     */
+    static Readable readable(ByteBuffer buffer) {
+        Objects.requireNonNull(buffer, "No buffer to wrap");
+        return new Readable() {
+            @Override
+            public int available() {
+                return buffer.remaining();
+            }
+
+            @Override
+            public void getRawBytes(byte[] data, int offset, int len) {
+                buffer.get(data, offset, len);
+            }
+        };
+    }
 }

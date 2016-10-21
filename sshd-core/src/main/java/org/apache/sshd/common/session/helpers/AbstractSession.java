@@ -953,11 +953,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     @SuppressWarnings("unchecked")
     @Override
-    public IoWriteFuture writePacket(Buffer buffer, final long timeout, final TimeUnit unit) throws IOException {
-        final IoWriteFuture writeFuture = writePacket(buffer);
-        final DefaultSshFuture<IoWriteFuture> future = (DefaultSshFuture<IoWriteFuture>) writeFuture;
+    public IoWriteFuture writePacket(Buffer buffer, long timeout, TimeUnit unit) throws IOException {
+        IoWriteFuture writeFuture = writePacket(buffer);
+        DefaultSshFuture<IoWriteFuture> future = (DefaultSshFuture<IoWriteFuture>) writeFuture;
         ScheduledExecutorService executor = factoryManager.getScheduledExecutorService();
-        final ScheduledFuture<?> sched = executor.schedule(() -> {
+        ScheduledFuture<?> sched = executor.schedule(() -> {
             Throwable t = new TimeoutException("Timeout writing packet: " + timeout + " " + unit);
             if (log.isDebugEnabled()) {
                 log.debug("writePacket({}): {}", AbstractSession.this, t.getMessage());
@@ -994,15 +994,18 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         // Synchronize all write requests as needed by the encoding algorithm
         // and also queue the write request in this synchronized block to ensure
         // packets are sent in the correct order
+        IoWriteFuture future;
         synchronized (encodeLock) {
             if (ignoreBuf != null) {
-                encode(ignoreBuf);
+                ignoreBuf = encode(ignoreBuf);
                 ioSession.write(ignoreBuf);
             }
 
-            encode(buffer);
-            return ioSession.write(buffer);
+            buffer = encode(buffer);
+            future = ioSession.write(buffer);
         }
+
+        return future;
     }
 
     protected int resolveIgnoreBufferDataLength() {
@@ -1162,9 +1165,12 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * This method need to be called into a synchronized block around encodeLock
      *
      * @param buffer the buffer to encode
+     * @return The encoded buffer - may be different than original if input
+     * buffer does not have enough room for {@link SshConstants#SSH_PACKET_HEADER_LEN},
+     * in which a substitute buffer will be created and used.
      * @throws IOException if an exception occurs during the encoding process
      */
-    protected void encode(Buffer buffer) throws IOException {
+    protected Buffer encode(Buffer buffer) throws IOException {
         try {
             // Check that the packet has some free space for the header
             int curPos = buffer.rpos();
@@ -1236,6 +1242,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             outBytesCount.addAndGet(len);
             // Make buffer ready to be read
             buffer.rpos(off);
+            return buffer;
         } catch (IOException e) {
             throw e;
         } catch (Exception e) {
@@ -1319,7 +1326,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                         if (uncompressBuffer == null) {
                             uncompressBuffer = new SessionWorkBuffer(this);
                         } else {
-                            uncompressBuffer.forceClear();
+                            uncompressBuffer.forceClear(true);
                         }
 
                         decoderBuffer.wpos(decoderBuffer.rpos() + decoderLength - 1 - pad);

@@ -408,8 +408,8 @@ public class AbstractSessionTest extends BaseTestSupport {
         }
 
         @Override
-        protected void encode(Buffer buffer) throws IOException {
-            // ignored
+        protected Buffer encode(Buffer buffer) throws IOException {
+            return buffer;
         }
 
         @Override

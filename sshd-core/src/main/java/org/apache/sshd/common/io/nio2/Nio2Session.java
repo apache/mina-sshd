@@ -239,18 +239,8 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         startReading(ByteBuffer.wrap(buf, offset, len));
     }
 
-    public void startReading(final ByteBuffer buffer) {
-        doReadCycle(buffer, new Readable() {
-            @Override
-            public int available() {
-                return buffer.remaining();
-            }
-
-            @Override
-            public void getRawBytes(byte[] data, int offset, int len) {
-                buffer.get(data, offset, len);
-            }
-        });
+    public void startReading(ByteBuffer buffer) {
+        doReadCycle(buffer, Readable.readable(buffer));
     }
 
     protected void doReadCycle(ByteBuffer buffer, Readable bufReader) {

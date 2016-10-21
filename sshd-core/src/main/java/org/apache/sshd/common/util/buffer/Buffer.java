@@ -19,6 +19,8 @@
 package org.apache.sshd.common.util.buffer;
 
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -60,6 +62,7 @@ import org.apache.sshd.common.config.keys.impl.ECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.common.util.buffer.keys.BufferPublicKeyParser;
@@ -107,7 +110,11 @@ public abstract class Buffer implements Readable {
         }
     }
 
-    public abstract void clear();
+    public void clear() {
+        clear(true);
+    }
+
+    public abstract void clear(boolean wipeData);
 
     public boolean isValidMessageStructure(Class<?>... fieldTypes) {
         return isValidMessageStructure(GenericUtils.isEmpty(fieldTypes) ? Collections.emptyList() : Arrays.asList(fieldTypes));
@@ -490,6 +497,8 @@ public abstract class Buffer implements Readable {
 
     public abstract int putBuffer(Readable buffer, boolean expand);
 
+    public abstract void putBuffer(ByteBuffer buffer);
+
     /**
      * Writes 16 bits
      *
@@ -536,8 +545,27 @@ public abstract class Buffer implements Readable {
         putByte(b ? (byte) 1 : (byte) 0);
     }
 
+    /**
+     * Adds the bytes to the buffer and wipes the data from the
+     * input buffer <U>after</U> having added it - useful for sensitive
+     * information such as password
+     *
+     * @param b The buffer to add - OK if {@code null}
+     */
+    public void putAndWipeBytes(byte[] b) {
+        putAndWipeBytes(b, 0, NumberUtils.length(b));
+    }
+
+    public void putAndWipeBytes(byte[] b, int off, int len) {
+        putBytes(b, off, len);
+
+        for (int pos = off, index = 0; index < len; pos++, index++) {
+            b[pos] = (byte) 0;
+        }
+    }
+
     public void putBytes(byte[] b) {
-        putBytes(b, 0, b.length);
+        putBytes(b, 0, NumberUtils.length(b));
     }
 
     public void putBytes(byte[] b, int off, int len) {
@@ -586,7 +614,58 @@ public abstract class Buffer implements Readable {
     }
 
     public void putString(String string, Charset charset) {
-        putBytes(GenericUtils.isEmpty(string) ? GenericUtils.EMPTY_BYTE_ARRAY : string.getBytes(charset));
+        if (GenericUtils.isEmpty(string)) {
+            putBytes(GenericUtils.EMPTY_BYTE_ARRAY);
+        } else {
+            putAndWipeBytes(string.getBytes(charset));
+        }
+    }
+
+    /**
+     * Zeroes the input array <U>after</U> having put the characters in the
+     * buffer - useful for sensitive information such as passwords
+     *
+     * @param chars The characters to put in the buffer - may be {@code null}/empty
+     * @see #putAndWipeChars(char[], Charset)
+     * @see #putChars(char[], Charset)
+     */
+    public void putAndWipeChars(char[] chars) {
+        putAndWipeChars(chars, 0, GenericUtils.length(chars));
+    }
+
+    public void putAndWipeChars(char[] chars, int offset, int len) {
+        putAndWipeChars(chars, offset, len, StandardCharsets.UTF_8);
+    }
+
+    public void putAndWipeChars(char[] chars, Charset charset) {
+        putAndWipeChars(chars, 0, GenericUtils.length(chars), charset);
+    }
+
+    public void putAndWipeChars(char[] chars, int offset, int len, Charset charset) {
+        putChars(chars, offset, len, charset);
+        for (int pos = offset, index = 0; index < len; index++, pos++) {
+            chars[pos] = '\0';
+        }
+    }
+
+    public void putChars(char[] chars) {
+        putChars(chars, 0, GenericUtils.length(chars));
+    }
+
+    public void putChars(char[] chars, int offset, int len) {
+        putChars(chars, offset, len, StandardCharsets.UTF_8);
+    }
+
+    public void putChars(char[] chars, Charset charset) {
+        putChars(chars, 0, GenericUtils.length(chars), charset);
+    }
+
+    public void putChars(char[] chars, int offset, int len, Charset charset) {
+        if (len <= 0) {
+            putBytes(GenericUtils.EMPTY_BYTE_ARRAY);
+        } else {
+            putBuffer(charset.encode(CharBuffer.wrap(chars, offset, len)));
+        }
     }
 
     public void putMPInt(BigInteger bi) {

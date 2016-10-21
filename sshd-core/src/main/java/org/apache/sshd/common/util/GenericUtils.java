@@ -59,6 +59,7 @@ import javax.management.ReflectionException;
 public final class GenericUtils {
 
     public static final byte[] EMPTY_BYTE_ARRAY = {};
+    public static final char[] EMPTY_CHAR_ARRAY = {};
     public static final String[] EMPTY_STRING_ARRAY = {};
     public static final Object[] EMPTY_OBJECT_ARRAY = {};
 
@@ -264,6 +265,44 @@ public final class GenericUtils {
     @SafeVarargs
     public static <T> boolean isEmpty(T... a) {
         return length(a) <= 0;
+    }
+
+    public static int length(char[] chars) {
+        return (chars == null) ? 0 : chars.length;
+    }
+
+    public static boolean isEmpty(char[] chars) {
+        return length(chars) <= 0;
+    }
+
+    /**
+     * Compares 2 character arrays - <B>Note:</B> {@code null} and empty
+     * are considered <U>equal</U>
+     *
+     * @param c1 1st array
+     * @param c2 2nd array
+     * @return Negative is 1st array comes first in lexicographical order,
+     * positive if 2nd array comes first and zero if equal
+     */
+    public static int compare(char[] c1, char[] c2) {
+        int l1 = length(c1);
+        int l2 = length(c2);
+        int cmpLen = Math.min(l1, l2);
+        for (int index = 0; index < cmpLen; index++) {
+            char c11 = c1[index];
+            char c22 = c2[index];
+            int nRes = Character.compare(c11, c22);
+            if (nRes != 0) {
+                return nRes;
+            }
+        }
+
+        int nRes = Integer.compare(l1, l2);
+        if (nRes != 0) {
+            return nRes;
+        }
+
+        return 0;
     }
 
     @SafeVarargs    // there is no EnumSet.of(...) so we have to provide our own

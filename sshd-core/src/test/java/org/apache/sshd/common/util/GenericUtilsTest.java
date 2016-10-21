@@ -145,4 +145,26 @@ public class GenericUtilsTest extends BaseTestSupport {
         Throwable[] actual = current.getSuppressed();
         assertArrayEquals("Suppressed", expected, actual);
     }
+
+    @Test
+    public void testNullOrEmptyCharArrayComparison() {
+        char[][] values = new char[][]{null, GenericUtils.EMPTY_CHAR_ARRAY};
+        for (char[] c1 : values) {
+            for (char[] c2 : values) {
+                assertEquals(((c1 == null) ? "null" : "empty") + " vs. " + ((c2 == null) ? "null" : "empty"), 0, GenericUtils.compare(c1, c2));
+            }
+        }
+    }
+
+    @Test
+    public void testCharArrayComparison() {
+        String s1 = getClass().getSimpleName();
+        char[] c1 = s1.toCharArray();
+        assertEquals("Same value equality", 0, GenericUtils.compare(c1, s1.toCharArray()));
+
+        String s2 = getCurrentTestName();
+        char[] c2 = s2.toCharArray();
+        assertEquals("s1 vs. s2", Integer.signum(s1.compareTo(s2)), Integer.signum(GenericUtils.compare(c1, c2)));
+        assertEquals("s2 vs. s1", Integer.signum(s2.compareTo(s1)), Integer.signum(GenericUtils.compare(c2, c1)));
+    }
 }

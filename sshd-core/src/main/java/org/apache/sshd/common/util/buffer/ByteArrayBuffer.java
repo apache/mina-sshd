@@ -19,7 +19,9 @@
 
 package org.apache.sshd.common.util.buffer;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
@@ -119,9 +121,13 @@ public class ByteArrayBuffer extends Buffer {
     }
 
     @Override
-    public void clear() {
+    public void clear(boolean wipeData) {
         rpos = 0;
         wpos = 0;
+
+        if (wipeData) {
+            Arrays.fill(data, (byte) 0);
+        }
     }
 
     @Override
@@ -143,6 +149,15 @@ public class ByteArrayBuffer extends Buffer {
         buffer.getRawBytes(data, wpos, r);
         wpos += r;
         return r;
+    }
+
+    @Override
+    public void putBuffer(ByteBuffer buffer) {
+        int required = buffer.remaining();
+        ensureCapacity(required + Integer.SIZE);
+        putInt(required);
+        buffer.get(data, wpos, required);
+        wpos += required;
     }
 
     @Override
