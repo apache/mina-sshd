@@ -19,6 +19,7 @@
 package org.apache.sshd.common.cipher;
 
 import java.math.BigInteger;
+import java.security.interfaces.ECKey;
 import java.security.spec.ECField;
 import java.security.spec.ECFieldFp;
 import java.security.spec.ECParameterSpec;
@@ -213,6 +214,15 @@ public enum ECCurves implements NamedResource, OptionalFeature {
      */
     public static ECCurves fromCurveName(String name) {
         return NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
+    }
+
+    /**
+     * @param key The {@link ECKey} - ignored if {@code null}
+     * @return The matching {@link ECCurves} instance - {@code null} if no
+     * match found
+     */
+    public static ECCurves fromECKey(ECKey key) {
+        return fromCurveParameters((key == null) ? null : key.getParams());
     }
 
     /**

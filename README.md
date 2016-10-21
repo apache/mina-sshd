@@ -34,8 +34,7 @@ Required only for reading/writing keys from/to PEM files or for special keys/cip
 
 ```
 
-**Caveat**: If _Bouncy Castle_ modules are available, then the code will use its implementation of the ciphers, keys, signatures, etc. rather than
-the default JCE provided in the JVM.
+**Caveat**: If _Bouncy Castle_ modules are available, then the code will use its implementation of the ciphers, keys, signatures, etc. rather than the default JCE provided in the JVM.
 
 
 * [MINA core](https://mina.apache.org/mina-project/)
@@ -46,7 +45,7 @@ Optional dependency to enable choosing between NIO asynchronous sockets (the def
 
 ```xml
 
-    <dependency>
+    <dependency>    <!-- For async. sockets I/O -->
         <groupId>org.apache.mina</groupId>
         <artifactId>mina-core</artifactId>
     </dependency>
@@ -69,6 +68,7 @@ Required for supporting [ssh-ed25519](https://tools.ietf.org/html/draft-bjh21-ss
 
 ```
 
+The code contains support for reading _ed25519_ [OpenSSH formatted private keys](https://issues.apache.org/jira/browse/SSHD-703).
 
 # Set up an SSH client in 5 minutes
 
@@ -107,7 +107,10 @@ Of course, one can implement the verifier in whatever other manner is suitable f
 
 ### ClientIdentityLoader/KeyPairProvider
 
-One can set up the public/private keys to be used in case a password-less authentication is needed. By default, the client is configured to automatically detect and use the identity files residing in the user's *~/.ssh* folder (e.g., *id_rsa*, *id_ecdsa*) and present them as part of the authentication process. **Note:** if the identity files are encrypted via a password, one must configure a `FilePasswordProvider` so that the code can decrypt them before using and presenting them to the server as part of the authentication process. Reading key files in PEM format (including encrypted ones) requires that the [Bouncy Castle](https://www.bouncycastle.org/) supporting artifacts be available in the code's classpath.
+One can set up the public/private keys to be used in case a password-less authentication is needed. By default, the client is configured to automatically detect and use the identity files residing in the user's *~/.ssh* folder (e.g., *id_rsa*, *id_ecdsa*) and present them as part of the authentication process. **Note:** if the identity files are encrypted via a password, one must configure a `FilePasswordProvider` so that the code can decrypt them before using and presenting them to the server as part of the authentication process. Reading key files in PEM format (including encrypted ones) requires that the [Bouncy Castle](https://www.bouncycastle.org/) supporting artifacts be available in the code's classpath. One can read files in
+[OpenSSH](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/PROTOCOL.key?rev=1.1&content-type=text/x-cvsweb-markup)
+format without any specific extra artifacts (although for reading _ed25519_ keys one needs to add the _EdDSA_ support
+artifacts). **Note:** for the time being, password encrypted _ed25519_ private key files are not supported.
 
 ### UserInteraction
 

@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.common.config.keys;
+package org.apache.sshd.common.config.keys.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,6 +36,8 @@ import java.security.spec.RSAPublicKeySpec;
 import java.util.Collections;
 import java.util.Objects;
 
+import org.apache.sshd.common.config.keys.KeyEntryResolver;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
@@ -55,8 +57,8 @@ public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder<RSAPublic
             throw new InvalidKeySpecException("Unexpected key type: " + keyType);
         }
 
-        BigInteger e = PublicKeyEntryDecoder.decodeBigInt(keyData);
-        BigInteger n = PublicKeyEntryDecoder.decodeBigInt(keyData);
+        BigInteger e = KeyEntryResolver.decodeBigInt(keyData);
+        BigInteger n = KeyEntryResolver.decodeBigInt(keyData);
 
         return generatePublicKey(new RSAPublicKeySpec(n, e));
     }
@@ -64,9 +66,9 @@ public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder<RSAPublic
     @Override
     public String encodePublicKey(OutputStream s, RSAPublicKey key) throws IOException {
         Objects.requireNonNull(key, "No public key provided");
-        PublicKeyEntryDecoder.encodeString(s, KeyPairProvider.SSH_RSA);
-        PublicKeyEntryDecoder.encodeBigInt(s, key.getPublicExponent());
-        PublicKeyEntryDecoder.encodeBigInt(s, key.getModulus());
+        KeyEntryResolver.encodeString(s, KeyPairProvider.SSH_RSA);
+        KeyEntryResolver.encodeBigInt(s, key.getPublicExponent());
+        KeyEntryResolver.encodeBigInt(s, key.getModulus());
 
         return KeyPairProvider.SSH_RSA;
     }

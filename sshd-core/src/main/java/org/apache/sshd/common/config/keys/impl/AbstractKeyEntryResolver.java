@@ -17,35 +17,33 @@
  * under the License.
  */
 
-package org.apache.sshd.common.config.keys;
+package org.apache.sshd.common.config.keys.impl;
 
 import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
 import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.KeySpec;
 import java.util.Collection;
 import java.util.Objects;
 
+import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * Useful base class implementation for a decoder of an {@code OpenSSH} encoded key data
- *
  * @param <PUB> Type of {@link PublicKey}
  * @param <PRV> Type of {@link PrivateKey}
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey, PRV extends PrivateKey>
-        implements PublicKeyEntryDecoder<PUB, PRV> {
+public abstract class AbstractKeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
+            extends AbstractLoggingBean
+            implements KeyEntryResolver<PUB, PRV>  {
     private final Class<PUB> pubType;
     private final Class<PRV> prvType;
     private final Collection<String> names;
 
-    protected AbstractPublicKeyEntryDecoder(Class<PUB> pubType, Class<PRV> prvType, Collection<String> names) {
+    protected AbstractKeyEntryResolver(Class<PUB> pubType, Class<PRV> prvType, Collection<String> names) {
         this.pubType = Objects.requireNonNull(pubType, "No public key type specified");
         this.prvType = Objects.requireNonNull(prvType, "No private key type specified");
         this.names = ValidateUtils.checkNotNullAndNotEmpty(names, "No type names provided");
@@ -59,39 +57,6 @@ public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey, PRV e
     @Override
     public final Class<PRV> getPrivateKeyType() {
         return prvType;
-    }
-
-    @Override
-    public KeyPair cloneKeyPair(KeyPair kp) throws GeneralSecurityException {
-        if (kp == null) {
-            return null;
-        }
-
-        PUB pubCloned = null;
-        PublicKey pubOriginal = kp.getPublic();
-        Class<PUB> pubExpected = getPublicKeyType();
-        if (pubOriginal != null) {
-            Class<?> orgType = pubOriginal.getClass();
-            if (!pubExpected.isAssignableFrom(orgType)) {
-                throw new InvalidKeyException("Mismatched public key types: expected=" + pubExpected.getSimpleName() + ", actual=" + orgType.getSimpleName());
-            }
-
-            pubCloned = clonePublicKey(pubExpected.cast(pubOriginal));
-        }
-
-        PRV prvCloned = null;
-        PrivateKey prvOriginal = kp.getPrivate();
-        Class<PRV> prvExpected = getPrivateKeyType();
-        if (prvOriginal != null) {
-            Class<?> orgType = prvOriginal.getClass();
-            if (!prvExpected.isAssignableFrom(orgType)) {
-                throw new InvalidKeyException("Mismatched private key types: expected=" + prvExpected.getSimpleName() + ", actual=" + orgType.getSimpleName());
-            }
-
-            prvCloned = clonePrivateKey(prvExpected.cast(prvOriginal));
-        }
-
-        return new KeyPair(pubCloned, prvCloned);
     }
 
     @Override
@@ -109,13 +74,6 @@ public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey, PRV e
         KeyFactory factory = getKeyFactoryInstance();
         Class<PRV> keyType = getPrivateKeyType();
         return keyType.cast(factory.generatePrivate(keySpec));
-    }
-
-    @Override
-    public KeyPair generateKeyPair(int keySize) throws GeneralSecurityException {
-        KeyPairGenerator gen = getKeyPairGenerator();
-        gen.initialize(keySize);
-        return gen.generateKeyPair();
     }
 
     @Override

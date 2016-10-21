@@ -36,6 +36,9 @@ import java.security.Provider;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.cert.CertificateFactory;
+import java.security.spec.InvalidKeySpecException;
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -43,6 +46,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
@@ -51,9 +55,10 @@ import javax.crypto.spec.DHParameterSpec;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
-import org.apache.sshd.common.keyprovider.AbstractClassLoadableResourceKeyPairProvider;
-import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
+import org.apache.sshd.common.config.keys.loader.KeyPairResourceParser;
+import org.apache.sshd.common.config.keys.loader.openssh.OpenSSHKeyPairResourceParser;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.random.JceRandomFactory;
 import org.apache.sshd.common.random.RandomFactory;
@@ -61,10 +66,8 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ReflectionUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleClassLoadableResourceKeyPairProvider;
-import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleFileKeyPairProvider;
 import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleGeneratorHostKeyProvider;
-import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleInputStreamLoader;
+import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleKeyPairResourceParser;
 import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleRandomFactory;
 import org.apache.sshd.common.util.security.eddsa.EdDSASecurityProvider;
 import org.apache.sshd.common.util.threads.ThreadUtils;
@@ -134,6 +137,7 @@ public final class SecurityUtils {
     private static final AtomicInteger MAX_DHG_KEY_SIZE_HOLDER = new AtomicInteger(0);
 
     private static final Map<String, Provider> REGISTERED_PROVIDERS = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private static final AtomicReference<KeyPairResourceParser> KEYPAIRS_PARSER_HODLER = new AtomicReference<>();
 
     private static String defaultProvider;
     private static Boolean registerBouncyCastle;
@@ -375,29 +379,25 @@ public final class SecurityUtils {
      *                    if the loaded key is <U>guaranteed</U> not to be encrypted
      * @return The loaded {@link KeyPair}
      * @throws IOException              If failed to read/parse the input stream
-     * @throws GeneralSecurityException If failed to generate the keys - specifically,
-     *                                  {@link NoSuchProviderException} is thrown also if {@link #isBouncyCastleRegistered()}
-     *                                  is {@code false}
+     * @throws GeneralSecurityException If failed to generate the keys
      */
     public static KeyPair loadKeyPairIdentity(String resourceKey, InputStream inputStream, FilePasswordProvider provider)
             throws IOException, GeneralSecurityException {
-        if (!isBouncyCastleRegistered()) {
-            throw new NoSuchProviderException("BouncyCastle not registered");
+        KeyPairResourceParser parser = getKeyPairResourceParser();
+        if (parser == null) {
+            throw new NoSuchProviderException("No registered key-pair resource parser");
         }
 
-        return BouncyCastleInputStreamLoader.loadKeyPair(resourceKey, inputStream, provider);
-    }
+        Collection<KeyPair> ids = parser.loadKeyPairs(resourceKey, provider, inputStream);
+        int numLoaded = GenericUtils.size(ids);
+        if (numLoaded <= 0) {
+            throw new InvalidKeyException("Unsupported private key file format: " + resourceKey);
+        }
+        if (numLoaded != 1) {
+            throw new InvalidKeySpecException("Multiple private key pairs N/A: " + resourceKey);
+        }
 
-    /* -------------------------------------------------------------------- */
-
-    public static AbstractFileKeyPairProvider createFileKeyPairProvider() {
-        ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
-        return new BouncyCastleFileKeyPairProvider();
-    }
-
-    public static AbstractClassLoadableResourceKeyPairProvider createClassLoadableResourceKeyPairProvider() {
-        ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
-        return new BouncyCastleClassLoadableResourceKeyPairProvider();
+        return ids.iterator().next();
     }
 
     /* -------------------------------------------------------------------- */
@@ -481,6 +481,14 @@ public final class SecurityUtils {
         return EdDSASecurityProvider.getEDDSAPublicKeyEntryDecoder();
     }
 
+    public static PrivateKeyEntryDecoder<? extends PublicKey, ? extends PrivateKey> getOpenSSHEDDSAPrivateKeyEntryDecoder() {
+        if (!isEDDSACurveSupported()) {
+            throw new UnsupportedOperationException(EDDSA + " provider N/A");
+        }
+
+        return EdDSASecurityProvider.getOpenSSHEDDSAPrivateKeyEntryDecoder();
+    }
+
     public static org.apache.sshd.common.signature.Signature getEDDSASigner() {
         if (isEDDSACurveSupported()) {
             return EdDSASecurityProvider.getEDDSASignature();
@@ -554,6 +562,33 @@ public final class SecurityUtils {
     }
 
     //////////////////////////////////////////////////////////////////////////
+
+    public static KeyPairResourceParser getKeyPairResourceParser() {
+        KeyPairResourceParser parser;
+        synchronized (KEYPAIRS_PARSER_HODLER) {
+            parser = KEYPAIRS_PARSER_HODLER.get();
+            if (parser != null) {
+                return parser;
+            }
+
+            Collection<KeyPairResourceParser> available = new LinkedList<>();
+            available.add(OpenSSHKeyPairResourceParser.INSTANCE);
+            if (isBouncyCastleRegistered()) {
+                available.add(BouncyCastleKeyPairResourceParser.INSTANCE);
+            }
+
+            parser = KeyPairResourceParser.aggregate(available);
+            KEYPAIRS_PARSER_HODLER.set(parser);
+        }
+
+        return parser;
+    }
+
+    public static void setKeyPairResourceParser(KeyPairResourceParser parser) {
+        synchronized (KEYPAIRS_PARSER_HODLER) {
+            KEYPAIRS_PARSER_HODLER.set(parser);
+        }
+    }
 
     public static synchronized KeyFactory getKeyFactory(String algorithm) throws GeneralSecurityException {
         register();

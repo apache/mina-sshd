@@ -37,6 +37,7 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @param <R> Type of resource from which the {@link KeyPair} is generated
@@ -170,7 +171,10 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
 
     protected abstract InputStream openKeyPairResource(String resourceKey, R resource) throws IOException;
 
-    protected abstract KeyPair doLoadKey(String resourceKey, InputStream inputStream, FilePasswordProvider provider) throws IOException, GeneralSecurityException;
+    protected KeyPair doLoadKey(String resourceKey, InputStream inputStream, FilePasswordProvider provider)
+            throws IOException, GeneralSecurityException {
+        return SecurityUtils.loadKeyPairIdentity(resourceKey, inputStream, provider);
+    }
 
     protected class KeyPairIterator implements Iterator<KeyPair> {
         private final Iterator<? extends R> iterator;

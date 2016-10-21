@@ -106,7 +106,7 @@ import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
+import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.mac.Mac;
@@ -119,7 +119,6 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
-import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * <P>
@@ -988,8 +987,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
     }
 
-    public static AbstractFileKeyPairProvider setupSessionIdentities(ClientFactoryManager client, Collection<File> identities,
-            final BufferedReader stdin, final PrintStream stdout, final PrintStream stderr)
+    public static FileKeyPairProvider setupSessionIdentities(ClientFactoryManager client, Collection<File> identities,
+            BufferedReader stdin, PrintStream stdout, PrintStream stderr)
                 throws Throwable {
         client.setFilePasswordProvider(file -> {
             stdout.print("Enter password for private key file=" + file + ": ");
@@ -1000,7 +999,12 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             return null;
         }
 
-        AbstractFileKeyPairProvider provider = SecurityUtils.createFileKeyPairProvider();
+        FileKeyPairProvider provider = new FileKeyPairProvider() {
+            @Override
+            public String toString() {
+                return FileKeyPairProvider.class.getSimpleName() + "[clientIdentitiesProvider]";
+            }
+        };
         provider.setFiles(identities);
         client.setKeyPairProvider(provider);
         return provider;

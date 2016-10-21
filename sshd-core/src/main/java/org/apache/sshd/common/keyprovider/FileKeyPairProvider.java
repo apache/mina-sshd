@@ -25,7 +25,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Objects;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -38,11 +41,23 @@ import org.apache.sshd.common.util.io.IoUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractFileKeyPairProvider extends AbstractResourceKeyPairProvider<Path> {
+public class FileKeyPairProvider extends AbstractResourceKeyPairProvider<Path> {
     private Collection<? extends Path> files;
 
-    protected AbstractFileKeyPairProvider() {
+    public FileKeyPairProvider() {
         super();
+    }
+
+    public FileKeyPairProvider(Path path) {
+        this(Collections.singletonList(Objects.requireNonNull(path, "No path provided")));
+    }
+
+    public FileKeyPairProvider(Path ... files) {
+        this(Arrays.asList(files));
+    }
+
+    public FileKeyPairProvider(Collection<? extends Path> files) {
+        this.files = files;
     }
 
     public Collection<? extends Path> getPaths() {

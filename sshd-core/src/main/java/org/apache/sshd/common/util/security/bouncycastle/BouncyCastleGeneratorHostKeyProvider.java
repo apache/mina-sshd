@@ -19,7 +19,6 @@
 package org.apache.sshd.common.util.security.bouncycastle;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
@@ -35,11 +34,6 @@ import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 public class BouncyCastleGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProvider {
     public BouncyCastleGeneratorHostKeyProvider(Path path) {
         setPath(path);
-    }
-
-    @Override
-    protected KeyPair doReadKeyPair(String resourceKey, InputStream inputStream) throws IOException, GeneralSecurityException {
-        return BouncyCastleInputStreamLoader.loadKeyPair(resourceKey, inputStream, null);
     }
 
     @SuppressWarnings("deprecation")

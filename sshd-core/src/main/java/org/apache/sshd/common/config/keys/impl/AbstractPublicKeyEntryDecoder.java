@@ -16,27 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.util.security.bouncycastle;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.GeneralSecurityException;
-import java.security.KeyPair;
+package org.apache.sshd.common.config.keys.impl;
 
-import org.apache.sshd.common.config.keys.FilePasswordProvider;
-import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.util.Collection;
+
+import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
 
 /**
+ * Useful base class implementation for a decoder of an {@code OpenSSH} encoded key data
+ *
+ * @param <PUB> Type of {@link PublicKey}
+ * @param <PRV> Type of {@link PrivateKey}
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class BouncyCastleFileKeyPairProvider extends AbstractFileKeyPairProvider {
-    public BouncyCastleFileKeyPairProvider() {
-        super();
-    }
-
-    @Override
-    protected KeyPair doLoadKey(String resourceKey, InputStream inputStream, FilePasswordProvider provider)
-            throws IOException, GeneralSecurityException {
-        return BouncyCastleInputStreamLoader.loadKeyPair(resourceKey, inputStream, provider);
+public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey, PRV extends PrivateKey>
+            extends AbstractKeyEntryResolver<PUB, PRV>
+            implements PublicKeyEntryDecoder<PUB, PRV> {
+    protected AbstractPublicKeyEntryDecoder(Class<PUB> pubType, Class<PRV> prvType, Collection<String> names) {
+        super(pubType, prvType, names);
     }
 }

@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.common.config.keys;
+package org.apache.sshd.common.config.keys.impl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
@@ -45,6 +45,8 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.config.keys.KeyEntryResolver;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -78,17 +80,18 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
         String keyCurveName = curve.getName();
         ECParameterSpec paramSpec = curve.getParameters();
         // see rfc5656 section 3.1
-        String encCurveName = PublicKeyEntryDecoder.decodeString(keyData);
+        String encCurveName = KeyEntryResolver.decodeString(keyData);
         if (!keyCurveName.equals(encCurveName)) {
             throw new InvalidKeySpecException("Mismatched key curve name (" + keyCurveName + ") vs. encoded one (" + encCurveName + ")");
         }
 
-        byte[] octets = PublicKeyEntryDecoder.readRLEBytes(keyData);
-        final ECPoint w;
+        byte[] octets = KeyEntryResolver.readRLEBytes(keyData);
+        ECPoint w;
         try {
             w = octetStringToEcPoint(octets);
             if (w == null) {
-                throw new InvalidKeySpecException("No ECPoint generated for curve=" + keyCurveName + " from octets=" + BufferUtils.toHex(':', octets));
+                throw new InvalidKeySpecException("No ECPoint generated for curve=" + keyCurveName
+                        + " from octets=" + BufferUtils.toHex(':', octets));
             }
         } catch (RuntimeException e) {
             throw new InvalidKeySpecException("Failed (" + e.getClass().getSimpleName() + ")"
@@ -144,9 +147,9 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
         ECCurves curve = Objects.requireNonNull(ECCurves.fromCurveParameters(params), "Cannot determine curve");
         String keyType = curve.getKeyType();
         String curveName = curve.getName();
-        PublicKeyEntryDecoder.encodeString(s, keyType);
+        KeyEntryResolver.encodeString(s, keyType);
         // see rfc5656 section 3.1
-        PublicKeyEntryDecoder.encodeString(s, curveName);
+        KeyEntryResolver.encodeString(s, curveName);
         ECPointCompression.UNCOMPRESSED.writeECPoint(s, curveName, key.getW());
         return keyType;
     }
@@ -274,7 +277,7 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
                 }
 
                 int numElements = curve.getNumPointOctets();
-                PublicKeyEntryDecoder.encodeInt(s, 1 /* the indicator */ + 2 * numElements);
+                KeyEntryResolver.encodeInt(s, 1 /* the indicator */ + 2 * numElements);
                 s.write(getIndicatorValue());
                 writeCoordinate(s, "X", p.getAffineX(), numElements);
                 writeCoordinate(s, "Y", p.getAffineY(), numElements);

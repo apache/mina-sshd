@@ -32,8 +32,8 @@ import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
 
-import org.apache.sshd.common.config.keys.AbstractPublicKeyEntryDecoder;
-import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
+import org.apache.sshd.common.config.keys.KeyEntryResolver;
+import org.apache.sshd.common.config.keys.impl.AbstractPublicKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
@@ -73,9 +73,9 @@ public final class Ed25519PublicKeyDecoder extends AbstractPublicKeyEntryDecoder
     @Override
     public String encodePublicKey(OutputStream s, EdDSAPublicKey key) throws IOException {
         Objects.requireNonNull(key, "No public key provided");
-        PublicKeyEntryDecoder.encodeString(s, KeyPairProvider.SSH_ED25519);
+        KeyEntryResolver.encodeString(s, KeyPairProvider.SSH_ED25519);
         byte[] seed = getSeedValue(key);
-        PublicKeyEntryDecoder.writeRLEBytes(s, seed);
+        KeyEntryResolver.writeRLEBytes(s, seed);
         return KeyPairProvider.SSH_ED25519;
     }
 
@@ -86,22 +86,12 @@ public final class Ed25519PublicKeyDecoder extends AbstractPublicKeyEntryDecoder
 
     @Override
     public EdDSAPublicKey decodePublicKey(String keyType, InputStream keyData) throws IOException, GeneralSecurityException {
-        byte[] seed = PublicKeyEntryDecoder.readRLEBytes(keyData);
+        byte[] seed = KeyEntryResolver.readRLEBytes(keyData);
         return EdDSAPublicKey.class.cast(SecurityUtils.generateEDDSAPublicKey(keyType, seed));
     }
 
     public static byte[] getSeedValue(EdDSAPublicKey key) {
         // a bit of reverse-engineering on the EdDSAPublicKeySpec
         return (key == null) ? null : key.getAbyte();
-    }
-
-    public static EdDSAPublicKey fromPrivateKey(EdDSAPrivateKey prvKey) throws GeneralSecurityException {
-        if (prvKey == null) {
-            return null;
-        }
-
-        EdDSAPublicKeySpec keySpec = new EdDSAPublicKeySpec(prvKey.getSeed(), prvKey.getParams());
-        KeyFactory factory = SecurityUtils.getKeyFactory(SecurityUtils.EDDSA);
-        return EdDSAPublicKey.class.cast(factory.generatePublic(keySpec));
     }
 }

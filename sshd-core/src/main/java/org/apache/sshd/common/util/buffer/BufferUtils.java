@@ -100,6 +100,24 @@ public final class BufferUtils {
                 sb.append(e.getClass().getSimpleName()).append(": ").append(e.getMessage());
             }
 
+            // Pad the last (incomplete) line to align its data view
+            for (int index = dumpSize; index < chunkSize; index++) {
+                if (sep != EMPTY_HEX_SEPARATOR) {
+                    sb.append(' ');
+                }
+                sb.append("  ");
+            }
+
+            sb.append("    ");
+            for (int pos = curOffset, l = 0; l < dumpSize; pos++, l++) {
+                int b = data[pos] & 0xFF;
+                if ((b > ' ') && (b < 0x7E)) {
+                    sb.append((char) b);
+                } else {
+                    sb.append('.');
+                }
+            }
+
             logger.log(level, sb.toString());
             remainLen -= dumpSize;
             curOffset += dumpSize;

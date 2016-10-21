@@ -18,13 +18,17 @@
  */
 package org.apache.sshd.common.util.io;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.Reader;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
 import java.nio.file.FileSystem;
@@ -35,11 +39,13 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.sshd.common.util.GenericUtils;
@@ -467,5 +473,70 @@ public final class IoUtils {
             copy(inStream, baos);
             return baos.toByteArray();
         }
+    }
+
+    /**
+     * Reads all lines until no more available
+     *
+     * @param url The {@link URL} to read from
+     * @return The {@link List} of lines in the same <U>order</U> as it was read
+     * @throws IOException If failed to read the lines
+     * @see #readAllLines(InputStream)
+     */
+    public static List<String> readAllLines(URL url) throws IOException {
+        try (InputStream stream = Objects.requireNonNull(url, "No URL").openStream()) {
+            return readAllLines(stream);
+        }
+    }
+
+    /**
+     * Reads all lines until no more available
+     *
+     * @param stream The {@link InputStream} - <B>Note:</B> assumed to
+     * contain {@code UTF-8} encoded data
+     * @return The {@link List} of lines in the same <U>order</U> as it was read
+     * @throws IOException If failed to read the lines
+     * @see #readAllLines(Reader)
+     */
+    public static List<String> readAllLines(InputStream stream) throws IOException {
+        try (Reader reader = new InputStreamReader(Objects.requireNonNull(stream, "No stream instance"), StandardCharsets.UTF_8)) {
+            return readAllLines(reader);
+        }
+    }
+
+    public static List<String> readAllLines(Reader reader) throws IOException {
+        try (BufferedReader br = new BufferedReader(Objects.requireNonNull(reader, "No reader instance"), DEFAULT_COPY_SIZE)) {
+            return readAllLines(br);
+        }
+    }
+
+    /**
+     * Reads all lines until no more available
+     *
+     * @param reader The {@link BufferedReader} to read all lines
+     * @return The {@link List} of lines in the same <U>order</U> as it was read
+     * @throws IOException If failed to read the lines
+     * @see #readAllLines(BufferedReader, int)
+     */
+    public static List<String> readAllLines(BufferedReader reader) throws IOException {
+        return readAllLines(reader, -1);
+    }
+
+    /**
+     * Reads all lines until no more available
+     *
+     * @param reader The {@link BufferedReader} to read all lines
+     * @param lineCountHint A hint as to the expected number of lines - non-positive
+     * means unknown - in which case some initial default value will be used to
+     * initialize the list used to accumulate the lines.
+     * @return The {@link List} of lines in the same <U>order</U> as it was read
+     * @throws IOException If failed to read the lines
+     */
+    public static List<String> readAllLines(BufferedReader reader, int lineCountHint) throws IOException {
+        List<String> result = new ArrayList<>(Math.max(lineCountHint, Short.SIZE));
+        for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+            result.add(line);
+        }
+        return result;
     }
 }

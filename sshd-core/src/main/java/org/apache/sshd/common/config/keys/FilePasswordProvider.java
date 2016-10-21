@@ -29,17 +29,7 @@ public interface FilePasswordProvider {
     /**
      * An &quot;empty&quot; provider that returns {@code null} - i.e., unprotected key file
      */
-    FilePasswordProvider EMPTY = new FilePasswordProvider() {
-        @Override
-        public String getPassword(String resourceKey) throws IOException {
-            return null;
-        }
-
-        @Override
-        public String toString() {
-            return "EMPTY";
-        }
-    };
+    FilePasswordProvider EMPTY = resourceKey -> null;
 
     /**
      * @param resourceKey The resource key representing the <U>private</U>

@@ -57,6 +57,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.config.keys.impl.DSSPublicKeyEntryDecoder;
+import org.apache.sshd.common.config.keys.impl.ECDSAPublicKeyEntryDecoder;
+import org.apache.sshd.common.config.keys.impl.RSAPublicKeyDecoder;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.digest.DigestFactory;

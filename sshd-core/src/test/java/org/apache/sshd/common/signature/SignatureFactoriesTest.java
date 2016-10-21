@@ -31,12 +31,13 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.cipher.ECCurves;
-import org.apache.sshd.common.config.keys.DSSPublicKeyEntryDecoder;
-import org.apache.sshd.common.config.keys.ECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
-import org.apache.sshd.common.config.keys.RSAPublicKeyDecoder;
+import org.apache.sshd.common.config.keys.impl.DSSPublicKeyEntryDecoder;
+import org.apache.sshd.common.config.keys.impl.ECDSAPublicKeyEntryDecoder;
+import org.apache.sshd.common.config.keys.impl.RSAPublicKeyDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -44,6 +45,7 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.Utils;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -57,22 +59,32 @@ import org.junit.runners.Parameterized.Parameters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-public class SignatureFactoriesTest extends BaseTestSupport {
+public class SignatureFactoriesTest extends BaseTestSupport implements OptionalFeature {
     private static SshServer sshd;
     private static SshClient client;
     private static int port;
 
     private final String keyType;
     private final int keySize;
+    private final boolean supported;
     private final NamedFactory<Signature> factory;
     private final PublicKeyEntryDecoder<?, ?> pubKeyDecoder;
 
-    public SignatureFactoriesTest(String keyType, NamedFactory<Signature> factory, int keySize, PublicKeyEntryDecoder<?, ?> decoder) {
+    public SignatureFactoriesTest(
+            String keyType, NamedFactory<Signature> factory, int keySize, boolean supported, PublicKeyEntryDecoder<?, ?> decoder) {
         this.keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified");
-        this.factory = Objects.requireNonNull(factory, "No signature factory provided");
-        ValidateUtils.checkTrue(keySize > 0, "Invalid key size: %d", keySize);
+        this.factory = supported ? Objects.requireNonNull(factory, "No signature factory provided") : factory;
+        if (supported) {
+            ValidateUtils.checkTrue(keySize > 0, "Invalid key size: %d", keySize);
+        }
         this.keySize = keySize;
-        this.pubKeyDecoder = Objects.requireNonNull(decoder, "No public key decoder provided");
+        this.supported = supported;
+        this.pubKeyDecoder = supported ? Objects.requireNonNull(decoder, "No public key decoder provided") : null;
+    }
+
+    @Override
+    public boolean isSupported() {
+        return supported;
     }
 
     @Parameters(name = "type={0}, size={2}")
@@ -80,24 +92,28 @@ public class SignatureFactoriesTest extends BaseTestSupport {
         List<Object[]> list = new ArrayList<>();
         addTests(list, KeyPairProvider.SSH_DSS, BuiltinSignatures.dsa, DSS_SIZES, DSSPublicKeyEntryDecoder.INSTANCE);
         addTests(list, KeyPairProvider.SSH_RSA, BuiltinSignatures.rsa, RSA_SIZES, RSAPublicKeyDecoder.INSTANCE);
+
         if (SecurityUtils.hasEcc()) {
             for (ECCurves curve : ECCurves.VALUES) {
-                if (!curve.isSupported()) {
-                    continue;
-                }
                 BuiltinSignatures factory = BuiltinSignatures.fromFactoryName(curve.getKeyType());
-                addTests(list, curve.getName(), factory, Collections.singletonList(curve.getKeySize()), ECDSAPublicKeyEntryDecoder.INSTANCE);
+                addTests(list, curve.getName(), factory,
+                        curve.isSupported() ? Collections.singletonList(curve.getKeySize()) : Collections.singletonList(-1),
+                        curve.isSupported() ? ECDSAPublicKeyEntryDecoder.INSTANCE : null);
+            }
+        } else {
+            for (String name : ECCurves.NAMES) {
+                addTests(list, name, null, Collections.singletonList(-1), null);
             }
         }
-        if (SecurityUtils.isEDDSACurveSupported()) {
-            addTests(list, KeyPairProvider.SSH_ED25519, BuiltinSignatures.ed25519, ED25519_SIZES, SecurityUtils.getEDDSAPublicKeyEntryDecoder());
-        }
+        addTests(list, KeyPairProvider.SSH_ED25519, BuiltinSignatures.ed25519, ED25519_SIZES,
+                SecurityUtils.isEDDSACurveSupported() ? SecurityUtils.getEDDSAPublicKeyEntryDecoder() : null);
         return Collections.unmodifiableList(list);
     }
 
-    private static void addTests(List<Object[]> list, String keyType, NamedFactory<Signature> factory, Collection<Integer> sizes, PublicKeyEntryDecoder<?, ?> decoder) {
+    private static void addTests(
+            List<Object[]> list, String keyType, NamedFactory<Signature> factory, Collection<Integer> sizes, PublicKeyEntryDecoder<?, ?> decoder) {
         for (Integer keySize : sizes) {
-            list.add(new Object[]{keyType, factory, keySize, decoder});
+            list.add(new Object[]{keyType, factory, keySize, decoder != null, decoder});
         }
     }
 
@@ -140,6 +156,7 @@ public class SignatureFactoriesTest extends BaseTestSupport {
 
     @Test
     public void testPublicKeyAuth() throws Exception {
+        Assume.assumeTrue(isSupported());
         testKeyPairProvider(getKeyType(), getKeySize(), pubKeyDecoder, Collections.singletonList(factory));
     }
 

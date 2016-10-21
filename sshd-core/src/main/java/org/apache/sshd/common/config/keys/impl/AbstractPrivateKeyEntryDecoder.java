@@ -16,27 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.util.security.bouncycastle;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.GeneralSecurityException;
-import java.security.KeyPair;
+package org.apache.sshd.common.config.keys.impl;
 
-import org.apache.sshd.common.config.keys.FilePasswordProvider;
-import org.apache.sshd.common.keyprovider.AbstractClassLoadableResourceKeyPairProvider;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.util.Collection;
+
+import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 
 /**
+ * @param <PUB> Type of {@link PublicKey}
+ * @param <PRV> Type of {@link PrivateKey}
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class BouncyCastleClassLoadableResourceKeyPairProvider extends AbstractClassLoadableResourceKeyPairProvider {
-    public BouncyCastleClassLoadableResourceKeyPairProvider() {
-        super();
+public abstract class AbstractPrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends PrivateKey>
+            extends AbstractKeyEntryResolver<PUB, PRV>
+            implements PrivateKeyEntryDecoder<PUB, PRV> {
+    protected AbstractPrivateKeyEntryDecoder(Class<PUB> pubType, Class<PRV> prvType, Collection<String> names) {
+        super(pubType, prvType, names);
     }
 
-    @Override
-    protected KeyPair doLoadKey(String resourceKey, InputStream inputStream, FilePasswordProvider provider)
-            throws IOException, GeneralSecurityException {
-        return BouncyCastleInputStreamLoader.loadKeyPair(resourceKey, inputStream, provider);
-    }
 }

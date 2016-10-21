@@ -33,16 +33,15 @@ import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.keyprovider.AbstractClassLoadableResourceKeyPairProvider;
-import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.AbstractResourceKeyPairProvider;
+import org.apache.sshd.common.keyprovider.ClassLoadableResourceKeyPairProvider;
+import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.Assume;
@@ -137,15 +136,11 @@ public class SecurityUtilsTest extends BaseTestSupport {
     }
 
     private static KeyPair testLoadPrivateKeyResource(String name, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
-        AbstractClassLoadableResourceKeyPairProvider provider = SecurityUtils.createClassLoadableResourceKeyPairProvider();
-        provider.setResources(Collections.singletonList(name));
-        return testLoadPrivateKey(name, provider, pubType, prvType);
+        return testLoadPrivateKey(name, new ClassLoadableResourceKeyPairProvider(name), pubType, prvType);
     }
 
     private static KeyPair testLoadPrivateKeyFile(Path file, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
-        AbstractFileKeyPairProvider provider = SecurityUtils.createFileKeyPairProvider();
-        provider.setPaths(Collections.singletonList(file));
-        return testLoadPrivateKey(file.toString(), provider, pubType, prvType);
+        return testLoadPrivateKey(file.toString(), new FileKeyPairProvider(file), pubType, prvType);
     }
 
     private static KeyPair testLoadPrivateKey(String resourceKey, AbstractResourceKeyPairProvider<?> provider,

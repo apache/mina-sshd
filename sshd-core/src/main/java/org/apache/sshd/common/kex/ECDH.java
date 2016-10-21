@@ -31,8 +31,8 @@ import java.util.Objects;
 import javax.crypto.KeyAgreement;
 
 import org.apache.sshd.common.cipher.ECCurves;
-import org.apache.sshd.common.config.keys.ECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.impl.ECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;

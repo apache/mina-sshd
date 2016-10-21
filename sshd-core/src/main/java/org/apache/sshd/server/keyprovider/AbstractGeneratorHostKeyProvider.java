@@ -250,7 +250,9 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
         }
     }
 
-    protected abstract KeyPair doReadKeyPair(String resourceKey, InputStream inputStream) throws IOException, GeneralSecurityException;
+    protected KeyPair doReadKeyPair(String resourceKey, InputStream inputStream) throws IOException, GeneralSecurityException {
+        return SecurityUtils.loadKeyPairIdentity(resourceKey, inputStream, null);
+    }
 
     protected void writeKeyPair(KeyPair kp, Path keyPath, OpenOption... options) throws IOException, GeneralSecurityException {
         if ((!Files.exists(keyPath)) || isOverwriteAllowed()) {

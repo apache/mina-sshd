@@ -26,6 +26,7 @@ import java.security.KeyPair;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
@@ -36,12 +37,34 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractClassLoadableResourceKeyPairProvider extends AbstractResourceKeyPairProvider<String> {
+public class ClassLoadableResourceKeyPairProvider extends AbstractResourceKeyPairProvider<String> {
     private ClassLoader classLoader;
     private Collection<String> resources;
 
-    protected AbstractClassLoadableResourceKeyPairProvider() {
-        classLoader = ThreadUtils.resolveDefaultClassLoader(getClass());
+    public ClassLoadableResourceKeyPairProvider() {
+        this(Collections.emptyList());
+    }
+
+    public ClassLoadableResourceKeyPairProvider(ClassLoader cl) {
+        this(cl, Collections.emptyList());
+    }
+
+    public ClassLoadableResourceKeyPairProvider(String res) {
+        this(Collections.singletonList(ValidateUtils.checkNotNullAndNotEmpty(res, "No resource specified")));
+    }
+
+    public ClassLoadableResourceKeyPairProvider(ClassLoader cl, String res) {
+        this(cl, Collections.singletonList(ValidateUtils.checkNotNullAndNotEmpty(res, "No resource specified")));
+    }
+
+    public ClassLoadableResourceKeyPairProvider(Collection<String> resources) {
+        this.classLoader = ThreadUtils.resolveDefaultClassLoader(getClass());
+        this.resources = (resources == null) ? Collections.emptyList() : resources;
+    }
+
+    public ClassLoadableResourceKeyPairProvider(ClassLoader cl, Collection<String> resources) {
+        this.classLoader = cl;
+        this.resources = (resources == null) ? Collections.emptyList() : resources;
     }
 
     public Collection<String> getResources() {

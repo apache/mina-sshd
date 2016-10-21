@@ -55,7 +55,7 @@ import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
+import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProviderHolder;
@@ -112,7 +112,7 @@ public final class Utils {
     // uses a cached instance to avoid re-creating the keys as it is a time-consuming effort
     private static final AtomicReference<KeyPairProvider> KEYPAIR_PROVIDER_HOLDER = new AtomicReference<>();
     // uses a cached instance to avoid re-creating the keys as it is a time-consuming effort
-    private static final Map<String, AbstractFileKeyPairProvider> PROVIDERS_MAP = new ConcurrentHashMap<>();
+    private static final Map<String, FileKeyPairProvider> PROVIDERS_MAP = new ConcurrentHashMap<>();
 
     private Utils() {
         throw new UnsupportedOperationException("No instance");
@@ -174,19 +174,19 @@ public final class Utils {
         return gen.generateKeyPair();
     }
 
-    public static AbstractFileKeyPairProvider createTestKeyPairProvider(String resource) {
+    public static FileKeyPairProvider createTestKeyPairProvider(String resource) {
         File file = getFile(resource);
         String filePath = file.getAbsolutePath();
-        AbstractFileKeyPairProvider provider = PROVIDERS_MAP.get(filePath);
+        FileKeyPairProvider provider = PROVIDERS_MAP.get(filePath);
         if (provider != null) {
             return provider;
         }
 
-        provider = SecurityUtils.createFileKeyPairProvider();
+        provider = new FileKeyPairProvider();
         provider.setFiles(Collections.singletonList(file));
         provider = validateKeyPairProvider(provider);
 
-        AbstractFileKeyPairProvider prev = PROVIDERS_MAP.put(filePath, provider);
+        FileKeyPairProvider prev = PROVIDERS_MAP.put(filePath, provider);
         if (prev != null) { // check if somebody else beat us to it
             return prev;
         } else {

@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.common.config.keys;
+package org.apache.sshd.common.config.keys.loader.openssh;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,45 +36,74 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.Collections;
 import java.util.Objects;
 
+import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.KeyEntryResolver;
+import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.impl.AbstractPrivateKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DSSPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<DSAPublicKey, DSAPrivateKey> {
-    public static final DSSPublicKeyEntryDecoder INSTANCE = new DSSPublicKeyEntryDecoder();
+public class OpenSSHDSSPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryDecoder<DSAPublicKey, DSAPrivateKey> {
+    public static final OpenSSHDSSPrivateKeyEntryDecoder INSTANCE = new OpenSSHDSSPrivateKeyEntryDecoder();
 
-    public DSSPublicKeyEntryDecoder() {
+    public OpenSSHDSSPrivateKeyEntryDecoder() {
         super(DSAPublicKey.class, DSAPrivateKey.class, Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_DSS)));
     }
 
     @Override
-    public DSAPublicKey decodePublicKey(String keyType, InputStream keyData) throws IOException, GeneralSecurityException {
+    public DSAPrivateKey decodePrivateKey(String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
+            throws IOException, GeneralSecurityException {
         if (!KeyPairProvider.SSH_DSS.equals(keyType)) { // just in case we were invoked directly
             throw new InvalidKeySpecException("Unexpected key type: " + keyType);
         }
 
-        BigInteger p = PublicKeyEntryDecoder.decodeBigInt(keyData);
-        BigInteger q = PublicKeyEntryDecoder.decodeBigInt(keyData);
-        BigInteger g = PublicKeyEntryDecoder.decodeBigInt(keyData);
-        BigInteger y = PublicKeyEntryDecoder.decodeBigInt(keyData);
+        BigInteger p = KeyEntryResolver.decodeBigInt(keyData);
+        BigInteger q = KeyEntryResolver.decodeBigInt(keyData);
+        BigInteger g = KeyEntryResolver.decodeBigInt(keyData);
+        BigInteger y = KeyEntryResolver.decodeBigInt(keyData);
+        Objects.requireNonNull(y, "No public key data");   // TODO run some validation on it
+        BigInteger x = KeyEntryResolver.decodeBigInt(keyData);
 
-        return generatePublicKey(new DSAPublicKeySpec(y, p, q, g));
+        return generatePrivateKey(new DSAPrivateKeySpec(x, p, q, g));
     }
 
     @Override
-    public String encodePublicKey(OutputStream s, DSAPublicKey key) throws IOException {
-        Objects.requireNonNull(key, "No public key provided");
+    public String encodePrivateKey(OutputStream s, DSAPrivateKey key) throws IOException {
+        Objects.requireNonNull(key, "No private key provided");
 
         DSAParams keyParams = Objects.requireNonNull(key.getParams(), "No DSA params available");
-        PublicKeyEntryDecoder.encodeString(s, KeyPairProvider.SSH_DSS);
-        PublicKeyEntryDecoder.encodeBigInt(s, keyParams.getP());
-        PublicKeyEntryDecoder.encodeBigInt(s, keyParams.getQ());
-        PublicKeyEntryDecoder.encodeBigInt(s, keyParams.getG());
-        PublicKeyEntryDecoder.encodeBigInt(s, key.getY());
+        BigInteger p = keyParams.getP();
+        KeyEntryResolver.encodeBigInt(s, p);
+        KeyEntryResolver.encodeBigInt(s, keyParams.getQ());
 
+        BigInteger g = keyParams.getG();
+        KeyEntryResolver.encodeBigInt(s, g);
+
+        BigInteger x = key.getX();
+        BigInteger y = g.modPow(x, p);
+        KeyEntryResolver.encodeBigInt(s, y);
+        KeyEntryResolver.encodeBigInt(s, x);
         return KeyPairProvider.SSH_DSS;
+    }
+
+    @Override
+    public boolean isPublicKeyRecoverySupported() {
+        return true;
+    }
+
+    @Override
+    public DSAPublicKey recoverPublicKey(DSAPrivateKey privateKey) throws GeneralSecurityException {
+        // based on code from https://github.com/alexo/SAML-2.0/blob/master/java-opensaml/opensaml-security-api/src/main/java/org/opensaml/xml/security/SecurityHelper.java
+        DSAParams keyParams = privateKey.getParams();
+        BigInteger p = keyParams.getP();
+        BigInteger x = privateKey.getX();
+        BigInteger q = keyParams.getQ();
+        BigInteger g = keyParams.getG();
+        BigInteger y = g.modPow(x, p);
+        return generatePublicKey(new DSAPublicKeySpec(y, p, q, g));
     }
 
     @Override

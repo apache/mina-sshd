@@ -181,6 +181,13 @@ public enum BuiltinIdentities implements Identity {
         for (BuiltinIdentities id : VALUES) {
             Class<?> pubType = id.getPublicKeyType();
             Class<?> prvType = id.getPrivateKeyType();
+            // Ignore placeholder classes (e.g., if ed25519 is not supported)
+            if ((prvType == null) || (pubType == null)) {
+                continue;
+            }
+            if ((prvType == PrivateKey.class) || (pubType == PublicKey.class)) {
+                continue;
+            }
             if (pubType.isAssignableFrom(clazz) || prvType.isAssignableFrom(clazz)) {
                 return id;
             }
