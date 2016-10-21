@@ -22,6 +22,7 @@ package org.apache.sshd.client.config.hosts;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Objects;
 
 import org.apache.sshd.common.Factory;
@@ -29,7 +30,6 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.mac.Mac;
-import org.apache.sshd.common.util.Base64;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -136,9 +136,10 @@ public class KnownHostHashValue {
     }
 
     public static <A extends Appendable> A append(A sb, NamedResource factory, byte[] salt, byte[] digest) throws IOException {
+        Base64.Encoder encoder = Base64.getEncoder();
         sb.append(HASHED_HOST_DELIMITER).append(factory.getName());
-        sb.append(HASHED_HOST_DELIMITER).append(Base64.encodeToString(salt));
-        sb.append(HASHED_HOST_DELIMITER).append(Base64.encodeToString(digest));
+        sb.append(HASHED_HOST_DELIMITER).append(encoder.encodeToString(salt));
+        sb.append(HASHED_HOST_DELIMITER).append(encoder.encodeToString(digest));
         return sb;
     }
 
@@ -158,9 +159,10 @@ public class KnownHostHashValue {
         NamedFactory<Mac> factory =
                 ValidateUtils.checkNotNull(KnownHostDigest.fromName(components[1]),
                         "Invalid hash pattern (unknown digest): %s", pattern);
+        Base64.Decoder decoder = Base64.getDecoder();
         value.setDigester(factory);
-        value.setSaltValue(Base64.decodeString(components[2]));
-        value.setDigestValue(Base64.decodeString(components[3]));
+        value.setSaltValue(decoder.decode(components[2]));
+        value.setDigestValue(decoder.decode(components[3]));
         return value;
     }
 }

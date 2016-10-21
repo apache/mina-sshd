@@ -26,6 +26,7 @@ import java.io.StreamCorruptedException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -33,7 +34,6 @@ import java.util.List;
 import java.util.logging.Level;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
-import org.apache.sshd.common.util.Base64;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -142,7 +142,8 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
         data = data.replaceAll("\\s", "");
         data = data.trim();
 
-        return extractKeyPairs(resourceKey, beginMarker, endMarker, passwordProvider, Base64.decodeString(data));
+        Base64.Decoder decoder = Base64.getDecoder();
+        return extractKeyPairs(resourceKey, beginMarker, endMarker, passwordProvider, decoder.decode(data));
     }
 
     /**

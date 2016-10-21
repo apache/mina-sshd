@@ -28,9 +28,9 @@ import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Objects;
 
-import org.apache.sshd.common.util.Base64;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 
@@ -162,7 +162,8 @@ public class PublicKeyEntry implements Serializable {
     @Override
     public String toString() {
         byte[] data = getKeyData();
-        return getKeyType() + " " + (NumberUtils.isEmpty(data) ? "<no-key>" : Base64.encodeToString(data));
+        Base64.Encoder encoder = Base64.getEncoder();
+        return getKeyType() + " " + (NumberUtils.isEmpty(data) ? "<no-key>" : encoder.encodeToString(data));
     }
 
     /**
@@ -206,7 +207,8 @@ public class PublicKeyEntry implements Serializable {
 
         String keyType = data.substring(0, startPos);
         String b64Data = data.substring(startPos + 1, endPos).trim();
-        byte[] keyData = Base64.decodeString(b64Data);
+        Base64.Decoder decoder = Base64.getDecoder();
+        byte[] keyData = decoder.decode(b64Data);
         if (NumberUtils.isEmpty(keyData)) {
             throw new IllegalArgumentException("Bad format (no BASE64 key data): " + data);
         }
@@ -254,7 +256,8 @@ public class PublicKeyEntry implements Serializable {
         try (ByteArrayOutputStream s = new ByteArrayOutputStream(Byte.MAX_VALUE)) {
             String keyType = decoder.encodePublicKey(s, key);
             byte[] bytes = s.toByteArray();
-            String b64Data = Base64.encodeToString(bytes);
+            Base64.Encoder encoder = Base64.getEncoder();
+            String b64Data = encoder.encodeToString(bytes);
             sb.append(keyType).append(' ').append(b64Data);
         }
 

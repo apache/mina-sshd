@@ -22,12 +22,12 @@ package org.apache.sshd.common.digest;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Objects;
 
 import org.apache.sshd.common.Factory;
-import org.apache.sshd.common.util.Base64;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -205,9 +205,10 @@ public final class DigestUtils {
         String algo = d.getAlgorithm();
         if (BuiltinDigests.md5.getAlgorithm().equals(algo)) {
             return algo + ":" + BufferUtils.toHex(':', data).toLowerCase();
-        } else {
-            return algo.replace("-", "").toUpperCase() + ":" + Base64.encodeToString(data).replaceAll("=", "");
         }
+
+        Base64.Encoder encoder = Base64.getEncoder();
+        return algo.replace("-", "").toUpperCase() + ":" + encoder.encodeToString(data).replaceAll("=", "");
     }
 
     public static byte[] getRawFingerprint(Digest d, byte... buf) throws Exception {
