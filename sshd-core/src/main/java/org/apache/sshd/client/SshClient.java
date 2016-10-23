@@ -19,7 +19,6 @@
 package org.apache.sshd.client;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -69,6 +68,7 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
+import org.apache.sshd.client.config.keys.ClientIdentity;
 import org.apache.sshd.client.config.keys.ClientIdentityLoader;
 import org.apache.sshd.client.config.keys.DefaultClientIdentitiesWatcher;
 import org.apache.sshd.client.future.ConnectFuture;
@@ -99,8 +99,10 @@ import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.config.CompressionConfigValue;
 import org.apache.sshd.common.config.SshConfigFileReader;
+import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.IoConnectFuture;
@@ -790,7 +792,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         String login = null;
         String password = null;
         boolean error = false;
-        List<File> identities = new ArrayList<>();
+        List<Path> identities = new ArrayList<>();
         Map<String, String> options = new LinkedHashMap<>();
         List<NamedFactory<Cipher>> ciphers = null;
         List<NamedFactory<Mac>> macs = null;
@@ -838,7 +840,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     break;
                 }
             } else if ("-i".equals(argName)) {
-                identities.add(new File(argVal));
+                identities.add(resolveIdentityFile(argVal));
             } else if ("-C".equals(argName)) {
                 compressions = setupCompressions(argName,
                         GenericUtils.join(
@@ -925,13 +927,24 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
     }
 
+    public static Path resolveIdentityFile(String id) throws IOException {
+        BuiltinIdentities identity = BuiltinIdentities.fromName(id);
+        if (identity != null) {
+            String fileName = ClientIdentity.getIdentityFileName(identity.getName());
+            Path keysFolder = PublicKeyEntry.getDefaultKeysFolderPath();
+            return keysFolder.resolve(fileName);
+        } else {
+            return Paths.get(id);
+        }
+    }
+
     // returns null if error encountered
     public static SshClient setupClient(
             Map<String, ?> options,
             List<NamedFactory<Cipher>> ciphers,
             List<NamedFactory<Mac>> macs,
             List<NamedFactory<Compression>> compressions,
-            Collection<File> identities,
+            Collection<? extends Path> identities,
             BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
         if (GenericUtils.isEmpty(ciphers)) {
             ciphers = setupCiphers(options, stderr);
@@ -987,7 +1000,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
     }
 
-    public static FileKeyPairProvider setupSessionIdentities(ClientFactoryManager client, Collection<File> identities,
+    public static FileKeyPairProvider setupSessionIdentities(ClientFactoryManager client, Collection<? extends Path> identities,
             BufferedReader stdin, PrintStream stdout, PrintStream stderr)
                 throws Throwable {
         client.setFilePasswordProvider(file -> {
@@ -1005,7 +1018,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 return FileKeyPairProvider.class.getSimpleName() + "[clientIdentitiesProvider]";
             }
         };
-        provider.setFiles(identities);
+        provider.setPaths(identities);
         client.setKeyPairProvider(provider);
         return provider;
     }
