@@ -176,7 +176,7 @@ public class PortForwardingTest extends BaseTestSupport {
                 Thread thread = Thread.currentThread();
                 ClassLoader cl = thread.getContextClassLoader();
 
-                final TcpipForwarder forwarder = factory.create(service);
+                TcpipForwarder forwarder = factory.create(service);
                 return (TcpipForwarder) Proxy.newProxyInstance(cl, interfaces, new InvocationHandler() {
                     private final org.slf4j.Logger log = LoggerFactory.getLogger(TcpipForwarder.class);
 
@@ -349,10 +349,10 @@ public class PortForwardingTest extends BaseTestSupport {
 
     @Test
     public void testRemoteForwardingNativeBigPayload() throws Exception {
-        final AtomicReference<SshdSocketAddress> localAddressHolder = new AtomicReference<>();
-        final AtomicReference<SshdSocketAddress> remoteAddressHolder = new AtomicReference<>();
-        final AtomicReference<SshdSocketAddress> boundAddressHolder = new AtomicReference<>();
-        final AtomicInteger tearDownSignal = new AtomicInteger(0);
+        AtomicReference<SshdSocketAddress> localAddressHolder = new AtomicReference<>();
+        AtomicReference<SshdSocketAddress> remoteAddressHolder = new AtomicReference<>();
+        AtomicReference<SshdSocketAddress> boundAddressHolder = new AtomicReference<>();
+        AtomicInteger tearDownSignal = new AtomicInteger(0);
         @SuppressWarnings("checkstyle:anoninnerlength")
         PortForwardingEventListener listener = new PortForwardingEventListener() {
             @Override

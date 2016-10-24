@@ -47,13 +47,10 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class KeepAliveTest extends BaseTestSupport {
-
     private static final long HEARTBEAT = TimeUnit.SECONDS.toMillis(2L);
     private static final long TIMEOUT = 2L * HEARTBEAT;
     private static final long WAIT = 2L * TIMEOUT;

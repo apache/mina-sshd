@@ -902,6 +902,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             // clear the listeners since we are closing the session (quicker GC)
             this.sessionListeners.clear();
             this.channelListeners.clear();
+            this.tunnelListeners.clear();
         }
 
         super.preClose();

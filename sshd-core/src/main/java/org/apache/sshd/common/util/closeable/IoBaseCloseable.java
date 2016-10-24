@@ -32,5 +32,4 @@ public abstract class IoBaseCloseable extends AbstractLoggingBean implements Clo
     protected IoBaseCloseable(String discriminator) {
         super(discriminator);
     }
-
 }

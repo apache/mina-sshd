@@ -32,7 +32,6 @@ import org.apache.sshd.common.future.SshFutureListener;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SequentialCloseable extends SimpleCloseable {
-
     private final Iterable<? extends Closeable> closeables;
 
     public SequentialCloseable(Object lock, Iterable<? extends Closeable> closeables) {
@@ -41,8 +40,8 @@ public class SequentialCloseable extends SimpleCloseable {
     }
 
     @Override
-    protected void doClose(final boolean immediately) {
-        final Iterator<? extends Closeable> iterator = closeables.iterator();
+    protected void doClose(boolean immediately) {
+        Iterator<? extends Closeable> iterator = closeables.iterator();
         SshFutureListener<CloseFuture> listener = new SshFutureListener<CloseFuture>() {
             @SuppressWarnings("synthetic-access")
             @Override

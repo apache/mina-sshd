@@ -499,6 +499,12 @@ public class DefaultTcpipForwarder
         return builder().parallel(dynamicLocal.values()).close(acceptor).build();
     }
 
+    @Override
+    protected void preClose() {
+        this.listeners.clear();
+        super.preClose();
+    }
+
     /**
      * @param address        The request bind address
      * @param handlerFactory A {@link Factory} to create an {@link IoHandler} if necessary

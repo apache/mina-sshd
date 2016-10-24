@@ -59,12 +59,9 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.forward.ForwardingFilter;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractFactoryManager extends AbstractKexFactoryManager implements FactoryManager {
-
     protected IoServiceFactoryFactory ioServiceFactoryFactory;
     protected IoServiceFactory ioServiceFactory;
     protected Factory<Random> randomFactory;

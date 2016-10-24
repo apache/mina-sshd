@@ -162,6 +162,12 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
         return forwarder;
     }
 
+    @Override
+    protected void preClose() {
+        this.listeners.clear();
+        super.preClose();
+    }
+
     protected TcpipForwarder createTcpipForwarder(S session) {
         FactoryManager manager =
                 Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
