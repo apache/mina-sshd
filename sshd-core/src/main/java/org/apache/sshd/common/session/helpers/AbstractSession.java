@@ -2365,8 +2365,10 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      */
     protected void checkForTimeouts() throws IOException {
         if (isClosing()) {
-            log.debug("checkForTimeouts({}) session closing", this);
-            return;
+            if (log.isDebugEnabled()) {
+                log.debug("checkForTimeouts({}) session closing", this);
+                return;
+            }
         }
 
         long now = System.currentTimeMillis();
