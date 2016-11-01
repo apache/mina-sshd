@@ -404,18 +404,26 @@ public abstract class AbstractChannel
         }
 
         if (this.channelListeners.add(listener)) {
-            log.trace("addChannelListener({})[{}] registered", this, listener);
+            if (log.isTraceEnabled()) {
+                log.trace("addChannelListener({})[{}] registered", this, listener);
+            }
         } else {
-            log.trace("addChannelListener({})[{}] ignored duplicate", this, listener);
+            if (log.isTraceEnabled()) {
+                log.trace("addChannelListener({})[{}] ignored duplicate", this, listener);
+            }
         }
     }
 
     @Override
     public void removeChannelListener(ChannelListener listener) {
         if (this.channelListeners.remove(listener)) {
-            log.trace("removeChannelListener({})[{}] removed", this, listener);
+            if (log.isTraceEnabled()) {
+                log.trace("removeChannelListener({})[{}] removed", this, listener);
+            }
         } else {
-            log.trace("removeChannelListener({})[{}] not registered", this, listener);
+            if (log.isTraceEnabled()) {
+                log.trace("removeChannelListener({})[{}] not registered", this, listener);
+            }
         }
     }
 

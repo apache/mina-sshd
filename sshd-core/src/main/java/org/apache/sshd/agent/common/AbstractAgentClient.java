@@ -47,8 +47,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
         int avail = buffer.available();
         if (avail < 4) {
             if (log.isTraceEnabled()) {
-                log.trace("Received message total length ({}) below minimum ({})",
-                        avail, 4);
+                log.trace("Received message total length ({}) below minimum ({})", avail, 4);
             }
             return;
         }
@@ -60,8 +59,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
         avail = buffer.available();
         if (avail < (len + 4)) {
             if (log.isTraceEnabled()) {
-                log.trace("Received request length ({}) below minimum ({})",
-                        avail, len + 4);
+                log.trace("Received request length ({}) below minimum ({})", avail, len + 4);
             }
             return;
         }
@@ -130,14 +128,18 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
             case SshAgentConstants.SSH2_AGENTC_ADD_IDENTITY: {
                 KeyPair keyToAdd = req.getKeyPair();
                 String comment = req.getString();
-                log.debug("SSH2_AGENTC_ADD_IDENTITY comment={}", comment);
+                if (log.isDebugEnabled()) {
+                    log.debug("SSH2_AGENTC_ADD_IDENTITY comment={}", comment);
+                }
                 agent.addIdentity(keyToAdd, comment);
                 rep.putByte(SshAgentConstants.SSH_AGENT_SUCCESS);
                 break;
             }
             case SshAgentConstants.SSH2_AGENTC_REMOVE_IDENTITY: {
                 PublicKey keyToRemove = req.getPublicKey();
-                log.debug("SSH2_AGENTC_REMOVE_IDENTITY {}", keyToRemove.getClass().getSimpleName());
+                if (log.isDebugEnabled()) {
+                    log.debug("SSH2_AGENTC_REMOVE_IDENTITY {}", keyToRemove.getClass().getSimpleName());
+                }
                 agent.removeIdentity(keyToRemove);
                 rep.putByte(SshAgentConstants.SSH_AGENT_SUCCESS);
                 break;

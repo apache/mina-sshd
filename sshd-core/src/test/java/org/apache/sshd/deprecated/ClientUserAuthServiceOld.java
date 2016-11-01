@@ -162,28 +162,38 @@ public class ClientUserAuthServiceOld extends AbstractCloseable implements Servi
      * @throws java.io.IOException
      */
     private void processUserAuth(Buffer buffer) throws IOException {
-        log.debug("processing {}", userAuth);
+        if (log.isDebugEnabled()) {
+            log.debug("processing {}", userAuth);
+        }
         Result result = userAuth.next(buffer);
         switch (result) {
             case Success:
-                log.debug("succeeded with {}", userAuth);
+                if (log.isDebugEnabled()) {
+                    log.debug("succeeded with {}", userAuth);
+                }
                 session.setAuthenticated();
                 session.switchToNextService();
                 // Will wake up anyone sitting in waitFor
                 authFuture.setAuthed(true);
                 break;
             case Failure:
-                log.debug("failed with {}", userAuth);
+                if (log.isDebugEnabled()) {
+                    log.debug("failed with {}", userAuth);
+                }
                 this.userAuth = null;
                 // Will wake up anyone sitting in waitFor
                 this.authFuture.setAuthed(false);
                 break;
             case Continued:
                 // Will wake up anyone sitting in waitFor
-                log.debug("continuing with {}", userAuth);
+                if (log.isDebugEnabled()) {
+                    log.debug("continuing with {}", userAuth);
+                }
                 break;
             default:
-                log.debug("ignored result={} for {}", result, userAuth);
+                if (log.isDebugEnabled()) {
+                    log.debug("ignored result={} for {}", result, userAuth);
+                }
         }
     }
 
@@ -196,7 +206,10 @@ public class ClientUserAuthServiceOld extends AbstractCloseable implements Servi
     }
 
     public AuthFuture auth(UserAuth userAuth) throws IOException {
-        log.debug("Trying authentication with {}", userAuth);
+        if (log.isDebugEnabled()) {
+            log.debug("Trying authentication with {}", userAuth);
+        }
+
         synchronized (lock) {
             if (readyForAuth(userAuth)) {
                 processUserAuth(null);

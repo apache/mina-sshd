@@ -107,9 +107,13 @@ public class CachingPublicKeyAuthenticator extends AbstractLoggingBean implement
     public void sessionClosed(Session session) {
         Map<PublicKey, Boolean> map = cache.remove(session);
         if (map == null) {
-            log.debug("sessionClosed({}) not cached", session);
+            if (log.isDebugEnabled()) {
+                log.debug("sessionClosed({}) not cached", session);
+            }
         } else {
-            log.debug("sessionClosed({}) removed from cache", session);
+            if (log.isDebugEnabled()) {
+                log.debug("sessionClosed({}) removed from cache", session);
+            }
         }
         session.removeSessionListener(this);
     }

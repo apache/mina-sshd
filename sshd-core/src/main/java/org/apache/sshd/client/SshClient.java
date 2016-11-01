@@ -542,7 +542,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         for (String l : locations) {
             if (!loader.isValidLocation(l)) {
                 if (ignoreNonExisting) {
-                    log.debug("loadClientIdentities - skip non-existing identity location: {}", l);
+                    if (log.isDebugEnabled()) {
+                        log.debug("loadClientIdentities - skip non-existing identity location: {}", l);
+                    }
                     continue;
                 }
 

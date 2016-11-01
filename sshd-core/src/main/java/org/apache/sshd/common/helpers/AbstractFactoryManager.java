@@ -283,18 +283,26 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
         }
 
         if (this.sessionListeners.add(listener)) {
-            log.trace("addSessionListener({})[{}] registered", this, listener);
+            if (log.isTraceEnabled()) {
+                log.trace("addSessionListener({})[{}] registered", this, listener);
+            }
         } else {
-            log.trace("addSessionListener({})[{}] ignored duplicate", this, listener);
+            if (log.isTraceEnabled()) {
+                log.trace("addSessionListener({})[{}] ignored duplicate", this, listener);
+            }
         }
     }
 
     @Override
     public void removeSessionListener(SessionListener listener) {
         if (this.sessionListeners.remove(listener)) {
-            log.trace("removeSessionListener({})[{}] removed", this, listener);
+            if (log.isTraceEnabled()) {
+                log.trace("removeSessionListener({})[{}] removed", this, listener);
+            }
         } else {
-            log.trace("removeSessionListener({})[{}] not registered", this, listener);
+            if (log.isTraceEnabled()) {
+                log.trace("removeSessionListener({})[{}] not registered", this, listener);
+            }
         }
     }
 
@@ -313,18 +321,26 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
         }
 
         if (this.channelListeners.add(listener)) {
-            log.trace("addChannelListener({})[{}] registered", this, listener);
+            if (log.isTraceEnabled()) {
+                log.trace("addChannelListener({})[{}] registered", this, listener);
+            }
         } else {
-            log.trace("addChannelListener({})[{}] ignored duplicate", this, listener);
+            if (log.isTraceEnabled()) {
+                log.trace("addChannelListener({})[{}] ignored duplicate", this, listener);
+            }
         }
     }
 
     @Override
     public void removeChannelListener(ChannelListener listener) {
         if (this.channelListeners.remove(listener)) {
-            log.trace("removeChannelListener({})[{}] removed", this, listener);
+            if (log.isTraceEnabled()) {
+                log.trace("removeChannelListener({})[{}] removed", this, listener);
+            }
         } else {
-            log.trace("removeChannelListener({})[{}] not registered", this, listener);
+            if (log.isTraceEnabled()) {
+                log.trace("removeChannelListener({})[{}] not registered", this, listener);
+            }
         }
     }
 
@@ -348,9 +364,13 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
         }
 
         if (this.tunnelListeners.add(listener)) {
-            log.trace("addPortForwardingEventListener({})[{}] registered", this, listener);
+            if (log.isTraceEnabled()) {
+                log.trace("addPortForwardingEventListener({})[{}] registered", this, listener);
+            }
         } else {
-            log.trace("addPortForwardingEventListener({})[{}] ignored duplicate", this, listener);
+            if (log.isTraceEnabled()) {
+                log.trace("addPortForwardingEventListener({})[{}] ignored duplicate", this, listener);
+            }
         }
     }
 
@@ -361,13 +381,17 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
         }
 
         if (this.tunnelListeners.remove(listener)) {
-            log.trace("removePortForwardingEventListener({})[{}] removed", this, listener);
+            if (log.isTraceEnabled()) {
+                log.trace("removePortForwardingEventListener({})[{}] removed", this, listener);
+            }
         } else {
-            log.trace("removePortForwardingEventListener({})[{}] not registered", this, listener);
+            if (log.isTraceEnabled()) {
+                log.trace("removePortForwardingEventListener({})[{}] not registered", this, listener);
+            }
         }
     }
 
-    protected void setupSessionTimeout(final AbstractSessionFactory<?, ?> sessionFactory) {
+    protected void setupSessionTimeout(AbstractSessionFactory<?, ?> sessionFactory) {
         // set up the the session timeout listener and schedule it
         sessionTimeoutListener = createSessionTimeoutListener();
         addSessionListener(sessionTimeoutListener);
@@ -376,7 +400,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
                 .scheduleAtFixedRate(sessionTimeoutListener, 1, 1, TimeUnit.SECONDS);
     }
 
-    protected void removeSessionTimeout(final AbstractSessionFactory<?, ?> sessionFactory) {
+    protected void removeSessionTimeout(AbstractSessionFactory<?, ?> sessionFactory) {
         stopSessionTimeoutListener(sessionFactory);
     }
 
@@ -384,7 +408,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
         return new SessionTimeoutListener();
     }
 
-    protected void stopSessionTimeoutListener(final AbstractSessionFactory<?, ?> sessionFactory) {
+    protected void stopSessionTimeoutListener(AbstractSessionFactory<?, ?> sessionFactory) {
         // cancel the timeout monitoring task
         if (timeoutListenerFuture != null) {
             try {

@@ -42,9 +42,13 @@ public class SessionTimeoutListener extends AbstractLoggingBean implements Sessi
     public void sessionCreated(Session session) {
         if ((session instanceof AbstractSession) && ((session.getAuthTimeout() > 0L) || (session.getIdleTimeout() > 0L))) {
             sessions.add((AbstractSession) session);
-            log.debug("sessionCreated({}) tracking", session);
+            if (log.isDebugEnabled()) {
+                log.debug("sessionCreated({}) tracking", session);
+            }
         } else {
-            log.trace("sessionCreated({}) not tracked", session);
+            if (log.isTraceEnabled()) {
+                log.trace("sessionCreated({}) not tracked", session);
+            }
         }
     }
 
@@ -68,9 +72,13 @@ public class SessionTimeoutListener extends AbstractLoggingBean implements Sessi
     @Override
     public void sessionClosed(Session s) {
         if (sessions.remove(s)) {
-            log.debug("sessionClosed({}) un-tracked", s);
+            if (log.isDebugEnabled()) {
+                log.debug("sessionClosed({}) un-tracked", s);
+            }
         } else {
-            log.trace("sessionClosed({}) not tracked", s);
+            if (log.isTraceEnabled()) {
+                log.trace("sessionClosed({}) not tracked", s);
+            }
         }
     }
 

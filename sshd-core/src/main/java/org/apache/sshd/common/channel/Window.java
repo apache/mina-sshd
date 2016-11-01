@@ -123,7 +123,9 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         }
 
         if (initialized.getAndSet(true)) {
-            log.debug("init({}) re-initializing", this);
+            if (log.isDebugEnabled()) {
+                log.debug("init({}) re-initializing", this);
+            }
         }
 
         if (log.isDebugEnabled()) {
@@ -259,13 +261,17 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
     public long waitForSpace(long maxWaitTime) throws InterruptedException, WindowClosedException, SocketTimeoutException {
         checkInitialized("waitForSpace");
 
+        long available;
         synchronized (lock) {
             waitForCondition(SPACE_AVAILABLE_PREDICATE, maxWaitTime);
-            if (log.isDebugEnabled()) {
-                log.debug("waitForSpace({}) available: {}", this, sizeHolder);
-            }
-            return sizeHolder.get();
+            available = sizeHolder.get();
         }
+
+        if (log.isDebugEnabled()) {
+            log.debug("waitForSpace({}) available: {}", this, available);
+        }
+
+        return available;
     }
 
     /**
@@ -333,7 +339,9 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
     @Override
     public void close() throws IOException {
         if (!closed.getAndSet(true)) {
-            log.debug("Closing {}", this);
+            if (log.isDebugEnabled()) {
+                log.debug("Closing {}", this);
+            }
         }
 
         // just in case someone is still waiting

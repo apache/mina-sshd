@@ -72,7 +72,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
     }
 
     protected synchronized void doWriteIfPossible(boolean resume) {
-        final IoWriteFutureImpl future = pendingWrite.get();
+        IoWriteFutureImpl future = pendingWrite.get();
         if (future == null) {
             if (log.isTraceEnabled()) {
                 log.trace("doWriteIfPossible({})[resume={}] no pending write future", this, resume);
@@ -80,8 +80,8 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             return;
         }
 
-        final Buffer buffer = future.getBuffer();
-        final int total = buffer.available();
+        Buffer buffer = future.getBuffer();
+        int total = buffer.available();
         if (total > 0) {
             Channel channel = getChannel();
             Window remoteWindow = channel.getRemoteWindow();

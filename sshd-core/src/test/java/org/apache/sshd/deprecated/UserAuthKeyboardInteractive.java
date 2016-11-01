@@ -74,8 +74,10 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                         prompt[i] = buffer.getString();
                         echo[i] = buffer.getBoolean();
                     }
-                    log.debug("Promt: {}", Arrays.toString(prompt));
-                    log.debug("Echo: {}", echo);
+                    if (log.isDebugEnabled()) {
+                        log.debug("Promt: {}", Arrays.toString(prompt));
+                        log.debug("Echo: {}", echo);
+                    }
 
                     String[] rep = null;
                     if (num == 0) {
@@ -113,7 +115,9 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                         return Result.Failure;
                     }
                 default:
-                    log.debug("Received unknown packet {}", cmd);
+                    if (log.isDebugEnabled()) {
+                        log.debug("Received unknown packet {}", cmd);
+                    }
                     return Result.Continued;
             }
         }

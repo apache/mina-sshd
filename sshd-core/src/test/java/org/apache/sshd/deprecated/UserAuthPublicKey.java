@@ -94,7 +94,9 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         } else {
             int cmd = buffer.getUByte();
             if (cmd == SshConstants.SSH_MSG_USERAUTH_SUCCESS) {
-                log.debug("Received SSH_MSG_USERAUTH_SUCCESS");
+                if (log.isDebugEnabled()) {
+                    log.debug("Received SSH_MSG_USERAUTH_SUCCESS");
+                }
                 return Result.Success;
             }
             if (cmd == SshConstants.SSH_MSG_USERAUTH_FAILURE) {
@@ -105,7 +107,9 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 }
                 return Result.Failure;
             } else {
-                log.debug("Received unknown packet {}", cmd);
+                if (log.isDebugEnabled()) {
+                    log.debug("Received unknown packet {}", cmd);
+                }
                 // TODO: check packets
                 return Result.Continued;
             }
