@@ -617,7 +617,7 @@ public abstract class Buffer implements Readable {
         if (GenericUtils.isEmpty(string)) {
             putBytes(GenericUtils.EMPTY_BYTE_ARRAY);
         } else {
-            putAndWipeBytes(string.getBytes(charset));
+            putBytes(string.getBytes(charset));
         }
     }
 
