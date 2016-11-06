@@ -80,6 +80,7 @@ public interface ChannelListener extends SshdEventListener {
      * @param channel The {@link Channel} whose state has changed
      * @param hint A &quot;hint&quot; as to the nature of the state change.
      * it can be a request name or a {@code SSH_MSG_CHANNEL_XXX} command
+     * or the name of an exception class
      */
     default void channelStateChanged(Channel channel, String hint) {
         // ignored
@@ -99,5 +100,9 @@ public interface ChannelListener extends SshdEventListener {
      */
     default void channelClosed(Channel channel, Throwable reason) {
         // ignored
+    }
+
+    static <L extends ChannelListener> L validateListener(L listener) {
+        return SshdEventListener.validateListener(listener, ChannelListener.class.getSimpleName());
     }
 }

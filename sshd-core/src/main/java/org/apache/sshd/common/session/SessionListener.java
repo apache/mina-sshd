@@ -101,4 +101,8 @@ public interface SessionListener extends SshdEventListener {
     default void sessionClosed(Session session) {
         // ignored
     }
+
+    static <L extends SessionListener> L validateListener(L listener) {
+        return SshdEventListener.validateListener(listener, SessionListener.class.getSimpleName());
+    }
 }

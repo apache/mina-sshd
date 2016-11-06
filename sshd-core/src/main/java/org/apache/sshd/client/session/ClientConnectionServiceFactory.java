@@ -41,6 +41,11 @@ public class ClientConnectionServiceFactory extends AbstractConnectionServiceFac
         public void removePortForwardingEventListener(PortForwardingEventListener listener) {
             throw new UnsupportedOperationException("removePortForwardingEventListener(" + listener + ") N/A on default instance");
         }
+
+        @Override
+        public PortForwardingEventListener getPortForwardingEventListenerProxy() {
+            return PortForwardingEventListener.EMPTY;
+        }
     };
 
     public ClientConnectionServiceFactory() {
@@ -57,7 +62,7 @@ public class ClientConnectionServiceFactory extends AbstractConnectionServiceFac
         AbstractClientSession abstractSession =
                 ValidateUtils.checkInstanceOf(session, AbstractClientSession.class, "Not a client session: %s", session);
         ClientConnectionService service = new ClientConnectionService(abstractSession);
-        service.addPortForwardingEventListener(getPortForwardingEventListenerProxy());
+        service.addPortForwardingEventListenerManager(this);
         return service;
     }
 }

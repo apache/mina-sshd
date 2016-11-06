@@ -19,9 +19,7 @@
 package org.apache.sshd.server.session;
 
 import org.apache.sshd.common.PropertyResolverUtils;
-import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.ServerFactoryManager;
 
@@ -33,30 +31,7 @@ import org.apache.sshd.server.ServerFactoryManager;
 public class ServerSessionImpl extends AbstractServerSession {
     public ServerSessionImpl(ServerFactoryManager server, IoSession ioSession) throws Exception {
         super(server, ioSession);
-
-        if (log.isDebugEnabled()) {
-            log.debug("Server session created {}", ioSession);
-        }
-
-        // Inform the listener of the newly created session
-        SessionListener listener = getSessionListenerProxy();
-        try {
-            listener.sessionCreated(this);
-        } catch (Throwable t) {
-            Throwable e = GenericUtils.peelException(t);
-            if (log.isDebugEnabled()) {
-                log.debug("Failed ({}) to announce session={} created: {}",
-                          e.getClass().getSimpleName(), ioSession, e.getMessage());
-            }
-            if (log.isTraceEnabled()) {
-                log.trace("Session=" + ioSession + " creation failure details", e);
-            }
-            if (e instanceof Exception) {
-                throw (Exception) e;
-            } else {
-                throw new RuntimeSshException(e);
-            }
-        }
+        signalSessionCreated(ioSession);
 
         String headerConfig = PropertyResolverUtils.getString(this, ServerFactoryManager.SERVER_EXTRA_IDENTIFICATION_LINES);
         String[] headers = GenericUtils.split(headerConfig, ServerFactoryManager.SERVER_EXTRA_IDENT_LINES_SEPARATOR);

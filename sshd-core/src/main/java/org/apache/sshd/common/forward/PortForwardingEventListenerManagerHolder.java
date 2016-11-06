@@ -16,24 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server;
 
-import org.apache.sshd.common.util.SshdEventListener;
+package org.apache.sshd.common.forward;
+
+import java.util.Collection;
 
 /**
- * Define a listener to receive signals
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FunctionalInterface
-public interface SignalListener extends SshdEventListener {
-
+public interface PortForwardingEventListenerManagerHolder {
     /**
-     * @param signal The received {@link Signal}
+     * @return The currently registered managers. <B>Note:</B> it is highly
+     * recommended that implementors return either an un-modifiable collection
+     * or a <U>copy</U> of the current one. Callers, should avoid modifying
+     * the retrieved value.
      */
-    void signal(Signal signal);
+    Collection<PortForwardingEventListenerManager> getRegisteredManagers();
 
-    static <L extends SignalListener> L validateListener(L listener) {
-        return SshdEventListener.validateListener(listener, SignalListener.class.getSimpleName());
-    }
+    boolean addPortForwardingEventListenerManager(PortForwardingEventListenerManager manager);
+    boolean removePortForwardingEventListenerManager(PortForwardingEventListenerManager manager);
 }

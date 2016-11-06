@@ -41,7 +41,6 @@ import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
-import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.io.IoInputStream;
@@ -328,36 +327,17 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         Window wRemote = getRemoteWindow();
         wRemote.init(rwSize, packetSize, manager.getProperties());
 
-        ChannelListener listener = getChannelListenerProxy();
         String changeEvent = "SSH_MSG_CHANNEL_OPEN_CONFIRMATION";
         try {
             doOpen();
 
-            listener.channelOpenSuccess(this);
+            signalChannelOpenSuccess();
             this.opened.set(true);
             this.openFuture.setOpened();
         } catch (Throwable t) {
             Throwable e = GenericUtils.peelException(t);
             changeEvent = e.getClass().getName();
-            try {
-                listener.channelOpenFailure(this, e);
-            } catch (Throwable err) {
-                Throwable ignored = GenericUtils.peelException(err);
-                log.warn("handleOpenSuccess({}) failed ({}) to inform listener of open failure={}: {}",
-                         this, ignored.getClass().getSimpleName(), e.getClass().getSimpleName(), ignored.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.debug("handleOpenSuccess(" + this + ") inform listener open failure details", ignored);
-                }
-                if (log.isTraceEnabled()) {
-                    Throwable[] suppressed = ignored.getSuppressed();
-                    if (GenericUtils.length(suppressed) > 0) {
-                        for (Throwable s : suppressed) {
-                            log.trace("handleOpenSuccess(" + this + ") suppressed channel open failure signalling", s);
-                        }
-                    }
-                }
-            }
-
+            signalChannelOpenFailure(e);
             this.openFuture.setException(e);
             this.closeFuture.setClosed();
             this.doCloseImmediately();

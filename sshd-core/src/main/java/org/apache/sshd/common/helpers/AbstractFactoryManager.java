@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -76,14 +77,11 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     protected List<RequestHandler<ConnectionService>> globalRequestHandlers;
     protected SessionTimeoutListener sessionTimeoutListener;
     protected ScheduledFuture<?> timeoutListenerFuture;
-    protected final Collection<SessionListener> sessionListeners =
-            EventListenerUtils.synchronizedListenersSet();
+    protected final Collection<SessionListener> sessionListeners = new CopyOnWriteArraySet<>();
     protected final SessionListener sessionListenerProxy;
-    protected final Collection<ChannelListener> channelListeners =
-            EventListenerUtils.synchronizedListenersSet();
+    protected final Collection<ChannelListener> channelListeners = new CopyOnWriteArraySet<>();
     protected final ChannelListener channelListenerProxy;
-    protected final Collection<PortForwardingEventListener> tunnelListeners =
-            EventListenerUtils.synchronizedListenersSet();
+    protected final Collection<PortForwardingEventListener> tunnelListeners = new CopyOnWriteArraySet<>();
     protected final PortForwardingEventListener tunnelListenerProxy;
 
     private final Map<String, Object> properties = new ConcurrentHashMap<>();
@@ -275,7 +273,8 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
 
     @Override
     public void addSessionListener(SessionListener listener) {
-        ValidateUtils.checkNotNull(listener, "addSessionListener(%s) null instance", this);
+        SessionListener.validateListener(listener);
+
         // avoid race conditions on notifications while manager is being closed
         if (!isOpen()) {
             log.warn("addSessionListener({})[{}] ignore registration while manager is closing", this, listener);
@@ -295,6 +294,12 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
 
     @Override
     public void removeSessionListener(SessionListener listener) {
+        if (listener == null) {
+            return;
+        }
+
+        SessionListener.validateListener(listener);
+
         if (this.sessionListeners.remove(listener)) {
             if (log.isTraceEnabled()) {
                 log.trace("removeSessionListener({})[{}] removed", this, listener);
@@ -313,7 +318,8 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
 
     @Override
     public void addChannelListener(ChannelListener listener) {
-        ValidateUtils.checkNotNull(listener, "addChannelListener(%s) null instance", this);
+        ChannelListener.validateListener(listener);
+
         // avoid race conditions on notifications while manager is being closed
         if (!isOpen()) {
             log.warn("addChannelListener({})[{}] ignore registration while session is closing", this, listener);
@@ -333,6 +339,11 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
 
     @Override
     public void removeChannelListener(ChannelListener listener) {
+        if (listener == null) {
+            return;
+        }
+
+        ChannelListener.validateListener(listener);
         if (this.channelListeners.remove(listener)) {
             if (log.isTraceEnabled()) {
                 log.trace("removeChannelListener({})[{}] removed", this, listener);
@@ -356,7 +367,8 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
 
     @Override
     public void addPortForwardingEventListener(PortForwardingEventListener listener) {
-        ValidateUtils.checkNotNull(listener, "addChannelListener(%s) null instance", this);
+        PortForwardingEventListener.validateListener(listener);
+
         // avoid race conditions on notifications while session is being closed
         if (!isOpen()) {
             log.warn("addPortForwardingEventListener({})[{}] ignore registration while session is closing", this, listener);
@@ -380,6 +392,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
             return;
         }
 
+        PortForwardingEventListener.validateListener(listener);
         if (this.tunnelListeners.remove(listener)) {
             if (log.isTraceEnabled()) {
                 log.trace("removePortForwardingEventListener({})[{}] removed", this, listener);

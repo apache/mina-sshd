@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.sshd.common.util;
 
 import java.lang.reflect.Proxy;
@@ -28,14 +27,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class EventListenerUtils {
     /**
      * A special &quot;comparator&quot; whose only purpose is to ensure
-     * there are no same references in a listener's set
+     * there are no same references in a listener's set - to be used
+     * in conjunction with a {@code TreeSet} as its comparator
      */
     @SuppressWarnings("checkstyle:anoninnerlength")
     public static final Comparator<EventListener> LISTENER_INSTANCE_COMPARATOR = (l1, l2) -> {
@@ -90,14 +89,14 @@ public final class EventListenerUtils {
     }
 
     /**
-     * @param <L> Type of {@link EventListener} contained in the set
+     * @param <L> Type of {@link SshdEventListener} contained in the set
      * @param listeners The listeners to pre-add to the create set - ignored
      * if (@code null}/empty
      * @return A (synchronized) {@link Set} for containing the listeners ensuring
      * that if same listener instance is added repeatedly only <U>one</U>
      * instance is actually contained
      */
-    public static <L extends EventListener> Set<L> synchronizedListenersSet(Collection<? extends L> listeners) {
+    public static <L extends SshdEventListener> Set<L> synchronizedListenersSet(Collection<? extends L> listeners) {
         Set<L> s = EventListenerUtils.synchronizedListenersSet();
         if (GenericUtils.size(listeners) > 0) {
             s.addAll(listeners);
@@ -107,14 +106,14 @@ public final class EventListenerUtils {
     }
 
     /**
-     * @param <L> Type of {@link EventListener} contained in the set
+     * @param <L> Type of {@link SshdEventListener} contained in the set
      * @return A (synchronized) {@link Set} for containing the listeners ensuring
      * that if same listener instance is added repeatedly only <U>one</U>
      * instance is actually contained
      * @see #LISTENER_INSTANCE_COMPARATOR
      */
-    public static <L extends EventListener> Set<L> synchronizedListenersSet() {
-        return Collections.synchronizedSet(new TreeSet<>(LISTENER_INSTANCE_COMPARATOR));
+    public static <L extends SshdEventListener> Set<L> synchronizedListenersSet() {
+        return Collections.synchronizedSet(new TreeSet<L>(LISTENER_INSTANCE_COMPARATOR));
     }
 
     /**
@@ -148,7 +147,7 @@ public final class EventListenerUtils {
      * the calls to the container
      * @see #proxyWrapper(Class, ClassLoader, Iterable)
      */
-    public static <T extends EventListener> T proxyWrapper(Class<T> listenerType, Iterable<? extends T> listeners) {
+    public static <T extends SshdEventListener> T proxyWrapper(Class<T> listenerType, Iterable<? extends T> listeners) {
         return proxyWrapper(listenerType, listenerType.getClassLoader(), listeners);
     }
 
@@ -157,7 +156,7 @@ public final class EventListenerUtils {
      * interface implementation. <b>Note:</b> a listener interface is one whose
      * invoked methods return <u>only</u> {@code void}.
      *
-     * @param <T>          Generic listener type
+     * @param <T>          Generic {@link SshdEventListener} type
      * @param listenerType The expected listener <u>interface</u>
      * @param loader       The {@link ClassLoader} to use for the proxy
      * @param listeners    An {@link Iterable} container of listeners to be invoked.
@@ -186,7 +185,7 @@ public final class EventListenerUtils {
      *                                  or a {@code null} container has been provided
      * @see #proxyWrapper(Class, ClassLoader, Iterable)
      */
-    public static <T extends EventListener> T proxyWrapper(Class<T> listenerType, ClassLoader loader, final Iterable<? extends T> listeners) {
+    public static <T extends SshdEventListener> T proxyWrapper(Class<T> listenerType, ClassLoader loader, final Iterable<? extends T> listeners) {
         Objects.requireNonNull(listenerType, "No listener type specified");
         ValidateUtils.checkTrue(listenerType.isInterface(), "Target proxy is not an interface: %s", listenerType.getSimpleName());
         Objects.requireNonNull(listeners, "No listeners container provided");

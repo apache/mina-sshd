@@ -69,6 +69,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -278,8 +279,7 @@ public class SftpSubsystem
 
     private ServerSession serverSession;
     private final AtomicBoolean closed = new AtomicBoolean(false);
-    private final Collection<SftpEventListener> sftpEventListeners =
-            EventListenerUtils.synchronizedListenersSet();
+    private final Collection<SftpEventListener> sftpEventListeners = new CopyOnWriteArraySet<>();
     private final SftpEventListener sftpEventListenerProxy;
     private final SftpFileSystemAccessor fileSystemAccessor;
 
@@ -328,12 +328,16 @@ public class SftpSubsystem
 
     @Override
     public boolean addSftpEventListener(SftpEventListener listener) {
-        return sftpEventListeners.add(Objects.requireNonNull(listener, "No listener"));
+        return sftpEventListeners.add(SftpEventListener.validateListener(listener));
     }
 
     @Override
     public boolean removeSftpEventListener(SftpEventListener listener) {
-        return sftpEventListeners.remove(listener);
+        if (listener == null) {
+            return false;
+        }
+
+        return sftpEventListeners.remove(SftpEventListener.validateListener(listener));
     }
 
     @Override

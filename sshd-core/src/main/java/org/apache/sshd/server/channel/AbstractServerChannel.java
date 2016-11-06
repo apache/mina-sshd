@@ -30,7 +30,6 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.session.Session;
@@ -87,32 +86,18 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
     }
 
     protected OpenFuture doInit(Buffer buffer) {
-        ChannelListener listener = getChannelListenerProxy();
         OpenFuture f = new DefaultOpenFuture(this);
+        String changeEvent = "doInit";
         try {
-            listener.channelOpenSuccess(this);
+            signalChannelOpenSuccess();
             f.setOpened();
         } catch (Throwable t) {
             Throwable e = GenericUtils.peelException(t);
-            try {
-                listener.channelOpenFailure(this, e);
-            } catch (Throwable err) {
-                Throwable ignored = GenericUtils.peelException(err);
-                log.warn("doInit({}) failed ({}) to inform listener of open failure={}: {}",
-                         this, ignored.getClass().getSimpleName(), e.getClass().getSimpleName(), ignored.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.debug("doInit(" + this + ") listener inform failure details", ignored);
-                }
-                if (log.isTraceEnabled()) {
-                    Throwable[] suppressed = ignored.getSuppressed();
-                    if (GenericUtils.length(suppressed) > 0) {
-                        for (Throwable s : suppressed) {
-                            log.trace("doInit(" + this + ") suppressed channel open failure signalling", s);
-                        }
-                    }
-                }
-            }
+            changeEvent = e.getClass().getSimpleName();
+            signalChannelOpenFailure(e);
             f.setException(e);
+        } finally {
+            notifyStateChanged(changeEvent);
         }
 
         return f;

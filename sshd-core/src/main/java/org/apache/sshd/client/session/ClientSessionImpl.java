@@ -32,7 +32,6 @@ import java.util.Set;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
-import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
@@ -87,26 +86,7 @@ public class ClientSessionImpl extends AbstractClientSession {
         authFuture = new DefaultAuthFuture(lock);
         authFuture.setAuthed(false);
 
-        // Inform the listener of the newly created session
-        SessionListener listener = getSessionListenerProxy();
-        try {
-            listener.sessionCreated(this);
-        } catch (Throwable t) {
-            Throwable e = GenericUtils.peelException(t);
-            if (log.isDebugEnabled()) {
-                log.debug("Failed ({}) to announce session={} created: {}",
-                          e.getClass().getSimpleName(), ioSession, e.getMessage());
-            }
-            if (log.isTraceEnabled()) {
-                log.trace("Session=" + ioSession + " creation failure details", e);
-            }
-            if (e instanceof Exception) {
-                throw (Exception) e;
-            } else {
-                throw new RuntimeSshException(e);
-            }
-        }
-
+        signalSessionCreated(ioSession);
         sendClientIdentification();
         kexState.set(KexState.INIT);
         sendKexInit();
@@ -188,14 +168,14 @@ public class ClientSessionImpl extends AbstractClientSession {
     }
 
     @Override
-    protected void sendSessionEvent(SessionListener.Event event) throws IOException {
+    protected void signalSessionEvent(SessionListener.Event event) throws IOException {
         if (SessionListener.Event.KeyEstablished.equals(event)) {
             sendInitialServiceRequest();
         }
         synchronized (lock) {
             lock.notifyAll();
         }
-        super.sendSessionEvent(event);
+        super.signalSessionEvent(event);
     }
 
     protected void sendInitialServiceRequest() throws IOException {

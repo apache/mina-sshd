@@ -19,11 +19,14 @@
 package org.apache.sshd.common.session.helpers;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -38,12 +41,13 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.OpenChannelException;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.forward.PortForwardingEventListener;
+import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
 import org.apache.sshd.common.forward.TcpipForwarder;
 import org.apache.sshd.common.forward.TcpipForwarderFactory;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
@@ -98,10 +102,9 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
     private final AtomicReference<X11ForwardSupport> x11ForwardHolder = new AtomicReference<>();
     private final AtomicReference<TcpipForwarder> tcpipForwarderHolder = new AtomicReference<>();
     private final AtomicBoolean allowMoreSessions = new AtomicBoolean(true);
-    private final Collection<PortForwardingEventListener> listeners =
-            EventListenerUtils.synchronizedListenersSet();
+    private final Collection<PortForwardingEventListener> listeners = new CopyOnWriteArraySet<>();
+    private final Collection<PortForwardingEventListenerManager> managersHolder = new CopyOnWriteArraySet<>();
     private final PortForwardingEventListener listenerProxy;
-
     private final S sessionInstance;
 
     protected AbstractConnectionService(S session) {
@@ -116,7 +119,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
 
     @Override
     public void addPortForwardingEventListener(PortForwardingEventListener listener) {
-        listeners.add(Objects.requireNonNull(listener, "No listener to add"));
+        listeners.add(PortForwardingEventListener.validateListener(listener));
     }
 
     @Override
@@ -125,7 +128,26 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
             return;
         }
 
-        listeners.remove(listener);
+        listeners.remove(PortForwardingEventListener.validateListener(listener));
+    }
+
+    @Override
+    public Collection<PortForwardingEventListenerManager> getRegisteredManagers() {
+        return managersHolder.isEmpty() ? Collections.emptyList() : new ArrayList<>(managersHolder);
+    }
+
+    @Override
+    public boolean addPortForwardingEventListenerManager(PortForwardingEventListenerManager manager) {
+        return managersHolder.add(Objects.requireNonNull(manager, "No manager"));
+    }
+
+    @Override
+    public boolean removePortForwardingEventListenerManager(PortForwardingEventListenerManager manager) {
+        if (manager == null) {
+            return false;
+        }
+
+        return managersHolder.remove(manager);
     }
 
     public Collection<Channel> getChannels() {
@@ -165,6 +187,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
     @Override
     protected void preClose() {
         this.listeners.clear();
+        this.managersHolder.clear();
         super.preClose();
     }
 
@@ -174,8 +197,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
         TcpipForwarderFactory factory =
                 Objects.requireNonNull(manager.getTcpipForwarderFactory(), "No forwarder factory");
         TcpipForwarder forwarder = factory.create(this);
-        forwarder.addPortForwardingEventListener(getPortForwardingEventListenerProxy());
-        forwarder.addPortForwardingEventListener(session.getPortForwardingEventListenerProxy());
+        forwarder.addPortForwardingEventListenerManager(this);
         return forwarder;
     }
 
@@ -272,26 +294,9 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
 
     protected void handleChannelRegistrationFailure(Channel channel, int channelId) throws IOException {
         RuntimeException reason = new IllegalStateException("Channel id=" + channelId + " not registered because session is being closed: " + this);
-        ChannelListener listener = channel.getChannelListenerProxy();
-        try {
-            listener.channelClosed(channel, reason);
-        } catch (Throwable err) {
-            Throwable ignored = GenericUtils.peelException(err);
-            log.warn("registerChannel({})[{}] failed ({}) to inform of channel closure: {}",
-                     this, channel, ignored.getClass().getSimpleName(), ignored.getMessage());
-            if (log.isDebugEnabled()) {
-                log.debug("registerChannel(" + this + ")[" + channel + "] inform closure failure details", ignored);
-            }
-            if (log.isTraceEnabled()) {
-                Throwable[] suppressed = ignored.getSuppressed();
-                if (GenericUtils.length(suppressed) > 0) {
-                    for (Throwable s : suppressed) {
-                        log.trace("registerChannel(" + this + ")[" + channel + "] suppressed channel closed signalling", s);
-                    }
-                }
-            }
-        }
-
+        AbstractChannel notifier =
+                ValidateUtils.checkInstanceOf(channel, AbstractChannel.class, "Non abstract channel for id=%d", channelId);
+        notifier.signalChannelClosed(reason);
         throw reason;
     }
 

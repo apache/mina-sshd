@@ -20,7 +20,7 @@
 package org.apache.sshd.server.subsystem.sftp;
 
 import java.util.Collection;
-import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.sshd.common.util.EventListenerUtils;
 
@@ -28,8 +28,7 @@ import org.apache.sshd.common.util.EventListenerUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractSftpEventListenerManager implements SftpEventListenerManager {
-    private final Collection<SftpEventListener> sftpEventListeners =
-            EventListenerUtils.synchronizedListenersSet();
+    private final Collection<SftpEventListener> sftpEventListeners = new CopyOnWriteArraySet<>();
     private final SftpEventListener sftpEventListenerProxy;
 
     protected AbstractSftpEventListenerManager() {
@@ -48,11 +47,15 @@ public abstract class AbstractSftpEventListenerManager implements SftpEventListe
 
     @Override
     public boolean addSftpEventListener(SftpEventListener listener) {
-        return sftpEventListeners.add(Objects.requireNonNull(listener, "No listener"));
+        return sftpEventListeners.add(SftpEventListener.validateListener(listener));
     }
 
     @Override
     public boolean removeSftpEventListener(SftpEventListener listener) {
-        return sftpEventListeners.remove(listener);
+        if (listener == null) {
+            return false;
+        }
+
+        return sftpEventListeners.remove(SftpEventListener.validateListener(listener));
     }
 }

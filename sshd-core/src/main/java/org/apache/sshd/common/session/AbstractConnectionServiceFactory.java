@@ -21,6 +21,7 @@ package org.apache.sshd.common.session;
 
 import java.util.Collection;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
@@ -31,8 +32,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractConnectionServiceFactory extends AbstractLoggingBean implements PortForwardingEventListenerManager {
-    private final Collection<PortForwardingEventListener> listeners =
-            EventListenerUtils.synchronizedListenersSet();
+    private final Collection<PortForwardingEventListener> listeners = new CopyOnWriteArraySet<>();
     private final PortForwardingEventListener listenerProxy;
 
     protected AbstractConnectionServiceFactory() {

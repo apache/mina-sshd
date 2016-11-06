@@ -154,4 +154,8 @@ public interface PortForwardingEventListener extends SshdEventListener {
     default void tornDownDynamicTunnel(Session session, SshdSocketAddress address, Throwable reason) throws IOException {
         // ignored
     }
+
+    static <L extends PortForwardingEventListener> L validateListener(L listener) {
+        return SshdEventListener.validateListener(listener, PortForwardingEventListener.class.getSimpleName());
+    }
 }

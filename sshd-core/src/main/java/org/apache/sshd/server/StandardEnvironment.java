@@ -21,11 +21,10 @@ package org.apache.sshd.server;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.sshd.common.channel.PtyMode;
-import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -61,7 +60,7 @@ public class StandardEnvironment extends AbstractLoggingBean implements Environm
      */
     @Override
     public void addSignalListener(SignalListener listener, Collection<Signal> signals) {
-        Objects.requireNonNull(listener, "No listener instance");
+        SignalListener.validateListener(listener);
         ValidateUtils.checkNotNullAndNotEmpty(signals, "No signals");
 
         for (Signal s : signals) {
@@ -81,7 +80,11 @@ public class StandardEnvironment extends AbstractLoggingBean implements Environm
 
     @Override
     public void removeSignalListener(SignalListener listener) {
-        Objects.requireNonNull(listener, "No listener instance");
+        if (listener == null) {
+            return;
+        }
+
+        SignalListener.validateListener(listener);
         for (Signal s : Signal.SIGNALS) {
             Collection<SignalListener> ls = getSignalListeners(s, false);
             if (ls != null) {
@@ -141,7 +144,7 @@ public class StandardEnvironment extends AbstractLoggingBean implements Environm
             synchronized (listeners) {
                 ls = listeners.get(signal);
                 if (ls == null) {
-                    ls =  EventListenerUtils.synchronizedListenersSet();
+                    ls = new CopyOnWriteArraySet<>();
                     listeners.put(signal, ls);
                 }
             }

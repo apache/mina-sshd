@@ -62,6 +62,7 @@ public class ProxyTest extends BaseTestSupport {
     private int echoPort;
     private IoAcceptor acceptor;
     private SshClient client;
+
     @SuppressWarnings("checkstyle:anoninnerlength")
     private final PortForwardingEventListener serverSideListener = new PortForwardingEventListener() {
         private final Logger log = LoggerFactory.getLogger(ProxyTest.class);
@@ -117,6 +118,10 @@ public class ProxyTest extends BaseTestSupport {
             log.info("tornDownDynamicTunnel(session={}, address={}, reason={})", session, address, reason);
         }
     };
+
+    public ProxyTest() {
+        super();
+    }
 
     @Before
     public void setUp() throws Exception {
@@ -221,6 +226,11 @@ public class ProxyTest extends BaseTestSupport {
                             throws IOException {
                 assertSame("Establishment indication not invoked", local, localAddressHolder.get());
                 assertNull("Multiple calls to establishment indicator", boundAddressHolder.getAndSet(boundAddress));
+            }
+
+            @Override
+            public String toString() {
+                return getCurrentTestName();
             }
         };
 

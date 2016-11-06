@@ -32,7 +32,6 @@ import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelFactory;
-import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.OpenChannelException;
 import org.apache.sshd.common.channel.Window;
@@ -192,7 +191,6 @@ public class TcpipServerChannel extends AbstractServerChannel {
     }
 
     protected void handleChannelConnectResult(OpenFuture f, IoConnectFuture future) {
-        ChannelListener listener = getChannelListenerProxy();
         try {
             if (future.isConnected()) {
                 handleChannelOpenSuccess(f, future.getSession());
@@ -205,80 +203,35 @@ public class TcpipServerChannel extends AbstractServerChannel {
             }
         } catch (RuntimeException t) {
             Throwable e = GenericUtils.peelException(t);
+            signalChannelOpenFailure(e);
             try {
-                listener.channelOpenFailure(this, e);
-            } catch (Throwable err) {
-                Throwable ignored = GenericUtils.peelException(err);
-                log.warn("handleChannelConnectResult({})[exception] failed ({}) to inform listener of open failure={}: {}",
-                         this, ignored.getClass().getSimpleName(), e.getClass().getSimpleName(), ignored.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.debug("handleChannelConnectResult(" + this + ")[exception] listener exception details", ignored);
-                }
-                if (log.isTraceEnabled()) {
-                    Throwable[] suppressed = ignored.getSuppressed();
-                    if (GenericUtils.length(suppressed) > 0) {
-                        for (Throwable s : suppressed) {
-                            log.trace("handleChannelConnectResult(" + this + ") suppressed channel open failure signalling", s);
-                        }
-                    }
-                }
+                f.setException(e);
+            } finally {
+                notifyStateChanged(e.getClass().getSimpleName());
             }
-            f.setException(e);
         }
     }
 
     protected void handleChannelOpenSuccess(OpenFuture f, IoSession session) {
         ioSession = session;
 
-        ChannelListener listener = getChannelListenerProxy();
+        String changeEvent = session.toString();
         try {
-            listener.channelOpenSuccess(this);
+            signalChannelOpenSuccess();
             f.setOpened();
         } catch (Throwable t) {
             Throwable e = GenericUtils.peelException(t);
-            try {
-                listener.channelOpenFailure(this, e);
-            } catch (Throwable err) {
-                Throwable ignored = GenericUtils.peelException(err);
-                log.warn("handleChannelOpenSuccess({}) failed ({}) to inform listener of open failure={}: {}",
-                         this, ignored.getClass().getSimpleName(), e.getClass().getSimpleName(), ignored.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.debug("doInit(" + this + ") listener inform failure details", ignored);
-                }
-                if (log.isTraceEnabled()) {
-                    Throwable[] suppressed = ignored.getSuppressed();
-                    if (GenericUtils.length(suppressed) > 0) {
-                        for (Throwable s : suppressed) {
-                            log.trace("handleChannelOpenSuccess(" + this + ") suppressed channel open failure signalling", s);
-                        }
-                    }
-                }
-            }
+            changeEvent = e.getClass().getSimpleName();
+            signalChannelOpenFailure(e);
             f.setException(e);
+        } finally {
+            notifyStateChanged(changeEvent);
         }
     }
 
     protected void handleChannelOpenFailure(OpenFuture f, Throwable problem) {
-        ChannelListener listener = getChannelListenerProxy();
-        try {
-            listener.channelOpenFailure(this, problem);
-        } catch (Throwable err) {
-            Throwable ignored = GenericUtils.peelException(err);
-            log.warn("handleChannelOpenFailure({}) failed ({}) to inform listener of open failure={}: {}",
-                     this, ignored.getClass().getSimpleName(), problem.getClass().getSimpleName(), ignored.getMessage());
-            if (log.isDebugEnabled()) {
-                log.debug("handleChannelOpenFailure(" + this + ") listener inform open failure details", ignored);
-            }
-            if (log.isTraceEnabled()) {
-                Throwable[] suppressed = ignored.getSuppressed();
-                if (GenericUtils.length(suppressed) > 0) {
-                    for (Throwable s : suppressed) {
-                        log.trace("handleOpenChannelFailure(" + this + ") suppressed channel open failure signalling", s);
-                    }
-                }
-            }
-        }
-
+        signalChannelOpenFailure(problem);
+        notifyStateChanged(problem.getClass().getSimpleName());
         closeImmediately0();
 
         if (problem instanceof ConnectException) {

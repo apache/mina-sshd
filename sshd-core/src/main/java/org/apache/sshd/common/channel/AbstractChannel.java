@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -50,6 +51,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
+import org.apache.sshd.common.util.Invoker;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -85,8 +87,7 @@ public abstract class AbstractChannel
     /**
      * Channel events listener
      */
-    protected final Collection<ChannelListener> channelListeners =
-            EventListenerUtils.synchronizedListenersSet();
+    protected final Collection<ChannelListener> channelListeners = new CopyOnWriteArraySet<>();
     protected final ChannelListener channelListenerProxy;
 
     private int id = -1;
@@ -352,11 +353,19 @@ public abstract class AbstractChannel
         this.sessionInstance = session;
         this.id = id;
 
-        ChannelListener listener = session.getChannelListenerProxy();
+        signalChannelInitialized();
+        configureWindow();
+        initialized.set(true);
+    }
+
+    protected void signalChannelInitialized() throws IOException {
         try {
-            listener.channelInitialized(this);
-        } catch (Throwable t) {
-            Throwable e = GenericUtils.peelException(t);
+            invokeChannelSignaller(l -> {
+                signalChannelInitialized(l);
+                return null;
+            });
+        } catch (Throwable err) {
+            Throwable e = GenericUtils.peelException(err);
             if (e instanceof IOException) {
                 throw (IOException) e;
             } else if (e instanceof RuntimeException) {
@@ -365,10 +374,39 @@ public abstract class AbstractChannel
                 throw new IOException("Failed (" + e.getClass().getSimpleName() + ") to notify channel " + this + " initialization: " + e.getMessage(), e);
             }
         }
-        // delegate the rest of the notifications to the channel
-        addChannelListener(listener);
-        configureWindow();
-        initialized.set(true);
+    }
+
+    protected void signalChannelInitialized(ChannelListener listener) {
+        if (listener == null) {
+            return;
+        }
+
+        listener.channelInitialized(this);
+    }
+
+    protected void signalChannelOpenSuccess() {
+        try {
+            invokeChannelSignaller(l -> {
+                signalChannelOpenSuccess(l);
+                return null;
+            });
+        } catch (Throwable err) {
+            if (err instanceof RuntimeException) {
+                throw (RuntimeException) err;
+            } else if (err instanceof Error) {
+                throw (Error) err;
+            } else {
+                throw new RuntimeException(err);
+            }
+        }
+    }
+
+    protected void signalChannelOpenSuccess(ChannelListener listener) {
+        if (listener == null) {
+            return;
+        }
+
+        listener.channelOpenSuccess(this);
     }
 
     @Override
@@ -376,27 +414,70 @@ public abstract class AbstractChannel
         return initialized.get();
     }
 
-    protected void notifyStateChanged(String hint) {
-        ChannelListener listener = getChannelListenerProxy();
+    protected void signalChannelOpenFailure(Throwable reason) {
         try {
-            listener.channelStateChanged(this, hint);
-        } catch (Throwable t) {
-            Throwable e = GenericUtils.peelException(t);
+            invokeChannelSignaller(l -> {
+                signalChannelOpenFailure(l, reason);
+                return null;
+            });
+        } catch (Throwable err) {
+            Throwable ignored = GenericUtils.peelException(err);
+            log.warn("signalChannelOpenFailure({}) failed ({}) to inform listener of open failure={}: {}",
+                     this, ignored.getClass().getSimpleName(), reason.getClass().getSimpleName(), ignored.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("doInit(" + this + ") inform listener open failure details", ignored);
+            }
+
+            if (log.isTraceEnabled()) {
+                Throwable[] suppressed = ignored.getSuppressed();
+                if (GenericUtils.length(suppressed) > 0) {
+                    for (Throwable s : suppressed) {
+                        log.trace("signalChannelOpenFailure(" + this + ") suppressed channel open failure signalling", s);
+                    }
+                }
+            }
+        }
+    }
+
+    protected void signalChannelOpenFailure(ChannelListener listener, Throwable reason) {
+        if (listener == null) {
+            return;
+        }
+
+        listener.channelOpenFailure(this, reason);
+    }
+
+    protected void notifyStateChanged(String hint) {
+        try {
+            invokeChannelSignaller(l -> {
+                notifyStateChanged(l, hint);
+                return null;
+            });
+        } catch (Throwable err) {
+            Throwable e = GenericUtils.peelException(err);
             log.warn("notifyStateChanged({})[{}] {} while signal channel state change: {}",
                      this, hint, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("notifyStateChanged(" + this + ")[" + hint + "] channel state signalling failure details", e);
             }
+        } finally {
+            synchronized (lock) {
+                lock.notifyAll();
+            }
+        }
+    }
+
+    protected void notifyStateChanged(ChannelListener listener, String hint) {
+        if (listener == null) {
+            return;
         }
 
-        synchronized (lock) {
-            lock.notifyAll();
-        }
+        listener.channelStateChanged(this, hint);
     }
 
     @Override
     public void addChannelListener(ChannelListener listener) {
-        ValidateUtils.checkNotNull(listener, "addChannelListener(%s) null instance", this);
+        ChannelListener.validateListener(listener);
         // avoid race conditions on notifications while channel is being closed
         if (!isOpen()) {
             log.warn("addChannelListener({})[{}] ignore registration while channel is closing", this, listener);
@@ -416,6 +497,11 @@ public abstract class AbstractChannel
 
     @Override
     public void removeChannelListener(ChannelListener listener) {
+        if (listener == null) {
+            return;
+        }
+
+        ChannelListener.validateListener(listener);
         if (this.channelListeners.remove(listener)) {
             if (log.isTraceEnabled()) {
                 log.trace("removeChannelListener({})[{}] removed", this, listener);
@@ -583,23 +669,8 @@ public abstract class AbstractChannel
 
     @Override
     protected void preClose() {
-        ChannelListener listener = getChannelListenerProxy();
         try {
-            listener.channelClosed(this, null);
-        } catch (Throwable t) {
-            Throwable e = GenericUtils.peelException(t);
-            log.warn("preClose({}) {} while signal channel closed: {}", this, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.debug("preClose(" + this + ") channel closed signalling failure details", e);
-            }
-            if (log.isTraceEnabled()) {
-                Throwable[] suppressed = e.getSuppressed();
-                if (GenericUtils.length(suppressed) > 0) {
-                    for (Throwable s : suppressed) {
-                        log.trace("preClose(" + this + ") suppressed closed channel signalling failure", s);
-                    }
-                }
-            }
+            signalChannelClosed(null);
         } finally {
             // clear the listeners since we are closing the channel (quicker GC)
             this.channelListeners.clear();
@@ -624,6 +695,62 @@ public abstract class AbstractChannel
         super.preClose();
     }
 
+    public void signalChannelClosed(Throwable reason) {
+        try {
+            invokeChannelSignaller(l -> {
+                signalChannelClosed(l, reason);
+                return null;
+            });
+        } catch (Throwable err) {
+            Throwable e = GenericUtils.peelException(err);
+            log.warn("signalChannelClosed({}) {} while signal channel closed: {}", this, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("signalChannelClosed(" + this + ") channel closed signalling failure details", e);
+            }
+            if (log.isTraceEnabled()) {
+                Throwable[] suppressed = e.getSuppressed();
+                if (GenericUtils.length(suppressed) > 0) {
+                    for (Throwable s : suppressed) {
+                        log.trace("signalChannelClosed(" + this + ") suppressed closed channel signalling failure", s);
+                    }
+                }
+            }
+        }
+    }
+
+    protected void signalChannelClosed(ChannelListener listener, Throwable reason) {
+        if (listener == null) {
+            return;
+        }
+
+        listener.channelClosed(this, reason);
+    }
+
+    protected void invokeChannelSignaller(Invoker<ChannelListener, Void> invoker) throws Throwable {
+        Session session = getSession();
+        FactoryManager manager = (session == null) ? null : session.getFactoryManager();
+        ChannelListener[] listeners = {
+            (manager == null) ? null : manager.getChannelListenerProxy(),
+            (session == null) ? null : session.getChannelListenerProxy(),
+            getChannelListenerProxy()
+        };
+
+        Throwable err = null;
+        for (ChannelListener l : listeners) {
+            if (l == null) {
+                continue;
+            }
+            try {
+                invoker.invoke(l);
+            } catch (Throwable t) {
+                err = GenericUtils.accumulateException(err, t);
+            }
+        }
+
+        if (err != null) {
+            throw err;
+        }
+    }
     @Override
     protected void doCloseImmediately() {
         if (service != null) {

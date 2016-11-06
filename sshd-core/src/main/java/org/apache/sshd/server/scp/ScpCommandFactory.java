@@ -19,6 +19,7 @@
 package org.apache.sshd.server.scp;
 
 import java.util.Collection;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.scp.ScpFileOpener;
@@ -106,8 +107,7 @@ public class ScpCommandFactory implements ScpFileOpenerHolder, CommandFactory, C
     private ScpFileOpener fileOpener;
     private int sendBufferSize = ScpHelper.MIN_SEND_BUFFER_SIZE;
     private int receiveBufferSize = ScpHelper.MIN_RECEIVE_BUFFER_SIZE;
-    private Collection<ScpTransferEventListener> listeners =
-            EventListenerUtils.synchronizedListenersSet();
+    private Collection<ScpTransferEventListener> listeners = new CopyOnWriteArraySet<>();
     private ScpTransferEventListener listenerProxy;
 
     public ScpCommandFactory() {
@@ -258,7 +258,7 @@ public class ScpCommandFactory implements ScpFileOpenerHolder, CommandFactory, C
         try {
             ScpCommandFactory other = getClass().cast(super.clone());
             // clone the listeners set as well
-            other.listeners = EventListenerUtils.synchronizedListenersSet(this.listeners);
+            other.listeners = new CopyOnWriteArraySet<>(this.listeners);
             other.listenerProxy = EventListenerUtils.proxyWrapper(ScpTransferEventListener.class, getClass().getClassLoader(), other.listeners);
             return other;
         } catch (CloneNotSupportedException e) {

@@ -19,7 +19,7 @@
 package org.apache.sshd.common.forward;
 
 import java.util.Collection;
-import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.EventListenerUtils;
@@ -40,10 +40,14 @@ public class DefaultTcpipForwarderFactory implements TcpipForwarderFactory, Port
         public void removePortForwardingEventListener(PortForwardingEventListener listener) {
             throw new UnsupportedOperationException("removePortForwardingEventListener(" + listener + ") N/A on default instance");
         }
+
+        @Override
+        public PortForwardingEventListener getPortForwardingEventListenerProxy() {
+            return PortForwardingEventListener.EMPTY;
+        }
     };
 
-    private final Collection<PortForwardingEventListener> listeners =
-            EventListenerUtils.synchronizedListenersSet();
+    private final Collection<PortForwardingEventListener> listeners = new CopyOnWriteArraySet<>();
     private final PortForwardingEventListener listenerProxy;
 
     public DefaultTcpipForwarderFactory() {
@@ -57,7 +61,7 @@ public class DefaultTcpipForwarderFactory implements TcpipForwarderFactory, Port
 
     @Override
     public void addPortForwardingEventListener(PortForwardingEventListener listener) {
-        listeners.add(Objects.requireNonNull(listener, "No listener to add"));
+        listeners.add(PortForwardingEventListener.validateListener(listener));
     }
 
     @Override
@@ -66,13 +70,13 @@ public class DefaultTcpipForwarderFactory implements TcpipForwarderFactory, Port
             return;
         }
 
-        listeners.remove(listener);
+        listeners.remove(PortForwardingEventListener.validateListener(listener));
     }
 
     @Override
     public TcpipForwarder create(ConnectionService service) {
         TcpipForwarder forwarder = new DefaultTcpipForwarder(service);
-        forwarder.addPortForwardingEventListener(getPortForwardingEventListenerProxy());
+        forwarder.addPortForwardingEventListenerManager(this);
         return forwarder;
     }
 }

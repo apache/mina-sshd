@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -30,6 +31,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.channel.ClientChannelEvent;
@@ -50,6 +52,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Invoker;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -91,8 +94,8 @@ public class DefaultTcpipForwarder
     private final Map<Integer, SocksProxy> dynamicLocal = new HashMap<>();
     private final Set<LocalForwardingEntry> localForwards = new HashSet<>();
     private final IoHandlerFactory staticIoHandlerFactory = StaticIoHandler::new;
-    private final Collection<PortForwardingEventListener> listeners =
-            EventListenerUtils.synchronizedListenersSet();
+    private final Collection<PortForwardingEventListener> listeners = new CopyOnWriteArraySet<>();
+    private final Collection<PortForwardingEventListenerManager> managersHolder = new CopyOnWriteArraySet<>();
     private final PortForwardingEventListener listenerProxy;
 
     private IoAcceptor acceptor;
@@ -110,7 +113,7 @@ public class DefaultTcpipForwarder
 
     @Override
     public void addPortForwardingEventListener(PortForwardingEventListener listener) {
-        listeners.add(Objects.requireNonNull(listener, "No listener to add"));
+        listeners.add(PortForwardingEventListener.validateListener(listener));
     }
 
     @Override
@@ -119,7 +122,26 @@ public class DefaultTcpipForwarder
             return;
         }
 
-        listeners.remove(listener);
+        listeners.remove(PortForwardingEventListener.validateListener(listener));
+    }
+
+    @Override
+    public Collection<PortForwardingEventListenerManager> getRegisteredManagers() {
+        return managersHolder.isEmpty() ? Collections.emptyList() : new ArrayList<>(managersHolder);
+    }
+
+    @Override
+    public boolean addPortForwardingEventListenerManager(PortForwardingEventListenerManager manager) {
+        return managersHolder.add(Objects.requireNonNull(manager, "No manager"));
+    }
+
+    @Override
+    public boolean removePortForwardingEventListenerManager(PortForwardingEventListenerManager manager) {
+        if (manager == null) {
+            return false;
+        }
+
+        return managersHolder.remove(manager);
     }
 
     @Override
@@ -129,6 +151,25 @@ public class DefaultTcpipForwarder
 
     public final ConnectionService getConnectionService() {
         return service;
+    }
+
+    protected Collection<PortForwardingEventListener> getDefaultListeners() {
+        Collection<PortForwardingEventListener> defaultListeners = new ArrayList<>();
+        defaultListeners.add(getPortForwardingEventListenerProxy());
+
+        Session session = getSession();
+        PortForwardingEventListener l = session.getPortForwardingEventListenerProxy();
+        if (l != null) {
+            defaultListeners.add(l);
+        }
+
+        FactoryManager manager = (session == null) ? null : session.getFactoryManager();
+        l = (manager == null) ? null : manager.getPortForwardingEventListenerProxy();
+        if (l != null) {
+            defaultListeners.add(l);
+        }
+
+        return defaultListeners;
     }
 
     //
@@ -150,8 +191,7 @@ public class DefaultTcpipForwarder
 
         InetSocketAddress bound;
         int port;
-        PortForwardingEventListener listener = getPortForwardingEventListenerProxy();
-        listener.establishingExplicitTunnel(getSession(), local, remote, true);
+        signalEstablishingExplicitTunnel(local, remote, true);
         try {
             bound = doBind(local, staticIoHandlerFactory);
             port = bound.getPort();
@@ -169,7 +209,7 @@ public class DefaultTcpipForwarder
             } catch (IOException | RuntimeException err) {
                 e.addSuppressed(err);
             }
-            listener.establishedExplicitTunnel(getSession(), local, remote, true, null, e);
+            signalEstablishedExplicitTunnel(local, remote, true, null, e);
             throw e;
         }
 
@@ -178,7 +218,7 @@ public class DefaultTcpipForwarder
             if (log.isDebugEnabled()) {
                 log.debug("startLocalPortForwarding(" + local + " -> " + remote + "): " + result);
             }
-            listener.establishedExplicitTunnel(getSession(), local, remote, true, result, null);
+            signalEstablishedExplicitTunnel(local, remote, true, result, null);
             return result;
         } catch (IOException | RuntimeException e) {
             stopLocalPortForwarding(local);
@@ -200,16 +240,15 @@ public class DefaultTcpipForwarder
                 log.debug("stopLocalPortForwarding(" + local + ") unbind " + bound);
             }
 
-            PortForwardingEventListener listener = getPortForwardingEventListenerProxy();
-            listener.tearingDownExplicitTunnel(getSession(), bound, true);
+            signalTearingDownExplicitTunnel(bound, true);
             try {
                 acceptor.unbind(bound.toInetSocketAddress());
             } catch (RuntimeException e) {
-                listener.tornDownExplicitTunnel(getSession(), bound, true, e);
+                signalTornDownExplicitTunnel(bound, true, e);
                 throw e;
             }
 
-            listener.tornDownExplicitTunnel(getSession(), bound, true, null);
+            signalTornDownExplicitTunnel(bound, true, null);
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("stopLocalPortForwarding(" + local + ") no mapping/acceptor for " + bound);
@@ -234,8 +273,7 @@ public class DefaultTcpipForwarder
         long timeout = PropertyResolverUtils.getLongProperty(session, FORWARD_REQUEST_TIMEOUT, DEFAULT_FORWARD_REQUEST_TIMEOUT);
         Buffer result;
         int port;
-        PortForwardingEventListener listener = getPortForwardingEventListenerProxy();
-        listener.establishingExplicitTunnel(getSession(), local, remote, false);
+        signalEstablishingExplicitTunnel(local, remote, false);
         try {
             result = session.request("tcpip-forward", buffer, timeout, TimeUnit.MILLISECONDS);
             if (result == null) {
@@ -257,7 +295,7 @@ public class DefaultTcpipForwarder
             } catch (IOException | RuntimeException err) {
                 e.addSuppressed(err);
             }
-            listener.establishedExplicitTunnel(session, local, remote, false, null, e);
+            signalEstablishedExplicitTunnel(local, remote, false, null, e);
             throw e;
         }
 
@@ -267,7 +305,7 @@ public class DefaultTcpipForwarder
                 log.debug("startRemotePortForwarding(" + remote + " -> " + local + "): " + bound);
             }
 
-            listener.establishedExplicitTunnel(getSession(), local, remote, false, bound, null);
+            signalEstablishedExplicitTunnel(local, remote, false, bound, null);
             return bound;
         } catch (IOException | RuntimeException e) {
             stopRemotePortForwarding(remote);
@@ -295,21 +333,82 @@ public class DefaultTcpipForwarder
             buffer.putString(remoteHost);
             buffer.putInt(remote.getPort());
 
-            PortForwardingEventListener listener = getPortForwardingEventListenerProxy();
-            listener.tearingDownExplicitTunnel(getSession(), bound, false);
+            signalTearingDownExplicitTunnel(bound, false);
             try {
                 session.writePacket(buffer);
             } catch (IOException | RuntimeException e) {
-                listener.tornDownExplicitTunnel(getSession(), bound, false, e);
+                signalTornDownExplicitTunnel(bound, false, e);
                 throw e;
             }
 
-            listener.tornDownExplicitTunnel(getSession(), bound, false, null);
+            signalTornDownExplicitTunnel(bound, false, null);
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("stopRemotePortForwarding(" + remote + ") no binding found");
             }
         }
+    }
+
+    protected void signalTearingDownExplicitTunnel(SshdSocketAddress boundAddress, boolean localForwarding) throws IOException {
+        try {
+            invokePortEventListenerSignaller(l -> {
+                signalTearingDownExplicitTunnel(l, boundAddress, localForwarding);
+                return null;
+            });
+        } catch (Throwable t) {
+            if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            } else if (t instanceof Error) {
+                throw (Error) t;
+            } else if (t instanceof IOException) {
+                throw (IOException) t;
+            } else {
+                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
+                        + " to signal tearing down explicit tunnel for local=" + localForwarding
+                        + " on bound=" + boundAddress, t);
+            }
+        }
+    }
+
+    protected void signalTearingDownExplicitTunnel(
+            PortForwardingEventListener listener, SshdSocketAddress boundAddress, boolean localForwarding)
+                    throws IOException {
+        if (listener == null) {
+            return;
+        }
+
+        listener.tearingDownExplicitTunnel(getSession(), boundAddress, localForwarding);
+    }
+
+    protected void signalTornDownExplicitTunnel(SshdSocketAddress boundAddress, boolean localForwarding, Throwable reason) throws IOException {
+        try {
+            invokePortEventListenerSignaller(l -> {
+                signalTornDownExplicitTunnel(l, boundAddress, localForwarding, reason);
+                return null;
+            });
+        } catch (Throwable t) {
+            if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            } else if (t instanceof Error) {
+                throw (Error) t;
+            } else if (t instanceof IOException) {
+                throw (IOException) t;
+            } else {
+                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
+                        + " to signal torn down explicit tunnel local=" + localForwarding
+                        + " on bound=" + boundAddress, t);
+            }
+        }
+    }
+
+    protected void signalTornDownExplicitTunnel(
+            PortForwardingEventListener listener, SshdSocketAddress boundAddress, boolean localForwarding, Throwable reason)
+                    throws IOException {
+        if (listener == null) {
+            return;
+        }
+
+        listener.tornDownExplicitTunnel(getSession(), boundAddress, localForwarding, reason);
     }
 
     @Override
@@ -328,8 +427,7 @@ public class DefaultTcpipForwarder
         SocksProxy prev;
         InetSocketAddress bound;
         int port;
-        PortForwardingEventListener listener = getPortForwardingEventListenerProxy();
-        listener.establishingDynamicTunnel(getSession(), local);
+        signalEstablishingDynamicTunnel(local);
         try {
             bound = doBind(local, socksProxyIoHandlerFactory);
             port = bound.getPort();
@@ -346,7 +444,7 @@ public class DefaultTcpipForwarder
             } catch (IOException | RuntimeException err) {
                 e.addSuppressed(err);
             }
-            listener.establishedDynamicTunnel(getSession(), local, null, e);
+            signalEstablishedDynamicTunnel(local, null, e);
             throw e;
         }
 
@@ -356,12 +454,73 @@ public class DefaultTcpipForwarder
                 log.debug("startDynamicPortForwarding(" + local + "): " + result);
             }
 
-            listener.establishedDynamicTunnel(getSession(), local, result, null);
+            signalEstablishedDynamicTunnel(local, result, null);
             return result;
         } catch (IOException | RuntimeException e) {
             stopDynamicPortForwarding(local);
             throw e;
         }
+    }
+
+    protected void signalEstablishedDynamicTunnel(
+            SshdSocketAddress local, SshdSocketAddress boundAddress, Throwable reason)
+                    throws IOException {
+        try {
+            invokePortEventListenerSignaller(l -> {
+                signalEstablishedDynamicTunnel(l, local, boundAddress, reason);
+                return null;
+            });
+        } catch (Throwable t) {
+            if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            } else if (t instanceof Error) {
+                throw (Error) t;
+            } else if (t instanceof IOException) {
+                throw (IOException) t;
+            } else {
+                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
+                        + " to signal establishing dynamic tunnel for local=" + local
+                        + " on bound=" + boundAddress, t);
+            }
+        }
+    }
+
+    protected void signalEstablishedDynamicTunnel(PortForwardingEventListener listener,
+                SshdSocketAddress local, SshdSocketAddress boundAddress, Throwable reason)
+                    throws IOException {
+        if (listener == null) {
+            return;
+        }
+
+        listener.establishedDynamicTunnel(getSession(), local, boundAddress, reason);
+    }
+
+    protected void signalEstablishingDynamicTunnel(SshdSocketAddress local) throws IOException {
+        try {
+            invokePortEventListenerSignaller(l -> {
+                signalEstablishingDynamicTunnel(l, local);
+                return null;
+            });
+        } catch (Throwable t) {
+            if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            } else if (t instanceof Error) {
+                throw (Error) t;
+            } else if (t instanceof IOException) {
+                throw (IOException) t;
+            } else {
+                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
+                        + " to signal establishing dynamic tunnel for local=" + local, t);
+            }
+        }
+    }
+
+    protected void signalEstablishingDynamicTunnel(PortForwardingEventListener listener, SshdSocketAddress local) throws IOException {
+        if (listener == null) {
+            return;
+        }
+
+        listener.establishingDynamicTunnel(getSession(), local);
     }
 
     @Override
@@ -376,22 +535,79 @@ public class DefaultTcpipForwarder
                 log.debug("stopDynamicPortForwarding(" + local + ") unbinding");
             }
 
-            PortForwardingEventListener listener = getPortForwardingEventListenerProxy();
-            listener.tearingDownDynamicTunnel(sessionInstance, local);
+            signalTearingDownDynamicTunnel(local);
             try {
                 obj.close(true);
                 acceptor.unbind(local.toInetSocketAddress());
             } catch (RuntimeException e) {
-                listener.tornDownDynamicTunnel(getSession(), local, e);
+                signalTornDownDynamicTunnel(local, e);
                 throw e;
             }
 
-            listener.tornDownDynamicTunnel(getSession(), local, null);
+            signalTornDownDynamicTunnel(local, null);
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("stopDynamicPortForwarding(" + local + ") no binding found");
             }
         }
+    }
+
+    protected void signalTearingDownDynamicTunnel(SshdSocketAddress address) throws IOException {
+        try {
+            invokePortEventListenerSignaller(l -> {
+                signalTearingDownDynamicTunnel(l, address);
+                return null;
+            });
+        } catch (Throwable t) {
+            if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            } else if (t instanceof Error) {
+                throw (Error) t;
+            } else if (t instanceof IOException) {
+                throw (IOException) t;
+            } else {
+                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
+                        + " to signal tearing down dynamic tunnel for address=" + address, t);
+            }
+        }
+    }
+
+    protected void signalTearingDownDynamicTunnel(PortForwardingEventListener listener, SshdSocketAddress address) throws IOException {
+        if (listener == null) {
+            return;
+        }
+
+        listener.tearingDownDynamicTunnel(getSession(), address);
+    }
+
+    protected void signalTornDownDynamicTunnel(SshdSocketAddress address, Throwable reason) throws IOException {
+        try {
+            invokePortEventListenerSignaller(l -> {
+                signalTornDownDynamicTunnel(l, address, reason);
+                return null;
+            });
+        } catch (Throwable t) {
+            if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            } else if (t instanceof Error) {
+                throw (Error) t;
+            } else if (t instanceof IOException) {
+                throw (IOException) t;
+            } else {
+                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
+                        + " to signal torn down dynamic tunnel for address=" + address, t);
+            }
+        }
+    }
+
+    protected void signalTornDownDynamicTunnel(
+            PortForwardingEventListener listener, SshdSocketAddress address, Throwable reason)
+                    throws IOException {
+        if (listener == null) {
+            return;
+        }
+
+        listener.tornDownDynamicTunnel(getSession(), address, reason);
     }
 
     @Override
@@ -425,8 +641,7 @@ public class DefaultTcpipForwarder
             throw new RuntimeSshException(e);
         }
 
-        PortForwardingEventListener listener = getPortForwardingEventListenerProxy();
-        listener.establishingExplicitTunnel(getSession(), local, null, true);
+        signalEstablishingExplicitTunnel(local, null, true);
         SshdSocketAddress result;
         try {
             InetSocketAddress bound = doBind(local, staticIoHandlerFactory);
@@ -450,12 +665,12 @@ public class DefaultTcpipForwarder
             } catch (IOException | RuntimeException err) {
                 e.addSuppressed(e);
             }
-            listener.establishedExplicitTunnel(getSession(), local, null, true, null, e);
+            signalEstablishedExplicitTunnel(local, null, true, null, e);
             throw e;
         }
 
         try {
-            listener.establishedExplicitTunnel(getSession(), local, null, true, result, null);
+            signalEstablishedExplicitTunnel(local, null, true, result, null);
             return result;
         } catch (IOException | RuntimeException e) {
             throw e;
@@ -477,20 +692,172 @@ public class DefaultTcpipForwarder
                 log.debug("localPortForwardingCancelled(" + local + ") unbind " + entry);
             }
 
-            PortForwardingEventListener listener = getPortForwardingEventListenerProxy();
-            listener.tearingDownExplicitTunnel(getSession(), entry, true);
+            signalTearingDownExplicitTunnel(entry, true);
             try {
                 acceptor.unbind(entry.toInetSocketAddress());
             } catch (RuntimeException e) {
-                listener.tornDownExplicitTunnel(getSession(), entry, true, e);
+                signalTornDownExplicitTunnel(entry, true, e);
                 throw e;
             }
 
-            listener.tornDownExplicitTunnel(getSession(), entry, true, null);
+            signalTornDownExplicitTunnel(entry, true, null);
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("localPortForwardingCancelled(" + local + ") no match/acceptor: " + entry);
             }
+        }
+    }
+
+    protected void signalEstablishingExplicitTunnel(
+            SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding)
+                    throws IOException {
+        try {
+            invokePortEventListenerSignaller(l -> {
+                signalEstablishingExplicitTunnel(l, local, remote, localForwarding);
+                return null;
+            });
+        } catch (Throwable t) {
+            if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            } else if (t instanceof Error) {
+                throw (Error) t;
+            } else if (t instanceof IOException) {
+                throw (IOException) t;
+            } else {
+                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
+                        + " to signal establishing explicit tunnel for local=" + local
+                        + ", remote=" + remote + ", localForwarding=" + localForwarding, t);
+            }
+        }
+    }
+
+    protected void signalEstablishingExplicitTunnel(PortForwardingEventListener listener,
+            SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding)
+                    throws IOException {
+        if (listener == null) {
+            return;
+        }
+
+        listener.establishingExplicitTunnel(getSession(), local, remote, localForwarding);
+    }
+
+    protected void signalEstablishedExplicitTunnel(
+            SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding,
+            SshdSocketAddress boundAddress, Throwable reason)
+                    throws IOException {
+        try {
+            invokePortEventListenerSignaller(l -> {
+                signalEstablishedExplicitTunnel(l, local, remote, localForwarding, boundAddress, reason);
+                return null;
+            });
+        } catch (Throwable t) {
+            if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            } else if (t instanceof Error) {
+                throw (Error) t;
+            } else if (t instanceof IOException) {
+                throw (IOException) t;
+            } else {
+                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
+                        + " to signal established explicit tunnel for local=" + local
+                        + ", remote=" + remote + ", localForwarding=" + localForwarding
+                        + ", bound=" + boundAddress, t);
+            }
+        }
+    }
+
+    protected void signalEstablishedExplicitTunnel(PortForwardingEventListener listener,
+            SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding,
+            SshdSocketAddress boundAddress, Throwable reason)
+                    throws IOException {
+        if (listener == null) {
+            return;
+        }
+
+        listener.establishedExplicitTunnel(getSession(), local, remote, localForwarding, boundAddress, reason);
+    }
+
+    protected void invokePortEventListenerSignaller(Invoker<PortForwardingEventListener, Void> invoker) throws Throwable {
+        Throwable err = null;
+        try {
+            invokePortEventListenerSignallerListeners(getDefaultListeners(), invoker);
+        } catch (Throwable t) {
+            Throwable e = GenericUtils.peelException(t);
+            err = GenericUtils.accumulateException(err, e);
+        }
+
+        try {
+            invokePortEventListenerSignallerHolders(managersHolder, invoker);
+        } catch (Throwable t) {
+            Throwable e = GenericUtils.peelException(t);
+            err = GenericUtils.accumulateException(err, e);
+        }
+
+
+        if (err != null) {
+            throw err;
+        }
+    }
+
+    protected void invokePortEventListenerSignallerListeners(
+            Collection<? extends PortForwardingEventListener> listeners, Invoker<PortForwardingEventListener, Void> invoker)
+                    throws Throwable {
+        if (GenericUtils.isEmpty(listeners)) {
+            return;
+        }
+
+        Throwable err = null;
+        // Need to go over the hierarchy (session, factory managed, connection service, etc...)
+        for (PortForwardingEventListener l : listeners) {
+            if (l == null) {
+                continue;
+            }
+
+            try {
+                invoker.invoke(l);
+            } catch (Throwable t) {
+                Throwable e = GenericUtils.peelException(t);
+                err = GenericUtils.accumulateException(err, e);
+            }
+        }
+
+        if (err != null) {
+            throw err;
+        }
+    }
+
+    protected void invokePortEventListenerSignallerHolders(
+            Collection<? extends PortForwardingEventListenerManager> holders, Invoker<PortForwardingEventListener, Void> invoker)
+                    throws Throwable {
+        if (GenericUtils.isEmpty(holders)) {
+            return;
+        }
+
+        Throwable err = null;
+        // Need to go over the hierarchy (session, factory managed, connection service, etc...)
+        for (PortForwardingEventListenerManager m : holders) {
+            try {
+                PortForwardingEventListener listener = m.getPortForwardingEventListenerProxy();
+                if (listener != null) {
+                    invoker.invoke(listener);
+                }
+            } catch (Throwable t) {
+                Throwable e = GenericUtils.peelException(t);
+                err = GenericUtils.accumulateException(err, e);
+            }
+
+            if (m instanceof PortForwardingEventListenerManagerHolder) {
+                try {
+                    invokePortEventListenerSignallerHolders(((PortForwardingEventListenerManagerHolder) m).getRegisteredManagers(), invoker);
+                } catch (Throwable t) {
+                    Throwable e = GenericUtils.peelException(t);
+                    err = GenericUtils.accumulateException(err, e);
+                }
+            }
+        }
+
+        if (err != null) {
+            throw err;
         }
     }
 
@@ -502,6 +869,7 @@ public class DefaultTcpipForwarder
     @Override
     protected void preClose() {
         this.listeners.clear();
+        this.managersHolder.clear();
         super.preClose();
     }
 

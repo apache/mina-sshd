@@ -98,4 +98,8 @@ public interface ScpTransferEventListener extends SshdEventListener {
             throws IOException {
         // ignored
     }
+
+    static <L extends ScpTransferEventListener> L validateListener(L listener) {
+        return SshdEventListener.validateListener(listener, ScpTransferEventListener.class.getSimpleName());
+    }
 }

@@ -376,4 +376,8 @@ public interface SftpEventListener extends SshdEventListener {
             throws IOException {
                 // ignored
     }
+
+    static <L extends SftpEventListener> L validateListener(L listener) {
+        return SshdEventListener.validateListener(listener, SftpEventListener.class.getSimpleName());
+    }
 }

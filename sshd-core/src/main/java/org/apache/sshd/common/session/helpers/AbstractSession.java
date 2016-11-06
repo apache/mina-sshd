@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -78,6 +79,7 @@ import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.SessionWorkBuffer;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Invoker;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.Readable;
@@ -133,22 +135,19 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     /**
      * Session listeners container
      */
-    protected final Collection<SessionListener> sessionListeners =
-            EventListenerUtils.synchronizedListenersSet();
+    protected final Collection<SessionListener> sessionListeners = new CopyOnWriteArraySet<>();
     protected final SessionListener sessionListenerProxy;
 
     /**
      * Channel events listener container
      */
-    protected final Collection<ChannelListener> channelListeners =
-            EventListenerUtils.synchronizedListenersSet();
+    protected final Collection<ChannelListener> channelListeners = new CopyOnWriteArraySet<>();
     protected final ChannelListener channelListenerProxy;
 
     /**
      * Port forwarding events listener container
      */
-    protected final Collection<PortForwardingEventListener> tunnelListeners =
-            EventListenerUtils.synchronizedListenersSet();
+    protected final Collection<PortForwardingEventListener> tunnelListeners = new CopyOnWriteArraySet<>();
     protected final PortForwardingEventListener tunnelListenerProxy;
 
     /*
@@ -265,11 +264,36 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         sessionListenerProxy = EventListenerUtils.proxyWrapper(SessionListener.class, loader, sessionListeners);
         channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, loader, channelListeners);
         tunnelListenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, loader, tunnelListeners);
+    }
 
-        // Delegate the task of further notifications to the session
-        addSessionListener(factoryManager.getSessionListenerProxy());
-        addChannelListener(factoryManager.getChannelListenerProxy());
-        addPortForwardingEventListener(factoryManager.getPortForwardingEventListenerProxy());
+    protected void signalSessionCreated(IoSession ioSession) throws Exception {
+        try {
+            invokeSessionSignaller(l -> {
+                signalSessionCreated(l);
+                return null;
+            });
+        } catch (Throwable err) {
+            Throwable e = GenericUtils.peelException(err);
+            if (log.isDebugEnabled()) {
+                log.debug("Failed ({}) to announce session={} created: {}",
+                          e.getClass().getSimpleName(), ioSession, e.getMessage());
+            }
+            if (log.isTraceEnabled()) {
+                log.trace("Session=" + ioSession + " creation failure details", e);
+            }
+            if (e instanceof Exception) {
+                throw (Exception) e;
+            } else {
+                throw new RuntimeSshException(e);
+            }
+        }
+    }
+
+    protected void signalSessionCreated(SessionListener listener) {
+        if (listener == null) {
+            return;
+        }
+        listener.sessionCreated(this);
     }
 
     /**
@@ -404,7 +428,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     @Override
     public void setAuthenticated() throws IOException {
         this.authed = true;
-        sendSessionEvent(SessionListener.Event.Authenticated);
+        signalSessionEvent(SessionListener.Event.Authenticated);
     }
 
     /**
@@ -736,7 +760,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 "Unknown negotiated KEX algorithm: %s",
                 kexAlgorithm);
         kex.init(this, serverVersion.getBytes(StandardCharsets.UTF_8), clientVersion.getBytes(StandardCharsets.UTF_8), i_s, i_c);
-        sendSessionEvent(SessionListener.Event.KexCompleted);
+        signalSessionEvent(SessionListener.Event.KexCompleted);
     }
 
     protected void handleNewKeys(int cmd, Buffer buffer) throws Exception {
@@ -756,7 +780,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             }
         }
 
-        sendSessionEvent(SessionListener.Event.KeyEstablished);
+        signalSessionEvent(SessionListener.Event.KeyEstablished);
         synchronized (pendingPackets) {
             if (!pendingPackets.isEmpty()) {
                 if (log.isDebugEnabled()) {
@@ -812,24 +836,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             log.debug("exceptionCaught(" + this + ")[state=" + curState + "] details", t);
         }
 
-        SessionListener listener = getSessionListenerProxy();
-        try {
-            listener.sessionException(this, t);
-        } catch (Throwable err) {
-            Throwable e = GenericUtils.peelException(err);
-            if (log.isDebugEnabled()) {
-                log.debug("exceptionCaught(" + this + ") signal session exception details", e);
-            }
-
-            if (log.isTraceEnabled()) {
-                Throwable[] suppressed = e.getSuppressed();
-                if (GenericUtils.length(suppressed) > 0) {
-                    for (Throwable s : suppressed) {
-                        log.trace("exceptionCaught(" + this + ") suppressed session exception signalling", s);
-                    }
-                }
-            }
-        }
+        signalExceptionCaught(t);
 
         if (State.Opened.equals(curState) && (t instanceof SshException)) {
             int code = ((SshException) t).getDisconnectCode();
@@ -850,6 +857,37 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
 
         close(true);
+    }
+
+    protected void signalExceptionCaught(Throwable t) {
+        try {
+            invokeSessionSignaller(l -> {
+                signalExceptionCaught(l, t);
+                return null;
+            });
+        } catch (Throwable err) {
+            Throwable e = GenericUtils.peelException(err);
+            if (log.isDebugEnabled()) {
+                log.debug("exceptionCaught(" + this + ") signal session exception details", e);
+            }
+
+            if (log.isTraceEnabled()) {
+                Throwable[] suppressed = e.getSuppressed();
+                if (GenericUtils.length(suppressed) > 0) {
+                    for (Throwable s : suppressed) {
+                        log.trace("exceptionCaught(" + this + ") suppressed session exception signalling", s);
+                    }
+                }
+            }
+        }
+    }
+
+    protected void signalExceptionCaught(SessionListener listener, Throwable t) {
+        if (listener == null) {
+            return;
+        }
+
+        listener.sessionException(this, t);
     }
 
     @Override
@@ -880,24 +918,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
 
         // Fire 'close' event
-        SessionListener listener = getSessionListenerProxy();
         try {
-            listener.sessionClosed(this);
-        } catch (Throwable t) {
-            Throwable e = GenericUtils.peelException(t);
-            log.warn("preClose({}) {} while signal session closed: {}", this, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.debug("preClose(" + this + ") signal session closed exception details", e);
-            }
-
-            if (log.isTraceEnabled()) {
-                Throwable[] suppressed = e.getSuppressed();
-                if (GenericUtils.length(suppressed) > 0) {
-                    for (Throwable s : suppressed) {
-                        log.trace("preClose(" + this + ") suppressed session closed signalling", s);
-                    }
-                }
-            }
+            signalSessionClosed();
         } finally {
             // clear the listeners since we are closing the session (quicker GC)
             this.sessionListeners.clear();
@@ -906,6 +928,38 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
 
         super.preClose();
+    }
+
+    protected void signalSessionClosed() {
+        try {
+            invokeSessionSignaller(l -> {
+                signalSessionClosed(l);
+                return null;
+            });
+        } catch (Throwable err) {
+            Throwable e = GenericUtils.peelException(err);
+            log.warn("signalSessionClosed({}) {} while signal session closed: {}", this, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("signalSessionClosed(" + this + ") signal session closed exception details", e);
+            }
+
+            if (log.isTraceEnabled()) {
+                Throwable[] suppressed = e.getSuppressed();
+                if (GenericUtils.length(suppressed) > 0) {
+                    for (Throwable s : suppressed) {
+                        log.trace("signalSessionClosed(" + this + ") suppressed session closed signalling", s);
+                    }
+                }
+            }
+        }
+    }
+
+    protected void signalSessionClosed(SessionListener listener) {
+        if (listener == null) {
+            return;
+        }
+
+        listener.sessionClosed(this);
     }
 
     protected List<Service> getServices() {
@@ -1866,10 +1920,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @return The negotiated options {@link Map}
      */
     protected Map<KexProposalOption, String> negotiate() {
-        SessionListener listener = getSessionListenerProxy();
         Map<KexProposalOption, String> c2sOptions = Collections.unmodifiableMap(clientProposal);
         Map<KexProposalOption, String> s2cOptions = Collections.unmodifiableMap(serverProposal);
-        listener.sessionNegotiationStart(this, c2sOptions, s2cOptions);
+        signalNegotiationStart(c2sOptions, s2cOptions);
 
         Map<KexProposalOption, String> guess = new EnumMap<>(KexProposalOption.class);
         Map<KexProposalOption, String> negotiatedGuess = Collections.unmodifiableMap(guess);
@@ -1914,12 +1967,67 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 }
             }
         } catch (RuntimeException | Error e) {
-            listener.sessionNegotiationEnd(this, c2sOptions, s2cOptions, negotiatedGuess, e);
+            signalNegotiationEnd(c2sOptions, s2cOptions, negotiatedGuess, e);
             throw e;
         }
 
-        listener.sessionNegotiationEnd(this, c2sOptions, s2cOptions, negotiatedGuess, null);
+        signalNegotiationEnd(c2sOptions, s2cOptions, negotiatedGuess, null);
         return setNegotiationResult(guess);
+    }
+
+    protected void signalNegotiationStart(Map<KexProposalOption, String> c2sOptions, Map<KexProposalOption, String> s2cOptions) {
+        try {
+            invokeSessionSignaller(l -> {
+                signalNegotiationStart(l, c2sOptions, s2cOptions);
+                return null;
+            });
+        } catch (Throwable err) {
+            if (err instanceof RuntimeException) {
+                throw (RuntimeException) err;
+            } else if (err instanceof Error) {
+                throw (Error) err;
+            } else {
+                throw new RuntimeException(err);
+            }
+        }
+    }
+
+    protected void signalNegotiationStart(
+            SessionListener listener, Map<KexProposalOption, String> c2sOptions, Map<KexProposalOption, String> s2cOptions) {
+        if (listener == null) {
+            return;
+        }
+
+        listener.sessionNegotiationStart(this, c2sOptions, s2cOptions);
+    }
+
+    protected void signalNegotiationEnd(
+            Map<KexProposalOption, String> c2sOptions, Map<KexProposalOption, String> s2cOptions,
+            Map<KexProposalOption, String> negotiatedGuess, Throwable reason) {
+        try {
+            invokeSessionSignaller(l -> {
+                signalNegotiationEnd(l, c2sOptions, s2cOptions, negotiatedGuess, reason);
+                return null;
+            });
+        } catch (Throwable err) {
+            if (err instanceof RuntimeException) {
+                throw (RuntimeException) err;
+            } else if (err instanceof Error) {
+                throw (Error) err;
+            } else {
+                throw new RuntimeException(err);
+            }
+        }
+    }
+
+    protected void signalNegotiationEnd(SessionListener listener,
+            Map<KexProposalOption, String> c2sOptions, Map<KexProposalOption, String> s2cOptions,
+            Map<KexProposalOption, String> negotiatedGuess, Throwable reason) {
+        if (listener == null) {
+            return;
+        }
+
+        listener.sessionNegotiationEnd(this, c2sOptions, s2cOptions, negotiatedGuess, null);
     }
 
     protected Map<KexProposalOption, String> setNegotiationResult(Map<KexProposalOption, String> guess) {
@@ -2026,7 +2134,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     @Override
     public void addSessionListener(SessionListener listener) {
-        ValidateUtils.checkNotNull(listener, "addSessionListener(%s) null instance", this);
+        SessionListener.validateListener(listener);
         // avoid race conditions on notifications while session is being closed
         if (!isOpen()) {
             log.warn("addSessionListener({})[{}] ignore registration while session is closing", this, listener);
@@ -2046,6 +2154,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     @Override
     public void removeSessionListener(SessionListener listener) {
+        if (listener == null) {
+            return;
+        }
+
+        SessionListener.validateListener(listener);
         if (this.sessionListeners.remove(listener)) {
             if (log.isTraceEnabled()) {
                 log.trace("removeSessionListener({})[{}] removed", this, listener);
@@ -2064,7 +2177,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     @Override
     public void addChannelListener(ChannelListener listener) {
-        ValidateUtils.checkNotNull(listener, "addChannelListener(%s) null instance", this);
+        ChannelListener.validateListener(listener);
         // avoid race conditions on notifications while session is being closed
         if (!isOpen()) {
             log.warn("addChannelListener({})[{}] ignore registration while session is closing", this, listener);
@@ -2084,6 +2197,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     @Override
     public void removeChannelListener(ChannelListener listener) {
+        if (listener == null) {
+            return;
+        }
+
+        ChannelListener.validateListener(listener);
         if (this.channelListeners.remove(listener)) {
             if (log.isTraceEnabled()) {
                 log.trace("removeChannelListener({})[{}] removed", this, listener);
@@ -2107,7 +2225,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     @Override
     public void addPortForwardingEventListener(PortForwardingEventListener listener) {
-        ValidateUtils.checkNotNull(listener, "addPortForwardingEventListener(%s) null instance", this);
+        PortForwardingEventListener.validateListener(listener);
         // avoid race conditions on notifications while session is being closed
         if (!isOpen()) {
             log.warn("addPortForwardingEventListener({})[{}] ignore registration while session is closing", this, listener);
@@ -2131,6 +2249,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             return;
         }
 
+        PortForwardingEventListener.validateListener(listener);
         if (this.tunnelListeners.remove(listener)) {
             if (log.isTraceEnabled()) {
                 log.trace("removePortForwardingEventListener({})[{}] removed", this, listener);
@@ -2148,12 +2267,14 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @param event The event to send
      * @throws IOException If any of the registered listeners threw an exception.
      */
-    protected void sendSessionEvent(SessionListener.Event event) throws IOException {
-        SessionListener listener = getSessionListenerProxy();
+    protected void signalSessionEvent(SessionListener.Event event) throws IOException {
         try {
-            listener.sessionEvent(this, event);
-        } catch (Throwable e) {
-            Throwable t = GenericUtils.peelException(e);
+            invokeSessionSignaller(l -> {
+                signalSessionEvent(l, event);
+                return null;
+            });
+        } catch (Throwable err) {
+            Throwable t = GenericUtils.peelException(err);
             if (log.isDebugEnabled()) {
                 log.debug("sendSessionEvent({})[{}] failed ({}) to inform listeners: {}",
                            this, event, t.getClass().getSimpleName(), t.getMessage());
@@ -2168,6 +2289,37 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             } else {
                 throw new IOException("Failed (" + t.getClass().getSimpleName() + ") to send session event: " + t.getMessage(), t);
             }
+        }
+    }
+
+    protected void signalSessionEvent(SessionListener listener, SessionListener.Event event) throws IOException {
+        if (listener == null) {
+            return;
+        }
+
+        listener.sessionEvent(this, event);
+    }
+
+    protected void invokeSessionSignaller(Invoker<SessionListener, Void> invoker) throws Throwable {
+        FactoryManager manager = getFactoryManager();
+        SessionListener[] listeners = {
+            (manager == null) ? null : manager.getSessionListenerProxy(),
+            getSessionListenerProxy()
+        };
+        Throwable err = null;
+        for (SessionListener l : listeners) {
+            if (l == null) {
+                continue;
+            }
+            try {
+                invoker.invoke(l);
+            } catch (Throwable t) {
+                err = GenericUtils.accumulateException(err, t);
+            }
+        }
+
+        if (err != null) {
+            throw err;
         }
     }
 
@@ -2224,6 +2376,10 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     protected boolean isRekeyRequired() {
+        if ((!isOpen()) || isClosing() || isClosed()) {
+            return false;
+        }
+
         KexState curState = kexState.get();
         if (!KexState.DONE.equals(curState)) {
             return false;
@@ -2388,7 +2544,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @see #checkIdleTimeout(long, long)
      */
     protected void checkForTimeouts() throws IOException {
-        if (isClosing()) {
+        if ((!isOpen()) || isClosing() || isClosed()) {
             if (log.isDebugEnabled()) {
                 log.debug("checkForTimeouts({}) session closing", this);
                 return;
