@@ -33,6 +33,7 @@ import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import net.i2p.crypto.eddsa.spec.EdDSAParameterSpec;
+import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
 
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
@@ -159,6 +160,17 @@ public class EdDSASecurityProvider extends Provider {
         EdDSAPublicKeySpec keySpec = new EdDSAPublicKeySpec(seed, params);
         KeyFactory factory = SecurityUtils.getKeyFactory(SecurityUtils.EDDSA);
         return factory.generatePublic(keySpec);
+    }
+
+    public static PrivateKey generateEDDSAPrivateKey(byte[] seed) throws GeneralSecurityException {
+        if (!SecurityUtils.isEDDSACurveSupported()) {
+            throw new NoSuchAlgorithmException(SecurityUtils.EDDSA + " not supported");
+        }
+
+        EdDSAParameterSpec params = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.CURVE_ED25519_SHA512);
+        EdDSAPrivateKeySpec keySpec = new EdDSAPrivateKeySpec(seed, params);
+        KeyFactory factory = SecurityUtils.getKeyFactory(SecurityUtils.EDDSA);
+        return factory.generatePrivate(keySpec);
     }
 
     public static <B extends Buffer> B putRawEDDSAPublicKey(B buffer, PublicKey key) {
