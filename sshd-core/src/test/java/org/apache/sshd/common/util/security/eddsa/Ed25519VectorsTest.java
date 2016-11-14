@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.util.security.eddsa;
 
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -201,14 +202,36 @@ public class Ed25519VectorsTest extends BaseTestSupport {
     public void testSignature() throws Exception {
         Signature signer = EdDSASecurityProvider.getEDDSASignature();
         signer.initSigner(privateKey);
-        signer.update(msgBytes);
+        signer.update(msgBytes.clone());
 
         byte[] actSignature = signer.sign();
         assertArrayEquals("Mismatched signature", expSignature, actSignature);
 
         Signature verifier = EdDSASecurityProvider.getEDDSASignature();
         verifier.initVerifier(publicKey);
-        verifier.update(msgBytes);
+        verifier.update(msgBytes.clone());
+        assertTrue("Verification failed", verifier.verify(expSignature));
+    }
+
+    @Test
+    public void testPartialBufferSignature() throws Exception {
+        byte[] extraData = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
+        byte[] dataBuf = new byte[msgBytes.length + extraData.length];
+        int offset = extraData.length / 2;
+        System.arraycopy(extraData, 0, dataBuf, 0, offset);
+        System.arraycopy(msgBytes, 0, dataBuf, offset, msgBytes.length);
+        System.arraycopy(extraData, offset, dataBuf, offset + msgBytes.length, extraData.length - offset);
+
+        Signature signer = EdDSASecurityProvider.getEDDSASignature();
+        signer.initSigner(privateKey);
+        signer.update(dataBuf.clone(), offset, msgBytes.length);
+
+        byte[] actSignature = signer.sign();
+        assertArrayEquals("Mismatched signature", expSignature, actSignature);
+
+        Signature verifier = EdDSASecurityProvider.getEDDSASignature();
+        verifier.initVerifier(publicKey);
+        verifier.update(dataBuf.clone(), offset, msgBytes.length);
         assertTrue("Verification failed", verifier.verify(expSignature));
     }
 }
