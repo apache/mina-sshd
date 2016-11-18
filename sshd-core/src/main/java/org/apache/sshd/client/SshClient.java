@@ -322,7 +322,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     @Override
     public void addPasswordIdentity(String password) {
-        identities.add(ValidateUtils.checkNotNullAndNotEmpty(password, "No password provided"));
+        // DO NOT USE checkNotNullOrNotEmpty SINCE IT TRIMS THE RESULT
+        ValidateUtils.checkTrue((password != null) && (!password.isEmpty()), "No password provided");
+        identities.add(password);
         if (log.isDebugEnabled()) { // don't show the password in the log
             log.debug("addPasswordIdentity({}) {}", this, KeyUtils.getFingerPrint(password));
         }

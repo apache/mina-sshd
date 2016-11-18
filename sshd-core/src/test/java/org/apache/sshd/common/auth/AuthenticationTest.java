@@ -547,8 +547,8 @@ public class AuthenticationTest extends BaseTestSupport {
     @Test
     public void testPasswordIdentityProviderPropagation() throws Exception {
         try (SshClient client = setupTestClient()) {
-            final List<String> passwords = Collections.singletonList(getCurrentTestName());
-            final AtomicInteger loadCount = new AtomicInteger(0);
+            List<String> passwords = Collections.singletonList(getCurrentTestName());
+            AtomicInteger loadCount = new AtomicInteger(0);
             PasswordIdentityProvider provider = () -> {
                 loadCount.incrementAndGet();
                 outputDebugMessage("loadPasswords - count=%s", loadCount);
@@ -569,7 +569,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test   // see SSHD-618
     public void testPublicKeyAuthDifferentThanKex() throws Exception {
-        final KeyPairProvider serverKeys = KeyPairProvider.wrap(
+        KeyPairProvider serverKeys = KeyPairProvider.wrap(
                     Utils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024),
                     Utils.generateKeyPair(KeyUtils.DSS_ALGORITHM, 512),
                     Utils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256));
@@ -617,7 +617,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test   // see SSHD-624
     public void testMismatchedUserAuthPkOkData() throws Exception {
-        final AtomicInteger challengeCounter = new AtomicInteger(0);
+        AtomicInteger challengeCounter = new AtomicInteger(0);
         sshd.setUserAuthFactories(Collections.singletonList(
                 new org.apache.sshd.server.auth.pubkey.UserAuthPublicKeyFactory() {
                     @Override
@@ -674,10 +674,10 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test   // see SSHD-620
     public void testHostBasedAuthentication() throws Exception {
-        final String hostClienUser = getClass().getSimpleName();
-        final String hostClientName = SshdSocketAddress.toAddressString(SshdSocketAddress.getFirstExternalNetwork4Address());
-        final KeyPair hostClientKey = Utils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
-        final AtomicInteger invocationCount = new AtomicInteger(0);
+        String hostClienUser = getClass().getSimpleName();
+        String hostClientName = SshdSocketAddress.toAddressString(SshdSocketAddress.getFirstExternalNetwork4Address());
+        KeyPair hostClientKey = Utils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
+        AtomicInteger invocationCount = new AtomicInteger(0);
         sshd.setHostBasedAuthenticator((session, username, clientHostKey, clientHostName, clientUsername, certificates) -> {
             invocationCount.incrementAndGet();
             return hostClienUser.equals(clientUsername)
@@ -711,9 +711,9 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test   // see SSHD-625
     public void testRuntimeErrorsInAuthenticators() throws Exception {
-        final Error thrown = new OutOfMemoryError(getCurrentTestName());
-        final PasswordAuthenticator authPassword = sshd.getPasswordAuthenticator();
-        final AtomicInteger passCounter = new AtomicInteger(0);
+        Error thrown = new OutOfMemoryError(getCurrentTestName());
+        PasswordAuthenticator authPassword = sshd.getPasswordAuthenticator();
+        AtomicInteger passCounter = new AtomicInteger(0);
         sshd.setPasswordAuthenticator((username, password, session) -> {
             int count = passCounter.incrementAndGet();
             if (count == 1) {
@@ -722,8 +722,8 @@ public class AuthenticationTest extends BaseTestSupport {
             return authPassword.authenticate(username, password, session);
         });
 
-        final PublickeyAuthenticator authPubkey = sshd.getPublickeyAuthenticator();
-        final AtomicInteger pubkeyCounter = new AtomicInteger(0);
+        PublickeyAuthenticator authPubkey = sshd.getPublickeyAuthenticator();
+        AtomicInteger pubkeyCounter = new AtomicInteger(0);
         sshd.setPublickeyAuthenticator((username, key, session) -> {
             int count = pubkeyCounter.incrementAndGet();
             if (count == 1) {
@@ -751,6 +751,35 @@ public class AuthenticationTest extends BaseTestSupport {
 
                         assertEquals("Password authenticator not consulted", 1, passCounter.get());
                         assertEquals("Pubkey authenticator not consulted", 1, pubkeyCounter.get());
+                    }
+                }
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    @Test   // see SSHD-714
+    public void testPasswordIdentityWithSpacesPrefixOrSuffix() throws Exception {
+        sshd.setPasswordAuthenticator((username, password, session) -> {
+            return (username != null) && (!username.trim().isEmpty())
+                && (password != null) && (!password.isEmpty())
+                && ((password.charAt(0) == ' ') || (password.charAt(password.length() - 1) == ' '));
+        });
+
+        try (SshClient client = setupTestClient()) {
+            client.start();
+
+            try {
+                for (String password : new String[]{
+                    " ", "    ", "  " + getCurrentTestName(), getCurrentTestName() + "    "
+                }) {
+                    try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                        s.addPasswordIdentity(password);
+
+                        AuthFuture auth = s.auth();
+                        assertTrue("No authentication result in time for password='" + password + "'", auth.await(11L, TimeUnit.SECONDS));
+                        assertTrue("Failed to authenticate with password='" + password + "'", auth.isSuccess());
                     }
                 }
             } finally {
