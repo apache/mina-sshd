@@ -637,6 +637,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             }
             return;
         }
+        resetIdleTimeout();
 
         ReservedSessionMessagesHandler handler = resolveReservedSessionMessagesHandler();
         handler.handleIgnoreMessage(this, buffer);
@@ -649,6 +650,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             }
             return;
         }
+        resetIdleTimeout();
 
         ReservedSessionMessagesHandler handler = resolveReservedSessionMessagesHandler();
         handler.handleUnimplementedMessage(this, buffer);
@@ -675,6 +677,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             }
             return;
         }
+        resetIdleTimeout();
 
         ReservedSessionMessagesHandler handler = resolveReservedSessionMessagesHandler();
         handler.handleDebugMessage(this, buffer);
