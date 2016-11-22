@@ -463,8 +463,15 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
      * @throws IOException if an error occurs
      */
     public void channelClose(Buffer buffer) throws IOException {
-        Channel channel = getChannel(buffer);
-        channel.handleClose();
+        // Do not use getChannel to avoid the session being closed
+        // if receiving the SSH_MSG_CHANNEL_CLOSE on an already closed channel
+        int recipient = buffer.getInt();
+        Channel channel = channels.get(recipient);
+        if (channel != null) {
+            channel.handleClose();
+        } else {
+            log.warn("Received SSH_MSG_CHANNEL_CLOSE on unknown channel " + recipient);
+        }
     }
 
     /**
