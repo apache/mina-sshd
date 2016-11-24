@@ -730,6 +730,11 @@
                         <goals>
                             <goal>manifest</goal>
                         </goals>
+                        <configuration>
+                            <instructions>
+                                <Export-Package>*;-noimport:=true</Export-Package>
+                            </instructions>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
