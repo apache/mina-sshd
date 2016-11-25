@@ -48,7 +48,7 @@ import org.apache.sshd.common.util.io.IoUtils;
  * Provides keys loading capability from the user's keys folder - e.g., {@code id_rsa}
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see org.apache.sshd.common.util.security.SecurityUtils#isBouncyCastleRegistered()
+ * @see org.apache.sshd.common.util.security.SecurityUtils#getKeyPairResourceParser()
  */
 public final class ClientIdentity {
 

@@ -19,11 +19,11 @@
 
 package org.apache.sshd.client.config.keys;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 
@@ -41,17 +41,11 @@ public interface ClientIdentityLoader {
      *
      * <P>
      * <B>Note:</B> It calls {@link SecurityUtils#loadKeyPairIdentity(String, InputStream, FilePasswordProvider)}
-     * which fails if the {@code Bouncycastle} provider is not registered, therefore the
-     * default {@link #isValidLocation(String)} implementation also checks if
-     * {@link SecurityUtils#isBouncyCastleRegistered()}
      * </P>
      */
     ClientIdentityLoader DEFAULT = new ClientIdentityLoader() {
         @Override
         public boolean isValidLocation(String location) throws IOException {
-            if (!SecurityUtils.isBouncyCastleRegistered()) {
-                return false;
-            }
             Path path = toPath(location);
             return Files.exists(path, IoUtils.EMPTY_LINK_OPTIONS);
         }
@@ -70,8 +64,10 @@ public interface ClientIdentityLoader {
         }
 
         private Path toPath(String location) {
-            Path path = new File(ValidateUtils.checkNotNullAndNotEmpty(location, "No location")).toPath();
-            return path.toAbsolutePath().normalize();
+            Path path = Paths.get(ValidateUtils.checkNotNullAndNotEmpty(location, "No location"));
+            path = path.toAbsolutePath();
+            path = path.normalize();
+            return path;
         }
     };
 

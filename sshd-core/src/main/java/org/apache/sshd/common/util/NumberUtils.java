@@ -20,6 +20,7 @@
 package org.apache.sshd.common.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -77,29 +78,41 @@ public final class NumberUtils {
     }
 
     public static int hashCode(long ... values) {
-        if (NumberUtils.length(values) <= 0) {
-            return 0;
-        }
-
-        int hash = Long.hashCode(values[0]);
-        for (int index = 1; index < values.length; index++) {
-            hash += 31 * hash + Long.hashCode(values[index]);
-        }
-
-        return hash;
+        return Arrays.hashCode(values);
     }
 
     public static int hashCode(int ... values) {
-        if (NumberUtils.length(values) <= 0) {
+        return Arrays.hashCode(values);
+    }
+
+    public static int hashCode(byte ... values) {
+        return Arrays.hashCode(values);
+    }
+
+    public static int hashCode(byte[] a, int offset, int len) {
+        if (len == 0) {
             return 0;
         }
 
-        int hash = values[0];
-        for (int index = 1; index < values.length; index++) {
-            hash += 31 * hash + values[index];
+        int result = 1;
+        for (int pos = offset, count = 0; count < len; pos++, count++) {
+            byte element = a[pos];
+            result = 31 * result + element;
         }
 
-        return hash;
+        return result;
+    }
+
+    public static int diffOffset(byte[] a1, int startPos1, byte[] a2, int startPos2, int len) {
+        for (int pos1 = startPos1, pos2 = startPos2, count = 0; count < len; pos1++, pos2++, count++) {
+            byte v1 = a1[pos1];
+            byte v2 = a2[pos2];
+            if (v1 != v2) {
+                return count;
+            }
+        }
+
+        return -1;
     }
 
     /**

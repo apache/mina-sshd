@@ -96,14 +96,7 @@ public class OpenSSHDSSPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryDec
 
     @Override
     public DSAPublicKey recoverPublicKey(DSAPrivateKey privateKey) throws GeneralSecurityException {
-        // based on code from https://github.com/alexo/SAML-2.0/blob/master/java-opensaml/opensaml-security-api/src/main/java/org/opensaml/xml/security/SecurityHelper.java
-        DSAParams keyParams = privateKey.getParams();
-        BigInteger p = keyParams.getP();
-        BigInteger x = privateKey.getX();
-        BigInteger q = keyParams.getQ();
-        BigInteger g = keyParams.getG();
-        BigInteger y = g.modPow(x, p);
-        return generatePublicKey(new DSAPublicKeySpec(y, p, q, g));
+        return KeyUtils.recoverDSAPublicKey(privateKey);
     }
 
     @Override

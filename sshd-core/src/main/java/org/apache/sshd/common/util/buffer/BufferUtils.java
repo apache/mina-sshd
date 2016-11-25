@@ -148,6 +148,10 @@ public final class BufferUtils {
         }
     }
 
+    public static <A extends Appendable> A appendHex(A sb, char sep, byte ... array) throws IOException {
+        return appendHex(sb, array, 0, NumberUtils.length(array), sep);
+    }
+
     public static <A extends Appendable> A appendHex(A sb, byte[] array, int offset, int len, char sep) throws IOException {
         if (len <= 0) {
             return sb;

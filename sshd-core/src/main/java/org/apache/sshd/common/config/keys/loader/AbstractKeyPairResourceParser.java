@@ -26,7 +26,6 @@ import java.io.StreamCorruptedException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -138,12 +137,7 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
     public Collection<KeyPair> extractKeyPairs(
             String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, List<String> lines)
                     throws IOException, GeneralSecurityException {
-        String data = GenericUtils.join(lines, ' ');
-        data = data.replaceAll("\\s", "");
-        data = data.trim();
-
-        Base64.Decoder decoder = Base64.getDecoder();
-        return extractKeyPairs(resourceKey, beginMarker, endMarker, passwordProvider, decoder.decode(data));
+        return extractKeyPairs(resourceKey, beginMarker, endMarker, passwordProvider, KeyPairResourceParser.extractDataBytes(lines));
     }
 
     /**

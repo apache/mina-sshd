@@ -34,9 +34,7 @@ import org.apache.sshd.common.config.keys.IdentityUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.Assume;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -52,8 +50,6 @@ public class ServerIdentityTest extends BaseTestSupport {
 
     @Test
     public void testLoadServerIdentities() throws Exception {
-        Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
-
         Path resFolder = getClassResourcesFolder(TEST_SUBFOLDER, getClass());
         Collection<Path> paths = new ArrayList<>(BuiltinIdentities.VALUES.size());
         LinkOption[] options = IoUtils.getLinkOptions(false);

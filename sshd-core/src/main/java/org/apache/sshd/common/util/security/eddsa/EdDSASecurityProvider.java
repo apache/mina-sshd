@@ -19,6 +19,7 @@
 package org.apache.sshd.common.util.security.eddsa;
 
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -93,6 +94,18 @@ public class EdDSASecurityProvider extends Provider {
 
     public static boolean isEDDSASignatureAlgorithm(String algorithm) {
         return EdDSANamedCurveTable.CURVE_ED25519_SHA512.equalsIgnoreCase(algorithm);
+    }
+
+    public static EdDSAPublicKey recoverEDDSAPublicKey(PrivateKey key) throws GeneralSecurityException {
+        ValidateUtils.checkTrue(SecurityUtils.isEDDSACurveSupported(), SecurityUtils.EDDSA + " not supported");
+        if (!(key instanceof EdDSAPrivateKey)) {
+            throw new InvalidKeyException("Private key is not " + SecurityUtils.EDDSA);
+        }
+
+        EdDSAPrivateKey prvKey = (EdDSAPrivateKey) key;
+        EdDSAPublicKeySpec keySpec = new EdDSAPublicKeySpec(prvKey.getSeed(), prvKey.getParams());
+        KeyFactory factory = SecurityUtils.getKeyFactory(SecurityUtils.EDDSA);
+        return EdDSAPublicKey.class.cast(factory.generatePublic(keySpec));
     }
 
     public static org.apache.sshd.common.signature.Signature getEDDSASignature() {

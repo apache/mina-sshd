@@ -29,7 +29,6 @@ import java.security.spec.InvalidKeySpecException;
 
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.config.keys.impl.ECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -69,7 +68,7 @@ public class ECBufferPublicKeyParser extends AbstractBufferPublicKeyParser<ECPub
         byte[] octets = buffer.getBytes();
         ECPoint w;
         try {
-            w = ECDSAPublicKeyEntryDecoder.octetStringToEcPoint(octets);
+            w = ECCurves.octetStringToEcPoint(octets);
         } catch (RuntimeException e) {
             throw new InvalidKeySpecException("getRawECKey(" + expectedCurve + ")"
                     + " cannot (" + e.getClass().getSimpleName() + ")"

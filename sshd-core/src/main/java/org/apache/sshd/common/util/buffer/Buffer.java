@@ -59,7 +59,6 @@ import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.config.keys.impl.ECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
@@ -461,7 +460,7 @@ public abstract class Buffer implements Readable {
 
         ECPoint group;
         try {
-            group = ECDSAPublicKeyEntryDecoder.octetStringToEcPoint(groupBytes);
+            group = ECCurves.octetStringToEcPoint(groupBytes);
         } catch (RuntimeException e) {
             throw new InvalidKeySpecException("extractEC(" + expectedCurveName + ")"
                     + " failed (" + e.getClass().getSimpleName() + ")"

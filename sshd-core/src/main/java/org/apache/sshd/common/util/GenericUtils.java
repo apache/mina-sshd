@@ -97,6 +97,40 @@ public final class GenericUtils {
         }
     }
 
+    /**
+     * @param s The {@link String} value to calculate the hash code on - may
+     * be <code>null</code>/empty in which case a value of zero is returned
+     * @return The calculated hash code
+     * @see #hashCode(String, Boolean)
+     */
+    public static int hashCode(String s) {
+        return hashCode(s, null);
+    }
+
+    /**
+     * @param s The {@link String} value to calculate the hash code on - may
+     * be <code>null</code>/empty in which case a value of zero is returned
+     * @param useUppercase Whether to convert the string to uppercase, lowercase
+     * or not at all:
+     * <UL>
+     *      <LI><code>null</code> - no conversion</LI>
+     *      <LI>{@link Boolean#TRUE} - get hash code of uppercase</LI>
+     *      <LI>{@link Boolean#FALSE} - get hash code of lowercase</LI>
+     * </UL>
+     * @return The calculated hash code
+     */
+    public static int hashCode(String s, Boolean useUppercase) {
+        if (isEmpty(s)) {
+            return 0;
+        } else if (useUppercase == null) {
+            return s.hashCode();
+        } else if (useUppercase.booleanValue()) {
+            return s.toUpperCase().hashCode();
+        } else {
+            return s.toLowerCase().hashCode();
+        }
+    }
+
     public static int safeCompare(String s1, String s2, boolean caseSensitive) {
         if (s1 == s2) {
             return 0;

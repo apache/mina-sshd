@@ -32,7 +32,6 @@ import javax.crypto.KeyAgreement;
 
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.config.keys.impl.ECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -99,7 +98,7 @@ public class ECDH extends AbstractDH {
     @Override
     public void setF(byte[] f) {
         Objects.requireNonNull(params, "No ECParameterSpec(s)");
-        this.f = ECDSAPublicKeyEntryDecoder.octetStringToEcPoint(f);
+        this.f = ECCurves.octetStringToEcPoint(f);
     }
 
     @Override

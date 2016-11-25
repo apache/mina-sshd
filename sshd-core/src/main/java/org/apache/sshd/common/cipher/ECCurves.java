@@ -18,6 +18,11 @@
  */
 package org.apache.sshd.common.cipher;
 
+import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.StreamCorruptedException;
 import java.math.BigInteger;
 import java.security.interfaces.ECKey;
 import java.security.spec.ECField;
@@ -35,10 +40,12 @@ import java.util.stream.Collectors;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.OptionalFeature;
+import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.digest.DigestFactory;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
@@ -48,7 +55,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public enum ECCurves implements NamedResource, OptionalFeature {
-    nistp256(Constants.NISTP256,
+    nistp256(Constants.NISTP256, new int[]{1, 2, 840, 10045, 3, 1, 7},
             new ECParameterSpec(
                     new EllipticCurve(
                             new ECFieldFp(new BigInteger("FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF", 16)),
@@ -61,7 +68,7 @@ public enum ECCurves implements NamedResource, OptionalFeature {
                     1),
             32,
             BuiltinDigests.sha256),
-    nistp384(Constants.NISTP384,
+    nistp384(Constants.NISTP384, new int[]{1, 3, 132, 0, 34},
             new ECParameterSpec(
                     new EllipticCurve(
                             new ECFieldFp(new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFF0000000000000000FFFFFFFF", 16)),
@@ -74,7 +81,7 @@ public enum ECCurves implements NamedResource, OptionalFeature {
                     1),
             48,
             BuiltinDigests.sha384),
-    nistp521(Constants.NISTP521,
+    nistp521(Constants.NISTP521, new int[]{1, 3, 132, 0, 35},
             new ECParameterSpec(
                     new EllipticCurve(
                             new ECFieldFp(new BigInteger("01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
@@ -131,13 +138,17 @@ public enum ECCurves implements NamedResource, OptionalFeature {
 
     private final String name;
     private final String keyType;
+    private final String oidString;
+    private final List<Integer> oidValue;
     private final ECParameterSpec params;
     private final int keySize;
     private final int numOctets;
     private final DigestFactory digestFactory;
 
-    ECCurves(String name, ECParameterSpec params, int numOctets, DigestFactory digestFactory) {
+    ECCurves(String name, int[] oid, ECParameterSpec params, int numOctets, DigestFactory digestFactory) {
         this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No curve name");
+        this.oidString = NumberUtils.join('.', ValidateUtils.checkNotNullAndNotEmpty(oid, "No OID"));
+        this.oidValue = Collections.unmodifiableList(NumberUtils.asList(oid));
         this.keyType = Constants.ECDSA_SHA2_PREFIX + name;
         this.params = ValidateUtils.checkNotNull(params, "No EC params for %s", name);
         this.keySize = getCurveSize(params);
@@ -148,6 +159,14 @@ public enum ECCurves implements NamedResource, OptionalFeature {
     @Override   // The curve name
     public final String getName() {
         return name;
+    }
+
+    public final String getOID() {
+        return oidString;
+    }
+
+    public final List<Integer> getOIDValue() {
+        return oidValue;
     }
 
     /**
@@ -258,6 +277,49 @@ public enum ECCurves implements NamedResource, OptionalFeature {
         return null;
     }
 
+    public static ECCurves fromOIDValue(List<? extends Number> oid) {
+        if (GenericUtils.isEmpty(oid)) {
+            return null;
+        }
+
+        for (ECCurves c : VALUES) {
+            List<? extends Number> v = c.getOIDValue();
+            if (oid.size() != v.size()) {
+                continue;
+            }
+
+            boolean matches = true;
+            for (int index = 0; index < v.size(); index++) {
+                Number exp = v.get(index);
+                Number act = oid.get(index);
+                if (exp.intValue() != act.intValue()) {
+                    matches = false;
+                    break;
+                }
+            }
+
+            if (matches) {
+                return c;
+            }
+        }
+
+        return null;
+    }
+
+    public static ECCurves fromOID(String oid) {
+        if (GenericUtils.isEmpty(oid)) {
+            return null;
+        }
+
+        for (ECCurves c : VALUES) {
+            if (oid.equalsIgnoreCase(c.getOID())) {
+                return c;
+            }
+        }
+
+        return null;
+    }
+
     /**
      * @param params The curve's {@link ECParameterSpec}
      * @return The curve's key size in bits
@@ -305,6 +367,59 @@ public enum ECCurves implements NamedResource, OptionalFeature {
         return output;
     }
 
+    /**
+     * Converts the given octet string (defined by ASN.1 specifications) to a {@link BigInteger}
+     * As octet strings always represent positive integers, a zero-byte is prepended to
+     * the given array if necessary (if is MSB equal to 1), then this is converted to BigInteger
+     * The conversion is defined in the Section 2.3.8
+     *
+     * @param octets - octet string bytes to be converted
+     * @return The {@link BigInteger} representation of the octet string
+     */
+    public static BigInteger octetStringToInteger(byte... octets) {
+        if (octets == null) {
+            return null;
+        } else if (octets.length == 0) {
+            return BigInteger.ZERO;
+        } else {
+            return new BigInteger(1, octets);
+        }
+    }
+
+    public static ECPoint octetStringToEcPoint(byte... octets) {
+        if (NumberUtils.isEmpty(octets)) {
+            return null;
+        }
+
+        int startIndex = findFirstNonZeroIndex(octets);
+        if (startIndex < 0) {
+            throw new IllegalArgumentException("All zeroes ECPoint N/A");
+        }
+
+        byte indicator = octets[startIndex];
+        ECCurves.ECPointCompression compression = ECCurves.ECPointCompression.fromIndicatorValue(indicator);
+        if (compression == null) {
+            throw new UnsupportedOperationException("Unknown compression indicator value: 0x" + Integer.toHexString(indicator & 0xFF));
+        }
+
+        // The coordinates actually start after the compression indicator
+        return compression.octetStringToEcPoint(octets, startIndex + 1, octets.length - startIndex - 1);
+    }
+
+    private static int findFirstNonZeroIndex(byte... octets) {
+        if (NumberUtils.isEmpty(octets)) {
+            return -1;
+        }
+
+        for (int index = 0; index < octets.length; index++) {
+            if (octets[index] != 0) {
+                return index;
+            }
+        }
+
+        return -1;    // all zeroes
+    }
+
     public static final class Constants {
         /**
          * Standard prefix of NISTP key types when encoded
@@ -314,5 +429,147 @@ public enum ECCurves implements NamedResource, OptionalFeature {
         public static final String NISTP256 = "nistp256";
         public static final String NISTP384 = "nistp384";
         public static final String NISTP521 = "nistp521";
+    }
+
+    /**
+     * The various {@link ECPoint} representation compression indicators
+     *
+     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+     * @see <A HREF="https://www.ietf.org/rfc/rfc5480.txt">RFC-5480 - section 2.2</A>
+     */
+    public enum ECPointCompression {
+        // see http://tools.ietf.org/html/draft-jivsov-ecc-compact-00
+        // see http://crypto.stackexchange.com/questions/8914/ecdsa-compressed-public-key-point-back-to-uncompressed-public-key-point
+        VARIANT2((byte) 0x02) {
+            @Override
+            public ECPoint octetStringToEcPoint(byte[] octets, int startIndex, int len) {
+                byte[] xp = new byte[len];
+                System.arraycopy(octets, startIndex, xp, 0, len);
+                BigInteger x = octetStringToInteger(xp);
+
+                // TODO derive even Y...
+                throw new UnsupportedOperationException("octetStringToEcPoint(" + name() + ")(X=" + x + ") compression support N/A");
+            }
+        },
+        VARIANT3((byte) 0x03) {
+            @Override
+            public ECPoint octetStringToEcPoint(byte[] octets, int startIndex, int len) {
+                byte[] xp = new byte[len];
+                System.arraycopy(octets, startIndex, xp, 0, len);
+                BigInteger x = octetStringToInteger(xp);
+
+                // TODO derive odd Y...
+                throw new UnsupportedOperationException("octetStringToEcPoint(" + name() + ")(X=" + x + ") compression support N/A");
+            }
+        },
+        UNCOMPRESSED((byte) 0x04) {
+            @Override
+            public ECPoint octetStringToEcPoint(byte[] octets, int startIndex, int len) {
+                int numElements = len / 2;    /* x, y */
+                if (len != (numElements * 2)) {    // make sure length is not odd
+                    throw new IllegalArgumentException("octetStringToEcPoint(" + name() + ") "
+                            + " invalid remainder octets representation: "
+                            + " expected=" + (2 * numElements) + ", actual=" + len);
+                }
+
+                byte[] xp = new byte[numElements];
+                byte[] yp = new byte[numElements];
+                System.arraycopy(octets, startIndex, xp, 0, numElements);
+                System.arraycopy(octets, startIndex + numElements, yp, 0, numElements);
+
+                BigInteger x = octetStringToInteger(xp);
+                BigInteger y = octetStringToInteger(yp);
+                return new ECPoint(x, y);
+            }
+
+            @Override
+            public void writeECPoint(OutputStream s, String curveName, ECPoint p) throws IOException {
+                ECCurves curve = fromCurveName(curveName);
+                if (curve == null) {
+                    throw new StreamCorruptedException("writeECPoint(" + name() + ")[" + curveName + "] cannot determine octets count");
+                }
+
+                int numElements = curve.getNumPointOctets();
+                KeyEntryResolver.encodeInt(s, 1 /* the indicator */ + 2 * numElements);
+                s.write(getIndicatorValue());
+                writeCoordinate(s, "X", p.getAffineX(), numElements);
+                writeCoordinate(s, "Y", p.getAffineY(), numElements);
+            }
+        };
+
+        public static final Set<ECPointCompression> VALUES =
+                Collections.unmodifiableSet(EnumSet.allOf(ECPointCompression.class));
+
+        private final byte indicatorValue;
+
+        ECPointCompression(byte indicator) {
+            indicatorValue = indicator;
+        }
+
+        public final byte getIndicatorValue() {
+            return indicatorValue;
+        }
+
+        public abstract ECPoint octetStringToEcPoint(byte[] octets, int startIndex, int len);
+
+        public byte[] ecPointToOctetString(String curveName, ECPoint p) {
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream((2 * 66) + Long.SIZE)) {
+                writeECPoint(baos, curveName, p);
+                return baos.toByteArray();
+            } catch (IOException e) {
+                throw new RuntimeException("ecPointToOctetString(" + curveName + ")"
+                        + " failed (" + e.getClass().getSimpleName() + ")"
+                        + " to write data: " + e.getMessage(),
+                        e);
+            }
+        }
+
+        public void writeECPoint(OutputStream s, String curveName, ECPoint p) throws IOException {
+            if (s == null) {
+                throw new EOFException("No output stream");
+            }
+
+            throw new StreamCorruptedException("writeECPoint(" + name() + ")[" + p + "] N/A");
+        }
+
+        protected void writeCoordinate(OutputStream s, String n, BigInteger v, int numElements) throws IOException {
+            byte[] vp = v.toByteArray();
+            int startIndex = 0;
+            int vLen = vp.length;
+            if (vLen > numElements) {
+                if (vp[0] == 0) {   // skip artificial positive sign
+                    startIndex++;
+                    vLen--;
+                }
+            }
+
+            if (vLen > numElements) {
+                throw new StreamCorruptedException("writeCoordinate(" + name() + ")[" + n + "]"
+                        + " value length (" + vLen + ") exceeds max. (" + numElements + ")"
+                        + " for " + v);
+            }
+
+            if (vLen < numElements) {
+                byte[] tmp = new byte[numElements];
+                System.arraycopy(vp, startIndex, tmp, numElements - vLen, vLen);
+                vp = tmp;
+            }
+
+            s.write(vp, startIndex, vLen);
+        }
+
+        public static ECPointCompression fromIndicatorValue(int value) {
+            if ((value < 0) || (value > 0xFF)) {
+                return null;    // must be a byte value
+            }
+
+            for (ECPointCompression c : VALUES) {
+                if (value == c.getIndicatorValue()) {
+                    return c;
+                }
+            }
+
+            return null;
+        }
     }
 }

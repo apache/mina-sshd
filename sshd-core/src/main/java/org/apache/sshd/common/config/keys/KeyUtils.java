@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.Key;
+import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -39,10 +40,13 @@ import java.security.interfaces.ECKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAKey;
+import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.DSAPublicKeySpec;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -84,6 +88,11 @@ public final class KeyUtils {
      * Name of algorithm for RSA keys to be used when calling security provider
      */
     public static final String RSA_ALGORITHM = "RSA";
+
+    /**
+     * The most commonly used RSA public key exponent
+     */
+    public static final BigInteger DEFAULT_RSA_PUBLIC_EXPONENT = new BigInteger("65537");
 
     /**
      * Name of algorithm for DSS keys to be used when calling security provider
@@ -759,54 +768,6 @@ public final class KeyUtils {
         }
     }
 
-    public static boolean compareKeys(PrivateKey k1, PrivateKey k2) {
-        if ((k1 instanceof RSAPrivateKey) && (k2 instanceof RSAPrivateKey)) {
-            return compareRSAKeys(RSAPrivateKey.class.cast(k1), RSAPrivateKey.class.cast(k2));
-        } else if ((k1 instanceof DSAPrivateKey) && (k2 instanceof DSAPrivateKey)) {
-            return compareDSAKeys(DSAPrivateKey.class.cast(k1), DSAPrivateKey.class.cast(k2));
-        } else if ((k1 instanceof ECPrivateKey) && (k2 instanceof ECPrivateKey)) {
-            return compareECKeys(ECPrivateKey.class.cast(k1), ECPrivateKey.class.cast(k2));
-        } else if ((k1 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k1.getAlgorithm())
-                    && (k2 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k2.getAlgorithm())) {
-            return SecurityUtils.compareEDDSAPrivateKeys(k1, k2);
-        } else {
-            return false;   // either key is null or not of same class
-        }
-    }
-
-    public static boolean compareRSAKeys(RSAPrivateKey k1, RSAPrivateKey k2) {
-        if (Objects.equals(k1, k2)) {
-            return true;
-        } else if (k1 == null || k2 == null) {
-            return false;   // both null is covered by Objects#equals
-        } else {
-            return Objects.equals(k1.getModulus(), k2.getModulus())
-                && Objects.equals(k1.getPrivateExponent(), k2.getPrivateExponent());
-        }
-    }
-
-    public static boolean compareDSAKeys(DSAPrivateKey k1, DSAPrivateKey k2) {
-        if (Objects.equals(k1, k2)) {
-            return true;
-        } else if (k1 == null || k2 == null) {
-            return false;   // both null is covered by Objects#equals
-        } else {
-            return Objects.equals(k1.getX(), k2.getX())
-                && compareDSAParams(k1.getParams(), k2.getParams());
-        }
-    }
-
-    public static boolean compareECKeys(ECPrivateKey k1, ECPrivateKey k2) {
-        if (Objects.equals(k1, k2)) {
-            return true;
-        } else if (k1 == null || k2 == null) {
-            return false;   // both null is covered by Objects#equals
-        } else {
-            return Objects.equals(k1.getS(), k2.getS())
-                && compareECParams(k1.getParams(), k2.getParams());
-        }
-    }
-
     public static boolean compareKeys(PublicKey k1, PublicKey k2) {
         if ((k1 instanceof RSAPublicKey) && (k2 instanceof RSAPublicKey)) {
             return compareRSAKeys(RSAPublicKey.class.cast(k1), RSAPublicKey.class.cast(k2));
@@ -817,6 +778,33 @@ public final class KeyUtils {
         } else if ((k1 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k1.getAlgorithm())
                     && (k2 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k2.getAlgorithm())) {
             return SecurityUtils.compareEDDSAPPublicKeys(k1, k2);
+        } else {
+            return false;   // either key is null or not of same class
+        }
+    }
+
+    public static PublicKey recoverPublicKey(PrivateKey key) throws GeneralSecurityException {
+        if (key instanceof RSAPrivateKey) {
+            return recoverRSAPublicKey((RSAPrivateKey) key);
+        } else if (key instanceof DSAPrivateKey) {
+            return recoverDSAPublicKey((DSAPrivateKey) key);
+        } else if ((key != null) && SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm())) {
+            return SecurityUtils.recoverEDDSAPublicKey(key);
+        } else {
+            return null;
+        }
+    }
+
+    public static boolean compareKeys(PrivateKey k1, PrivateKey k2) {
+        if ((k1 instanceof RSAPrivateKey) && (k2 instanceof RSAPrivateKey)) {
+            return compareRSAKeys(RSAPrivateKey.class.cast(k1), RSAPrivateKey.class.cast(k2));
+        } else if ((k1 instanceof DSAPrivateKey) && (k2 instanceof DSAPrivateKey)) {
+            return compareDSAKeys(DSAPrivateKey.class.cast(k1), DSAPrivateKey.class.cast(k2));
+        } else if ((k1 instanceof ECPrivateKey) && (k2 instanceof ECPrivateKey)) {
+            return compareECKeys(ECPrivateKey.class.cast(k1), ECPrivateKey.class.cast(k2));
+        } else if ((k1 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k1.getAlgorithm())
+                    && (k2 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k2.getAlgorithm())) {
+            return SecurityUtils.compareEDDSAPrivateKeys(k1, k2);
         } else {
             return false;   // either key is null or not of same class
         }
@@ -833,6 +821,39 @@ public final class KeyUtils {
         }
     }
 
+    public static boolean compareRSAKeys(RSAPrivateKey k1, RSAPrivateKey k2) {
+        if (Objects.equals(k1, k2)) {
+            return true;
+        } else if (k1 == null || k2 == null) {
+            return false;   // both null is covered by Objects#equals
+        } else {
+            return Objects.equals(k1.getModulus(), k2.getModulus())
+                && Objects.equals(k1.getPrivateExponent(), k2.getPrivateExponent());
+        }
+    }
+
+    public static RSAPublicKey recoverRSAPublicKey(RSAPrivateKey privateKey) throws GeneralSecurityException {
+        if (privateKey instanceof RSAPrivateCrtKey) {
+            return recoverFromRSAPrivateCrtKey((RSAPrivateCrtKey) privateKey);
+        } else {
+            // Not ideal, but best we can do under the circumstances
+            return recoverRSAPublicKey(privateKey.getModulus(), DEFAULT_RSA_PUBLIC_EXPONENT);
+        }
+    }
+
+    public static RSAPublicKey recoverFromRSAPrivateCrtKey(RSAPrivateCrtKey rsaKey) throws GeneralSecurityException {
+        return recoverRSAPublicKey(rsaKey.getPrimeP(), rsaKey.getPrimeQ(), rsaKey.getPublicExponent());
+    }
+
+    public static RSAPublicKey recoverRSAPublicKey(BigInteger p, BigInteger q, BigInteger publicExponent) throws GeneralSecurityException {
+        return recoverRSAPublicKey(p.multiply(q), publicExponent);
+    }
+
+    public static RSAPublicKey recoverRSAPublicKey(BigInteger modulus, BigInteger publicExponent) throws GeneralSecurityException {
+        KeyFactory kf = SecurityUtils.getKeyFactory(RSA_ALGORITHM);
+        return (RSAPublicKey) kf.generatePublic(new RSAPublicKeySpec(modulus, publicExponent));
+    }
+
     public static boolean compareDSAKeys(DSAPublicKey k1, DSAPublicKey k2) {
         if (Objects.equals(k1, k2)) {
             return true;
@@ -840,6 +861,17 @@ public final class KeyUtils {
             return false;   // both null is covered by Objects#equals
         } else {
             return Objects.equals(k1.getY(), k2.getY())
+                && compareDSAParams(k1.getParams(), k2.getParams());
+        }
+    }
+
+    public static boolean compareDSAKeys(DSAPrivateKey k1, DSAPrivateKey k2) {
+        if (Objects.equals(k1, k2)) {
+            return true;
+        } else if (k1 == null || k2 == null) {
+            return false;   // both null is covered by Objects#equals
+        } else {
+            return Objects.equals(k1.getX(), k2.getX())
                 && compareDSAParams(k1.getParams(), k2.getParams());
         }
     }
@@ -853,6 +885,29 @@ public final class KeyUtils {
             return Objects.equals(p1.getG(), p2.getG())
                 && Objects.equals(p1.getP(), p2.getP())
                 && Objects.equals(p1.getQ(), p2.getQ());
+        }
+    }
+
+    // based on code from https://github.com/alexo/SAML-2.0/blob/master/java-opensaml/opensaml-security-api/src/main/java/org/opensaml/xml/security/SecurityHelper.java
+    public static DSAPublicKey recoverDSAPublicKey(DSAPrivateKey privateKey) throws GeneralSecurityException {
+        DSAParams keyParams = privateKey.getParams();
+        BigInteger p = keyParams.getP();
+        BigInteger x = privateKey.getX();
+        BigInteger q = keyParams.getQ();
+        BigInteger g = keyParams.getG();
+        BigInteger y = g.modPow(x, p);
+        KeyFactory kf = SecurityUtils.getKeyFactory(DSS_ALGORITHM);
+        return (DSAPublicKey) kf.generatePublic(new DSAPublicKeySpec(y, p, q, g));
+    }
+
+    public static boolean compareECKeys(ECPrivateKey k1, ECPrivateKey k2) {
+        if (Objects.equals(k1, k2)) {
+            return true;
+        } else if (k1 == null || k2 == null) {
+            return false;   // both null is covered by Objects#equals
+        } else {
+            return Objects.equals(k1.getS(), k2.getS())
+                && compareECParams(k1.getParams(), k2.getParams());
         }
     }
 

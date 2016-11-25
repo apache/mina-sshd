@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.common.util.io;
+package org.apache.sshd.common.util.io.der;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FilterOutputStream;
@@ -26,6 +26,7 @@ import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.math.BigInteger;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -53,6 +54,23 @@ public class DERWriter extends FilterOutputStream {
         super(Objects.requireNonNull(stream, "No output stream"));
     }
 
+    public DERWriter startSequence() {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        AtomicBoolean dataWritten = new AtomicBoolean(false);
+        @SuppressWarnings("resource")
+        DERWriter encloser = this;
+        return new DERWriter(baos) {
+            @Override
+            public void close() throws IOException {
+                baos.close();
+
+                if (!dataWritten.getAndSet(true)) { // detect repeated calls and write this only once
+                    encloser.writeObject(new ASN1Object(ASN1Class.UNIVERSAL, ASN1Type.SEQUENCE, false, baos.size(), baos.toByteArray()));
+                }
+            }
+        };
+    }
+
     public void writeBigInteger(BigInteger value) throws IOException {
         writeBigInteger(Objects.requireNonNull(value, "No value").toByteArray());
     }
@@ -67,12 +85,23 @@ public class DERWriter extends FilterOutputStream {
 
         write(0x02);    // indicate it is an INTEGER
         writeLength(len + padLen);
-
         for (int index = 0; index < padLen; index++) {
             write(0);
         }
 
         write(bytes, off, len);
+    }
+
+
+    public void writeObject(ASN1Object obj) throws IOException {
+        Objects.requireNonNull(obj, "No ASN.1 object");
+
+        ASN1Type type = obj.getObjType();
+        byte typeValue = type.getTypeValue();
+        ASN1Class clazz = obj.getObjClass();
+        byte classValue = clazz.getClassValue();
+        byte tagValue = (byte) (((classValue << 6) & 0xC0) | (typeValue & 0x1F));
+        writeObject(tagValue, obj.getLength(), obj.getValue());
     }
 
     public void writeObject(byte tag, int len, byte... data) throws IOException {

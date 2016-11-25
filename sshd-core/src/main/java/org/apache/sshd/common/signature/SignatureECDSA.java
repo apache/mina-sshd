@@ -26,8 +26,8 @@ import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.common.util.io.DERParser;
-import org.apache.sshd.common.util.io.DERWriter;
+import org.apache.sshd.common.util.io.der.DERParser;
+import org.apache.sshd.common.util.io.der.DERWriter;
 
 /**
  * Signature algorithm for EC keys using ECDSA.

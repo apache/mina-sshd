@@ -98,13 +98,7 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
 
     @Override
     public EdDSAPublicKey recoverPublicKey(EdDSAPrivateKey prvKey) throws GeneralSecurityException {
-        if (!SecurityUtils.isEDDSACurveSupported()) {
-            throw new NoSuchAlgorithmException(SecurityUtils.EDDSA + " provider not supported");
-        }
-
-        EdDSAPublicKeySpec keySpec = new EdDSAPublicKeySpec(prvKey.getSeed(), prvKey.getParams());
-        KeyFactory factory = SecurityUtils.getKeyFactory(SecurityUtils.EDDSA);
-        return EdDSAPublicKey.class.cast(factory.generatePublic(keySpec));
+        return EdDSASecurityProvider.recoverEDDSAPublicKey(prvKey);
     }
 
     @Override

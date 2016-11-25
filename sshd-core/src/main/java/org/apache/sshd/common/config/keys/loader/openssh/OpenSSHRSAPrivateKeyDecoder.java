@@ -81,7 +81,6 @@ public class OpenSSHRSAPrivateKeyDecoder extends AbstractPrivateKeyEntryDecoder<
         return generatePrivateKey(new RSAPrivateKeySpec(n, d));
     }
 
-
     @Override
     public boolean isPublicKeyRecoverySupported() {
         return true;
@@ -89,23 +88,7 @@ public class OpenSSHRSAPrivateKeyDecoder extends AbstractPrivateKeyEntryDecoder<
 
     @Override
     public RSAPublicKey recoverPublicKey(RSAPrivateKey privateKey) throws GeneralSecurityException {
-        if (privateKey instanceof RSAPrivateCrtKey) {
-            return recoverFromRSAPrivateCrtKey((RSAPrivateCrtKey) privateKey);
-        } else {
-            return recoverPublicKey(privateKey.getModulus(), privateKey.getPrivateExponent());
-        }
-    }
-
-    protected RSAPublicKey recoverPublicKey(BigInteger modulus, BigInteger privateExponent) throws GeneralSecurityException {
-        return generatePublicKey(new RSAPublicKeySpec(modulus, DEFAULT_PUBLIC_EXPONENT));
-    }
-
-    protected RSAPublicKey recoverFromRSAPrivateCrtKey(RSAPrivateCrtKey rsaKey) throws GeneralSecurityException {
-        BigInteger p = rsaKey.getPrimeP();
-        BigInteger q = rsaKey.getPrimeQ();
-        BigInteger n = p.multiply(q);
-        BigInteger e = rsaKey.getPublicExponent();
-        return generatePublicKey(new RSAPublicKeySpec(n, e));
+        return KeyUtils.recoverRSAPublicKey(privateKey);
     }
 
     @Override

@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.common.util.io;
+package org.apache.sshd.common.util.io.der;
 
 import java.io.ByteArrayInputStream;
 import java.io.FilterInputStream;
@@ -37,7 +37,6 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DERParser extends FilterInputStream {
-
     /**
      * Maximum size of data allowed by {@link #readLength()} - it is a bit
      * arbitrary since one can encode 32-bit length data, but it is good
@@ -116,6 +115,22 @@ public class DERParser extends FilterInputStream {
 
         // we know the cast is safe since it is less than MAX_DER_VALUE_LENGTH which is ~64K
         return (int) len;
+    }
+
+    public ASN1Object readObject() throws IOException {
+        int tag = read();
+        if (tag == -1) {
+            return null;
+        }
+
+        int length = readLength();
+        byte[] value = new byte[length];
+        int n = read(value);
+        if (n < length) {
+            throw new StreamCorruptedException("Invalid DER: stream too short, missing value: read " + n + " out of required " + length);
+        }
+
+        return new ASN1Object((byte) tag, length, value);
     }
 
     public BigInteger readBigInteger() throws IOException {

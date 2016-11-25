@@ -44,7 +44,6 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPairProvider {
-
     private FilePasswordProvider passwordFinder;
     /*
      * NOTE: the map is case insensitive even for Linux, as it is (very) bad

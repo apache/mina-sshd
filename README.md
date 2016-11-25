@@ -17,9 +17,12 @@ The code only requires the core abstract [slf4j-api](https://mvnrepository.com/a
 * [Bouncy Castle](https://www.bouncycastle.org/)
 
 
-Required only for reading/writing keys from/to PEM files or for special keys/ciphers/etc. that are not part of the standard [Java Cryptography Extension](https://en.wikipedia.org/wiki/Java_Cryptography_Extension). See [Java Cryptography Architecture (JCA) Reference Guide](https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html) for key classes and explanations as to how _Bouncy Castle_ is plugged in (other security providers). **Note:** the required Maven module(s) are defined as `optional` so must be added as an
-**explicit** dependency in order to be included in the classpath:
+Required mainly for writing keys from/to PEM files or for special keys/ciphers/etc. that are not part of the standard [Java Cryptography Extension](https://en.wikipedia.org/wiki/Java_Cryptography_Extension). See [Java Cryptography Architecture (JCA) Reference Guide](https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html) for key classes and explanations as to how _Bouncy Castle_ is plugged in (other security providers).
 
+**Caveat**: If _Bouncy Castle_ modules are registered, then the code will use its implementation of the ciphers, keys, signatures, etc. rather than the default JCE provided in the JVM. Furthermore, one can use the `BouncyCastleKeyPairResourceParser.INSTANCE` to load standard PEM files instead of the core one - either directly or via `SecurityUtils#setKeyPairResourceParser` for **global** usage.
+
+ **Note:** the required Maven module(s) are defined as `optional` so must be added as an
+**explicit** dependency in order to be included in the classpath:
 
 ```xml
 
@@ -33,9 +36,6 @@ Required only for reading/writing keys from/to PEM files or for special keys/cip
     </dependency>
 
 ```
-
-**Caveat**: If _Bouncy Castle_ modules are available, then the code will use its implementation of the ciphers, keys, signatures, etc. rather than the default JCE provided in the JVM.
-
 
 * [MINA core](https://mina.apache.org/mina-project/)
 
@@ -120,7 +120,7 @@ While RFC-4256 support is the primary purpose of this interface, it can also be 
 
 ## Using the `SshClient` to connect to a server
 
-Once the `SshClient` instance is properly configured it needs to be `start()`-ed in order to connect to a server. **Note:** one can use a single `SshClient` instance to connnect to multiple server as well as modifying the default configuration (ciphers, MACs, keys, etc.) on a per-session manner (see more in the *Advanced usage* section). Furthermore, one can change almost any configured `SshClient` parameter - although its influence on currently established sessions depends on the actual changed configuration. Here is how a typical usage would look like
+Once the `SshClient` instance is properly configured it needs to be `start()`-ed in order to connect to a server. **Note:** one can use a single `SshClient` instance to connnect to multiple servers as well as modifying the default configuration (ciphers, MACs, keys, etc.) on a per-session manner (see more in the *Advanced usage* section). Furthermore, one can change almost any configured `SshClient` parameter - although its influence on currently established sessions depends on the actual changed configuration. Here is how a typical usage would look like
 
 ```java
 

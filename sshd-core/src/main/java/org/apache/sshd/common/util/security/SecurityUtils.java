@@ -38,7 +38,6 @@ import java.security.Signature;
 import java.security.cert.CertificateFactory;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -59,6 +58,7 @@ import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceParser;
 import org.apache.sshd.common.config.keys.loader.openssh.OpenSSHKeyPairResourceParser;
+import org.apache.sshd.common.config.keys.loader.pem.PEMResourceParserUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.random.JceRandomFactory;
 import org.apache.sshd.common.random.RandomFactory;
@@ -407,6 +407,11 @@ public final class SecurityUtils {
         return new BouncyCastleGeneratorHostKeyProvider(path);
     }
 
+    public static KeyPairResourceParser getBouncycastleKeyPairResourceParser() {
+        ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
+        return BouncyCastleKeyPairResourceParser.INSTANCE;
+    }
+
     /**
      * @return If {@link #isBouncyCastleRegistered()} then a {@link BouncyCastleRandomFactory}
      * instance, otherwise a {@link JceRandomFactory} one
@@ -517,6 +522,14 @@ public final class SecurityUtils {
         return isEDDSACurveSupported() ? EdDSASecurityProvider.compareEDDSAPrivateKeys(k1, k2) : false;
     }
 
+    public static PublicKey recoverEDDSAPublicKey(PrivateKey key) throws GeneralSecurityException {
+        if (!isEDDSACurveSupported()) {
+            throw new NoSuchAlgorithmException(EDDSA + " provider not supported");
+        }
+
+        return EdDSASecurityProvider.recoverEDDSAPublicKey(key);
+    }
+
     public static PublicKey generateEDDSAPublicKey(String keyType, byte[] seed) throws GeneralSecurityException {
         if (!KeyPairProvider.SSH_ED25519.equals(keyType)) {
             throw new InvalidKeyException("Unsupported key type: " + keyType);
@@ -571,19 +584,20 @@ public final class SecurityUtils {
                 return parser;
             }
 
-            Collection<KeyPairResourceParser> available = new LinkedList<>();
-            available.add(OpenSSHKeyPairResourceParser.INSTANCE);
-            if (isBouncyCastleRegistered()) {
-                available.add(BouncyCastleKeyPairResourceParser.INSTANCE);
-            }
-
-            parser = KeyPairResourceParser.aggregate(available);
+            parser = KeyPairResourceParser.aggregate(
+                    PEMResourceParserUtils.PROXY,
+                    OpenSSHKeyPairResourceParser.INSTANCE);
             KEYPAIRS_PARSER_HODLER.set(parser);
         }
 
         return parser;
     }
 
+    /**
+     * @param parser The system-wide {@code KeyPairResourceParser} to use.
+     * If set to {@code null}, then the default parser will be re-constructed
+     * on next call to {@link #getKeyPairResourceParser()}
+     */
     public static void setKeyPairResourceParser(KeyPairResourceParser parser) {
         synchronized (KEYPAIRS_PARSER_HODLER) {
             KEYPAIRS_PARSER_HODLER.set(parser);

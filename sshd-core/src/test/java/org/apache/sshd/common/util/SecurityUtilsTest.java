@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.util;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
@@ -33,12 +34,14 @@ import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.loader.KeyPairResourceLoader;
 import org.apache.sshd.common.keyprovider.AbstractResourceKeyPairProvider;
 import org.apache.sshd.common.keyprovider.ClassLoadableResourceKeyPairProvider;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
@@ -62,14 +65,12 @@ public class SecurityUtilsTest extends BaseTestSupport {
     }
 
     @Test
-    public void testLoadEncryptedDESPrivateKey() {
-        Assume.assumeTrue("Bouncycastle not registered", SecurityUtils.isBouncyCastleRegistered());
+    public void testLoadEncryptedDESPrivateKey() throws Exception {
         testLoadEncryptedRSAPrivateKey("DES-EDE3");
     }
 
     @Test
     public void testLoadEncryptedAESPrivateKey() {
-        Assume.assumeTrue("Bouncycastle not registered", SecurityUtils.isBouncyCastleRegistered());
         for (BuiltinCiphers c : new BuiltinCiphers[]{
             BuiltinCiphers.aes128cbc, BuiltinCiphers.aes192cbc, BuiltinCiphers.aes256cbc
         }) {
@@ -78,33 +79,34 @@ public class SecurityUtilsTest extends BaseTestSupport {
                 continue;
             }
 
-            testLoadEncryptedRSAPrivateKey("AES-" + c.getKeySize());
+            try {
+                testLoadEncryptedRSAPrivateKey("AES-" + c.getKeySize());
+            } catch (Exception e) {
+                fail("Failed (" + e.getClass().getSimpleName() + " to load key for " + c.getName() + ": " + e.getMessage());
+            }
         }
     }
 
-    private KeyPair testLoadEncryptedRSAPrivateKey(String algorithm) {
+    private KeyPair testLoadEncryptedRSAPrivateKey(String algorithm) throws IOException, GeneralSecurityException {
         return testLoadRSAPrivateKey(DEFAULT_PASSWORD.replace(' ', '-') + "-RSA-" + algorithm.toUpperCase() + "-key");
     }
 
     @Test
-    public void testLoadUnencryptedRSAPrivateKey() {
-        Assume.assumeTrue("Bouncycastle not registered", SecurityUtils.isBouncyCastleRegistered());
+    public void testLoadUnencryptedRSAPrivateKey() throws Exception {
         testLoadRSAPrivateKey(getClass().getSimpleName() + "-RSA-KeyPair");
     }
 
     @Test
-    public void testLoadUnencryptedDSSPrivateKey() {
-        Assume.assumeTrue("Bouncycastle not registered", SecurityUtils.isBouncyCastleRegistered());
+    public void testLoadUnencryptedDSSPrivateKey() throws Exception {
         testLoadDSSPrivateKey(getClass().getSimpleName() + "-DSA-KeyPair");
     }
 
-    private KeyPair testLoadDSSPrivateKey(String name) {
+    private KeyPair testLoadDSSPrivateKey(String name) throws Exception {
         return testLoadPrivateKey(name, DSAPublicKey.class, DSAPrivateKey.class);
     }
 
     @Test
-    public void testLoadUnencryptedECPrivateKey() {
-        Assume.assumeTrue("Bouncycastle not registered", SecurityUtils.isBouncyCastleRegistered());
+    public void testLoadUnencryptedECPrivateKey() throws Exception {
         Assume.assumeTrue("EC not supported", SecurityUtils.hasEcc());
         for (ECCurves c : ECCurves.VALUES) {
             if (!c.isSupported()) {
@@ -116,22 +118,33 @@ public class SecurityUtilsTest extends BaseTestSupport {
         }
     }
 
-    private KeyPair testLoadECPrivateKey(String name) {
+    private KeyPair testLoadECPrivateKey(String name) throws IOException, GeneralSecurityException {
         return testLoadPrivateKey(name, ECPublicKey.class, ECPrivateKey.class);
     }
 
-    private KeyPair testLoadRSAPrivateKey(String name) {
+    private KeyPair testLoadRSAPrivateKey(String name) throws IOException, GeneralSecurityException {
         return testLoadPrivateKey(name, RSAPublicKey.class, RSAPrivateKey.class);
     }
 
-    private KeyPair testLoadPrivateKey(String name, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
+    private KeyPair testLoadPrivateKey(String name, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType)
+            throws IOException, GeneralSecurityException {
         Path folder = getClassResourcesFolder(TEST_SUBFOLDER);
-        KeyPair kpFile = testLoadPrivateKeyFile(folder.resolve(name), pubType, prvType);
+        Path file = folder.resolve(name);
+        KeyPair kpFile = testLoadPrivateKeyFile(file, pubType, prvType);
+        if (SecurityUtils.isBouncyCastleRegistered()) {
+            KeyPairResourceLoader bcLoader = SecurityUtils.getBouncycastleKeyPairResourceParser();
+            Collection<KeyPair> kpList = bcLoader.loadKeyPairs(file, TEST_PASSWORD_PROVIDER);
+            assertEquals(name + ": Mismatched loaded BouncyCastle keys count", 1, GenericUtils.size(kpList));
+
+            KeyPair kpBC = kpList.iterator().next();
+            assertTrue(name + ": Mismatched BouncyCastle vs. file values", KeyUtils.compareKeyPairs(kpFile, kpBC));
+        }
+
         Class<?> clazz = getClass();
         Package pkg = clazz.getPackage();
         KeyPair kpResource = testLoadPrivateKeyResource(pkg.getName().replace('.', '/') + "/" + name, pubType, prvType);
 
-        assertTrue("Mismatched key pairs values", KeyUtils.compareKeyPairs(kpFile, kpResource));
+        assertTrue(name + ": Mismatched key file vs. resource values", KeyUtils.compareKeyPairs(kpFile, kpResource));
         return kpResource;
     }
 

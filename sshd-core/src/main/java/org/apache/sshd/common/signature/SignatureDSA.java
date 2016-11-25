@@ -27,8 +27,8 @@ import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
-import org.apache.sshd.common.util.io.DERParser;
-import org.apache.sshd.common.util.io.DERWriter;
+import org.apache.sshd.common.util.io.der.DERParser;
+import org.apache.sshd.common.util.io.der.DERWriter;
 
 
 /**

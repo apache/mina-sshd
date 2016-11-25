@@ -246,6 +246,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
 
         return stream;
     }
+
     /**
      * @param decoder The decoder to register
      * @throws IllegalArgumentException if no decoder or not key type or no

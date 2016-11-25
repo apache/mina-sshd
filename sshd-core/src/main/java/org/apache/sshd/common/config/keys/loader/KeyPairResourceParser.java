@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -68,6 +69,23 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
      * the possibility to extract the key pairs
      */
     boolean canExtractKeyPairs(String resourceKey, List<String> lines) throws IOException, GeneralSecurityException;
+
+    /**
+     * Converts the lines assumed to contain BASE-64 encoded data into
+     * the actual content bytes.
+     *
+     * @param lines The data lines - empty lines and spaces are automatically
+     * deleted <U>before</U> BASE-64 decoding takes place.
+     * @return The decoded data bytes
+     */
+    static byte[] extractDataBytes(Collection<String> lines) {
+        String data = GenericUtils.join(lines, ' ');
+        data = data.replaceAll("\\s", "");
+        data = data.trim();
+
+        Base64.Decoder decoder = Base64.getDecoder();
+        return decoder.decode(data);
+    }
 
     static boolean containsMarkerLine(List<String> lines, String marker) {
         return containsMarkerLine(lines, Collections.singletonList(ValidateUtils.checkNotNullAndNotEmpty(marker, "No marker")));
