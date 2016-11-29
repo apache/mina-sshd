@@ -36,7 +36,7 @@ import org.apache.sshd.server.ExitCallback;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UnknownCommand implements Command {
+public class UnknownCommand implements Command, Runnable {
 
     private final String command;
     private final String message;
@@ -81,18 +81,29 @@ public class UnknownCommand implements Command {
     }
 
     @Override
-    public void start(Environment env) throws IOException {
-        Objects.requireNonNull(err, "No error stream");
+    public void run() {
         String errorMessage = getMessage();
         try {
-            err.write(errorMessage.getBytes(StandardCharsets.UTF_8));
-            err.write('\n');
-        } finally {
-            err.flush();
+            try {
+                err.write(errorMessage.getBytes(StandardCharsets.UTF_8));
+                err.write('\n');
+            } finally {
+                err.flush();
+            }
+        } catch (IOException e) {
+            // ignored
         }
+
         if (callback != null) {
             callback.onExit(1, errorMessage);
         }
+    }
+
+    @Override
+    public void start(Environment env) throws IOException {
+        Thread thread = new Thread(this);
+        thread.setDaemon(true);
+        thread.start();
     }
 
     @Override

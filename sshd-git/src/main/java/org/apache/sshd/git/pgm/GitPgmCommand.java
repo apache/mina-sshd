@@ -82,7 +82,7 @@ public class GitPgmCommand implements Command, Runnable {
 
     @Override
     public void start(Environment env) throws IOException {
-        Thread  thread = new Thread(this);
+        Thread thread = new Thread(this);
         thread.setDaemon(true);
         thread.start();
     }
