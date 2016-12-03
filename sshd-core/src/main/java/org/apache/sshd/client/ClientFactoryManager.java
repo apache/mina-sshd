@@ -52,7 +52,7 @@ public interface ClientFactoryManager
     String HEARTBEAT_INTERVAL = "heartbeat-interval";
 
     /**
-     * Default value for {@link #HEARTBEAT_INTERVAL} if none configured
+     * Default value for {@value #HEARTBEAT_INTERVAL} if none configured
      */
     long DEFAULT_HEARTBEAT_INTERVAL = 0L;
 
@@ -74,7 +74,7 @@ public interface ClientFactoryManager
     String IGNORE_INVALID_IDENTITIES = "ignore-invalid-identities";
 
     /**
-     * Default value of {@link #IGNORE_INVALID_IDENTITIES} if none configured
+     * Default value of {@value #IGNORE_INVALID_IDENTITIES} if none configured
      */
     boolean DEFAULT_IGNORE_INVALID_IDENTITIES = true;
 

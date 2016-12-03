@@ -189,6 +189,8 @@
 								<configuration>
 									<reportsDirectory>${project.build.directory}/surefire-reports-jce</reportsDirectory>
 									<systemProperties>
+                                        <org.apache.sshd.security.provider.BC.enabled>false</org.apache.sshd.security.provider.BC.enabled>
+                                            <!-- deprecated -->
 										<org.apache.sshd.registerBouncyCastle>false</org.apache.sshd.registerBouncyCastle>
 									</systemProperties>
 								</configuration>

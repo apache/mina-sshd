@@ -59,7 +59,7 @@ public class KeyUtilsCloneTest extends BaseTestSupport {
         List<Object[]> list = new ArrayList<>();
         addTests(list, KeyPairProvider.SSH_DSS, DSS_SIZES);
         addTests(list, KeyPairProvider.SSH_RSA, RSA_SIZES);
-        if (SecurityUtils.hasEcc()) {
+        if (SecurityUtils.isECCSupported()) {
             for (ECCurves curve : ECCurves.VALUES) {
                 if (!curve.isSupported()) {
                     continue;

@@ -60,7 +60,7 @@ public interface FactoryManager
     String WINDOW_SIZE = "window-size";
 
     /**
-     * Default {@link #WINDOW_SIZE} if none set
+     * Default {@value #WINDOW_SIZE} if none set
      */
     long DEFAULT_WINDOW_SIZE = 0x200000L;   // actually a UINT32
 
@@ -73,7 +73,7 @@ public interface FactoryManager
     String WINDOW_TIMEOUT = "window-timeout";
 
     /**
-     * Default {@link #WINDOW_TIMEOUT} value
+     * Default {@value #WINDOW_TIMEOUT} value
      */
     long DEFAULT_WINDOW_TIMEOUT = 0L;
 
@@ -85,7 +85,7 @@ public interface FactoryManager
     String MAX_PACKET_SIZE = "packet-size";
 
     /**
-     * Default {@link #MAX_PACKET_SIZE} if none set
+     * Default {@value #MAX_PACKET_SIZE} if none set
      */
     long DEFAULT_MAX_PACKET_SIZE = 0x8000L;   // actually a UINT32
 
@@ -97,7 +97,7 @@ public interface FactoryManager
     String LIMIT_PACKET_SIZE = "max-packet-size";
 
     /**
-     * Default {@link #LIMIT_PACKET_SIZE} if none set
+     * Default {@value #LIMIT_PACKET_SIZE} if none set
      */
     long DEFAULT_LIMIT_PACKET_SIZE = Integer.MAX_VALUE / 4L;
 
@@ -122,7 +122,7 @@ public interface FactoryManager
     String AUTH_TIMEOUT = "auth-timeout";
 
     /**
-     * Default value for {@link #AUTH_TIMEOUT} if none set
+     * Default value for {@value #AUTH_TIMEOUT} if none set
      */
     long DEFAULT_AUTH_TIMEOUT = TimeUnit.MINUTES.toMillis(2L);
 
@@ -134,7 +134,7 @@ public interface FactoryManager
     String IDLE_TIMEOUT = "idle-timeout";
 
     /**
-     * Default value for {@link #IDLE_TIMEOUT} if none set
+     * Default value for {@value #IDLE_TIMEOUT} if none set
      */
     long DEFAULT_IDLE_TIMEOUT = TimeUnit.MINUTES.toMillis(10L);
 
@@ -146,7 +146,7 @@ public interface FactoryManager
     String NIO2_READ_TIMEOUT = "nio2-read-timeout";
 
     /**
-     * Default value for {@link #NIO2_READ_TIMEOUT} if none set
+     * Default value for {@value #NIO2_READ_TIMEOUT} if none set
      */
     long DEFAULT_NIO2_READ_TIMEOUT = DEFAULT_IDLE_TIMEOUT + TimeUnit.SECONDS.toMillis(15L);
 
@@ -158,7 +158,7 @@ public interface FactoryManager
     String NIO2_MIN_WRITE_TIMEOUT = "nio2-min-write-timeout";
 
     /**
-     * Default value for {@link #NIO2_MIN_WRITE_TIMEOUT} if none set
+     * Default value for {@value #NIO2_MIN_WRITE_TIMEOUT} if none set
      */
     long DEFAULT_NIO2_MIN_WRITE_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
 
@@ -172,7 +172,7 @@ public interface FactoryManager
     String DISCONNECT_TIMEOUT = "disconnect-timeout";
 
     /**
-     * Default value for {@link #DISCONNECT_TIMEOUT} if none set
+     * Default value for {@value #DISCONNECT_TIMEOUT} if none set
      */
     long DEFAULT_DISCONNECT_TIMEOUT = TimeUnit.SECONDS.toMillis(10L);
 
@@ -185,7 +185,7 @@ public interface FactoryManager
     String CHANNEL_CLOSE_TIMEOUT = "channel-close-timeout";
 
     /**
-     * Default {@link #CHANNEL_CLOSE_TIMEOUT} value if none set
+     * Default {@value #CHANNEL_CLOSE_TIMEOUT} value if none set
      */
     long DEFAULT_CHANNEL_CLOSE_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
 
@@ -197,7 +197,7 @@ public interface FactoryManager
     String STOP_WAIT_TIME = "stop-wait-time";
 
     /**
-     * Default value for {@link #STOP_WAIT_TIME} if none specified
+     * Default value for {@value #STOP_WAIT_TIME} if none specified
      */
     long DEFAULT_STOP_WAIT_TIME = TimeUnit.MINUTES.toMillis(1L);
 
@@ -262,19 +262,19 @@ public interface FactoryManager
     String MAX_IDENTIFICATION_SIZE = "max-identification-size";
 
     /**
-     * Default value for {@link #MAX_IDENTIFICATION_SIZE} if none set
+     * Default value for {@value #MAX_IDENTIFICATION_SIZE} if none set
      */
     int DEFAULT_MAX_IDENTIFICATION_SIZE = 16 * 1024;
 
     /**
      * Key re-exchange will be automatically performed after the session
      * has sent or received the given amount of bytes. If non-positive,
-     * then disabled. The default value is {@link #DEFAULT_REKEY_BYTES_LIMIT}
+     * then disabled. The default value is {@value #DEFAULT_REKEY_BYTES_LIMIT}
      */
     String REKEY_BYTES_LIMIT = "rekey-bytes-limit";
 
     /**
-     * Default value for {@link #REKEY_BYTES_LIMIT} if no override
+     * Default value for {@value #REKEY_BYTES_LIMIT} if no override
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-9">RFC4253 section 9</A>
      */
     long DEFAULT_REKEY_BYTES_LIMIT = 1024L * 1024L * 1024L; // 1GB
@@ -282,12 +282,12 @@ public interface FactoryManager
     /**
      * Key re-exchange will be automatically performed after the specified
      * amount of time has elapsed since the last key exchange - in milliseconds.
-     * If non-positive then disabled. The default value is {@link #DEFAULT_REKEY_TIME_LIMIT}
+     * If non-positive then disabled. The default value is {@value #DEFAULT_REKEY_TIME_LIMIT}
      */
     String REKEY_TIME_LIMIT = "rekey-time-limit";
 
     /**
-     * Default value for {@link #REKEY_TIME_LIMIT} if none specified
+     * Default value for {@value #REKEY_TIME_LIMIT} if none specified
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-9">RFC4253 section 9</A>
      */
     long DEFAULT_REKEY_TIME_LIMIT = 60L * 60L * 1000L; // 1 hour
@@ -295,12 +295,12 @@ public interface FactoryManager
     /**
      * Key re-exchange will be automatically performed after the specified
      * number of packets has been exchanged - positive 64-bit value. If
-     * non-positive then disabled. The default is {@link #DEFAULT_REKEY_PACKETS_LIMIT}
+     * non-positive then disabled. The default is {@value #DEFAULT_REKEY_PACKETS_LIMIT}
      */
     String REKEY_PACKETS_LIMIT = "rekey-packets-limit";
 
     /**
-     * Default value for {@link #REKEY_PACKETS_LIMIT} if none specified
+     * Default value for {@value #REKEY_PACKETS_LIMIT} if none specified
      * @see <A HREF="https://tools.ietf.org/html/rfc4344#section-3.1">RFC4344 section 3.1</A>
      */
     long DEFAULT_REKEY_PACKETS_LIMIT = 1L << 31;
@@ -322,12 +322,12 @@ public interface FactoryManager
     String IGNORE_MESSAGE_FREQUENCY = "ignore-message-frequency";
 
     /**
-     * Default value of {@link #IGNORE_MESSAGE_FREQUENCY} if none set.
+     * Default value of {@value #IGNORE_MESSAGE_FREQUENCY} if none set.
      */
     long DEFAULT_IGNORE_MESSAGE_FREQUENCY = 1024L;
 
     /**
-     * The variance to be used around the configured {@link #IGNORE_MESSAGE_FREQUENCY}
+     * The variance to be used around the configured {@value #IGNORE_MESSAGE_FREQUENCY}
      * value in order to avoid insertion at a set frequency. If zero, then <U>exact</U>
      * frequency is used. If negative, then the <U>absolute</U> value is used. If
      * greater or equal to the frequency, then assumed to be zero - i.e., no variance
@@ -336,7 +336,7 @@ public interface FactoryManager
     String IGNORE_MESSAGE_VARIANCE = "ignore-message-variance";
 
     /**
-     * Default value for {@link #IGNORE_MESSAGE_VARIANCE} if none configured
+     * Default value for {@value #IGNORE_MESSAGE_VARIANCE} if none configured
      */
     int DEFAULT_IGNORE_MESSAGE_VARIANCE = 32;
 
@@ -349,7 +349,7 @@ public interface FactoryManager
     String IGNORE_MESSAGE_SIZE = "ignore-message-size";
 
     /**
-     * Value of {@link #IGNORE_MESSAGE_SIZE} if none configured
+     * Value of {@value #IGNORE_MESSAGE_SIZE} if none configured
      */
     int DEFAULT_IGNORE_MESSAGE_SIZE = 16;
 

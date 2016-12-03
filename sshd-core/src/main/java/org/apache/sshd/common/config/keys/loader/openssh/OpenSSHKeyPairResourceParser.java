@@ -81,7 +81,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         registerPrivateKeyEntryDecoder(OpenSSHRSAPrivateKeyDecoder.INSTANCE);
         registerPrivateKeyEntryDecoder(OpenSSHDSSPrivateKeyEntryDecoder.INSTANCE);
 
-        if (SecurityUtils.hasEcc()) {
+        if (SecurityUtils.isECCSupported()) {
             registerPrivateKeyEntryDecoder(OpenSSHECDSAPrivateKeyEntryDecoder.INSTANCE);
         }
         if (SecurityUtils.isEDDSACurveSupported()) {

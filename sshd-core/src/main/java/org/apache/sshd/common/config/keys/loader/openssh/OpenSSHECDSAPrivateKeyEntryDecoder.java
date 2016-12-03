@@ -62,7 +62,7 @@ public class OpenSSHECDSAPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryD
             throw new InvalidKeySpecException("Not an EC curve name: " + keyType);
         }
 
-        if (!SecurityUtils.hasEcc()) {
+        if (!SecurityUtils.isECCSupported()) {
             throw new NoSuchProviderException("ECC not supported");
         }
 
@@ -98,7 +98,7 @@ public class OpenSSHECDSAPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryD
 
     @Override
     public ECPublicKey clonePublicKey(ECPublicKey key) throws GeneralSecurityException {
-        if (!SecurityUtils.hasEcc()) {
+        if (!SecurityUtils.isECCSupported()) {
             throw new NoSuchProviderException("ECC not supported");
         }
 
@@ -116,7 +116,7 @@ public class OpenSSHECDSAPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryD
 
     @Override
     public ECPrivateKey clonePrivateKey(ECPrivateKey key) throws GeneralSecurityException {
-        if (!SecurityUtils.hasEcc()) {
+        if (!SecurityUtils.isECCSupported()) {
             throw new NoSuchProviderException("ECC not supported");
         }
 
@@ -134,7 +134,7 @@ public class OpenSSHECDSAPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryD
 
     @Override
     public KeyFactory getKeyFactoryInstance() throws GeneralSecurityException {
-        if (SecurityUtils.hasEcc()) {
+        if (SecurityUtils.isECCSupported()) {
             return SecurityUtils.getKeyFactory(KeyUtils.EC_ALGORITHM);
         } else {
             throw new NoSuchProviderException("ECC not supported");
@@ -155,7 +155,7 @@ public class OpenSSHECDSAPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryD
 
     @Override
     public KeyPairGenerator getKeyPairGenerator() throws GeneralSecurityException {
-        if (SecurityUtils.hasEcc()) {
+        if (SecurityUtils.isECCSupported()) {
             return SecurityUtils.getKeyPairGenerator(KeyUtils.EC_ALGORITHM);
         } else {
             throw new NoSuchProviderException("ECC not supported");

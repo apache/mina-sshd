@@ -380,7 +380,9 @@ public final class PropertyResolverUtils {
 
     /**
      * Unwinds the resolvers hierarchy until found one with a non-{@code null} value
-     * for the requested property or reached top.
+     * for the requested property or reached top. If still no value found and the key
+     * starts with &quot;org.apache.sshd&quot; then the system properties are also
+     * consulted
      *
      * @param resolver The {@link PropertyResolver} to start from - ignored if {@code null}
      * @param name     The requested property name
@@ -394,6 +396,10 @@ public final class PropertyResolverUtils {
             if (value != null) {
                 return value;
             }
+        }
+
+        if (key.startsWith("org.apache.sshd")) {
+            return System.getProperty(key);
         }
 
         return null;

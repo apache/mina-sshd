@@ -62,7 +62,7 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTestSupport {
     @Test
     public void testECnistp256() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
-        Assume.assumeTrue("ECC not supported", SecurityUtils.hasEcc());
+        Assume.assumeTrue("ECC not supported", SecurityUtils.isECCSupported());
         Assume.assumeTrue(ECCurves.nistp256 + " N/A", ECCurves.nistp256.isSupported());
         testPEMGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP256, -1, new ECGenParameterSpec("prime256v1"));
     }
@@ -70,7 +70,7 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTestSupport {
     @Test
     public void testECnistp384() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
-        Assume.assumeTrue("ECC not supported", SecurityUtils.hasEcc());
+        Assume.assumeTrue("ECC not supported", SecurityUtils.isECCSupported());
         Assume.assumeTrue(ECCurves.nistp384 + " N/A", ECCurves.nistp384.isSupported());
         testPEMGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP384, -1, new ECGenParameterSpec("P-384"));
     }
@@ -78,7 +78,7 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTestSupport {
     @Test
     public void testECnistp521() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
-        Assume.assumeTrue("ECC not supported", SecurityUtils.hasEcc());
+        Assume.assumeTrue("ECC not supported", SecurityUtils.isECCSupported());
         Assume.assumeTrue(ECCurves.nistp521 + " N/A", ECCurves.nistp521.isSupported());
         testPEMGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP521, -1, new ECGenParameterSpec("P-521"));
     }

@@ -97,7 +97,7 @@ public abstract class AuthorizedKeysTestSupport extends BaseTestSupport {
 
     public static List<String> loadSupportedKeys(BufferedReader rdr) throws IOException {
         List<String> keyLines = new ArrayList<>();
-        boolean eccSupported = SecurityUtils.hasEcc();
+        boolean eccSupported = SecurityUtils.isECCSupported();
         for (String l = rdr.readLine(); l != null; l = rdr.readLine()) {
             l = GenericUtils.trimToEmpty(l);
             // filter out empty and comment lines

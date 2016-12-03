@@ -187,6 +187,7 @@ public class SftpSubsystem
      * @see #DEFAULT_SUPPORTED_CLIENT_EXTENSIONS
      */
     public static final String CLIENT_EXTENSIONS_PROP = "sftp-client-extensions";
+
     /**
      * The default reported supported client extensions
      */

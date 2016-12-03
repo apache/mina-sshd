@@ -46,13 +46,13 @@ public interface ServerFactoryManager
     /**
      * Key used to retrieve any extra lines to be sent during
      * initial protocol handshake <U>before</U> the identification.
-     * The configured string value should use {@link #SERVER_EXTRA_IDENT_LINES_SEPARATOR}
+     * The configured string value should use {@value #SERVER_EXTRA_IDENT_LINES_SEPARATOR}
      * character to denote line breaks
      */
     String SERVER_EXTRA_IDENTIFICATION_LINES = "server-extra-identification-lines";
 
     /**
-     * Separator used in the {@link #SERVER_EXTRA_IDENTIFICATION_LINES} configuration
+     * Separator used in the {@value #SERVER_EXTRA_IDENTIFICATION_LINES} configuration
      * string to indicate new line break
      */
     char SERVER_EXTRA_IDENT_LINES_SEPARATOR = '|';
@@ -75,7 +75,7 @@ public interface ServerFactoryManager
     String COMMAND_EXIT_TIMEOUT = "command-exit-timeout";
 
     /**
-     * Default {@link #COMMAND_EXIT_TIMEOUT} if not set
+     * Default {@value #COMMAND_EXIT_TIMEOUT} if not set
      */
     long DEFAULT_COMMAND_EXIT_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
 

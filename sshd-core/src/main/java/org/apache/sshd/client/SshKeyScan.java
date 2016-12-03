@@ -547,7 +547,7 @@ public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, S
         } else if (BuiltinIdentities.Constants.DSA.equalsIgnoreCase(keyType)) {
             return Collections.singletonList(KeyUtils.generateKeyPair(KeyPairProvider.SSH_DSS, 512));
         } else if (BuiltinIdentities.Constants.ECDSA.equalsIgnoreCase(keyType)) {
-            if (!SecurityUtils.hasEcc()) {
+            if (!SecurityUtils.isECCSupported()) {
                 throw new NoSuchAlgorithmException("ECC not supported: " + keyType);
             }
 

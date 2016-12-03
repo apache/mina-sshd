@@ -32,20 +32,25 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
-import java.security.Provider;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.cert.CertificateFactory;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
@@ -63,7 +68,6 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.random.JceRandomFactory;
 import org.apache.sshd.common.random.RandomFactory;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ReflectionUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleGeneratorHostKeyProvider;
@@ -72,7 +76,6 @@ import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleRandomFacto
 import org.apache.sshd.common.util.security.eddsa.EdDSASecurityProvider;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,6 +94,9 @@ public final class SecurityUtils {
      * EDDSA support
      */
     public static final String EDDSA = "EdDSA";
+
+    // A copy-paste from the original, but we don't want to drag the classes into the classpath
+    public static final String CURVE_ED25519_SHA512 = "ed25519-sha-512";
 
     /**
      * System property used to configure the value for the maximum supported Diffie-Hellman
@@ -114,9 +120,23 @@ public final class SecurityUtils {
     public static final int MAX_DHGEX_KEY_SIZE = 8192;
 
     /**
+     * Comma separated list of fully qualified {@link SecurityProviderRegistrar}s
+     * to automatically register
+     */
+    public static final String SECURITY_PROVIDER_REGISTRARS = "org.apache.sshd.security.registrars";
+    public static final List<String> DEFAULT_SECURITY_PROVIDER_REGISTRARS =
+            Collections.unmodifiableList(
+                    Arrays.asList(
+                            "org.apache.sshd.common.util.security.bouncycastle.BouncyCastleSecurityProviderRegistrar",
+                            "org.apache.sshd.common.util.security.eddsa.EdDSASecurityProviderRegistrar"));
+
+
+    /**
      * System property used to control whether to automatically register the
      * {@code Bouncyastle} JCE provider
+     * @deprecated Please use &quot;org.apache.sshd.security.provider.BC.enabled&quot;
      */
+    @Deprecated
     public static final String REGISTER_BOUNCY_CASTLE_PROP = "org.apache.sshd.registerBouncyCastle";
 
     /**
@@ -131,29 +151,82 @@ public final class SecurityUtils {
      * (in addition or even in spite of {@link #isEDDSACurveSupported()}). If not
      * set or set to {@code true}, then the existence of the optional support classes
      * determines the support.
+     * @deprecated Please use &quot;org.apache.sshd.security.provider.EdDSA.enabled&qupt;
      */
+    @Deprecated
     public static final String EDDSA_SUPPORTED_PROP = "org.apache.sshd.eddsaSupport";
+
+    public static final String PROP_DEFAULT_SECURITY_PROVIDER = "org.apache.sshd.security.defaultProvider";
 
     private static final AtomicInteger MAX_DHG_KEY_SIZE_HOLDER = new AtomicInteger(0);
 
-    private static final Map<String, Provider> REGISTERED_PROVIDERS = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    /*
+     * NOTE: we use a LinkedHashMap in order to preserve registration order
+     * in case several providers support the same security entity
+     */
+    private static final Map<String, SecurityProviderRegistrar> REGISTERED_PROVIDERS = new LinkedHashMap<>();
     private static final AtomicReference<KeyPairResourceParser> KEYPAIRS_PARSER_HODLER = new AtomicReference<>();
+    // If an entry already exists for the named provider, then it overrides its SecurityProviderRegistrar#isEnabled()
+    private static final Set<String> APRIORI_DISABLED_PROVIDERS = new TreeSet<>();
+    private static final AtomicBoolean REGISTRATION_STATE_HOLDER = new AtomicBoolean(false);
+    private static final Map<Class<?>, Map<String, SecurityEntityFactory<?>>> SECURITY_ENTITY_FACTORIES = new HashMap<>();
 
-    private static String defaultProvider;
-    private static Boolean registerBouncyCastle;
-    private static boolean registrationDone;
+    private static final AtomicReference<SecurityProviderChoice> DEFAULT_PROVIDER_HOLDER = new AtomicReference<>();
+
     private static Boolean hasEcc;
-    private static Boolean eddsaSupported;
 
     private SecurityUtils() {
         throw new UnsupportedOperationException("No instance");
     }
 
     /**
+     * @param name The provider's name - never {@code null}/empty
+     * @return {@code true} if the provider is marked as disabled a-priori
+     * @see #setAPrioriDisabledProvider(String, boolean)
+     */
+    public static boolean isAPrioriDisabledProvider(String name) {
+        ValidateUtils.checkNotNullAndNotEmpty(name, "No provider name specified");
+        synchronized (APRIORI_DISABLED_PROVIDERS) {
+            return APRIORI_DISABLED_PROVIDERS.contains(name);
+        }
+    }
+
+    /**
+     * Marks a provider's registrar as &quot;a-priori&quot; <U>programatically</U>
+     * so that when its {@link SecurityProviderRegistrar#isEnabled()} is eventually
+     * consulted it will return {@code false} regardless of the configured value for
+     * the specific provider registrar instance. <B>Note:</B> has no effect if the
+     * provider has already been registered.
+     *
+     * @param name The provider's name - never {@code null}/empty
+     * @param disabled {@code true} whether to disable it a-priori
+     * @see #isAPrioriDisabledProvider(String)
+     */
+    public static void setAPrioriDisabledProvider(String name, boolean disabled) {
+        ValidateUtils.checkNotNullAndNotEmpty(name, "No provider name specified");
+        synchronized (APRIORI_DISABLED_PROVIDERS) {
+            if (disabled) {
+                APRIORI_DISABLED_PROVIDERS.add(name);
+            } else {
+                APRIORI_DISABLED_PROVIDERS.remove(name);
+            }
+        }
+    }
+
+    /**
+     * @return A <U>copy</U> if the current a-priori disabled providers names
+     */
+    public static Set<String> getAPrioriDisabledProviders() {
+        synchronized (APRIORI_DISABLED_PROVIDERS) {
+            return new TreeSet<>(APRIORI_DISABLED_PROVIDERS);
+        }
+    }
+
+    /**
      * @return {@code true} if Elliptic Curve Cryptography is supported
      * @see #ECC_SUPPORTED_PROP
      */
-    public static boolean hasEcc() {
+    public static boolean isECCSupported() {
         if (hasEcc == null) {
             String propValue = System.getProperty(ECC_SUPPORTED_PROP);
             if (GenericUtils.isEmpty(propValue)) {
@@ -253,120 +326,143 @@ public final class SecurityUtils {
         }
     }
 
-    public static synchronized void setRegisterBouncyCastle(boolean registerBouncyCastle) {
-        SecurityUtils.registerBouncyCastle = registerBouncyCastle;
-        registrationDone = false;
+    public static SecurityProviderChoice getDefaultProviderChoice() {
+        SecurityProviderChoice choice;
+        synchronized (DEFAULT_PROVIDER_HOLDER) {
+            choice = DEFAULT_PROVIDER_HOLDER.get();
+            if (choice != null) {
+                return choice;
+            }
+
+            String name = System.getProperty(PROP_DEFAULT_SECURITY_PROVIDER);
+            choice = (GenericUtils.isEmpty(name) || "none".equalsIgnoreCase(name))
+                    ? SecurityProviderChoice.EMPTY
+                    : SecurityProviderChoice.toSecurityProviderChoice(name);
+            DEFAULT_PROVIDER_HOLDER.set(choice);
+        }
+
+        return choice;
     }
 
-    public static synchronized String getDefaultProvider() {
-        return defaultProvider;
-    }
-
-    public static synchronized void setDefaultProvider(String provider) {
-        defaultProvider = provider;
-        registrationDone = false;
+    public static void setDefaultProviderChoice(SecurityProviderChoice choice) {
+        DEFAULT_PROVIDER_HOLDER.set(choice);
     }
 
     /**
      * @return A <U>copy</U> of the currently registered security providers
      */
-    public static synchronized Set<String> getRegisteredProviders() {
-        register();
-
+    public static Set<String> getRegisteredProviders() {
         // returns a COPY of the providers in order to avoid modifications
         synchronized (REGISTERED_PROVIDERS) {
             return new TreeSet<>(REGISTERED_PROVIDERS.keySet());
         }
     }
 
-    public static synchronized boolean isBouncyCastleRegistered() {
+    public static boolean isBouncyCastleRegistered() {
         register();
-        return isBouncyCastleListed();
-    }
-
-    private static boolean isBouncyCastleListed() {
         return isProviderRegistered(BOUNCY_CASTLE);
     }
 
-    private static boolean isEDDSAListed() {
-        return isProviderRegistered(EDDSA);
+    public static boolean isProviderRegistered(String provider) {
+        return getRegisteredProvider(provider) != null;
     }
 
-    private static boolean isProviderRegistered(String provider) {
-        Objects.requireNonNull(provider, "No provider name specified");
+    public static SecurityProviderRegistrar getRegisteredProvider(String provider) {
+        ValidateUtils.checkNotNullAndNotEmpty(provider, "No provider name specified");
         synchronized (REGISTERED_PROVIDERS) {
-            return REGISTERED_PROVIDERS.containsKey(provider);
+            return REGISTERED_PROVIDERS.get(provider);
         }
     }
 
-    @SuppressWarnings("synthetic-access")
+    public static boolean isRegistrationCompleted() {
+        return REGISTRATION_STATE_HOLDER.get();
+    }
+
     private static void register() {
-        if (!registrationDone) {
-            if (registerBouncyCastle == null) {
-                String propValue = System.getProperty(REGISTER_BOUNCY_CASTLE_PROP);
-                if (!GenericUtils.isEmpty(propValue)) {
-                    Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
-                    logger.info("Override BouncyCastle registration value: " + propValue);
-                    registerBouncyCastle = Boolean.valueOf(propValue);
-                }
+        synchronized (REGISTRATION_STATE_HOLDER) {
+            if (REGISTRATION_STATE_HOLDER.get()) {
+                return;
             }
 
-            if ((defaultProvider == null) && (!isBouncyCastleListed()) && ((registerBouncyCastle == null) || registerBouncyCastle)) {
-                // Use an inner class to avoid a strong dependency from SshServer on BouncyCastle
-                try {
-                    new BouncyCastleRegistration().call();
-                    defaultProvider = BOUNCY_CASTLE;
-                } catch (Throwable t) {
-                    Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
-                    if (registerBouncyCastle == null) {
-                        logger.info("BouncyCastle not registered, using the default JCE provider");
-                    } else {
-                        logger.error("Failed {} to register BouncyCastle as a JCE provider: {}", t.getClass().getSimpleName(), t.getMessage());
-                        throw new RuntimeException("Failed to register BouncyCastle as a JCE provider", t);
+            String regsList = System.getProperty(SECURITY_PROVIDER_REGISTRARS,
+                    GenericUtils.join(DEFAULT_SECURITY_PROVIDER_REGISTRARS, ','));
+            boolean bouncyCastleRegistered = false;
+            if ((GenericUtils.length(regsList) > 0) && (!"none".equalsIgnoreCase(regsList))) {
+                String[] classes = GenericUtils.split(regsList, ',');
+                Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
+                ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(SecurityUtils.class);
+                for (String registrarClass : classes) {
+                    SecurityProviderRegistrar r;
+                    try {
+                        r = ThreadUtils.createDefaultInstance(cl, SecurityProviderRegistrar.class, registrarClass);
+                    } catch (ReflectiveOperationException t) {
+                        Throwable e = GenericUtils.peelException(t);
+                        logger.error("Failed ({}) to create default {} registrar instance: {}",
+                                     e.getClass().getSimpleName(), registrarClass, e.getMessage());
+                        if (e instanceof RuntimeException) {
+                            throw (RuntimeException) e;
+                        } else if (e instanceof Error) {
+                            throw (Error) e;
+                        } else {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
+                    String name = r.getName();
+                    SecurityProviderRegistrar registeredInstance = registerSecurityProvider(r);
+                    if (registeredInstance == null) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("register({}) not registered - enabled={}, supported={}",
+                                         name, r.isEnabled(), r.isSupported());
+                        }
+                        continue;   // provider not registered - e.g., disabled, not supported
+                    }
+
+                    if (BOUNCY_CASTLE.equalsIgnoreCase(name)) {
+                        bouncyCastleRegistered = true;
                     }
                 }
             }
 
-            if ((!isEDDSAListed()) && isEDDSACurveSupported()) {
-                try {
-                    new EdDSARegistration().call();
-                } catch (Throwable t) {
-                    Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
-                    logger.error("Failed {} to register " + EDDSA + " as a JCE provider: {}", t.getClass().getSimpleName(), t.getMessage());
-                    throw new RuntimeException("Failed to register " + EDDSA + " as a JCE provider", t);
-                }
+            SecurityProviderChoice choice = getDefaultProviderChoice();
+            if (((choice == null) || (choice == SecurityProviderChoice.EMPTY)) && bouncyCastleRegistered) {
+                setDefaultProviderChoice(SecurityProviderChoice.toSecurityProviderChoice(BOUNCY_CASTLE));
             }
 
-            registrationDone = true;
+            REGISTRATION_STATE_HOLDER.set(true);
         }
+    }
+
+    /**
+     * @param registrar The registrar instance to register
+     * @return The registered instance - may be different than required
+     * if already registered. Returns {@code null} if not already registered
+     * and not enabled or not supported registrar.
+     */
+    public static SecurityProviderRegistrar registerSecurityProvider(SecurityProviderRegistrar registrar) {
+        Objects.requireNonNull(registrar, "No registrar instance to register");
+        String name = registrar.getName();
+        SecurityProviderRegistrar registeredInstance = getRegisteredProvider(name);
+        if ((registeredInstance == null) && registrar.isEnabled() && registrar.isSupported()) {
+            try {
+                SecurityProviderRegistrar.registerSecurityProvider(registrar);
+                synchronized (REGISTERED_PROVIDERS) {
+                    REGISTERED_PROVIDERS.put(name, registrar);
+                }
+
+                return registrar;
+            } catch (Throwable t) {
+                Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
+                logger.error("Failed {} to register {} as a JCE provider: {}",
+                             t.getClass().getSimpleName(), name, t.getMessage());
+                throw new RuntimeException("Failed to register " + name + " as a JCE provider", t);
+            }
+        }
+
+        return registeredInstance;
     }
 
     ///////////////// Bouncycastle specific implementations //////////////////
-
-    private static class BouncyCastleRegistration implements Callable<Void> {
-        @SuppressWarnings("synthetic-access")
-        @Override
-        public Void call() throws Exception {
-            // no need for a logger specific to this class since this is a one-time call
-            Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
-            Provider p = java.security.Security.getProvider(BOUNCY_CASTLE);
-            if (p == null) {
-                logger.info("Trying to register BouncyCastle as a JCE provider");
-                p = new BouncyCastleProvider();
-                java.security.Security.addProvider(p);
-                MessageDigest.getInstance("MD5", BOUNCY_CASTLE);
-                KeyAgreement.getInstance("DH", BOUNCY_CASTLE);
-                logger.info("Registration succeeded");
-            } else {
-                logger.info("BouncyCastle already registered as a JCE provider");
-            }
-
-            synchronized (REGISTERED_PROVIDERS) {
-                REGISTERED_PROVIDERS.put(BOUNCY_CASTLE, p);
-            }
-            return null;
-        }
-    }
 
     /* -------------------------------------------------------------------- */
 
@@ -429,51 +525,11 @@ public final class SecurityUtils {
     /**
      * @return {@code true} if EDDSA curves (e.g., {@code ed25519}) are supported
      */
-    public static synchronized boolean isEDDSACurveSupported() {
-        if (eddsaSupported == null) {
-            String propValue = System.getProperty(EDDSA_SUPPORTED_PROP);
-            if (GenericUtils.isEmpty(propValue) || "true".equals(propValue)) {
-                ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(SecurityUtils.class);
-                eddsaSupported = ReflectionUtils.isClassAvailable(cl, "net.i2p.crypto.eddsa.EdDSAKey");
-            } else {
-                eddsaSupported = Boolean.FALSE;
-                Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
-                logger.info("Override EDDSA support value: " + propValue);
-            }
-        }
+    public static boolean isEDDSACurveSupported() {
+        register();
 
-        return eddsaSupported;
-    }
-
-    /* -------------------------------------------------------------------- */
-
-    private static class EdDSARegistration implements Callable<Void> {
-        EdDSARegistration() {
-            super();
-        }
-
-        @SuppressWarnings("synthetic-access")
-        @Override
-        public Void call() throws Exception {
-            // no need for a logger specific to this class since this is a one-time call
-            Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
-            Provider p = java.security.Security.getProvider(EDDSA);
-            if (p == null) {
-                logger.info("Trying to register " + EDDSA + " as a JCE provider");
-                p = new EdDSASecurityProvider();
-                java.security.Security.addProvider(p);
-                KeyFactory.getInstance(EDDSA, EDDSA);
-                logger.info("Registration succeeded");
-            } else {
-                logger.info(EDDSA + " already registered as a JCE provider");
-            }
-
-            synchronized (REGISTERED_PROVIDERS) {
-                REGISTERED_PROVIDERS.put(EDDSA, p);
-            }
-
-            return null;
-        }
+        SecurityProviderRegistrar r = getRegisteredProvider(EDDSA);
+        return (r != null) && r.isEnabled() && r.isSupported();
     }
 
     /* -------------------------------------------------------------------- */
@@ -604,103 +660,99 @@ public final class SecurityUtils {
         }
     }
 
-    public static synchronized KeyFactory getKeyFactory(String algorithm) throws GeneralSecurityException {
-        register();
+    //////////////////////////// Security entities factories /////////////////////////////
 
-        String providerName = getDefaultProvider();
-        if (isEDDSACurveSupported() && EdDSASecurityProvider.isEDDSAKeyFactoryAlgorithm(algorithm)) {
-            providerName = EDDSA;
+    @SuppressWarnings("unchecked")
+    public static <T> SecurityEntityFactory<T> resolveSecurityEntityFactory(
+            Class<T> entityType, String algorithm, Predicate<? super SecurityProviderRegistrar> entitySelector) {
+        Map<String, SecurityEntityFactory<?>> factoriesMap;
+        synchronized (SECURITY_ENTITY_FACTORIES) {
+            factoriesMap =
+                    SECURITY_ENTITY_FACTORIES.computeIfAbsent(
+                            entityType, k -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER));
         }
 
-        if (GenericUtils.isEmpty(providerName)) {
-            return KeyFactory.getInstance(algorithm);
-        } else {
-            return KeyFactory.getInstance(algorithm, providerName);
+        String effectiveName = SecurityProviderRegistrar.getEffectiveSecurityEntityName(entityType, algorithm);
+        SecurityEntityFactory<?> factoryEntry;
+        synchronized (factoriesMap) {
+            factoryEntry =
+                    factoriesMap.computeIfAbsent(
+                            effectiveName, k -> createSecurityEntityFactory(entityType, entitySelector));
+        }
+
+        return (SecurityEntityFactory<T>) factoryEntry;
+    }
+
+    public static <T> SecurityEntityFactory<T> createSecurityEntityFactory(
+            Class<T> entityType, Predicate<? super SecurityProviderRegistrar> entitySelector) {
+        register();
+
+        SecurityProviderRegistrar registrar;
+        synchronized (REGISTERED_PROVIDERS) {
+            registrar =
+                 SecurityProviderRegistrar.findSecurityProviderRegistrarBySecurityEntity(
+                         entitySelector, REGISTERED_PROVIDERS.values());
+        }
+
+        try {
+            return SecurityEntityFactory.toFactory(entityType, registrar, getDefaultProviderChoice());
+        } catch (ReflectiveOperationException t) {
+            Throwable e = GenericUtils.peelException(t);
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            } else if (e instanceof Error) {
+                throw (Error) e;
+            } else {
+                throw new RuntimeException(e);
+            }
         }
     }
 
-    public static synchronized Cipher getCipher(String transformation) throws GeneralSecurityException {
-        register();
-
-        String providerName = getDefaultProvider();
-        if (GenericUtils.isEmpty(providerName)) {
-            return Cipher.getInstance(transformation);
-        } else {
-            return Cipher.getInstance(transformation, providerName);
-        }
+    public static KeyFactory getKeyFactory(String algorithm) throws GeneralSecurityException {
+        SecurityEntityFactory<KeyFactory> factory =
+                resolveSecurityEntityFactory(KeyFactory.class, algorithm, r -> r.isKeyFactorySupported(algorithm));
+        return factory.getInstance(algorithm);
     }
 
-    public static synchronized MessageDigest getMessageDigest(String algorithm) throws GeneralSecurityException {
-        register();
-
-        String providerName = getDefaultProvider();
-        if (GenericUtils.isEmpty(providerName)) {
-            return MessageDigest.getInstance(algorithm);
-        } else {
-            return MessageDigest.getInstance(algorithm, providerName);
-        }
+    public static Cipher getCipher(String transformation) throws GeneralSecurityException {
+        SecurityEntityFactory<Cipher> factory =
+                resolveSecurityEntityFactory(Cipher.class, transformation, r -> r.isCipherSupported(transformation));
+        return factory.getInstance(transformation);
     }
 
-    public static synchronized KeyPairGenerator getKeyPairGenerator(String algorithm) throws GeneralSecurityException {
-        register();
-
-        String providerName = getDefaultProvider();
-        if (isEDDSACurveSupported() && EdDSASecurityProvider.isEDDSAKeyPairGeneratorAlgorithm(algorithm)) {
-            providerName = EDDSA;
-        }
-
-        if (GenericUtils.isEmpty(providerName)) {
-            return KeyPairGenerator.getInstance(algorithm);
-        } else {
-            return KeyPairGenerator.getInstance(algorithm, providerName);
-        }
+    public static MessageDigest getMessageDigest(String algorithm) throws GeneralSecurityException {
+        SecurityEntityFactory<MessageDigest> factory =
+                resolveSecurityEntityFactory(MessageDigest.class, algorithm, r -> r.isMessageDigestSupported(algorithm));
+        return factory.getInstance(algorithm);
     }
 
-    public static synchronized KeyAgreement getKeyAgreement(String algorithm) throws GeneralSecurityException {
-        register();
-
-        String providerName = getDefaultProvider();
-        if (GenericUtils.isEmpty(providerName)) {
-            return KeyAgreement.getInstance(algorithm);
-        } else {
-            return KeyAgreement.getInstance(algorithm, providerName);
-        }
+    public static KeyPairGenerator getKeyPairGenerator(String algorithm) throws GeneralSecurityException {
+        SecurityEntityFactory<KeyPairGenerator> factory =
+                resolveSecurityEntityFactory(KeyPairGenerator.class, algorithm, r -> r.isKeyPairGeneratorSupported(algorithm));
+        return factory.getInstance(algorithm);
     }
 
-    public static synchronized Mac getMac(String algorithm) throws GeneralSecurityException {
-        register();
-
-        String providerName = getDefaultProvider();
-        if (GenericUtils.isEmpty(providerName)) {
-            return Mac.getInstance(algorithm);
-        } else {
-            return Mac.getInstance(algorithm, providerName);
-        }
+    public static KeyAgreement getKeyAgreement(String algorithm) throws GeneralSecurityException {
+        SecurityEntityFactory<KeyAgreement> factory =
+                resolveSecurityEntityFactory(KeyAgreement.class, algorithm, r -> r.isKeyAgreementSupported(algorithm));
+        return factory.getInstance(algorithm);
     }
 
-    public static synchronized Signature getSignature(String algorithm) throws GeneralSecurityException {
-        register();
-
-        String providerName = getDefaultProvider();
-        if (isEDDSACurveSupported() && EdDSASecurityProvider.isEDDSASignatureAlgorithm(algorithm)) {
-            providerName = EDDSA;
-        }
-
-        if (GenericUtils.isEmpty(providerName)) {
-            return Signature.getInstance(algorithm);
-        } else {
-            return Signature.getInstance(algorithm, providerName);
-        }
+    public static Mac getMac(String algorithm) throws GeneralSecurityException {
+        SecurityEntityFactory<Mac> factory =
+                resolveSecurityEntityFactory(Mac.class, algorithm, r -> r.isMacSupported(algorithm));
+        return factory.getInstance(algorithm);
     }
 
-    public static synchronized CertificateFactory getCertificateFactory(String type) throws GeneralSecurityException {
-        register();
+    public static Signature getSignature(String algorithm) throws GeneralSecurityException {
+        SecurityEntityFactory<Signature> factory =
+                resolveSecurityEntityFactory(Signature.class, algorithm, r -> r.isSignatureSupported(algorithm));
+        return factory.getInstance(algorithm);
+    }
 
-        String providerName = getDefaultProvider();
-        if (GenericUtils.isEmpty(providerName)) {
-            return CertificateFactory.getInstance(type);
-        } else {
-            return CertificateFactory.getInstance(type, providerName);
-        }
+    public static CertificateFactory getCertificateFactory(String type) throws GeneralSecurityException {
+        SecurityEntityFactory<CertificateFactory> factory =
+                resolveSecurityEntityFactory(CertificateFactory.class, type, r -> r.isCertificateFactorySupported(type));
+        return factory.getInstance(type);
     }
 }

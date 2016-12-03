@@ -178,7 +178,7 @@ public enum ECCurves implements NamedResource, OptionalFeature {
 
     @Override
     public final boolean isSupported() {
-        return SecurityUtils.hasEcc() && digestFactory.isSupported();
+        return SecurityUtils.isECCSupported() && digestFactory.isSupported();
     }
 
     public final ECParameterSpec getParameters() {

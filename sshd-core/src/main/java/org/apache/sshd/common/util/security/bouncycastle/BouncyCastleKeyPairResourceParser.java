@@ -26,6 +26,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.security.NoSuchProviderException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,6 +36,7 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.loader.AbstractKeyPairResourceParser;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.security.SecurityProviderRegistrar;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.bouncycastle.openssl.PEMDecryptorProvider;
 import org.bouncycastle.openssl.PEMEncryptedKeyPair;
@@ -96,8 +98,17 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
         try (PEMParser r = new PEMParser(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             Object o = r.readObject();
 
+            SecurityProviderRegistrar registrar = SecurityUtils.getRegisteredProvider(SecurityUtils.BOUNCY_CASTLE);
+            if (registrar == null) {
+                throw new NoSuchProviderException(SecurityUtils.BOUNCY_CASTLE + " registrar not available");
+            }
+
             JcaPEMKeyConverter pemConverter = new JcaPEMKeyConverter();
-            pemConverter.setProvider(SecurityUtils.BOUNCY_CASTLE);
+            if (registrar.isNamedProviderUsed()) {
+                pemConverter.setProvider(registrar.getName());
+            } else {
+                pemConverter.setProvider(registrar.getSecurityProvider());
+            }
             if (o instanceof PEMEncryptedKeyPair) {
                 ValidateUtils.checkNotNull(provider, "No password provider for resource=%s", resourceKey);
 

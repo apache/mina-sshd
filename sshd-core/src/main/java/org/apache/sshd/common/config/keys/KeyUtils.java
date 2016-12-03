@@ -139,7 +139,7 @@ public final class KeyUtils {
         registerPublicKeyEntryDecoder(RSAPublicKeyDecoder.INSTANCE);
         registerPublicKeyEntryDecoder(DSSPublicKeyEntryDecoder.INSTANCE);
 
-        if (SecurityUtils.hasEcc()) {
+        if (SecurityUtils.isECCSupported()) {
             registerPublicKeyEntryDecoder(ECDSAPublicKeyEntryDecoder.INSTANCE);
         }
         if (SecurityUtils.isEDDSACurveSupported()) {

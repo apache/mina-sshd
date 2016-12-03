@@ -47,7 +47,7 @@ public enum BuiltinIdentities implements Identity {
     ECDSA(Constants.ECDSA, KeyUtils.EC_ALGORITHM, ECPublicKey.class, ECPrivateKey.class) {
         @Override
         public boolean isSupported() {
-            return SecurityUtils.hasEcc();
+            return SecurityUtils.isECCSupported();
         }
     },
     ED25119(Constants.ED25519, SecurityUtils.EDDSA, SecurityUtils.getEDDSAPublicKeyType(), SecurityUtils.getEDDSAPrivateKeyType()) {

@@ -96,6 +96,18 @@ public final class ThreadUtils {
         return resolveDefaultClassLoader(anchor == null ? null : anchor.getClass());
     }
 
+    public static <T> T createDefaultInstance(Class<?> anchor, Class<T> targetType, String className)
+            throws ReflectiveOperationException {
+        return createDefaultInstance(resolveDefaultClassLoader(anchor), targetType, className);
+    }
+
+    public static <T> T createDefaultInstance(ClassLoader cl, Class<T> targetType, String className)
+            throws ReflectiveOperationException {
+        Class<?> instanceType = cl.loadClass(className);
+        Object instance = instanceType.newInstance();
+        return targetType.cast(instance);
+    }
+
     /**
      * <P>Attempts to find the most suitable {@link ClassLoader} as follows:</P>
      * <UL>

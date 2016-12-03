@@ -542,6 +542,16 @@ public final class GenericUtils {
         return map;
     }
 
+    @SafeVarargs
+    public static <T> T findFirstMatchingMember(Predicate<? super T> acceptor, T ... values) {
+        return findFirstMatchingMember(acceptor, isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
+    }
+
+    public static <T> T findFirstMatchingMember(Predicate<? super T> acceptor, Collection<? extends T> values) {
+        List<T> matches = selectMatchingMembers(acceptor, values);
+        return GenericUtils.isEmpty(matches) ? null : matches.get(0);
+    }
+
     /**
      * Returns a list of all the values that were accepted by a predicate
      *
@@ -565,7 +575,7 @@ public final class GenericUtils {
      */
     public static <T> List<T> selectMatchingMembers(Predicate<? super T> acceptor, Collection<? extends T> values) {
         return GenericUtils.stream(values)
-                .filter(acceptor::test)
+                .filter(acceptor)
                 .collect(Collectors.toList());
     }
 

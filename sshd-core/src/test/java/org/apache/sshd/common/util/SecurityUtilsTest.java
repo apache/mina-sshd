@@ -23,9 +23,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
-import java.security.Provider;
 import java.security.PublicKey;
 import java.security.interfaces.DSAPrivateKey;
 import java.security.interfaces.DSAPublicKey;
@@ -45,9 +43,12 @@ import org.apache.sshd.common.config.keys.loader.KeyPairResourceLoader;
 import org.apache.sshd.common.keyprovider.AbstractResourceKeyPairProvider;
 import org.apache.sshd.common.keyprovider.ClassLoadableResourceKeyPairProvider;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import org.apache.sshd.common.util.security.SecurityProviderRegistrar;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.junit.AfterClass;
 import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -57,11 +58,27 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SecurityUtilsTest extends BaseTestSupport {
+    public static final String BC_NAMED_USAGE_PROP =
+            SecurityProviderRegistrar.CONFIG_PROP_BASE
+          + "." + SecurityUtils.BOUNCY_CASTLE
+          + "." + SecurityProviderRegistrar.NAMED_PROVIDER_PROPERTY;
+
     private static final String DEFAULT_PASSWORD = "super secret passphrase";
     private static final FilePasswordProvider TEST_PASSWORD_PROVIDER = file -> DEFAULT_PASSWORD;
 
     public SecurityUtilsTest() {
         super();
+    }
+
+    // NOTE: Using the BouncyCastle provider instead of the name does not work as expected so we take no chances
+    @BeforeClass
+    public static void useNamedBouncyCastleProvider() {
+        System.setProperty(BC_NAMED_USAGE_PROP, Boolean.TRUE.toString());
+    }
+
+    @AfterClass
+    public static void unsetBouncyCastleProviderUsagePreference() {
+        System.clearProperty(BC_NAMED_USAGE_PROP);
     }
 
     @Test
@@ -107,7 +124,7 @@ public class SecurityUtilsTest extends BaseTestSupport {
 
     @Test
     public void testLoadUnencryptedECPrivateKey() throws Exception {
-        Assume.assumeTrue("EC not supported", SecurityUtils.hasEcc());
+        Assume.assumeTrue("EC not supported", SecurityUtils.isECCSupported());
         for (ECCurves c : ECCurves.VALUES) {
             if (!c.isSupported()) {
                 System.out.println("Skip unsupported curve: " + c.getName());
@@ -177,26 +194,6 @@ public class SecurityUtilsTest extends BaseTestSupport {
         assertTrue("Not an " + prvType.getSimpleName() + " private key for " + resourceKey, prvType.isAssignableFrom(prv.getClass()));
 
         return kp;
-    }
-
-    @Test
-    public void testBouncyCastleRegistrationSettings() {
-        Assume.assumeTrue("Bouncycastle not registered", SecurityUtils.isBouncyCastleRegistered());
-        assertTrue("DH Group Exchange not supported", SecurityUtils.isDHGroupExchangeSupported());
-        assertEquals("Mismatched max. DH group exchange key size", SecurityUtils.MAX_DHGEX_KEY_SIZE, SecurityUtils.getMaxDHGroupExchangeKeySize());
-        assertTrue("ECC not supported", SecurityUtils.hasEcc());
-    }
-
-    @Test
-    public void testBouncyCastleRegistrationProperty() throws GeneralSecurityException {
-        String propValue = System.getProperty(SecurityUtils.REGISTER_BOUNCY_CASTLE_PROP);
-        Assume.assumeFalse(SecurityUtils.REGISTER_BOUNCY_CASTLE_PROP + " property not set", GenericUtils.isEmpty(propValue));
-        Assume.assumeFalse(SecurityUtils.REGISTER_BOUNCY_CASTLE_PROP + " property is " + propValue, Boolean.parseBoolean(propValue));
-        assertFalse("Unexpected registration of provider", SecurityUtils.isBouncyCastleRegistered());
-
-        KeyPairGenerator kpg = SecurityUtils.getKeyPairGenerator(KeyUtils.RSA_ALGORITHM);
-        Provider provider = kpg.getProvider();
-        assertNotEquals("Unexpected used provider", SecurityUtils.BOUNCY_CASTLE, provider.getName());
     }
 
     @Test

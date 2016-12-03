@@ -93,7 +93,7 @@ public class SignatureFactoriesTest extends BaseTestSupport implements OptionalF
         addTests(list, KeyPairProvider.SSH_DSS, BuiltinSignatures.dsa, DSS_SIZES, DSSPublicKeyEntryDecoder.INSTANCE);
         addTests(list, KeyPairProvider.SSH_RSA, BuiltinSignatures.rsa, RSA_SIZES, RSAPublicKeyDecoder.INSTANCE);
 
-        if (SecurityUtils.hasEcc()) {
+        if (SecurityUtils.isECCSupported()) {
             for (ECCurves curve : ECCurves.VALUES) {
                 BuiltinSignatures factory = BuiltinSignatures.fromFactoryName(curve.getKeyType());
                 addTests(list, curve.getName(), factory,

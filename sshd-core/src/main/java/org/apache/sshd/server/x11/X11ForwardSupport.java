@@ -32,7 +32,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
 public interface X11ForwardSupport extends Closeable, IoHandler {
     /**
      * Configuration value on the {@link FactoryManager} to control the
-     * channel open timeout. If not specified then {@link #DEFAULT_CHANNEL_OPEN_TIMEOUT}
+     * channel open timeout. If not specified then {@value #DEFAULT_CHANNEL_OPEN_TIMEOUT}
      * value is used
      */
     String CHANNEL_OPEN_TIMEOUT_PROP = "x11-fwd-open-timeout";
@@ -40,7 +40,7 @@ public interface X11ForwardSupport extends Closeable, IoHandler {
 
     /**
      * Configuration value to control from which X11 display number to start
-     * looking for a free value. If not specified, then {@link #DEFAULT_X11_DISPLAY_OFFSET}
+     * looking for a free value. If not specified, then {@value #DEFAULT_X11_DISPLAY_OFFSET}
      * is used
      */
     String X11_DISPLAY_OFFSET = "x11-fwd-display-offset";
@@ -48,7 +48,7 @@ public interface X11ForwardSupport extends Closeable, IoHandler {
 
     /**
      * Configuration value to control up to which (but not including) X11 display number
-     * to look or a free value. If not specified, then {@link #DEFAULT_X11_MAX_DISPLAYS}
+     * to look or a free value. If not specified, then {@value #DEFAULT_X11_MAX_DISPLAYS}
      * is used
      */
     String X11_MAX_DISPLAYS = "x11-fwd-max-display";
@@ -56,7 +56,7 @@ public interface X11ForwardSupport extends Closeable, IoHandler {
 
     /**
      * Configuration value to control the base port number for the X11 display
-     * number socket binding. If not specified then {@link #DEFAULT_X11_BASE_PORT}
+     * number socket binding. If not specified then {@value #DEFAULT_X11_BASE_PORT}
      * value is used
      */
     String X11_BASE_PORT = "x11-fwd-base-port";
@@ -64,7 +64,7 @@ public interface X11ForwardSupport extends Closeable, IoHandler {
 
     /**
      * Configuration value to control the host used to bind to for the X11 display
-     * when looking for a free port. If not specified, then {@link #DEFAULT_X11_BIND_HOST}
+     * when looking for a free port. If not specified, then {@value #DEFAULT_X11_BIND_HOST}
      * is used
      */
     String X11_BIND_HOST = "x11-fwd-bind-host";
