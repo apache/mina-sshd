@@ -47,6 +47,7 @@ public interface Invoker<ARG, RET> {
      * @param arg The argument to pass to the {@link #invoke(Object)} method
      * @param invokers The invokers to scan - ignored if {@code null}/empty
      * (also ignores {@code null} members)
+     * @throws Throwable If invocation failed
      */
     static <ARG> void invokeAll(ARG arg, Collection<? extends Invoker<? super ARG, ?>> invokers) throws Throwable {
         if (GenericUtils.isEmpty(invokers)) {
