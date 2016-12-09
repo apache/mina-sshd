@@ -74,6 +74,8 @@ public interface SecurityProviderRegistrar extends SecurityProviderChoice, Optio
     String ALL_OPTIONS_VALUE = "all";
     String ALL_OPTIONS_WILDCARD = "*";
 
+    String NO_OPTIONS_VALUE = "none";
+
     /**
      * All the entities that are used in calls to {@link #isSecurityEntitySupported(Class, String)}
      */
@@ -259,6 +261,10 @@ public interface SecurityProviderRegistrar extends SecurityProviderChoice, Optio
         String propValue = PropertyResolverUtils.getString(resolver, propName);
         if (GenericUtils.isEmpty(propValue)) {
             propValue = defaultValue;
+        }
+
+        if (NO_OPTIONS_VALUE.equalsIgnoreCase(propValue)) {
+            return false;
         }
 
         String[] values = GenericUtils.split(propValue, ',');

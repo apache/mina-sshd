@@ -40,6 +40,7 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
     public static final String PROVIDER_CLASS = "org.bouncycastle.jce.provider.BouncyCastleProvider";
     // Do not define a static registrar instance to minimize class loading issues
     private final AtomicReference<Boolean> supportHolder = new AtomicReference<>(null);
+    private final AtomicReference<String> allSupportHolder = new AtomicReference<>();
 
     public BouncyCastleSecurityProviderRegistrar() {
         super(SecurityUtils.BOUNCY_CASTLE);
@@ -73,7 +74,19 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
 
     @Override
     public String getDefaultSecurityEntitySupportValue(Class<?> entityType) {
-        return ALL_OPTIONS_VALUE;
+        String allValue = allSupportHolder.get();
+        if (GenericUtils.length(allValue) > 0) {
+            return allValue;
+        }
+
+        String propName = getConfigurationPropertyName("supportAll");
+        allValue = PropertyResolverUtils.getStringProperty(this, propName, ALL_OPTIONS_VALUE);
+        if (GenericUtils.isEmpty(allValue)) {
+            allValue = NO_OPTIONS_VALUE;
+        }
+
+        allSupportHolder.set(allValue);
+        return allValue;
     }
 
     @Override
