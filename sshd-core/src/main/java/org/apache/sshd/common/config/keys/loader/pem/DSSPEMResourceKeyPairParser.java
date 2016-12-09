@@ -26,9 +26,10 @@ import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
-import java.security.interfaces.DSAPrivateKey;
-import java.security.interfaces.DSAPublicKey;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.spec.DSAPrivateKeySpec;
+import java.security.spec.DSAPublicKeySpec;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -69,11 +70,7 @@ public class DSSPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParse
     public Collection<KeyPair> extractKeyPairs(
             String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, InputStream stream)
                     throws IOException, GeneralSecurityException {
-        DSAPrivateKeySpec keySpec = decodeDSSPrivateKeySpec(stream, false);
-        KeyFactory kf = SecurityUtils.getKeyFactory(KeyUtils.DSS_ALGORITHM);
-        DSAPrivateKey prvKey = (DSAPrivateKey) kf.generatePrivate(keySpec);
-        DSAPublicKey pubKey = KeyUtils.recoverDSAPublicKey(prvKey);
-        KeyPair kp = new KeyPair(pubKey, prvKey);
+        KeyPair kp = decodeDSSKeyPair(SecurityUtils.getKeyFactory(KeyUtils.DSS_ALGORITHM), stream, false);
         return Collections.singletonList(kp);
     }
 
@@ -89,13 +86,16 @@ public class DSSPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParse
      *      x       INTEGER
      * }
      * </code></pre>
+     * @param kf The {@link KeyFactory} To use to generate the keys
      * @param s The {@link InputStream} containing the encoded bytes
      * @param okToClose <code>true</code> if the method may close the input
      * stream regardless of success or failure
-     * @return The recovered {@link DSAPrivateKeySpec}
+     * @return The recovered {@link KeyPair}
      * @throws IOException If failed to read or decode the bytes
+     * @throws GeneralSecurityException If failed to generate the keys
      */
-    public static final DSAPrivateKeySpec decodeDSSPrivateKeySpec(InputStream s, boolean okToClose) throws IOException {
+    public static KeyPair decodeDSSKeyPair(KeyFactory kf, InputStream s, boolean okToClose)
+            throws IOException, GeneralSecurityException {
         ASN1Object sequence;
         try (DERParser parser = new DERParser(NoCloseInputStream.resolveInputStream(s, okToClose))) {
             sequence = parser.readObject();
@@ -116,12 +116,11 @@ public class DSSPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParse
             BigInteger p = parser.readObject().asInteger();
             BigInteger q = parser.readObject().asInteger();
             BigInteger g = parser.readObject().asInteger();
-            // don't need it, but have to read it to get to x
-            @SuppressWarnings("unused")
             BigInteger y = parser.readObject().asInteger();
             BigInteger x = parser.readObject().asInteger();
-
-            return new DSAPrivateKeySpec(x, p, q, g);
+            PublicKey pubKey = kf.generatePublic(new DSAPublicKeySpec(y, p, q, g));
+            PrivateKey prvKey = kf.generatePrivate(new DSAPrivateKeySpec(x, p, q, g));
+            return new KeyPair(pubKey, prvKey);
         }
     }
 }

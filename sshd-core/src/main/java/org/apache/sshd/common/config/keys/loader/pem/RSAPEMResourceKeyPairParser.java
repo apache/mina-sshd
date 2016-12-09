@@ -26,9 +26,11 @@ import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.spec.RSAPrivateCrtKeySpec;
+import java.security.spec.RSAPrivateKeySpec;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -69,11 +71,7 @@ public class RSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParse
     public Collection<KeyPair> extractKeyPairs(
             String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, InputStream stream)
                     throws IOException, GeneralSecurityException {
-        RSAPrivateCrtKeySpec prvSpec = decodeRSAPrivateKeySpec(stream, false);
-        KeyFactory kf = SecurityUtils.getKeyFactory(KeyUtils.RSA_ALGORITHM);
-        RSAPrivateKey prvKey = (RSAPrivateKey) kf.generatePrivate(prvSpec);
-        RSAPublicKey pubKey = KeyUtils.recoverRSAPublicKey(prvSpec.getPrimeP(), prvSpec.getPrimeQ(), prvSpec.getPublicExponent());
-        KeyPair kp = new KeyPair(pubKey, prvKey);
+        KeyPair kp = decodeRSAKeyPair(SecurityUtils.getKeyFactory(KeyUtils.RSA_ALGORITHM), stream, false);
         return Collections.singletonList(kp);
     }
 
@@ -93,13 +91,16 @@ public class RSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParse
      *   otherPrimeInfos   OtherPrimeInfos OPTIONAL
      * }
      * </code></pre>
+     * @param kf The {@link KeyFactory} To use to generate the keys
      * @param s The {@link InputStream} containing the encoded bytes
      * @param okToClose <code>true</code> if the method may close the input
      * stream regardless of success or failure
-     * @return The recovered {@link RSAPrivateCrtKeySpec}
+     * @return The recovered {@link KeyPair}
      * @throws IOException If failed to read or decode the bytes
+     * @throws GeneralSecurityException If failed to generate the keys
      */
-    public static RSAPrivateCrtKeySpec decodeRSAPrivateKeySpec(InputStream s, boolean okToClose) throws IOException {
+    public static KeyPair decodeRSAKeyPair(KeyFactory kf, InputStream s, boolean okToClose)
+            throws IOException, GeneralSecurityException {
         ASN1Object sequence;
         try (DERParser parser = new DERParser(NoCloseInputStream.resolveInputStream(s, okToClose))) {
             sequence = parser.readObject();
@@ -124,14 +125,18 @@ public class RSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParse
 
             BigInteger modulus = parser.readObject().asInteger();
             BigInteger publicExp = parser.readObject().asInteger();
+            PublicKey pubKey = kf.generatePublic(new RSAPublicKeySpec(modulus, publicExp));
+
             BigInteger privateExp = parser.readObject().asInteger();
             BigInteger primeP = parser.readObject().asInteger();
             BigInteger primeQ = parser.readObject().asInteger();
             BigInteger primeExponentP = parser.readObject().asInteger();
             BigInteger primeExponentQ = parser.readObject().asInteger();
             BigInteger crtCoef = parser.readObject().asInteger();
-
-            return new RSAPrivateCrtKeySpec(modulus, publicExp, privateExp, primeP, primeQ, primeExponentP, primeExponentQ, crtCoef);
+            RSAPrivateKeySpec prvSpec = new RSAPrivateCrtKeySpec(
+                    modulus, publicExp, privateExp, primeP, primeQ, primeExponentP, primeExponentQ, crtCoef);
+            PrivateKey prvKey = kf.generatePrivate(prvSpec);
+            return new KeyPair(pubKey, prvKey);
         }
     }
 }

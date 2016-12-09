@@ -68,7 +68,8 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
      * @throws GeneralSecurityException If failed to extract information regarding
      * the possibility to extract the key pairs
      */
-    boolean canExtractKeyPairs(String resourceKey, List<String> lines) throws IOException, GeneralSecurityException;
+    boolean canExtractKeyPairs(String resourceKey, List<String> lines)
+            throws IOException, GeneralSecurityException;
 
     /**
      * Converts the lines assumed to contain BASE-64 encoded data into
@@ -77,14 +78,19 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
      * @param lines The data lines - empty lines and spaces are automatically
      * deleted <U>before</U> BASE-64 decoding takes place.
      * @return The decoded data bytes
+     * @see #joinDataLines(Collection)
      */
     static byte[] extractDataBytes(Collection<String> lines) {
+        String data = joinDataLines(lines);
+        Base64.Decoder decoder = Base64.getDecoder();
+        return decoder.decode(data);
+    }
+
+    static String joinDataLines(Collection<String> lines) {
         String data = GenericUtils.join(lines, ' ');
         data = data.replaceAll("\\s", "");
         data = data.trim();
-
-        Base64.Decoder decoder = Base64.getDecoder();
-        return decoder.decode(data);
+        return data;
     }
 
     static boolean containsMarkerLine(List<String> lines, String marker) {
