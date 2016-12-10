@@ -21,6 +21,7 @@ package org.apache.sshd.common.io.mina;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoProcessor;
@@ -33,9 +34,11 @@ import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
 /**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class MinaService extends AbstractCloseable implements org.apache.sshd.common.io.IoService, IoHandler, Closeable {
     protected final FactoryManager manager;
@@ -52,12 +55,14 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
     protected abstract IoService getIoService();
 
     public void dispose() {
-        getIoService().dispose();
+        IoService ioService = getIoService();
+        ioService.dispose();
     }
 
     @Override
     protected void doCloseImmediately() {
-        getIoService().dispose();
+        IoService ioService = getIoService();
+        ioService.dispose();
         super.doCloseImmediately();
     }
 
@@ -123,31 +128,60 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
     }
 
     protected void configure(SocketSessionConfig config) {
-        Integer intVal;
-        Boolean boolVal;
-        boolVal = getBoolean(FactoryManager.SOCKET_KEEPALIVE);
+        Boolean boolVal = getBoolean(FactoryManager.SOCKET_KEEPALIVE);
         if (boolVal != null) {
-            config.setKeepAlive(boolVal);
+            try {
+                config.setKeepAlive(boolVal);
+            } catch (RuntimeIoException t) {
+                handleConfigurationError(config, FactoryManager.SOCKET_KEEPALIVE, boolVal, t);
+            }
         }
-        intVal = getInteger(FactoryManager.SOCKET_SNDBUF);
+
+        Integer intVal = getInteger(FactoryManager.SOCKET_SNDBUF);
         if (intVal != null) {
-            config.setSendBufferSize(intVal);
+            try {
+                config.setSendBufferSize(intVal);
+            } catch (RuntimeIoException t) {
+                handleConfigurationError(config, FactoryManager.SOCKET_SNDBUF, intVal, t);
+            }
         }
+
         intVal = getInteger(FactoryManager.SOCKET_RCVBUF);
         if (intVal != null) {
-            config.setReceiveBufferSize(intVal);
+            try {
+                config.setReceiveBufferSize(intVal);
+            } catch (RuntimeIoException t) {
+                handleConfigurationError(config, FactoryManager.SOCKET_RCVBUF, intVal, t);
+            }
         }
+
         intVal = getInteger(FactoryManager.SOCKET_LINGER);
         if (intVal != null) {
-            config.setSoLinger(intVal);
+            try {
+                config.setSoLinger(intVal);
+            } catch (RuntimeIoException t) {
+                handleConfigurationError(config, FactoryManager.SOCKET_LINGER, intVal, t);
+            }
         }
+
         boolVal = getBoolean(FactoryManager.TCP_NODELAY);
         if (boolVal != null) {
-            config.setTcpNoDelay(boolVal);
+            try {
+                config.setTcpNoDelay(boolVal);
+            } catch (RuntimeIoException t) {
+                handleConfigurationError(config, FactoryManager.TCP_NODELAY, boolVal, t);
+            }
         }
+
         if (sessionConfig != null) {
             config.setAll(sessionConfig);
         }
+    }
+
+    protected void handleConfigurationError(SocketSessionConfig config, String propName, Object propValue, RuntimeIoException t) {
+        Throwable e = GenericUtils.resolveExceptionCause(t);
+        log.warn("handleConfigurationError({}={}) failed ({}) to configure: {}",
+                 propName, propValue, e.getClass().getSimpleName(), e.getMessage());
     }
 
     protected Integer getInteger(String property) {
@@ -157,5 +191,4 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
     protected Boolean getBoolean(String property) {
         return PropertyResolverUtils.getBoolean(manager, property);
     }
-
 }

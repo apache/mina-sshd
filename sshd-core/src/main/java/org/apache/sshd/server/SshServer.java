@@ -386,7 +386,9 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     protected IoAcceptor createAcceptor() {
-        return getIoServiceFactory().createAcceptor(getSessionFactory());
+        IoServiceFactory ioFactory = getIoServiceFactory();
+        SessionFactory sessFactory = getSessionFactory();
+        return ioFactory.createAcceptor(sessFactory);
     }
 
     protected SessionFactory createSessionFactory() {

@@ -21,10 +21,12 @@ package org.apache.sshd.common.io.nio2;
 import java.io.IOException;
 import java.net.SocketOption;
 import java.net.SocketTimeoutException;
+import java.net.StandardSocketOptions;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.NetworkChannel;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,11 +41,28 @@ import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 
 /**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class Nio2Service extends AbstractInnerCloseable implements IoService, FactoryManagerHolder {
+    public static final Map<String, Pair<SocketOption<?>, Object>> CONFIGURABLE_OPTIONS =
+            Collections.unmodifiableMap(new LinkedHashMap<String, Pair<SocketOption<?>, Object>>() {
+                // Not serializing it
+                private static final long serialVersionUID = 1L;
+
+                {
+                    put(FactoryManager.SOCKET_KEEPALIVE, new Pair<SocketOption<?>, Object>(StandardSocketOptions.SO_KEEPALIVE, null));
+                    put(FactoryManager.SOCKET_LINGER, new Pair<SocketOption<?>, Object>(StandardSocketOptions.SO_LINGER, null));
+                    put(FactoryManager.SOCKET_RCVBUF, new Pair<SocketOption<?>, Object>(StandardSocketOptions.SO_RCVBUF, null));
+                    put(FactoryManager.SOCKET_REUSEADDR, new Pair<SocketOption<?>, Object>(StandardSocketOptions.SO_REUSEADDR, DEFAULT_REUSE_ADDRESS));
+                    put(FactoryManager.SOCKET_SNDBUF, new Pair<SocketOption<?>, Object>(StandardSocketOptions.SO_SNDBUF, null));
+                    put(FactoryManager.TCP_NODELAY, new Pair<SocketOption<?>, Object>(StandardSocketOptions.TCP_NODELAY, null));
+                }
+            });
+
     protected final Map<Long, IoSession> sessions;
     protected final AtomicBoolean disposing = new AtomicBoolean();
     private final FactoryManager manager;
@@ -105,7 +124,25 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
         sessions.remove(session.getId());
     }
 
-    protected <T> void setOption(NetworkChannel socket, String property, SocketOption<T> option, T defaultValue) throws IOException {
+    @SuppressWarnings("unchecked")
+    protected <S extends NetworkChannel> S setSocketOptions(S socket) throws IOException {
+        Collection<? extends SocketOption<?>> supported = socket.supportedOptions();
+        if (GenericUtils.isEmpty(supported)) {
+            return socket;
+        }
+
+        for (Map.Entry<String, Pair<SocketOption<?>, Object>> ce : CONFIGURABLE_OPTIONS.entrySet()) {
+            String property = ce.getKey();
+            Pair<SocketOption<?>, Object> defConfig = ce.getValue();
+            @SuppressWarnings("rawtypes")
+            SocketOption option = defConfig.getKey();
+            setOption(socket, property, option, defConfig.getValue());
+        }
+
+        return socket;
+    }
+
+    protected <T> boolean setOption(NetworkChannel socket, String property, SocketOption<T> option, T defaultValue) throws IOException {
         PropertyResolver manager = getFactoryManager();
         String valStr = PropertyResolverUtils.getString(manager, property);
         T val = defaultValue;
@@ -116,28 +153,34 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
             } else if (type == Boolean.class) {
                 val = type.cast(Boolean.valueOf(valStr));
             } else {
-                throw new IllegalStateException("Unsupported socket option type " + type);
+                throw new IllegalStateException("Unsupported socket option type (" + type + ") " + property + "=" + valStr);
             }
         }
 
-        if (val != null) {
-            Collection<? extends SocketOption<?>> supported = socket.supportedOptions();
-            if ((GenericUtils.size(supported) <= 0) || (!supported.contains(option))) {
-                log.warn("Unsupported socket option (" + option + ") to set using property '" + property + "' value=" + val);
-                return;
-            }
+        if (val == null) {
+            return false;
+        }
 
-            try {
-                socket.setOption(option, val);
-                if (log.isDebugEnabled()) {
-                    log.debug("setOption({})[{}] from property={}", option, val, property);
-                }
-            } catch (IOException | RuntimeException e) {
-                log.warn("Unable (" + e.getClass().getSimpleName() + ")"
-                       + " to set socket option " + option
-                       + " using property '" + property + "' value=" + val
-                       + ": " + e.getMessage());
+        Collection<? extends SocketOption<?>> supported = socket.supportedOptions();
+        if (GenericUtils.isEmpty(supported) || (!supported.contains(option))) {
+            if (log.isDebugEnabled()) {
+                log.debug("Unsupported socket option ({}) to set using {}={}", option, property, val);
             }
+            return false;
+        }
+
+        try {
+            socket.setOption(option, val);
+            if (log.isDebugEnabled()) {
+                log.debug("setOption({})[{}] from property={}", option, val, property);
+            }
+            return true;
+        } catch (IOException | RuntimeException e) {
+            log.warn("Unable (" + e.getClass().getSimpleName() + ")"
+                   + " to set socket option " + option
+                   + " using property " + property + "=" + val
+                   + ": " + e.getMessage());
+            return false;
         }
     }
 }

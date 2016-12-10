@@ -67,5 +67,4 @@ public class RSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder {
         PrivateKey prvKey = kf.generatePrivate(prvSpec);
         return Collections.singletonList(new KeyPair(pubKey, prvKey));
     }
-
 }

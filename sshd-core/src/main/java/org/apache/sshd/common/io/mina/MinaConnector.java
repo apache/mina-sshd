@@ -26,6 +26,7 @@ import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoProcessor;
+import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.apache.sshd.common.FactoryManager;
@@ -33,9 +34,9 @@ import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
 
 /**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class MinaConnector extends MinaService implements org.apache.sshd.common.io.IoConnector, IoHandler {
-
     protected final AtomicReference<IoConnector> connectorHolder = new AtomicReference<>(null);
 
     public MinaConnector(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler, IoProcessor<NioSession> ioProcessor) {
@@ -61,7 +62,9 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
             connectorHolder.set(connector);
         }
 
-        log.debug("Created IoConnector");
+        if (log.isDebugEnabled()) {
+            log.debug("Created IoConnector");
+        }
         return connector;
     }
 
@@ -104,17 +107,22 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
                 setValue(exception);
             }
         }
-        final IoConnectFuture future = new Future(null);
-        getConnector().connect(address).addListener((IoFutureListener<ConnectFuture>) cf -> {
-            if (cf.getException() != null) {
-                future.setException(cf.getException());
+
+        IoConnectFuture future = new Future(null);
+        IoConnector connector = getConnector();
+        ConnectFuture connectFuture = connector.connect(address);
+        connectFuture.addListener((IoFutureListener<ConnectFuture>) cf -> {
+            Throwable t = cf.getException();
+            if (t != null) {
+                future.setException(t);
             } else if (cf.isCanceled()) {
                 future.cancel();
             } else {
-                future.setSession(getSession(cf.getSession()));
+                IoSession ioSession = cf.getSession();
+                org.apache.sshd.common.io.IoSession sshSession = getSession(ioSession);
+                future.setSession(sshSession);
             }
         });
         return future;
     }
-
 }

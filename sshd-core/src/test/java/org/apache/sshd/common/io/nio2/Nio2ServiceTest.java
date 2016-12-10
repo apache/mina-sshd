@@ -20,11 +20,23 @@
 package org.apache.sshd.common.io.nio2;
 
 import java.net.Socket;
+import java.net.SocketOption;
+import java.nio.channels.AsynchronousSocketChannel;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.session.ServerSessionImpl;
+import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -39,24 +51,69 @@ public class Nio2ServiceTest extends BaseTestSupport {
         super();
     }
 
-    @Test   // see SSHD-554
+    @Test   // see SSHD-554, SSHD-722
     public void testSetSocketOptions() throws Exception {
         try (SshServer sshd = setupTestServer()) {
-            PropertyResolverUtils.updateProperty(sshd, FactoryManager.SOCKET_KEEPALIVE, true);
-            PropertyResolverUtils.updateProperty(sshd, FactoryManager.SOCKET_LINGER, 5);
-            PropertyResolverUtils.updateProperty(sshd, FactoryManager.SOCKET_RCVBUF, 1024);
-            PropertyResolverUtils.updateProperty(sshd, FactoryManager.SOCKET_REUSEADDR, true);
-            PropertyResolverUtils.updateProperty(sshd, FactoryManager.SOCKET_SNDBUF, 1024);
-            PropertyResolverUtils.updateProperty(sshd, FactoryManager.TCP_NODELAY, true);
+            Map<String, Object> expectedOptions =
+                    Collections.unmodifiableMap(new LinkedHashMap<String, Object>() {
+                        // Not serializing it
+                        private static final long serialVersionUID = 1L;
 
+                        {
+                            put(FactoryManager.SOCKET_KEEPALIVE, true);
+                            put(FactoryManager.SOCKET_LINGER, 5);
+                            put(FactoryManager.SOCKET_RCVBUF, 1024);
+                            put(FactoryManager.SOCKET_REUSEADDR, true);
+                            put(FactoryManager.SOCKET_SNDBUF, 1024);
+                            put(FactoryManager.TCP_NODELAY, true);
+                        }
+                    });
+            for (Map.Entry<String, ?> oe : expectedOptions.entrySet()) {
+                PropertyResolverUtils.updateProperty(sshd, oe.getKey(), oe.getValue());
+            }
+
+            Semaphore sigSem = new Semaphore(0, true);
+            sshd.setSessionFactory(new SessionFactory(sshd) {
+                @Override
+                protected ServerSessionImpl doCreateSession(IoSession ioSession) throws Exception {
+                    validateSocketOptions(ioSession);
+                    sigSem.release();
+                    return super.doCreateSession(ioSession);
+                }
+
+                private void validateSocketOptions(IoSession ioSession) throws Exception {
+                    if (!(ioSession instanceof Nio2Session)) {
+                        return;
+                    }
+
+                    AsynchronousSocketChannel socket = ((Nio2Session) ioSession).getSocket();
+                    Collection<? extends SocketOption<?>> supported = socket.supportedOptions();
+                    if (GenericUtils.isEmpty(supported)) {
+                        return;
+                    }
+
+                    for (Map.Entry<String, ?> oe : expectedOptions.entrySet()) {
+                        String propName = oe.getKey();
+                        Object expValue = oe.getValue();
+                        Pair<SocketOption<?>, ?> optionEntry = Nio2Service.CONFIGURABLE_OPTIONS.get(propName);
+                        SocketOption<?> option = optionEntry.getKey();
+                        if (!supported.contains(option)) {
+                            continue;
+                        }
+
+                        Object actValue = socket.getOption(option);
+                        assertEquals("Mismatched value for " + propName + "/" + option, expValue, actValue);
+                    }
+                }
+            });
             sshd.start();
-
             int port = sshd.getPort();
             long startTime = System.nanoTime();
             try (Socket s = new Socket(TEST_LOCALHOST, port)) {
                 long endTime = System.nanoTime();
                 long duration = endTime - startTime;
                 assertTrue("Connect duration is too high: " + duration, duration <= TimeUnit.SECONDS.toNanos(15L));
+                assertTrue("Validation not completed on time", sigSem.tryAcquire(15L, TimeUnit.SECONDS));
             } finally {
                 sshd.stop();
             }

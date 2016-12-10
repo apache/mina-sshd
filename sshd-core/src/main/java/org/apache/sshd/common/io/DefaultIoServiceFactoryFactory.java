@@ -29,9 +29,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFactory {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultIoServiceFactoryFactory.class);
 
     private IoServiceFactoryFactory factory;

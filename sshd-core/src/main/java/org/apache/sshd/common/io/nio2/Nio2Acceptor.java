@@ -20,7 +20,6 @@ package org.apache.sshd.common.io.nio2;
 
 import java.io.IOException;
 import java.net.SocketAddress;
-import java.net.StandardSocketOptions;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
@@ -41,10 +40,9 @@ import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
-    public static final int DEFAULT_BACKLOG = 0;
-
     protected final Map<SocketAddress, AsynchronousServerSocketChannel> channels = new ConcurrentHashMap<>();
     private int backlog = DEFAULT_BACKLOG;
 
@@ -60,13 +58,9 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
             if (log.isDebugEnabled()) {
                 log.debug("Binding Nio2Acceptor to address {}", address);
             }
-            AsynchronousServerSocketChannel socket = openAsynchronousServerSocketChannel(address, group);
-            setOption(socket, FactoryManager.SOCKET_KEEPALIVE, StandardSocketOptions.SO_KEEPALIVE, null);
-            setOption(socket, FactoryManager.SOCKET_LINGER, StandardSocketOptions.SO_LINGER, null);
-            setOption(socket, FactoryManager.SOCKET_RCVBUF, StandardSocketOptions.SO_RCVBUF, null);
-            setOption(socket, FactoryManager.SOCKET_REUSEADDR, StandardSocketOptions.SO_REUSEADDR, Boolean.TRUE);
-            setOption(socket, FactoryManager.SOCKET_SNDBUF, StandardSocketOptions.SO_SNDBUF, null);
-            setOption(socket, FactoryManager.TCP_NODELAY, StandardSocketOptions.TCP_NODELAY, null);
+
+            AsynchronousServerSocketChannel socket =
+                    setSocketOptions(openAsynchronousServerSocketChannel(address, group));
             socket.bind(address, backlog);
             SocketAddress local = socket.getLocalAddress();
             channels.put(local, socket);
@@ -172,6 +166,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
             try {
                 // Create a session
                 IoHandler handler = getIoHandler();
+                setSocketOptions(result);
                 session = Objects.requireNonNull(createSession(Nio2Acceptor.this, address, result, handler), "No NIO2 session created");
                 handler.sessionCreated(session);
                 sessions.put(session.getId(), session);

@@ -34,11 +34,9 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
 
 /**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class MinaAcceptor extends MinaService implements org.apache.sshd.common.io.IoAcceptor, IoHandler {
-    public static final int DEFAULT_BACKLOG = 0;
-    public static final boolean DEFAULT_REUSE_ADDRESS = true;
-
     protected final AtomicReference<IoAcceptor> acceptorHolder = new AtomicReference<>(null);
 
     // Acceptor
@@ -85,32 +83,37 @@ public class MinaAcceptor extends MinaService implements org.apache.sshd.common.
 
     @Override
     public void bind(Collection<? extends SocketAddress> addresses) throws IOException {
-        getAcceptor().bind(addresses);
+        IoAcceptor acceptor = getAcceptor();
+        acceptor.bind(addresses);
     }
 
     @Override
     public void bind(SocketAddress address) throws IOException {
-        getAcceptor().bind(address);
+        IoAcceptor acceptor = getAcceptor();
+        acceptor.bind(address);
     }
 
     @Override
     public void unbind() {
-        getAcceptor().unbind();
+        IoAcceptor acceptor = getAcceptor();
+        acceptor.unbind();
     }
 
     @Override
     public void unbind(Collection<? extends SocketAddress> addresses) {
-        getAcceptor().unbind(addresses);
+        IoAcceptor acceptor = getAcceptor();
+        acceptor.unbind(addresses);
     }
 
     @Override
     public void unbind(SocketAddress address) {
-        getAcceptor().unbind(address);
+        IoAcceptor acceptor = getAcceptor();
+        acceptor.unbind(address);
     }
 
     @Override
     public Set<SocketAddress> getBoundAddresses() {
-        return getAcceptor().getLocalAddresses();
+        IoAcceptor acceptor = getAcceptor();
+        return acceptor.getLocalAddresses();
     }
-
 }

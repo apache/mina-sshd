@@ -32,6 +32,7 @@ import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class Nio2ServiceFactory extends AbstractIoServiceFactory {
 
