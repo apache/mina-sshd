@@ -121,6 +121,37 @@
         <maven>${min.required.maven.version}</maven>
     </prerequisites>
 
+    <profiles>
+        <profile>
+            <id>quick</id>
+            <properties>
+                <skipTests>true</skipTests>
+                <maven.javadoc.skip>true</maven.javadoc.skip>
+            </properties>
+        </profile>
+        <profile>
+            <id>findbugs</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>findbugs-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>run-findbugs</id>
+                                <!-- Note: phase must be AFTER detection of workspace root dir -->
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>           
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+    
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -564,6 +595,47 @@
                             <version>${slf4j.version}</version>
                         </dependency>                        
                     </dependencies>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>findbugs-maven-plugin</artifactId>
+                    <version>3.0.4</version>
+                        <!-- see https://www.petrikainulainen.net/programming/maven/findbugs-maven-plugin-tutorial/ -->
+                    <configuration>
+                        <effort>Max</effort>
+                        <threshold>Low</threshold>
+                        <xmlOutput>true</xmlOutput>
+                        <findbugsXmlOutputDirectory>${project.build.directory}/findbugs</findbugsXmlOutputDirectory>
+                    </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>com.google.code.findbugs</groupId>
+                            <artifactId>findbugs</artifactId>
+                            <version>3.0.1</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.codehaus.groovy</groupId>
+                            <artifactId>groovy</artifactId>
+                            <version>${groovy.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.codehaus.groovy</groupId>
+                            <artifactId>groovy-ant</artifactId>
+                            <version>${groovy.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.codehaus.groovy</groupId>
+                            <artifactId>groovy-xml</artifactId>
+                            <version>${groovy.version}</version>
+                        </dependency>
+                          <!-- referenced indirectly by groovy-all -->
+                        <dependency>
+                            <groupId>org.apache.ant</groupId>
+                            <artifactId>ant</artifactId>
+                            <version>${ant.version}</version>
+                        </dependency>
+                    </dependencies>                    
                 </plugin>
             </plugins>
         </pluginManagement>
