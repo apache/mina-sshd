@@ -34,6 +34,7 @@ Required mainly for writing keys to PEM files or for special keys/ciphers/etc. t
  
  - The required _Maven_ module(s) are defined as `optional` so must be added as an **explicit** dependency in order to be included in the classpath:
 
+
 ```xml
 
     <dependency>
@@ -117,7 +118,7 @@ Of course, one can implement the verifier in whatever other manner is suitable f
 
 ### ClientIdentityLoader/KeyPairProvider
 
-One can set up the public/private keys to be used in case a password-less authentication is needed. By default, the client is configured to automatically detect and use the identity files residing in the user's *~/.ssh* folder (e.g., *id_rsa*, *id_ecdsa*) and present them as part of the authentication process. **Note:** if the identity files are encrypted via a password, one must configure a `FilePasswordProvider` so that the code can decrypt them before using and presenting them to the server as part of the authentication process. Reading key files in PEM format (including encrypted ones) requires that the [Bouncy Castle](https://www.bouncycastle.org/) supporting artifacts be available in the code's classpath. One can read files in
+One can set up the public/private keys to be used in case a password-less authentication is needed. By default, the client is configured to automatically detect and use the identity files residing in the user's *~/.ssh* folder (e.g., *id_rsa*, *id_ecdsa*) and present them as part of the authentication process. **Note:** if the identity files are encrypted via a password, one must configure a `FilePasswordProvider` so that the code can decrypt them before using and presenting them to the server as part of the authentication process. Reading key files in PEM format (including encrypted ones) is supported by default for the standard keys and formats. Using additional non-standard special features requires that the [Bouncy Castle](https://www.bouncycastle.org/) supporting artifacts be available in the code's classpath. One can also read files in
 [OpenSSH](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/PROTOCOL.key?rev=1.1&content-type=text/x-cvsweb-markup)
 format without any specific extra artifacts (although for reading _ed25519_ keys one needs to add the _EdDSA_ support
 artifacts). **Note:** for the time being, password encrypted _ed25519_ private key files are not supported.
@@ -180,7 +181,7 @@ Creating an instance of `SshServer` is as simple as creating a new object
 
 ```
 
-It will configure the server with sensible defaults for ciphers, macs, key exchange algorithm, etc... If you want a different behavior, you can look at the code of the `setUpDefaultServer` as well as `checkConfig` methods as a reference for available options and configure the SSH server the way you need.
+It will configure the server with sensible defaults for ciphers, macs, key exchange algorithm, etc... If different behavior is required, one should consult the code of the `setUpDefaultServer` as well as `checkConfig` methods as a reference for available options and configure the SSH server the way it is needed.
 
 ## Configuring the server instance
 
@@ -189,13 +190,13 @@ There are a few things that need to be configured on the server before being abl
 * Port - `sshd.setPort(22);` - sets the listen port for the server instance. If not set explicitly then a **random** free port is selected by the O/S. In any case, once the server is `start()`-ed one can query the instance as to the assigned port via `sshd.getPort()`.
 
 
-In this context, the listen bind address can also be specified explicitly via `sshd.setHost(...some IP address...)` that causes the server to bind to a specific network address rather than all addresses (the default). Using "0.0.0.0" as the bind address is also tantamount to binding to all addresses.
+In this context, the listen bind address can also be specified explicitly via `sshd.setHost(...some IP address...)` that causes the server to bind to a specific network address rather than **all** addresses (the default). Using `"0.0.0.0"` as the bind address is also tantamount to binding to all addresses.
 
 
-* `KeyPairProvider` - `sshd.setKeyPairProvider(...);` - sets the host's private keys used for key exchange with clients as well as representing the host's "identities". There are several choices - one can load keys from standard PEM files or generate them in the code.  It's usually a good idea to save generated keys, so that if the SSHD server is restarted, the same keys will be used to authenticate the server and avoid the warning the clients might get if the host keys are modified. **Note**: loading or saving key files in PEM format requires  that the [Bouncy Castle](https://www.bouncycastle.org/) supporting artifacts be available in the code's classpath.
+* `KeyPairProvider` - `sshd.setKeyPairProvider(...);` - sets the host's private keys used for key exchange with clients as well as representing the host's "identities". There are several choices - one can load keys from standard PEM files or generate them in the code.  It's usually a good idea to save generated keys, so that if the SSHD server is restarted, the same keys will be used to authenticate the server and avoid the warning the clients might get if the host keys are modified. **Note**: saving key files in PEM format requires  that the [Bouncy Castle](https://www.bouncycastle.org/) supporting artifacts be available in the code's classpath.
 
 
-* `ShellFactory` - That's the part you will usually have to write to customize the SSHD server. The shell factory will be used to create a new shell each time a user logs in and wants to run an interactive shelll. SSHD provides a simple implementation that you can use if you want. This implementation will create a process and delegate everything to it, so it's mostly useful to launch the OS native shell. E.g.,
+* `ShellFactory` - That's the part one usually has to write to customize the SSHD server. The shell factory will be used to create a new shell each time a user logs in and wants to run an interactive shelll. SSHD provides a simple implementation that you can use if you want. This implementation will create a process and delegate everything to it, so it's mostly useful to launch the OS native shell. E.g.,
 
 
 ```java
@@ -220,7 +221,7 @@ SSHD provides a `CommandFactory` to support SCP that can be configured in the fo
 
 ```
 
-You can also use the `ScpCommandFactory` on top of your own `CommandFactory` by placing your command factory as a **delegate** of the `ScpCommandFactory`. The `ScpCommandFactory` will intercept SCP commands and execute them by itself, while passing all other commands to (your) delegate `CommandFactory`
+One can also use the `ScpCommandFactory` on top of one's own `CommandFactory` by placing the command factory as a **delegate** of the `ScpCommandFactory`. The `ScpCommandFactory` will intercept SCP commands and execute them by itself, while passing all other commands to the delegate `CommandFactory`
 
 
 ```java
@@ -261,17 +262,18 @@ Several useful implementations are available that can be used as-is or extended 
 ## Configuring ciphers, macs, digest...
 
 SSH supports pluggable factories to define various configuration parts such as ciphers, digests, key exchange, etc...
-The list of supported implementations can be changed to suit your needs, or you can also implement your own factories.
+The list of supported implementations can be changed to suit one's needs, or one can also implement one's own factories.
 
-Configuring supported ciphers can be done with the following code:
+Configuring supported factories can be done with the following code:
 
 ```java
 
     sshd.setCipherFactories(Arrays.asList(BuiltinCiphers.aes256ctr, BuiltinCiphers.aes192ctr, BuiltinCiphers.aes128ctr));
-
+    sshd.setKeyExchangeFactories(Arrays.asList(new MyKex1(), new MyKex2(), BuiltinKeyExchange.A, ...etc...));
+    
 ```
 
-You can configure other security components using built-in factories the same way.
+One can configure other security components using built-in factories the same way. It is important to remember though that the **order** of the factories is important as it affects the key exchange phase where the client and server decide what options to use out of each peer's reported preferences.
 
 ## Starting the Server
 
@@ -291,7 +293,7 @@ The code contains built-in security provider registrars for _BouncyCastle_ and _
 **Note:**
 
 
-- The registration code that automatically parses the configured reigstrars list and instantiates them. In this context, one can use the special `none` value to indicate that the code should not attempt to automatically register the default providers.
+- The registration code automatically parses the configured reigstrars list and instantiates them. In this context, one can use the special `none` value to indicate that the code should not attempt to automatically register the default providers.
  
 - A registrar instance might be created but eventually discarded and not invoked if it is disabled, unsupported or already registered programmatically via `SecurityUtils#registerSecurityProvider`.
 
@@ -299,13 +301,13 @@ The code contains built-in security provider registrars for _BouncyCastle_ and _
 - The registration attempt is a **one-shot** deal - i.e., once the registrars list is parsed and successfully resolved, any modifications to the registered security providers must be done **programatically**. One can call `SecurityUtils#isRegistrationCompleted()` to find out if the registration phase has already been executed.
 
 
-- The registrars are consulted in the same order as they were initially registered - either programmatically or via the system property configuration. Therefore, if two or more registrars support the same algorithm, then the earlier registered one will be used.
+- The registrars are consulted in the same **order** as they were initially registered - either programmatically or via the system property configuration. Therefore, if two or more registrars support the same algorithm, then the earlier registered one will be used.
 
 
 - If no matching registrar was found, then the default security provider is used. If none set, the JCE defaults are invoked. The default security provider can be configured either via the `org.apache.sshd.security.defaultProvider` system property or by programmatically invoking `SecurityUtils#setDefaultProviderChoice`. **Note:** if the system property option is used, then it is assumed to contain a security provider's **name** (rather than its `Provider` class name...).
 
 
-- The if programmatic selection of the default security provider choice is required, then the code flow must ensure that `SecurityUtils#setDefaultProviderChoice` is called before **any** security entity (e.g., ciphers, keys, etc...) are required. Theoretically, one could change the choice after ciphers have been been requested but before keys were generated (e.g....), but it is dangerous and may yield unpredictable behavior.
+- If programmatic selection of the default security provider choice is required, then the code flow must ensure that `SecurityUtils#setDefaultProviderChoice` is called before **any** security entity (e.g., ciphers, keys, etc...) are required. Theoretically, one could change the choice after ciphers have been been requested but before keys were generated (e.g....), but it is dangerous and may yield unpredictable behavior.
 
 
 ### Implementing a new security provider registrar
@@ -335,7 +337,7 @@ See `AbstractSecurityProviderRegistrar` helper class for a default implementatio
 * For ease of implementation, all support query calls are routed to the `isSecurityEntitySupported` method so that one can concentrate all the configuration in a single method. This is done for **convenience** reasons - the code will invoke the correct support query as per the type of entity it needs. E.g., if it needs a cipher, it will invoke `isCipherSupported` - which by default will invoke `isSecurityEntitySupported` with the `Cipher` class as its argument.
 
 
-* Specifically for **ciphers** the argument to the support query contains a **transformation** (e.g., `AES/CBC/NoPadding`) so one should take that into account - see `SecurityProviderRegistrar.getEffectiveSecurityEntityName(Class<?>, String)` helper method
+* Specifically for **ciphers** the argument to the support query contains a **transformation** (e.g., `AES/CBC/NoPadding`) so one should take that into account when parsing the input argument to decide which cipher is referenced - see `SecurityProviderRegistrar.getEffectiveSecurityEntityName(Class<?>, String)` helper method
 
 
 ## `FileSystemFactory` usage
@@ -1165,6 +1167,10 @@ The code contains [support for "wrapper" protocols](https://issues.apache.org/ji
 * `SshClient/ClientSesssion#setClientProxyConnector` - sets a proxy that intercepts the 1st packet before being sent to the server
 
 * `SshServer/ServerSession#setServerProxyAcceptor` - sets a proxy that intercept the 1st incoming packet before being processed by the server
+
+## PUTTY key file(s) readers
+
+Part of the _sshd-contrib_ artifact.
 
 # Builtin components
 
