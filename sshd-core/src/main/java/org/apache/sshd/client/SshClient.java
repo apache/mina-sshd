@@ -400,9 +400,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 factories = forwarders;
             } else {
                 // create a copy in case un-modifiable original
-                factories = new ArrayList<>(factories.size() + forwarders.size());
-                factories.addAll(factories);
-                factories.addAll(forwarders);
+                List<NamedFactory<Channel>> factories2 =
+                    new ArrayList<>(factories.size() + forwarders.size());
+                factories2.addAll(factories);
+                factories2.addAll(forwarders);
+                factories = factories2;
             }
 
             setChannelFactories(factories);
