@@ -129,7 +129,7 @@ public class AsyncEchoShellFactory implements Factory<Command> {
 
         @Override
         public int data(final ChannelSession channel, byte[] buf, int start, int len) throws IOException {
-            buffer.append(new String(buf, start, len));
+            buffer.append(new String(buf, start, len, StandardCharsets.UTF_8));
             for (int i = 0; i < buffer.length(); i++) {
                 if (buffer.charAt(i) == '\n') {
                     final String s = buffer.substring(0, i + 1);

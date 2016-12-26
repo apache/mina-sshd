@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.charset.Charset;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
@@ -240,7 +241,8 @@ public class DefaultScpClient extends AbstractScpClient {
         final PrintStream stdout = System.out;
         final PrintStream stderr = System.err;
         OutputStream logStream = stdout;
-        try (BufferedReader stdin = new BufferedReader(new InputStreamReader(new NoCloseInputStream(System.in)))) {
+        try (BufferedReader stdin = new BufferedReader(
+                new InputStreamReader(new NoCloseInputStream(System.in), Charset.defaultCharset()))) {
             args = normalizeCommandArguments(stdout, stderr, args);
             int numArgs = GenericUtils.length(args);
             // see the way normalizeCommandArguments works...

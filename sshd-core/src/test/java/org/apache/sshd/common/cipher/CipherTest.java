@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.jcraft.jsch.JSch;
+
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.channel.Channel;
@@ -148,7 +149,7 @@ public class CipherTest extends BaseTestSupport {
                     os.flush();
 
                     int len = is.read(actData);
-                    String actual = new String(actData, 0, len);
+                    String actual = new String(actData, 0, len, StandardCharsets.UTF_8);
                     assertEquals("Mismatched command at iteration " + i, expected, actual);
                 }
             } finally {

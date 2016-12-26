@@ -297,7 +297,7 @@ public enum PtyMode {
             Collections.unmodifiableMap(
                     GenericUtils.toSortedMap(MODES, PtyMode::toInt, Function.identity(), Comparator.naturalOrder()));
 
-    private int v;
+    private final int v;
 
     PtyMode(int v) {
         this.v = v;

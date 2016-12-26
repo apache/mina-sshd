@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
@@ -89,8 +90,8 @@ public final class SttySupport {
             if (idx1 < 0) {
                 return -1;
             }
-            if (idx1 > 0 && Character.isLetterOrDigit(stty.charAt(idx1 - 1))
-                    || (idx2 < stty.length() && Character.isLetterOrDigit(stty.charAt(idx2)))) {
+            if ((idx1 > 0) && Character.isLetterOrDigit(stty.charAt(idx1 - 1))
+                    || ((idx2 < stty.length()) && Character.isLetterOrDigit(stty.charAt(idx2)))) {
                 cur = idx2;
                 continue;
             }
@@ -257,7 +258,7 @@ public final class SttySupport {
      * @throws IOException If failed to execute the command
      * @throws InterruptedException If interrupted while awaiting command execution
      */
-    private static String exec(final String ... cmd)
+    private static String exec(String ... cmd)
             throws IOException, InterruptedException {
         try (ByteArrayOutputStream bout = new ByteArrayOutputStream()) {
             Process p = Runtime.getRuntime().exec(cmd);
@@ -265,7 +266,7 @@ public final class SttySupport {
             copyStream(p.getErrorStream(), bout);
             p.waitFor();
 
-            String result = new String(bout.toByteArray());
+            String result = new String(bout.toByteArray(), Charset.defaultCharset());
             return result;
         }
     }

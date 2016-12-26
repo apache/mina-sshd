@@ -257,7 +257,7 @@ public class ProxyTest extends BaseTestSupport {
                             sockOut.flush();
 
                             int l = sockIn.read(buf);
-                            assertEquals("Mismatched data at iteration " + i, expected, new String(buf, 0, l));
+                            assertEquals("Mismatched data at iteration " + i, expected, new String(buf, 0, l, StandardCharsets.UTF_8));
                         }
                     }
                 }

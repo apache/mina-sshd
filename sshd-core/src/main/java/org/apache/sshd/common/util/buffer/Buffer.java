@@ -210,7 +210,7 @@ public abstract class Buffer implements Readable {
         ensureAvailable(Short.BYTES);
         getRawBytes(workBuf, 0, Short.BYTES);
         short v = (short) ((workBuf[1] << Byte.SIZE) & 0xFF00);
-        v |= workBuf[0] & 0xF;
+        v |= (short) (workBuf[0] & 0xF);
         return v;
     }
 

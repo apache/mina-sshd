@@ -30,6 +30,7 @@ import java.io.StringWriter;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -1377,7 +1378,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         ClientSession session = null;
-        try (BufferedReader stdin = new BufferedReader(new InputStreamReader(new NoCloseInputStream(System.in)))) {
+        try (BufferedReader stdin = new BufferedReader(
+                new InputStreamReader(new NoCloseInputStream(System.in), Charset.defaultCharset()))) {
             if (!error) {
                 setupLogging(level, stdout, stderr, logStream);
 

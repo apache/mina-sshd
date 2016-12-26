@@ -108,7 +108,7 @@ public class UserAuthGSS extends AbstractUserAuth {
         } else {
             int msg = buffer.getUByte();
             if (!((msg == SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE)
-                    || (msg == SshConstants.SSH_MSG_USERAUTH_GSSAPI_MIC) && context.isEstablished())) {
+                    || ((msg == SshConstants.SSH_MSG_USERAUTH_GSSAPI_MIC)) && context.isEstablished())) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                         "Packet not supported by user authentication method: " + SshConstants.getCommandMessageName(msg));
             }
@@ -120,7 +120,6 @@ public class UserAuthGSS extends AbstractUserAuth {
             // If the context is established, this must be a MIC message
 
             if (context.isEstablished()) {
-
                 if (msg != SshConstants.SSH_MSG_USERAUTH_GSSAPI_MIC) {
                     return Boolean.FALSE;
                 }
@@ -128,7 +127,6 @@ public class UserAuthGSS extends AbstractUserAuth {
                 // Make the MIC message so the token can be verified
 
                 Buffer msgbuf = new ByteArrayBuffer();
-
                 msgbuf.putBytes(ValidateUtils.checkNotNullAndNotEmpty(session.getSessionId(), "No current session ID"));
                 msgbuf.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
                 msgbuf.putString(super.getUsername());
@@ -137,7 +135,6 @@ public class UserAuthGSS extends AbstractUserAuth {
 
                 byte[] msgbytes = msgbuf.getCompactData();
                 byte[] inmic = buffer.getBytes();
-
                 try {
                     context.verifyMIC(inmic, 0, inmic.length, msgbytes, 0, msgbytes.length, new MessageProp(false));
                     if (log.isDebugEnabled()) {
@@ -152,15 +149,12 @@ public class UserAuthGSS extends AbstractUserAuth {
                     return Boolean.FALSE;
                 }
             } else {
-
                 // Not established - new token to process
-
                 byte[] tok = buffer.getBytes();
                 byte[] out = context.acceptSecContext(tok, 0, tok.length);
                 boolean established = context.isEstablished();
 
                 // Validate identity if context is now established
-
                 if (established && (identity == null)) {
                     identity = context.getSrcName().toString();
                     if (log.isDebugEnabled()) {
@@ -173,7 +167,6 @@ public class UserAuthGSS extends AbstractUserAuth {
                 }
 
                 // Send return token if necessary
-
                 if (NumberUtils.length(out) > 0) {
                     Buffer b = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE, out.length + Integer.SIZE);
                     b.putBytes(out);

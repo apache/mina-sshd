@@ -454,7 +454,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
         attrs = Files.readAttributes(file1, "*", LinkOption.NOFOLLOW_LINKS);
         outputDebugMessage("%s no-follow attributes: %s", file1, attrs);
-        assertEquals("Mismatched symlink data", expected, new String(Files.readAllBytes(file1)));
+        assertEquals("Mismatched symlink data", expected, new String(Files.readAllBytes(file1), StandardCharsets.UTF_8));
 
         try (FileChannel channel = FileChannel.open(file1)) {
             try (FileLock lock = channel.lock()) {

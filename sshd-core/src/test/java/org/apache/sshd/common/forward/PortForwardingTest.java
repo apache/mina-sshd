@@ -438,7 +438,7 @@ public class PortForwardingTest extends BaseTestSupport {
                     output.flush();
 
                     int n = input.read(buf);
-                    String res = new String(buf, 0, n);
+                    String res = new String(buf, 0, n, StandardCharsets.UTF_8);
                     assertEquals("Mismatched data at iteration #" + i, expected, res);
                 }
             } finally {
@@ -475,7 +475,7 @@ public class PortForwardingTest extends BaseTestSupport {
 
                 byte[] buf = new byte[bytes.length + Long.SIZE];
                 int n = input.read(buf);
-                String res = new String(buf, 0, n);
+                String res = new String(buf, 0, n, StandardCharsets.UTF_8);
                 assertEquals("Mismatched data", expected, res);
             } finally {
                 session.delPortForwardingL(forwardedPort);
@@ -575,7 +575,7 @@ public class PortForwardingTest extends BaseTestSupport {
 
                 byte[] buf = new byte[bytes.length + Long.SIZE];
                 int n = input.read(buf);
-                String res = new String(buf, 0, n);
+                String res = new String(buf, 0, n, StandardCharsets.UTF_8);
                 assertEquals("Mismatched data", expected, res);
             } finally {
                 tracker.close();
@@ -625,7 +625,7 @@ public class PortForwardingTest extends BaseTestSupport {
                     output.flush();
 
                     int n = input.read(buf);
-                    String res = new String(buf, 0, n);
+                    String res = new String(buf, 0, n, StandardCharsets.UTF_8);
                     assertEquals("Mismatched data at iteration #" + i, expected, res);
                 }
             } finally {
@@ -653,7 +653,7 @@ public class PortForwardingTest extends BaseTestSupport {
 
                     byte[] buf = new byte[bytes.length + Long.SIZE];
                     int n = input.read(buf);
-                    String res = new String(buf, 0, n);
+                    String res = new String(buf, 0, n, StandardCharsets.UTF_8);
                     assertEquals("Mismatched data", expected, res);
                 }
                 channel.close(false);

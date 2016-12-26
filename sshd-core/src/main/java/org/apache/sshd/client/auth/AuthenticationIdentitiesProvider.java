@@ -83,7 +83,7 @@ public interface AuthenticationIdentitiesProvider extends KeyIdentityProvider, P
      * @param identities The {@link Iterable} identities - OK if {@code null}/empty
      * @return An {@link AuthenticationIdentitiesProvider} wrapping the identities
      */
-    static AuthenticationIdentitiesProvider wrap(final Iterable<?> identities) {
+    static AuthenticationIdentitiesProvider wrap(Iterable<?> identities) {
         return new AuthenticationIdentitiesProvider() {
             @Override
             public Iterable<KeyPair> loadKeys() {

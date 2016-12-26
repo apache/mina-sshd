@@ -229,7 +229,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     os.flush();
 
                     int len = is.read(data);
-                    String str = new String(data, 0, len);
+                    String str = new String(data, 0, len, StandardCharsets.UTF_8);
                     assertEquals("Mismatched data at iteration " + i, expected, str);
 
                     outputDebugMessage("Request re-key #%d", i);
@@ -264,14 +264,14 @@ public class KeyReExchangeTest extends BaseTestSupport {
                          private long writeCount;
 
                          @Override
-                         public void write(int b) {
+                         public synchronized void write(int b) {
                              super.write(b);
                              updateWriteCount(1L);
                              pipedCount.release(1);
                          }
 
                          @Override
-                         public void write(byte[] b, int off, int len) {
+                         public synchronized void write(byte[] b, int off, int len) {
                              super.write(b, off, len);
                              updateWriteCount(len);
                              pipedCount.release(len);
@@ -342,14 +342,14 @@ public class KeyReExchangeTest extends BaseTestSupport {
                      private long writeCount;
 
                      @Override
-                     public void write(int b) {
+                     public synchronized void write(int b) {
                          super.write(b);
                          updateWriteCount(1L);
                          pipedCount.release(1);
                      }
 
                      @Override
-                     public void write(byte[] b, int off, int len) {
+                     public synchronized void write(byte[] b, int off, int len) {
                          super.write(b, off, len);
                          updateWriteCount(len);
                          pipedCount.release(len);
@@ -444,14 +444,14 @@ public class KeyReExchangeTest extends BaseTestSupport {
                      private long writeCount;
 
                      @Override
-                     public void write(int b) {
+                     public synchronized void write(int b) {
                          super.write(b);
                          updateWriteCount(1L);
                          pipedCount.release(1);
                      }
 
                      @Override
-                     public void write(byte[] b, int off, int len) {
+                     public synchronized void write(byte[] b, int off, int len) {
                          super.write(b, off, len);
                          updateWriteCount(len);
                          pipedCount.release(len);
@@ -480,7 +480,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     teeOut.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
 
-                    final AtomicInteger exchanges = new AtomicInteger();
+                    AtomicInteger exchanges = new AtomicInteger();
                     session.addSessionListener(new SessionListener() {
                         @Override
                         public void sessionEvent(Session session, Event event) {
@@ -558,14 +558,14 @@ public class KeyReExchangeTest extends BaseTestSupport {
                      private long writeCount;
 
                      @Override
-                     public void write(int b) {
+                     public synchronized void write(int b) {
                          super.write(b);
                          updateWriteCount(1L);
                          pipedCount.release(1);
                      }
 
                      @Override
-                     public void write(byte[] b, int off, int len) {
+                     public synchronized void write(byte[] b, int off, int len) {
                          super.write(b, off, len);
                          updateWriteCount(len);
                          pipedCount.release(len);

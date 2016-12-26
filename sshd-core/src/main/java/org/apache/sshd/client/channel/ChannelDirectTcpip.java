@@ -65,7 +65,7 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
     }
 
     @Override
-    public OpenFuture open() throws IOException {
+    public synchronized OpenFuture open() throws IOException {
         if (closeFuture.isClosed()) {
             throw new SshException("Session has been closed");
         }

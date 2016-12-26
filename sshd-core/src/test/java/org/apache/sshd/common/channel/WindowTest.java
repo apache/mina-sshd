@@ -168,8 +168,8 @@ public class WindowTest extends BaseTestSupport {
                     final String message = "0123456789";
                     final int nbMessages = 500;
 
-                    try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(channel.getInvertedIn()));
-                         BufferedReader reader = new BufferedReader(new InputStreamReader(channel.getInvertedOut()))) {
+                    try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(channel.getInvertedIn(), StandardCharsets.UTF_8));
+                         BufferedReader reader = new BufferedReader(new InputStreamReader(channel.getInvertedOut(), StandardCharsets.UTF_8))) {
 
                         for (int i = 0; i < nbMessages; i++) {
                             writer.write(message);
@@ -223,8 +223,8 @@ public class WindowTest extends BaseTestSupport {
                     final String message = "0123456789";
                     final int nbMessages = 500;
 
-                    try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(inPos));
-                         BufferedReader reader = new BufferedReader(new InputStreamReader(outPis))) {
+                    try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(inPos, StandardCharsets.UTF_8));
+                         BufferedReader reader = new BufferedReader(new InputStreamReader(outPis, StandardCharsets.UTF_8))) {
                         for (int i = 0; i < nbMessages; i++) {
                             writer.write(message);
                             writer.write('\n');
@@ -283,7 +283,8 @@ public class WindowTest extends BaseTestSupport {
                         IoReadFuture future = input.read(buf);
                         future.verify(5L, TimeUnit.SECONDS);
                         assertEquals("Mismatched available data at line #" + i, message.length(), buf.available());
-                        assertEquals("Mismatched data at line #" + i, message, new String(buf.array(), buf.rpos(), buf.available()));
+                        assertEquals("Mismatched data at line #" + i, message,
+                                new String(buf.array(), buf.rpos(), buf.available(), StandardCharsets.UTF_8));
 
                         waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote", TimeUnit.SECONDS.toMillis(3L));
                         waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local", TimeUnit.SECONDS.toMillis(3L));

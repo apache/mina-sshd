@@ -20,6 +20,7 @@ package org.apache.sshd.common.util;
 
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.apache.sshd.common.channel.PtyMode;
@@ -39,7 +40,7 @@ public class SttySupportTest extends BaseTestSupport {
 
     @Test
     public void parseOutput1() throws Exception {
-        Reader r = new InputStreamReader(getClass().getResourceAsStream("stty-output-1.txt"));
+        Reader r = new InputStreamReader(getClass().getResourceAsStream("stty-output-1.txt"), StandardCharsets.UTF_8);
         char[] buf = new char[8192];
         int len = r.read(buf);
         String stty = new String(buf, 0, len);
@@ -49,7 +50,7 @@ public class SttySupportTest extends BaseTestSupport {
 
     @Test
     public void parseOutput2() throws Exception {
-        Reader r = new InputStreamReader(getClass().getResourceAsStream("stty-output-2.txt"));
+        Reader r = new InputStreamReader(getClass().getResourceAsStream("stty-output-2.txt"), StandardCharsets.UTF_8);
         char[] buf = new char[8192];
         int len = r.read(buf);
         String stty = new String(buf, 0, len);

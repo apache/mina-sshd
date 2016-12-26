@@ -90,7 +90,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
         session.close(false);
     }
 
-    public abstract class Proxy implements Closeable {
+    public abstract static class Proxy implements Closeable {
 
         IoSession session;
         TcpipClientChannel channel;

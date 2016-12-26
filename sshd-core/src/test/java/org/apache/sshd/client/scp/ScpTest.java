@@ -1016,7 +1016,7 @@ public class ScpTest extends BaseTestSupport {
             os.write(0);
             os.flush();
 
-            return new String(buffer);
+            return new String(buffer, StandardCharsets.UTF_8);
         } finally {
             c.disconnect();
         }
@@ -1056,7 +1056,7 @@ public class ScpTest extends BaseTestSupport {
             os.write(0);
             os.flush();
 
-            return new String(buffer);
+            return new String(buffer, StandardCharsets.UTF_8);
         } finally {
             c.disconnect();
         }

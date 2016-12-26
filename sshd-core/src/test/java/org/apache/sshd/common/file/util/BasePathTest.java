@@ -463,7 +463,7 @@ public class BasePathTest extends BaseTestSupport {
         private void testParents(Path path) {
             Path parent = path.getParent();
 
-            if (root != null && names.size() >= 1 || names.size() > 1) {
+            if (((root != null) && (names.size() >= 1)) || (names.size() > 1)) {
                 assertNotNull(parent);
             }
 

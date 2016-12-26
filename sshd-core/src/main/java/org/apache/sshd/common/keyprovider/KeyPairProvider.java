@@ -140,7 +140,7 @@ public interface KeyPairProvider extends KeyIdentityProvider {
      * returns {@link #EMPTY_KEYPAIR_PROVIDER})
      * @return The provider wrapper
      */
-    static KeyPairProvider wrap(final Iterable<KeyPair> pairs) {
+    static KeyPairProvider wrap(Iterable<KeyPair> pairs) {
         return (pairs == null) ? EMPTY_KEYPAIR_PROVIDER : new KeyPairProvider() {
             @Override
             public Iterable<KeyPair> loadKeys() {
