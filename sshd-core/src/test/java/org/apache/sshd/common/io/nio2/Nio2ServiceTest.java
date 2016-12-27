@@ -19,13 +19,16 @@
 
 package org.apache.sshd.common.io.nio2;
 
+import java.io.Flushable;
 import java.net.Socket;
 import java.net.SocketOption;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -73,6 +76,7 @@ public class Nio2ServiceTest extends BaseTestSupport {
             }
 
             Semaphore sigSem = new Semaphore(0, true);
+            Map<SocketOption<?>, Pair<Object, Object>> actualOptionValues = new HashMap<>(expectedOptions.size());
             sshd.setSessionFactory(new SessionFactory(sshd) {
                 @Override
                 protected ServerSessionImpl doCreateSession(IoSession ioSession) throws Exception {
@@ -102,7 +106,7 @@ public class Nio2ServiceTest extends BaseTestSupport {
                         }
 
                         Object actValue = socket.getOption(option);
-                        assertEquals("Mismatched value for " + propName + "/" + option, expValue, actValue);
+                        actualOptionValues.put(option, new Pair<>(expValue, actValue));
                     }
                 }
             });
@@ -116,6 +120,22 @@ public class Nio2ServiceTest extends BaseTestSupport {
                 assertTrue("Validation not completed on time", sigSem.tryAcquire(15L, TimeUnit.SECONDS));
             } finally {
                 sshd.stop();
+            }
+
+            // NOTE: we do not fail the test since some O/S implementations treat the value as a recommendation - i.e., they might ignore it
+            for (Map.Entry<SocketOption<?>, Pair<Object, Object>> mme : actualOptionValues.entrySet()) {
+                SocketOption<?> option = mme.getKey();
+                Pair<?, ?> vp = mme.getValue();
+                Object expValue = vp.getKey();
+                Object actValue = vp.getValue();
+                Appendable output = Objects.equals(expValue, actValue) ? System.out : System.err;
+                output.append('\t').append(option.name())
+                      .append(": expected=").append(Objects.toString(expValue))
+                      .append(", actual=").append(Objects.toString(actValue))
+                      .append(System.lineSeparator());
+                if (output instanceof Flushable) {
+                    ((Flushable) output).flush();
+                }
             }
         }
     }
