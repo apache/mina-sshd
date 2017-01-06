@@ -100,7 +100,7 @@
         <maven.compiler.target>${javac.target}</maven.compiler.target>
         <ant.build.javac.target>${javac.target}</ant.build.javac.target>
 
-        <min.required.maven.version>3.0.5</min.required.maven.version>
+        <min.required.maven.version>3.3.1</min.required.maven.version>
         <gmaven.plugin.version>2.0</gmaven.plugin.version>
         <groovy.major.version>2</groovy.major.version>
         <groovy.minor.version>4</groovy.minor.version>
@@ -108,10 +108,10 @@
         <groovy.compliance.level>2.0</groovy.compliance.level>
         <groovy.version>${groovy.major.version}.${groovy.minor.version}.${groovy.release.version}</groovy.version>        
 
-        <bouncycastle.version>1.55</bouncycastle.version>
-        <slf4j.version>1.7.21</slf4j.version>
+        <bouncycastle.version>1.56</bouncycastle.version>
+        <slf4j.version>1.7.22</slf4j.version>
         <spring.version>3.2.17.RELEASE</spring.version>
-        <jgit.version>3.4.1.201406201815-r</jgit.version>
+        <jgit.version>4.6.0.201612231935-r</jgit.version>
         <junit.version>4.12</junit.version>
         <surefire.plugin.version>2.19.1</surefire.plugin.version>
         <httpcomps.version>4.4.1</httpcomps.version>
@@ -594,7 +594,7 @@
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>7.3</version>
+                            <version>7.4</version>
                             <exclusions>
                                 <!-- MCHECKSTYLE-156 -->
                                 <exclusion>
