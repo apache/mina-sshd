@@ -134,21 +134,8 @@ public class FileHandle extends Handle {
 
     public int read(byte[] data, int doff, int length, long offset) throws IOException {
         SeekableByteChannel channel = getFileChannel();
-        channel.position(offset);
-
-        long size = channel.size();
-        long curPos = channel.position();
-        long available = size - curPos;
-        if (available <= 0) {
-            return -1;
-        }
-
-        int bufLen = length;
-        if (bufLen > available) {
-            bufLen = (int) available;   // debug breakpoint
-        }
-
-        return channel.read(ByteBuffer.wrap(data, doff, bufLen));
+        channel = channel.position(offset);
+        return channel.read(ByteBuffer.wrap(data, doff, length));
     }
 
     public void append(byte[] data) throws IOException {
@@ -166,7 +153,7 @@ public class FileHandle extends Handle {
 
     public void write(byte[] data, int doff, int length, long offset) throws IOException {
         SeekableByteChannel channel = getFileChannel();
-        channel.position(offset);
+        channel = channel.position(offset);
         channel.write(ByteBuffer.wrap(data, doff, length));
     }
 

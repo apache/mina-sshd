@@ -1605,7 +1605,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         for (KexProposalOption paramType : KexProposalOption.VALUES) {
             String s = proposal.get(paramType);
             if (log.isTraceEnabled()) {
-                log.trace("sendKexInit(}|)[{}] {}", this, paramType.getDescription(), s);
+                log.trace("sendKexInit({})[{}] {}", this, paramType.getDescription(), s);
             }
             buffer.putString(GenericUtils.trimToEmpty(s));
         }
