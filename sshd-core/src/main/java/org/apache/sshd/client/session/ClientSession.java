@@ -54,14 +54,14 @@ import org.apache.sshd.common.util.io.NullOutputStream;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
- * <P>An authenticated session to a given SSH server</P>
+ * <P>An authenticated session to a given SSH server.</P>
  *
  * <P>
  * A client session is established using the {@link org.apache.sshd.client.SshClient}.
  * Once the session has been created, the user has to authenticate
  * using either {@link #addPasswordIdentity(String)} or
  * {@link #addPublicKeyIdentity(java.security.KeyPair)} followed by
- * a call to {$link #auth()}.
+ * a call to {@link #auth()}.
  * </P>
  *
  * <P>
