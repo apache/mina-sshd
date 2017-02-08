@@ -52,7 +52,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairProvider {
-    public static final String DEFAULT_ALGORITHM = KeyUtils.DSS_ALGORITHM;
+    public static final String DEFAULT_ALGORITHM = KeyUtils.RSA_ALGORITHM;
     public static final boolean DEFAULT_ALLOWED_TO_OVERWRITE = true;
 
     private final AtomicReference<KeyPair> keyPairHolder = new AtomicReference<>();
