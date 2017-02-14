@@ -221,8 +221,12 @@ public final class ThreadUtils {
             Thread t;
             try {
                 // see SSHD-668
-                t = AccessController.doPrivileged((PrivilegedExceptionAction<Thread>) () ->
-                        new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0));
+                if (System.getSecurityManager() != null) {
+                    t = AccessController.doPrivileged((PrivilegedExceptionAction<Thread>) () ->
+                            new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0));
+                } else {
+                    t = new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0);
+                }
             } catch (PrivilegedActionException e) {
                 Exception err = e.getException();
                 if (err instanceof RuntimeException) {
