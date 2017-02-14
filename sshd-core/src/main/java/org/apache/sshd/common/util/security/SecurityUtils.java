@@ -390,11 +390,10 @@ public final class SecurityUtils {
             if ((GenericUtils.length(regsList) > 0) && (!"none".equalsIgnoreCase(regsList))) {
                 String[] classes = GenericUtils.split(regsList, ',');
                 Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
-                ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(SecurityUtils.class);
                 for (String registrarClass : classes) {
                     SecurityProviderRegistrar r;
                     try {
-                        r = ThreadUtils.createDefaultInstance(cl, SecurityProviderRegistrar.class, registrarClass);
+                        r = ThreadUtils.createDefaultInstance(SecurityUtils.class, SecurityProviderRegistrar.class, registrarClass);
                     } catch (ReflectiveOperationException t) {
                         Throwable e = GenericUtils.peelException(t);
                         logger.error("Failed ({}) to create default {} registrar instance: {}",

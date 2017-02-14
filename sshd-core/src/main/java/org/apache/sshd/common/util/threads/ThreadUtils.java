@@ -25,6 +25,8 @@ import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
@@ -96,9 +98,13 @@ public final class ThreadUtils {
         return resolveDefaultClassLoader(anchor == null ? null : anchor.getClass());
     }
 
+    public static Iterable<ClassLoader> resolveDefaultClassLoaders(Object anchor) {
+        return resolveDefaultClassLoaders(anchor == null ? null : anchor.getClass());
+    }
+
     public static <T> T createDefaultInstance(Class<?> anchor, Class<T> targetType, String className)
             throws ReflectiveOperationException {
-        return createDefaultInstance(resolveDefaultClassLoader(anchor), targetType, className);
+        return createDefaultInstance(resolveDefaultClassLoaders(anchor), targetType, className);
     }
 
     public static <T> T createDefaultInstance(ClassLoader cl, Class<T> targetType, String className)
@@ -106,6 +112,18 @@ public final class ThreadUtils {
         Class<?> instanceType = cl.loadClass(className);
         Object instance = instanceType.newInstance();
         return targetType.cast(instance);
+    }
+
+    public static <T> T createDefaultInstance(Iterable<ClassLoader> cls, Class<T> targetType, String className)
+            throws ReflectiveOperationException {
+        for (ClassLoader cl : cls) {
+            try {
+                return createDefaultInstance(cl, targetType, className);
+            } catch (ClassNotFoundException e) {
+                // Ignore
+            }
+        }
+        throw new ClassNotFoundException(className);
     }
 
     /**
@@ -146,6 +164,20 @@ public final class ThreadUtils {
         }
 
         return cl;
+    }
+
+    public static Iterable<ClassLoader> resolveDefaultClassLoaders(Class<?> anchor) {
+        Set<ClassLoader> cls = new LinkedHashSet<>();
+        Thread thread = Thread.currentThread();
+        ClassLoader cl = thread.getContextClassLoader();
+        if (cl != null) {
+            cls.add(cl);
+        }
+        if (anchor != null) {
+            cls.add(anchor.getClassLoader());
+        }
+        cls.add(ClassLoader.getSystemClassLoader());
+        return cls;
     }
 
     public static ExecutorService newFixedThreadPool(String poolName, int nThreads) {
