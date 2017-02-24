@@ -168,13 +168,22 @@ public class SftpSubsystem
                             .collect(Collectors.joining(","));
 
     /**
-     * Force the use of a max. packet length - especially for {@link #doReadDir(Buffer, int)}
-     * and {@link #doRead(Buffer, int)} methods
+     * Force the use of a max. packet length for {@link #doRead(Buffer, int)} protection
+     * against malicious packets
      *
-     * @see #DEFAULT_MAX_PACKET_LENGTH
+     * @see #DEFAULT_MAX_READDATA_PACKET_LENGTH
      */
-    public static final String MAX_PACKET_LENGTH_PROP = "sftp-max-packet-length";
-    public static final int DEFAULT_MAX_PACKET_LENGTH = 1024 * 16;
+    public static final String MAX_READDATA_PACKET_LENGTH_PROP = "sftp-max-readdata-packet-length";
+    public static final int DEFAULT_MAX_READDATA_PACKET_LENGTH = 63 * 1024;
+
+    /**
+     * Maximum amount of data allocated for listing the contents of a directory
+     * in any single invocation of {@link #doReadDir(Buffer, int)}
+     *
+     * @see #DEFAULT_MAX_READDIR_DATA_SIZE
+     */
+    public static final String MAX_READDIR_DATA_SIZE_PROP = "sftp-max-readdir-data-size";
+    public static final int DEFAULT_MAX_READDIR_DATA_SIZE = 16 * 1024;
 
     /**
      * Allows controlling reports of which client extensions are supported
@@ -1831,7 +1840,8 @@ public class SftpSubsystem
                 reply.putInt(0);
 
                 ServerSession session = getServerSession();
-                int count = doReadDir(id, handle, dh, reply, PropertyResolverUtils.getIntProperty(session, MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH));
+                int maxDataSize = PropertyResolverUtils.getIntProperty(session, MAX_READDIR_DATA_SIZE_PROP, DEFAULT_MAX_READDIR_DATA_SIZE);
+                int count = doReadDir(id, handle, dh, reply, maxDataSize);
                 BufferUtils.updateLengthPlaceholder(reply, lenPos, count);
                 if ((!dh.isSendDot()) && (!dh.isSendDotDot()) && (!dh.hasNext())) {
                     dh.markDone();
@@ -2049,9 +2059,8 @@ public class SftpSubsystem
         String handle = buffer.getString();
         long offset = buffer.getLong();
         int requestedLength = buffer.getInt();
-        int maxAllowed = PropertyResolverUtils.getIntProperty(getServerSession(), MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH);
+        int maxAllowed = PropertyResolverUtils.getIntProperty(getServerSession(), MAX_READDATA_PACKET_LENGTH_PROP, DEFAULT_MAX_READDATA_PACKET_LENGTH);
         int readLen = Math.min(requestedLength, maxAllowed);
-
         if (log.isTraceEnabled()) {
             log.trace("doRead({})[id={}]({})[offset={}] - req={}, max={}, effective={}",
                       getServerSession(), id, handle, offset, requestedLength, maxAllowed, readLen);

@@ -209,7 +209,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 byte[] actual = new byte[expected.length];
                 int maxAllowed = actual.length / 4;
                 // allow less than actual
-                PropertyResolverUtils.updateProperty(sshd, SftpSubsystem.MAX_PACKET_LENGTH_PROP, maxAllowed);
+                PropertyResolverUtils.updateProperty(sshd, SftpSubsystem.MAX_READDATA_PACKET_LENGTH_PROP, maxAllowed);
                 try (CloseableHandle handle = sftp.open(file, OpenMode.Read)) {
                     int readLen = sftp.read(handle, 0L, actual);
                     assertEquals("Mismatched read len", maxAllowed, readLen);
@@ -224,7 +224,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                         }
                     }
                 } finally {
-                    PropertyResolverUtils.updateProperty(sshd, SftpSubsystem.MAX_PACKET_LENGTH_PROP, SftpSubsystem.DEFAULT_MAX_PACKET_LENGTH);
+                    PropertyResolverUtils.updateProperty(sshd, SftpSubsystem.MAX_READDATA_PACKET_LENGTH_PROP, SftpSubsystem.DEFAULT_MAX_READDATA_PACKET_LENGTH);
                 }
             }
         }
