@@ -24,7 +24,6 @@ import java.security.Key;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.Provider;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Objects;
@@ -47,16 +46,9 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class EdDSASecurityProvider extends Provider {
-    private static final long serialVersionUID = -6183277432144104981L;
-
-    public EdDSASecurityProvider() {
-        super(SecurityUtils.EDDSA, 0.1, "net.i2p security provider wrapper");
-
-        // see https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/HowToImplAProvider.html
-        put("KeyPairGenerator." + SecurityUtils.EDDSA, "net.i2p.crypto.eddsa.KeyPairGenerator");
-        put("KeyFactory." + SecurityUtils.EDDSA, "net.i2p.crypto.eddsa.KeyFactory");
-        put("Signature." + EdDSANamedCurveTable.CURVE_ED25519_SHA512, "net.i2p.crypto.eddsa.EdDSAEngine");
+public final class EdDSASecurityProviderUtils {
+    private EdDSASecurityProviderUtils() {
+        throw new UnsupportedOperationException("No instance");
     }
 
     public static Class<? extends PublicKey> getEDDSAPublicKeyType() {

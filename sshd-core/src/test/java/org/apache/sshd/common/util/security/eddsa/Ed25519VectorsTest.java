@@ -60,9 +60,9 @@ public class Ed25519VectorsTest extends BaseTestSupport {
     public Ed25519VectorsTest(String name, String prvKey, String pubKey, String msg, String signature)
             throws GeneralSecurityException {
         prvBytes = BufferUtils.decodeHex(BufferUtils.EMPTY_HEX_SEPARATOR, prvKey);
-        privateKey = EdDSASecurityProvider.generateEDDSAPrivateKey(prvBytes.clone());
+        privateKey = EdDSASecurityProviderUtils.generateEDDSAPrivateKey(prvBytes.clone());
         pubBytes = BufferUtils.decodeHex(BufferUtils.EMPTY_HEX_SEPARATOR, pubKey);
-        publicKey = EdDSASecurityProvider.generateEDDSAPublicKey(pubBytes.clone());
+        publicKey = EdDSASecurityProviderUtils.generateEDDSAPublicKey(pubBytes.clone());
         msgBytes = BufferUtils.decodeHex(BufferUtils.EMPTY_HEX_SEPARATOR, msg);
         expSignature = BufferUtils.decodeHex(BufferUtils.EMPTY_HEX_SEPARATOR, signature);
     }
@@ -200,14 +200,14 @@ public class Ed25519VectorsTest extends BaseTestSupport {
 
     @Test
     public void testSignature() throws Exception {
-        Signature signer = EdDSASecurityProvider.getEDDSASignature();
+        Signature signer = EdDSASecurityProviderUtils.getEDDSASignature();
         signer.initSigner(privateKey);
         signer.update(msgBytes.clone());
 
         byte[] actSignature = signer.sign();
         assertArrayEquals("Mismatched signature", expSignature, actSignature);
 
-        Signature verifier = EdDSASecurityProvider.getEDDSASignature();
+        Signature verifier = EdDSASecurityProviderUtils.getEDDSASignature();
         verifier.initVerifier(publicKey);
         verifier.update(msgBytes.clone());
         assertTrue("Verification failed", verifier.verify(expSignature));
@@ -222,14 +222,14 @@ public class Ed25519VectorsTest extends BaseTestSupport {
         System.arraycopy(msgBytes, 0, dataBuf, offset, msgBytes.length);
         System.arraycopy(extraData, offset, dataBuf, offset + msgBytes.length, extraData.length - offset);
 
-        Signature signer = EdDSASecurityProvider.getEDDSASignature();
+        Signature signer = EdDSASecurityProviderUtils.getEDDSASignature();
         signer.initSigner(privateKey);
         signer.update(dataBuf.clone(), offset, msgBytes.length);
 
         byte[] actSignature = signer.sign();
         assertArrayEquals("Mismatched signature", expSignature, actSignature);
 
-        Signature verifier = EdDSASecurityProvider.getEDDSASignature();
+        Signature verifier = EdDSASecurityProviderUtils.getEDDSASignature();
         verifier.initVerifier(publicKey);
         verifier.update(dataBuf.clone(), offset, msgBytes.length);
         assertTrue("Verification failed", verifier.verify(expSignature));
