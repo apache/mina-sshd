@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.server.session.ServerSession;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -36,6 +37,18 @@ public abstract class Handle implements java.nio.channels.Channel {
     protected Handle(Path file, String handle) {
         this.file = Objects.requireNonNull(file, "No local file path");
         this.handle = ValidateUtils.checkNotNullAndNotEmpty(handle, "No assigned handle for %s", file);
+    }
+
+    protected void signalHandleOpening(SftpSubsystem subsystem) throws IOException {
+        SftpEventListener listener = subsystem.getSftpEventListenerProxy();
+        ServerSession session = subsystem.getServerSession();
+        listener.opening(session, handle, this);
+    }
+
+    protected void signalHandleOpen(SftpSubsystem subsystem) throws IOException {
+        SftpEventListener listener = subsystem.getSftpEventListenerProxy();
+        ServerSession session = subsystem.getServerSession();
+        listener.open(session, handle, this);
     }
 
     public Path getFile() {

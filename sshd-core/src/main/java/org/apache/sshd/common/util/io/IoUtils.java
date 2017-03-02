@@ -36,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
@@ -73,7 +74,20 @@ public final class IoUtils {
     /**
      * The local O/S line separator
      */
-    public static final String EOL = System.getProperty("line.separator");
+    public static final String EOL = System.lineSeparator();
+
+    /**
+     * A {@link Set} of {@link StandardOpenOption}-s that indicate an intent
+     * to create/modify a file
+     */
+    public static final Set<StandardOpenOption> WRITEABLE_OPEN_OPTIONS =
+        Collections.unmodifiableSet(
+            EnumSet.of(
+                StandardOpenOption.APPEND, StandardOpenOption.CREATE,
+                StandardOpenOption.CREATE_NEW, StandardOpenOption.DELETE_ON_CLOSE,
+                StandardOpenOption.DSYNC, StandardOpenOption.SYNC,
+                StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE));
+
     private static final byte[] EOL_BYTES = EOL.getBytes(StandardCharsets.UTF_8);
 
     private static final LinkOption[] NO_FOLLOW_OPTIONS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};

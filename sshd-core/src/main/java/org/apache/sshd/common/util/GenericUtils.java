@@ -365,6 +365,19 @@ public final class GenericUtils {
         return result;
     }
 
+    public static <T> boolean containsAny(Collection<? extends T> coll, Iterable<? extends T> values) {
+        if (isEmpty(coll)) {
+            return false;
+        }
+
+        for (T v : values) {
+            if (coll.contains(v)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
     public static <T> void forEach(Iterable<T> values, Consumer<T> consumer) {
         if (isNotEmpty(values)) {
             values.forEach(consumer);

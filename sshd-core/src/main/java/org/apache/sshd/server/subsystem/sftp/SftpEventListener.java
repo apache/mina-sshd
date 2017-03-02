@@ -56,6 +56,19 @@ public interface SftpEventListener extends SshdEventListener {
     }
 
     /**
+     * Specified file / directory is being opened
+     *
+     * @param session      The {@link ServerSession} through which the request was handled
+     * @param remoteHandle The (opaque) assigned handle for the file / directory
+     * @param localHandle  The associated file / directory {@link Handle}
+     * @throws IOException If failed to handle the call
+     */
+    default void opening(ServerSession session, String remoteHandle, Handle localHandle)
+            throws IOException {
+        // ignored
+    }
+
+    /**
      * Specified file / directory has been opened
      *
      * @param session      The {@link ServerSession} through which the request was handled
@@ -65,7 +78,7 @@ public interface SftpEventListener extends SshdEventListener {
      */
     default void open(ServerSession session, String remoteHandle, Handle localHandle)
             throws IOException {
-                // ignored
+        // ignored
     }
 
     /**

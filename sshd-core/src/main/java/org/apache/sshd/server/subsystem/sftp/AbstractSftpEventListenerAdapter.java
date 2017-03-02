@@ -56,6 +56,14 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     }
 
     @Override
+    public void opening(ServerSession session, String remoteHandle, Handle localHandle) throws IOException {
+        if (log.isTraceEnabled()) {
+            Path path = localHandle.getFile();
+            log.trace("opening(" + session + ")[" + remoteHandle + "] " + (Files.isDirectory(path) ? "directory" : "file") + " " + path);
+        }
+    }
+
+    @Override
     public void open(ServerSession session, String remoteHandle, Handle localHandle) {
         if (log.isTraceEnabled()) {
             Path path = localHandle.getFile();

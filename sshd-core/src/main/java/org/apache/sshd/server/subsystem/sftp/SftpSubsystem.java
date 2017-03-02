@@ -1902,8 +1902,6 @@ public class SftpSubsystem
         } else {
             String handle = generateFileHandle(p);
             DirectoryHandle dirHandle = new DirectoryHandle(this, p, handle);
-            SftpEventListener listener = getSftpEventListenerProxy();
-            listener.open(getServerSession(), handle, dirHandle);
             handles.put(handle, dirHandle);
             return handle;
         }
@@ -2228,8 +2226,6 @@ public class SftpSubsystem
         Path file = resolveFile(path);
         String handle = generateFileHandle(file);
         FileHandle fileHandle = new FileHandle(this, file, handle, pflags, access, attrs);
-        SftpEventListener listener = getSftpEventListenerProxy();
-        listener.open(getServerSession(), handle, fileHandle);
         handles.put(handle, fileHandle);
         return handle;
     }

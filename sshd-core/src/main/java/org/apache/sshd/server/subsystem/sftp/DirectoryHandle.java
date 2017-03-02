@@ -39,6 +39,7 @@ public class DirectoryHandle extends Handle implements Iterator<Path> {
 
     public DirectoryHandle(SftpSubsystem subsystem, Path dir, String handle) throws IOException {
         super(dir, handle);
+        signalHandleOpening(subsystem);
 
         SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
         ServerSession session = subsystem.getServerSession();
@@ -49,6 +50,13 @@ public class DirectoryHandle extends Handle implements Iterator<Path> {
             sendDotDot = false;  // if no parent then no need to send ".."
         }
         fileList = ds.iterator();
+
+        try {
+            signalHandleOpen(subsystem);
+        } catch (IOException e) {
+            close();
+            throw e;
+        }
     }
 
     public boolean isDone() {

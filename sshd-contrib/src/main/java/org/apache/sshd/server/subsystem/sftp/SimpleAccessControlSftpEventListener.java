@@ -23,9 +23,12 @@ import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.CopyOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.Map;
 
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -51,6 +54,28 @@ public abstract class SimpleAccessControlSftpEventListener extends AbstractSftpE
 
     protected SimpleAccessControlSftpEventListener() {
         super();
+    }
+
+    @Override
+    public void opening(ServerSession session, String remoteHandle, Handle localHandle)
+            throws IOException {
+        super.opening(session, remoteHandle, localHandle);
+        if (localHandle instanceof DirectoryHandle) {
+            if (!isAccessAllowed(session, remoteHandle, localHandle)) {
+                throw new AccessDeniedException(remoteHandle);
+            }
+        } else {
+            Collection<StandardOpenOption> options = ((FileHandle) localHandle).getOpenOptions();
+            if (GenericUtils.containsAny(options, IoUtils.WRITEABLE_OPEN_OPTIONS)) {
+                if (!isModificationAllowed(session, remoteHandle, localHandle.getFile())) {
+                    throw new AccessDeniedException(remoteHandle);
+                }
+            } else {
+                if (!isAccessAllowed(session, remoteHandle, localHandle)) {
+                    throw new AccessDeniedException(remoteHandle);
+                }
+            }
+        }
     }
 
     @Override
@@ -166,5 +191,4 @@ public abstract class SimpleAccessControlSftpEventListener extends AbstractSftpE
      * @throws IOException If failed to handle the call
      */
     protected abstract boolean isModificationAllowed(ServerSession session, String remoteHandle, Path localPath) throws IOException;
-
 }

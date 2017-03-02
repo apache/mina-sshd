@@ -27,6 +27,7 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -41,79 +42,53 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.session.ServerSession;
 
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class FileHandle extends Handle {
-
     private final int access;
     private final SeekableByteChannel fileChannel;
     private final List<FileLock> locks = new ArrayList<>();
     private final SftpSubsystem subsystem;
+    private final Set<StandardOpenOption> openOptions;
+    private final Collection<FileAttribute<?>> fileAttributes;
 
     public FileHandle(SftpSubsystem subsystem, Path file, String handle, int flags, int access, Map<String, Object> attrs) throws IOException {
         super(file, handle);
         this.subsystem = Objects.requireNonNull(subsystem, "No subsystem instance provided");
         this.access = access;
+        this.openOptions = Collections.unmodifiableSet(getOpenOptions(flags, access));
+        this.fileAttributes = Collections.unmodifiableCollection(toFileAttributes(attrs));
+        signalHandleOpening(subsystem);
 
-        Set<StandardOpenOption> options = EnumSet.noneOf(StandardOpenOption.class);
-        if (((access & SftpConstants.ACE4_READ_DATA) != 0) || ((access & SftpConstants.ACE4_READ_ATTRIBUTES) != 0)) {
-            options.add(StandardOpenOption.READ);
-        }
-        if (((access & SftpConstants.ACE4_WRITE_DATA) != 0) || ((access & SftpConstants.ACE4_WRITE_ATTRIBUTES) != 0)) {
-            options.add(StandardOpenOption.WRITE);
-        }
-
-        int accessDisposition = flags & SftpConstants.SSH_FXF_ACCESS_DISPOSITION;
-        switch (accessDisposition) {
-            case SftpConstants.SSH_FXF_CREATE_NEW:
-                options.add(StandardOpenOption.CREATE_NEW);
-                break;
-            case SftpConstants.SSH_FXF_CREATE_TRUNCATE:
-                options.add(StandardOpenOption.CREATE);
-                options.add(StandardOpenOption.TRUNCATE_EXISTING);
-                break;
-            case SftpConstants.SSH_FXF_OPEN_EXISTING:
-                break;
-            case SftpConstants.SSH_FXF_OPEN_OR_CREATE:
-                options.add(StandardOpenOption.CREATE);
-                break;
-            case SftpConstants.SSH_FXF_TRUNCATE_EXISTING:
-                options.add(StandardOpenOption.TRUNCATE_EXISTING);
-                break;
-            default:    // ignored
-        }
-        if ((flags & SftpConstants.SSH_FXF_APPEND_DATA) != 0) {
-            options.add(StandardOpenOption.APPEND);
-        }
-
-        Collection<FileAttribute<?>> attributes = null;
-        // Cannot use forEach because the referenced attributes variable is not effectively final
-        for (Map.Entry<String, Object> attr : attrs.entrySet()) {
-            FileAttribute<?> fileAttr = toFileAttribute(attr.getKey(), attr.getValue());
-            if (fileAttr == null) {
-                continue;
-            }
-            if (attributes == null) {
-                attributes = new LinkedList<>();
-            }
-            attributes.add(fileAttr);
-        }
-
-        FileAttribute<?>[] fileAttrs = GenericUtils.isEmpty(attributes)
+        FileAttribute<?>[] fileAttrs = GenericUtils.isEmpty(fileAttributes)
                 ? IoUtils.EMPTY_FILE_ATTRIBUTES
-                : attributes.toArray(new FileAttribute<?>[attributes.size()]);
+                : fileAttributes.toArray(new FileAttribute<?>[fileAttributes.size()]);
         SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
         ServerSession session = subsystem.getServerSession();
         SeekableByteChannel channel;
         try {
-            channel = accessor.openFile(session, subsystem, file, handle, options, fileAttrs);
+            channel = accessor.openFile(session, subsystem, file, handle, openOptions, fileAttrs);
         } catch (UnsupportedOperationException e) {
-            channel = accessor.openFile(session, subsystem, file, handle, options, IoUtils.EMPTY_FILE_ATTRIBUTES);
+            channel = accessor.openFile(session, subsystem, file, handle, openOptions, IoUtils.EMPTY_FILE_ATTRIBUTES);
             subsystem.doSetAttributes(file, attrs);
         }
         this.fileChannel = channel;
+
+        try {
+            signalHandleOpen(subsystem);
+        } catch (IOException e) {
+            close();
+            throw e;
+        }
+    }
+
+    public final Set<StandardOpenOption> getOpenOptions() {
+        return openOptions;
+    }
+
+    public final Collection<FileAttribute<?>> getFileAttributes() {
+        return fileAttributes;
     }
 
     public final SeekableByteChannel getFileChannel() {
@@ -203,7 +178,28 @@ public class FileHandle extends Handle {
         lock.release();
     }
 
-    public static FileAttribute<?> toFileAttribute(final String key, final Object val) {
+    public static Collection<FileAttribute<?>> toFileAttributes(Map<String, Object> attrs) {
+        if (GenericUtils.isEmpty(attrs)) {
+            return Collections.emptyList();
+        }
+
+        Collection<FileAttribute<?>> attributes = null;
+        // Cannot use forEach because the referenced attributes variable is not effectively final
+        for (Map.Entry<String, Object> attr : attrs.entrySet()) {
+            FileAttribute<?> fileAttr = toFileAttribute(attr.getKey(), attr.getValue());
+            if (fileAttr == null) {
+                continue;
+            }
+            if (attributes == null) {
+                attributes = new LinkedList<>();
+            }
+            attributes.add(fileAttr);
+        }
+
+        return (attributes == null) ? Collections.emptyList() : attributes;
+    }
+
+    public static FileAttribute<?> toFileAttribute(String key, Object val) {
         // Some ignored attributes sent by the SFTP client
         if ("isOther".equals(key)) {
             if ((Boolean) val) {
@@ -235,5 +231,40 @@ public class FileHandle extends Handle {
                 return s;
             }
         };
+    }
+
+    public static Set<StandardOpenOption> getOpenOptions(int flags, int access) {
+        Set<StandardOpenOption> options = EnumSet.noneOf(StandardOpenOption.class);
+        if (((access & SftpConstants.ACE4_READ_DATA) != 0) || ((access & SftpConstants.ACE4_READ_ATTRIBUTES) != 0)) {
+            options.add(StandardOpenOption.READ);
+        }
+        if (((access & SftpConstants.ACE4_WRITE_DATA) != 0) || ((access & SftpConstants.ACE4_WRITE_ATTRIBUTES) != 0)) {
+            options.add(StandardOpenOption.WRITE);
+        }
+
+        int accessDisposition = flags & SftpConstants.SSH_FXF_ACCESS_DISPOSITION;
+        switch (accessDisposition) {
+            case SftpConstants.SSH_FXF_CREATE_NEW:
+                options.add(StandardOpenOption.CREATE_NEW);
+                break;
+            case SftpConstants.SSH_FXF_CREATE_TRUNCATE:
+                options.add(StandardOpenOption.CREATE);
+                options.add(StandardOpenOption.TRUNCATE_EXISTING);
+                break;
+            case SftpConstants.SSH_FXF_OPEN_EXISTING:
+                break;
+            case SftpConstants.SSH_FXF_OPEN_OR_CREATE:
+                options.add(StandardOpenOption.CREATE);
+                break;
+            case SftpConstants.SSH_FXF_TRUNCATE_EXISTING:
+                options.add(StandardOpenOption.TRUNCATE_EXISTING);
+                break;
+            default:    // ignored
+        }
+        if ((flags & SftpConstants.SSH_FXF_APPEND_DATA) != 0) {
+            options.add(StandardOpenOption.APPEND);
+        }
+
+        return options;
     }
 }
