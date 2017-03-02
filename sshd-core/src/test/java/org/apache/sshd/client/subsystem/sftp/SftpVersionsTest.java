@@ -213,7 +213,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                     }
 
                     @Override
-                    protected void setFileAccessControl(Path file, List<AclEntry> aclActual, LinkOption ... options) throws IOException {
+                    protected void setFileAccessControl(Path file, List<AclEntry> aclActual, LinkOption... options) throws IOException {
                         if (aclActual != null) {
                             assertListEquals("Mismatched ACL set for file=" + file, aclExpected, aclActual);
                             numInvocations.incrementAndGet();
@@ -331,7 +331,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                     }
 
                     @Override
-                    protected void setFileExtensions(Path file, Map<String, byte[]> extensions, LinkOption ... options) throws IOException {
+                    protected void setFileExtensions(Path file, Map<String, byte[]> extensions, LinkOption... options) throws IOException {
                         assertExtensionsMapEquals("setFileExtensions(" + file + ")", expExtensions, extensions);
                         numInvocations.incrementAndGet();
 

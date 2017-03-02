@@ -136,7 +136,7 @@ public abstract class BaseTestSupport extends Assert {
      * @see #TEMP_SUBFOLDER_NAME
      * @see #getTargetRelativeFile(Collection)
      */
-    protected Path getTempTargetRelativeFile(String ... comps) {
+    protected Path getTempTargetRelativeFile(String... comps) {
         return getTempTargetRelativeFile(GenericUtils.isEmpty(comps) ? Collections.emptyList() : Arrays.asList(comps));
     }
 
@@ -175,7 +175,7 @@ public abstract class BaseTestSupport extends Assert {
      * @param comps The path components - ignored if {@code null}/empty
      * @return The {@link Path} representing the result - same as target folder if no components
      */
-    protected Path getTargetRelativeFile(String ... comps) {
+    protected Path getTargetRelativeFile(String... comps) {
         return getTargetRelativeFile(GenericUtils.isEmpty(comps) ? Collections.emptyList() : Arrays.asList(comps));
     }
 
@@ -561,7 +561,7 @@ public abstract class BaseTestSupport extends Assert {
         return false;
     }
 
-    public static void outputDebugMessage(String format, Object ... args) {
+    public static void outputDebugMessage(String format, Object... args) {
         if (OUTPUT_DEBUG_MESSAGES) {
             outputDebugMessage(String.format(format, args));
         }

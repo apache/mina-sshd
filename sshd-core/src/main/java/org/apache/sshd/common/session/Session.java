@@ -189,7 +189,7 @@ public interface Session
      * @throws IOException if an error occurred when encoding sending the packet
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-11.2">RFC 4253 - section 11.2</A>
      */
-    IoWriteFuture sendIgnoreMessage(byte ... data) throws IOException;
+    IoWriteFuture sendIgnoreMessage(byte... data) throws IOException;
 
     /**
      * Encode and send the given buffer.

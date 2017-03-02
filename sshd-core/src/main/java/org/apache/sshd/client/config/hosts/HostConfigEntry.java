@@ -639,7 +639,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * @throws IOException If failed to append the requested data
      * @see #appendNonEmptyValues(Appendable, String, Collection)
      */
-    public static <A extends Appendable> A appendNonEmptyValues(A sb, String name, Object ... values) throws IOException {
+    public static <A extends Appendable> A appendNonEmptyValues(A sb, String name, Object... values) throws IOException {
         return appendNonEmptyValues(sb, name, GenericUtils.isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
     }
 
@@ -1011,7 +1011,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         writeHostConfigEntries(Objects.requireNonNull(file, "No file").toPath(), entries, IoUtils.EMPTY_OPEN_OPTIONS);
     }
 
-    public static void writeHostConfigEntries(Path path, Collection<? extends HostConfigEntry> entries, OpenOption ... options) throws IOException {
+    public static void writeHostConfigEntries(Path path, Collection<? extends HostConfigEntry> entries, OpenOption... options) throws IOException {
         try (OutputStream outputStream = Files.newOutputStream(path, options)) {
             writeHostConfigEntries(outputStream, true, entries);
         }

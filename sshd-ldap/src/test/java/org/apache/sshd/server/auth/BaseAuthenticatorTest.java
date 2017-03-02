@@ -76,7 +76,7 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
         return getHost((ldapServer == null) ? null : ldapServer.getTransports());
     }
 
-    public static String getHost(Transport ... transports) {
+    public static String getHost(Transport... transports) {
         return GenericUtils.isEmpty(transports) ? null : transports[0].getAddress();
     }
 
@@ -88,7 +88,7 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
         return getPort((ldapServer == null) ? null : ldapServer.getTransports());
     }
 
-    public static int getPort(Transport ... transports) {
+    public static int getPort(Transport... transports) {
         return GenericUtils.isEmpty(transports) ? -1 : transports[0].getPort();
     }
 

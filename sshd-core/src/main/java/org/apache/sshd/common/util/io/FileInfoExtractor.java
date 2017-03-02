@@ -48,6 +48,6 @@ public interface FileInfoExtractor<T> {
 
     FileInfoExtractor<FileTime> LASTMODIFIED = Files::getLastModifiedTime;
 
-    T infoOf(Path file, LinkOption ... options) throws IOException;
+    T infoOf(Path file, LinkOption... options) throws IOException;
 
 }

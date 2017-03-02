@@ -67,7 +67,7 @@ public interface KexFactoryManager extends KeyPairProviderHolder, SignatureFacto
     default void setCipherFactoriesNameList(String names) {
         setCipherFactoriesNames(GenericUtils.split(names, ','));
     }
-    default void setCipherFactoriesNames(String ... names) {
+    default void setCipherFactoriesNames(String... names) {
         setCipherFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.emptyList() : Arrays.asList(names));
     }
     default void setCipherFactoriesNames(Collection<String> names) {
@@ -97,7 +97,7 @@ public interface KexFactoryManager extends KeyPairProviderHolder, SignatureFacto
     default void setCompressionFactoriesNameList(String names) {
         setCompressionFactoriesNames(GenericUtils.split(names, ','));
     }
-    default void setCompressionFactoriesNames(String ... names) {
+    default void setCompressionFactoriesNames(String... names) {
         setCompressionFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.emptyList() : Arrays.asList(names));
     }
     default void setCompressionFactoriesNames(Collection<String> names) {
@@ -127,7 +127,7 @@ public interface KexFactoryManager extends KeyPairProviderHolder, SignatureFacto
     default void setMacFactoriesNameList(String names) {
         setMacFactoriesNames(GenericUtils.split(names, ','));
     }
-    default void setMacFactoriesNames(String ... names) {
+    default void setMacFactoriesNames(String... names) {
         setMacFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.emptyList() : Arrays.asList(names));
     }
     default void setMacFactoriesNames(Collection<String> names) {

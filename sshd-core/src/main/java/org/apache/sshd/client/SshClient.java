@@ -535,7 +535,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return doConnect(hostConfig.getUsername(), new InetSocketAddress(host, port), keys, !hostConfig.isIdentitiesOnly());
     }
 
-    protected List<KeyPair> loadClientIdentities(Collection<String> locations, LinkOption ... options) throws IOException {
+    protected List<KeyPair> loadClientIdentities(Collection<String> locations, LinkOption... options) throws IOException {
         if (GenericUtils.isEmpty(locations)) {
             return Collections.emptyList();
         }
@@ -1120,7 +1120,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return current;
     }
 
-    public static Level resolveLoggingVerbosity(String ... args) {
+    public static Level resolveLoggingVerbosity(String... args) {
         return resolveLoggingVerbosity(args, GenericUtils.length(args));
     }
 
@@ -1139,7 +1139,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return Level.WARNING;
     }
 
-    public static OutputStream resolveLoggingTargetStream(PrintStream stdout, PrintStream stderr, String ... args) {
+    public static OutputStream resolveLoggingTargetStream(PrintStream stdout, PrintStream stderr, String... args) {
         return resolveLoggingTargetStream(stdout, stderr, args, GenericUtils.length(args));
     }
 

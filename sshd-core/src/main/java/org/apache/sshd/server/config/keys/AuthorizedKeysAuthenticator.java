@@ -163,7 +163,7 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
      * or empty if file does not exist
      * @throws IOException If failed to read keys from file
      */
-    public static List<AuthorizedKeyEntry> readDefaultAuthorizedKeys(OpenOption ... options) throws IOException {
+    public static List<AuthorizedKeyEntry> readDefaultAuthorizedKeys(OpenOption... options) throws IOException {
         Path keysFile = getDefaultAuthorizedKeysFile();
         if (Files.exists(keysFile, IoUtils.EMPTY_LINK_OPTIONS)) {
             return AuthorizedKeyEntry.readAuthorizedKeys(keysFile);

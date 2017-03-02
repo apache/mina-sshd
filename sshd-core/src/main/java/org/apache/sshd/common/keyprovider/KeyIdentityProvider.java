@@ -134,7 +134,7 @@ public interface KeyIdentityProvider {
      * @return The wrapping provider
      * @see #multiProvider(Collection)
      */
-    static KeyIdentityProvider multiProvider(KeyIdentityProvider ... providers) {
+    static KeyIdentityProvider multiProvider(KeyIdentityProvider... providers) {
         return multiProvider(GenericUtils.asList(providers));
     }
 
@@ -169,7 +169,7 @@ public interface KeyIdentityProvider {
      * {@link #EMPTY_KEYS_PROVIDER}).
      * @return The provider wrapper
      */
-    static KeyIdentityProvider wrap(KeyPair ... pairs) {
+    static KeyIdentityProvider wrap(KeyPair... pairs) {
         return wrap(GenericUtils.asList(pairs));
     }
 

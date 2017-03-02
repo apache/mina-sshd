@@ -77,15 +77,15 @@ public final class NumberUtils {
         return j;
     }
 
-    public static int hashCode(long ... values) {
+    public static int hashCode(long... values) {
         return Arrays.hashCode(values);
     }
 
-    public static int hashCode(int ... values) {
+    public static int hashCode(int... values) {
         return Arrays.hashCode(values);
     }
 
-    public static int hashCode(byte ... values) {
+    public static int hashCode(byte... values) {
         return Arrays.hashCode(values);
     }
 
@@ -149,7 +149,7 @@ public final class NumberUtils {
         }
     }
 
-    public static String join(CharSequence separator, long ... values) {
+    public static String join(CharSequence separator, long... values) {
         if (NumberUtils.isEmpty(values)) {
             return "";
         }
@@ -165,7 +165,7 @@ public final class NumberUtils {
         return sb.toString();
     }
 
-    public static String join(char separator, long ... values) {
+    public static String join(char separator, long... values) {
         if (NumberUtils.isEmpty(values)) {
             return "";
         }
@@ -181,7 +181,7 @@ public final class NumberUtils {
         return sb.toString();
     }
 
-    public static String join(CharSequence separator, boolean unsigned, byte ... values) {
+    public static String join(CharSequence separator, boolean unsigned, byte... values) {
         if (NumberUtils.isEmpty(values)) {
             return "";
         }
@@ -197,7 +197,7 @@ public final class NumberUtils {
         return sb.toString();
     }
 
-    public static String join(char separator, boolean unsigned, byte ... values) {
+    public static String join(char separator, boolean unsigned, byte... values) {
         if (NumberUtils.isEmpty(values)) {
             return "";
         }
@@ -213,7 +213,7 @@ public final class NumberUtils {
         return sb.toString();
     }
 
-    public static String join(CharSequence separator, int ... values) {
+    public static String join(CharSequence separator, int... values) {
         if (NumberUtils.isEmpty(values)) {
             return "";
         }
@@ -229,7 +229,7 @@ public final class NumberUtils {
         return sb.toString();
     }
 
-    public static String join(char separator, int ... values) {
+    public static String join(char separator, int... values) {
         if (NumberUtils.isEmpty(values)) {
             return "";
         }
@@ -269,7 +269,7 @@ public final class NumberUtils {
         return a == null ? 0 : a.length;
     }
 
-    public static List<Integer> asList(int ... values) {
+    public static List<Integer> asList(int... values) {
         int len = length(values);
         if (len <= 0) {
             return Collections.emptyList();

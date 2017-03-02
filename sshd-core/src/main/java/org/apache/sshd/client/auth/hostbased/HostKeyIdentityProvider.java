@@ -42,7 +42,7 @@ public interface HostKeyIdentityProvider {
         return GenericUtils.iteratorOf((provider == null) ? null : provider.loadHostKeys());
     }
 
-    static HostKeyIdentityProvider wrap(KeyPair ... pairs) {
+    static HostKeyIdentityProvider wrap(KeyPair... pairs) {
         return wrap(GenericUtils.asList(pairs));
     }
 

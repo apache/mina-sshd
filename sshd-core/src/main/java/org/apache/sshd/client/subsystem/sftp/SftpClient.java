@@ -808,7 +808,7 @@ public interface SftpClient extends SubsystemClient {
     // High level API
     //
 
-    default SftpRemotePathChannel openRemotePathChannel(String path, OpenOption ... options) throws IOException {
+    default SftpRemotePathChannel openRemotePathChannel(String path, OpenOption... options) throws IOException {
         return openRemotePathChannel(path, GenericUtils.isEmpty(options) ? Collections.emptyList() : Arrays.asList(options));
     }
 
@@ -816,7 +816,7 @@ public interface SftpClient extends SubsystemClient {
         return openRemoteFileChannel(path, OpenMode.fromOpenOptions(options));
     }
 
-    default SftpRemotePathChannel openRemoteFileChannel(String path, OpenMode ... modes) throws IOException {
+    default SftpRemotePathChannel openRemoteFileChannel(String path, OpenMode... modes) throws IOException {
         return openRemoteFileChannel(path, GenericUtils.isEmpty(modes) ? Collections.emptyList() : Arrays.asList(modes));
     }
 

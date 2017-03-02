@@ -168,7 +168,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
      * identification data being written successfully or failing
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>
      */
-    protected IoWriteFuture sendServerIdentification(String ... headerLines) {
+    protected IoWriteFuture sendServerIdentification(String... headerLines) {
         serverVersion = resolveIdentificationString(ServerFactoryManager.SERVER_IDENTIFICATION);
 
         String ident = serverVersion;

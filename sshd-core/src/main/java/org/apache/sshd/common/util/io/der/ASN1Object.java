@@ -60,11 +60,11 @@ public class ASN1Object implements Serializable, Cloneable {
      *-------------------------------------------------
      * </pre>
      */
-    public ASN1Object(byte tag, int len, byte ... data) {
+    public ASN1Object(byte tag, int len, byte... data) {
         this(ASN1Class.fromDERValue(tag), ASN1Type.fromDERValue(tag), (tag & CONSTRUCTED) == CONSTRUCTED, len, data);
     }
 
-    public ASN1Object(ASN1Class c, ASN1Type t, boolean ctored, int len, byte ... data) {
+    public ASN1Object(ASN1Class c, ASN1Type t, boolean ctored, int len, byte... data) {
         objClass = c;
         objType = t;
         constructed = ctored;

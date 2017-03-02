@@ -320,7 +320,7 @@ public enum PtyMode {
      * @param options The options to enable - ignored if {@code null}/empty
      * @return A {@link Map} where all the specified {@link PtyMode}s have {@link #TRUE_SETTING}
      */
-    public static Map<PtyMode, Integer> createEnabledOptions(PtyMode ... options) {
+    public static Map<PtyMode, Integer> createEnabledOptions(PtyMode... options) {
         return createEnabledOptions(GenericUtils.of(options));
     }
 
@@ -341,7 +341,7 @@ public enum PtyMode {
         return modes;
     }
 
-    public static Set<PtyMode> resolveEnabledOptions(Map<PtyMode, ?> modes, PtyMode ... options) {
+    public static Set<PtyMode> resolveEnabledOptions(Map<PtyMode, ?> modes, PtyMode... options) {
         return resolveEnabledOptions(modes, GenericUtils.of(options));
     }
 

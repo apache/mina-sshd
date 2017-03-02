@@ -141,7 +141,7 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
         return null;
     }
 
-    static KeyPairResourceParser aggregate(KeyPairResourceParser ... parsers) {
+    static KeyPairResourceParser aggregate(KeyPairResourceParser... parsers) {
         return aggregate(Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(parsers, "No parsers to aggregate")));
     }
 

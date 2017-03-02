@@ -132,7 +132,7 @@ public interface PasswordIdentityProvider {
      * @return The wrapping provider
      * @see #multiProvider(Collection)
      */
-    static PasswordIdentityProvider multiProvider(PasswordIdentityProvider ... providers) {
+    static PasswordIdentityProvider multiProvider(PasswordIdentityProvider... providers) {
         return multiProvider(GenericUtils.asList(providers));
     }
 
@@ -166,7 +166,7 @@ public interface PasswordIdentityProvider {
      * (i.e., returns {@link #EMPTY_PASSWORDS_PROVIDER})
      * @return The provider wrapper
      */
-    static PasswordIdentityProvider wrap(String ... passwords) {
+    static PasswordIdentityProvider wrap(String... passwords) {
         return wrap(GenericUtils.asList(passwords));
     }
 
@@ -177,7 +177,7 @@ public interface PasswordIdentityProvider {
      * (i.e., returns {@link #EMPTY_PASSWORDS_PROVIDER})
      * @return The provider wrapper
      */
-    static PasswordIdentityProvider wrap(final Iterable<String> passwords) {
+    static PasswordIdentityProvider wrap(Iterable<String> passwords) {
         return (passwords == null) ? EMPTY_PASSWORDS_PROVIDER : () -> passwords;
     }
 }

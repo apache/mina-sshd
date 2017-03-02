@@ -46,7 +46,7 @@ public abstract class SecurityProviderRegistrarTestSupport extends BaseTestSuppo
     }
 
     public static void assertSecurityEntitySupportState(
-            String prefix, SecurityProviderRegistrar registrar, boolean expected, String name, Class<?> ... entities) {
+            String prefix, SecurityProviderRegistrar registrar, boolean expected, String name, Class<?>... entities) {
         assertSecurityEntitySupportState(prefix, registrar, expected, name, Arrays.asList(entities));
     }
 

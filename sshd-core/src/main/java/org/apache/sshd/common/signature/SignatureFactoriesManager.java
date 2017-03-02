@@ -50,7 +50,7 @@ public interface SignatureFactoriesManager {
     default void setSignatureFactoriesNameList(String names) {
         setSignatureFactoriesNames(GenericUtils.split(names, ','));
     }
-    default void setSignatureFactoriesNames(String ... names) {
+    default void setSignatureFactoriesNames(String... names) {
         setSignatureFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.emptyList() : Arrays.asList(names));
     }
     default void setSignatureFactoriesNames(Collection<String> names) {

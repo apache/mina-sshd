@@ -129,7 +129,7 @@ public interface KeyPairProvider extends KeyIdentityProvider {
      * @return The provider wrapper
      * @see #wrap(Iterable)
      */
-    static KeyPairProvider wrap(KeyPair ... pairs) {
+    static KeyPairProvider wrap(KeyPair... pairs) {
         return GenericUtils.isEmpty(pairs) ? EMPTY_KEYPAIR_PROVIDER : wrap(Arrays.asList(pairs));
     }
 

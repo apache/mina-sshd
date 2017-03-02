@@ -258,7 +258,7 @@ public final class SttySupport {
      * @throws IOException If failed to execute the command
      * @throws InterruptedException If interrupted while awaiting command execution
      */
-    private static String exec(String ... cmd)
+    private static String exec(String... cmd)
             throws IOException, InterruptedException {
         try (ByteArrayOutputStream bout = new ByteArrayOutputStream()) {
             Process p = Runtime.getRuntime().exec(cmd);

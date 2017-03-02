@@ -52,7 +52,7 @@ public class FileKeyPairProvider extends AbstractResourceKeyPairProvider<Path> {
         this(Collections.singletonList(Objects.requireNonNull(path, "No path provided")));
     }
 
-    public FileKeyPairProvider(Path ... files) {
+    public FileKeyPairProvider(Path... files) {
         this(Arrays.asList(files));
     }
 

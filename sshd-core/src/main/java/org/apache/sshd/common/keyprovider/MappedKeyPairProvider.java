@@ -48,7 +48,7 @@ public class MappedKeyPairProvider implements KeyPairProvider {
 
     private final Map<String, KeyPair> pairsMap;
 
-    public MappedKeyPairProvider(KeyPair ... pairs) {
+    public MappedKeyPairProvider(KeyPair... pairs) {
         this(GenericUtils.isEmpty(pairs) ? Collections.emptyList() : Arrays.asList(pairs));
     }
 

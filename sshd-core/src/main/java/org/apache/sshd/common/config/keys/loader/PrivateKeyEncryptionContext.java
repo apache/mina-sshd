@@ -101,7 +101,7 @@ public class PrivateKeyEncryptionContext implements Cloneable {
         return initVector;
     }
 
-    public void setInitVector(byte ... values) {
+    public void setInitVector(byte... values) {
         initVector = values;
     }
 

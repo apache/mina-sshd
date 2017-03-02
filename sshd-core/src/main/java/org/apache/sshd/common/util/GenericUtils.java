@@ -430,7 +430,7 @@ public final class GenericUtils {
     }
 
     @SafeVarargs
-    public static <T> List<T> unmodifiableList(T ... values) {
+    public static <T> List<T> unmodifiableList(T... values) {
         return unmodifiableList(asList(values));
     }
 
@@ -447,17 +447,17 @@ public final class GenericUtils {
     }
 
     @SafeVarargs
-    public static <T> List<T> asList(T ... values) {
+    public static <T> List<T> asList(T... values) {
         return isEmpty(values) ? Collections.emptyList() : Arrays.asList(values);
     }
 
     @SafeVarargs
-    public static <T> Set<T> asSet(T ... values) {
+    public static <T> Set<T> asSet(T... values) {
         return new HashSet<>(asList(values));
     }
 
     @SafeVarargs
-    public static <V extends Comparable<V>> SortedSet<V> asSortedSet(V ... values) {
+    public static <V extends Comparable<V>> SortedSet<V> asSortedSet(V... values) {
         return asSortedSet(Comparator.naturalOrder(), values);
     }
 
@@ -473,7 +473,7 @@ public final class GenericUtils {
      * using the provided comparator
      */
     @SafeVarargs
-    public static <V> SortedSet<V> asSortedSet(Comparator<? super V> comp, V ... values) {
+    public static <V> SortedSet<V> asSortedSet(Comparator<? super V> comp, V... values) {
         return asSortedSet(comp, isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
     }
 
@@ -520,7 +520,7 @@ public final class GenericUtils {
 
     @SafeVarargs
     public static <K, V> Map<K, V> mapValues(
-            Function<? super V, ? extends K> keyMapper, Supplier<? extends Map<K, V>> mapCreator, V ... values) {
+            Function<? super V, ? extends K> keyMapper, Supplier<? extends Map<K, V>> mapCreator, V... values) {
         return mapValues(keyMapper, mapCreator, isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
     }
 
@@ -556,7 +556,7 @@ public final class GenericUtils {
     }
 
     @SafeVarargs
-    public static <T> T findFirstMatchingMember(Predicate<? super T> acceptor, T ... values) {
+    public static <T> T findFirstMatchingMember(Predicate<? super T> acceptor, T... values) {
         return findFirstMatchingMember(acceptor, isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
     }
 
@@ -574,7 +574,7 @@ public final class GenericUtils {
      * @return A {@link List} of all the values that were accepted by the predicate
      */
     @SafeVarargs
-    public static <T> List<T> selectMatchingMembers(Predicate<? super T> acceptor, T ... values) {
+    public static <T> List<T> selectMatchingMembers(Predicate<? super T> acceptor, T... values) {
         return selectMatchingMembers(acceptor, isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
     }
 

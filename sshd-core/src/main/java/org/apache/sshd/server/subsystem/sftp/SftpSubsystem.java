@@ -2832,7 +2832,7 @@ public class SftpSubsystem
      * @throws IOException If failed to access the file
      * @see #resolveMissingFileAttributes(Path, int, Map, LinkOption...)
      */
-    protected Map<String, Object> getAttributes(Path file, int flags, LinkOption ... options) throws IOException {
+    protected Map<String, Object> getAttributes(Path file, int flags, LinkOption... options) throws IOException {
         FileSystem           fs = file.getFileSystem();
         Collection<String>   supportedViews = fs.supportedFileAttributeViews();
         Map<String, Object>  attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -2881,7 +2881,7 @@ public class SftpSubsystem
      * an <U>error</U> is returned to the SFTP client
      * @see #FILEATTRS_RESOLVERS
      */
-    protected Map<String, Object> resolveMissingFileAttributes(Path file, int flags, Map<String, Object> current, LinkOption ... options) throws IOException {
+    protected Map<String, Object> resolveMissingFileAttributes(Path file, int flags, Map<String, Object> current, LinkOption... options) throws IOException {
         Map<String, Object> attrs = null;
         // Cannot use forEach because the attrs variable is not effectively final
         for (Map.Entry<String, FileInfoExtractor<?>> re : FILEATTRS_RESOLVERS.entrySet()) {
@@ -2923,7 +2923,7 @@ public class SftpSubsystem
         }
     }
 
-    protected Object resolveMissingFileAttributeValue(Path file, String name, Object value, FileInfoExtractor<?> x, LinkOption ... options) throws IOException {
+    protected Object resolveMissingFileAttributeValue(Path file, String name, Object value, FileInfoExtractor<?> x, LinkOption... options) throws IOException {
         if (value != null) {
             return value;
         } else {
@@ -2931,7 +2931,7 @@ public class SftpSubsystem
         }
     }
 
-    protected Map<String, Object> addMissingAttribute(Path file, Map<String, Object> current, String name, FileInfoExtractor<?> x, LinkOption ... options) throws IOException {
+    protected Map<String, Object> addMissingAttribute(Path file, Map<String, Object> current, String name, FileInfoExtractor<?> x, LinkOption... options) throws IOException {
         Object value = GenericUtils.isEmpty(current) ? null : current.get(name);
         if (value != null) {    // already have the value
             return current;
@@ -2951,7 +2951,7 @@ public class SftpSubsystem
         return current;
     }
 
-    protected Map<String, Object> readFileAttributes(Path file, String view, LinkOption ... options) throws IOException {
+    protected Map<String, Object> readFileAttributes(Path file, String view, LinkOption... options) throws IOException {
         try {
             return Files.readAttributes(file, view, options);
         } catch (IOException e) {
@@ -2994,7 +2994,7 @@ public class SftpSubsystem
         listener.modifiedAttributes(session, file, attributes, null);
     }
 
-    protected void setFileAttributes(Path file, Map<String, ?> attributes, LinkOption ... options) throws IOException {
+    protected void setFileAttributes(Path file, Map<String, ?> attributes, LinkOption... options) throws IOException {
         Set<String> unsupported = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         // Cannot use forEach because of the potential IOException being thrown
         for (Map.Entry<String, ?> ae : attributes.entrySet()) {
@@ -3079,7 +3079,7 @@ public class SftpSubsystem
         }
     }
 
-    protected void setFileAttribute(Path file, String view, String attribute, Object value, LinkOption ... options) throws IOException {
+    protected void setFileAttribute(Path file, String view, String attribute, Object value, LinkOption... options) throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("setFileAttribute({})[{}] {}:{}={}", getServerSession(), file, view, attribute, value);
         }
@@ -3105,7 +3105,7 @@ public class SftpSubsystem
         }
     }
 
-    protected void setFileTime(Path file, String view, String attribute, FileTime value, LinkOption ... options) throws IOException {
+    protected void setFileTime(Path file, String view, String attribute, FileTime value, LinkOption... options) throws IOException {
         if (value == null) {
             return;
         }
@@ -3117,7 +3117,7 @@ public class SftpSubsystem
         Files.setAttribute(file, view + ":" + attribute, value, options);
     }
 
-    protected void setFileOwnership(Path file, String attribute, Principal value, LinkOption ... options) throws IOException {
+    protected void setFileOwnership(Path file, String attribute, Principal value, LinkOption... options) throws IOException {
         if (value == null) {
             return;
         }
@@ -3160,7 +3160,7 @@ public class SftpSubsystem
         }
     }
 
-    protected void setFileExtensions(Path file, Map<String, byte[]> extensions, LinkOption ... options) throws IOException {
+    protected void setFileExtensions(Path file, Map<String, byte[]> extensions, LinkOption... options) throws IOException {
         if (GenericUtils.isEmpty(extensions)) {
             return;
         }
@@ -3181,7 +3181,7 @@ public class SftpSubsystem
         }
     }
 
-    protected void setFilePermissions(Path file, Set<PosixFilePermission> perms, LinkOption ... options) throws IOException {
+    protected void setFilePermissions(Path file, Set<PosixFilePermission> perms, LinkOption... options) throws IOException {
         if (OsUtils.isWin32()) {
             IoUtils.setPermissionsToFile(file.toFile(), perms);
             return;
@@ -3198,7 +3198,7 @@ public class SftpSubsystem
         view.setPermissions(perms);
     }
 
-    protected void setFileAccessControl(Path file, List<AclEntry> acl, LinkOption ... options) throws IOException {
+    protected void setFileAccessControl(Path file, List<AclEntry> acl, LinkOption... options) throws IOException {
         AclFileAttributeView view = Files.getFileAttributeView(file, AclFileAttributeView.class, options);
         if (view == null) {
             throw new UnsupportedOperationException("ACL view not supported for " + file);

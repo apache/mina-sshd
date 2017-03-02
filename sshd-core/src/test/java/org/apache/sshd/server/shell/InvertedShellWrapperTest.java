@@ -243,7 +243,7 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
         return newDelayedInputStream(callsCount, data.getBytes(StandardCharsets.UTF_8));
     }
 
-    private static InputStream newDelayedInputStream(final int callsCount, byte ... data) {
+    private static InputStream newDelayedInputStream(final int callsCount, byte... data) {
         return new ByteArrayInputStream(data) {
             private int delayCount;
 

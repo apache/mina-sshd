@@ -66,7 +66,7 @@ public final class BufferUtils {
         throw new UnsupportedOperationException("No instance allowed");
     }
 
-    public static void dumpHex(SimplifiedLog logger, Level level, String prefix, PropertyResolver resolver, char sep, byte ... data) {
+    public static void dumpHex(SimplifiedLog logger, Level level, String prefix, PropertyResolver resolver, char sep, byte... data) {
         dumpHex(logger, level, prefix, resolver, sep, data, 0, NumberUtils.length(data));
     }
 
@@ -74,7 +74,7 @@ public final class BufferUtils {
         dumpHex(logger, level, prefix, sep, PropertyResolverUtils.getIntProperty(resolver, HEXDUMP_CHUNK_SIZE, DEFAULT_HEXDUMP_CHUNK_SIZE), data, offset, len);
     }
 
-    public static void dumpHex(SimplifiedLog logger, Level level, String prefix, char sep, int chunkSize, byte ... data) {
+    public static void dumpHex(SimplifiedLog logger, Level level, String prefix, char sep, int chunkSize, byte... data) {
         dumpHex(logger, level, prefix, sep, chunkSize, data, 0, NumberUtils.length(data));
     }
 
@@ -148,7 +148,7 @@ public final class BufferUtils {
         }
     }
 
-    public static <A extends Appendable> A appendHex(A sb, char sep, byte ... array) throws IOException {
+    public static <A extends Appendable> A appendHex(A sb, char sep, byte... array) throws IOException {
         return appendHex(sb, array, 0, NumberUtils.length(array), sep);
     }
 
@@ -573,7 +573,7 @@ public final class BufferUtils {
         return value;
     }
 
-    public static long validateInt32Value(long value, String format, Object ... args) {
+    public static long validateInt32Value(long value, String format, Object... args) {
         ValidateUtils.checkTrue(isValidInt32Value(value), format, args);
         return value;
     }
@@ -592,7 +592,7 @@ public final class BufferUtils {
         return value;
     }
 
-    public static long validateUint32Value(long value, String format, Object ... args) {
+    public static long validateUint32Value(long value, String format, Object... args) {
         ValidateUtils.checkTrue(isValidUint32Value(value), format, args);
         return value;
     }

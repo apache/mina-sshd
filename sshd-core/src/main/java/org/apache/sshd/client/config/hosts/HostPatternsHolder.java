@@ -113,7 +113,7 @@ public abstract class HostPatternsHolder {
      * @return A {@link List} of all the matching entries
      * @see #isHostMatch(String)
      */
-    public static List<HostConfigEntry> findMatchingEntries(String host, HostConfigEntry ... entries) {
+    public static List<HostConfigEntry> findMatchingEntries(String host, HostConfigEntry... entries) {
         // TODO in Java-8 use Stream(s) + predicate
         if (GenericUtils.isEmpty(host) || GenericUtils.isEmpty(entries)) {
             return Collections.emptyList();
@@ -207,7 +207,7 @@ public abstract class HostPatternsHolder {
         return m.matches();
     }
 
-    public static List<Pair<Pattern, Boolean>> parsePatterns(CharSequence ... patterns) {
+    public static List<Pair<Pattern, Boolean>> parsePatterns(CharSequence... patterns) {
         return parsePatterns(GenericUtils.isEmpty(patterns) ? Collections.emptyList() : Arrays.asList(patterns));
     }
 

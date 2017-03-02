@@ -83,7 +83,7 @@ public interface SftpVersionSelector {
      * @return A {@link SftpVersionSelector} that attempts to select
      * the most preferred version that is also listed as available.
      */
-    static SftpVersionSelector preferredVersionSelector(final int ... preferred) {
+    static SftpVersionSelector preferredVersionSelector(final int... preferred) {
         return preferredVersionSelector(NumberUtils.asList(preferred));
 
     }

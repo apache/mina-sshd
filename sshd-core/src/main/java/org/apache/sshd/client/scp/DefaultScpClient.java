@@ -178,7 +178,7 @@ public class DefaultScpClient extends AbstractScpClient {
         return true;
     }
 
-    private static String[] normalizeCommandArguments(PrintStream stdout, PrintStream stderr, String ... args) {
+    private static String[] normalizeCommandArguments(PrintStream stdout, PrintStream stderr, String... args) {
         int numArgs = GenericUtils.length(args);
         if (numArgs <= 0) {
             return args;

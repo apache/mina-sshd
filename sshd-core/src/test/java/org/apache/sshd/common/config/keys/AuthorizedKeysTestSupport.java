@@ -51,7 +51,7 @@ public abstract class AuthorizedKeysTestSupport extends BaseTestSupport {
         super();
     }
 
-    protected List<String> writeDefaultSupportedKeys(Path file, OpenOption ... options) throws IOException {
+    protected List<String> writeDefaultSupportedKeys(Path file, OpenOption... options) throws IOException {
         List<String> keyLines = loadDefaultSupportedKeys();
         if (Files.exists(file)) {
             Files.delete(file);
