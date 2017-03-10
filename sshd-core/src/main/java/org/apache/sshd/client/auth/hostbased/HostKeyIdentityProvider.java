@@ -47,9 +47,6 @@ public interface HostKeyIdentityProvider {
     }
 
     static HostKeyIdentityProvider wrap(Iterable<? extends KeyPair> pairs) {
-        return () -> () -> {
-            Iterator<? extends KeyPair> iter = GenericUtils.iteratorOf(pairs);
-            return GenericUtils.wrapIterator(iter, kp -> new Pair<>(kp, Collections.<X509Certificate>emptyList()));
-        };
+        return () -> GenericUtils.wrapIterable(pairs, kp -> new Pair<>(kp, Collections.<X509Certificate>emptyList()));
     }
 }

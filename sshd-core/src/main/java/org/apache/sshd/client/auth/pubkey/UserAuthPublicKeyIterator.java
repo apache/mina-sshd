@@ -27,6 +27,7 @@ import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
@@ -42,22 +43,21 @@ import org.apache.sshd.common.util.GenericUtils;
 public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKeyIdentity> implements Channel {
 
     private final AtomicBoolean open = new AtomicBoolean(true);
-    private final Iterator<Iterator<? extends PublicKeyIdentity>> iterators;
     private Iterator<? extends PublicKeyIdentity> current;
     private SshAgent agent;
 
     public UserAuthPublicKeyIterator(ClientSession session, SignatureFactoriesManager signatureFactories) throws Exception {
         super(session);
 
-        Collection<Iterator<? extends PublicKeyIdentity>> identities = new LinkedList<>();
-        identities.add(new SessionKeyPairIterator(session, signatureFactories, KeyIdentityProvider.iteratorOf(session)));
+        Collection<Stream<? extends PublicKeyIdentity>> identities = new LinkedList<>();
 
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No session factory manager");
         SshAgentFactory factory = manager.getAgentFactory();
         if (factory != null) {
             try {
                 agent = Objects.requireNonNull(factory.createClient(manager), "No agent created");
-                identities.add(new SshAgentPublicKeyIterator(session, agent));
+                identities.add(agent.getIdentities().stream()
+                        .map(kp -> new KeyAgentIdentity(agent, kp.getFirst(), kp.getSecond())));
             } catch (Exception e) {
                 try {
                     closeAgent();
@@ -69,8 +69,12 @@ public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKey
             }
         }
 
-        iterators = GenericUtils.iteratorOf(identities);
-        current = nextIterator(iterators);
+        identities.add(Stream.of(KeyIdentityProvider.providerOf(session))
+                .map(KeyIdentityProvider::loadKeys)
+                .flatMap(GenericUtils::stream)
+                .map(kp -> new KeyPairIdentity(session, signatureFactories, kp)));
+
+        current = identities.stream().flatMap(r -> r).iterator();
     }
 
     @Override
@@ -79,7 +83,7 @@ public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKey
             return false;
         }
 
-        return current != null;
+        return current.hasNext();
     }
 
     @Override
@@ -87,12 +91,7 @@ public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKey
         if (!isOpen()) {
             throw new NoSuchElementException("Iterator is closed");
         }
-
-        PublicKeyIdentity pki = current.next();
-        if (!current.hasNext()) {
-            current = nextIterator(iterators);
-        }
-        return pki;
+        return current.next();
     }
 
     @Override
@@ -117,15 +116,4 @@ public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKey
         }
     }
 
-    protected Iterator<? extends PublicKeyIdentity> nextIterator(
-            Iterator<? extends Iterator<? extends PublicKeyIdentity>> available) {
-        while ((available != null) && available.hasNext()) {
-            Iterator<? extends PublicKeyIdentity> iter = available.next();
-            if (iter.hasNext()) {
-                return iter;
-            }
-        }
-
-        return null;
-    }
 }

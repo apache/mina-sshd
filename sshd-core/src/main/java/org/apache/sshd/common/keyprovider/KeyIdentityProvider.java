@@ -65,6 +65,24 @@ public interface KeyIdentityProvider {
     Iterable<KeyPair> loadKeys();
 
     /**
+     * Creates a &quot;unified&quot; {@link KeyIdentityProvider} of key pairs out of the registered
+     * {@link KeyPair} identities and the extra available ones as a single iterator
+     * of key pairs
+     *
+     *
+     * @param session The {@link ClientSession} - ignored if {@code null} (i.e., empty
+     * iterator returned)
+     * @return The wrapping KeyIdentityProvider
+     * @see ClientSession#getRegisteredIdentities()
+     * @see ClientSession#getKeyPairProvider()
+     */
+    static KeyIdentityProvider providerOf(ClientSession session) {
+        return session == null
+                ? EMPTY_KEYS_PROVIDER
+                : resolveKeyIdentityProvider(session.getRegisteredIdentities(), session.getKeyPairProvider());
+    }
+
+    /**
      * Creates a &quot;unified&quot; {@link Iterator} of key pairs out of the registered
      * {@link KeyPair} identities and the extra available ones as a single iterator
      * of key pairs
@@ -76,7 +94,7 @@ public interface KeyIdentityProvider {
      * @see ClientSession#getKeyPairProvider()
      */
     static Iterator<KeyPair> iteratorOf(ClientSession session) {
-        return (session == null) ? Collections.<KeyPair>emptyIterator() : iteratorOf(session.getRegisteredIdentities(), session.getKeyPairProvider());
+        return iteratorOf(providerOf(session));
     }
 
     /**

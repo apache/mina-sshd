@@ -24,7 +24,6 @@ import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -70,33 +69,20 @@ public class BuiltinClientIdentitiesWatcher extends ClientIdentitiesWatcher {
     }
 
     @Override
-    public List<KeyPair> loadKeys() {
-        List<KeyPair> keys = super.loadKeys();
-        if (GenericUtils.isEmpty(keys) || (!isSupportedOnly())) {
-            return keys;
+    public Iterable<KeyPair> loadKeys() {
+        return isSupportedOnly() ? loadKeys(this::isSupported) : super.loadKeys();
+    }
+
+    private boolean isSupported(KeyPair kp) {
+        BuiltinIdentities id = BuiltinIdentities.fromKeyPair(kp);
+        if ((id != null) && id.isSupported()) {
+            return true;
         }
-
-        Collection<KeyPair> toRemove = null;
-        for (KeyPair kp : keys) {
-            BuiltinIdentities id = BuiltinIdentities.fromKeyPair(kp);
-            if ((id != null) && id.isSupported()) {
-                continue;
-            }
-
-            if (log.isDebugEnabled()) {
-                log.debug("loadKeys - remove unsupported identity={}, key-type={}, key={}",
-                          id, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
-            }
-
-            if (toRemove == null) {
-                toRemove = new LinkedList<>();
-            }
-            toRemove.add(kp);
+        if (log.isDebugEnabled()) {
+            log.debug("loadKeys - remove unsupported identity={}, key-type={}, key={}",
+                    id, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
         }
-
-        GenericUtils.forEach(toRemove, keys::remove);
-
-        return keys;
+        return false;
     }
 
     public static List<Path> getDefaultBuiltinIdentitiesPaths(Path keysFolder) {

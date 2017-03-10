@@ -33,7 +33,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
@@ -756,7 +755,13 @@ public final class GenericUtils {
     }
 
     public static <U, V> Iterable<V> wrapIterable(Iterable<? extends U> iter, Function<U, V> mapper) {
-        return () -> wrapIterator(iteratorOf(iter), mapper);
+        return () -> wrapIterator(iter, mapper);
+    }
+
+    public static <U, V> Iterator<V> wrapIterator(Iterable<? extends U> iter, Function<U, V> mapper) {
+        return stream(iter)
+                .map(mapper::apply)
+                .iterator();
     }
 
     public static <U, V> Iterator<V> wrapIterator(Iterator<? extends U> iter, Function<U, V> mapper) {
@@ -784,41 +789,7 @@ public final class GenericUtils {
      * @return The wrapping instance
      */
     public static <T> Iterable<T> multiIterableSuppliers(Iterable<? extends Supplier<? extends Iterable<? extends T>>> providers) {
-        return (providers == null) ? Collections.emptyList() : () -> new Iterator<T>() {
-            private final Iterator<? extends Supplier<? extends Iterable<? extends T>>> iter = iteratorOf(providers);
-            private Iterator<? extends T> current = nextIterator();
-
-            @Override
-            public boolean hasNext() {
-                return current != null;
-            }
-
-            @Override
-            public T next() {
-                if (current == null) {
-                    throw new NoSuchElementException("No more elements");
-                }
-
-                T value = current.next();
-                if (!current.hasNext()) {
-                    current = nextIterator();
-                }
-
-                return value;
-            }
-
-            private Iterator<? extends T> nextIterator() {
-                while (iter.hasNext()) {
-                    Supplier<? extends Iterable<? extends T>> supplier = iter.next();
-                    Iterator<? extends T> values = iteratorOf((supplier == null) ? null : supplier.get());
-                    if (values.hasNext()) {
-                        return values;
-                    }
-                }
-
-                return null;
-            }
-        };
+        return () -> stream(providers).flatMap(s -> stream(s.get())).map(u -> (T) u).iterator();
     }
 
     public static <K, V> MapBuilder<K, V> mapBuilder() {

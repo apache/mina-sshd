@@ -21,12 +21,15 @@ package org.apache.sshd.client.config.keys;
 
 import java.nio.file.Path;
 import java.security.KeyPair;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
@@ -69,32 +72,46 @@ public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements 
     }
 
     @Override
-    public List<KeyPair> loadKeys() {
-        if (GenericUtils.isEmpty(providers)) {
-            return Collections.emptyList();
-        }
+    public Iterable<KeyPair> loadKeys() {
+        return loadKeys(null);
+    }
 
-        List<KeyPair> keys = new ArrayList<>(providers.size()); // optimistic initialization
-        for (ClientIdentityProvider p : providers) {
-            try {
-                KeyPair kp = p.getClientIdentity();
-                if (kp == null) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("loadKeys({}) no key loaded", p);
-                    }
-                    continue;
-                }
+    protected Iterable<KeyPair> loadKeys(Predicate<KeyPair> filter) {
+        return () -> {
+            Stream<KeyPair> stream = safeMap(GenericUtils.stream(providers), this::doGetKeyPair);
+            if (filter != null) {
+                stream = stream.filter(filter);
+            }
+            return stream.iterator();
+        };
+    }
 
-                keys.add(kp);
-            } catch (Throwable e) {
-                log.warn("loadKeys({}) failed ({}) to load key: {}", p, e.getClass().getSimpleName(), e.getMessage());
+    /**
+     * Performs a mapping operation on the stream, discarding any null values
+     * returned by the mapper.
+     */
+    private <U, V> Stream<V> safeMap(Stream<U> stream, Function<U, V> mapper) {
+        return stream.map(u -> Optional.ofNullable(mapper.apply(u)))
+                .filter(Optional::isPresent)
+                .map(Optional::get);
+    }
+
+    private KeyPair doGetKeyPair(ClientIdentityProvider p) {
+        try {
+            KeyPair kp = p.getClientIdentity();
+            if (kp == null) {
                 if (log.isDebugEnabled()) {
-                    log.debug("loadKeys(" + p + ") key load failure details", e);
+                    log.debug("loadKeys({}) no key loaded", p);
                 }
             }
+            return kp;
+        } catch (Throwable e) {
+            log.warn("loadKeys({}) failed ({}) to load key: {}", p, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("loadKeys(" + p + ") key load failure details", e);
+            }
+            return null;
         }
-
-        return keys;
     }
 
     public static List<ClientIdentityProvider> buildProviders(
