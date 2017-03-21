@@ -76,7 +76,7 @@ public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements 
         return loadKeys(null);
     }
 
-    protected Iterable<KeyPair> loadKeys(Predicate<KeyPair> filter) {
+    protected Iterable<KeyPair> loadKeys(Predicate<? super KeyPair> filter) {
         return () -> {
             Stream<KeyPair> stream = safeMap(GenericUtils.stream(providers), this::doGetKeyPair);
             if (filter != null) {
@@ -89,14 +89,20 @@ public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements 
     /**
      * Performs a mapping operation on the stream, discarding any null values
      * returned by the mapper.
+     *
+     * @param <U> Original type
+     * @param <V> Mapped type
+     * @param stream Original values stream
+     * @param mapper Mapper to target type
+     * @return Mapped stream
      */
-    private <U, V> Stream<V> safeMap(Stream<U> stream, Function<U, V> mapper) {
+    protected <U, V> Stream<V> safeMap(Stream<U> stream, Function<? super U, ? extends V> mapper) {
         return stream.map(u -> Optional.ofNullable(mapper.apply(u)))
                 .filter(Optional::isPresent)
                 .map(Optional::get);
     }
 
-    private KeyPair doGetKeyPair(ClientIdentityProvider p) {
+    protected KeyPair doGetKeyPair(ClientIdentityProvider p) {
         try {
             KeyPair kp = p.getClientIdentity();
             if (kp == null) {

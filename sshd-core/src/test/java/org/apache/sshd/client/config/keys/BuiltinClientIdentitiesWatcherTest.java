@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.EnumMap;
@@ -141,7 +142,11 @@ public class BuiltinClientIdentitiesWatcherTest extends BaseTestSupport {
     }
 
     private static void testMultipleFilesWatch(String phase, KeyIdentityProvider watcher, Collection<? extends KeyPair> expected) {
-        Collection<? extends KeyPair> actual = (Collection<? extends KeyPair>) watcher.loadKeys();
+        Iterable<KeyPair> keys = watcher.loadKeys();
+        Collection<KeyPair> actual = new ArrayList<>();
+        for (KeyPair kp : keys) {
+            actual.add(kp);
+        }
         assertEquals(phase + ": mismatched sizes", GenericUtils.size(expected), GenericUtils.size(actual));
 
         if (!GenericUtils.isEmpty(expected)) {
