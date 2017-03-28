@@ -36,7 +36,7 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegistrar {
-    public static final String PROVIDER_CLASS = "net.i2p.crypto.eddsa.EdDSASecurityProvider";
+    public static final String PROVIDER_CLASS = "org.apache.sshd.common.util.security.eddsa.EdDSASecurityProvider";
     // Do not define a static registrar instance to minimize class loading issues
     private final AtomicReference<Boolean> supportHolder = new AtomicReference<>(null);
 

@@ -25,7 +25,7 @@ import java.security.PublicKey;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
-import org.apache.sshd.common.util.security.eddsa.EdDSASecurityProviderUtils;
+import org.apache.sshd.common.util.security.eddsa.EdDSASecurityProvider;
 import org.apache.sshd.util.test.BaseTestSupport;
 
 /**
@@ -64,9 +64,9 @@ public class SignaturesDevelopment extends BaseTestSupport {
         SignatureFactory factory = BuiltinSignatures.resolveFactory(args[0]);
         // TODO recover public/private keys according to factory name
         byte[] publicKey = BufferUtils.decodeHex(':', args[1]);
-        PublicKey pubKey = EdDSASecurityProviderUtils.generateEDDSAPublicKey(publicKey);
+        PublicKey pubKey = EdDSASecurityProvider.generateEDDSAPublicKey(publicKey);
         byte[] privateKey = BufferUtils.decodeHex(':', args[2]);
-        PrivateKey prvKey = EdDSASecurityProviderUtils.generateEDDSAPrivateKey(privateKey);
+        PrivateKey prvKey = EdDSASecurityProvider.generateEDDSAPrivateKey(privateKey);
         String op = args[3];
         byte[] data = BufferUtils.decodeHex(':', args[4]);
         byte[] signature = GenericUtils.EMPTY_BYTE_ARRAY;

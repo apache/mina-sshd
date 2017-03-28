@@ -26,8 +26,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 
-import net.i2p.crypto.eddsa.EdDSASecurityProvider;
-
 import org.apache.sshd.common.util.security.SecurityProviderRegistrar;
 import org.apache.sshd.common.util.security.SecurityProviderRegistrarTestSupport;
 import org.apache.sshd.common.util.security.SecurityUtils;

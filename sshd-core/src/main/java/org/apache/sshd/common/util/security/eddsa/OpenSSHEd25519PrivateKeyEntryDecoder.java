@@ -98,7 +98,7 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
 
     @Override
     public EdDSAPublicKey recoverPublicKey(EdDSAPrivateKey prvKey) throws GeneralSecurityException {
-        return EdDSASecurityProviderUtils.recoverEDDSAPublicKey(prvKey);
+        return EdDSASecurityProvider.recoverEDDSAPublicKey(prvKey);
     }
 
     @Override
