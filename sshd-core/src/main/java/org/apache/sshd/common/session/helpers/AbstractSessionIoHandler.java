@@ -37,9 +37,8 @@ public abstract class AbstractSessionIoHandler extends AbstractLoggingBean imple
 
     @Override
     public void sessionCreated(IoSession ioSession) throws Exception {
-        AbstractSession session = ValidateUtils.checkNotNull(
+        ValidateUtils.checkNotNull(
                 createSession(ioSession), "No session created for %s", ioSession);
-        AbstractSession.attachSession(ioSession, session);
     }
 
     @Override

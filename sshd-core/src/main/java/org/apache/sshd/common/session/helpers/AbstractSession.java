@@ -255,6 +255,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         this.ioSession = ioSession;
         this.decoderBuffer = new SessionWorkBuffer(this);
 
+        attachSession(ioSession, this);
+
         Factory<Random> factory = ValidateUtils.checkNotNull(factoryManager.getRandomFactory(), "No random factory for %s", ioSession);
         random = ValidateUtils.checkNotNull(factory.create(), "No randomizer instance for %s", ioSession);
 
