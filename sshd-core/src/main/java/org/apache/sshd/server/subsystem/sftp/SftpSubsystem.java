@@ -57,6 +57,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -266,6 +267,17 @@ public class SftpSubsystem
                 .put("size", FileInfoExtractor.SIZE)
                 .put("lastModifiedTime", FileInfoExtractor.LASTMODIFIED)
                 .immutable();
+
+    /**
+     * Whether to automatically follow symbolic links when resolving paths
+     * @see #DEFAULT_AUTO_FOLLOW_LINKS
+     */
+    public static final String AUTO_FOLLOW_LINKS = "sftp-auto-follow-links";
+
+    /**
+     * Default value of {@value #AUTO_FOLLOW_LINKS}
+     */
+    public static final boolean DEFAULT_AUTO_FOLLOW_LINKS = true;
 
     protected ExitCallback callback;
     protected InputStream in;
@@ -905,7 +917,9 @@ public class SftpSubsystem
         send(buffer);
     }
 
-    protected byte[] doMD5Hash(int id, String targetType, String target, long startOffset, long length, byte[] quickCheckHash) throws Exception {
+    protected byte[] doMD5Hash(
+            int id, String targetType, String target, long startOffset, long length, byte[] quickCheckHash)
+                    throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("doMD5Hash({})({})[{}] offset={}, length={}, quick-hash={}",
                       getServerSession(), targetType, target, startOffset, length,
@@ -931,7 +945,7 @@ public class SftpSubsystem
             }
         } else {
             path = resolveFile(target);
-            if (Files.isDirectory(path, IoUtils.getLinkOptions(false))) {
+            if (Files.isDirectory(path, IoUtils.getLinkOptions(true))) {
                 throw new NotDirectoryException(path.toString());
             }
         }
@@ -1532,8 +1546,13 @@ public class SftpSubsystem
             log.debug("doStat({})[id={}] SSH_FXP_STAT (path={}, flags=0x{})",
                       getServerSession(), id, path, Integer.toHexString(flags));
         }
+
+        /*
+         * SSH_FXP_STAT and SSH_FXP_LSTAT only differ in that SSH_FXP_STAT
+         * follows symbolic links on the server, whereas SSH_FXP_LSTAT does not.
+         */
         Path p = resolveFile(path);
-        return resolveFileAttributes(p, flags, IoUtils.getLinkOptions(false));
+        return resolveFileAttributes(p, flags, IoUtils.getLinkOptions(true));
     }
 
     protected void doRealPath(Buffer buffer, int id) throws IOException {
@@ -1549,7 +1568,6 @@ public class SftpSubsystem
         Map<String, ?> attrs = Collections.emptyMap();
         Pair<Path, Boolean> result;
         try {
-            LinkOption[] options = IoUtils.getLinkOptions(false);
             if (version < SftpConstants.SFTP_V6) {
                 /*
                  * See http://www.openssh.com/txt/draft-ietf-secsh-filexfer-02.txt:
@@ -1559,7 +1577,10 @@ public class SftpSubsystem
                  *
                  * See also SSHD-294
                  */
-                result = doRealPathV345(id, path, options);
+                Path p = resolveFile(path);
+                LinkOption[] options =
+                    getPathResolutionLinkOption(SftpConstants.SSH_FXP_REALPATH, "", p);
+                result = doRealPathV345(id, path, p, options);
             } else {
                 /*
                  * See https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-8.9
@@ -1581,9 +1602,13 @@ public class SftpSubsystem
                     extraPaths.add(buffer.getString());
                 }
 
-                result = doRealPathV6(id, path, extraPaths, options);
+                Path p = resolveFile(path);
+                LinkOption[] options =
+                    getPathResolutionLinkOption(SftpConstants.SSH_FXP_REALPATH, "", p);
+                result = doRealPathV6(id, path, extraPaths, p, options);
 
-                Path p = result.getFirst();
+                p = result.getFirst();
+                options = getPathResolutionLinkOption(SftpConstants.SSH_FXP_REALPATH, "", p);
                 Boolean status = result.getSecond();
                 switch (control) {
                     case SftpConstants.SSH_FXP_REALPATH_STAT_IF:
@@ -1591,7 +1616,7 @@ public class SftpSubsystem
                             attrs = handleUnknownStatusFileAttributes(p, SftpConstants.SSH_FILEXFER_ATTR_ALL, options);
                         } else if (status) {
                             try {
-                                attrs = getAttributes(p, IoUtils.getLinkOptions(false));
+                                attrs = getAttributes(p, options);
                             } catch (IOException e) {
                                 if (log.isDebugEnabled()) {
                                     log.debug("doRealPath({}) - failed ({}) to retrieve attributes of {}: {}",
@@ -1631,8 +1656,8 @@ public class SftpSubsystem
         sendPath(BufferUtils.clear(buffer), id, result.getFirst(), attrs);
     }
 
-    protected Pair<Path, Boolean> doRealPathV6(int id, String path, Collection<String> extraPaths, LinkOption... options) throws IOException {
-        Path p = resolveFile(path);
+    protected Pair<Path, Boolean> doRealPathV6(
+            int id, String path, Collection<String> extraPaths, Path p, LinkOption... options) throws IOException {
         int numExtra = GenericUtils.size(extraPaths);
         if (numExtra > 0) {
             if (log.isDebugEnabled()) {
@@ -1644,6 +1669,7 @@ public class SftpSubsystem
 
             for (String p2 : extraPaths) {
                 p = p.resolve(p2);
+                options = getPathResolutionLinkOption(SftpConstants.SSH_FXP_REALPATH, "", p);
                 sb.append('/').append(p2);
             }
 
@@ -1653,8 +1679,8 @@ public class SftpSubsystem
         return validateRealPath(id, path, p, options);
     }
 
-    protected Pair<Path, Boolean> doRealPathV345(int id, String path, LinkOption... options) throws IOException {
-        return validateRealPath(id, path, resolveFile(path), options);
+    protected Pair<Path, Boolean> doRealPathV345(int id, String path, Path p, LinkOption... options) throws IOException {
+        return validateRealPath(id, path, p, options);
     }
 
     /**
@@ -1767,6 +1793,10 @@ public class SftpSubsystem
     protected void doRemove(Buffer buffer, int id) throws IOException {
         String path = buffer.getString();
         try {
+            /*
+             * If 'filename' is a symbolic link, the link is removed,
+             * not the file it points to.
+             */
             doRemove(id, path, IoUtils.getLinkOptions(false));
         } catch (IOException | RuntimeException e) {
             sendStatus(BufferUtils.clear(buffer), id, e);
@@ -1813,7 +1843,8 @@ public class SftpSubsystem
             }
 
             Path file = dh.getFile();
-            LinkOption[] options = IoUtils.getLinkOptions(false);
+            LinkOption[] options =
+                getPathResolutionLinkOption(SftpConstants.SSH_FXP_READDIR, "", file);
             Boolean status = IoUtils.checkFileExists(file, options);
             if (status == null) {
                 throw new AccessDeniedException("Cannot determine existence of read-dir for " + file);
@@ -1840,14 +1871,16 @@ public class SftpSubsystem
                 reply.putInt(0);
 
                 ServerSession session = getServerSession();
-                int maxDataSize = PropertyResolverUtils.getIntProperty(session, MAX_READDIR_DATA_SIZE_PROP, DEFAULT_MAX_READDIR_DATA_SIZE);
-                int count = doReadDir(id, handle, dh, reply, maxDataSize);
+                int maxDataSize =
+                    PropertyResolverUtils.getIntProperty(session, MAX_READDIR_DATA_SIZE_PROP, DEFAULT_MAX_READDIR_DATA_SIZE);
+                int count = doReadDir(id, handle, dh, reply, maxDataSize, options);
                 BufferUtils.updateLengthPlaceholder(reply, lenPos, count);
                 if ((!dh.isSendDot()) && (!dh.isSendDotDot()) && (!dh.hasNext())) {
                     dh.markDone();
                 }
 
-                Boolean indicator = SftpHelper.indicateEndOfNamesList(reply, getVersion(), session, dh.isDone());
+                Boolean indicator =
+                    SftpHelper.indicateEndOfNamesList(reply, getVersion(), session, dh.isDone());
                 if (log.isDebugEnabled()) {
                     log.debug("doReadDir({})({})[{}] - seding {} entries - eol={}", session, handle, h, count, indicator);
                 }
@@ -1872,7 +1905,15 @@ public class SftpSubsystem
         String handle;
 
         try {
-            handle = doOpenDir(id, path, IoUtils.getLinkOptions(false));
+            Path p = resolveNormalizedLocation(path);
+            if (log.isDebugEnabled()) {
+                log.debug("doOpenDir({})[id={}] SSH_FXP_OPENDIR (path={})[{}]",
+                          getServerSession(), id, path, p);
+            }
+
+            LinkOption[] options =
+                getPathResolutionLinkOption(SftpConstants.SSH_FXP_OPENDIR, "", p);
+            handle = doOpenDir(id, path, p, options);
         } catch (IOException | RuntimeException e) {
             sendStatus(BufferUtils.clear(buffer), id, e);
             return;
@@ -1881,13 +1922,7 @@ public class SftpSubsystem
         sendHandle(BufferUtils.clear(buffer), id, handle);
     }
 
-    protected String doOpenDir(int id, String path, LinkOption... options) throws IOException {
-        Path p = resolveNormalizedLocation(path);
-        if (log.isDebugEnabled()) {
-            log.debug("doOpenDir({})[id={}] SSH_FXP_OPENDIR (path={})[{}]",
-                      getServerSession(), id, path, p);
-        }
-
+    protected String doOpenDir(int id, String path, Path p, LinkOption... options) throws IOException {
         Boolean status = IoUtils.checkFileExists(p, options);
         if (status == null) {
             throw new AccessDeniedException("Cannot determine open-dir existence for " + p);
@@ -2005,6 +2040,10 @@ public class SftpSubsystem
                       getServerSession(), id, path, p, Integer.toHexString(flags));
         }
 
+        /*
+         * SSH_FXP_STAT and SSH_FXP_LSTAT only differ in that SSH_FXP_STAT
+         * follows symbolic links on the server, whereas SSH_FXP_LSTAT does not.
+         */
         return resolveFileAttributes(p, flags, IoUtils.getLinkOptions(false));
     }
 
@@ -2670,13 +2709,14 @@ public class SftpSubsystem
      * @param dir     The {@link DirectoryHandle}
      * @param buffer  The {@link Buffer} to write the results
      * @param maxSize Max. buffer size
+     * @param options The {@link LinkOption}-s to use when querying the directory contents
      * @return Number of written entries
      * @throws IOException If failed to generate an entry
      */
-    protected int doReadDir(int id, String handle, DirectoryHandle dir, Buffer buffer, int maxSize) throws IOException {
+    protected int doReadDir(
+            int id, String handle, DirectoryHandle dir, Buffer buffer, int maxSize, LinkOption ... options) throws IOException {
         int nb = 0;
-        LinkOption[] options = IoUtils.getLinkOptions(false);
-        Map<String, Path> entries = new TreeMap<>();
+        Map<String, Path> entries = new TreeMap<>(Comparator.naturalOrder());
         while ((dir.isSendDot() || dir.isSendDotDot() || dir.hasNext()) && (buffer.wpos() < maxSize)) {
             if (dir.isSendDot()) {
                 writeDirEntry(id, dir, entries, buffer, nb, dir.getFile(), ".", options);
@@ -2992,6 +3032,12 @@ public class SftpSubsystem
             throw e;
         }
         listener.modifiedAttributes(session, file, attributes, null);
+    }
+
+    protected LinkOption[] getPathResolutionLinkOption(int cmd, String extension, Path path) throws IOException {
+        ServerSession session = getServerSession();
+        boolean followLinks = PropertyResolverUtils.getBooleanProperty(session, AUTO_FOLLOW_LINKS, DEFAULT_AUTO_FOLLOW_LINKS);
+        return IoUtils.getLinkOptions(followLinks);
     }
 
     protected void setFileAttributes(Path file, Map<String, ?> attributes, LinkOption... options) throws IOException {

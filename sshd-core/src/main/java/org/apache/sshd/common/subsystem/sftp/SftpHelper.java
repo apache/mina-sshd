@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystemLoopException;
 import java.nio.file.InvalidPathException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
@@ -434,6 +435,7 @@ public final class SftpHelper {
      * @param t The thrown {@link Throwable}
      * @return The matching sub-status
      */
+    @SuppressWarnings("checkstyle:ReturnCount")
     public static int resolveSubstatus(Throwable t) {
         if ((t instanceof NoSuchFileException) || (t instanceof FileNotFoundException)) {
             return SftpConstants.SSH_FX_NO_SUCH_FILE;
@@ -461,6 +463,8 @@ public final class SftpHelper {
             return SftpConstants.SSH_FX_OP_UNSUPPORTED;
         } else if (t instanceof UserPrincipalNotFoundException) {
             return SftpConstants.SSH_FX_UNKNOWN_PRINCIPAL;
+        } else if (t instanceof FileSystemLoopException) {
+            return SftpConstants.SSH_FX_LINK_LOOP;
         } else if (t instanceof SftpException) {
             return ((SftpException) t).getStatus();
         } else {
