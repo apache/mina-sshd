@@ -24,11 +24,11 @@ import java.security.Key;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.Provider;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Objects;
 
+import net.i2p.crypto.eddsa.EdDSAEngine;
 import net.i2p.crypto.eddsa.EdDSAKey;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
@@ -47,16 +47,12 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class EdDSASecurityProvider extends Provider {
-    private static final long serialVersionUID = -6183277432144104981L;
+public final class EdDSASecurityProviderUtils {
+    // See EdDSANamedCurveTable
+    public static final String CURVE_ED25519_SHA512 = "Ed25519";
 
-    public EdDSASecurityProvider() {
-        super(SecurityUtils.EDDSA, 0.1, "net.i2p security provider wrapper");
-
-        // see https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/HowToImplAProvider.html
-        put("KeyPairGenerator." + SecurityUtils.EDDSA, "net.i2p.crypto.eddsa.KeyPairGenerator");
-        put("KeyFactory." + SecurityUtils.EDDSA, "net.i2p.crypto.eddsa.KeyFactory");
-        put("Signature." + EdDSANamedCurveTable.CURVE_ED25519_SHA512, "net.i2p.crypto.eddsa.EdDSAEngine");
+    private EdDSASecurityProviderUtils() {
+        throw new UnsupportedOperationException("No instance");
     }
 
     public static Class<? extends PublicKey> getEDDSAPublicKeyType() {
@@ -93,7 +89,7 @@ public class EdDSASecurityProvider extends Provider {
     }
 
     public static boolean isEDDSASignatureAlgorithm(String algorithm) {
-        return EdDSANamedCurveTable.CURVE_ED25519_SHA512.equalsIgnoreCase(algorithm);
+        return EdDSAEngine.SIGNATURE_ALGORITHM.equalsIgnoreCase(algorithm);
     }
 
     public static EdDSAPublicKey recoverEDDSAPublicKey(PrivateKey key) throws GeneralSecurityException {
@@ -169,7 +165,7 @@ public class EdDSASecurityProvider extends Provider {
             throw new NoSuchAlgorithmException(SecurityUtils.EDDSA + " not supported");
         }
 
-        EdDSAParameterSpec params = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.CURVE_ED25519_SHA512);
+        EdDSAParameterSpec params = EdDSANamedCurveTable.getByName(CURVE_ED25519_SHA512);
         EdDSAPublicKeySpec keySpec = new EdDSAPublicKeySpec(seed, params);
         KeyFactory factory = SecurityUtils.getKeyFactory(SecurityUtils.EDDSA);
         return factory.generatePublic(keySpec);
@@ -180,7 +176,7 @@ public class EdDSASecurityProvider extends Provider {
             throw new NoSuchAlgorithmException(SecurityUtils.EDDSA + " not supported");
         }
 
-        EdDSAParameterSpec params = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.CURVE_ED25519_SHA512);
+        EdDSAParameterSpec params = EdDSANamedCurveTable.getByName(CURVE_ED25519_SHA512);
         EdDSAPrivateKeySpec keySpec = new EdDSAPrivateKeySpec(seed, params);
         KeyFactory factory = SecurityUtils.getKeyFactory(SecurityUtils.EDDSA);
         return factory.generatePrivate(keySpec);

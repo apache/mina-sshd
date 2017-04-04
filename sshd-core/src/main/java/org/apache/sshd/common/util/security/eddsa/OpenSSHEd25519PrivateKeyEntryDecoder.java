@@ -70,7 +70,7 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
             throw new InvalidKeyException("Mismatched signature (" + signature.length + ") vs. seed (" + seed.length + ") length");
         }
 
-        EdDSAParameterSpec params = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.CURVE_ED25519_SHA512);
+        EdDSAParameterSpec params = EdDSANamedCurveTable.getByName(EdDSASecurityProviderUtils.CURVE_ED25519_SHA512);
         EdDSAPrivateKeySpec keySpec = new EdDSAPrivateKeySpec(seed, params);
         return generatePrivateKey(keySpec);
     }
@@ -98,7 +98,7 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
 
     @Override
     public EdDSAPublicKey recoverPublicKey(EdDSAPrivateKey prvKey) throws GeneralSecurityException {
-        return EdDSASecurityProvider.recoverEDDSAPublicKey(prvKey);
+        return EdDSASecurityProviderUtils.recoverEDDSAPublicKey(prvKey);
     }
 
     @Override

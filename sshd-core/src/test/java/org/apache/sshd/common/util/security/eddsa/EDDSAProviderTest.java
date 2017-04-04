@@ -27,7 +27,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 
-import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
+import net.i2p.crypto.eddsa.EdDSAEngine;
 
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -75,7 +75,7 @@ public class EDDSAProviderTest extends BaseTestSupport {
 
     @Test
     public void testSignature() throws GeneralSecurityException {
-        Signature s = SecurityUtils.getSignature(EdDSANamedCurveTable.CURVE_ED25519_SHA512);
+        Signature s = SecurityUtils.getSignature(EdDSAEngine.SIGNATURE_ALGORITHM);
         assertNotNull("No signature instance", s);
         s.initSign(keyPair.getPrivate());
 
@@ -83,7 +83,7 @@ public class EDDSAProviderTest extends BaseTestSupport {
         s.update(data);
         byte[] signed = s.sign();
 
-        s = SecurityUtils.getSignature(EdDSANamedCurveTable.CURVE_ED25519_SHA512);
+        s = SecurityUtils.getSignature(EdDSAEngine.SIGNATURE_ALGORITHM);
         s.initVerify(keyPair.getPublic());
         s.update(data);
         assertTrue("Failed to verify", s.verify(signed));

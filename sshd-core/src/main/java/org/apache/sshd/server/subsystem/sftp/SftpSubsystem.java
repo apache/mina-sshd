@@ -2714,7 +2714,7 @@ public class SftpSubsystem
      * @throws IOException If failed to generate an entry
      */
     protected int doReadDir(
-            int id, String handle, DirectoryHandle dir, Buffer buffer, int maxSize, LinkOption ... options) throws IOException {
+            int id, String handle, DirectoryHandle dir, Buffer buffer, int maxSize, LinkOption... options) throws IOException {
         int nb = 0;
         Map<String, Path> entries = new TreeMap<>(Comparator.naturalOrder());
         while ((dir.isSendDot() || dir.isSendDotDot() || dir.hasNext()) && (buffer.wpos() < maxSize)) {
@@ -2722,7 +2722,8 @@ public class SftpSubsystem
                 writeDirEntry(id, dir, entries, buffer, nb, dir.getFile(), ".", options);
                 dir.markDotSent();    // do not send it again
             } else if (dir.isSendDotDot()) {
-                writeDirEntry(id, dir, entries, buffer, nb, dir.getFile().getParent(), "..", options);
+                Path dirPath = dir.getFile();
+                writeDirEntry(id, dir, entries, buffer, nb, dirPath.getParent(), "..", options);
                 dir.markDotDotSent(); // do not send it again
             } else {
                 Path f = dir.next();
@@ -2749,8 +2750,9 @@ public class SftpSubsystem
      * @param options   The {@link LinkOption}s to use for querying the entry-s attributes
      * @throws IOException If failed to generate the entry data
      */
-    protected void writeDirEntry(int id, DirectoryHandle dir, Map<String, Path> entries, Buffer buffer, int index, Path f, String shortName, LinkOption... options)
-            throws IOException {
+    protected void writeDirEntry(
+            int id, DirectoryHandle dir, Map<String, Path> entries, Buffer buffer, int index, Path f, String shortName, LinkOption... options)
+                    throws IOException {
         Map<String, ?> attrs = resolveFileAttributes(f, SftpConstants.SSH_FILEXFER_ATTR_ALL, options);
         entries.put(shortName, f);
 

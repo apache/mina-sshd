@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.common.util.security.eddsa;
 
-import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
+import net.i2p.crypto.eddsa.EdDSAEngine;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.signature.AbstractSignature;
@@ -30,7 +30,7 @@ import org.apache.sshd.common.util.ValidateUtils;
  */
 public class SignatureEd25519 extends AbstractSignature {
     public SignatureEd25519() {
-        super(EdDSANamedCurveTable.CURVE_ED25519_SHA512);
+        super(EdDSAEngine.SIGNATURE_ALGORITHM);
     }
 
     @Override
