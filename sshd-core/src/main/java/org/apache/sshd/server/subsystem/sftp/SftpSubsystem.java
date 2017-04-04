@@ -1873,7 +1873,7 @@ public class SftpSubsystem
                 ServerSession session = getServerSession();
                 int maxDataSize =
                     PropertyResolverUtils.getIntProperty(session, MAX_READDIR_DATA_SIZE_PROP, DEFAULT_MAX_READDIR_DATA_SIZE);
-                int count = doReadDir(id, handle, dh, reply, maxDataSize, options);
+                int count = doReadDir(id, handle, dh, reply, maxDataSize, IoUtils.getLinkOptions(false));
                 BufferUtils.updateLengthPlaceholder(reply, lenPos, count);
                 if ((!dh.isSendDot()) && (!dh.isSendDotDot()) && (!dh.hasNext())) {
                     dh.markDone();
@@ -2875,10 +2875,10 @@ public class SftpSubsystem
      * @see #resolveMissingFileAttributes(Path, int, Map, LinkOption...)
      */
     protected Map<String, Object> getAttributes(Path file, int flags, LinkOption... options) throws IOException {
-        FileSystem           fs = file.getFileSystem();
-        Collection<String>   supportedViews = fs.supportedFileAttributeViews();
-        Map<String, Object>  attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        Collection<String>   views;
+        FileSystem fs = file.getFileSystem();
+        Collection<String> supportedViews = fs.supportedFileAttributeViews();
+        Map<String, Object> attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        Collection<String> views;
 
         if (GenericUtils.isEmpty(supportedViews)) {
             views = Collections.emptyList();
