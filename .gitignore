@@ -6,6 +6,7 @@ Servers/
 RemoteSystemsTempFiles/
 .classpath
 .project
+.checkstyle
 *.iml
 *.ipr
 *.iws
