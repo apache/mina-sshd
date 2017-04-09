@@ -474,9 +474,10 @@ public abstract class Buffer implements Readable {
         return new KeyPair(pubKey, privKey);
     }
 
-    public void ensureAvailable(int a) throws BufferException {
-        if (available() < a) {
-            throw new BufferException("Underflow");
+    public void ensureAvailable(int reqLen) throws BufferException {
+        int availLen = available();
+        if (availLen < reqLen) {
+            throw new BufferException("Underflow: requested=" + reqLen + ", available=" + availLen);
         }
     }
 

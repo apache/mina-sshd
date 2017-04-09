@@ -691,7 +691,10 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     protected void handleDisconnect(Buffer buffer) throws Exception  {
-        handleDisconnect(buffer.getInt(), buffer.getString(), buffer.getString(), buffer);
+        int code = buffer.getInt();
+        String message = buffer.getString();
+        String languageTag = buffer.getString();
+        handleDisconnect(code, message, languageTag, buffer);
     }
 
     protected void handleDisconnect(int code, String msg, String lang, Buffer buffer) throws Exception {
@@ -704,7 +707,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     protected void handleServiceRequest(Buffer buffer) throws Exception {
-        handleServiceRequest(buffer.getString(), buffer);
+        String serviceName = buffer.getString();
+        handleServiceRequest(serviceName, buffer);
     }
 
     protected boolean handleServiceRequest(String serviceName, Buffer buffer) throws Exception {
