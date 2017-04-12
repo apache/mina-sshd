@@ -25,7 +25,6 @@ import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -139,7 +138,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
 
     @Override
     public void setSession(ServerSession session) {
-        pumpSleepTime = PropertyResolverUtils.getLongProperty(session, PUMP_SLEEP_TIME, DEFAULT_PUMP_SLEEP_TIME);
+        pumpSleepTime = session.getLongProperty(PUMP_SLEEP_TIME, DEFAULT_PUMP_SLEEP_TIME);
         ValidateUtils.checkTrue(pumpSleepTime > 0L, "Invalid " + PUMP_SLEEP_TIME + ": %d", pumpSleepTime);
         shell.setSession(session);
     }

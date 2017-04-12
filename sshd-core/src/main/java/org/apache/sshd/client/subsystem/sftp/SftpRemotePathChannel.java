@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.util.GenericUtils;
@@ -284,7 +283,7 @@ public class SftpRemotePathChannel extends FileChannel {
         }
         ensureOpen(WRITE_MODES);
 
-        int copySize = PropertyResolverUtils.getIntProperty(sftp.getClientSession(), COPY_BUFSIZE_PROP, DEFAULT_TRANSFER_BUFFER_SIZE);
+        int copySize = sftp.getClientSession().getIntProperty(COPY_BUFSIZE_PROP, DEFAULT_TRANSFER_BUFFER_SIZE);
         boolean completed = false;
         long curPos = (position >= 0L) ? position : posTracker.get();
         long totalRead = 0L;

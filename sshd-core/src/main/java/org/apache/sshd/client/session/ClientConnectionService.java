@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
@@ -60,7 +59,7 @@ public class ClientConnectionService extends AbstractConnectionService<AbstractC
 
     protected void startHeartBeat() {
         ClientSession session = getClientSession();
-        long interval = PropertyResolverUtils.getLongProperty(session, ClientFactoryManager.HEARTBEAT_INTERVAL, ClientFactoryManager.DEFAULT_HEARTBEAT_INTERVAL);
+        long interval = session.getLongProperty(ClientFactoryManager.HEARTBEAT_INTERVAL, ClientFactoryManager.DEFAULT_HEARTBEAT_INTERVAL);
         if (interval > 0L) {
             FactoryManager manager = session.getFactoryManager();
             ScheduledExecutorService service = manager.getScheduledExecutorService();
@@ -78,7 +77,7 @@ public class ClientConnectionService extends AbstractConnectionService<AbstractC
      */
     protected IoWriteFuture sendHeartBeat() {
         ClientSession session = getClientSession();
-        String request = PropertyResolverUtils.getStringProperty(session, ClientFactoryManager.HEARTBEAT_REQUEST, ClientFactoryManager.DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING);
+        String request = session.getStringProperty(ClientFactoryManager.HEARTBEAT_REQUEST, ClientFactoryManager.DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING);
         try {
             Buffer buf = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST, request.length() + Byte.SIZE);
             buf.putString(request);

@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -100,7 +101,7 @@ public class WindowInitTest extends BaseTestSupport {
     @Test(expected = IllegalArgumentException.class)
     public void testInitializationFailure() throws IOException {
         try (Window w = new Window(MOCK_CHANNEL, null, true, true)) {
-            w.init(initialSize, packetSize, Collections.<String, Object>emptyMap());
+            w.init(initialSize, packetSize, PropertyResolver.EMPTY);
             fail("Unexpected success for initialiSize=" + initialSize + ", packetSize=" + packetSize);
         }
     }

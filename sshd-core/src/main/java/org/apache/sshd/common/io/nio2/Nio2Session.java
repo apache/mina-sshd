@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoHandler;
@@ -225,7 +224,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     }
 
     public void startReading() {
-        startReading(PropertyResolverUtils.getIntProperty(manager, FactoryManager.NIO2_READ_BUFFER_SIZE, DEFAULT_READBUF_SIZE));
+        startReading(manager.getIntProperty(FactoryManager.NIO2_READ_BUFFER_SIZE, DEFAULT_READBUF_SIZE));
     }
 
     public void startReading(int bufSize) {
@@ -301,7 +300,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
     protected void doReadCycle(ByteBuffer buffer, Nio2CompletionHandler<Integer, Object> completion) {
         AsynchronousSocketChannel socket = getSocket();
-        long readTimeout = PropertyResolverUtils.getLongProperty(manager, FactoryManager.NIO2_READ_TIMEOUT, FactoryManager.DEFAULT_NIO2_READ_TIMEOUT);
+        long readTimeout = manager.getLongProperty(FactoryManager.NIO2_READ_TIMEOUT, FactoryManager.DEFAULT_NIO2_READ_TIMEOUT);
         socket.read(buffer, readTimeout, TimeUnit.MILLISECONDS, null, completion);
     }
 
@@ -330,7 +329,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
     protected void doWriteCycle(ByteBuffer buffer, Nio2CompletionHandler<Integer, Object> completion) {
         AsynchronousSocketChannel socket = getSocket();
-        long writeTimeout = PropertyResolverUtils.getLongProperty(manager, FactoryManager.NIO2_MIN_WRITE_TIMEOUT, FactoryManager.DEFAULT_NIO2_MIN_WRITE_TIMEOUT);
+        long writeTimeout = manager.getLongProperty(FactoryManager.NIO2_MIN_WRITE_TIMEOUT, FactoryManager.DEFAULT_NIO2_MIN_WRITE_TIMEOUT);
         socket.write(buffer, writeTimeout, TimeUnit.MILLISECONDS, null, completion);
     }
 

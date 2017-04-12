@@ -51,7 +51,6 @@ import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.PropertyResolver;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -141,7 +140,7 @@ public final class SftpHelper {
             return null;
         }
 
-        if (!PropertyResolverUtils.getBooleanProperty(resolver, APPEND_END_OF_LIST_INDICATOR, DEFAULT_APPEND_END_OF_LIST_INDICATOR)) {
+        if (!resolver.getBooleanProperty(APPEND_END_OF_LIST_INDICATOR, DEFAULT_APPEND_END_OF_LIST_INDICATOR)) {
             return null;
         }
 

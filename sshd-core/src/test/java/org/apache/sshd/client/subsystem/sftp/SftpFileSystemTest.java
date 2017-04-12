@@ -59,7 +59,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.session.Session;
@@ -149,7 +148,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
                         return;
                     }
 
-                    Object actual = PropertyResolverUtils.getObject(session, key);
+                    Object actual = session.getObject(key);
                     assertEquals("Mismatched value for param '" + key + "'", expected, actual);
                 });
             }

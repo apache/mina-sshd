@@ -21,7 +21,6 @@ package org.apache.sshd.server.auth.keyboard;
 
 import java.util.List;
 
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.GenericUtils;
@@ -103,22 +102,22 @@ public class DefaultKeyboardInteractiveAuthenticator
     }
 
     protected String getInteractionName(ServerSession session) {
-        return PropertyResolverUtils.getStringProperty(session, KB_INTERACTIVE_NAME_PROP, DEFAULT_KB_INTERACTIVE_NAME);
+        return session.getStringProperty(KB_INTERACTIVE_NAME_PROP, DEFAULT_KB_INTERACTIVE_NAME);
     }
 
     protected String getInteractionInstruction(ServerSession session) {
-        return PropertyResolverUtils.getStringProperty(session, KB_INTERACTIVE_INSTRUCTION_PROP, DEFAULT_KB_INTERACTIVE_INSTRUCTION);
+        return session.getStringProperty(KB_INTERACTIVE_INSTRUCTION_PROP, DEFAULT_KB_INTERACTIVE_INSTRUCTION);
     }
 
     protected String getInteractionLanguage(ServerSession session) {
-        return PropertyResolverUtils.getStringProperty(session, KB_INTERACTIVE_LANG_PROP, DEFAULT_KB_INTERACTIVE_LANG);
+        return session.getStringProperty(KB_INTERACTIVE_LANG_PROP, DEFAULT_KB_INTERACTIVE_LANG);
     }
 
     protected String getInteractionPrompt(ServerSession session) {
-        return PropertyResolverUtils.getStringProperty(session, KB_INTERACTIVE_PROMPT_PROP, DEFAULT_KB_INTERACTIVE_PROMPT);
+        return session.getStringProperty(KB_INTERACTIVE_PROMPT_PROP, DEFAULT_KB_INTERACTIVE_PROMPT);
     }
 
     protected boolean isInteractionPromptEchoEnabled(ServerSession session) {
-        return PropertyResolverUtils.getBooleanProperty(session, KB_INTERACTIVE_ECHO_PROMPT_PROP, DEFAULT_KB_INTERACTIVE_ECHO_PROMPT);
+        return session.getBooleanProperty(KB_INTERACTIVE_ECHO_PROMPT_PROP, DEFAULT_KB_INTERACTIVE_ECHO_PROMPT);
     }
 }

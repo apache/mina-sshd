@@ -21,8 +21,6 @@ package org.apache.sshd.common.channel;
 import java.io.IOException;
 import java.io.StreamCorruptedException;
 import java.net.SocketTimeoutException;
-import java.util.Collections;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,7 +29,6 @@ import java.util.function.Predicate;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolver;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -45,7 +42,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class Window extends AbstractLoggingBean implements java.nio.channels.Channel, ChannelHolder, PropertyResolver {
+public class Window extends AbstractLoggingBean implements java.nio.channels.Channel, ChannelHolder {
     /**
      * Default {@link Predicate} used to test if space became available
      */
@@ -63,22 +60,11 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
 
     private long maxSize;   // actually uint32
     private long packetSize;   // actually uint32
-    private Map<String, Object> props = Collections.emptyMap();
 
     public Window(AbstractChannel channel, Object lock, boolean client, boolean local) {
         this.channelInstance = Objects.requireNonNull(channel, "No channel provided");
         this.lock = (lock != null) ? lock : this;
         this.suffix = (client ? "client" : "server") + "/" + (local ? "local" : "remote");
-    }
-
-    @Override
-    public Map<String, Object> getProperties() {
-        return props;
-    }
-
-    @Override
-    public PropertyResolver getParentPropertyResolver() {
-        return getChannel();
     }
 
     @Override   // co-variant return
@@ -101,16 +87,16 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
     }
 
     public void init(PropertyResolver resolver) {
-        init(PropertyResolverUtils.getLongProperty(resolver, FactoryManager.WINDOW_SIZE, FactoryManager.DEFAULT_WINDOW_SIZE),
-             PropertyResolverUtils.getLongProperty(resolver, FactoryManager.MAX_PACKET_SIZE, FactoryManager.DEFAULT_MAX_PACKET_SIZE),
-             resolver.getProperties());
+        init(resolver.getLongProperty(FactoryManager.WINDOW_SIZE, FactoryManager.DEFAULT_WINDOW_SIZE),
+             resolver.getLongProperty(FactoryManager.MAX_PACKET_SIZE, FactoryManager.DEFAULT_MAX_PACKET_SIZE),
+             resolver);
     }
 
-    public void init(long size, long packetSize, Map<String, Object> props) {
+    public void init(long size, long packetSize, PropertyResolver resolver) {
         BufferUtils.validateUint32Value(size, "Illegal initial size: %d");
         BufferUtils.validateUint32Value(packetSize, "Illegal packet size: %d");
         ValidateUtils.checkTrue(packetSize > 0L, "Packet size must be positive: %d", packetSize);
-        long limitPacketSize = PropertyResolverUtils.getLongProperty(props, FactoryManager.LIMIT_PACKET_SIZE, FactoryManager.DEFAULT_LIMIT_PACKET_SIZE);
+        long limitPacketSize = resolver.getLongProperty(FactoryManager.LIMIT_PACKET_SIZE, FactoryManager.DEFAULT_LIMIT_PACKET_SIZE);
         if (packetSize > limitPacketSize) {
             throw new IllegalArgumentException("Requested packet size (" + packetSize + ") exceeds max. allowed: " + limitPacketSize);
         }
@@ -118,7 +104,6 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         synchronized (lock) {
             this.maxSize = size;
             this.packetSize = packetSize;
-            this.props = (props == null) ? Collections.emptyMap() : props;
             updateSize(size);
         }
 

@@ -25,7 +25,6 @@ import java.security.Signature;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ReflectionUtils;
 import org.apache.sshd.common.util.security.AbstractSecurityProviderRegistrar;
@@ -51,7 +50,7 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
         }
 
         // For backward compatibility
-        return PropertyResolverUtils.getBooleanProperty(this, SecurityUtils.EDDSA_SUPPORTED_PROP, true);
+        return this.getBooleanProperty(SecurityUtils.EDDSA_SUPPORTED_PROP, true);
     }
 
     @Override

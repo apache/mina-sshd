@@ -29,7 +29,6 @@ import java.util.Objects;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
@@ -92,10 +91,10 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
             acceptor = factory.createAcceptor(this);
         }
 
-        int minDisplayNumber = PropertyResolverUtils.getIntProperty(session, X11_DISPLAY_OFFSET, DEFAULT_X11_DISPLAY_OFFSET);
-        int maxDisplayNumber = PropertyResolverUtils.getIntProperty(session, X11_MAX_DISPLAYS, DEFAULT_X11_MAX_DISPLAYS);
-        int basePort = PropertyResolverUtils.getIntProperty(session, X11_BASE_PORT, DEFAULT_X11_BASE_PORT);
-        String bindHost = PropertyResolverUtils.getStringProperty(session, X11_BIND_HOST, DEFAULT_X11_BIND_HOST);
+        int minDisplayNumber = session.getIntProperty(X11_DISPLAY_OFFSET, DEFAULT_X11_DISPLAY_OFFSET);
+        int maxDisplayNumber = session.getIntProperty(X11_MAX_DISPLAYS, DEFAULT_X11_MAX_DISPLAYS);
+        int basePort = session.getIntProperty(X11_BASE_PORT, DEFAULT_X11_BASE_PORT);
+        String bindHost = session.getStringProperty(X11_BIND_HOST, DEFAULT_X11_BIND_HOST);
         InetSocketAddress addr = null;
 
         // try until bind successful or max is reached
@@ -180,7 +179,7 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
             log.debug("sessionCreated({}) channel{}", session, channel);
         }
         this.service.registerChannel(channel);
-        channel.open().verify(PropertyResolverUtils.getLongProperty(channel, CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
+        channel.open().verify(channel.getLongProperty(CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
     }
 
     @Override

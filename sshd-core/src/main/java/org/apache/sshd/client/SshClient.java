@@ -433,7 +433,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     public void stop() {
         try {
-            long maxWait = PropertyResolverUtils.getLongProperty(this, STOP_WAIT_TIME, DEFAULT_STOP_WAIT_TIME);
+            long maxWait = this.getLongProperty(STOP_WAIT_TIME, DEFAULT_STOP_WAIT_TIME);
             boolean successful = close(true).await(maxWait);
             if (!successful) {
                 throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");
@@ -541,7 +541,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         List<KeyPair> ids = new ArrayList<>(locations.size());
-        boolean ignoreNonExisting = PropertyResolverUtils.getBooleanProperty(this, IGNORE_INVALID_IDENTITIES, DEFAULT_IGNORE_INVALID_IDENTITIES);
+        boolean ignoreNonExisting = this.getBooleanProperty(IGNORE_INVALID_IDENTITIES, DEFAULT_IGNORE_INVALID_IDENTITIES);
         ClientIdentityLoader loader = Objects.requireNonNull(getClientIdentityLoader(), "No ClientIdentityLoader");
         FilePasswordProvider provider = Objects.requireNonNull(getFilePasswordProvider(), "No FilePasswordProvider");
         for (String l : locations) {

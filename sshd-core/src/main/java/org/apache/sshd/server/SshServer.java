@@ -339,7 +339,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     public void stop(boolean immediately) throws IOException {
-        long maxWait = immediately ? PropertyResolverUtils.getLongProperty(this, STOP_WAIT_TIME, DEFAULT_STOP_WAIT_TIME) : Long.MAX_VALUE;
+        long maxWait = immediately ? this.getLongProperty(STOP_WAIT_TIME, DEFAULT_STOP_WAIT_TIME) : Long.MAX_VALUE;
         boolean successful = close(immediately).await(maxWait);
         if (!successful) {
             throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");

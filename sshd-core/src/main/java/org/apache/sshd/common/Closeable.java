@@ -105,7 +105,7 @@ public interface Closeable extends Channel {
 
     static long getMaxCloseWaitTime(PropertyResolver resolver) {
         return (resolver == null) ? DEFAULT_CLOSE_WAIT_TIMEOUT
-                : PropertyResolverUtils.getLongProperty(resolver, CLOSE_WAIT_TIMEOUT, DEFAULT_CLOSE_WAIT_TIMEOUT);
+                : resolver.getLongProperty(CLOSE_WAIT_TIMEOUT, DEFAULT_CLOSE_WAIT_TIMEOUT);
     }
 
     static void close(Closeable closeable) throws IOException {

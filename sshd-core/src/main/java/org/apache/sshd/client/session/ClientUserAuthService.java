@@ -33,7 +33,6 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
@@ -75,7 +74,7 @@ public class ClientUserAuthService
                 clientSession.getUserAuthFactories(), "No user auth factories for %s", s);
         clientMethods = new ArrayList<>();
 
-        String prefs = PropertyResolverUtils.getString(s, ClientAuthenticationManager.PREFERRED_AUTHS);
+        String prefs = s.getString(ClientAuthenticationManager.PREFERRED_AUTHS);
         if (GenericUtils.isEmpty(prefs)) {
             for (NamedFactory<UserAuth> factory : authFactories) {
                 clientMethods.add(factory.getName());

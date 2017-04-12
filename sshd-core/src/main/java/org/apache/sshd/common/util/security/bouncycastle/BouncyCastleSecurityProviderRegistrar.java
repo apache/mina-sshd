@@ -25,7 +25,6 @@ import java.security.Signature;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ReflectionUtils;
 import org.apache.sshd.common.util.security.AbstractSecurityProviderRegistrar;
@@ -53,7 +52,7 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
         }
 
         // For backward compatibility
-        return PropertyResolverUtils.getBooleanProperty(this, SecurityUtils.REGISTER_BOUNCY_CASTLE_PROP, true);
+        return this.getBooleanProperty(SecurityUtils.REGISTER_BOUNCY_CASTLE_PROP, true);
     }
 
     @Override
@@ -80,7 +79,7 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
         }
 
         String propName = getConfigurationPropertyName("supportAll");
-        allValue = PropertyResolverUtils.getStringProperty(this, propName, ALL_OPTIONS_VALUE);
+        allValue = this.getStringProperty(propName, ALL_OPTIONS_VALUE);
         if (GenericUtils.isEmpty(allValue)) {
             allValue = NO_OPTIONS_VALUE;
         }

@@ -38,7 +38,6 @@ import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.AbstractChannel;
@@ -265,7 +264,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
     @Override
     public int registerChannel(Channel channel) throws IOException {
         Session session = getSession();
-        int maxChannels = PropertyResolverUtils.getIntProperty(session, MAX_CONCURRENT_CHANNELS_PROP, DEFAULT_MAX_CHANNELS);
+        int maxChannels = session.getIntProperty(MAX_CONCURRENT_CHANNELS_PROP, DEFAULT_MAX_CHANNELS);
         int curSize = channels.size();
         if (curSize > maxChannels) {
             throw new IllegalStateException("Currently active channels (" + curSize + ") at max.: " + maxChannels);

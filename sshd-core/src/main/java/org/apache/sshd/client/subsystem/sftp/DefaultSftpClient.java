@@ -42,7 +42,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
@@ -88,7 +87,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         });
         this.channel.setErr(new ByteArrayOutputStream(Byte.MAX_VALUE));
 
-        long initializationTimeout = PropertyResolverUtils.getLongProperty(clientSession, SFTP_CHANNEL_OPEN_TIMEOUT, DEFAULT_CHANNEL_OPEN_TIMEOUT);
+        long initializationTimeout = clientSession.getLongProperty(SFTP_CHANNEL_OPEN_TIMEOUT, DEFAULT_CHANNEL_OPEN_TIMEOUT);
         this.channel.open().verify(initializationTimeout);
         this.channel.onClose(() -> {
             synchronized (messages) {

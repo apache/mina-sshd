@@ -30,7 +30,6 @@ import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.agent.unix.UnixAgentFactory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
@@ -55,7 +54,7 @@ public class ProxyAgentFactory implements SshAgentFactory {
 
     @Override
     public SshAgent createClient(FactoryManager manager) throws IOException {
-        String proxyId = PropertyResolverUtils.getString(manager, SshAgent.SSH_AUTHSOCKET_ENV_NAME);
+        String proxyId = manager.getString(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
         if (GenericUtils.isEmpty(proxyId)) {
             throw new IllegalStateException("No " + SshAgent.SSH_AUTHSOCKET_ENV_NAME + " environment variable set");
         }

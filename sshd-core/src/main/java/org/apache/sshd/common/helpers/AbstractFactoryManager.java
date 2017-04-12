@@ -177,7 +177,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     }
 
     public int getNioWorkers() {
-        int nb = PropertyResolverUtils.getIntProperty(this, NIO_WORKERS, DEFAULT_NIO_WORKERS);
+        int nb = this.getIntProperty(NIO_WORKERS, DEFAULT_NIO_WORKERS);
         if (nb > 0) {
             return nb;
         } else {    // it may have been configured to a negative value

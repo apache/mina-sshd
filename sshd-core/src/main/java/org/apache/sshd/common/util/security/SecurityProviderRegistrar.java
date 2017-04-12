@@ -106,7 +106,7 @@ public interface SecurityProviderRegistrar extends SecurityProviderChoice, Optio
             return false;
         }
 
-        return PropertyResolverUtils.getBooleanProperty(this, getConfigurationPropertyName(ENABLED_PROPERTY), true);
+        return this.getBooleanProperty(getConfigurationPropertyName(ENABLED_PROPERTY), true);
     }
 
     @Override
@@ -258,7 +258,7 @@ public interface SecurityProviderRegistrar extends SecurityProviderChoice, Optio
             return false;
         }
 
-        String propValue = PropertyResolverUtils.getString(resolver, propName);
+        String propValue = resolver.getString(propName);
         if (GenericUtils.isEmpty(propValue)) {
             propValue = defaultValue;
         }

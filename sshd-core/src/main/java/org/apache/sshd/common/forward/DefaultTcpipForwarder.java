@@ -38,7 +38,6 @@ import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -270,7 +269,7 @@ public class DefaultTcpipForwarder
         buffer.putString(remoteHost);
         buffer.putInt(remotePort);
 
-        long timeout = PropertyResolverUtils.getLongProperty(session, FORWARD_REQUEST_TIMEOUT, DEFAULT_FORWARD_REQUEST_TIMEOUT);
+        long timeout = session.getLongProperty(FORWARD_REQUEST_TIMEOUT, DEFAULT_FORWARD_REQUEST_TIMEOUT);
         Buffer result;
         int port;
         signalEstablishingExplicitTunnel(local, remote, false);

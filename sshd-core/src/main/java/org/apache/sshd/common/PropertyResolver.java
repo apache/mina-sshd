@@ -85,4 +85,40 @@ public interface PropertyResolver {
      *         {@code null}
      */
     Map<String, Object> getProperties();
+
+    default long getLongProperty(String name, long def) {
+        return PropertyResolverUtils.getLongProperty(this, name, def);
+    }
+
+    default Long getLong(String name) {
+        return PropertyResolverUtils.getLong(this, name);
+    }
+
+    default int getIntProperty(String name, int def) {
+        return PropertyResolverUtils.getIntProperty(this, name, def);
+    }
+
+    default Integer getInteger(String name) {
+        return PropertyResolverUtils.getInteger(this, name);
+    }
+
+    default boolean getBooleanProperty(String name, boolean def) {
+        return PropertyResolverUtils.getBooleanProperty(this, name, def);
+    }
+
+    default Boolean getBoolean(String name) {
+        return PropertyResolverUtils.getBoolean(this, name);
+    }
+
+    default String getStringProperty(String name, String def) {
+        return PropertyResolverUtils.getStringProperty(this, name, def);
+    }
+
+    default String getString(String name) {
+        return PropertyResolverUtils.getString(this, name);
+    }
+
+    default Object getObject(String name) {
+        return PropertyResolverUtils.getObject(this, name);
+    }
 }

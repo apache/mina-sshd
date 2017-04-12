@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerHolder;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 
@@ -81,7 +80,7 @@ public abstract class AbstractIoServiceFactory
     }
 
     public static int getNioWorkers(FactoryManager manager) {
-        int nb = PropertyResolverUtils.getIntProperty(manager, FactoryManager.NIO_WORKERS, FactoryManager.DEFAULT_NIO_WORKERS);
+        int nb = manager.getIntProperty(FactoryManager.NIO_WORKERS, FactoryManager.DEFAULT_NIO_WORKERS);
         if (nb > 0) {
             return nb;
         } else {

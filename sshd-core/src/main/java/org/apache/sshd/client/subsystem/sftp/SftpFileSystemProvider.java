@@ -195,7 +195,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             ClientSession session = null;
             try {
                 session = client.connect(username, host, port)
-                        .verify(PropertyResolverUtils.getLongProperty(resolver, CONNECT_TIME_PROP_NAME, DEFAULT_CONNECT_TIME))
+                        .verify(resolver.getLongProperty(CONNECT_TIME_PROP_NAME, DEFAULT_CONNECT_TIME))
                         .getSession();
                 if (GenericUtils.size(params) > 0) {
                     // Cannot use forEach because the session is not effectively final
@@ -210,7 +210,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                     }
                 }
                 session.addPasswordIdentity(password);
-                session.auth().verify(PropertyResolverUtils.getLongProperty(resolver, AUTH_TIME_PROP_NAME, DEFAULT_AUTH_TIME));
+                session.auth().verify(resolver.getLongProperty(AUTH_TIME_PROP_NAME, DEFAULT_AUTH_TIME));
 
                 fileSystem = new SftpFileSystem(this, id, session, selector);
                 fileSystems.put(id, fileSystem);
@@ -238,8 +238,8 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             }
         }
 
-        fileSystem.setReadBufferSize(PropertyResolverUtils.getIntProperty(resolver, READ_BUFFER_PROP_NAME, DEFAULT_READ_BUFFER_SIZE));
-        fileSystem.setWriteBufferSize(PropertyResolverUtils.getIntProperty(resolver, WRITE_BUFFER_PROP_NAME, DEFAULT_WRITE_BUFFER_SIZE));
+        fileSystem.setReadBufferSize(resolver.getIntProperty(READ_BUFFER_PROP_NAME, DEFAULT_READ_BUFFER_SIZE));
+        fileSystem.setWriteBufferSize(resolver.getIntProperty(WRITE_BUFFER_PROP_NAME, DEFAULT_WRITE_BUFFER_SIZE));
         if (log.isDebugEnabled()) {
             log.debug("newFileSystem({}): {}", uri.toASCIIString(), fileSystem);
         }
@@ -247,7 +247,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     }
 
     protected SftpVersionSelector resolveSftpVersionSelector(URI uri, SftpVersionSelector defaultSelector, PropertyResolver resolver) {
-        String preference = PropertyResolverUtils.getString(resolver, VERSION_PARAM);
+        String preference = resolver.getString(VERSION_PARAM);
         if (GenericUtils.isEmpty(preference)) {
             return defaultSelector;
         }
@@ -339,8 +339,8 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             fileSystems.put(id, fileSystem);
         }
 
-        fileSystem.setReadBufferSize(PropertyResolverUtils.getIntProperty(session, READ_BUFFER_PROP_NAME, DEFAULT_READ_BUFFER_SIZE));
-        fileSystem.setWriteBufferSize(PropertyResolverUtils.getIntProperty(session, WRITE_BUFFER_PROP_NAME, DEFAULT_WRITE_BUFFER_SIZE));
+        fileSystem.setReadBufferSize(session.getIntProperty(READ_BUFFER_PROP_NAME, DEFAULT_READ_BUFFER_SIZE));
+        fileSystem.setWriteBufferSize(session.getIntProperty(WRITE_BUFFER_PROP_NAME, DEFAULT_WRITE_BUFFER_SIZE));
         if (log.isDebugEnabled()) {
             log.debug("newFileSystem: {}", fileSystem);
         }

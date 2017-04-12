@@ -467,14 +467,14 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected void refreshConfiguration() {
         synchronized (random) {
             // re-keying configuration
-            maxRekeyBytes = PropertyResolverUtils.getLongProperty(this, FactoryManager.REKEY_BYTES_LIMIT, maxRekeyBytes);
-            maxRekeyInterval = PropertyResolverUtils.getLongProperty(this, FactoryManager.REKEY_TIME_LIMIT, maxRekeyInterval);
-            maxRekyPackets = PropertyResolverUtils.getLongProperty(this, FactoryManager.REKEY_PACKETS_LIMIT, maxRekyPackets);
+            maxRekeyBytes = this.getLongProperty(FactoryManager.REKEY_BYTES_LIMIT, maxRekeyBytes);
+            maxRekeyInterval = this.getLongProperty(FactoryManager.REKEY_TIME_LIMIT, maxRekeyInterval);
+            maxRekyPackets = this.getLongProperty(FactoryManager.REKEY_PACKETS_LIMIT, maxRekyPackets);
 
             // intermittent SSH_MSG_IGNORE stream padding
-            ignorePacketDataLength = PropertyResolverUtils.getIntProperty(this, FactoryManager.IGNORE_MESSAGE_SIZE, FactoryManager.DEFAULT_IGNORE_MESSAGE_SIZE);
-            ignorePacketsFrequency = PropertyResolverUtils.getLongProperty(this, FactoryManager.IGNORE_MESSAGE_FREQUENCY, FactoryManager.DEFAULT_IGNORE_MESSAGE_FREQUENCY);
-            ignorePacketsVariance = PropertyResolverUtils.getIntProperty(this, FactoryManager.IGNORE_MESSAGE_VARIANCE, FactoryManager.DEFAULT_IGNORE_MESSAGE_VARIANCE);
+            ignorePacketDataLength = this.getIntProperty(FactoryManager.IGNORE_MESSAGE_SIZE, FactoryManager.DEFAULT_IGNORE_MESSAGE_SIZE);
+            ignorePacketsFrequency = this.getLongProperty(FactoryManager.IGNORE_MESSAGE_FREQUENCY, FactoryManager.DEFAULT_IGNORE_MESSAGE_FREQUENCY);
+            ignorePacketsVariance = this.getIntProperty(FactoryManager.IGNORE_MESSAGE_VARIANCE, FactoryManager.DEFAULT_IGNORE_MESSAGE_VARIANCE);
             if (ignorePacketsVariance >= ignorePacketsFrequency) {
                 ignorePacketsVariance = 0;
             }
@@ -1436,7 +1436,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      */
     protected String resolveIdentificationString(String configPropName) {
         FactoryManager manager = getFactoryManager();
-        String ident = PropertyResolverUtils.getString(manager, configPropName);
+        String ident = manager.getString(configPropName);
         return DEFAULT_SSH_VERSION_PREFIX + (GenericUtils.isEmpty(ident) ? manager.getVersion() : ident);
     }
 
@@ -1814,7 +1814,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         // select the lowest cipher size
         int avgCipherBlockSize = Math.min(inBlockSize, outBlockSize);
         long recommendedByteRekeyBlocks = 1L << Math.min((avgCipherBlockSize * Byte.SIZE) / 4, 63);    // in case (block-size / 4) > 63
-        maxRekeyBlocks.set(PropertyResolverUtils.getLongProperty(this, FactoryManager.REKEY_BLOCKS_LIMIT, recommendedByteRekeyBlocks));
+        maxRekeyBlocks.set(this.getLongProperty(FactoryManager.REKEY_BLOCKS_LIMIT, recommendedByteRekeyBlocks));
         if (log.isDebugEnabled()) {
             log.debug("receiveNewKeys({}) inCipher={}, outCipher={}, recommended blocks limit={}, actual={}",
                       this, inCipher, outCipher, recommendedByteRekeyBlocks, maxRekeyBlocks);
@@ -1871,7 +1871,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
         // Write the packet with a timeout to ensure a timely close of the session
         // in case the consumer does not read packets anymore.
-        long disconnectTimeoutMs = PropertyResolverUtils.getLongProperty(this, FactoryManager.DISCONNECT_TIMEOUT, FactoryManager.DEFAULT_DISCONNECT_TIMEOUT);
+        long disconnectTimeoutMs = this.getLongProperty(FactoryManager.DISCONNECT_TIMEOUT, FactoryManager.DEFAULT_DISCONNECT_TIMEOUT);
         writePacket(buffer, disconnectTimeoutMs, TimeUnit.MILLISECONDS).addListener(future -> {
             Throwable t = future.getException();
             if (log.isDebugEnabled()) {
@@ -2631,12 +2631,12 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     @Override
     public long getAuthTimeout() {
-        return PropertyResolverUtils.getLongProperty(this, FactoryManager.AUTH_TIMEOUT, FactoryManager.DEFAULT_AUTH_TIMEOUT);
+        return this.getLongProperty(FactoryManager.AUTH_TIMEOUT, FactoryManager.DEFAULT_AUTH_TIMEOUT);
     }
 
     @Override
     public long getIdleTimeout() {
-        return PropertyResolverUtils.getLongProperty(this, FactoryManager.IDLE_TIMEOUT, FactoryManager.DEFAULT_IDLE_TIMEOUT);
+        return this.getLongProperty(FactoryManager.IDLE_TIMEOUT, FactoryManager.DEFAULT_IDLE_TIMEOUT);
     }
 
     @Override

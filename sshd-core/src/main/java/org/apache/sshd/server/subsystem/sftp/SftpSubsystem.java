@@ -370,11 +370,11 @@ public class SftpSubsystem
         Factory<? extends Random> factory = manager.getRandomFactory();
         this.randomizer = factory.create();
 
-        this.fileHandleSize = PropertyResolverUtils.getIntProperty(session, FILE_HANDLE_SIZE, DEFAULT_FILE_HANDLE_SIZE);
+        this.fileHandleSize = session.getIntProperty(FILE_HANDLE_SIZE, DEFAULT_FILE_HANDLE_SIZE);
         ValidateUtils.checkTrue(this.fileHandleSize >= MIN_FILE_HANDLE_SIZE, "File handle size too small: %d", this.fileHandleSize);
         ValidateUtils.checkTrue(this.fileHandleSize <= MAX_FILE_HANDLE_SIZE, "File handle size too big: %d", this.fileHandleSize);
 
-        this.maxFileHandleRounds = PropertyResolverUtils.getIntProperty(session, MAX_FILE_HANDLE_RAND_ROUNDS, DEFAULT_FILE_HANDLE_ROUNDS);
+        this.maxFileHandleRounds = session.getIntProperty(MAX_FILE_HANDLE_RAND_ROUNDS, DEFAULT_FILE_HANDLE_ROUNDS);
         ValidateUtils.checkTrue(this.maxFileHandleRounds >= MIN_FILE_HANDLE_ROUNDS, "File handle rounds too small: %d", this.maxFileHandleRounds);
         ValidateUtils.checkTrue(this.maxFileHandleRounds <= MAX_FILE_HANDLE_ROUNDS, "File handle rounds too big: %d", this.maxFileHandleRounds);
 
@@ -1155,7 +1155,7 @@ public class SftpSubsystem
         String available = ALL_SFTP_IMPL;
         // check if user wants to use a specific version
         ServerSession session = getServerSession();
-        Integer sftpVersion = PropertyResolverUtils.getInteger(session, SFTP_VERSION);
+        Integer sftpVersion = session.getInteger(SFTP_VERSION);
         if (sftpVersion != null) {
             int forcedValue = sftpVersion;
             if ((forcedValue < LOWER_SFTP_IMPL) || (forcedValue > HIGHER_SFTP_IMPL)) {
@@ -1871,8 +1871,7 @@ public class SftpSubsystem
                 reply.putInt(0);
 
                 ServerSession session = getServerSession();
-                int maxDataSize =
-                    PropertyResolverUtils.getIntProperty(session, MAX_READDIR_DATA_SIZE_PROP, DEFAULT_MAX_READDIR_DATA_SIZE);
+                int maxDataSize = session.getIntProperty(MAX_READDIR_DATA_SIZE_PROP, DEFAULT_MAX_READDIR_DATA_SIZE);
                 int count = doReadDir(id, handle, dh, reply, maxDataSize, IoUtils.getLinkOptions(false));
                 BufferUtils.updateLengthPlaceholder(reply, lenPos, count);
                 if ((!dh.isSendDot()) && (!dh.isSendDotDot()) && (!dh.hasNext())) {
@@ -2096,7 +2095,7 @@ public class SftpSubsystem
         String handle = buffer.getString();
         long offset = buffer.getLong();
         int requestedLength = buffer.getInt();
-        int maxAllowed = PropertyResolverUtils.getIntProperty(getServerSession(), MAX_READDATA_PACKET_LENGTH_PROP, DEFAULT_MAX_READDATA_PACKET_LENGTH);
+        int maxAllowed = getServerSession().getIntProperty(MAX_READDATA_PACKET_LENGTH_PROP, DEFAULT_MAX_READDATA_PACKET_LENGTH);
         int readLen = Math.min(requestedLength, maxAllowed);
         if (log.isTraceEnabled()) {
             log.trace("doRead({})[id={}]({})[offset={}] - req={}, max={}, effective={}",
@@ -2257,7 +2256,7 @@ public class SftpSubsystem
                       getServerSession(), id, path, Integer.toHexString(access), Integer.toHexString(pflags), attrs);
         }
         int curHandleCount = handles.size();
-        int maxHandleCount = PropertyResolverUtils.getIntProperty(getServerSession(), MAX_OPEN_HANDLES_PER_SESSION, DEFAULT_MAX_OPEN_HANDLES);
+        int maxHandleCount = getServerSession().getIntProperty(MAX_OPEN_HANDLES_PER_SESSION, DEFAULT_MAX_OPEN_HANDLES);
         if (curHandleCount > maxHandleCount) {
             throw new IllegalStateException("Too many open handles: current=" + curHandleCount + ", max.=" + maxHandleCount);
         }
@@ -2371,7 +2370,7 @@ public class SftpSubsystem
     }
 
     protected Collection<Integer> resolveAclSupportedCapabilities(ServerSession session) {
-        String override = PropertyResolverUtils.getString(session, ACL_SUPPORTED_MASK_PROP);
+        String override = session.getString(ACL_SUPPORTED_MASK_PROP);
         if (override == null) {
             return DEFAULT_ACL_SUPPORTED_MASK;
         }
@@ -2411,7 +2410,7 @@ public class SftpSubsystem
     }
 
     protected List<OpenSSHExtension> resolveOpenSSHExtensions(ServerSession session) {
-        String value = PropertyResolverUtils.getString(session, OPENSSH_EXTENSIONS_PROP);
+        String value = session.getString(OPENSSH_EXTENSIONS_PROP);
         if (value == null) {    // No override
             return DEFAULT_OPEN_SSH_EXTENSIONS;
         }
@@ -2445,7 +2444,7 @@ public class SftpSubsystem
 
     protected Map<String, OptionalFeature> getSupportedClientExtensions() {
         ServerSession session = getServerSession();
-        String value = PropertyResolverUtils.getString(session, CLIENT_EXTENSIONS_PROP);
+        String value = session.getString(CLIENT_EXTENSIONS_PROP);
         if (value == null) {
             return DEFAULT_SUPPORTED_CLIENT_EXTENSIONS;
         }
@@ -2517,7 +2516,7 @@ public class SftpSubsystem
     }
 
     protected String resolveNewlineValue(ServerSession session) {
-        String value = PropertyResolverUtils.getString(session, NEWLINE_VALUE);
+        String value = session.getString(NEWLINE_VALUE);
         if (value == null) {
             return IoUtils.EOL;
         } else {
@@ -2555,9 +2554,9 @@ public class SftpSubsystem
         // placeholder for length
         int lenPos = buffer.wpos();
         buffer.putInt(0);
-        buffer.putString(PropertyResolverUtils.getStringProperty(resolver, "groupId", getClass().getPackage().getName()));   // vendor-name
-        buffer.putString(PropertyResolverUtils.getStringProperty(resolver, "artifactId", getClass().getSimpleName()));       // product-name
-        buffer.putString(PropertyResolverUtils.getStringProperty(resolver, "version", FactoryManager.DEFAULT_VERSION));      // product-version
+        buffer.putString(resolver.getStringProperty("groupId", getClass().getPackage().getName()));   // vendor-name
+        buffer.putString(resolver.getStringProperty("artifactId", getClass().getSimpleName()));       // product-name
+        buffer.putString(resolver.getStringProperty("version", FactoryManager.DEFAULT_VERSION));      // product-version
         buffer.putLong(0L); // product-build-number
         BufferUtils.updateLengthPlaceholder(buffer, lenPos);
     }

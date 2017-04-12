@@ -36,7 +36,6 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.scp.ScpException;
@@ -178,7 +177,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
      */
     protected void handleCommandExitStatus(String cmd, ClientChannel channel) throws IOException {
         // give a chance for the exit status to be received
-        long timeout = PropertyResolverUtils.getLongProperty(channel, SCP_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT, DEFAULT_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT);
+        long timeout = channel.getLongProperty(SCP_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT, DEFAULT_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT);
         if (timeout <= 0L) {
             handleCommandExitStatus(cmd, (Integer) null);
             return;
@@ -241,7 +240,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
     }
 
     protected ChannelExec openCommandChannel(ClientSession session, String cmd) throws IOException {
-        long waitTimeout = PropertyResolverUtils.getLongProperty(session, SCP_EXEC_CHANNEL_OPEN_TIMEOUT, DEFAULT_EXEC_CHANNEL_OPEN_TIMEOUT);
+        long waitTimeout = session.getLongProperty(SCP_EXEC_CHANNEL_OPEN_TIMEOUT, DEFAULT_EXEC_CHANNEL_OPEN_TIMEOUT);
         ChannelExec channel = session.createExecChannel(cmd);
 
         long startTime = System.nanoTime();

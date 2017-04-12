@@ -26,7 +26,6 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.Session;
@@ -58,7 +57,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
     private boolean noDelay;
 
     public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, Logger log, byte cmd, boolean eofOnClose) {
-        this(channel, remoteWindow, PropertyResolverUtils.getLongProperty(channel, WAIT_FOR_SPACE_TIMEOUT, DEFAULT_WAIT_FOR_SPACE_TIMEOUT), log, cmd, eofOnClose);
+        this(channel, remoteWindow, channel.getLongProperty(WAIT_FOR_SPACE_TIMEOUT, DEFAULT_WAIT_FOR_SPACE_TIMEOUT), log, cmd, eofOnClose);
     }
 
     public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, long maxWaitTimeout, Logger log, byte cmd, boolean eofOnClose) {

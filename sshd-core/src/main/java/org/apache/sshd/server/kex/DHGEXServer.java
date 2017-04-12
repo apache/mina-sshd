@@ -31,7 +31,6 @@ import java.util.Objects;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.kex.DHFactory;
@@ -274,7 +273,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
 
     protected List<Moduli.DhGroup> loadModuliGroups() throws IOException {
         ServerSession session = getServerSession();
-        String moduliStr = PropertyResolverUtils.getString(session, ServerFactoryManager.MODULI_URL);
+        String moduliStr = session.getString(ServerFactoryManager.MODULI_URL);
 
         List<Moduli.DhGroup> groups = null;
         URL moduli;

@@ -21,7 +21,6 @@ package org.apache.sshd.client.channel;
 import java.io.IOException;
 import java.util.Date;
 
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.session.Session;
@@ -57,7 +56,7 @@ public class ChannelExec extends PtyCapableChannelSession {
         }
 
         Session session = getSession();
-        boolean wantReply = PropertyResolverUtils.getBooleanProperty(this, REQUEST_EXEC_REPLY, DEFAULT_REQUEST_EXEC_REPLY);
+        boolean wantReply = this.getBooleanProperty(REQUEST_EXEC_REPLY, DEFAULT_REQUEST_EXEC_REPLY);
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, command.length() + Integer.SIZE);
         buffer.putInt(getRecipient());
         buffer.putString(Channel.CHANNEL_EXEC);

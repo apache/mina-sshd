@@ -39,7 +39,6 @@ import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolver;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
@@ -604,7 +603,7 @@ public abstract class AbstractChannel
                 buffer.putInt(getRecipient());
 
                 try {
-                    long timeout = PropertyResolverUtils.getLongProperty(channel, FactoryManager.CHANNEL_CLOSE_TIMEOUT, FactoryManager.DEFAULT_CHANNEL_CLOSE_TIMEOUT);
+                    long timeout = channel.getLongProperty(FactoryManager.CHANNEL_CLOSE_TIMEOUT, FactoryManager.DEFAULT_CHANNEL_CLOSE_TIMEOUT);
                     s.writePacket(buffer, timeout, TimeUnit.MILLISECONDS).addListener(future -> {
                         if (future.isWritten()) {
                             handleClosePacketWritten(channel, immediately);

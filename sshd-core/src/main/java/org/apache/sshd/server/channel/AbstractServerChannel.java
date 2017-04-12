@@ -70,7 +70,7 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
         Session s = getSession();
         FactoryManager manager = Objects.requireNonNull(s.getFactoryManager(), "No factory manager");
         Window wRemote = getRemoteWindow();
-        wRemote.init(rwSize, packetSize, manager.getProperties());
+        wRemote.init(rwSize, packetSize, manager);
         configureWindow();
         return doInit(buffer);
     }

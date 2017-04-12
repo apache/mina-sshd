@@ -26,7 +26,6 @@ import java.util.function.IntUnaryOperator;
 import java.util.logging.Level;
 
 import org.apache.sshd.common.PropertyResolver;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -71,7 +70,7 @@ public final class BufferUtils {
     }
 
     public static void dumpHex(SimplifiedLog logger, Level level, String prefix, PropertyResolver resolver, char sep, byte[] data, int offset, int len) {
-        dumpHex(logger, level, prefix, sep, PropertyResolverUtils.getIntProperty(resolver, HEXDUMP_CHUNK_SIZE, DEFAULT_HEXDUMP_CHUNK_SIZE), data, offset, len);
+        dumpHex(logger, level, prefix, sep, resolver.getIntProperty(HEXDUMP_CHUNK_SIZE, DEFAULT_HEXDUMP_CHUNK_SIZE), data, offset, len);
     }
 
     public static void dumpHex(SimplifiedLog logger, Level level, String prefix, char sep, int chunkSize, byte... data) {

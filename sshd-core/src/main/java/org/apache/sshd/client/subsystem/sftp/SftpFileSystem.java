@@ -41,7 +41,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.file.util.BaseFileSystem;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
@@ -74,7 +73,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
         this.clientSession = Objects.requireNonNull(session, "No client session");
         this.selector = selector;
         this.stores = Collections.unmodifiableList(Collections.<FileStore>singletonList(new SftpFileStore(id, this)));
-        this.pool = new LinkedBlockingQueue<>(PropertyResolverUtils.getIntProperty(session, POOL_SIZE_PROP, DEFAULT_POOL_SIZE));
+        this.pool = new LinkedBlockingQueue<>(session.getIntProperty(POOL_SIZE_PROP, DEFAULT_POOL_SIZE));
         try (SftpClient client = getClient()) {
             version = client.getVersion();
             defaultDir = getPath(client.canonicalPath("."));

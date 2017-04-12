@@ -32,7 +32,6 @@ import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.session.ConnectionService;
@@ -110,7 +109,7 @@ public class UnixAgentFactory implements SshAgentFactory, ExecutorServiceConfigu
 
     @Override
     public SshAgent createClient(FactoryManager manager) throws IOException {
-        String authSocket = PropertyResolverUtils.getString(manager, SshAgent.SSH_AUTHSOCKET_ENV_NAME);
+        String authSocket = manager.getString(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
         if (GenericUtils.isEmpty(authSocket)) {
             throw new SshException("No " + SshAgent.SSH_AUTHSOCKET_ENV_NAME + " value");
         }

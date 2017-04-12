@@ -31,7 +31,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolver;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
@@ -60,7 +59,7 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
     private long timeout;
 
     public ChannelPipedInputStream(PropertyResolver resolver, Window localWindow) {
-        this(localWindow, PropertyResolverUtils.getLongProperty(resolver, FactoryManager.WINDOW_TIMEOUT, FactoryManager.DEFAULT_WINDOW_TIMEOUT));
+        this(localWindow, resolver.getLongProperty(FactoryManager.WINDOW_TIMEOUT, FactoryManager.DEFAULT_WINDOW_TIMEOUT));
     }
 
     public ChannelPipedInputStream(Window localWindow, long windowTimeout) {

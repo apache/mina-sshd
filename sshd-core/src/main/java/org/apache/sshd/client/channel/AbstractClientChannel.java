@@ -325,7 +325,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         Session session = getSession();
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         Window wRemote = getRemoteWindow();
-        wRemote.init(rwSize, packetSize, manager.getProperties());
+        wRemote.init(rwSize, packetSize, manager);
 
         String changeEvent = "SSH_MSG_CHANNEL_OPEN_CONFIRMATION";
         try {

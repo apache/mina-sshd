@@ -85,7 +85,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         Object phase = PropertyResolverUtils.getObject(s, ServerAuthenticationManager.WELCOME_BANNER_PHASE);
         phase = PropertyResolverUtils.toEnum(WelcomeBannerPhase.class, phase, true, WelcomeBannerPhase.VALUES);
         welcomePhase = (phase == null) ? ServerAuthenticationManager.DEFAULT_BANNER_PHASE : (WelcomeBannerPhase) phase;
-        maxAuthRequests = PropertyResolverUtils.getIntProperty(s, ServerAuthenticationManager.MAX_AUTH_REQUESTS, ServerAuthenticationManager.DEFAULT_MAX_AUTH_REQUESTS);
+        maxAuthRequests = s.getIntProperty(ServerAuthenticationManager.MAX_AUTH_REQUESTS, ServerAuthenticationManager.DEFAULT_MAX_AUTH_REQUESTS);
 
         List<NamedFactory<UserAuth>> factories = ValidateUtils.checkNotNullAndNotEmpty(
                 serverSession.getUserAuthFactories(), "No user auth factories for %s", s);
@@ -93,7 +93,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         // Get authentication methods
         authMethods = new ArrayList<>();
 
-        String mths = PropertyResolverUtils.getString(s, ServerAuthenticationManager.AUTH_METHODS);
+        String mths = s.getString(ServerAuthenticationManager.AUTH_METHODS);
         if (GenericUtils.isEmpty(mths)) {
             for (NamedFactory<UserAuth> uaf : factories) {
                 authMethods.add(new ArrayList<>(Collections.singletonList(uaf.getName())));
@@ -272,7 +272,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         }
 
         if (success) {
-            Integer maxSessionCount = PropertyResolverUtils.getInteger(session, ServerFactoryManager.MAX_CONCURRENT_SESSIONS);
+            Integer maxSessionCount = session.getInteger(ServerFactoryManager.MAX_CONCURRENT_SESSIONS);
             if (maxSessionCount != null) {
                 int currentSessionCount = session.getActiveSessionCountForUser(username);
                 if (currentSessionCount >= maxSessionCount) {
@@ -396,7 +396,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     }
 
     protected String resolveWelcomeBanner(ServerSession session) throws IOException {
-        Object bannerValue = PropertyResolverUtils.getObject(session, ServerAuthenticationManager.WELCOME_BANNER);
+        Object bannerValue = session.getObject(ServerAuthenticationManager.WELCOME_BANNER);
         if (bannerValue == null) {
             return null;
         }

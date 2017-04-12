@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentServer;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -46,10 +45,10 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
     public SshAgent createClient() throws IOException {
         try {
             Session session = this.service.getSession();
-            String channelType = PropertyResolverUtils.getStringProperty(session, PROXY_CHANNEL_TYPE, DEFAULT_PROXY_CHANNEL_TYPE);
+            String channelType = session.getStringProperty(PROXY_CHANNEL_TYPE, DEFAULT_PROXY_CHANNEL_TYPE);
             AgentForwardedChannel channel = new AgentForwardedChannel(channelType);
             this.service.registerChannel(channel);
-            channel.open().verify(PropertyResolverUtils.getLongProperty(channel, CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
+            channel.open().verify(channel.getLongProperty(CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
             return channel.getAgent();
         } catch (Throwable t) {
             if (log.isDebugEnabled()) {
