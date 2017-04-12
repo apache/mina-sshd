@@ -355,7 +355,7 @@ public final class PropertyResolverUtils {
 
     public static Object resolvePropertyValue(Map<String, ?> props, String name) {
         String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
-        return GenericUtils.isEmpty(props) ? null : props.get(key);
+        return props != null ? props.get(key) : null;
     }
 
     /**
@@ -392,14 +392,12 @@ public final class PropertyResolverUtils {
         String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
         for (PropertyResolver r = resolver; r != null; r = r.getParentPropertyResolver()) {
             Map<String, ?> props = r.getProperties();
-            Object value = GenericUtils.isEmpty(props) ? null : props.get(key);
-            if (value != null) {
-                return value;
+            if (props != null) {
+                Object value = props.get(key);
+                if (value != null) {
+                    return value;
+                }
             }
-        }
-
-        if (key.startsWith("org.apache.sshd")) {
-            return System.getProperty(key);
         }
 
         return null;
@@ -417,9 +415,11 @@ public final class PropertyResolverUtils {
         String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
         for (PropertyResolver r = resolver; r != null; r = r.getParentPropertyResolver()) {
             Map<String, Object> props = r.getProperties();
-            Object value = GenericUtils.isEmpty(props) ? null : props.get(key);
-            if (value != null) {
-                return props;
+            if (props != null) {
+                Object value = props.get(key);
+                if (value != null) {
+                    return props;
+                }
             }
         }
 
