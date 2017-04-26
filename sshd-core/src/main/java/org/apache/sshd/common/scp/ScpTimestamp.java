@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
+ * Represents an SCP timestamp definition
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ScpTimestamp {
@@ -47,17 +48,18 @@ public class ScpTimestamp {
     @Override
     public String toString() {
         return "modified=" + new Date(lastModifiedTime)
-                + ";accessed=" + new Date(lastAccessTime);
+            + ";accessed=" + new Date(lastAccessTime);
     }
 
     /**
      * @param line The time specification - format:
-     *             {@code T<mtime-sec> <mtime-micros> <atime-sec> <atime-micros>}
-     *             where specified times are since UTC
+     * {@code T<mtime-sec> <mtime-micros> <atime-sec> <atime-micros>}
+     * where specified times are in seconds since UTC
      * @return The {@link ScpTimestamp} value with the timestamps converted to
      * <U>milliseconds</U>
      * @throws NumberFormatException if bad numerical values - <B>Note:</B>
-     *                               does not check if 1st character is 'T'.
+     * does not check if 1st character is 'T'.
+     * @see <A HREF="https://blogs.oracle.com/janp/entry/how_the_scp_protocol_works">How the SCP protocol works</A>
      */
     public static ScpTimestamp parseTime(String line) throws NumberFormatException {
         String[] numbers = GenericUtils.split(line.substring(1), ' ');
