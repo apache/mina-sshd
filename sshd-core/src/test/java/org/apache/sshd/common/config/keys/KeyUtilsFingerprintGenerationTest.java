@@ -33,18 +33,21 @@ import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.DigestFactory;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class KeyUtilsFingerprintGenerationTest extends BaseTestSupport {
     private final PublicKey key;
     private final DigestFactory digestFactory;
@@ -66,11 +69,11 @@ public class KeyUtilsFingerprintGenerationTest extends BaseTestSupport {
                 // CHECKSTYLE:ON
                 Arrays.asList(
                     new Pair<>(
-                        (DigestFactory)BuiltinDigests.md5,
+                        BuiltinDigests.md5,
                         "MD5:24:32:3c:80:01:b3:e1:fa:7c:53:ca:e3:e8:4e:c6:8e"
                     ),
                     new Pair<>(
-                        (DigestFactory)BuiltinDigests.sha256,
+                        BuiltinDigests.sha256,
                         "SHA256:1wNOZO+/XgNGJMx8UUJst33V+bBMTz5EcL0B6y2iRv0"
                     )
                 )
@@ -81,11 +84,11 @@ public class KeyUtilsFingerprintGenerationTest extends BaseTestSupport {
                 // CHECKSTYLE:ON
                 Arrays.asList(
                     new Pair<>(
-                        (DigestFactory)BuiltinDigests.md5,
+                        BuiltinDigests.md5,
                         "MD5:fb:29:14:8d:94:f9:1d:cf:6b:0e:a4:35:1d:83:44:2f"
                     ),
                     new Pair<>(
-                        (DigestFactory)BuiltinDigests.sha256,
+                        BuiltinDigests.sha256,
                         "SHA256:grxw4KhY1cK6eOczBWs7tDVvo9V0PQw4E1wN1gJvHlw"
                     )
                 )
@@ -96,11 +99,11 @@ public class KeyUtilsFingerprintGenerationTest extends BaseTestSupport {
                 // CHECKSTYLE:ON
                 Arrays.asList(
                     new Pair<>(
-                        (DigestFactory)BuiltinDigests.md5,
+                        BuiltinDigests.md5,
                         "MD5:e6:dc:a2:4f:5b:11:b2:3c:0f:e8:f6:d8:d1:01:e9:d3"
                     ),
                     new Pair<>(
-                        (DigestFactory)BuiltinDigests.sha512,
+                        BuiltinDigests.sha512,
                         "SHA512:4w6ZB78tmFWhpN2J50Ok6WeMJhZp1X0xN0EKWxZmRLcYDbCWhyJDe8lgrQKWqdTCMZ5aNEBl9xQUklcC5Gt2jg"
                     )
                 )
