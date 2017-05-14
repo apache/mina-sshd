@@ -118,8 +118,8 @@ public class KnownHostEntry extends HostPatternsHolder {
     }
 
     @Override
-    public boolean isHostMatch(String host) {
-        if (super.isHostMatch(host)) {
+    public boolean isHostMatch(String host, int port) {
+        if (super.isHostMatch(host, port)) {
             return true;
         }
 

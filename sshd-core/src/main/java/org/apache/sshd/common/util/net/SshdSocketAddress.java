@@ -78,11 +78,38 @@ public class SshdSocketAddress extends SocketAddress {
     /**
      * Compares {@link InetAddress}-es according to their {@link InetAddress#getHostAddress()}
      * value case <U>insensitive</U>
+     *
+     * @see #toAddressString(InetAddress)
      */
     public static final Comparator<InetAddress> BY_HOST_ADDRESS = (a1, a2) -> {
         String n1 = GenericUtils.trimToEmpty(toAddressString(a1));
         String n2 = GenericUtils.trimToEmpty(toAddressString(a2));
         return String.CASE_INSENSITIVE_ORDER.compare(n1, n2);
+    };
+
+    /**
+     * Compares {@link SocketAddress}-es according to their host case <U>insensitive</U>
+     * and if equals, then according to their port value (if any)
+     *
+     * @see #toAddressString(SocketAddress)
+     * @see #toAddressPort(SocketAddress)
+     */
+    public static final Comparator<SocketAddress> BY_HOST_AND_PORT = (a1, a2) -> {
+        String n1 = GenericUtils.trimToEmpty(toAddressString(a1));
+        String n2 = GenericUtils.trimToEmpty(toAddressString(a2));
+        int nRes = String.CASE_INSENSITIVE_ORDER.compare(n1, n2);
+        if (nRes != 0) {
+            return nRes;
+        }
+
+        int p1 = toAddressPort(a1);
+        int p2 = toAddressPort(a2);
+        nRes = Integer.compare(p1, p2);
+        if (nRes != 0) {
+            return nRes;
+        }
+
+        return 0;
     };
 
     private static final long serialVersionUID = 6461645947151952729L;
@@ -283,20 +310,46 @@ public class SshdSocketAddress extends SocketAddress {
         return true;
     }
 
+    public static SshdSocketAddress toSshdSocketAddress(SocketAddress addr) {
+        if (addr == null) {
+            return null;
+        } else if (addr instanceof SshdSocketAddress) {
+            return (SshdSocketAddress) addr;
+        } else if (addr instanceof InetSocketAddress) {
+            InetSocketAddress isockAddress = (InetSocketAddress) addr;
+            return new SshdSocketAddress(isockAddress.getHostName(), isockAddress.getPort());
+        } else {
+            throw new UnsupportedOperationException("Cannot convert " + addr.getClass().getSimpleName()
+                    + "=" + addr + " to " + SshdSocketAddress.class.getSimpleName());
+        }
+    }
+
     public static String toAddressString(SocketAddress addr) {
         if (addr == null) {
             return null;
-        }
-
-        if (addr instanceof InetSocketAddress) {
+        } else if (addr instanceof InetSocketAddress) {
             return ((InetSocketAddress) addr).getHostString();
-        }
-
-        if (addr instanceof SshdSocketAddress) {
+        } else if (addr instanceof SshdSocketAddress) {
             return ((SshdSocketAddress) addr).getHostName();
+        } else {
+            return addr.toString();
         }
+    }
 
-        return addr.toString();
+    /**
+     * Attempts to resolve the port value
+     *
+     * @param addr The {@link SocketAddress} to examine
+     * @return The associated port value - negative if failed to resolve
+     */
+    public static int toAddressPort(SocketAddress addr) {
+        if (addr instanceof InetSocketAddress) {
+            return ((InetSocketAddress) addr).getPort();
+        } else if (addr instanceof SshdSocketAddress) {
+            return ((SshdSocketAddress) addr).getPort();
+        } else {
+            return -1;
+        }
     }
 
     /**

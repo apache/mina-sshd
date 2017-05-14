@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -48,7 +47,7 @@ public class HostConfigEntryTest extends BaseTestSupport {
         String testHost = "37.77.34.7";
         String[] elements = GenericUtils.split(testHost, '.');
         StringBuilder sb = new StringBuilder(testHost.length() + Byte.SIZE);
-        List<Pair<Pattern, Boolean>> patterns = new ArrayList<>(elements.length + 1);
+        List<HostPatternValue> patterns = new ArrayList<>(elements.length + 1);
         // all wildcard patterns are not negated - only the actual host
         patterns.add(HostPatternsHolder.toPattern(String.valueOf(HostPatternsHolder.NEGATION_CHAR_PATTERN) + testHost));
 
@@ -70,7 +69,7 @@ public class HostConfigEntryTest extends BaseTestSupport {
         }
 
         for (int index = 0; index < patterns.size(); index++) {
-            assertFalse("Unexpected match for " + patterns, HostPatternsHolder.isHostMatch(testHost, patterns));
+            assertFalse("Unexpected match for " + patterns, HostPatternsHolder.isHostMatch(testHost, 0, patterns));
             Collections.shuffle(patterns);
         }
     }
@@ -85,8 +84,8 @@ public class HostConfigEntryTest extends BaseTestSupport {
         }
 
         String value = sb.toString();
-        Pair<Pattern, Boolean> pp = HostPatternsHolder.toPattern(value);
-        Pattern pattern = pp.getFirst();
+        HostPatternValue pp = HostPatternsHolder.toPattern(value);
+        Pattern pattern = pp.getPattern();
         String domain = value.substring(1); // chomp the wildcard prefix
         for (String host : new String[] {
                 getClass().getSimpleName(),
@@ -106,7 +105,7 @@ public class HostConfigEntryTest extends BaseTestSupport {
         StringBuilder sb = new StringBuilder().append("10.0.0.");
         int sbLen = sb.length();
 
-        Pattern pattern = HostPatternsHolder.toPattern(sb.append(HostPatternsHolder.WILDCARD_PATTERN)).getFirst();
+        Pattern pattern = HostPatternsHolder.toPattern(sb.append(HostPatternsHolder.WILDCARD_PATTERN)).getPattern();
         for (int v = 0; v <= 255; v++) {
             sb.setLength(sbLen);    // start from scratch
             sb.append(v);
@@ -123,7 +122,7 @@ public class HostConfigEntryTest extends BaseTestSupport {
         for (boolean restoreOriginal : new boolean[] {true, false}) {
             for (int index = 0; index < value.length(); index++) {
                 sb.setCharAt(index, HostPatternsHolder.SINGLE_CHAR_PATTERN);
-                testCaseInsensitivePatternMatching(value, HostPatternsHolder.toPattern(sb.toString()).getFirst(), true);
+                testCaseInsensitivePatternMatching(value, HostPatternsHolder.toPattern(sb.toString()).getPattern(), true);
                 if (restoreOriginal) {
                     sb.setCharAt(index, value.charAt(index));
                 }
@@ -147,8 +146,8 @@ public class HostConfigEntryTest extends BaseTestSupport {
             }
 
             String pattern = sb.toString();
-            Pair<Pattern, Boolean> pp = HostPatternsHolder.toPattern(pattern);
-            assertTrue("No match for " + address + " on pattern=" + pattern, HostPatternsHolder.isHostMatch(address, Collections.singletonList(pp)));
+            HostPatternValue pp = HostPatternsHolder.toPattern(pattern);
+            assertTrue("No match for " + address + " on pattern=" + pattern, HostPatternsHolder.isHostMatch(address, 0, Collections.singletonList(pp)));
         }
     }
 

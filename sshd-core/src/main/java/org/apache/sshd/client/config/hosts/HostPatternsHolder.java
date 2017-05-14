@@ -29,7 +29,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -58,17 +57,26 @@ public abstract class HostPatternsHolder {
      */
     public static final String PATTERN_CHARS = new String(new char[]{WILDCARD_PATTERN, SINGLE_CHAR_PATTERN, NEGATION_CHAR_PATTERN});
 
-    private Collection<Pair<Pattern, Boolean>> patterns = new LinkedList<>();
+    /** Port value separator if non-standard port pattern used */
+    public static final char PORT_VALUE_DELIMITER = ':';
+
+    /** Non-standard port specification host pattern enclosure start delimiter */
+    public static final char NON_STANDARD_PORT_PATTERN_ENCLOSURE_START_DELIM = '[';
+
+    /** Non-standard port specification host pattern enclosure end delimiter */
+    public static final char NON_STANDARD_PORT_PATTERN_ENCLOSURE_END_DELIM = ']';
+
+    private Collection<HostPatternValue> patterns = new LinkedList<>();
 
     protected HostPatternsHolder() {
         super();
     }
 
-    public Collection<Pair<Pattern, Boolean>> getPatterns() {
+    public Collection<HostPatternValue> getPatterns() {
         return patterns;
     }
 
-    public void setPatterns(Collection<Pair<Pattern, Boolean>> patterns) {
+    public void setPatterns(Collection<HostPatternValue> patterns) {
         this.patterns = patterns;
     }
 
@@ -76,11 +84,12 @@ public abstract class HostPatternsHolder {
      * Checks if a given host name / address matches the entry's host pattern(s)
      *
      * @param host The host name / address - ignored if {@code null}/empty
+     * @param port The connection port
      * @return {@code true} if the name / address matches the pattern(s)
      * @see #isHostMatch(String, Pattern)
      */
-    public boolean isHostMatch(String host) {
-        return isHostMatch(host, getPatterns());
+    public boolean isHostMatch(String host, int port) {
+        return isHostMatch(host, port, getPatterns());
     }
 
     /**
@@ -138,7 +147,7 @@ public abstract class HostPatternsHolder {
 
         List<HostConfigEntry> matches = null;
         for (HostConfigEntry entry : entries) {
-            if (!entry.isHostMatch(host)) {
+            if (!entry.isHostMatch(host, 0 /* any port */)) {
                 continue;   // debug breakpoint
             }
 
@@ -156,14 +165,14 @@ public abstract class HostPatternsHolder {
         }
     }
 
-    public static boolean isHostMatch(String host, Collection<Pair<Pattern, Boolean>> patterns) {
+    public static boolean isHostMatch(String host, int port, Collection<HostPatternValue> patterns) {
         if (GenericUtils.isEmpty(patterns)) {
             return false;
         }
 
         boolean matchFound = false;
-        for (Pair<Pattern, Boolean> pp : patterns) {
-            Boolean negated = pp.getSecond();
+        for (HostPatternValue pv : patterns) {
+            boolean negated = pv.isNegated();
             /*
              * If already found a match we are interested only in negations
              */
@@ -171,7 +180,7 @@ public abstract class HostPatternsHolder {
                 continue;
             }
 
-            if (!isHostMatch(host, pp.getFirst())) {
+            if (!isHostMatch(host, pv.getPattern())) {
                 continue;
             }
 
@@ -183,6 +192,11 @@ public abstract class HostPatternsHolder {
              */
             if (negated) {
                 return false;
+            }
+
+            int pvPort = pv.getPort();
+            if ((pvPort != 0) && (port != 0) && (pvPort != port)) {
+                continue;
             }
 
             matchFound = true;
@@ -207,16 +221,16 @@ public abstract class HostPatternsHolder {
         return m.matches();
     }
 
-    public static List<Pair<Pattern, Boolean>> parsePatterns(CharSequence... patterns) {
+    public static List<HostPatternValue> parsePatterns(CharSequence... patterns) {
         return parsePatterns(GenericUtils.isEmpty(patterns) ? Collections.emptyList() : Arrays.asList(patterns));
     }
 
-    public static List<Pair<Pattern, Boolean>> parsePatterns(Collection<? extends CharSequence> patterns) {
+    public static List<HostPatternValue> parsePatterns(Collection<? extends CharSequence> patterns) {
         if (GenericUtils.isEmpty(patterns)) {
             return Collections.emptyList();
         }
 
-        List<Pair<Pattern, Boolean>> result = new ArrayList<>(patterns.size());
+        List<HostPatternValue> result = new ArrayList<>(patterns.size());
         for (CharSequence p : patterns) {
             result.add(ValidateUtils.checkNotNull(toPattern(p), "No pattern for %s", p));
         }
@@ -231,18 +245,38 @@ public abstract class HostPatternsHolder {
      * @param pattern The original pattern string - ignored if {@code null}/empty
      * @return The regular expression matcher {@link Pattern} and the indication
      * whether it is a negating pattern or not - {@code null} if no original string
+     * @see #NON_STANDARD_PORT_PATTERN_ENCLOSURE_START_DELIM
+     * @see #NON_STANDARD_PORT_PATTERN_ENCLOSURE_END_DELIM
      * @see #WILDCARD_PATTERN
      * @see #SINGLE_CHAR_PATTERN
      * @see #NEGATION_CHAR_PATTERN
      */
-    public static Pair<Pattern, Boolean> toPattern(CharSequence pattern) {
+    public static HostPatternValue toPattern(CharSequence pattern) {
         if (GenericUtils.isEmpty(pattern)) {
             return null;
         }
 
-        StringBuilder sb = new StringBuilder(pattern.length());
+        int patternLen = pattern.length();
+        int port = 0;
+        // Check if non-standard port value used
+        StringBuilder sb = new StringBuilder(patternLen);
+        if (pattern.charAt(0) == HostPatternsHolder.NON_STANDARD_PORT_PATTERN_ENCLOSURE_START_DELIM) {
+            int pos = GenericUtils.lastIndexOf(pattern, HostPatternsHolder.PORT_VALUE_DELIMITER);
+            ValidateUtils.checkTrue(pos > 0, "Missing non-standard port value delimiter in %s", pattern);
+            ValidateUtils.checkTrue(pos < (patternLen - 1), "Missing non-standard port value number in %s", pattern);
+            ValidateUtils.checkTrue(pattern.charAt(pos - 1) == HostPatternsHolder.NON_STANDARD_PORT_PATTERN_ENCLOSURE_END_DELIM,
+                "Invalid non-standard port value host pattern enclosure delimiters in %s", pattern);
+
+            CharSequence csPort = pattern.subSequence(pos + 1, patternLen);
+            port = Integer.parseInt(csPort.toString());
+            ValidateUtils.checkTrue((port > 0) && (port <= 0xFFFF), "Invalid non-start port value (%d) in %s", port, pattern);
+
+            pattern = pattern.subSequence(1, pos - 1);
+            patternLen = pattern.length();
+        }
+
         boolean negated = false;
-        for (int curPos = 0; curPos < pattern.length(); curPos++) {
+        for (int curPos = 0; curPos < patternLen; curPos++) {
             char ch = pattern.charAt(curPos);
             ValidateUtils.checkTrue(isValidPatternChar(ch), "Invalid host pattern char in %s", pattern);
 
@@ -266,7 +300,7 @@ public abstract class HostPatternsHolder {
             }
         }
 
-        return new Pair<>(Pattern.compile(sb.toString(), Pattern.CASE_INSENSITIVE), negated);
+        return new HostPatternValue(Pattern.compile(sb.toString(), Pattern.CASE_INSENSITIVE), port, negated);
     }
 
     /**

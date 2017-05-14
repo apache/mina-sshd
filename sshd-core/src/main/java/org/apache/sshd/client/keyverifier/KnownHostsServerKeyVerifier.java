@@ -39,6 +39,7 @@ import java.util.Objects;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.client.config.hosts.HostPatternsHolder;
 import org.apache.sshd.client.config.hosts.KnownHostEntry;
 import org.apache.sshd.client.config.hosts.KnownHostHashValue;
 import org.apache.sshd.client.session.ClientSession;
@@ -490,7 +491,7 @@ public class KnownHostsServerKeyVerifier
             return null;
         }
 
-        Collection<String> candidates = resolveHostNetworkIdentities(clientSession, remoteAddress);
+        Collection<SshdSocketAddress> candidates = resolveHostNetworkIdentities(clientSession, remoteAddress);
         if (log.isDebugEnabled()) {
             log.debug("findKnownHostEntry({})[{}] host network identities: {}",
                       clientSession, remoteAddress, candidates);
@@ -502,9 +503,9 @@ public class KnownHostsServerKeyVerifier
 
         for (HostEntryPair match : knownHosts) {
             KnownHostEntry entry = match.getHostEntry();
-            for (String host : candidates) {
+            for (SshdSocketAddress host : candidates) {
                 try {
-                    if (entry.isHostMatch(host)) {
+                    if (entry.isHostMatch(host.getHostName(), host.getPort())) {
                         if (log.isDebugEnabled()) {
                             log.debug("findKnownHostEntry({})[{}] matched host={} for entry={}",
                                        clientSession, remoteAddress, host, entry);
@@ -620,8 +621,9 @@ public class KnownHostsServerKeyVerifier
      * will be called in order to enable recovery of its data
      * @see #resetReloadAttributes()
      */
-    protected KnownHostEntry updateKnownHostsFile(ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey,
-            Path file, Collection<HostEntryPair> knownHosts) throws Exception {
+    protected KnownHostEntry updateKnownHostsFile(
+            ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey, Path file, Collection<HostEntryPair> knownHosts)
+                    throws Exception {
         KnownHostEntry entry = prepareKnownHostEntry(clientSession, remoteAddress, serverKey);
         if (entry == null) {
             if (log.isDebugEnabled()) {
@@ -665,14 +667,14 @@ public class KnownHostsServerKeyVerifier
      * @see KnownHostEntry#getConfigLine()
      */
     protected KnownHostEntry prepareKnownHostEntry(ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey) throws Exception {
-        Collection<String> patterns = resolveHostNetworkIdentities(clientSession, remoteAddress);
+        Collection<SshdSocketAddress> patterns = resolveHostNetworkIdentities(clientSession, remoteAddress);
         if (GenericUtils.isEmpty(patterns)) {
             return null;
         }
 
         StringBuilder sb = new StringBuilder(Byte.MAX_VALUE);
         Random rnd = null;
-        for (String hostIdentity : patterns) {
+        for (SshdSocketAddress hostIdentity : patterns) {
             if (sb.length() > 0) {
                 sb.append(',');
             }
@@ -692,10 +694,20 @@ public class KnownHostsServerKeyVerifier
                 byte[] salt = new byte[blockSize];
                 rnd.fill(salt);
 
-                byte[] digestValue = KnownHostHashValue.calculateHashValue(hostIdentity, mac, salt);
+                byte[] digestValue = KnownHostHashValue.calculateHashValue(hostIdentity.getHostName(), mac, salt);
                 KnownHostHashValue.append(sb, digester, salt, digestValue);
             } else {
-                sb.append(hostIdentity);
+                int portValue = hostIdentity.getPort();
+                boolean nonDefaultPort = (portValue > 0) && (portValue != SshConfigFileReader.DEFAULT_PORT);
+                if (nonDefaultPort) {
+                    sb.append(HostPatternsHolder.NON_STANDARD_PORT_PATTERN_ENCLOSURE_START_DELIM);
+                }
+                sb.append(hostIdentity.getHostName());
+                if (nonDefaultPort) {
+                    sb.append(HostPatternsHolder.NON_STANDARD_PORT_PATTERN_ENCLOSURE_END_DELIM);
+                    sb.append(HostPatternsHolder.PORT_VALUE_DELIMITER);
+                    sb.append(portValue);
+                }
             }
         }
 
@@ -713,7 +725,7 @@ public class KnownHostsServerKeyVerifier
      * @param hostIdentity The entry's host name/address
      * @return The digester {@link NamedFactory} - {@code null} if no hashing is to be made
      */
-    protected NamedFactory<Mac> getHostValueDigester(ClientSession clientSession, SocketAddress remoteAddress, String hostIdentity) {
+    protected NamedFactory<Mac> getHostValueDigester(ClientSession clientSession, SocketAddress remoteAddress, SshdSocketAddress hostIdentity) {
         return null;
     }
 
@@ -724,20 +736,20 @@ public class KnownHostsServerKeyVerifier
      *
      * @param clientSession The {@link ClientSession}
      * @param remoteAddress The remote host address
-     * @return A {@link Collection} of the names/addresses to use - if {@code null}/empty
-     * then ignored (i.e., no matching is done or no entry is generated)
+     * @return A {@link Collection} of the {@code InetSocketAddress}-es to use - if
+     * {@code null}/empty then ignored (i.e., no matching is done or no entry is generated)
      * @see ClientSession#getConnectAddress()
-     * @see SshdSocketAddress#toAddressString(SocketAddress)
+     * @see SshdSocketAddress#toSshdSocketAddress(SocketAddress)
      */
-    protected Collection<String> resolveHostNetworkIdentities(ClientSession clientSession, SocketAddress remoteAddress) {
+    protected Collection<SshdSocketAddress> resolveHostNetworkIdentities(ClientSession clientSession, SocketAddress remoteAddress) {
         /*
          * NOTE !!! we do not resolve the fully-qualified name to avoid long DNS timeouts.
          * Instead we use the reported peer address and the original connection target host
          */
-        Collection<String> candidates = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-        candidates.add(SshdSocketAddress.toAddressString(remoteAddress));
+        Collection<SshdSocketAddress> candidates = new TreeSet<>(SshdSocketAddress.BY_HOST_AND_PORT);
+        candidates.add(SshdSocketAddress.toSshdSocketAddress(remoteAddress));
         SocketAddress connectAddress = clientSession.getConnectAddress();
-        candidates.add(SshdSocketAddress.toAddressString(connectAddress));
+        candidates.add(SshdSocketAddress.toSshdSocketAddress(connectAddress));
         return candidates;
     }
 

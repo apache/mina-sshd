@@ -23,18 +23,21 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class KnownHostHashValueTest extends BaseTestSupport {
     private final String hostName;
     private final String hashValue;

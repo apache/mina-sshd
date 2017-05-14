@@ -156,6 +156,30 @@ public final class GenericUtils {
         return !isEmpty(cs);
     }
 
+    public static int indexOf(CharSequence cs, char c) {
+        int len = length(cs);
+        for (int pos = 0; pos < len; pos++) {
+            char ch = cs.charAt(pos);
+            if (ch == c) {
+                return pos;
+            }
+        }
+
+        return -1;
+    }
+
+    public static int lastIndexOf(CharSequence cs, char c) {
+        int len = length(cs);
+        for (int pos = len - 1; pos >= 0; pos--) {
+            char ch = cs.charAt(pos);
+            if (ch == c) {
+                return pos;
+            }
+        }
+
+        return -1;
+    }
+
     // a List would be better, but we want to be compatible with String.split(...)
     public static String[] split(String s, char ch) {
         if (isEmpty(s)) {
