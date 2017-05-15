@@ -637,12 +637,15 @@ public class KnownHostsServerKeyVerifier
         String line = entry.getConfigLine();
         byte[] lineData = line.getBytes(StandardCharsets.UTF_8);
         boolean reuseExisting = Files.exists(file) && (Files.size(file) > 0);
+        byte[] eolBytes = IoUtils.getEOLBytes();
         synchronized (updateLock) {
             try (OutputStream output = reuseExisting ? Files.newOutputStream(file, StandardOpenOption.APPEND) : Files.newOutputStream(file)) {
                 if (reuseExisting) {
-                    output.write(IoUtils.getEOLBytes());    // separate from previous lines
+                    output.write(eolBytes);    // separate from previous lines
                 }
+
                 output.write(lineData);
+                output.write(eolBytes); // add another separator for trailing lines - in case regular SSH client appends to it
             }
         }
 
