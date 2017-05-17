@@ -7,6 +7,7 @@ RemoteSystemsTempFiles/
 .classpath
 .project
 .checkstyle
+.eclipse-pmd
 *.iml
 *.ipr
 *.iws

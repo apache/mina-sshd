@@ -524,7 +524,6 @@ public class ClientTest extends BaseTestSupport {
                             }
                         } catch (IOException e) {
                             if (!channel.isClosing()) {
-                                e.printStackTrace();
                                 channel.close(true);
                             }
                         }
@@ -543,7 +542,6 @@ public class ClientTest extends BaseTestSupport {
                             channel.getAsyncOut().read(buffer).addListener(this);
                         } catch (IOException e) {
                             if (!channel.isClosing()) {
-                                e.printStackTrace();
                                 channel.close(true);
                             }
                         }
@@ -562,7 +560,6 @@ public class ClientTest extends BaseTestSupport {
                             channel.getAsyncErr().read(buffer).addListener(this);
                         } catch (IOException e) {
                             if (!channel.isClosing()) {
-                                e.printStackTrace();
                                 channel.close(true);
                             }
                         }

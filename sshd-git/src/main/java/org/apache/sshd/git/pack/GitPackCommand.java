@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
@@ -40,7 +41,7 @@ import org.eclipse.jgit.util.FS;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class GitPackCommand implements Command, Runnable {
+public class GitPackCommand extends AbstractLoggingBean implements Command, Runnable {
 
     private static final int CHAR = 1;
     private static final int DELIMITER = 2;
@@ -119,11 +120,16 @@ public class GitPackCommand implements Command, Runnable {
             } else {
                 throw new IllegalArgumentException("Unknown git command: " + command);
             }
+
+            if (callback != null) {
+                callback.onExit(0);
+            }
         } catch (Throwable t) {
-            t.printStackTrace();
-        }
-        if (callback != null) {
-            callback.onExit(0);
+            log.warn("Failed {} to execute command={}: {}",
+                     t.getClass().getSimpleName(), command, t.getMessage());
+            if (callback != null) {
+                callback.onExit(-1, t.getClass().getSimpleName());
+            }
         }
     }
 

@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
@@ -35,7 +36,7 @@ import org.apache.sshd.server.ExitCallback;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class GitPgmCommand implements Command, Runnable {
+public class GitPgmCommand extends AbstractLoggingBean implements Command, Runnable {
 
     private static final int CHAR = 1;
     private static final int DELIMITER = 2;
@@ -110,7 +111,8 @@ public class GitPgmCommand implements Command, Runnable {
                 err.write((t.getMessage() + "\n").getBytes(StandardCharsets.UTF_8));
                 err.flush();
             } catch (IOException e) {
-                e.printStackTrace();
+                log.warn("Failed {} to flush command={} failure: {}",
+                        e.getClass().getSimpleName(), command, e.getMessage());
             }
             if (callback != null) {
                 callback.onExit(-1);

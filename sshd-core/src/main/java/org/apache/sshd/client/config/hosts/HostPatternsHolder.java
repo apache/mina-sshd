@@ -120,7 +120,7 @@ public abstract class HostPatternsHolder {
      * @param host The host name / address - ignored if {@code null}/empty
      * @param entries The {@link HostConfigEntry}-ies to scan - ignored if {@code null}/empty
      * @return A {@link List} of all the matching entries
-     * @see #isHostMatch(String)
+     * @see #isHostMatch(String, int)
      */
     public static List<HostConfigEntry> findMatchingEntries(String host, HostConfigEntry... entries) {
         // TODO in Java-8 use Stream(s) + predicate
@@ -137,7 +137,7 @@ public abstract class HostPatternsHolder {
      * @param host The host name / address - ignored if {@code null}/empty
      * @param entries The {@link HostConfigEntry}-ies to scan - ignored if {@code null}/empty
      * @return A {@link List} of all the matching entries
-     * @see #isHostMatch(String)
+     * @see #isHostMatch(String, int)
      */
     public static List<HostConfigEntry> findMatchingEntries(String host, Collection<? extends HostConfigEntry> entries) {
         // TODO in Java-8 use Stream(s) + predicate

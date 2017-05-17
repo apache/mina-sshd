@@ -469,7 +469,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             }
             latch.await();
             for (Throwable t : errors) {
-                t.printStackTrace();
+                log.warn("{}: {}", t.getClass().getSimpleName(), t.getMessage());
             }
             assertEquals(0, errors.size());
         } finally {

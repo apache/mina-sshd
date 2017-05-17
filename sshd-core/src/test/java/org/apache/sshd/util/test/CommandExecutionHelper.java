@@ -27,6 +27,7 @@ import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
@@ -34,7 +35,7 @@ import org.apache.sshd.server.ExitCallback;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class CommandExecutionHelper implements Command, Runnable, ExitCallback {
+public abstract class CommandExecutionHelper extends AbstractLoggingBean implements Command, Runnable, ExitCallback {
     private InputStream in;
     private OutputStream out;
     private OutputStream err;
@@ -133,7 +134,8 @@ public abstract class CommandExecutionHelper implements Command, Runnable, ExitC
                 OutputStream stderr = getErr();
                 stderr.write(message.getBytes(StandardCharsets.US_ASCII));
             } catch (IOException ioe) {
-                ioe.printStackTrace();
+                log.warn("Failed ({}) to write error message={}: {}",
+                         e.getClass().getSimpleName(), message, ioe.getMessage());
             } finally {
                 onExit(-1, message);
             }

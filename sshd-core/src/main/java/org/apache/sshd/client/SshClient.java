@@ -1290,7 +1290,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     StringWriter sw = new StringWriter();
                     try (PrintWriter pw = new PrintWriter(sw)) {
                         pw.println();
-                        t.printStackTrace(pw);
+                        t.printStackTrace(pw);  // NOPMD
                     }
                     throwable = sw.toString();
                 }

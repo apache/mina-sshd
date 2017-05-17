@@ -114,6 +114,8 @@
         <jgit.version>4.6.0.201612231935-r</jgit.version>
         <junit.version>4.12</junit.version>
         <surefire.plugin.version>2.19.1</surefire.plugin.version>
+        <!-- See https://pmd.github.io/ for available latest version -->
+        <pmd.version>5.6.1</pmd.version>
         <httpcomps.version>4.4.1</httpcomps.version>
     </properties>
 
@@ -482,6 +484,7 @@
                         <excludes>
                             <exclude>**/*.iml</exclude>
                             <exclude>README.md</exclude>
+                            <exclude>*pmd*</exclude>
                             <exclude>src/docs/**</exclude>
                             <exclude>src/test/resources/**</exclude>
                             <exclude>**/stty-output-*.txt</exclude>
@@ -666,6 +669,31 @@
                         </dependency>
                     </dependencies>                    
                 </plugin>
+                <plugin> 
+                   <groupId>org.apache.maven.plugins</groupId> 
+                   <artifactId>maven-pmd-plugin</artifactId> 
+                   <version>3.8</version> 
+                   <configuration> 
+                       <targetJdk>${javac.target}</targetJdk> 
+                       <printFailingErrors>true</printFailingErrors> 
+                       <skipPmdError>false</skipPmdError> 
+                       <excludeRoots> 
+                           <excludeRoot>target/generated-sources/java</excludeRoot> 
+                       </excludeRoots> 
+                   </configuration> 
+                   <dependencies> 
+                       <dependency> 
+                          <groupId>net.sourceforge.pmd</groupId> 
+                          <artifactId>pmd-core</artifactId> 
+                          <version>${pmd.version}</version> 
+                       </dependency> 
+                       <dependency> 
+                          <groupId>net.sourceforge.pmd</groupId> 
+                          <artifactId>pmd-java</artifactId> 
+                          <version>${pmd.version}</version> 
+                       </dependency> 
+                   </dependencies> 
+               </plugin>
             </plugins>
         </pluginManagement>
 
@@ -723,6 +751,27 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin> 
+               <!-- to disable - mvn [commands...] -Dpmd.skip --> 
+               <groupId>org.apache.maven.plugins</groupId> 
+               <artifactId>maven-pmd-plugin</artifactId> 
+               <configuration> 
+                   <rulesets> 
+                       <ruleset>${workspace.root.dir}${file.separator}sshd-pmd-ruleset.xml</ruleset>
+                   </rulesets> 
+                   <includeTests>true</includeTests>
+               </configuration> 
+               <executions> 
+                   <execution> 
+                       <id>pmd-checker</id> 
+                       <!-- Note: phase must be AFTER detection of workspace root dir --> 
+                       <phase>verify</phase> 
+                       <goals> 
+                           <goal>check</goal> 
+                       </goals> 
+                   </execution> 
+               </executions> 
+           </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>animal-sniffer-maven-plugin</artifactId>
@@ -935,6 +984,16 @@
             <url />
         </repository>
     </distributionManagement>
+
+    <reporting> 
+       <plugins> 
+           <plugin>    <!-- used by PMD to create a source XREF --> 
+               <groupId>org.apache.maven.plugins</groupId> 
+               <artifactId>maven-jxr-plugin</artifactId> 
+               <version>2.5</version> 
+           </plugin> 
+       </plugins> 
+    </reporting>
 
     <modules>
         <module>sshd-core</module>

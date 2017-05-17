@@ -167,7 +167,6 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
             log.info("LDAP server started");
         } catch (Exception e) {
             log.error("Failed (" + e.getClass().getSimpleName() + ") to start LDAP server: " + e.getMessage(), e);
-            e.printStackTrace(System.err);
             stopApacheDs(directoryService);
             throw e;
         }

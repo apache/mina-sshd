@@ -967,7 +967,7 @@ public class ServerTest extends BaseTestSupport {
                     try {
                         name.wait();
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        e.printStackTrace();    // NOPMD
                     }
                 }
             }
@@ -987,7 +987,7 @@ public class ServerTest extends BaseTestSupport {
             } catch (WindowClosedException e) {
                 // ok, do nothing
             } catch (Throwable e) {
-                e.printStackTrace();
+                e.printStackTrace();    // NOPMD
             } finally {
                 if (latch != null) {
                     latch.countDown();

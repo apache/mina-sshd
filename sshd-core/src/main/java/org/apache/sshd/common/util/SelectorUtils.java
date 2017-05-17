@@ -149,7 +149,9 @@ public final class SelectorUtils {
         if (strIdxStart > strIdxEnd) {
             // String is exhausted
             return true;
-        } else return patIdxStart <= patIdxEnd;
+        } else {
+            return patIdxStart <= patIdxEnd;
+        }
         // CHECKSTYLE:ON
     }
 
