@@ -100,20 +100,20 @@
         <maven.compiler.target>${javac.target}</maven.compiler.target>
         <ant.build.javac.target>${javac.target}</ant.build.javac.target>
 
-        <min.required.maven.version>3.3.1</min.required.maven.version>
+        <min.required.maven.version>3.5.0</min.required.maven.version>
         <gmaven.plugin.version>2.0</gmaven.plugin.version>
         <groovy.major.version>2</groovy.major.version>
         <groovy.minor.version>4</groovy.minor.version>
-        <groovy.release.version>9</groovy.release.version>
+        <groovy.release.version>11</groovy.release.version>
         <groovy.compliance.level>2.0</groovy.compliance.level>
         <groovy.version>${groovy.major.version}.${groovy.minor.version}.${groovy.release.version}</groovy.version>        
 
-        <bouncycastle.version>1.56</bouncycastle.version>
-        <slf4j.version>1.7.24</slf4j.version>
+        <bouncycastle.version>1.57</bouncycastle.version>
+        <slf4j.version>1.7.25</slf4j.version>
         <spring.version>3.2.17.RELEASE</spring.version>
-        <jgit.version>4.6.0.201612231935-r</jgit.version>
+        <jgit.version>4.7.0.201704051617-r</jgit.version>
         <junit.version>4.12</junit.version>
-        <surefire.plugin.version>2.19.1</surefire.plugin.version>
+        <surefire.plugin.version>2.20</surefire.plugin.version>
         <!-- See https://pmd.github.io/ for available latest version -->
         <pmd.version>5.6.1</pmd.version>
         <httpcomps.version>4.4.1</httpcomps.version>
@@ -537,6 +537,11 @@
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>3.0.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-clean-plugin</artifactId>
                     <version>3.0.0</version>
                 </plugin>
@@ -597,7 +602,7 @@
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>7.6</version>
+                            <version>7.7</version>
                             <exclusions>
                                 <!-- MCHECKSTYLE-156 -->
                                 <exclusion>
@@ -811,7 +816,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.6.0</version>
+                <version>3.6.1</version>
                 <configuration>
                     <source>${javac.source}</source>
                     <target>${javac.target}</target>
@@ -824,7 +829,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>2.10</version>
+                <version>3.0.1</version>
                 <executions>
                     <execution>
                         <id>install</id>
@@ -879,7 +884,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.6</version>
+                <version>3.0.0</version>
                 <executions>
                     <execution>
                         <id>source-release-assembly</id>
