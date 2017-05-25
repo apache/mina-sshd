@@ -38,4 +38,8 @@ public interface FilePasswordProvider {
      * @throws IOException if cannot resolve password
      */
     String getPassword(String resourceKey) throws IOException;
+
+    static FilePasswordProvider of(String password) {
+        return r -> password;
+    }
 }
