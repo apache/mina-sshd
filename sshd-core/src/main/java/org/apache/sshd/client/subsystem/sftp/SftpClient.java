@@ -30,6 +30,7 @@ import java.nio.file.attribute.FileTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -443,6 +444,36 @@ public interface SftpClient extends SubsystemClient {
     }
 
     class DirEntry {
+        public static final Comparator<DirEntry> BY_CASE_SENSITIVE_FILENAME = new Comparator<DirEntry>() {
+            @Override
+            public int compare(DirEntry o1, DirEntry o2) {
+                if (o1 == o2) {
+                    return 0;
+                } else if (o1 == null) {
+                    return 1;
+                } else if (o2 == null) {
+                    return -1;
+                } else {
+                    return GenericUtils.safeCompare(o1.getFilename(), o2.getFilename(), true);
+                }
+            }
+        };
+
+        public static final Comparator<DirEntry> BY_CASE_INSENSITIVE_FILENAME = new Comparator<DirEntry>() {
+            @Override
+            public int compare(DirEntry o1, DirEntry o2) {
+                if (o1 == o2) {
+                    return 0;
+                } else if (o1 == null) {
+                    return 1;
+                } else if (o2 == null) {
+                    return -1;
+                } else {
+                    return GenericUtils.safeCompare(o1.getFilename(), o2.getFilename(), false);
+                }
+            }
+        };
+
         private final String filename;
         private final String longFilename;
         private final Attributes attributes;
@@ -470,6 +501,8 @@ public interface SftpClient extends SubsystemClient {
             return getFilename() + "[" + getLongFilename() + "]: " + getAttributes();
         }
     }
+
+    DirEntry[] EMPTY_DIR_ENTRIES = new DirEntry[0];
 
     // default values used if none specified
     int MIN_BUFFER_SIZE = Byte.MAX_VALUE;

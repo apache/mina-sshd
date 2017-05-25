@@ -78,9 +78,8 @@ public class ClientDeadlockTest extends BaseTestSupport {
         client.start();
 
         ConnectFuture future = client.connect(getCurrentTestName(), TEST_LOCALHOST, port);
-        ClientSession session = future.verify(5, TimeUnit.SECONDS).getSession();
-        session.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), TimeUnit.SECONDS.toMillis(3L));
-        assertTrue(session.isClosed());
+        ClientSession session = future.verify(5L, TimeUnit.SECONDS).getSession();
+        session.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), TimeUnit.SECONDS.toMillis(7L));
+        assertFalse(session.isOpen());
     }
-
 }

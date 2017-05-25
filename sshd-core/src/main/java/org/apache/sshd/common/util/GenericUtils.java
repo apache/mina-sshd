@@ -39,6 +39,7 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -411,24 +412,18 @@ public final class GenericUtils {
         return stream(values).map(mapper).collect(Collectors.toList());
     }
 
-    public static <T, U> SortedSet<U> mapSort(Collection<T> values,
-                                              Function<? super T, ? extends U> mapper,
-                                              Comparator<U> comparator) {
+    public static <T, U> SortedSet<U> mapSort(
+            Collection<T> values, Function<? super T, ? extends U> mapper, Comparator<U> comparator) {
         return stream(values).map(mapper).collect(toSortedSet(comparator));
     }
 
     public static <T, K, U> SortedMap<K, U> toSortedMap(
-                                Iterable<T> values,
-                                Function<? super T, ? extends K> keyMapper,
-                                Function<? super T, ? extends U> valueMapper,
-                                Comparator<K> comparator) {
+            Iterable<T> values, Function<? super T, ? extends K> keyMapper, Function<? super T, ? extends U> valueMapper, Comparator<K> comparator) {
         return stream(values).collect(toSortedMap(keyMapper, valueMapper, comparator));
     }
 
     public static <T, K, U> Collector<T, ?, SortedMap<K, U>> toSortedMap(
-                                Function<? super T, ? extends K> keyMapper,
-                                Function<? super T, ? extends U> valueMapper,
-                                Comparator<K> comparator) {
+            Function<? super T, ? extends K> keyMapper, Function<? super T, ? extends U> valueMapper, Comparator<K> comparator) {
         return Collectors.toMap(keyMapper, valueMapper, throwingMerger(), () -> new TreeMap<>(comparator));
     }
 
@@ -657,6 +652,29 @@ public final class GenericUtils {
         }
     }
 
+    public static RuntimeException toRuntimeException(Throwable t) {
+        return toRuntimeException(t, true);
+    }
+
+    /**
+     * Converts a thrown generic exception to a {@link RuntimeException}
+     *
+     * @param t The original thrown exception
+     * @param peelThrowable Whether to determine the root cause by &quot;peeling&quot;
+     * any enclosing exceptions
+     * @return The thrown cause if already a runtime exception, otherwise a
+     * runtime exception of the resolved exception as its cause
+     * @see #peelException(Throwable)
+     */
+    public static RuntimeException toRuntimeException(Throwable t, boolean peelThrowable) {
+        Throwable e = peelThrowable ? peelException(t) : t;
+        if (e instanceof RuntimeException) {
+            return (RuntimeException) e;
+        }
+
+        return new RuntimeException(e);
+    }
+
     /**
      * Attempts to get to the &quot;effective&quot; exception being thrown,
      * by taking care of some known exceptions that wrap the original thrown
@@ -666,6 +684,7 @@ public final class GenericUtils {
      * @return The effective exception - same as input if not a wrapper
      */
     public static Throwable peelException(Throwable t) {
+        // NOTE: check order is important - e.g., InvocationTargetException extends ReflectiveOperationException
         if (t == null) {
             return t;
         } else if (t instanceof UndeclaredThrowableException) {
@@ -689,6 +708,11 @@ public final class GenericUtils {
             Throwable target = ((ReflectionException) t).getTargetException();
             if (target != null) {
                 return peelException(target);
+            }
+        } else if (t instanceof ExecutionException) {
+            Throwable wrapped = resolveExceptionCause(t);
+            if (wrapped != null) {
+                return peelException(wrapped);
             }
         } else if (t instanceof MBeanException) {
             Throwable target = ((MBeanException) t).getTargetException();

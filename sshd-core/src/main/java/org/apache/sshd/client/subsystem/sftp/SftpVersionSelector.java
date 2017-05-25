@@ -33,7 +33,6 @@ import org.apache.sshd.common.util.ValidateUtils;
  */
 @FunctionalInterface
 public interface SftpVersionSelector {
-
     /**
      * An {@link SftpVersionSelector} that returns the current version
      */
@@ -54,8 +53,7 @@ public interface SftpVersionSelector {
     /**
      * @param session   The {@link ClientSession} through which the SFTP connection is made
      * @param current   The current version negotiated with the server
-     * @param available Extra versions available - may be empty and/or contain
-     *                  only the current one
+     * @param available Extra versions available - may be empty and/or contain only the current one
      * @return The new requested version - if same as current, then nothing is done
      */
     int selectVersion(ClientSession session, int current, List<Integer> available);
@@ -69,8 +67,8 @@ public interface SftpVersionSelector {
      * @param version The requested version
      * @return The {@link SftpVersionSelector}
      */
-    static SftpVersionSelector fixedVersionSelector(final int version) {
-        return (session, current, available) -> version;
+    static SftpVersionSelector fixedVersionSelector(int version) {
+        return new NamedVersionSelector(Integer.toString(version), (session, current, available) -> version);
     }
 
     /**
@@ -83,7 +81,7 @@ public interface SftpVersionSelector {
      * @return A {@link SftpVersionSelector} that attempts to select
      * the most preferred version that is also listed as available.
      */
-    static SftpVersionSelector preferredVersionSelector(final int... preferred) {
+    static SftpVersionSelector preferredVersionSelector(int... preferred) {
         return preferredVersionSelector(NumberUtils.asList(preferred));
 
     }
@@ -98,13 +96,13 @@ public interface SftpVersionSelector {
      * @return A {@link SftpVersionSelector} that attempts to select
      * the most preferred version that is also listed as available.
      */
-    static SftpVersionSelector preferredVersionSelector(final Iterable<? extends Number> preferred) {
+    static SftpVersionSelector preferredVersionSelector(Iterable<? extends Number> preferred) {
         ValidateUtils.checkNotNullAndNotEmpty((Collection<?>) preferred, "Empty preferred versions");
-        return (session, current, available) -> StreamSupport.stream(preferred.spliterator(), false)
-                .mapToInt(Number::intValue)
-                .filter(v -> v == current || available.contains(v))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Preferred versions (" + preferred + ") not available: " + available));
+        return new NamedVersionSelector(GenericUtils.join(preferred, ','), (session, current, available) -> StreamSupport.stream(preferred.spliterator(), false)
+            .mapToInt(Number::intValue)
+            .filter(v -> v == current || available.contains(v))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("Preferred versions (" + preferred + ") not available: " + available)));
     }
 
     class NamedVersionSelector implements SftpVersionSelector {
@@ -126,5 +124,4 @@ public interface SftpVersionSelector {
             return name;
         }
     }
-
 }
