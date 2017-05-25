@@ -21,6 +21,7 @@ package org.apache.sshd.common.util;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -174,7 +175,42 @@ public final class ValidateUtils {
         }
     }
 
-    public static void throwIllegalArgumentException(String message, Object... args) {
-        throw new IllegalArgumentException(String.format(message, args));
+    public static void throwIllegalArgumentException(String format, Object... args) {
+        throw createFormattedException(IllegalArgumentException::new, format, args);
     }
+
+    public static void checkState(boolean flag, String message) {
+        if (!flag) {
+            throwIllegalStateException(message, GenericUtils.EMPTY_OBJECT_ARRAY);
+        }
+    }
+
+    public static void checkState(boolean flag, String message, long value) {
+        if (!flag) {
+            throwIllegalStateException(message, value);
+        }
+    }
+
+    public static void checkState(boolean flag, String message, Object arg) {
+        if (!flag) {
+            throwIllegalStateException(message, arg);
+        }
+    }
+
+    public static void checkState(boolean flag, String message, Object... args) {
+        if (!flag) {
+            throwIllegalStateException(message, args);
+        }
+    }
+
+    public static void throwIllegalStateException(String format, Object... args) {
+        throw createFormattedException(IllegalStateException::new, format, args);
+    }
+
+    public static <T extends Throwable> T createFormattedException(
+            Function<? super String, ? extends T> constructor, String format, Object... args) {
+        String message = String.format(format, args);
+        return constructor.apply(message);
+    }
+
 }
