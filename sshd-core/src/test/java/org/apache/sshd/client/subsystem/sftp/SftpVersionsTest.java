@@ -20,6 +20,7 @@
 package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -46,6 +47,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
+import org.apache.sshd.client.subsystem.sftp.SftpClient.OpenMode;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpHelper;
@@ -98,6 +100,29 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
 
     public final int getTestedVersion() {
         return testVersion;
+    }
+
+    @Test   // See SSHD-749
+    public void testSftpOpenFlags() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclParent = assertHierarchyTargetFolderExists(lclSftp);
+        Path lclFile = lclParent.resolve(getCurrentTestName() + "-" + getTestedVersion() + ".txt");
+        Files.deleteIfExists(lclFile);
+
+        Path parentPath = targetPath.getParent();
+        String remotePath = Utils.resolveRelativeRemotePath(parentPath, lclFile);
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(5L, TimeUnit.SECONDS);
+            try (SftpClient sftp = session.createSftpClient(getTestedVersion())) {
+                try (OutputStream out = sftp.write(remotePath, OpenMode.Create, OpenMode.Write)) {
+                    out.write(getCurrentTestName().getBytes(StandardCharsets.UTF_8));
+                }
+                assertTrue("File should exist on disk: " + lclFile, Files.exists(lclFile));
+                sftp.remove(remotePath);
+            }
+        }
     }
 
     @Test

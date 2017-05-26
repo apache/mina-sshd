@@ -564,7 +564,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         buffer.putString(path);
         int version = getVersion();
         int mode = 0;
-        if (version == SftpConstants.SFTP_V3) {
+        if (version < SftpConstants.SFTP_V5) {
             for (OpenMode m : options) {
                 switch (m) {
                     case Read:
@@ -589,19 +589,17 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
                 }
             }
         } else {
-            if (version >= SftpConstants.SFTP_V5) {
-                int access = 0;
-                if (options.contains(OpenMode.Read)) {
-                    access |= SftpConstants.ACE4_READ_DATA | SftpConstants.ACE4_READ_ATTRIBUTES;
-                }
-                if (options.contains(OpenMode.Write)) {
-                    access |= SftpConstants.ACE4_WRITE_DATA | SftpConstants.ACE4_WRITE_ATTRIBUTES;
-                }
-                if (options.contains(OpenMode.Append)) {
-                    access |= SftpConstants.ACE4_APPEND_DATA;
-                }
-                buffer.putInt(access);
+            int access = 0;
+            if (options.contains(OpenMode.Read)) {
+                access |= SftpConstants.ACE4_READ_DATA | SftpConstants.ACE4_READ_ATTRIBUTES;
             }
+            if (options.contains(OpenMode.Write)) {
+                access |= SftpConstants.ACE4_WRITE_DATA | SftpConstants.ACE4_WRITE_ATTRIBUTES;
+            }
+            if (options.contains(OpenMode.Append)) {
+                access |= SftpConstants.ACE4_APPEND_DATA;
+            }
+            buffer.putInt(access);
 
             if (options.contains(OpenMode.Create) && options.contains(OpenMode.Exclusive)) {
                 mode |= SftpConstants.SSH_FXF_CREATE_NEW;
