@@ -347,7 +347,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         }
 
         String errorMessage = null;
-        if ((errorMessage == null) && (!clientVersion.startsWith(DEFAULT_SSH_VERSION_PREFIX))) {
+        if (!(clientVersion.startsWith(DEFAULT_SSH_VERSION_PREFIX) || clientVersion.startsWith("SSH-1.99-"))) {
             errorMessage = "Unsupported protocol version: " + clientVersion;
         }
 
