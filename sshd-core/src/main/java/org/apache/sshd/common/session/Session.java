@@ -38,6 +38,7 @@ import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.mac.MacInformation;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -63,6 +64,12 @@ public interface Session
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>
      */
     String DEFAULT_SSH_VERSION_PREFIX = "SSH-2.0-";
+
+    /**
+     * Backward compatible special prefix
+     * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-5">RFC 4253 - section 5</A>
+     */
+    String FALLBACK_SSH_VERSION_PREFIX = "SSH-1.99-";
 
     /**
      * Maximum number of characters for any single line sent as part
@@ -313,4 +320,14 @@ public interface Session
      * @throws Exception If failed to start it
      */
     void startService(String name) throws Exception;
+
+    /**
+     * @param version The reported client/server version
+     * @return {@code true} if version not empty and starts with either
+     * {@value #DEFAULT_SSH_VERSION_PREFIX} or {@value #FALLBACK_SSH_VERSION_PREFIX}
+     */
+    static boolean isValidVersionPrefix(String version) {
+        return GenericUtils.isNotEmpty(version)
+            && (version.startsWith(DEFAULT_SSH_VERSION_PREFIX) || version.startsWith(FALLBACK_SSH_VERSION_PREFIX));
+    }
 }

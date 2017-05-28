@@ -42,6 +42,7 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -347,7 +348,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         }
 
         String errorMessage = null;
-        if ((errorMessage == null) && (!clientVersion.startsWith(DEFAULT_SSH_VERSION_PREFIX))) {
+        if (!Session.isValidVersionPrefix(clientVersion)) {
             errorMessage = "Unsupported protocol version: " + clientVersion;
         }
 
