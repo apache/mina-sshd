@@ -796,8 +796,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                     log.debug("handleNewKeys({}) Dequeing {} pending packets", this, pendingPackets.size());
                 }
                 synchronized (encodeLock) {
-                    PendingWriteFuture future;
-                    while ((future = pendingPackets.poll()) != null) {
+                    for (PendingWriteFuture future = pendingPackets.poll();
+                            future != null;
+                            future = pendingPackets.poll()) {
                         doWritePacket(future.getBuffer()).addListener(future);
                     }
                 }
@@ -923,7 +924,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         // if anyone waiting for global response notify them about the closing session
         synchronized (requestResult) {
             requestResult.set(GenericUtils.NULL);
-            requestResult.notify();
+            requestResult.notifyAll();
         }
 
         // Fire 'close' event
@@ -2073,7 +2074,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         synchronized (requestResult) {
             requestResult.set(resultBuf);
             resetIdleTimeout();
-            requestResult.notify();
+            requestResult.notifyAll();
         }
     }
 
@@ -2087,7 +2088,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         synchronized (requestResult) {
             requestResult.set(GenericUtils.NULL);
             resetIdleTimeout();
-            requestResult.notify();
+            requestResult.notifyAll();
         }
     }
 

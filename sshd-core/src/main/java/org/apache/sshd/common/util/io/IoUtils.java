@@ -124,11 +124,11 @@ public final class IoUtils {
     public static long copy(InputStream source, OutputStream sink, int bufferSize) throws IOException {
         long nread = 0L;
         byte[] buf = new byte[bufferSize];
-        int n;
-        while ((n = source.read(buf)) > 0) {
+        for (int n = source.read(buf); n > 0; n = source.read(buf)) {
             sink.write(buf, 0, n);
             nread += n;
         }
+
         return nread;
     }
 

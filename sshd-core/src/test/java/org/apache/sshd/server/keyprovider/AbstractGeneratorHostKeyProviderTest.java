@@ -18,31 +18,32 @@
  */
 package org.apache.sshd.server.keyprovider;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AbstractGeneratorHostKeyProviderTest extends BaseTestSupport {
-
-    @Rule
-    public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    public AbstractGeneratorHostKeyProviderTest() {
+        super();
+    }
 
     @SuppressWarnings("synthetic-access")
     @Test
     public void testOverwriteKey() throws Exception {
-        File keyPairFile = temporaryFolder.newFile();
+        Path tempDir = assertHierarchyTargetFolderExists(getTempTargetFolder());
+        Path keyPairFile = tempDir.resolve(getCurrentTestName() + ".key");
+        Files.deleteIfExists(keyPairFile);
 
         TestProvider provider = new TestProvider(keyPairFile);
         provider.loadKeys();
@@ -57,9 +58,9 @@ public class AbstractGeneratorHostKeyProviderTest extends BaseTestSupport {
     private static final class TestProvider extends AbstractGeneratorHostKeyProvider {
         private final AtomicInteger writes = new AtomicInteger(0);
 
-        private TestProvider(File file) {
+        private TestProvider(Path file) {
             setKeySize(512);
-            setPath(file.toPath());
+            setPath(file);
         }
 
         @Override
@@ -76,5 +77,4 @@ public class AbstractGeneratorHostKeyProviderTest extends BaseTestSupport {
             return writes.get();
         }
     }
-
 }

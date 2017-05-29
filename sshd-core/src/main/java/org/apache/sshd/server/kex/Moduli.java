@@ -45,13 +45,13 @@ public final class Moduli {
 
     // Private constructor
     private Moduli() {
+        throw new UnsupportedOperationException("No instance allowed");
     }
 
     public static List<DhGroup> parseModuli(URL url) throws IOException {
         List<DhGroup> groups = new ArrayList<>();
         try (BufferedReader r = new BufferedReader(new InputStreamReader(url.openStream(), StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = r.readLine()) != null) {
+            for (String line = r.readLine(); line != null; line = r.readLine()) {
                 line = line.trim();
                 if (line.startsWith("#")) {
                     continue;
@@ -87,6 +87,7 @@ public final class Moduli {
                 group.p = new BigInteger(parts[6], 16);
                 groups.add(group);
             }
+
             return groups;
         }
     }

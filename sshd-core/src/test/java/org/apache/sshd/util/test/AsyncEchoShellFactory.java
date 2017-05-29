@@ -44,6 +44,9 @@ import org.apache.sshd.server.channel.ChannelSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class AsyncEchoShellFactory implements Factory<Command> {
+    public AsyncEchoShellFactory() {
+        super();
+    }
 
     @Override
     public Command create() {
@@ -51,13 +54,16 @@ public class AsyncEchoShellFactory implements Factory<Command> {
     }
 
     public static class EchoShell implements AsyncCommand, ChannelDataReceiver, ChannelSessionAware {
-
         private IoOutputStream out;
         private IoOutputStream err;
         private ExitCallback callback;
         private Environment environment;
         private ChannelSession session;
         private StringBuilder buffer = new StringBuilder();
+
+        public EchoShell() {
+            super();
+        }
 
         public IoOutputStream getOut() {
             return out;
@@ -132,8 +138,8 @@ public class AsyncEchoShellFactory implements Factory<Command> {
             buffer.append(new String(buf, start, len, StandardCharsets.UTF_8));
             for (int i = 0; i < buffer.length(); i++) {
                 if (buffer.charAt(i) == '\n') {
-                    final String s = buffer.substring(0, i + 1);
-                    final byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
+                    String s = buffer.substring(0, i + 1);
+                    byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
                     out.write(new ByteArrayBuffer(bytes)).addListener(future -> {
                         Session session1 = channel.getSession();
                         if (future.isWritten()) {
@@ -155,5 +161,4 @@ public class AsyncEchoShellFactory implements Factory<Command> {
             return 0;
         }
     }
-
 }

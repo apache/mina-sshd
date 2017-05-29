@@ -37,6 +37,9 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SttySupportTest extends BaseTestSupport {
+    public SttySupportTest() {
+        super();
+    }
 
     @Test
     public void parseOutput1() throws Exception {

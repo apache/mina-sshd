@@ -171,7 +171,8 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 this.authUserName = username;
                 this.authService = service;
             } else if (this.authUserName.equals(username) && this.authService.equals(service)) {
-                if (nbAuthRequests++ > maxAuthRequests) {
+                nbAuthRequests++;
+                if (nbAuthRequests > maxAuthRequests) {
                     session.disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Too many authentication failures: " + nbAuthRequests);
                     return;
                 }

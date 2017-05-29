@@ -358,6 +358,7 @@ public class DirectoryScanner {
      * @param max  maximum number of values to replace, or <code>-1</code> if no maximum
      * @return the text with any replacements processed
      */
+    @SuppressWarnings("PMD.AssignmentInOperand")
     public static String replace(String text, String repl, String with, int max) {
         if ((text == null) || (repl == null) || (with == null) || (repl.length() == 0)) {
             return text;
@@ -365,8 +366,7 @@ public class DirectoryScanner {
 
         StringBuilder buf = new StringBuilder(text.length());
         int start = 0;
-        int end;
-        while ((end = text.indexOf(repl, start)) != -1) {
+        for (int end = text.indexOf(repl, start); end != -1; end = text.indexOf(repl, start)) {
             buf.append(text.substring(start, end)).append(with);
             start = end + repl.length();
 
@@ -377,5 +377,4 @@ public class DirectoryScanner {
         buf.append(text.substring(start));
         return buf.toString();
     }
-
 }

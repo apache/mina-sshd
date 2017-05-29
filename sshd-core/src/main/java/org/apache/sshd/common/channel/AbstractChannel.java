@@ -644,6 +644,7 @@ public abstract class AbstractChannel
 
             if (gracefulState.compareAndSet(GracefulState.Opened, GracefulState.CloseSent)) {
                 // Waiting for CLOSE message to come back from the remote side
+                return;
             } else if (gracefulState.compareAndSet(GracefulState.CloseReceived, GracefulState.Closed)) {
                 gracefulFuture.setClosed();
             }

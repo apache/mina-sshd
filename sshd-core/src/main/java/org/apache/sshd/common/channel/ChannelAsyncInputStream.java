@@ -101,7 +101,9 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
         synchronized (buffer) {
             if (buffer.available() > 0) {
                 if (resume) {
-//                    LOGGER.debug("Resuming read due to incoming data");
+                    if (log.isDebugEnabled()) {
+                        log.debug("Resuming read due to incoming data on {}", this);
+                    }
                 }
                 future = pending;
                 pending = null;
@@ -111,7 +113,9 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
                 }
             } else {
                 if (!resume) {
-//                    LOGGER.debug("Delaying read until data is available");
+                    if (log.isDebugEnabled()) {
+                        log.debug("Delaying read until data is available on {}", this);
+                    }
                 }
             }
         }

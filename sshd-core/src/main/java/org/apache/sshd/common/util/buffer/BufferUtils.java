@@ -483,6 +483,7 @@ public final class BufferUtils {
         }
     }
 
+    @SuppressWarnings("PMD.AssignmentInOperand")
     public static boolean equals(byte[] a1, int a1Offset, byte[] a2, int a2Offset, int length) {
         int len1 = NumberUtils.length(a1);
         int len2 = NumberUtils.length(a2);
@@ -495,6 +496,7 @@ public final class BufferUtils {
                 return false;
             }
         }
+
         return true;
     }
 

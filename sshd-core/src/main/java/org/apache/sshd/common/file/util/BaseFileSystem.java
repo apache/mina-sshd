@@ -162,7 +162,8 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
             char ch = arr[i];
             switch (ch) {
                 case '\\':
-                    if (++i >= arr.length) {
+                    i++;
+                    if (i >= arr.length) {
                         sb.append('\\');
                     } else {
                         char next = arr[i];
@@ -183,10 +184,10 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
                     }
                     break;
                 case '*':
-                    sb.append(inClass == 0 ? ".*" : "*");
+                    sb.append((inClass == 0) ? ".*" : "*");
                     break;
                 case '?':
-                    sb.append(inClass == 0 ? '.' : '?');
+                    sb.append((inClass == 0) ? '.' : '?');
                     break;
                 case '[':
                     inClass++;
@@ -206,13 +207,13 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
                 case '$':
                 case '@':
                 case '%':
-                    if (inClass == 0 || (firstIndexInClass == i && ch == '^')) {
+                    if ((inClass == 0) || ((firstIndexInClass == i) && (ch == '^'))) {
                         sb.append('\\');
                     }
                     sb.append(ch);
                     break;
                 case '!':
-                    sb.append(firstIndexInClass == i ? '^' : '!');
+                    sb.append((firstIndexInClass == i) ? '^' : '!');
                     break;
                 case '{':
                     inGroup++;
@@ -223,7 +224,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
                     sb.append(')');
                     break;
                 case ',':
-                    sb.append(inGroup > 0 ? '|' : ',');
+                    sb.append((inGroup > 0) ? '|' : ',');
                     break;
                 default:
                     sb.append(ch);

@@ -23,9 +23,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.StringTokenizer;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -55,10 +55,11 @@ public final class SttySupport {
     }
 
     public static Map<PtyMode, Integer> parsePtyModes(String stty) {
-        Map<PtyMode, Integer> modes = new TreeMap<>();
+        Map<PtyMode, Integer> modes = new EnumMap<>(PtyMode.class);
         for (PtyMode mode : PtyMode.values()) {
             if (mode == PtyMode.TTY_OP_ISPEED || mode == PtyMode.TTY_OP_OSPEED) {
                 // TODO ...
+                continue;
             } else {
                 String str = mode.name().toLowerCase();
                 // Are we looking for a character?
@@ -79,6 +80,7 @@ public final class SttySupport {
                 }
             }
         }
+
         return modes;
     }
 

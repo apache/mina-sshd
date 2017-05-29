@@ -280,6 +280,10 @@ public class SftpCommand implements Channel {
     }
 
     private static class ExitCommandExecutor implements CommandExecutor {
+        ExitCommandExecutor() {
+            super();
+        }
+
         @Override
         public String getName() {
             return "exit";
@@ -313,6 +317,10 @@ public class SftpCommand implements Channel {
     }
 
     private class SessionCommandExecutor implements CommandExecutor {
+        SessionCommandExecutor() {
+            super();
+        }
+
         @Override
         public String getName() {
             return "session";
@@ -339,6 +347,10 @@ public class SftpCommand implements Channel {
     }
 
     private class InfoCommandExecutor implements CommandExecutor {
+        InfoCommandExecutor() {
+            super();
+        }
+
         @Override
         public String getName() {
             return "info";
@@ -373,6 +385,10 @@ public class SftpCommand implements Channel {
     }
 
     private class VersionCommandExecutor implements CommandExecutor {
+        VersionCommandExecutor() {
+            super();
+        }
+
         @Override
         public String getName() {
             return "version";
@@ -388,6 +404,10 @@ public class SftpCommand implements Channel {
     }
 
     private class CdCommandExecutor extends PwdCommandExecutor {
+        CdCommandExecutor() {
+            super();
+        }
+
         @Override
         public String getName() {
             return "cd";
@@ -405,6 +425,10 @@ public class SftpCommand implements Channel {
     }
 
     private class LcdCommandExecutor extends PwdCommandExecutor {
+        LcdCommandExecutor() {
+            super();
+        }
+
         @Override
         public String getName() {
             return "lcd";
@@ -426,6 +450,10 @@ public class SftpCommand implements Channel {
     }
 
     private class MkdirCommandExecutor implements CommandExecutor {
+        MkdirCommandExecutor() {
+            super();
+        }
+
         @Override
         public String getName() {
             return "mkdir";
@@ -443,6 +471,10 @@ public class SftpCommand implements Channel {
     }
 
     private class LsCommandExecutor implements CommandExecutor {
+        LsCommandExecutor() {
+            super();
+        }
+
         @Override
         public String getName() {
             return "ls";
@@ -478,6 +510,10 @@ public class SftpCommand implements Channel {
     }
 
     private class RmCommandExecutor implements CommandExecutor {
+        RmCommandExecutor() {
+            super();
+        }
+
         @Override
         public String getName() {
             return "rm";
@@ -557,6 +593,10 @@ public class SftpCommand implements Channel {
     }
 
     private class RmdirCommandExecutor implements CommandExecutor {
+        RmdirCommandExecutor() {
+            super();
+        }
+
         @Override
         public String getName() {
             return "rmdir";
@@ -574,6 +614,10 @@ public class SftpCommand implements Channel {
     }
 
     private class RenameCommandExecutor implements CommandExecutor {
+        RenameCommandExecutor() {
+            super();
+        }
+
         @Override
         public String getName() {
             return "rename";
@@ -593,6 +637,10 @@ public class SftpCommand implements Channel {
     }
 
     private class StatVfsCommandExecutor implements CommandExecutor {
+        StatVfsCommandExecutor() {
+            super();
+        }
+
         @Override
         public String getName() {
             return StatVfsExtensionParser.NAME;
@@ -627,6 +675,10 @@ public class SftpCommand implements Channel {
     }
 
     private class LStatCommandExecutor implements CommandExecutor {
+        LStatCommandExecutor() {
+            super();
+        }
+
         @Override
         public String getName() {
             return "lstat";
@@ -646,6 +698,10 @@ public class SftpCommand implements Channel {
     }
 
     private class ReadLinkCommandExecutor implements CommandExecutor {
+        ReadLinkCommandExecutor() {
+            super();
+        }
+
         @Override
         public String getName() {
             return "readlink";
@@ -665,6 +721,10 @@ public class SftpCommand implements Channel {
     }
 
     private class HelpCommandExecutor implements CommandExecutor {
+        HelpCommandExecutor() {
+            super();
+        }
+
         @Override
         public String getName() {
             return "help";
@@ -825,6 +885,10 @@ public class SftpCommand implements Channel {
     }
 
     private class GetCommandExecutor extends TransferCommandExecutor {
+        GetCommandExecutor() {
+            super();
+        }
+
         @Override
         public String getName() {
             return "get";
@@ -838,6 +902,10 @@ public class SftpCommand implements Channel {
     }
 
     private class PutCommandExecutor extends TransferCommandExecutor {
+        PutCommandExecutor() {
+            super();
+        }
+
         @Override
         public String getName() {
             return "put";

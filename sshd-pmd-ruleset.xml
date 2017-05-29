@@ -9,15 +9,33 @@
    </description> 
 
        <!-- See https://pmd.github.io/pmd-5.6.1/pmd-java/rules/index.html --> 
+   <rule ref="rulesets/java/basic.xml/AvoidMultipleUnaryOperators" /> 
+   <rule ref="rulesets/java/basic.xml/AvoidUsingOctalValues" /> 
    <rule ref="rulesets/java/basic.xml/BooleanInstantiation" /> 
+   <rule ref="rulesets/java/basic.xml/BrokenNullCheck" /> 
    <rule ref="rulesets/java/basic.xml/ExtendsObject" /> 
+   <rule ref="rulesets/java/basic.xml/MisplacedNullCheck" /> 
+   <rule ref="rulesets/java/basic.xml/OverrideBothEqualsAndHashcode" /> 
+   <rule ref="rulesets/java/basic.xml/ReturnFromFinallyBlock" /> 
+   <rule ref="rulesets/java/basic.xml/UnconditionalIfStatement" /> 
 
    <rule ref="rulesets/java/braces.xml" /> 
 
    <rule ref="rulesets/java/clone.xml/ProperCloneImplementation" /> 
    <rule ref="rulesets/java/clone.xml/CloneMethodMustImplementCloneable" /> 
 
+   <rule ref="rulesets/java/controversial.xml/AssignmentInOperand" /> 
+   <rule ref="rulesets/java/controversial.xml/AtLeastOneConstructor" /> 
+
+   <rule ref="rulesets/java/design.xml/UseNotifyAllInsteadOfNotify" /> 
+
+   <rule ref="rulesets/java/empty.xml"> 
+       <exclude name="EmptyCatchBlock" />  <!-- Enforced by checkstyle --> 
+   </rule> 
+
+   <rule ref="rulesets/java/finalizers.xml" /> 
+
    <rule ref="rulesets/java/javabeans.xml/MissingSerialVersionUID" /> 
 
-   <rule ref="rulesets/java/logging-java.xml/AvoidPrintStackTrace" /> 
+   <rule ref="rulesets/java/logging-java.xml/AvoidPrintStackTrace" />
 </ruleset>

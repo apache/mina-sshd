@@ -62,7 +62,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@SuppressWarnings("OctalInteger")
+@SuppressWarnings("PMD.AvoidUsingOctalValues")
 public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Session> {
     /**
      * Command prefix used to identify SCP commands

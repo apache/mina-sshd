@@ -148,11 +148,9 @@ public final class AprLibrary {
     }
 
     static void secureLocalSocket(String authSocket, long handle) throws IOException {
+        // should be ok on windows
         if (OsUtils.isUNIX()) {
             chmodOwner(authSocket, false);
-
-        } else {
-            // should be ok on windows
         }
     }
 

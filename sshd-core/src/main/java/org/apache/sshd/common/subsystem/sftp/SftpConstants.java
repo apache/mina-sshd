@@ -27,7 +27,7 @@ import org.apache.sshd.common.util.logging.LoggingUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@SuppressWarnings("OctalInteger")
+@SuppressWarnings("PMD.AvoidUsingOctalValues")
 public final class SftpConstants {
     public static final String SFTP_SUBSYSTEM_NAME = "sftp";
 

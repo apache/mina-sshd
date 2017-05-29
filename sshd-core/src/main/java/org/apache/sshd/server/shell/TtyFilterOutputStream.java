@@ -66,12 +66,12 @@ public class TtyFilterOutputStream extends FilterOutputStream {
         }
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     protected void handleCR() throws IOException {
         if (ttyOptions.contains(PtyMode.ICRNL)) {
             writeRawOutput('\n');   // Map CR to NL on input
         } else if (ttyOptions.contains(PtyMode.IGNCR)) {
             // Ignore CR on input
+            return;
         } else {
             writeRawOutput('\r');
         }

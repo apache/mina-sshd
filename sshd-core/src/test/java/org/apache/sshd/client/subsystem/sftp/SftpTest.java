@@ -1438,10 +1438,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
              InputStream is = c.get(path)) {
-
             byte[] buffer = new byte[256];
-            int count;
-            while (-1 != (count = is.read(buffer))) {
+            for (int count = is.read(buffer); count != -1; count = is.read(buffer)) {
                 bos.write(buffer, 0, count);
             }
 

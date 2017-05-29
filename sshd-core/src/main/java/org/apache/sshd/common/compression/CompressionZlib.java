@@ -64,8 +64,9 @@ public class CompressionZlib extends BaseCompression {
     public void compress(Buffer buffer) throws IOException {
         compresser.setInput(buffer.array(), buffer.rpos(), buffer.available());
         buffer.wpos(buffer.rpos());
-        int len;
-        while ((len = compresser.deflate(tmpbuf, 0, tmpbuf.length, Deflater.SYNC_FLUSH)) > 0) {
+        for (int len = compresser.deflate(tmpbuf, 0, tmpbuf.length, Deflater.SYNC_FLUSH);
+                len > 0;
+                len = compresser.deflate(tmpbuf, 0, tmpbuf.length, Deflater.SYNC_FLUSH)) {
             buffer.putRawBytes(tmpbuf, 0, len);
         }
     }
@@ -73,14 +74,12 @@ public class CompressionZlib extends BaseCompression {
     @Override
     public void uncompress(Buffer from, Buffer to) throws IOException {
         decompresser.setInput(from.array(), from.rpos(), from.available());
-        int len;
         try {
-            while ((len = decompresser.inflate(tmpbuf)) > 0) {
+            for (int len = decompresser.inflate(tmpbuf); len > 0; len = decompresser.inflate(tmpbuf)) {
                 to.putRawBytes(tmpbuf, 0, len);
             }
         } catch (DataFormatException e) {
             throw new IOException("Error decompressing data", e);
         }
     }
-
 }

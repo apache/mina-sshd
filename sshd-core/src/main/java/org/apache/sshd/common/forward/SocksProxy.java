@@ -182,13 +182,11 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
 
         private String getNTString(Buffer buffer) {
             StringBuilder sb = new StringBuilder();
-            char c;
-            while ((c = (char) getUByte(buffer)) != 0) {
+            for (char c = (char) getUByte(buffer); c != '\0'; c = (char) getUByte(buffer)) {
                 sb.append(c);
             }
             return sb.toString();
         }
-
     }
 
     /**

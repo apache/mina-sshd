@@ -980,6 +980,7 @@ public class ClientTest extends BaseTestSupport {
 
         try (ClientSession session = createTestClientSession()) {
             // nothing extra
+            assertNotNull(session);
         } finally {
             client.stop();
         }
@@ -1009,6 +1010,7 @@ public class ClientTest extends BaseTestSupport {
 
         try (ClientSession session = createTestClientSession()) {
             // nothing extra
+            assertNotNull(session);
         } finally {
             client.stop();
         }

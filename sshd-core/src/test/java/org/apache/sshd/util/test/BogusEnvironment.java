@@ -28,6 +28,9 @@ import org.apache.sshd.server.Signal;
 import org.apache.sshd.server.SignalListener;
 
 public class BogusEnvironment implements Environment {
+    public BogusEnvironment() {
+        super();
+    }
 
     @Override
     public Map<String, String> getEnv() {

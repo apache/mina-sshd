@@ -362,8 +362,8 @@ public final class SelectorUtils {
      * @return <code>true</code> if the string matches against the pattern,
      * or <code>false</code> otherwise.
      */
-    public static boolean match(String pattern, String str,
-                                boolean isCaseSensitive) {
+    @SuppressWarnings("PMD.AssignmentInOperand")
+    public static boolean match(String pattern, String str, boolean isCaseSensitive) {
         char[] patArr = pattern.toCharArray();
         char[] strArr = str.toCharArray();
         int patIdxStart = 0;
@@ -387,7 +387,7 @@ public final class SelectorUtils {
             }
             for (int i = 0; i <= patIdxEnd; i++) {
                 ch = patArr[i];
-                if (ch != '?' && !equals(ch, strArr[i], isCaseSensitive)) {
+                if ((ch != '?') && (!equals(ch, strArr[i], isCaseSensitive))) {
                     return false; // Character mismatch
                 }
             }
@@ -400,14 +400,15 @@ public final class SelectorUtils {
 
         // Process characters before first star
         // CHECKSTYLE:OFF
-        while ((ch = patArr[patIdxStart]) != '*' && strIdxStart <= strIdxEnd) {
-            if (ch != '?' && !equals(ch, strArr[strIdxStart], isCaseSensitive)) {
+        while (((ch = patArr[patIdxStart]) != '*') && (strIdxStart <= strIdxEnd)) {
+            if ((ch != '?') && (!equals(ch, strArr[strIdxStart], isCaseSensitive))) {
                 return false; // Character mismatch
             }
             patIdxStart++;
             strIdxStart++;
         }
         // CHECKSTYLE:ON
+
         if (strIdxStart > strIdxEnd) {
             // All characters in the string are used. Check if only '*'s are
             // left in the pattern. If so, we succeeded. Otherwise failure.
@@ -421,14 +422,15 @@ public final class SelectorUtils {
 
         // Process characters after last star
         // CHECKSTYLE:OFF
-        while ((ch = patArr[patIdxEnd]) != '*' && strIdxStart <= strIdxEnd) {
-            if (ch != '?' && !equals(ch, strArr[strIdxEnd], isCaseSensitive)) {
+        while (((ch = patArr[patIdxEnd]) != '*') && (strIdxStart <= strIdxEnd)) {
+            if ((ch != '?') && (!equals(ch, strArr[strIdxEnd], isCaseSensitive))) {
                 return false; // Character mismatch
             }
             patIdxEnd--;
             strIdxEnd--;
         }
         // CHECKSTYLE:ON
+
         if (strIdxStart > strIdxEnd) {
             // All characters in the string are used. Check if only '*'s are
             // left in the pattern. If so, we succeeded. Otherwise failure.
@@ -440,9 +442,8 @@ public final class SelectorUtils {
             return true;
         }
 
-        // process pattern between stars. padIdxStart and patIdxEnd point
-        // always to a '*'.
-        while (patIdxStart != patIdxEnd && strIdxStart <= strIdxEnd) {
+        // process pattern between stars. padIdxStart and patIdxEnd point always to a '*'.
+        while ((patIdxStart != patIdxEnd) && (strIdxStart <= strIdxEnd)) {
             int patIdxTmp = -1;
             for (int i = patIdxStart + 1; i <= patIdxEnd; i++) {
                 if (patArr[i] == '*') {
