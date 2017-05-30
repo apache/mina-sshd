@@ -26,7 +26,24 @@
             <outputDirectory>/</outputDirectory>
             <lineEnding>dos</lineEnding>
         </fileSet>
+        <fileSet>
+            <directory>..</directory>
+            <outputDirectory>/</outputDirectory>
+            <lineEnding>dos</lineEnding>
+            <includes>
+                <include>LICENSE*</include>
+            </includes>
+        </fileSet>
     </fileSets>
+
+    <files>
+        <file>
+            <source>../NOTICE-bin.txt</source>
+            <outputDirectory>/</outputDirectory>
+            <destName>NOTICE.txt</destName>
+            <lineEnding>dos</lineEnding>
+        </file>
+    </files>
 
     <dependencySets>
         <dependencySet>

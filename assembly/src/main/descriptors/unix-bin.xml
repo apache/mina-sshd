@@ -33,9 +33,23 @@
                 <exclude>bin/ssh-keyscan.sh</exclude>
             </excludes>
         </fileSet>
+        <fileSet>
+            <directory>..</directory>
+            <outputDirectory>/</outputDirectory>
+            <lineEnding>unix</lineEnding>
+            <includes>
+                <include>LICENSE*</include>
+            </includes>
+        </fileSet>
     </fileSets>
 
     <files>
+        <file>
+            <source>../NOTICE-bin.txt</source>
+            <outputDirectory>/</outputDirectory>
+            <destName>NOTICE.txt</destName>
+            <lineEnding>unix</lineEnding>
+        </file>
         <file>
             <source>src/main/distribution/bin/sshd.sh</source>
             <outputDirectory>/bin/</outputDirectory>
