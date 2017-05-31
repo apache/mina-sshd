@@ -89,7 +89,7 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
         // verify that the keypair contains the expected pk
         // yes, it's stored redundant, this seems to mimic the output structure of the keypair generation interface
         if (!Arrays.equals(pk, Arrays.copyOfRange(keypair, SK_SIZE, KEYPAIR_SIZE))) {
-            throw new InvalidKeyException(String.format("Keypair did not contain the public key."));
+            throw new InvalidKeyException("Keypair did not contain the public key.");
         }
         
         // create the private key
@@ -103,7 +103,7 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
         
         // we can now verify the generated pk matches the one we read
         if (!Arrays.equals(privateKey.getAbyte(), pk)) {
-            throw new InvalidKeyException(String.format("The provided pk does NOT match the computed pk for the given sk."));
+            throw new InvalidKeyException("The provided pk does NOT match the computed pk for the given sk.");
         }
         
         return privateKey;
