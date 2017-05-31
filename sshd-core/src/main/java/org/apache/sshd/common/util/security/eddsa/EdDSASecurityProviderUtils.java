@@ -99,7 +99,7 @@ public final class EdDSASecurityProviderUtils {
         }
 
         EdDSAPrivateKey prvKey = (EdDSAPrivateKey) key;
-        EdDSAPublicKeySpec keySpec = new EdDSAPublicKeySpec(prvKey.getSeed(), prvKey.getParams());
+        EdDSAPublicKeySpec keySpec = new EdDSAPublicKeySpec(prvKey.getAbyte(), prvKey.getParams());
         KeyFactory factory = SecurityUtils.getKeyFactory(SecurityUtils.EDDSA);
         return EdDSAPublicKey.class.cast(factory.generatePublic(keySpec));
     }
