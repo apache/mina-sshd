@@ -83,6 +83,8 @@ public class ClientSessionImpl extends AbstractClientSession {
             nextServiceFactory = null;
         }
 
+        attachSession(session, this);
+
         authFuture = new DefaultAuthFuture(lock);
         authFuture.setAuthed(false);
 
