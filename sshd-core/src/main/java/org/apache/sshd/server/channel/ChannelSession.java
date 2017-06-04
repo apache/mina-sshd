@@ -113,6 +113,15 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     @Override
+    public void handleWindowAdjust(Buffer buffer) throws IOException {
+        super.handleWindowAdjust(buffer);
+
+        if (asyncOut != null) {
+            asyncOut.onWindowExpanded();
+        }
+    }
+
+    @Override
     protected Closeable getInnerCloseable() {
         return builder()
                 .sequential(new CommandCloseable(), new GracefulChannelCloseable())
