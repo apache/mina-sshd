@@ -179,7 +179,13 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
     @Override
     protected CloseFuture doCloseGracefully() {
-        return builder().when(writes).build().close(false);
+        return builder().when(writes).run(()->{
+            try {
+                getSocket().shutdownOutput();
+            } catch (IOException e) {
+                log.info("doCloseGracefully(" + this + ") exception caught while shutting down output", e);
+            }
+         }).build().close(false);
     }
 
     @Override
