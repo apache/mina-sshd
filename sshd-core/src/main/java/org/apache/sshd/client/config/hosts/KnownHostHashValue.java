@@ -143,11 +143,13 @@ public class KnownHostHashValue {
         return sb;
     }
 
-    public static KnownHostHashValue parse(String pattern) {
+    public static KnownHostHashValue parse(String patternString) {
+        String pattern = GenericUtils.replaceWhitespaceAndTrim(patternString);
         return parse(pattern, GenericUtils.isEmpty(pattern) ? null : new KnownHostHashValue());
     }
 
-    public static <V extends KnownHostHashValue> V parse(String pattern, V value) {
+    public static <V extends KnownHostHashValue> V parse(String patternString, V value) {
+        String pattern = GenericUtils.replaceWhitespaceAndTrim(patternString);
         if (GenericUtils.isEmpty(pattern)) {
             return value;
         }

@@ -39,9 +39,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.TreeMap;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseReader;
 import org.apache.sshd.server.auth.pubkey.KeySetPublickeyAuthenticator;
@@ -264,7 +266,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
             AuthorizedKeyEntry entry;
             try {
-                entry = parseAuthorizedKeyEntry(line.trim());
+                entry = parseAuthorizedKeyEntry(line);
                 if (entry == null) {    // null, empty or comment line
                     continue;
                 }
@@ -288,13 +290,14 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     }
 
     /**
-     * @param line Original line from an <code>authorized_keys</code> file
+     * @param value Original line from an <code>authorized_keys</code> file
      * @return {@link AuthorizedKeyEntry} or {@code null} if the line is
      * {@code null}/empty or a comment line
      * @throws IllegalArgumentException If failed to parse/decode the line
      * @see #COMMENT_CHAR
      */
-    public static AuthorizedKeyEntry parseAuthorizedKeyEntry(String line) throws IllegalArgumentException {
+    public static AuthorizedKeyEntry parseAuthorizedKeyEntry(String value) throws IllegalArgumentException {
+        String line = GenericUtils.replaceWhitespaceAndTrim(value);
         if (GenericUtils.isEmpty(line) || (line.charAt(0) == COMMENT_CHAR) /* comment ? */) {
             return null;
         }
@@ -311,13 +314,10 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
 
         String keyType = line.substring(0, startPos);
         PublicKeyEntryDecoder<?, ?> decoder = KeyUtils.getPublicKeyEntryDecoder(keyType);
-        final AuthorizedKeyEntry entry;
+        AuthorizedKeyEntry entry;
         if (decoder == null) {  // assume this is due to the fact that it starts with login options
             entry = parseAuthorizedKeyEntry(line.substring(startPos + 1).trim());
-            if (entry == null) {
-                throw new IllegalArgumentException("Bad format (no key data after login options): " + line);
-            }
-
+            ValidateUtils.checkTrue(entry != null, "Bad format (no key data after login options): %s", line);
             entry.setLoginOptions(parseLoginOptions(keyType));
         } else {
             String encData = (endPos < (line.length() - 1)) ? line.substring(0, endPos).trim() : line;
@@ -329,14 +329,14 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         return entry;
     }
 
-    public static Map<String, String> parseLoginOptions(String options) {
+    public static NavigableMap<String, String> parseLoginOptions(String options) {
         // TODO add support if quoted values contain ','
-        String[] pairs = GenericUtils.split(options, ',');
+        String[] pairs = GenericUtils.split(GenericUtils.replaceWhitespaceAndTrim(options), ',');
         if (GenericUtils.isEmpty(pairs)) {
-            return Collections.emptyMap();
+            return Collections.emptyNavigableMap();
         }
 
-        Map<String, String> optsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        NavigableMap<String, String> optsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (String p : pairs) {
             p = GenericUtils.trimToEmpty(p);
             if (GenericUtils.isEmpty(p)) {

@@ -828,7 +828,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
 
         int lineNumber = 1;
         for (String line = rdr.readLine(); line != null; line = rdr.readLine(), lineNumber++) {
-            line = GenericUtils.trimToEmpty(line);
+            line = GenericUtils.replaceWhitespaceAndTrim(line);
             if (GenericUtils.isEmpty(line)) {
                 continue;
             }
@@ -1046,7 +1046,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * @return A {@link List} of the encountered values
      */
     public static List<String> parseConfigValue(String value) {
-        String s = GenericUtils.trimToEmpty(value);
+        String s = GenericUtils.replaceWhitespaceAndTrim(value);
         if (GenericUtils.isEmpty(s)) {
             return Collections.emptyList();
         }

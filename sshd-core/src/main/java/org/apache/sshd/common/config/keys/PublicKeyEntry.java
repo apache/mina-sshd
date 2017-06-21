@@ -173,7 +173,8 @@ public class PublicKeyEntry implements Serializable {
      * @throws IllegalArgumentException if bad format found
      * @see #parsePublicKeyEntry(PublicKeyEntry, String)
      */
-    public static PublicKeyEntry parsePublicKeyEntry(String data) throws IllegalArgumentException {
+    public static PublicKeyEntry parsePublicKeyEntry(String encData) throws IllegalArgumentException {
+        String data = GenericUtils.replaceWhitespaceAndTrim(encData);
         if (GenericUtils.isEmpty(data)) {
             return null;
         } else {
@@ -185,12 +186,13 @@ public class PublicKeyEntry implements Serializable {
      * @param <E>   The generic entry type
      * @param entry The {@link PublicKeyEntry} whose contents are to be
      *              updated - ignored if {@code null}
-     * @param data  Assumed to contain at least {@code key-type base64-data} (anything
+     * @param encData Assumed to contain at least {@code key-type base64-data} (anything
      *              beyond the BASE64 data is ignored) - ignored if {@code null}/empty
      * @return The updated entry instance
      * @throws IllegalArgumentException if bad format found
      */
-    public static <E extends PublicKeyEntry> E parsePublicKeyEntry(E entry, String data) throws IllegalArgumentException {
+    public static <E extends PublicKeyEntry> E parsePublicKeyEntry(E entry, String encData) throws IllegalArgumentException {
+        String data = GenericUtils.replaceWhitespaceAndTrim(encData);
         if (GenericUtils.isEmpty(data) || (entry == null)) {
             return entry;
         }

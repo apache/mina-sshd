@@ -97,6 +97,14 @@ public final class GenericUtils {
         }
     }
 
+    public static String replaceWhitespaceAndTrim(String s) {
+        if (s != null) {
+            s = s.replace('\t', ' ');
+        }
+
+        return trimToEmpty(s);
+    }
+
     /**
      * @param s The {@link String} value to calculate the hash code on - may
      * be <code>null</code>/empty in which case a value of zero is returned

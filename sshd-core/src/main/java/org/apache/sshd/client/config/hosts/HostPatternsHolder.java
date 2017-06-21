@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -242,7 +243,7 @@ public abstract class HostPatternsHolder {
      * Converts a host pattern string to a regular expression matcher.
      * <B>Note:</B> pattern matching is <U>case insensitive</U>
      *
-     * @param pattern The original pattern string - ignored if {@code null}/empty
+     * @param patternString The original pattern string - ignored if {@code null}/empty
      * @return The regular expression matcher {@link Pattern} and the indication
      * whether it is a negating pattern or not - {@code null} if no original string
      * @see #NON_STANDARD_PORT_PATTERN_ENCLOSURE_START_DELIM
@@ -251,7 +252,8 @@ public abstract class HostPatternsHolder {
      * @see #SINGLE_CHAR_PATTERN
      * @see #NEGATION_CHAR_PATTERN
      */
-    public static HostPatternValue toPattern(CharSequence pattern) {
+    public static HostPatternValue toPattern(CharSequence patternString) {
+        String pattern = GenericUtils.replaceWhitespaceAndTrim(Objects.toString(patternString, null));
         if (GenericUtils.isEmpty(pattern)) {
             return null;
         }
@@ -267,11 +269,11 @@ public abstract class HostPatternsHolder {
             ValidateUtils.checkTrue(pattern.charAt(pos - 1) == HostPatternsHolder.NON_STANDARD_PORT_PATTERN_ENCLOSURE_END_DELIM,
                 "Invalid non-standard port value host pattern enclosure delimiters in %s", pattern);
 
-            CharSequence csPort = pattern.subSequence(pos + 1, patternLen);
-            port = Integer.parseInt(csPort.toString());
+            String csPort = pattern.substring(pos + 1, patternLen);
+            port = Integer.parseInt(csPort);
             ValidateUtils.checkTrue((port > 0) && (port <= 0xFFFF), "Invalid non-start port value (%d) in %s", port, pattern);
 
-            pattern = pattern.subSequence(1, pos - 1);
+            pattern = pattern.substring(1, pos - 1);
             patternLen = pattern.length();
         }
 

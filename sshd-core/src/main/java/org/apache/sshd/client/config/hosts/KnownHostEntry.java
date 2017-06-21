@@ -229,7 +229,7 @@ public class KnownHostEntry extends HostPatternsHolder {
     }
 
     public static <E extends KnownHostEntry> E parseKnownHostEntry(E entry, String data) {
-        String line = data;
+        String line = GenericUtils.replaceWhitespaceAndTrim(data);
         if (GenericUtils.isEmpty(line) || (line.charAt(0) == PublicKeyEntry.COMMENT_CHAR)) {
             return entry;
         }
