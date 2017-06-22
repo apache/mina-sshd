@@ -215,6 +215,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                                 try (InputStream sockIn = s.getInputStream();
                                      ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 
+                                	//Reag a payload worth of data, save it to baos
                                     while (baos.size() < payload.length()) {
                                         int l = sockIn.read(buf);
                                         if (l < 0) {
@@ -224,17 +225,12 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                                     }
 
                                     assertEquals("Mismatched received data at iteration #" + i, payload, baos.toString());
-
-                                    try (InputStream inputCopy = new ByteArrayInputStream(baos.toByteArray());
-                                         OutputStream sockOut = s.getOutputStream()) {
-
-                                        while (true) {
-                                            int l = sockIn.read(buf);
-                                            if (l < 0) {
-                                                break;
-                                            }
-                                            sockOut.write(buf, 0, l);
-                                        }
+                                    
+                                    //Then write it back to client
+                                    try (OutputStream sockOut = s.getOutputStream()) {
+                                	   sockOut.write(baos.toByteArray(), 0, payload.length());
+                                	   sockOut.flush();
+                                	   sockOut.close();
                                     }
                                 }
                             }
@@ -254,6 +250,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             byte[] bytes = payload.getBytes(StandardCharsets.UTF_8);
             for (int i = 0; i < numIterations; i++) {
                 log.info("Iteration {}", i);
+                //Open Socket, write payload to server, expect to read same payload back.
                 try (Socket s = new Socket(TEST_LOCALHOST, sinkPort);
                      OutputStream sockOut = s.getOutputStream()) {
 
