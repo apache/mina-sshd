@@ -167,8 +167,8 @@ public class PublicKeyEntry implements Serializable {
     }
 
     /**
-     * @param data Assumed to contain at least {@code key-type base64-data} (anything
-     *             beyond the BASE64 data is ignored) - ignored if {@code null}/empty
+     * @param encData Assumed to contain at least {@code key-type base64-data}
+     * (anything beyond the BASE64 data is ignored) - ignored if {@code null}/empty
      * @return A {@link PublicKeyEntry} or {@code null} if no data
      * @throws IllegalArgumentException if bad format found
      * @see #parsePublicKeyEntry(PublicKeyEntry, String)
