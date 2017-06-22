@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.common.forward;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -215,7 +214,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                                 try (InputStream sockIn = s.getInputStream();
                                      ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 
-                                	//Reag a payload worth of data, save it to baos
+                                    //Read a payload worth of data, save it to baos
                                     while (baos.size() < payload.length()) {
                                         int l = sockIn.read(buf);
                                         if (l < 0) {
@@ -228,9 +227,9 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                                     
                                     //Then write it back to client
                                     try (OutputStream sockOut = s.getOutputStream()) {
-                                	   sockOut.write(baos.toByteArray(), 0, payload.length());
-                                	   sockOut.flush();
-                                	   sockOut.close();
+                                        sockOut.write(baos.toByteArray(), 0, payload.length());
+                                        sockOut.flush();
+                                        sockOut.close();
                                     }
                                 }
                             }
