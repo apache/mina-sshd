@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
  * Port forwarding tests
  */
 public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
-    private static final Logger log = LoggerFactory.getLogger(AbstractServerCloseTestSupport.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractServerCloseTestSupport.class);
     private static final String PAYLOAD = String.join("", Collections.nCopies(200, "This is significantly longer Test Data."));
 
     protected int testServerPort;
@@ -106,12 +106,12 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
     }
 
     private void readInLoop(int serverPort) throws Exception {
-        log.debug("Connecting to {}", serverPort);
+        LOG.debug("Connecting to {}", serverPort);
         StringBuilder sb = new StringBuilder();
         try (Socket s = new Socket(TEST_LOCALHOST, serverPort)) {
             s.setSoTimeout(300);
 
-            try(InputStream inputStream = s.getInputStream()) {
+            try (InputStream inputStream = s.getInputStream()) {
                 byte b[] = new byte[PAYLOAD.length() / 10];
                 while (true) {
                     int read = inputStream.read(b);
@@ -130,41 +130,41 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
     }
 
     private void readInOneBuffer(int serverPort) throws Exception {
-        log.debug("Connecting to {}", serverPort);
+        LOG.debug("Connecting to {}", serverPort);
         try (Socket s = new Socket(TEST_LOCALHOST, serverPort)) {
             s.setSoTimeout(300);
 
             byte buf[] = new byte[PAYLOAD.length()];
-            try(InputStream inputStream = s.getInputStream()) {
+            try (InputStream inputStream = s.getInputStream()) {
                 int readCount = inputStream.read(buf);
                 String actual = new String(buf, 0, readCount, StandardCharsets.UTF_8);
-                log.info("Got {} bytes from the server: {}", readCount, actual);
+                LOG.info("Got {} bytes from the server: {}", readCount, actual);
                 assertEquals("Mismatched read data", PAYLOAD, actual);
             }
         }
     }
 
     private void readInTwoBuffersWithPause(int serverPort) throws Exception {
-        log.debug("Connecting to {}", serverPort);
+        LOG.debug("Connecting to {}", serverPort);
         try (Socket s = new Socket(TEST_LOCALHOST, serverPort)) {
             s.setSoTimeout(300);
             byte b1[] = new byte[PAYLOAD.length() / 2];
             byte b2[] = new byte[PAYLOAD.length()];
 
-            try(InputStream inputStream = s.getInputStream()) {
+            try (InputStream inputStream = s.getInputStream()) {
                 int read1 = inputStream.read(b1);
                 String half1 = new String(b1, 0, read1, StandardCharsets.UTF_8);
-                log.info("Got {} bytes from the server: {}", read1, half1);
+                LOG.info("Got {} bytes from the server: {}", read1, half1);
 
                 Thread.sleep(50L);
 
                 try {
                     int read2 = inputStream.read(b2);
                     String half2 = new String(b2, 0, read2, StandardCharsets.UTF_8);
-                    log.info("Got {} bytes from the server: {}", read2, half2);
+                    LOG.info("Got {} bytes from the server: {}", read2, half2);
                     assertEquals("Mismatched read data", PAYLOAD, half1 + half2);
                 } catch (SocketException e) {
-                    log.error("Disconnected before all data read: ", e);
+                    LOG.error("Disconnected before all data read: ", e);
                     fail("Caught error from socket durning second read" + e.getMessage());
                 }
             }

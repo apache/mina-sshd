@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport {
-    private static final Logger log = LoggerFactory.getLogger(ApacheServerApacheClientTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ApacheServerApacheClientTest.class);
 
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(10L);
 
@@ -59,7 +59,7 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
      */
     @BeforeClass
     public static void startSshServer() throws IOException {
-        log.info("Starting SSHD...");
+        LOG.info("Starting SSHD...");
 
         // System.setProperty(IoServiceFactory.class.getName(),
         // MinaServiceFactory.class.getName());
@@ -70,7 +70,7 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
         server.setKeyPairProvider(new SimpleGeneratorHostKeyProvider());
         server.start();
         sshServerPort = server.getPort();
-        log.info("SSHD Running on port {}", server.getPort());
+        LOG.info("SSHD Running on port {}", server.getPort());
     }
 
     @AfterClass
@@ -80,22 +80,22 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
 
     @Before
     public void createClient() throws IOException {
-        log.info("Creating SSH Client...");
+        LOG.info("Creating SSH Client...");
         SshClient client = SshClient.setUpDefaultClient();
         client.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
-        log.info("Starting");
+        LOG.info("Starting");
         client.start();
-        log.info("Connecting...");
+        LOG.info("Connecting...");
         session = client.connect("user", TEST_LOCALHOST, sshServerPort).verify(TIMEOUT).getSession();
-        log.info("Connected");
+        LOG.info("Connected");
         session.addPasswordIdentity("foo");
         session.auth().verify(TIMEOUT);
-        log.info("SSH Client connected to server.");
+        LOG.info("SSH Client connected to server.");
     }
 
     @After
     public void stopClient() throws Exception {
-        log.info("Disconnecting Client");
+        LOG.info("Disconnecting Client");
         try {
             assertTrue("Failed to close session", session.close(true).await(TIMEOUT));
         } finally {
