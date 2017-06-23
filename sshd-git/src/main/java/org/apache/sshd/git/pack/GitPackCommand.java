@@ -155,39 +155,35 @@ public class GitPackCommand extends AbstractLoggingBean implements Command, Runn
         }
 
         List<String> list = new ArrayList<>();
-
         StringBuilder sb = new StringBuilder();
-
         int expecting = CHAR | DELIMITER | STARTQUOTE;
-
         boolean isEscaped = false;
         for (int i = 0; i < value.length(); i++) {
             char c = value.charAt(i);
-
             boolean isDelimiter = delim.indexOf(c) >= 0;
-
-            if (!isEscaped && c == '\\') {
+            if (!isEscaped && (c == '\\')) {
                 isEscaped = true;
                 continue;
             }
 
             if (isEscaped) {
                 sb.append(c);
-            } else if (isDelimiter && (expecting & DELIMITER) > 0) {
+            } else if (isDelimiter && ((expecting & DELIMITER) != 0)) {
                 if (trim) {
-                    list.add(sb.toString().trim());
+                    String str = sb.toString();
+                    list.add(str.trim());
                 } else {
                     list.add(sb.toString());
                 }
                 sb.delete(0, sb.length());
                 expecting = CHAR | DELIMITER | STARTQUOTE;
-            } else if ((c == '"') && (expecting & STARTQUOTE) > 0) {
+            } else if ((c == '"') && ((expecting & STARTQUOTE) != 0)) {
                 sb.append(c);
                 expecting = CHAR | ENDQUOTE;
-            } else if ((c == '"') && (expecting & ENDQUOTE) > 0) {
+            } else if ((c == '"') && ((expecting & ENDQUOTE) != 0)) {
                 sb.append(c);
                 expecting = CHAR | STARTQUOTE | DELIMITER;
-            } else if ((expecting & CHAR) > 0) {
+            } else if ((expecting & CHAR) != 0) {
                 sb.append(c);
             } else {
                 throw new IllegalArgumentException("Invalid delimited string: " + value);
@@ -198,7 +194,8 @@ public class GitPackCommand extends AbstractLoggingBean implements Command, Runn
 
         if (sb.length() > 0) {
             if (trim) {
-                list.add(sb.toString().trim());
+                String str = sb.toString();
+                list.add(str.trim());
             } else {
                 list.add(sb.toString());
             }

@@ -119,10 +119,6 @@
         <httpcomps.version>4.4.1</httpcomps.version>
     </properties>
 
-    <prerequisites>
-        <maven>${min.required.maven.version}</maven>
-    </prerequisites>
-
     <profiles>
         <profile>
             <id>quick</id>
@@ -138,6 +134,12 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>findbugs-maven-plugin</artifactId>
+                        <configuration>
+                            <xmlOutput>true</xmlOutput>
+                            <fork>false</fork>
+                            <includeTests>true</includeTests>
+                            <includeFilterFile>${workspace.root.dir}${file.separator}sshd-findbugs.xml</includeFilterFile>
+                        </configuration>
                         <executions>
                             <execution>
                                 <id>run-findbugs</id>
@@ -484,6 +486,7 @@
                             <exclude>src/test/resources/**</exclude>
                             <exclude>**/stty-output-*.txt</exclude>
                             <exclude>*checkstyle*</exclude>
+                            <exclude>*findbugs*</exclude>
                             <exclude>**/big-msg.txt</exclude>
                                 <!-- Eclipse files -->
                             <exclude>.metadata/**</exclude>

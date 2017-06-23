@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.util;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.ArrayList;
@@ -140,7 +141,7 @@ public final class GenericUtils {
     }
 
     public static int safeCompare(String s1, String s2, boolean caseSensitive) {
-        if (s1 == s2) {
+        if (isSameReference(s1, s2)) {
             return 0;
         } else if (s1 == null) {
             return +1;    // push null(s) to end
@@ -151,6 +152,10 @@ public final class GenericUtils {
         } else {
             return s1.compareToIgnoreCase(s2);
         }
+    }
+
+    public static <T> boolean isSameReference(T o1, T o2) {
+        return o1 == o2;
     }
 
     public static int length(CharSequence cs) {
@@ -731,6 +736,7 @@ public final class GenericUtils {
 
         return t;   // no special handling required or available
     }
+
     /**
      * @param t The original {@link Throwable} - ignored if {@code null}
      * @return If {@link Throwable#getCause()} is non-{@code null} then
@@ -773,6 +779,14 @@ public final class GenericUtils {
 
         current.addSuppressed(extra);
         return current;
+    }
+
+    public static IOException toIOException(Throwable e) {
+        if (e instanceof IOException) {
+            return (IOException) e;
+        } else {
+            return new IOException(e);
+        }
     }
 
     /**

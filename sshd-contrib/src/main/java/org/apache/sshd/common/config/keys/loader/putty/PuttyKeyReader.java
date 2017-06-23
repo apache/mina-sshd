@@ -23,6 +23,7 @@ import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StreamCorruptedException;
 import java.math.BigInteger;
 
 /**
@@ -37,7 +38,11 @@ public class PuttyKeyReader implements Closeable {
     }
 
     public void skip() throws IOException {
-        di.skipBytes(di.readInt());
+        int skipSize = di.readInt();
+        int effectiveSkip = di.skipBytes(skipSize);
+        if (skipSize != effectiveSkip) {
+            throw new StreamCorruptedException("Mismatched skip size: expected" + skipSize + ", actual=" + effectiveSkip);
+        }
     }
 
     private byte[] read() throws IOException {

@@ -56,7 +56,7 @@ public abstract class AbstractSimpleClient extends AbstractLoggingBean implement
     protected SftpClient createSftpClient(final ClientSession session) throws IOException {
         Exception err = null;
         try {
-            final SftpClient client = session.createSftpClient();
+            SftpClient client = session.createSftpClient();
             try {
                 return createSftpClient(session, client);
             } catch (Exception e) {
@@ -191,7 +191,7 @@ public abstract class AbstractSimpleClient extends AbstractLoggingBean implement
         return createScpClient(sessionLogin(target, username, identity));
     }
 
-    protected CloseableScpClient createScpClient(final ClientSession session) throws IOException {
+    protected CloseableScpClient createScpClient(ClientSession session) throws IOException {
         try {
             ScpClient client = Objects.requireNonNull(session, "No client session").createScpClient();
             ClassLoader loader = getClass().getClassLoader();
@@ -230,12 +230,7 @@ public abstract class AbstractSimpleClient extends AbstractLoggingBean implement
                 e.addSuppressed(t);
             }
 
-            if (e instanceof IOException) {
-                throw (IOException) e;
-            } else {
-                throw new IOException(e);
-            }
+            throw GenericUtils.toIOException(e);
         }
     }
-
 }

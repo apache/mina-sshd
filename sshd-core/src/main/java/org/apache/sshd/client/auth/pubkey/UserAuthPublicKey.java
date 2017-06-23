@@ -45,9 +45,9 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFactoriesManager {
     public static final String NAME = UserAuthPublicKeyFactory.NAME;
 
-    private Iterator<PublicKeyIdentity> keys;
-    private PublicKeyIdentity current;
-    private List<NamedFactory<Signature>> factories;
+    protected Iterator<PublicKeyIdentity> keys;
+    protected PublicKeyIdentity current;
+    protected List<NamedFactory<Signature>> factories;
 
     public UserAuthPublicKey() {
         this(null);
@@ -124,12 +124,14 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
 
             throw new RuntimeSshException(e);
         }
+
         String algo = KeyUtils.getKeyType(key);
         String name = getName();
         if (log.isDebugEnabled()) {
             log.debug("sendAuthDataRequest({})[{}] send SSH_MSG_USERAUTH_REQUEST request {} type={} - fingerprint={}",
                       session, service, name, algo, KeyUtils.getFingerPrint(key));
         }
+
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
         buffer.putString(session.getUsername());
         buffer.putString(service);
@@ -166,6 +168,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
 
             throw new RuntimeSshException(e);
         }
+
         String algo = KeyUtils.getKeyType(key);
         String rspKeyType = buffer.getString();
         if (!rspKeyType.equals(algo)) {
@@ -196,6 +199,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         buffer.putString(algo);
         buffer.putPublicKey(key);
         appendSignature(session, service, name, username, algo, key, buffer);
+
         session.writePacket(buffer);
         return true;
     }

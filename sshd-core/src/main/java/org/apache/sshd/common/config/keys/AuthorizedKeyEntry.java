@@ -125,6 +125,16 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         return key;
     }
 
+    @Override   // to avoid Findbugs[EQ_DOESNT_OVERRIDE_EQUALS]
+    public int hashCode() {
+        return super.hashCode();
+    }
+
+    @Override   // to avoid Findbugs[EQ_DOESNT_OVERRIDE_EQUALS]
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
+
     @Override
     public String toString() {
         String entry = super.toString();

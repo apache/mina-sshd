@@ -1,0 +1,34 @@
+<?xml version="1.0"?> 
+<FindBugsFilter> 
+   <!-- See http://findbugs.sourceforge.net/manual/filter.html for available format options --> 
+
+   <Match> 
+       <!-- Exclude Groovy files --> 
+       <Source name="~.*\.groovy" /> 
+   </Match> 
+
+   <!-- See http://findbugs.sourceforge.net/bugDescriptions.html for available built-in bug codes and patterns --> 
+
+   <Match> 
+       <Bug code="BIT,CN,Co,DMI,ES,FS,HE,ISC,ME,RR" /> 
+   </Match> 
+
+   <Match> 
+       <Bug pattern="BC_EQUALS_METHOD_SHOULD_WORK_FOR_ALL_OBJECTS,BC_IMPOSSIBLE_CAST,BC_IMPOSSIBLE_DOWNCAST" /> 
+   </Match> 
+   <Match> 
+       <Bug pattern="BC_IMPOSSIBLE_DOWNCAST_OF_TOARRAY,BC_IMPOSSIBLE_INSTANCEOF" /> 
+   </Match> 
+
+   <Match> 
+       <Bug pattern="DM_NEW_FOR_GETCLASS" /> 
+   </Match> 
+
+   <Match> 
+       <Bug pattern="EQ_ABSTRACT_SELF,EQ_CHECK_FOR_OPERAND_NOT_COMPATIBLE_WITH_THIS,EQ_SELF_NO_OBJECT,EQ_ALWAYS_FALSE,EQ_ALWAYS_TRUE,EQ_COMPARING_CLASS_NAMES" /> 
+   </Match> 
+   <Match> 
+       <Bug pattern="EQ_OTHER_NO_OBJECT,EQ_OTHER_USE_OBJECT,EQ_SELF_USE_OBJECT,EQ_DOESNT_OVERRIDE_EQUALS" /> 
+   </Match> 
+
+</FindBugsFilter>
