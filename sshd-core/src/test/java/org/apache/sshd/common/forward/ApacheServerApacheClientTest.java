@@ -19,6 +19,7 @@
 package org.apache.sshd.common.forward;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
@@ -30,27 +31,30 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.FixMethodOrder;
+import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Port forwarding tests, Apache server & client
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport {
-    private static Logger log = LoggerFactory.getLogger(ApacheServerApacheClientTest.class);
+    private static final Logger log = LoggerFactory.getLogger(ApacheServerApacheClientTest.class);
 
-    private static int timeout = 10_000;
+    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(10L);
 
     private static int sshServerPort;
-
     private static SshServer server;
+
     private ClientSession session;
 
     public ApacheServerApacheClientTest() {
-
+        super();
     }
 
-    /**
+    /*
      * Starts an SSH Server
      */
     @BeforeClass
@@ -71,7 +75,7 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
 
     @AfterClass
     public static void stopServer() throws IOException {
-        server.close(true).await(timeout);
+        server.close(true).await(TIMEOUT);
     }
 
     @Before
@@ -82,17 +86,21 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
         log.info("Starting");
         client.start();
         log.info("Connecting...");
-        session = client.connect("user", TEST_LOCALHOST, sshServerPort).verify(timeout).getSession();
+        session = client.connect("user", TEST_LOCALHOST, sshServerPort).verify(TIMEOUT).getSession();
         log.info("Connected");
         session.addPasswordIdentity("foo");
-        session.auth().verify(timeout);
+        session.auth().verify(TIMEOUT);
         log.info("SSH Client connected to server.");
     }
 
     @After
     public void stopClient() throws Exception {
         log.info("Disconnecting Client");
-        session.close(true).await(timeout);
+        try {
+            assertTrue("Failed to close session", session.close(true).await(TIMEOUT));
+        } finally {
+            session = null;
+        }
     }
 
     @Override
@@ -110,5 +118,4 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
         SshdSocketAddress bound = session.startLocalPortForwarding(remote, local);
         return bound.getPort();
     }
-
 }

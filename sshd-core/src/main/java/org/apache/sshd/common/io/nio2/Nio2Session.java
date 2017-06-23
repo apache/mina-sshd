@@ -181,7 +181,8 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     protected CloseFuture doCloseGracefully() {
         return builder().when(writes).run(() -> {
             try {
-                getSocket().shutdownOutput();
+                AsynchronousSocketChannel socket = getSocket();
+                socket.shutdownOutput();
             } catch (IOException e) {
                 log.info("doCloseGracefully(" + this + ") exception caught while shutting down output", e);
             }
