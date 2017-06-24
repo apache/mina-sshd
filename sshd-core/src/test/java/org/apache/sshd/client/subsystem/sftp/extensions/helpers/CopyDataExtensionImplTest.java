@@ -136,7 +136,7 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
-        LinkOption[] options = IoUtils.getLinkOptions(false);
+        LinkOption[] options = IoUtils.getLinkOptions(true);
         String baseName = readOffset + "-" + readLength + "-" + writeOffset;
         Path srcFile = assertHierarchyTargetFolderExists(lclSftp, options).resolve(baseName + "-src.txt");
         Files.write(srcFile, data, IoUtils.EMPTY_OPEN_OPTIONS);

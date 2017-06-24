@@ -132,7 +132,7 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     }
 
     private static Path ensureDirectory(Path path) {
-        return IoUtils.ensureDirectory(path, IoUtils.getLinkOptions(false));
+        return IoUtils.ensureDirectory(path, IoUtils.getLinkOptions(true));
     }
 
     @Override

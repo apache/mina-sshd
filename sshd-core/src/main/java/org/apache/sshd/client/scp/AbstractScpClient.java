@@ -93,7 +93,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
         local = ValidateUtils.checkNotNull(local, "Invalid argument local: %s", local);
         remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s", remote);
 
-        LinkOption[] opts = IoUtils.getLinkOptions(false);
+        LinkOption[] opts = IoUtils.getLinkOptions(true);
         if (Files.isDirectory(local, opts)) {
             options = addTargetIsDirectory(options);
         }

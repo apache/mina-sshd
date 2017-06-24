@@ -47,11 +47,11 @@ public class DefaultKnownHostsServerKeyVerifier extends KnownHostsServerKeyVerif
     }
 
     public DefaultKnownHostsServerKeyVerifier(ServerKeyVerifier delegate, boolean strict) {
-        this(delegate, strict, KnownHostEntry.getDefaultKnownHostsFile(), IoUtils.getLinkOptions(false));
+        this(delegate, strict, KnownHostEntry.getDefaultKnownHostsFile(), IoUtils.getLinkOptions(true));
     }
 
     public DefaultKnownHostsServerKeyVerifier(ServerKeyVerifier delegate, boolean strict, File file) {
-        this(delegate, strict, Objects.requireNonNull(file, "No file provided").toPath(), IoUtils.getLinkOptions(false));
+        this(delegate, strict, Objects.requireNonNull(file, "No file provided").toPath(), IoUtils.getLinkOptions(true));
     }
 
     public DefaultKnownHostsServerKeyVerifier(ServerKeyVerifier delegate, boolean strict, Path file, LinkOption... options) {

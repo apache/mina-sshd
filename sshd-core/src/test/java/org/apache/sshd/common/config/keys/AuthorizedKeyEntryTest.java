@@ -84,7 +84,7 @@ public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
         Path path = AuthorizedKeysAuthenticator.getDefaultAuthorizedKeysFile();
         assertNotNull("No default location", path);
 
-        LinkOption[] options = IoUtils.getLinkOptions(false);
+        LinkOption[] options = IoUtils.getLinkOptions(true);
         if (!Files.exists(path, options)) {
             outputDebugMessage("Verify non-existing %s", path);
             Collection<AuthorizedKeyEntry> entries = AuthorizedKeysAuthenticator.readDefaultAuthorizedKeys();

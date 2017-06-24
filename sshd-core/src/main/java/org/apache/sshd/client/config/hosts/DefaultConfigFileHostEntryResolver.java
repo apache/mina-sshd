@@ -56,7 +56,7 @@ public class DefaultConfigFileHostEntryResolver extends ConfigFileHostEntryResol
     }
 
     public DefaultConfigFileHostEntryResolver(File file, boolean strict) {
-        this(Objects.requireNonNull(file, "No file provided").toPath(), strict, IoUtils.getLinkOptions(false));
+        this(Objects.requireNonNull(file, "No file provided").toPath(), strict, IoUtils.getLinkOptions(true));
     }
 
     public DefaultConfigFileHostEntryResolver(Path path, boolean strict, LinkOption... options) {

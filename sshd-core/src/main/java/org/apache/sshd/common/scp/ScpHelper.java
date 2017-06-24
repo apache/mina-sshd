@@ -162,9 +162,9 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     }
 
     public void receive(Path local, final boolean recursive, boolean shouldBeDir, final boolean preserve, final int bufferSize) throws IOException {
-        final Path path = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
+        Path path = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
         if (shouldBeDir) {
-            LinkOption[] options = IoUtils.getLinkOptions(false);
+            LinkOption[] options = IoUtils.getLinkOptions(true);
             Boolean status = IoUtils.checkFileExists(path, options);
             if (status == null) {
                 throw new SshException("Target directory " + path + " is most like inaccessible");
@@ -255,7 +255,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             throw new IOException("Expected 0 length for directory but got " + length);
         }
 
-        LinkOption[] options = IoUtils.getLinkOptions(false);
+        LinkOption[] options = IoUtils.getLinkOptions(true);
         Boolean status = IoUtils.checkFileExists(path, options);
         if (status == null) {
             throw new AccessDeniedException("Receive directory existence status cannot be determined: " + path);
@@ -446,7 +446,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         }
         validateOperationReadyCode("send", "Paths", readyCode, false);
 
-        LinkOption[] options = IoUtils.getLinkOptions(false);
+        LinkOption[] options = IoUtils.getLinkOptions(true);
         for (String pattern : paths) {
             pattern = pattern.replace('/', File.separatorChar);
 
@@ -494,7 +494,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         }
         validateOperationReadyCode("sendPaths", "Paths", readyCode, false);
 
-        LinkOption[] options = IoUtils.getLinkOptions(false);
+        LinkOption[] options = IoUtils.getLinkOptions(true);
         for (Path file : paths) {
             send(file, recursive, preserve, bufferSize, options);
         }
@@ -695,7 +695,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             validateAckReplyCode(cmd, path, readyCode, false);
         }
 
-        LinkOption[] options = IoUtils.getLinkOptions(false);
+        LinkOption[] options = IoUtils.getLinkOptions(true);
         Set<PosixFilePermission> perms = IoUtils.getPermissions(path, options);
         String cmd = "D" + (preserve ? getOctalPermissions(perms) : "0755") + " "
                 + "0" + " " + path.getFileName().toString();

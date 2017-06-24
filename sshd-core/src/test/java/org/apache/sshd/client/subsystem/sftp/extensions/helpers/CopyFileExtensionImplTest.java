@@ -68,7 +68,7 @@ public class CopyFileExtensionImplTest extends AbstractSftpClientTestSupport {
         Path dstFile = lclSftp.resolve("dst.txt");
         String dstPath = Utils.resolveRelativeRemotePath(parentPath, dstFile);
 
-        LinkOption[] options = IoUtils.getLinkOptions(false);
+        LinkOption[] options = IoUtils.getLinkOptions(true);
         assertFalse("Destination file unexpectedly exists", Files.exists(dstFile, options));
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {

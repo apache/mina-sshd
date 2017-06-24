@@ -69,7 +69,7 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
     }
 
     public ModifiableFileWatcher(Path file) {
-        this(file, IoUtils.getLinkOptions(false));
+        this(file, IoUtils.getLinkOptions(true));
     }
 
     public ModifiableFileWatcher(Path file, LinkOption... options) {

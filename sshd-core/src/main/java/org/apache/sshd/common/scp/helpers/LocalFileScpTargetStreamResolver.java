@@ -51,7 +51,7 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
     private Path file;
 
     public LocalFileScpTargetStreamResolver(Path path, ScpFileOpener opener) throws IOException {
-        LinkOption[] linkOptions = IoUtils.getLinkOptions(false);
+        LinkOption[] linkOptions = IoUtils.getLinkOptions(true);
         this.status = IoUtils.checkFileExists(path, linkOptions);
         if (status == null) {
             throw new AccessDeniedException("Receive target file path existence status cannot be determined: " + path);
@@ -68,7 +68,7 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
             throw new StreamCorruptedException("resolveTargetStream(" + name + ")[" + perms + "] already resolved: " + file);
         }
 
-        LinkOption[] linkOptions = IoUtils.getLinkOptions(false);
+        LinkOption[] linkOptions = IoUtils.getLinkOptions(true);
         if (status && Files.isDirectory(path, linkOptions)) {
             String localName = name.replace('/', File.separatorChar);   // in case we are running on Windows
             file = path.resolve(localName);

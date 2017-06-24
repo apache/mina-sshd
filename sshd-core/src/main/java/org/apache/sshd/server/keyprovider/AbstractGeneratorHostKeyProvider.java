@@ -209,7 +209,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
     }
 
     protected KeyPair loadFromFile(String alg, Path keyPath) throws IOException, GeneralSecurityException {
-        LinkOption[] options = IoUtils.getLinkOptions(false);
+        LinkOption[] options = IoUtils.getLinkOptions(true);
         if ((!Files.exists(keyPath, options)) || (!Files.isRegularFile(keyPath, options))) {
             return null;
         }

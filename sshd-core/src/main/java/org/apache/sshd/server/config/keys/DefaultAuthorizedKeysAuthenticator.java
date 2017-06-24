@@ -70,11 +70,11 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
     }
 
     public DefaultAuthorizedKeysAuthenticator(File file, boolean strict) {
-        this(Objects.requireNonNull(file, "No file provided").toPath(), strict, IoUtils.getLinkOptions(false));
+        this(Objects.requireNonNull(file, "No file provided").toPath(), strict, IoUtils.getLinkOptions(true));
     }
 
     public DefaultAuthorizedKeysAuthenticator(String user, File file, boolean strict) {
-        this(user, Objects.requireNonNull(file, "No file provided").toPath(), strict, IoUtils.getLinkOptions(false));
+        this(user, Objects.requireNonNull(file, "No file provided").toPath(), strict, IoUtils.getLinkOptions(true));
     }
 
     public DefaultAuthorizedKeysAuthenticator(Path path, boolean strict, LinkOption... options) {

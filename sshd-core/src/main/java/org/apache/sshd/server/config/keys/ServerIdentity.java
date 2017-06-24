@@ -79,7 +79,7 @@ public final class ServerIdentity {
      */
     public static <S extends SshServer> S setKeyPairProvider(S server, Properties props, boolean supportedOnly)
             throws IOException, GeneralSecurityException {
-        KeyPairProvider provider = loadKeyPairProvider(props, supportedOnly, IoUtils.getLinkOptions(false));
+        KeyPairProvider provider = loadKeyPairProvider(props, supportedOnly, IoUtils.getLinkOptions(true));
         if (provider != null) {
             server.setKeyPairProvider(provider);
         }
