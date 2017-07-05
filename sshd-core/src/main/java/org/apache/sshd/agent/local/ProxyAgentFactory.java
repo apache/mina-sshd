@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.agent.SshAgentServer;
-import org.apache.sshd.agent.unix.UnixAgentFactory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.Channel;
@@ -49,7 +48,7 @@ public class ProxyAgentFactory implements SshAgentFactory {
 
     @Override
     public List<NamedFactory<Channel>> getChannelForwardingFactories(FactoryManager manager) {
-        return UnixAgentFactory.DEFAULT_FORWARDING_CHANNELS;
+        return LocalAgentFactory.DEFAULT_FORWARDING_CHANNELS;
     }
 
     @Override

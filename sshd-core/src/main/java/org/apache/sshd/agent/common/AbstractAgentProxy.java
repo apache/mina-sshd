@@ -42,11 +42,23 @@ import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractAgentProxy extends AbstractLoggingBean implements SshAgent, ExecutorServiceConfigurer {
+    public static final String CHANNEL_TYPE_IETF = "auth-agent-req";
+    public static final String CHANNEL_TYPE_OPENSSH = "auth-agent-req@openssh.com";
+
     private ExecutorService executor;
     private boolean shutdownExecutor;
+    private String channelType = CHANNEL_TYPE_OPENSSH;
 
     protected AbstractAgentProxy() {
         super();
+    }
+
+    public String getChannelType() {
+        return channelType;
+    }
+
+    public void setChannelType(String channelType) {
+        this.channelType = channelType;
     }
 
     @Override
@@ -71,10 +83,17 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
 
     @Override
     public List<Pair<PublicKey, String>> getIdentities() throws IOException {
-        Buffer buffer = createBuffer(SshAgentConstants.SSH2_AGENTC_REQUEST_IDENTITIES, 1);
+        byte cmd = SshAgentConstants.SSH2_AGENTC_REQUEST_IDENTITIES;
+        byte okcmd = SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSWER;
+        if (CHANNEL_TYPE_IETF.equals(channelType)) {
+            cmd = SshAgentConstants.SSH_AGENT_LIST_KEYS;
+            okcmd = SshAgentConstants.SSH_AGENT_KEY_LIST;
+        }
+
+        Buffer buffer = createBuffer(cmd, 1);
         buffer = request(prepare(buffer));
         int type = buffer.getUByte();
-        if (type != SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSWER) {
+        if (type != okcmd) {
             throw new SshException("Bad agent identities answer: " + SshAgentConstants.getCommandMessageName(type));
         }
 
@@ -99,24 +118,44 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
 
     @Override
     public byte[] sign(PublicKey key, byte[] data) throws IOException {
-        Buffer buffer = createBuffer(SshAgentConstants.SSH2_AGENTC_SIGN_REQUEST);
+        byte cmd = SshAgentConstants.SSH2_AGENTC_SIGN_REQUEST;
+        byte okcmd = SshAgentConstants.SSH2_AGENT_SIGN_RESPONSE;
+        if (CHANNEL_TYPE_IETF.equals(channelType)) {
+            cmd = SshAgentConstants.SSH_AGENT_PRIVATE_KEY_OP;
+            okcmd = SshAgentConstants.SSH_AGENT_OPERATION_COMPLETE;
+        }
+
+        Buffer buffer = createBuffer(cmd);
+        if (CHANNEL_TYPE_IETF.equals(channelType)) {
+            buffer.putString("sign");
+        }
         buffer.putPublicKey(key);
         buffer.putBytes(data);
         buffer.putInt(0);
         buffer = request(prepare(buffer));
 
         int responseType = buffer.getUByte();
-        if (responseType != SshAgentConstants.SSH2_AGENT_SIGN_RESPONSE) {
+        if (responseType != okcmd) {
             throw new SshException("Bad signing response type: " + SshAgentConstants.getCommandMessageName(responseType));
         }
 
-        Buffer buf = new ByteArrayBuffer(buffer.getBytes());
-        String algorithm = buf.getString();
-        byte[] signature = buf.getBytes();
-        if (log.isDebugEnabled()) {
-            log.debug("sign({})[{}] {}: {}",
-                      KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key),
-                      algorithm, BufferUtils.toHex(':', signature));
+        byte[] signature = null;
+        if (CHANNEL_TYPE_IETF.equals(channelType)) {
+            signature = buffer.getBytes();
+            if (log.isDebugEnabled()) {
+                log.debug("sign({})[{}] : {}",
+                          KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key),
+                          BufferUtils.toHex(':', signature));
+            }
+        } else {
+            Buffer buf = new ByteArrayBuffer(buffer.getBytes());
+            String algorithm = buf.getString();
+            signature = buf.getBytes();
+            if (log.isDebugEnabled()) {
+                log.debug("sign({})[{}] {}: {}",
+                          KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key),
+                          algorithm, BufferUtils.toHex(':', signature));
+            }
         }
 
         return signature;

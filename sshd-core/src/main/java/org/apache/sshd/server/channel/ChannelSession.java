@@ -698,6 +698,7 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected RequestHandler.Result handleAgentForwarding(String requestType, Buffer buffer, boolean wantReply) throws IOException {
         ServerSession session = getServerSession();
+        PropertyResolverUtils.updateProperty(session, FactoryManager.AGENT_FORWARD_AUTH_TYPE, requestType);
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No session factory manager");
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
         SshAgentFactory factory = manager.getAgentFactory();
