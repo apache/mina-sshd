@@ -349,10 +349,20 @@ public interface FactoryManager
     String IGNORE_MESSAGE_SIZE = "ignore-message-size";
 
     /**
-     * The request type of agent forwarding. The value may be "auth-agent-req" (IETF) or
-     * "auth-agent-req@openssh.com" (OpenSSH).
+     * The request type of agent forwarding. The value may be {@value #AGENT_FORWARDING_TYPE_IETF} or
+     *  {@value #AGENT_FORWARDING_TYPE_OPENSSH}.
      */
-    String AGENT_FORWARD_AUTH_TYPE = "agent-fw-auth-type";
+    String AGENT_FORWARDING_TYPE = "agent-fw-auth-type";
+
+    /**
+     * The agent forwarding type defined by IETF (https://tools.ietf.org/html/draft-ietf-secsh-agent-02).
+     */
+    String AGENT_FORWARDING_TYPE_IETF = "auth-agent-req";
+
+    /**
+     * The agent forwarding type defined by OpenSSH.
+     */
+    String AGENT_FORWARDING_TYPE_OPENSSH = "auth-agent-req@openssh.com";
 
     /**
      * Value of {@value #IGNORE_MESSAGE_SIZE} if none configured

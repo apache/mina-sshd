@@ -67,7 +67,7 @@ public class AgentForwardedChannel extends AbstractClientChannel {
                 }
             }
         };
-        rtn.setChannelType(PropertyResolverUtils.getString(getSession(), FactoryManager.AGENT_FORWARD_AUTH_TYPE));
+        rtn.setChannelType(PropertyResolverUtils.getString(getSession(), FactoryManager.AGENT_FORWARDING_TYPE));
         return rtn;
     }
 
