@@ -8,6 +8,7 @@ RemoteSystemsTempFiles/
 .project
 .checkstyle
 .eclipse-pmd
+.pmd
 *.iml
 *.ipr
 *.iws
