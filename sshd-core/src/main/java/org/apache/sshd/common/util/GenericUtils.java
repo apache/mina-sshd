@@ -859,7 +859,7 @@ public final class GenericUtils {
      * @return The wrapping instance
      */
     public static <T> Iterable<T> multiIterableSuppliers(Iterable<? extends Supplier<? extends Iterable<? extends T>>> providers) {
-        return () -> stream(providers).flatMap(s -> stream(s.get())).map(u -> (T) u).iterator();
+        return () -> stream(providers).<T>flatMap(s -> stream(s.get())).map(Function.identity()).iterator();
     }
 
     public static <K, V> MapBuilder<K, V> mapBuilder() {

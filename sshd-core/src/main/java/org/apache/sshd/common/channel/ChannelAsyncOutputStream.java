@@ -53,8 +53,8 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
     }
 
     @Override
-    public synchronized IoWriteFuture write(final Buffer buffer) {
-        final IoWriteFutureImpl future = new IoWriteFutureImpl(buffer);
+    public synchronized IoWriteFuture write(Buffer buffer) {
+        IoWriteFutureImpl future = new IoWriteFutureImpl(buffer);
         if (isClosing()) {
             future.setValue(new IOException("Closed"));
         } else {
@@ -98,10 +98,10 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                 }
 
                 if (length >= (Integer.MAX_VALUE - 12)) {
-                    throw new IllegalArgumentException("Command " + SshConstants.getCommandMessageName(cmd) + " length (" + length + " exceeds int boundaries");
+                    throw new IllegalArgumentException("Command " + SshConstants.getCommandMessageName(cmd) + " length (" + length + ") exceeds int boundaries");
                 }
-                Session s = channel.getSession();
 
+                Session s = channel.getSession();
                 Buffer buf = s.createBuffer(cmd, (int) length + 12);
                 buf.putInt(channel.getRecipient());
                 if (cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) {
@@ -111,9 +111,11 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                 buf.putRawBytes(buffer.array(), buffer.rpos(), (int) length);
                 buffer.rpos(buffer.rpos() + (int) length);
                 remoteWindow.consume(length);
+
                 try {
-                    final ChannelAsyncOutputStream stream = this;
-                    s.writePacket(buf).addListener(new SshFutureListener<IoWriteFuture>() {
+                    ChannelAsyncOutputStream stream = this;
+                    IoWriteFuture writeFuture = s.writePacket(buf);
+                    writeFuture.addListener(new SshFutureListener<IoWriteFuture>() {
                         @Override
                         public void operationComplete(IoWriteFuture f) {
                             if (f.isWritten()) {
