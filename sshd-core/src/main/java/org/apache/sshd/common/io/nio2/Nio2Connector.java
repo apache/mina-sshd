@@ -33,6 +33,9 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class Nio2Connector extends Nio2Service implements IoConnector {
     public Nio2Connector(FactoryManager manager, IoHandler handler, AsynchronousChannelGroup group) {
@@ -46,10 +49,12 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
         }
 
         IoConnectFuture future = new DefaultIoConnectFuture(null);
+        AsynchronousSocketChannel channel = null;
+        AsynchronousSocketChannel socket = null;
         try {
             AsynchronousChannelGroup group = getChannelGroup();
-            AsynchronousSocketChannel socket =
-                    setSocketOptions(openAsynchronousSocketChannel(address, group));
+            channel = openAsynchronousSocketChannel(address, group);
+            socket = setSocketOptions(channel);
             Nio2CompletionHandler<Void, Object> completionHandler =
                     ValidateUtils.checkNotNull(createConnectionCompletionHandler(future, socket, getFactoryManager(), getIoHandler()),
                                                "No connection completion handler created for %s",
@@ -64,18 +69,43 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
             if (log.isTraceEnabled()) {
                 log.trace("connect(" + address + ") connection failure details", t);
             }
+
+            try {
+                if (socket != null) {
+                    socket.close();
+                }
+            } catch (IOException err) {
+                if (log.isDebugEnabled()) {
+                    log.debug("connect({}) - failed ({}) to close socket: {}",
+                            address, err.getClass().getSimpleName(), err.getMessage());
+                }
+            }
+
+            try {
+                if (channel != null) {
+                    channel.close();
+                }
+            } catch (IOException err) {
+                if (log.isDebugEnabled()) {
+                    log.debug("connect({}) - failed ({}) to close channel: {}",
+                            address, err.getClass().getSimpleName(), err.getMessage());
+                }
+            }
+
             future.setException(t);
         }
+
         return future;
     }
 
     protected AsynchronousSocketChannel openAsynchronousSocketChannel(
-            SocketAddress address, AsynchronousChannelGroup group) throws IOException {
+                SocketAddress address, AsynchronousChannelGroup group)
+                    throws IOException {
         return AsynchronousSocketChannel.open(group);
     }
 
     protected Nio2CompletionHandler<Void, Object> createConnectionCompletionHandler(
-            final IoConnectFuture future, final AsynchronousSocketChannel socket, final FactoryManager manager, final IoHandler handler) {
+            IoConnectFuture future, AsynchronousSocketChannel socket, FactoryManager manager, IoHandler handler) {
         return new Nio2CompletionHandler<Void, Object>() {
             @Override
             @SuppressWarnings("synthetic-access")
@@ -83,7 +113,8 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                 try {
                     Nio2Session session = createSession(manager, handler, socket);
                     handler.sessionCreated(session);
-                    sessions.put(session.getId(), session);
+                    long sessionId = session.getId();
+                    sessions.put(sessionId, session);
                     future.setSession(session);
                     session.startReading();
                 } catch (Throwable exc) {
@@ -95,6 +126,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                     if (log.isTraceEnabled()) {
                         log.trace("onCompleted - session creation failure details", t);
                     }
+
                     try {
                         socket.close();
                     } catch (IOException err) {
@@ -102,6 +134,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                             log.debug("onCompleted - failed {} to close socket: {}", err.getClass().getSimpleName(), err.getMessage());
                         }
                     }
+
                     future.setException(t);
                 }
             }
