@@ -69,6 +69,14 @@ public final class SshAgentConstants {
     public static final byte SSH_AGENT_CONSTRAIN_LIFETIME = 1;
     public static final byte SSH_AGENT_CONSTRAIN_CONFIRM = 2;
 
+    // Packet types defined by IETF (https://tools.ietf.org/html/draft-ietf-secsh-agent-02)
+    // Messages sent by the client
+    public static final int SSH_AGENT_LIST_KEYS = 204;
+    public static final int SSH_AGENT_PRIVATE_KEY_OP = 205;
+    // Messages sent by the agent
+    public static final byte SSH_AGENT_KEY_LIST = 104;
+    public static final byte SSH_AGENT_OPERATION_COMPLETE = 105;
+
     private SshAgentConstants() {
     }
 
