@@ -43,9 +43,9 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ProxyAgentFactory implements SshAgentFactory {
+    private static boolean useUnixAgentFactory;
     private final Map<String, AgentServerProxy> proxies = new ConcurrentHashMap<>();
 
-    static boolean useUnixAgentFactory = false;
     static {
         if (OsUtils.isUNIX() || Boolean.getBoolean("org.apache.sshd.agent.PreferUnixAgentFactory")) {
             try {
@@ -61,8 +61,8 @@ public class ProxyAgentFactory implements SshAgentFactory {
 
     @Override
     public List<NamedFactory<Channel>> getChannelForwardingFactories(FactoryManager manager) {
-        return useUnixAgentFactory ? UnixAgentFactory.DEFAULT_FORWARDING_CHANNELS :
-            LocalAgentFactory.DEFAULT_FORWARDING_CHANNELS;
+        return useUnixAgentFactory ? UnixAgentFactory.DEFAULT_FORWARDING_CHANNELS
+            : LocalAgentFactory.DEFAULT_FORWARDING_CHANNELS;
     }
 
     @Override
