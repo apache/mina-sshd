@@ -71,8 +71,8 @@ public final class SshAgentConstants {
 
     // Packet types defined by IETF (https://tools.ietf.org/html/draft-ietf-secsh-agent-02)
     // Messages sent by the client
-    public static final byte SSH_AGENT_LIST_KEYS = (byte) 204;
-    public static final byte SSH_AGENT_PRIVATE_KEY_OP = (byte) 205;
+    public static final int SSH_AGENT_LIST_KEYS = 204;
+    public static final int SSH_AGENT_PRIVATE_KEY_OP = 205;
     // Messages sent by the agent
     public static final byte SSH_AGENT_KEY_LIST = 104;
     public static final byte SSH_AGENT_OPERATION_COMPLETE = 105;

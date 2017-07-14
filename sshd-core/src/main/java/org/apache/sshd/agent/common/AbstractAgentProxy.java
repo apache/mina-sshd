@@ -82,14 +82,14 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
 
     @Override
     public List<Pair<PublicKey, String>> getIdentities() throws IOException {
-        byte cmd = SshAgentConstants.SSH2_AGENTC_REQUEST_IDENTITIES;
-        byte okcmd = SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSWER;
+        int cmd = SshAgentConstants.SSH2_AGENTC_REQUEST_IDENTITIES;
+        int okcmd = SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSWER;
         if (FactoryManager.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {
             cmd = SshAgentConstants.SSH_AGENT_LIST_KEYS;
             okcmd = SshAgentConstants.SSH_AGENT_KEY_LIST;
         }
 
-        Buffer buffer = createBuffer(cmd, 1);
+        Buffer buffer = createBuffer((byte) cmd, 1);
         buffer = request(prepare(buffer));
         int type = buffer.getUByte();
         if (type != okcmd) {
@@ -117,14 +117,14 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
 
     @Override
     public byte[] sign(PublicKey key, byte[] data) throws IOException {
-        byte cmd = SshAgentConstants.SSH2_AGENTC_SIGN_REQUEST;
-        byte okcmd = SshAgentConstants.SSH2_AGENT_SIGN_RESPONSE;
+        int cmd = SshAgentConstants.SSH2_AGENTC_SIGN_REQUEST;
+        int okcmd = SshAgentConstants.SSH2_AGENT_SIGN_RESPONSE;
         if (FactoryManager.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {
             cmd = SshAgentConstants.SSH_AGENT_PRIVATE_KEY_OP;
             okcmd = SshAgentConstants.SSH_AGENT_OPERATION_COMPLETE;
         }
 
-        Buffer buffer = createBuffer(cmd);
+        Buffer buffer = createBuffer((byte) cmd);
         if (FactoryManager.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {
             buffer.putString("sign");
         }
@@ -138,16 +138,15 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
             throw new SshException("Bad signing response type: " + SshAgentConstants.getCommandMessageName(responseType));
         }
 
-        byte[] signature = null;
+        byte[] signature = buffer.getBytes();
         if (FactoryManager.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {
-            signature = buffer.getBytes();
             if (log.isDebugEnabled()) {
                 log.debug("sign({})[{}] : {}",
                           KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key),
                           BufferUtils.toHex(':', signature));
             }
         } else {
-            Buffer buf = new ByteArrayBuffer(buffer.getBytes());
+            Buffer buf = new ByteArrayBuffer(signature);
             String algorithm = buf.getString();
             signature = buf.getBytes();
             if (log.isDebugEnabled()) {
