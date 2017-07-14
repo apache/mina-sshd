@@ -27,12 +27,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.agent.SshAgentServer;
+import org.apache.sshd.agent.unix.AprLibrary;
+import org.apache.sshd.agent.unix.UnixAgentFactory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -42,13 +45,24 @@ import org.apache.sshd.server.session.ServerSession;
 public class ProxyAgentFactory implements SshAgentFactory {
     private final Map<String, AgentServerProxy> proxies = new ConcurrentHashMap<>();
 
+    static boolean useUnixAgentFactory = false;
+    static {
+        if (OsUtils.isUNIX() || Boolean.getBoolean("org.apache.sshd.agent.PreferUnixAgentFactory")) {
+            try {
+                useUnixAgentFactory = AprLibrary.getInstance() != null;
+            } catch (Exception ignore) {
+            }
+        }
+    }
+
     public ProxyAgentFactory() {
         super();
     }
 
     @Override
     public List<NamedFactory<Channel>> getChannelForwardingFactories(FactoryManager manager) {
-        return LocalAgentFactory.DEFAULT_FORWARDING_CHANNELS;
+        return useUnixAgentFactory ? UnixAgentFactory.DEFAULT_FORWARDING_CHANNELS :
+            LocalAgentFactory.DEFAULT_FORWARDING_CHANNELS;
     }
 
     @Override
