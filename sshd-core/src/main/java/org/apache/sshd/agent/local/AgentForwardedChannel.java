@@ -28,6 +28,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.common.AbstractAgentProxy;
 import org.apache.sshd.client.channel.AbstractClientChannel;
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.Window;
@@ -44,7 +46,7 @@ public class AgentForwardedChannel extends AbstractClientChannel {
     }
 
     public SshAgent getAgent() {
-        return new AbstractAgentProxy() {
+        AbstractAgentProxy rtn = new AbstractAgentProxy() {
             private final AtomicBoolean open = new AtomicBoolean(true);
 
             @Override
@@ -65,6 +67,8 @@ public class AgentForwardedChannel extends AbstractClientChannel {
                 }
             }
         };
+        rtn.setChannelType(PropertyResolverUtils.getString(getSession(), FactoryManager.AGENT_FORWARDING_TYPE));
+        return rtn;
     }
 
     protected Buffer request(Buffer buffer) throws IOException {

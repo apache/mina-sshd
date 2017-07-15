@@ -27,13 +27,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.agent.SshAgentServer;
+import org.apache.sshd.agent.unix.AprLibrary;
 import org.apache.sshd.agent.unix.UnixAgentFactory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.PropertyResolver;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -49,7 +53,9 @@ public class ProxyAgentFactory implements SshAgentFactory {
 
     @Override
     public List<NamedFactory<Channel>> getChannelForwardingFactories(FactoryManager manager) {
-        return UnixAgentFactory.DEFAULT_FORWARDING_CHANNELS;
+        return isPreferredUnixAgent(manager)
+            ? UnixAgentFactory.DEFAULT_FORWARDING_CHANNELS
+            : LocalAgentFactory.DEFAULT_FORWARDING_CHANNELS;
     }
 
     @Override
@@ -73,7 +79,7 @@ public class ProxyAgentFactory implements SshAgentFactory {
         ValidateUtils.checkInstanceOf(session, ServerSession.class,
                 "The session used to create an agent server proxy must be a server session: %s", session);
 
-        final AgentServerProxy proxy = new AgentServerProxy(service);
+        AgentServerProxy proxy = new AgentServerProxy(service);
         proxies.put(proxy.getId(), proxy);
         return new SshAgentServer() {
             private final AtomicBoolean open = new AtomicBoolean(true);
@@ -99,4 +105,17 @@ public class ProxyAgentFactory implements SshAgentFactory {
         };
     }
 
+    public static boolean isPreferredUnixAgent(PropertyResolver resolver) {
+        if (PropertyResolverUtils.getBooleanProperty(resolver, PREFER_UNIX_AGENT, OsUtils.isUNIX())) {
+            try {
+                if (AprLibrary.getInstance() != null) {
+                    return true;
+                }
+            } catch (Exception ignore) {
+                // ignored
+            }
+        }
+
+        return false;
+    }
 }

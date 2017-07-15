@@ -39,6 +39,9 @@ public interface SshAgentFactory {
     // see also https://tools.ietf.org/html/draft-ietf-secsh-agent-02
     String DEFAULT_PROXY_AUTH_CHANNEL_TYPE = "auth-agent-req@openssh.com";
 
+    // See ProxyAgentFactory#getChannelForwardingFactories
+    String PREFER_UNIX_AGENT = "ssh-prefer-unix-agent";
+
     /**
      * The channels are requested by the ssh server when forwarding a client request.
      * The channel will receive agent requests and need to forward them to the agent,
