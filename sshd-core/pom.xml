@@ -70,6 +70,14 @@
             <artifactId>eddsa</artifactId>
             <optional>true</optional>
         </dependency>
+        
+        <!-- Openssh key support -->
+        <dependency>
+            <groupId>org.apache.servicemix.bundles</groupId>
+            <artifactId>org.apache.servicemix.bundles.not-yet-commons-ssl</artifactId>
+            <version>0.3.11_1</version>
+            <optional>true</optional>
+        </dependency>
 
             <!-- test dependencies -->
         <dependency>
