@@ -599,11 +599,10 @@
                     </configuration>
                     <dependencies>
                             <!-- see http://checkstyle.sourceforge.net/ for latest version -->
-                            <!-- NOTE: when upgrading see if https://github.com/checkstyle/checkstyle/issues/4472 is solved -->
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>8.0</version>
+                            <version>8.1</version>
                             <exclusions>
                                 <!-- MCHECKSTYLE-156 -->
                                 <exclusion>

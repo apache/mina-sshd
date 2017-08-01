@@ -272,15 +272,15 @@
             <!--<module name="RequiredRegexp">-->
         <!-- Make the @SuppressWarnings annotations available to Checkstyle -->
         <module name="SuppressWarningsHolder" />
-    </module>
-    <module name="SuppressionCommentFilter">
-        <property name="offCommentFormat" value="CHECKSTYLE\:OFF" />
-        <property name="onCommentFormat" value="CHECKSTYLE\:ON" />
-    </module>
-    <module name="SuppressionCommentFilter">
-        <property name="offCommentFormat" value="CHECKSTYLE.OFF\:([\w\|]+)" />
-        <property name="onCommentFormat" value="CHECKSTYLE.ON\:([\w\|]+)" />
-        <property name="checkFormat" value="$1" />
+        <module name="SuppressionCommentFilter">
+            <property name="offCommentFormat" value="CHECKSTYLE\:OFF" />
+            <property name="onCommentFormat" value="CHECKSTYLE\:ON" />
+        </module>
+        <module name="SuppressionCommentFilter">
+            <property name="offCommentFormat" value="CHECKSTYLE.OFF\:([\w\|]+)" />
+            <property name="onCommentFormat" value="CHECKSTYLE.ON\:([\w\|]+)" />
+            <property name="checkFormat" value="$1" />
+        </module>
     </module>
     <module name="SuppressWarningsFilter" />
 	<!-- Header checks -->
