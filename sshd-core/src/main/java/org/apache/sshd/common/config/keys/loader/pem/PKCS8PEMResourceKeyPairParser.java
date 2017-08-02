@@ -70,7 +70,7 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
                     throws IOException, GeneralSecurityException {
         // Save the data before getting the algorithm OID since we will need it
         byte[] encBytes = IoUtils.toByteArray(stream);
-        List<Integer> oidAlgorithm = getPKCS8AlgorithmIdentifier(stream, false);
+        List<Integer> oidAlgorithm = getPKCS8AlgorithmIdentifier(encBytes);
         PrivateKey prvKey = decodePEMPrivateKeyPKCS8(oidAlgorithm, encBytes, passwordProvider);
         PublicKey pubKey = ValidateUtils.checkNotNull(KeyUtils.recoverPublicKey(prvKey),
                 "Failed to recover public key of OID=%s", oidAlgorithm);
@@ -101,8 +101,8 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
         return factory.generatePrivate(keySpec);
     }
 
-    public static List<Integer> getPKCS8AlgorithmIdentifier(InputStream input, boolean okToClose) throws IOException {
-        try (DERParser parser = new DERParser(NoCloseInputStream.resolveInputStream(input, okToClose))) {
+    public static List<Integer> getPKCS8AlgorithmIdentifier(byte[] input) throws IOException {
+        try (DERParser parser = new DERParser(input)) {
             return getPKCS8AlgorithmIdentifier(parser);
         }
     }
