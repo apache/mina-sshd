@@ -103,7 +103,7 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
             int endIndex = markerPos.getKey();
             String endLine = lines.get(endIndex);
             Collection<KeyPair> kps =
-                    extractKeyPairs(resourceKey, startLine, endLine, passwordProvider, lines.subList(startIndex, endIndex));
+                extractKeyPairs(resourceKey, startLine, endLine, passwordProvider, lines.subList(startIndex, endIndex));
             if (GenericUtils.isNotEmpty(kps)) {
                 if (GenericUtils.isEmpty(keyPairs)) {
                     keyPairs = new LinkedList<>(kps);

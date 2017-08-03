@@ -84,12 +84,12 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
         return decodePEMPrivateKeyPKCS8(GenericUtils.join(oidAlgorithm, '.'), keyBytes, passwordProvider);
     }
 
-    public static final PrivateKey decodePEMPrivateKeyPKCS8(
+    public static PrivateKey decodePEMPrivateKeyPKCS8(
             String oid, byte[] keyBytes, FilePasswordProvider passwordProvider)
                     throws GeneralSecurityException {
         KeyPairPEMResourceParser parser =
-                PEMResourceParserUtils.getPEMResourceParserByOid(
-                        ValidateUtils.checkNotNullAndNotEmpty(oid, "No PKCS8 algorithm OID"));
+            PEMResourceParserUtils.getPEMResourceParserByOid(
+                ValidateUtils.checkNotNullAndNotEmpty(oid, "No PKCS8 algorithm OID"));
         if (parser == null) {
             throw new NoSuchAlgorithmException("decodePEMPrivateKeyPKCS8(" + oid + ") unknown algorithm identifier");
         }

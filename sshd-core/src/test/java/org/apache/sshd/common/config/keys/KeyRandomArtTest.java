@@ -71,8 +71,10 @@ public class KeyRandomArtTest extends BaseTestSupport {
             params.add(new Object[]{KeyUtils.DSS_ALGORITHM, keySize});
         }
 
-        for (ECCurves curve : ECCurves.VALUES) {
-            params.add(new Object[]{KeyUtils.EC_ALGORITHM, curve.getKeySize()});
+        if (SecurityUtils.isECCSupported()) {
+            for (ECCurves curve : ECCurves.VALUES) {
+                params.add(new Object[]{KeyUtils.EC_ALGORITHM, curve.getKeySize()});
+            }
         }
 
         if (SecurityUtils.isEDDSACurveSupported()) {
