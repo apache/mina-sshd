@@ -38,7 +38,6 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.der.ASN1Object;
 import org.apache.sshd.common.util.io.der.DERParser;
 import org.apache.sshd.common.util.security.SecurityUtils;

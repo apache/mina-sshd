@@ -18,11 +18,6 @@
  */
 package org.apache.sshd.common.config.keys.loader.pem;
 
-import org.apache.commons.ssl.PEMItem;
-import org.apache.commons.ssl.PEMUtil;
-import org.apache.sshd.common.util.security.SecurityUtils;
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.security.KeyPair;
@@ -30,9 +25,15 @@ import java.security.KeyPairGenerator;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import static org.junit.Assert.assertEquals;
+import org.apache.commons.ssl.PEMItem;
+import org.apache.commons.ssl.PEMUtil;
+import org.apache.sshd.common.util.security.SecurityUtils;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class PemKeyPairResourceParserTest {
+    public PemKeyPairResourceParserTest() {
+    }
 
     @Test
     public void testPkcs8() throws Exception {
@@ -51,7 +52,7 @@ public class PemKeyPairResourceParserTest {
 
         KeyPair kp2 = SecurityUtils.loadKeyPairIdentity("the-key", new ByteArrayInputStream(os.toByteArray()), null);
 
-        assertEquals(kp.getPublic(), kp2.getPublic());
-        assertEquals(kp.getPrivate(), kp2.getPrivate());
+        Assert.assertEquals(kp.getPublic(), kp2.getPublic());
+        Assert.assertEquals(kp.getPrivate(), kp2.getPrivate());
     }
 }
