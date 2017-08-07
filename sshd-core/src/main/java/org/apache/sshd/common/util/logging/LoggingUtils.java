@@ -24,7 +24,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -82,7 +82,7 @@ public final class LoggingUtils {
             return Collections.emptyMap();
         }
 
-        Map<Integer, String> result = new HashMap<>(fields.size());
+        Map<Integer, String> result = new TreeMap<>(Comparator.naturalOrder());
         for (Field f : fields) {
             String name = f.getName();
             try {
@@ -138,7 +138,7 @@ public final class LoggingUtils {
         }
 
         Map<String, Integer> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        Map<Integer, List<String>> opcodesMap = new HashMap<>(fields.size());
+        Map<Integer, List<String>> opcodesMap = new TreeMap<>(Comparator.naturalOrder());
         for (Field f : fields) {
             String name = f.getName();
             try {

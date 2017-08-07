@@ -20,10 +20,11 @@
 package org.apache.sshd.server.auth;
 
 import java.io.File;
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 
 import org.apache.directory.server.constants.ServerDNConstants;
 import org.apache.directory.server.core.CoreSession;
@@ -178,7 +179,7 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
     public static Map<String, String> populateUsers(DirectoryService service, Class<?> anchor, String credentialName) throws Exception {
         Logger log = LoggerFactory.getLogger(anchor);
         CoreSession session = Objects.requireNonNull(service.getAdminSession(), "No core session");
-        Map<String, String> usersMap = new HashMap<>();
+        Map<String, String> usersMap = new TreeMap<>(Comparator.naturalOrder());
         try (LdifReader reader = new LdifReader(Objects.requireNonNull(anchor.getResourceAsStream("/auth-users.ldif"), "No users ldif"))) {
             int id = 1;
             for (LdifEntry entry : reader) {

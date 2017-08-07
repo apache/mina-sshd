@@ -20,9 +20,10 @@
 package org.apache.sshd.server.auth.pubkey;
 
 import java.security.PublicKey;
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.directory.server.core.DirectoryService;
@@ -47,7 +48,7 @@ import org.mockito.Mockito;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
     private static final AtomicReference<Pair<LdapServer, DirectoryService>> LDAP_CONTEX_HOLDER = new AtomicReference<>();
-    private static final Map<String, PublicKey> KEYS_MAP = new HashMap<>();
+    private static final Map<String, PublicKey> KEYS_MAP = new TreeMap<>(Comparator.naturalOrder());
     // we use this instead of the default since the default requires some extra LDIF manipulation which we don't need
     private static final String TEST_ATTR_NAME = "description";
 

@@ -25,12 +25,13 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 
@@ -88,9 +89,9 @@ public class DefaultTcpipForwarder
     private final ConnectionService service;
     private final IoHandlerFactory socksProxyIoHandlerFactory = () -> new SocksProxy(getConnectionService());
     private final Session sessionInstance;
-    private final Map<Integer, SshdSocketAddress> localToRemote = new HashMap<>();
-    private final Map<Integer, SshdSocketAddress> remoteToLocal = new HashMap<>();
-    private final Map<Integer, SocksProxy> dynamicLocal = new HashMap<>();
+    private final Map<Integer, SshdSocketAddress> localToRemote = new TreeMap<>(Comparator.naturalOrder());
+    private final Map<Integer, SshdSocketAddress> remoteToLocal = new TreeMap<>(Comparator.naturalOrder());
+    private final Map<Integer, SocksProxy> dynamicLocal = new TreeMap<>(Comparator.naturalOrder());
     private final Set<LocalForwardingEntry> localForwards = new HashSet<>();
     private final IoHandlerFactory staticIoHandlerFactory = StaticIoHandler::new;
     private final Collection<PortForwardingEventListener> listeners = new CopyOnWriteArraySet<>();

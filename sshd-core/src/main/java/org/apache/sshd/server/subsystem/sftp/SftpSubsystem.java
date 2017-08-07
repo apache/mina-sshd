@@ -295,7 +295,7 @@ public class SftpSubsystem
     protected Path defaultDir = fileSystem.getPath(System.getProperty("user.dir"));
     protected long requestsCount;
     protected int version;
-    protected final Map<String, byte[]> extensions = new HashMap<>();
+    protected final Map<String, byte[]> extensions = new TreeMap<>(Comparator.naturalOrder());
     protected final Map<String, Handle> handles = new HashMap<>();
     protected final UnsupportedAttributePolicy unsupportedAttributePolicy;
 

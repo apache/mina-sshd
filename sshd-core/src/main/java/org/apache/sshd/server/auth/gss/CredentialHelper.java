@@ -20,8 +20,8 @@ package org.apache.sshd.server.auth.gss;
 
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.AppConfigurationEntry;
@@ -65,18 +65,17 @@ public final class CredentialHelper {
         private AppConfigurationEntry entry;
 
         private FixedLoginConfiguration(String spn, String keytab) {
-            Map<String, String> parms = new HashMap<>();
-
-            parms.put("isInitiator", "false");
-            parms.put("principal", spn);
-            parms.put("useKeyTab", "true");
-            parms.put("storeKey", "true");
+            Map<String, String> params = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            params.put("isInitiator", "false");
+            params.put("principal", spn);
+            params.put("useKeyTab", "true");
+            params.put("storeKey", "true");
 
             if (keytab != null) {
-                parms.put("keyTab", keytab);
+                params.put("keyTab", keytab);
             }
 
-            entry = new AppConfigurationEntry("com.sun.security.auth.module.Krb5LoginModule", AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, parms);
+            entry = new AppConfigurationEntry("com.sun.security.auth.module.Krb5LoginModule", AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, params);
         }
 
         @Override

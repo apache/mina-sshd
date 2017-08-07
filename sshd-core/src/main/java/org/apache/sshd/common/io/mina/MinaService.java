@@ -18,8 +18,9 @@
  */
 package org.apache.sshd.common.io.mina;
 
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.buffer.IoBuffer;
@@ -67,11 +68,14 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
 
     @Override
     public Map<Long, org.apache.sshd.common.io.IoSession> getManagedSessions() {
-        Map<Long, IoSession> mina = new HashMap<>(getIoService().getManagedSessions());
-        Map<Long, org.apache.sshd.common.io.IoSession> sessions = new HashMap<>();
+        IoService ioService = getIoService();
+        Map<Long, IoSession> managedMap = ioService.getManagedSessions();
+        Map<Long, IoSession> mina = new TreeMap<>(managedMap);
+        Map<Long, org.apache.sshd.common.io.IoSession> sessions = new TreeMap<>(Comparator.naturalOrder());
         for (Long id : mina.keySet()) {
             // Avoid possible NPE if the MinaSession hasn't been created yet
-            org.apache.sshd.common.io.IoSession session = getSession(mina.get(id));
+            IoSession minaSession = mina.get(id);
+            org.apache.sshd.common.io.IoSession session = getSession(minaSession);
             if (session != null) {
                 sessions.put(id, session);
             }
