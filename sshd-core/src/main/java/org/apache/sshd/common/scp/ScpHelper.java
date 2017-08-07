@@ -97,6 +97,9 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     public static final int S_IWOTH = 0000002;
     public static final int S_IXOTH = 0000001;
 
+    public static final String DEFAULT_DIR_OCTAL_PERMISSIONS = "0755";
+    public static final String DEFAULT_FILE_OCTAL_PERMISSIONS = "0644";
+
     protected final InputStream in;
     protected final OutputStream out;
     protected final FileSystem fileSystem;
@@ -120,7 +123,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         return sessionInstance;
     }
 
-    public void receiveFileStream(final OutputStream local, final int bufferSize) throws IOException {
+    public void receiveFileStream(OutputStream local, int bufferSize) throws IOException {
         receive((line, isDir, timestamp) -> {
             if (isDir) {
                 throw new StreamCorruptedException("Cannot download a directory into a file stream: " + line);
@@ -161,7 +164,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         });
     }
 
-    public void receive(Path local, final boolean recursive, boolean shouldBeDir, final boolean preserve, final int bufferSize) throws IOException {
+    public void receive(Path local, boolean recursive, boolean shouldBeDir, boolean preserve, final int bufferSize) throws IOException {
         Path path = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
         if (shouldBeDir) {
             LinkOption[] options = IoUtils.getLinkOptions(true);
@@ -602,7 +605,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         }
 
         Set<PosixFilePermission> perms = EnumSet.copyOf(resolver.getPermissions());
-        String octalPerms = preserve ? getOctalPermissions(perms) : "0644";
+        String octalPerms = GenericUtils.isEmpty(perms) ? DEFAULT_FILE_OCTAL_PERMISSIONS : getOctalPermissions(perms);
         String fileName = resolver.getFileName();
         String cmd = "C" + octalPerms + " " + fileSize + " " + fileName;
         if (log.isDebugEnabled()) {
@@ -697,8 +700,8 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
 
         LinkOption[] options = IoUtils.getLinkOptions(true);
         Set<PosixFilePermission> perms = IoUtils.getPermissions(path, options);
-        String cmd = "D" + (preserve ? getOctalPermissions(perms) : "0755") + " "
-                + "0" + " " + path.getFileName().toString();
+        String octalPerms = GenericUtils.isEmpty(perms) ? DEFAULT_DIR_OCTAL_PERMISSIONS : getOctalPermissions(perms);
+        String cmd = "D" + octalPerms + " " + "0" + " " + Objects.toString(path.getFileName(), null);
         if (log.isDebugEnabled()) {
             log.debug("sendDir({})[{}] send 'D' command: {}", this, path, cmd);
         }
@@ -747,7 +750,8 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     }
 
     public static String getOctalPermissions(Path path, LinkOption... options) throws IOException {
-        return getOctalPermissions(IoUtils.getPermissions(path, options));
+        Collection<PosixFilePermission> perms = IoUtils.getPermissions(path, options);
+        return getOctalPermissions(perms);
     }
 
     public static String getOctalPermissions(Collection<PosixFilePermission> perms) {

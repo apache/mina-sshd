@@ -901,24 +901,24 @@ public class ScpTest extends BaseTestSupport {
             File target = new File(unixPath);
             Utils.deleteRecursive(root);
             root.mkdirs();
-            assertTrue(root.exists());
+            assertTrue("Failed to ensure existence of " + root, root.exists());
 
             target.delete();
-            assertFalse(target.exists());
-            sendFile(session, unixPath, fileName, data);
+            assertFalse("Failed to delete 1st time: " + target, target.exists());
+            sendFile(session, unixPath, target, data);
             assertFileLength(target, data.length(), TimeUnit.SECONDS.toMillis(5L));
 
             target.delete();
-            assertFalse(target.exists());
-            sendFile(session, unixDir, fileName, data);
+            assertFalse("Failed to delete 2nd time: " + target, target.exists());
+            sendFile(session, unixDir, target, data);
             assertFileLength(target, data.length(), TimeUnit.SECONDS.toMillis(5L));
 
             sendFileError(session, "target", ScpHelper.SCP_COMMAND_PREFIX, data);
 
             readFileError(session, unixDir);
 
-            assertEquals("Mismatched file data", data, readFile(session, unixPath, target.length()));
-            assertEquals("Mismatched dir data", data, readDir(session, unixDir, fileName, target.length()));
+            assertEquals("Mismatched file data", data, readFile(session, unixPath, target));
+            assertEquals("Mismatched dir data", data, readDir(session, unixDir, target));
 
             target.delete();
             root.delete();
@@ -989,22 +989,26 @@ public class ScpTest extends BaseTestSupport {
         }
     }
 
-    protected String readFile(com.jcraft.jsch.Session session, String path, long expectedSize) throws Exception {
+    protected String readFile(com.jcraft.jsch.Session session, String path, File target) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel(Channel.CHANNEL_EXEC);
         c.setCommand("scp -f " + path);
         c.connect();
 
-        int namePos = path.lastIndexOf('/');
-        String fileName = (namePos >= 0) ? path.substring(namePos + 1) : path;
+        String fileName = target.getName();
         try (OutputStream os = c.getOutputStream();
              InputStream is = c.getInputStream()) {
 
             os.write(0);
             os.flush();
-            String header = readLine(is);
-            assertEquals("Mismatched header for " + path, "C0644 " + expectedSize + " " + fileName, header);
 
-            int length = Integer.parseInt(header.substring(6, header.indexOf(' ', 6)));
+            String header = readLine(is);
+            Collection<PosixFilePermission> perms = IoUtils.getPermissions(target.toPath());
+            String octalPerms = ScpHelper.getOctalPermissions(perms);
+            String expHeader = "C" + octalPerms + " " + target.length() + " " + fileName;
+            assertEquals("Mismatched header for " + path, expHeader, header);
+
+            String lenValue = header.substring(6, header.indexOf(' ', 6));
+            int length = Integer.parseInt(lenValue);
             os.write(0);
             os.flush();
 
@@ -1022,7 +1026,7 @@ public class ScpTest extends BaseTestSupport {
         }
     }
 
-    protected String readDir(com.jcraft.jsch.Session session, String path, String fileName, long expectedSize) throws Exception {
+    protected String readDir(com.jcraft.jsch.Session session, String path, File target) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel(Channel.CHANNEL_EXEC);
         c.setCommand("scp -r -f " + path);
         c.connect();
@@ -1033,12 +1037,19 @@ public class ScpTest extends BaseTestSupport {
             os.flush();
 
             String header = readLine(is);
-            assertTrue("Bad header prefix for " + path + ": " + header, header.startsWith("D0755 0 "));
+            File parent = target.getParentFile();
+            Collection<PosixFilePermission> perms = IoUtils.getPermissions(parent.toPath());
+            String octalPerms = ScpHelper.getOctalPermissions(perms);
+            String expPrefix = "D" + octalPerms + " 0 ";
+            assertTrue("Bad header prefix for " + path + ": " + header, header.startsWith(expPrefix));
             os.write(0);
             os.flush();
 
             header = readLine(is);
-            assertEquals("Mismatched dir header for " + path, "C0644 " + expectedSize + " " + fileName, header);
+            perms = IoUtils.getPermissions(target.toPath());
+            octalPerms = ScpHelper.getOctalPermissions(perms);
+            String expHeader = "C" + octalPerms + " " + target.length() + " " + target.getName();
+            assertEquals("Mismatched dir header for " + path, expHeader, header);
             int length = Integer.parseInt(header.substring(6, header.indexOf(' ', 6)));
             os.write(0);
             os.flush();
@@ -1079,7 +1090,7 @@ public class ScpTest extends BaseTestSupport {
         }
     }
 
-    protected void sendFile(com.jcraft.jsch.Session session, String path, String name, String data) throws Exception {
+    protected void sendFile(com.jcraft.jsch.Session session, String path, File target, String data) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel(Channel.CHANNEL_EXEC);
         String command = "scp -t " + path;
         c.setCommand(command);
@@ -1089,7 +1100,12 @@ public class ScpTest extends BaseTestSupport {
              InputStream is = c.getInputStream()) {
 
             assertAckReceived(is, command);
-            assertAckReceived(os, is, "C7777 " + data.length() + " " + name);
+
+            File parent = target.getParentFile();
+            Collection<PosixFilePermission> perms = IoUtils.getPermissions(parent.toPath());
+            String octalPerms = ScpHelper.getOctalPermissions(perms);
+            String name = target.getName();
+            assertAckReceived(os, is, "C" + octalPerms + " " + data.length() + " " + name);
 
             os.write(data.getBytes(StandardCharsets.UTF_8));
             os.flush();

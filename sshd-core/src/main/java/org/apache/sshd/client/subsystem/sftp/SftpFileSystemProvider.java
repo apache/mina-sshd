@@ -60,7 +60,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -1089,11 +1088,12 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     }
 
     public static String getOctalPermissions(int perms) {
-        return getOctalPermissions(permissionsToAttributes(perms));
+        Collection<PosixFilePermission> attrs = permissionsToAttributes(perms);
+        return getOctalPermissions(attrs);
     }
 
     public static Set<PosixFilePermission> permissionsToAttributes(int perms) {
-        Set<PosixFilePermission> p = new HashSet<>();
+        Set<PosixFilePermission> p = EnumSet.noneOf(PosixFilePermission.class);
         if ((perms & SftpConstants.S_IRUSR) == SftpConstants.S_IRUSR) {
             p.add(PosixFilePermission.OWNER_READ);
         }

@@ -114,21 +114,22 @@ public class DefaultScpClient extends AbstractScpClient {
     }
 
     @Override
-    public void upload(final InputStream local, final String remote, final long size, final Collection<PosixFilePermission> perms, final ScpTimestamp time) throws IOException {
+    public void upload(InputStream local, String remote, long size, Collection<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
         int namePos = ValidateUtils.checkNotNullAndNotEmpty(remote, "No remote location specified").lastIndexOf('/');
-        final String name = (namePos < 0)
-                ? remote
-                : ValidateUtils.checkNotNullAndNotEmpty(remote.substring(namePos + 1), "No name value in remote=%s", remote);
-        final String cmd = ScpClient.createSendCommand(remote, (time != null) ? EnumSet.of(Option.PreserveAttributes) : Collections.emptySet());
+        String name = (namePos < 0)
+            ? remote
+            : ValidateUtils.checkNotNullAndNotEmpty(remote.substring(namePos + 1), "No name value in remote=%s", remote);
+        Collection<Option> options = (time != null) ? EnumSet.of(Option.PreserveAttributes) : Collections.emptySet();
+        String cmd = ScpClient.createSendCommand(remote, options);
         ClientSession session = getClientSession();
         ChannelExec channel = openCommandChannel(session, cmd);
         try (InputStream invOut = channel.getInvertedOut();
              OutputStream invIn = channel.getInvertedIn()) {
             // NOTE: we use a mock file system since we expect no invocations for it
             ScpHelper helper = new ScpHelper(session, invOut, invIn, new MockFileSystem(remote), opener, listener);
-            final Path mockPath = new MockPath(remote);
+            Path mockPath = new MockPath(remote);
             helper.sendStream(new DefaultScpStreamResolver(name, mockPath, perms, time, size, local, cmd),
-                              time != null, ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
+                    options.contains(Option.PreserveAttributes), ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
             handleCommandExitStatus(cmd, channel);
         } finally {
             channel.close(false);
