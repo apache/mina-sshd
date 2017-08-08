@@ -76,13 +76,35 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
         return f;
     }
 
+    @Override
+    public void handleEof() throws IOException {
+        // Close agent forwarding channel
+        try {
+            if ((agent != null) && agent.isOpen()) {
+                agent.close();
+            }
+        } finally {
+            super.handleEof();
+        }
+    }
+
     private void closeImmediately0() {
         // We need to close the channel immediately to remove it from the
         // server session's channel table and *not* send a packet to the
         // client.  A notification was already sent by our caller, or will
         // be sent after we return.
-        //
-        super.close(true);
+        try {
+            if ((agent != null) && agent.isOpen()) {
+                try {
+                    agent.close();
+                } catch (IOException e) {
+                    log.error("closeImmediately0({}) Failed ({}) to close open local agent: {}",
+                            this, e.getClass().getSimpleName(), e.getMessage());
+                }
+            }
+        } finally {
+            super.close(true);
+        }
     }
 
     @Override
