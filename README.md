@@ -1129,7 +1129,9 @@ decide whether to accept a successfully authenticated session.
 
 # Extension modules
 
-There are several extension modules available
+There are several extension modules available - specifically, the _sshd-contrib_ module contains some of them. **Note:** the module contains experimental code that may find its way some time
+in the future to a standard artifact. It is also subject to changes and/or deletion without any prior announcement. Therefore, any code that relies on it should also store a copy of the sources
+in case the classes it used it are modified or deleted.
 
 ## Command line clients
 
@@ -1162,15 +1164,61 @@ The _sshd-ldap_ artifact contains an [LdapPasswordAuthenticator](https://issues.
 
 ## PROXY / SSLH protocol hooks
 
-The code contains [support for "wrapper" protocols](https://issues.apache.org/jira/browse/SSHD-656) such as [PROXY](http://www.haproxy.org/download/1.6/doc/proxy-protocol.txt) or  [sslh](http://www.rutschle.net/tech/sslh.shtml). The idea is that one can register either a `ClientProxyConnector` or `ServerProxyAcceptor` and intercept the 1st packet being sent/received (respectively) **before** it reaches the SSHD code. This gives the programmer the capability to write a front-end that routes outgoing/incoming packets:
+The code contains [support for "wrapper" protocols](https://issues.apache.org/jira/browse/SSHD-656) such as [PROXY](http://www.haproxy.org/download/1.6/doc/proxy-protocol.txt) or [sslh](http://www.rutschle.net/tech/sslh.shtml). The idea is that one can register either a `ClientProxyConnector` or `ServerProxyAcceptor` and intercept the 1st packet being sent/received (respectively) **before** it reaches the SSHD code. This gives the programmer the capability to write a front-end that routes outgoing/incoming packets:
 
 * `SshClient/ClientSesssion#setClientProxyConnector` - sets a proxy that intercepts the 1st packet before being sent to the server
 
 * `SshServer/ServerSession#setServerProxyAcceptor` - sets a proxy that intercept the 1st incoming packet before being processed by the server
 
-## PUTTY key file(s) readers
+## Useful extra components in _sshd-contrib_
 
-Part of the _sshd-contrib_ artifact.
+* PUTTY key file(s) readers - see `org.apache.sshd.common.config.keys.loader.putty` package - specifically `PuttyKeyUtils#DEFAULT_INSTANCE KeyPairResourceParser`.
+
+
+* `InteractivePasswordIdentityProvider` - helps implement a `PasswordIdentityProvider` by delegating calls to `UserInteraction#getUpdatedPassword`.
+The way to use it would be as follows:
+
+
+```java
+try (ClientSession session = client.connect(login, host, port).await().getSession()) {
+     session.setUserInteraction(...);     // this can also be set at the client level
+     PasswordIdentityProvider passwordIdentityProvider =
+          InteractivePasswordIdentityProvider.providerOf(session, "My prompt");
+     session.setPasswordIdentityProvider(passwordIdentityProvider);
+     session.auth.verify(...timeout...);
+     ... continue with the authenticated session ...
+}
+```
+
+or
+
+
+```java
+UserInteraction ui = ....;
+try (ClientSession session = client.connect(login, host, port).await().getSession()) {
+    PasswordIdentityProvider passwordIdentityProvider =
+         InteractivePasswordIdentityProvider.providerOf(session, ui, "My prompt");
+    session.setPasswordIdentityProvider(passwordIdentityProvider);
+    session.auth.verify(...timeout...);
+     ... continue with the authenticated session ...
+}
+```
+
+
+**Note:** `UserInteraction#isInteractionAllowed` is consulted prior to invoking `getUpdatedPassword` - if it returns _false_ then password retrieval method is not invoked,
+and it is assumed that no more passwords are available
+
+
+* `SimpleAccessControlScpEventListener` - Provides a simple access control by making a distinction between methods that upload data and ones that download it via SCP.
+In order to use it, simply extend it and override its `isFileUpload/DownloadAllowed` methods
+
+
+* `SimpleAccessControlSftpEventListener` - Provides a simple access control by making a distinction between methods that provide SFTP file information - including
+reading data - and those that modify it
+
+
+* `ProxyProtocolAcceptor` - A working prototype to support the PROXY protocol as described in [HAProxy Documentation](http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt)
+
 
 # Builtin components
 

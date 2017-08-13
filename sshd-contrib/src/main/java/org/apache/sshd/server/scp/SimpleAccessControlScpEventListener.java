@@ -30,6 +30,7 @@ import org.apache.sshd.common.scp.AbstractScpTransferEventListenerAdapter;
 /**
  * Provides a simple access control by making a distinction between methods
  * that upload data and ones that download it
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class SimpleAccessControlScpEventListener extends AbstractScpTransferEventListenerAdapter {

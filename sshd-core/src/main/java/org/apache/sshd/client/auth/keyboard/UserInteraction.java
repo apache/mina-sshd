@@ -59,9 +59,11 @@ public interface UserInteraction {
     /**
      *
      * @param session The {@link ClientSession}
-     * @return {@code true} if user interaction allowed for this session
+     * @return {@code true} if user interaction allowed for this session (default)
      */
-    boolean isInteractionAllowed(ClientSession session);
+    default boolean isInteractionAllowed(ClientSession session) {
+        return true;
+    }
 
     /**
      * Called if the server sent any extra information beyond the standard

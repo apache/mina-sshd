@@ -34,6 +34,7 @@ import org.apache.sshd.server.session.ServerSession;
 /**
  * Provides a simple access control by making a distinction between methods
  * that provide information - including reading data - and those that modify it
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class SimpleAccessControlSftpEventListener extends AbstractSftpEventListenerAdapter {
