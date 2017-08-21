@@ -59,12 +59,14 @@ import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.junit.runner.RunWith;
 
 /**
  * Helper used as base class for all test classes
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@RunWith(JUnit4SingleInstanceClassRunner.class)
 public abstract class BaseTestSupport extends Assert {
     public static final String TEMP_SUBFOLDER_NAME = "temp";
     // can be used to override the 'localhost' with an address other than 127.0.0.1 in case it is required
