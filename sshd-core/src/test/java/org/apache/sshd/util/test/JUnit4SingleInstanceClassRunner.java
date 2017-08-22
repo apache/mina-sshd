@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.util.test;
 
-import java.lang.reflect.Constructor;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.util.Pair;
@@ -47,8 +46,7 @@ public class JUnit4SingleInstanceClassRunner extends BlockJUnit4ClassRunner {
             return lastTest.getValue();
         }
 
-        Constructor<?> ctor = curTest.getOnlyConstructor();
-        Object instance = ctor.newInstance();
+        Object instance = super.createTest();
         testHolder.set(new Pair<>(curTestClass, instance));
         return instance;
     }
