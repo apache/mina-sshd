@@ -29,8 +29,10 @@ import java.nio.channels.CompletionHandler;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -191,6 +193,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
      */
     @Test
     public void testRemotePortForwardOneBuffer() throws Exception {
+        Assume.assumeTrue("Intermittent failures in Windows", OsUtils.isUNIX());
         readInOneBuffer(startRemotePF());
     }
 
@@ -212,6 +215,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
 
     @Test
     public void testLocalPortForwardOneBuffer() throws Exception {
+        Assume.assumeTrue("Intermittent failures in Windows", OsUtils.isUNIX());
         readInOneBuffer(startLocalPF());
     }
 
