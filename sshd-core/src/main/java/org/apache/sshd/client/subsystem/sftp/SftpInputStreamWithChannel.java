@@ -127,7 +127,7 @@ public class SftpInputStreamWithChannel extends InputStreamWithChannel {
     public int read() throws IOException {
         int read = read(bb, 0, 1);
         if (read > 0) {
-            return bb[0];
+            return bb[0] & 0xFF;
         }
 
         return read;
