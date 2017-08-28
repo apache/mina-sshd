@@ -21,6 +21,8 @@ package org.apache.sshd.client.channel;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.rmi.RemoteException;
+import java.rmi.ServerException;
 import java.util.Collection;
 import java.util.Set;
 
@@ -110,4 +112,21 @@ public interface ClientChannel extends Channel {
      * - {@code null} if not signaled
      */
     String getExitSignal();
+
+    /**
+     * Makes sure remote command exit status has been provided and it is zero
+     *
+     * @param command The command string - used only for exception text
+     * @param exitStatus The exit status value
+     * @throws RemoteException If <tt>exitStatus</tt> is {@code null} or non-zero
+     */
+    static void validateCommandExitStatusCode(String command, Integer exitStatus) throws RemoteException {
+        if (exitStatus == null) {
+            throw new RemoteException("No exit status returned for command=" + command);
+        }
+        if (exitStatus.intValue() != 0) {
+            throw new RemoteException("Remote command failed (" + exitStatus + "): " + command, new ServerException(exitStatus.toString()));
+        }
+    }
+
 }

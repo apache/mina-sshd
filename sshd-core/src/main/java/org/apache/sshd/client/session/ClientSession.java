@@ -197,15 +197,45 @@ public interface ClientSession
      * but does check the reported exit status (if any) for non-zero value. If
      * non-zero exit status received then a {@link RemoteException} is thrown with'
      * a {@link ServerException} cause containing the exits value
+     * @see #executeRemoteCommand(String, OutputStream, OutputStream, Charset)
      */
     default String executeRemoteCommand(String command, OutputStream stderr, Charset charset) throws IOException {
         if (charset == null) {
             charset = StandardCharsets.US_ASCII;
         }
 
-        try (ByteArrayOutputStream channelOut = new ByteArrayOutputStream(Byte.MAX_VALUE);
-             OutputStream channelErr = (stderr == null) ? new NullOutputStream() : new NoCloseOutputStream(stderr);
-             ClientChannel channel = createExecChannel(command)) {
+        try (ByteArrayOutputStream stdout = new ByteArrayOutputStream(Byte.MAX_VALUE)) {
+            executeRemoteCommand(command, stdout, stderr, charset);
+            byte[] outBytes = stdout.toByteArray();
+            return new String(outBytes, charset);
+        }
+    }
+
+    /**
+     * Execute a command that requires no input and redirects its STDOUT/STDERR
+     * streams to the user-provided ones
+     *
+     * @param command The command to execute - without a terminating LF
+     * @param stdout  Standard output stream - if {@code null} then
+     * stream data is ignored. <B>Note:</B> if the stream is not {@code null}
+     * then it will be left <U>open</U> when this method returns or exception
+     * is thrown
+     * @param stderr Error output stream - if {@code null} then stream data is ignored.
+     * <B>Note:</B> if the stream is not {@code null} then it will be left <U>open</U>
+     * when this method returns or exception is thrown
+     * @param charset The command {@link Charset} for output/error - if
+     * {@code null} then US_ASCII is assumed
+     * @throws IOException If failed to execute the command or got a non-zero exit status
+     * @see ClientChannel#validateCommandExitStatusCode(String, Integer) validateCommandExitStatusCode
+     */
+    default void executeRemoteCommand(String command, OutputStream stdout, OutputStream stderr, Charset charset) throws IOException {
+        if (charset == null) {
+            charset = StandardCharsets.US_ASCII;
+        }
+
+        try (OutputStream channelErr = (stderr == null) ? new NullOutputStream() : new NoCloseOutputStream(stderr);
+             OutputStream channelOut = (stdout == null) ? new NullOutputStream() : new NoCloseOutputStream(stdout);
+            ClientChannel channel = createExecChannel(command)) {
             channel.setOut(channelOut);
             channel.setErr(channelErr);
             channel.open().await(); // TODO use verify and a configurable timeout
@@ -217,12 +247,7 @@ public interface ClientSession
             }
 
             Integer exitStatus = channel.getExitStatus();
-            if ((exitStatus != null) && (exitStatus != 0)) {
-                throw new RemoteException("Remote command failed (" + exitStatus + "): " + command, new ServerException(exitStatus.toString()));
-            }
-
-            byte[] response = channelOut.toByteArray();
-            return new String(response, charset);
+            ClientChannel.validateCommandExitStatusCode(command, exitStatus);
         }
     }
 
