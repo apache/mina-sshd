@@ -23,9 +23,9 @@ import java.io.IOException;
 import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.forward.ForwardingFilter;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManagerHolder;
-import org.apache.sshd.common.forward.TcpipForwarder;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 
 /**
@@ -51,11 +51,11 @@ public interface ConnectionService extends Service, PortForwardingEventListenerM
     void unregisterChannel(Channel channel);
 
     /**
-     * Retrieve the tcpip forwarder
+     * Retrieve the forwarder instance
      *
-     * @return The {@link TcpipForwarder}
+     * @return The {@link ForwardingFilter}
      */
-    TcpipForwarder getTcpipForwarder();
+    ForwardingFilter getForwardingFilter();
 
     // TODO: remove from interface, it's server side only
     AgentForwardSupport getAgentForwardSupport();

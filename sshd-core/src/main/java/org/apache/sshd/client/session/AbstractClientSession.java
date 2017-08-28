@@ -58,7 +58,7 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.CipherNone;
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.forward.TcpipForwarder;
+import org.apache.sshd.common.forward.ForwardingFilter;
 import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoSession;
@@ -388,37 +388,43 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     public SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
-        return getTcpipForwarder().startLocalPortForwarding(local, remote);
+        ForwardingFilter filter = getForwardingFilter();
+        return filter.startLocalPortForwarding(local, remote);
     }
 
     @Override
     public void stopLocalPortForwarding(SshdSocketAddress local) throws IOException {
-        getTcpipForwarder().stopLocalPortForwarding(local);
+        ForwardingFilter filter = getForwardingFilter();
+        filter.stopLocalPortForwarding(local);
     }
 
     @Override
     public SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws IOException {
-        return getTcpipForwarder().startRemotePortForwarding(remote, local);
+        ForwardingFilter filter = getForwardingFilter();
+        return filter.startRemotePortForwarding(remote, local);
     }
 
     @Override
     public void stopRemotePortForwarding(SshdSocketAddress remote) throws IOException {
-        getTcpipForwarder().stopRemotePortForwarding(remote);
+        ForwardingFilter filter = getForwardingFilter();
+        filter.stopRemotePortForwarding(remote);
     }
 
     @Override
     public SshdSocketAddress startDynamicPortForwarding(SshdSocketAddress local) throws IOException {
-        return getTcpipForwarder().startDynamicPortForwarding(local);
+        ForwardingFilter filter = getForwardingFilter();
+        return filter.startDynamicPortForwarding(local);
     }
 
     @Override
     public void stopDynamicPortForwarding(SshdSocketAddress local) throws IOException {
-        getTcpipForwarder().stopDynamicPortForwarding(local);
+        ForwardingFilter filter = getForwardingFilter();
+        filter.stopDynamicPortForwarding(local);
     }
 
-    protected TcpipForwarder getTcpipForwarder() {
+    protected ForwardingFilter getForwardingFilter() {
         ConnectionService service = Objects.requireNonNull(getConnectionService(), "No connection service");
-        return Objects.requireNonNull(service.getTcpipForwarder(), "No forwarder");
+        return Objects.requireNonNull(service.getForwardingFilter(), "No forwarder");
     }
 
     @Override

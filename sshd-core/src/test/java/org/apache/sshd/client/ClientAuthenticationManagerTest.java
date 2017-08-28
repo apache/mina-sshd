@@ -39,7 +39,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.channel.ChannelListener;
-import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
+import org.apache.sshd.common.forward.DefaultForwarderFactory;
 import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -236,7 +236,7 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
 
     private ClientSession createMockClientSession() throws Exception {
         ClientFactoryManager client = Mockito.mock(ClientFactoryManager.class);
-        Mockito.when(client.getTcpipForwarderFactory()).thenReturn(DefaultTcpipForwarderFactory.INSTANCE);
+        Mockito.when(client.getForwarderFactory()).thenReturn(DefaultForwarderFactory.INSTANCE);
         Mockito.when(client.getSessionListenerProxy()).thenReturn(new SessionListener() {
             @Override
             public void sessionEvent(Session session, Event event) {

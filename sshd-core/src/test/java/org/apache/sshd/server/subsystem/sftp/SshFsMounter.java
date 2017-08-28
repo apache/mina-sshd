@@ -317,7 +317,7 @@ public final class SshFsMounter {
 
         sshd.setShellFactory(InteractiveProcessShellFactory.INSTANCE);
         sshd.setPasswordAuthenticator(AcceptAllPasswordAuthenticator.INSTANCE);
-        sshd.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
+        sshd.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(MounterCommandFactory.INSTANCE).build());
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
         sshd.start();

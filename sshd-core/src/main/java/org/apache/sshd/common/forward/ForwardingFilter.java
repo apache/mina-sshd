@@ -24,7 +24,12 @@ import java.io.IOException;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
-public interface TcpipForwarder
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
+public interface ForwardingFilter
         extends PortForwardingManager,
                 PortForwardingEventListenerManager,
                 PortForwardingEventListenerManagerHolder,

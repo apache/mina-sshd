@@ -59,7 +59,7 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
         LOG.info("Starting SSHD...");
         server = SshServer.setUpDefaultServer();
         server.setPasswordAuthenticator((u, p, s) -> true);
-        server.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
+        server.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         server.setKeyPairProvider(new SimpleGeneratorHostKeyProvider());
         server.start();
         sshServerPort = server.getPort();
@@ -76,7 +76,7 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
     @Before
     public void createClient() throws IOException {
         SshClient client = SshClient.setUpDefaultClient();
-        client.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
+        client.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         client.start();
         LOG.info("Connecting...");
         session = client.connect("user", TEST_LOCALHOST, sshServerPort).verify(TIMEOUT).getSession();

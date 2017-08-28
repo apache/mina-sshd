@@ -42,8 +42,8 @@ import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.config.VersionProperties;
 import org.apache.sshd.common.file.FileSystemFactory;
+import org.apache.sshd.common.forward.ForwardingFilterFactory;
 import org.apache.sshd.common.forward.PortForwardingEventListener;
-import org.apache.sshd.common.forward.TcpipForwarderFactory;
 import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoServiceFactoryFactory;
@@ -70,8 +70,8 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     protected SshAgentFactory agentFactory;
     protected ScheduledExecutorService executor;
     protected boolean shutdownExecutor;
-    protected TcpipForwarderFactory tcpipForwarderFactory;
-    protected ForwardingFilter tcpipForwardingFilter;
+    protected ForwardingFilterFactory forwarderFactory;
+    protected ForwardingFilter forwardingFilter;
     protected FileSystemFactory fileSystemFactory;
     protected List<ServiceFactory> serviceFactories;
     protected List<RequestHandler<ConnectionService>> globalRequestHandlers;
@@ -217,21 +217,21 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     }
 
     @Override
-    public TcpipForwarderFactory getTcpipForwarderFactory() {
-        return tcpipForwarderFactory;
+    public ForwardingFilterFactory getForwarderFactory() {
+        return forwarderFactory;
     }
 
-    public void setTcpipForwarderFactory(TcpipForwarderFactory tcpipForwarderFactory) {
-        this.tcpipForwarderFactory = tcpipForwarderFactory;
+    public void setForwarderFactory(ForwardingFilterFactory forwarderFactory) {
+        this.forwarderFactory = forwarderFactory;
     }
 
     @Override
-    public ForwardingFilter getTcpipForwardingFilter() {
-        return tcpipForwardingFilter;
+    public ForwardingFilter getForwardingFilter() {
+        return forwardingFilter;
     }
 
-    public void setTcpipForwardingFilter(ForwardingFilter tcpipForwardingFilter) {
-        this.tcpipForwardingFilter = tcpipForwardingFilter;
+    public void setForwardingFilter(ForwardingFilter forwardingFilter) {
+        this.forwardingFilter = forwardingFilter;
     }
 
     @Override

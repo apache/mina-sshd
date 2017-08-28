@@ -153,7 +153,7 @@ public class PortForwardingTest extends BaseTestSupport {
         sshd = Utils.setupTestServer(PortForwardingTest.class);
         PropertyResolverUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 2048);
         PropertyResolverUtils.updateProperty(sshd, FactoryManager.MAX_PACKET_SIZE, 256);
-        sshd.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
+        sshd.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.addPortForwardingEventListener(SERVER_SIDE_LISTENER);
         sshd.start();
         sshPort = sshd.getPort();
@@ -162,9 +162,9 @@ public class PortForwardingTest extends BaseTestSupport {
             REQUESTS_QUEUE.clear();
         }
 
-        TcpipForwarderFactory factory = Objects.requireNonNull(sshd.getTcpipForwarderFactory(), "No TcpipForwarderFactory");
-        sshd.setTcpipForwarderFactory(new TcpipForwarderFactory() {
-            private final Class<?>[] interfaces = {TcpipForwarder.class};
+        ForwardingFilterFactory factory = Objects.requireNonNull(sshd.getForwarderFactory(), "No ForwarderFactory");
+        sshd.setForwarderFactory(new ForwardingFilterFactory() {
+            private final Class<?>[] interfaces = {ForwardingFilter.class};
             private final Map<String, String> method2req =
                     GenericUtils.<String, String>mapBuilder(String.CASE_INSENSITIVE_ORDER)
                         .put("localPortForwardingRequested", TcpipForwardHandler.REQUEST)
@@ -172,13 +172,13 @@ public class PortForwardingTest extends BaseTestSupport {
                         .build();
 
             @Override
-            public TcpipForwarder create(ConnectionService service) {
+            public ForwardingFilter create(ConnectionService service) {
                 Thread thread = Thread.currentThread();
                 ClassLoader cl = thread.getContextClassLoader();
 
-                TcpipForwarder forwarder = factory.create(service);
-                return (TcpipForwarder) Proxy.newProxyInstance(cl, interfaces, new InvocationHandler() {
-                    private final org.slf4j.Logger log = LoggerFactory.getLogger(TcpipForwarder.class);
+                ForwardingFilter forwarder = factory.create(service);
+                return (ForwardingFilter) Proxy.newProxyInstance(cl, interfaces, new InvocationHandler() {
+                    private final org.slf4j.Logger log = LoggerFactory.getLogger(ForwardingFilter.class);
 
                     @SuppressWarnings("synthetic-access")
                     @Override
@@ -797,7 +797,7 @@ public class PortForwardingTest extends BaseTestSupport {
     protected ClientSession createNativeSession(PortForwardingEventListener listener) throws Exception {
         PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 2048);
         PropertyResolverUtils.updateProperty(client, FactoryManager.MAX_PACKET_SIZE, 256);
-        client.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
+        client.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         if (listener != null) {
             client.addPortForwardingEventListener(listener);
         }

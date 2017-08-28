@@ -17,23 +17,66 @@
  * under the License.
  */
 
-package org.apache.sshd.common.config;
+package org.apache.sshd.server.config;
 
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.server.forward.TcpForwardingFilter;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see <A HREF="http://www.freebsd.org/cgi/man.cgi?query=sshd_config&sektion=5">sshd_config(5) section</A>
  */
-public enum AllowTcpForwardingValue {
-    ALL,
-    NONE,
-    LOCAL,
-    REMOTE;
+public enum AllowTcpForwardingValue implements TcpForwardingFilter {
+    ALL {
+        @Override
+        public boolean canListen(SshdSocketAddress address, Session session) {
+            return true;
+        }
+
+        @Override
+        public boolean canConnect(Type type, SshdSocketAddress address, Session session) {
+            return true;
+        }
+    },
+    NONE {
+        @Override
+        public boolean canListen(SshdSocketAddress address, Session session) {
+            return false;
+        }
+
+        @Override
+        public boolean canConnect(Type type, SshdSocketAddress address, Session session) {
+            return false;
+        }
+    },
+    LOCAL {
+        @Override
+        public boolean canListen(SshdSocketAddress address, Session session) {
+            return true;
+        }
+
+        @Override
+        public boolean canConnect(Type type, SshdSocketAddress address, Session session) {
+            return false;
+        }
+    },
+    REMOTE {
+        @Override
+        public boolean canListen(SshdSocketAddress address, Session session) {
+            return false;
+        }
+
+        @Override
+        public boolean canConnect(Type type, SshdSocketAddress address, Session session) {
+            return true;
+        }
+    };
 
     public static final Set<AllowTcpForwardingValue> VALUES =
             Collections.unmodifiableSet(EnumSet.allOf(AllowTcpForwardingValue.class));

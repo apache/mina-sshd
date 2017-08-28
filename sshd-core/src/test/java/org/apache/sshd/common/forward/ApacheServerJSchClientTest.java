@@ -70,7 +70,7 @@ public class ApacheServerJSchClientTest extends AbstractServerCloseTestSupport {
         LOG.info("Starting SSHD...");
         server = SshServer.setUpDefaultServer();
         server.setPasswordAuthenticator((u, p, s) -> true);
-        server.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
+        server.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         server.setKeyPairProvider(new SimpleGeneratorHostKeyProvider());
         server.start();
         sshServerPort = server.getPort();

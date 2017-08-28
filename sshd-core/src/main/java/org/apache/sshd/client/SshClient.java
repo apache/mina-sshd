@@ -378,7 +378,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     protected void checkConfig() {
         super.checkConfig();
 
-        Objects.requireNonNull(getTcpipForwarderFactory(), "TcpipForwarderFactory not set");
+        Objects.requireNonNull(getForwarderFactory(), "ForwarderFactory not set");
         Objects.requireNonNull(getServerKeyVerifier(), "ServerKeyVerifier not set");
         Objects.requireNonNull(getHostConfigEntryResolver(), "HostConfigEntryResolver not set");
         Objects.requireNonNull(getClientIdentityLoader(), "ClientIdentityLoader not set");

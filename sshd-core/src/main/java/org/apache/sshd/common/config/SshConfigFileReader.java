@@ -78,21 +78,8 @@ public final class SshConfigFileReader {
 
     public static final char COMMENT_CHAR = '#';
 
-    // Some well known configuration properties names and values
-    public static final String BANNER_CONFIG_PROP = "Banner";
-    public static final String VISUAL_HOST_KEY = "VisualHostKey";
-    public static final String DEFAULT_VISUAL_HOST_KEY = "no";
     public static final String COMPRESSION_PROP = "Compression";
     public static final String DEFAULT_COMPRESSION = CompressionConfigValue.NO.getName();
-    public static final String ALLOW_TCP_FORWARDING_CONFIG_PROP = "AllowTcpForwarding";
-    public static final String DEFAULT_TCP_FORWARDING = "yes";
-    public static final boolean DEFAULT_TCP_FORWARDING_VALUE = parseBooleanValue(DEFAULT_TCP_FORWARDING);
-    public static final String ALLOW_AGENT_FORWARDING_CONFIG_PROP = "AllowAgentForwarding";
-    public static final String DEFAULT_AGENT_FORWARDING = "yes";
-    public static final boolean DEFAULT_AGENT_FORWARDING_VALUE = parseBooleanValue(DEFAULT_AGENT_FORWARDING);
-    public static final String ALLOW_X11_FORWARDING_CONFIG_PROP = "X11Forwarding";
-    public static final String DEFAULT_X11_FORWARDING = "yes";
-    public static final boolean DEFAULT_X11_FORWARDING_VALUE = parseBooleanValue(DEFAULT_X11_FORWARDING);
     public static final String MAX_SESSIONS_CONFIG_PROP = "MaxSessions";
     public static final int DEFAULT_MAX_SESSIONS = 10;
     public static final String PASSWORD_AUTH_CONFIG_PROP = "PasswordAuthentication";

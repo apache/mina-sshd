@@ -30,8 +30,8 @@ import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
-import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
-import org.apache.sshd.common.forward.TcpipForwarderFactory;
+import org.apache.sshd.common.forward.DefaultForwarderFactory;
+import org.apache.sshd.common.forward.ForwardingFilterFactory;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.KeyExchange;
@@ -59,7 +59,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
 
     public static final ForwardingFilter DEFAULT_FORWARDING_FILTER = RejectAllForwardingFilter.INSTANCE;
 
-    public static final TcpipForwarderFactory DEFAULT_FORWARDER_FACTORY = DefaultTcpipForwarderFactory.INSTANCE;
+    public static final ForwardingFilterFactory DEFAULT_FORWARDER_FACTORY = DefaultForwarderFactory.INSTANCE;
 
     /**
      * The default {@link BuiltinCiphers} setup in order of preference
@@ -138,7 +138,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
     protected Factory<Random> randomFactory;
     protected List<NamedFactory<Channel>> channelFactories;
     protected FileSystemFactory fileSystemFactory;
-    protected TcpipForwarderFactory tcpipForwarderFactory;
+    protected ForwardingFilterFactory forwarderFactory;
     protected List<RequestHandler<ConnectionService>> globalRequestHandlers;
     protected ForwardingFilter forwardingFilter;
 
@@ -171,8 +171,8 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
             forwardingFilter = DEFAULT_FORWARDING_FILTER;
         }
 
-        if (tcpipForwarderFactory == null) {
-            tcpipForwarderFactory = DEFAULT_FORWARDER_FACTORY;
+        if (forwarderFactory == null) {
+            forwarderFactory = DEFAULT_FORWARDER_FACTORY;
         }
 
         return me();
@@ -223,8 +223,8 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
         return me();
     }
 
-    public S tcpipForwarderFactory(TcpipForwarderFactory tcpipForwarderFactory) {
-        this.tcpipForwarderFactory = tcpipForwarderFactory;
+    public S forwarderFactory(ForwardingFilterFactory forwarderFactory) {
+        this.forwarderFactory = forwarderFactory;
         return me();
     }
 
@@ -253,8 +253,8 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
         ssh.setMacFactories(macFactories);
         ssh.setChannelFactories(channelFactories);
         ssh.setFileSystemFactory(fileSystemFactory);
-        ssh.setTcpipForwardingFilter(forwardingFilter);
-        ssh.setTcpipForwarderFactory(tcpipForwarderFactory);
+        ssh.setForwardingFilter(forwardingFilter);
+        ssh.setForwarderFactory(forwarderFactory);
         ssh.setGlobalRequestHandlers(globalRequestHandlers);
         return ssh;
     }

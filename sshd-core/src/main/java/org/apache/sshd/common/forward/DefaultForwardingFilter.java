@@ -59,16 +59,16 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
-import org.apache.sshd.server.forward.ForwardingFilter;
+import org.apache.sshd.server.forward.TcpForwardingFilter;
 
 /**
  * Requests a &quot;tcpip-forward&quot; action
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultTcpipForwarder
+public class DefaultForwardingFilter
         extends AbstractInnerCloseable
-        implements TcpipForwarder, SessionHolder<Session>, PortForwardingEventListenerManager {
+        implements ForwardingFilter, SessionHolder<Session>, PortForwardingEventListenerManager {
 
     /**
      * Used to configure the timeout (milliseconds) for receiving a response
@@ -100,7 +100,7 @@ public class DefaultTcpipForwarder
 
     private IoAcceptor acceptor;
 
-    public DefaultTcpipForwarder(ConnectionService service) {
+    public DefaultForwardingFilter(ConnectionService service) {
         this.service = Objects.requireNonNull(service, "No connection service");
         this.sessionInstance = Objects.requireNonNull(service.getSession(), "No session");
         this.listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, getClass().getClassLoader(), listeners);
@@ -171,10 +171,6 @@ public class DefaultTcpipForwarder
 
         return defaultListeners;
     }
-
-    //
-    // TcpIpForwarder implementation
-    //
 
     @Override
     public synchronized SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
@@ -624,7 +620,7 @@ public class DefaultTcpipForwarder
 
         Session session = getSession();
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
-        ForwardingFilter filter = manager.getTcpipForwardingFilter();
+        TcpForwardingFilter filter = manager.getTcpForwardingFilter();
         try {
             if ((filter == null) || (!filter.canListen(local, session))) {
                 if (log.isDebugEnabled()) {
@@ -956,7 +952,7 @@ public class DefaultTcpipForwarder
                     if (log.isDebugEnabled()) {
                         log.debug("sessionCreated(" + session + ") channel=" + channel + " open failure details", t);
                     }
-                    DefaultTcpipForwarder.this.service.unregisterChannel(channel);
+                    DefaultForwardingFilter.this.service.unregisterChannel(channel);
                     channel.close(false);
                 }
             });

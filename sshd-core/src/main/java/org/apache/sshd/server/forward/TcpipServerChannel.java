@@ -122,7 +122,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
                 address = new SshdSocketAddress(hostToConnect, portToConnect);
                 break;
             case Forwarded:
-                address = service.getTcpipForwarder().getForwardedPort(portToConnect);
+                address = service.getForwardingFilter().getForwardedPort(portToConnect);
                 break;
             default:
                 throw new IllegalStateException("Unknown server channel type: " + type);
@@ -130,7 +130,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
 
         Session session = getSession();
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
-        ForwardingFilter filter = manager.getTcpipForwardingFilter();
+        TcpForwardingFilter filter = manager.getTcpForwardingFilter();
         OpenFuture f = new DefaultOpenFuture(this);
         try {
             if ((address == null) || (filter == null) || (!filter.canConnect(type, address, session))) {

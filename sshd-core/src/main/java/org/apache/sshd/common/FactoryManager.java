@@ -27,15 +27,18 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListenerManager;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.file.FileSystemFactory;
+import org.apache.sshd.common.forward.ForwardingFilterFactory;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
-import org.apache.sshd.common.forward.TcpipForwarderFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.ReservedSessionMessagesManager;
 import org.apache.sshd.common.session.SessionListenerManager;
+import org.apache.sshd.server.forward.AgentForwardingFilter;
 import org.apache.sshd.server.forward.ForwardingFilter;
+import org.apache.sshd.server.forward.TcpForwardingFilter;
+import org.apache.sshd.server.forward.X11ForwardingFilter;
 
 /**
  * This interface allows retrieving all the <code>NamedFactory</code> used
@@ -415,14 +418,26 @@ public interface FactoryManager
      *
      * @return The {@link ForwardingFilter} or {@code null}
      */
-    ForwardingFilter getTcpipForwardingFilter();
+    ForwardingFilter getForwardingFilter();
+
+    default TcpForwardingFilter getTcpForwardingFilter() {
+        return getForwardingFilter();
+    }
+
+    default AgentForwardingFilter getAgentForwardingFilter() {
+        return getForwardingFilter();
+    }
+
+    default X11ForwardingFilter getX11ForwardingFilter() {
+        return getForwardingFilter();
+    }
 
     /**
-     * Retrieve the tcpip forwarder factory used to support tcpip forwarding.
+     * Retrieve the forwarder factory used to support forwarding.
      *
-     * @return The {@link TcpipForwarderFactory}
+     * @return The {@link ForwardingFilterFactory}
      */
-    TcpipForwarderFactory getTcpipForwarderFactory();
+    ForwardingFilterFactory getForwarderFactory();
 
     /**
      * Retrieve the <code>FileSystemFactory</code> to be used to traverse the file system.

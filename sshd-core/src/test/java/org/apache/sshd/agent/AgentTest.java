@@ -115,13 +115,13 @@ public class AgentTest extends BaseTestSupport {
         try (SshServer sshd1 = setupTestServer()) {
             sshd1.setShellFactory(shellFactory);
             sshd1.setAgentFactory(agentFactory);
-            sshd1.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
+            sshd1.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
             sshd1.start();
 
             final int port1 = sshd1.getPort();
             try (SshServer sshd2 = setupTestServer()) {
                 sshd2.setShellFactory(new TestEchoShellFactory());
-                sshd1.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
+                sshd1.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
                 sshd2.setAgentFactory(new ProxyAgentFactory());
                 sshd2.start();
 

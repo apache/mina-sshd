@@ -25,12 +25,12 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.EventListenerUtils;
 
 /**
- * The default {@link TcpipForwarderFactory} implementation.
+ * The default {@link ForwardingFilterFactory} implementation.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultTcpipForwarderFactory implements TcpipForwarderFactory, PortForwardingEventListenerManager {
-    public static final DefaultTcpipForwarderFactory INSTANCE = new DefaultTcpipForwarderFactory() {
+public class DefaultForwarderFactory implements ForwardingFilterFactory, PortForwardingEventListenerManager {
+    public static final DefaultForwarderFactory INSTANCE = new DefaultForwarderFactory() {
         @Override
         public void addPortForwardingEventListener(PortForwardingEventListener listener) {
             throw new UnsupportedOperationException("addPortForwardingListener(" + listener + ") N/A on default instance");
@@ -50,7 +50,7 @@ public class DefaultTcpipForwarderFactory implements TcpipForwarderFactory, Port
     private final Collection<PortForwardingEventListener> listeners = new CopyOnWriteArraySet<>();
     private final PortForwardingEventListener listenerProxy;
 
-    public DefaultTcpipForwarderFactory() {
+    public DefaultForwarderFactory() {
         listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, getClass().getClassLoader(), listeners);
     }
 
@@ -74,8 +74,8 @@ public class DefaultTcpipForwarderFactory implements TcpipForwarderFactory, Port
     }
 
     @Override
-    public TcpipForwarder create(ConnectionService service) {
-        TcpipForwarder forwarder = new DefaultTcpipForwarder(service);
+    public ForwardingFilter create(ConnectionService service) {
+        ForwardingFilter forwarder = new DefaultForwardingFilter(service);
         forwarder.addPortForwardingEventListenerManager(this);
         return forwarder;
     }

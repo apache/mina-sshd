@@ -22,7 +22,7 @@ import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.forward.TcpipForwarder;
+import org.apache.sshd.common.forward.ForwardingFilter;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.helpers.AbstractConnectionServiceRequestHandler;
@@ -59,7 +59,7 @@ public class TcpipForwardHandler extends AbstractConnectionServiceRequestHandler
         String address = buffer.getString();
         int port = buffer.getInt();
         SshdSocketAddress socketAddress = new SshdSocketAddress(address, port);
-        TcpipForwarder forwarder = Objects.requireNonNull(connectionService.getTcpipForwarder(), "No TCP/IP forwarder");
+        ForwardingFilter forwarder = Objects.requireNonNull(connectionService.getForwardingFilter(), "No TCP/IP forwarder");
         SshdSocketAddress bound = forwarder.localPortForwardingRequested(socketAddress);
         if (log.isDebugEnabled()) {
             log.debug("process({})[{}][want-reply-{}] {} => {}",

@@ -44,7 +44,6 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.ServiceFactory;
-import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
@@ -66,7 +65,7 @@ import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
-import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
+import org.apache.sshd.server.config.SshServerConfigFileReader;
 import org.apache.sshd.server.forward.ForwardingFilter;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
@@ -261,11 +260,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     @Override
     public void setHostBasedAuthenticator(HostBasedAuthenticator hostBasedAuthenticator) {
         this.hostBasedAuthenticator = hostBasedAuthenticator;
-    }
-
-    @Override
-    public void setTcpipForwardingFilter(ForwardingFilter forwardingFilter) {
-        this.tcpipForwardingFilter = forwardingFilter;
     }
 
     @Override
@@ -475,14 +469,14 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         for (int i = 0; i < numArgs; i++) {
             String argName = args[i];
             if ("-p".equals(argName)) {
-                if (i + 1 >= numArgs) {
+                if ((i + 1) >= numArgs) {
                     System.err.println("option requires an argument: " + argName);
                     error = true;
                     break;
                 }
                 port = Integer.parseInt(args[++i]);
             } else if ("-key-type".equals(argName)) {
-                if (i + 1 >= numArgs) {
+                if ((i + 1) >= numArgs) {
                     System.err.println("option requires an argument: " + argName);
                     error = true;
                     break;
@@ -495,7 +489,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 }
                 hostKeyType = args[++i].toUpperCase();
             } else if ("-key-size".equals(argName)) {
-                if (i + 1 >= numArgs) {
+                if ((i + 1) >= numArgs) {
                     System.err.println("option requires an argument: " + argName);
                     error = true;
                     break;
@@ -509,7 +503,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
                 hostKeySize = Integer.parseInt(args[++i]);
             } else if ("-key-file".equals(argName)) {
-                if (i + 1 >= numArgs) {
+                if ((i + 1) >= numArgs) {
                     System.err.println("option requires an argument: " + argName);
                     error = true;
                     break;
@@ -521,7 +515,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 }
                 keyFiles.add(keyFilePath);
             } else if ("-io".equals(argName)) {
-                if (i + 1 >= numArgs) {
+                if ((i + 1) >= numArgs) {
                     System.err.println("option requires an argument: " + argName);
                     error = true;
                     break;
@@ -537,7 +531,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                     break;
                 }
             } else if ("-o".equals(argName)) {
-                if (i + 1 >= numArgs) {
+                if ((i + 1) >= numArgs) {
                     System.err.println("option requires and argument: " + argName);
                     error = true;
                     break;
@@ -580,7 +574,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         sshd.setShellFactory(InteractiveProcessShellFactory.INSTANCE);
         sshd.setPasswordAuthenticator((username, password, session) -> Objects.equals(username, password));
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
-        sshd.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
+        setupServerForwarding(sshd, options);
         sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(
             command -> new ProcessShellFactory(GenericUtils.split(command, ' ')).create()
         ).build());
@@ -590,34 +584,14 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         Thread.sleep(Long.MAX_VALUE);
     }
 
-    public static Object setupServerBanner(ServerFactoryManager server, Map<String, ?> options) throws Exception {
-        String bannerOption = GenericUtils.isEmpty(options)
-                ? null
-                : Objects.toString(options.remove(SshConfigFileReader.BANNER_CONFIG_PROP), null);
-        if (GenericUtils.isEmpty(bannerOption)) {
-            bannerOption = GenericUtils.isEmpty(options)
-                    ? null
-                    : Objects.toString(options.remove(SshConfigFileReader.VISUAL_HOST_KEY), null);
-            if (SshConfigFileReader.parseBooleanValue(bannerOption)) {
-                bannerOption = ServerAuthenticationManager.AUTO_WELCOME_BANNER_VALUE;
-            }
-        }
+    public static ForwardingFilter setupServerForwarding(SshServer server, Map<String, ?> options) {
+        ForwardingFilter forwardFilter = SshServerConfigFileReader.resolveServerForwarding(options);
+        server.setForwardingFilter(forwardFilter);
+        return forwardFilter;
+    }
 
-        Object banner;
-        if (GenericUtils.isNotEmpty(bannerOption)) {
-            if ("none".equals(bannerOption)) {
-                return null;
-            }
-
-            if (ServerAuthenticationManager.AUTO_WELCOME_BANNER_VALUE.equalsIgnoreCase(bannerOption)) {
-                banner = bannerOption;
-            } else {
-                banner = Paths.get(bannerOption);
-            }
-        } else {
-            banner = "Welcome to SSHD\n";
-        }
-
+    public static Object setupServerBanner(ServerFactoryManager server, Map<String, ?> options) {
+        Object banner = SshServerConfigFileReader.resolveBanner(options);
         PropertyResolverUtils.updateProperty(server, ServerAuthenticationManager.WELCOME_BANNER, banner);
         return banner;
     }

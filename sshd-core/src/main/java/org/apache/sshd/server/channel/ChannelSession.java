@@ -71,7 +71,8 @@ import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.Signal;
 import org.apache.sshd.server.StandardEnvironment;
-import org.apache.sshd.server.forward.ForwardingFilter;
+import org.apache.sshd.server.forward.AgentForwardingFilter;
+import org.apache.sshd.server.forward.X11ForwardingFilter;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 
@@ -700,7 +701,7 @@ public class ChannelSession extends AbstractServerChannel {
         ServerSession session = getServerSession();
         PropertyResolverUtils.updateProperty(session, FactoryManager.AGENT_FORWARDING_TYPE, requestType);
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No session factory manager");
-        ForwardingFilter filter = manager.getTcpipForwardingFilter();
+        AgentForwardingFilter filter = manager.getAgentForwardingFilter();
         SshAgentFactory factory = manager.getAgentFactory();
         try {
             if ((factory == null) || (filter == null) || (!filter.canForwardAgent(session, requestType))) {
@@ -739,7 +740,7 @@ public class ChannelSession extends AbstractServerChannel {
         int screenId = buffer.getInt();
 
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
-        ForwardingFilter filter = manager.getTcpipForwardingFilter();
+        X11ForwardingFilter filter = manager.getX11ForwardingFilter();
         try {
             if ((filter == null) || (!filter.canForwardX11(session, requestType))) {
                 if (log.isDebugEnabled()) {

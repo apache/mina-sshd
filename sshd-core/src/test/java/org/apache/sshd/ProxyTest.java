@@ -128,7 +128,7 @@ public class ProxyTest extends BaseTestSupport {
         sshd = setupTestServer();
         PropertyResolverUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 2048);
         PropertyResolverUtils.updateProperty(sshd, FactoryManager.MAX_PACKET_SIZE, "256");
-        sshd.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
+        sshd.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.addPortForwardingEventListener(serverSideListener);
         sshd.start();
         sshPort = sshd.getPort();
@@ -288,7 +288,7 @@ public class ProxyTest extends BaseTestSupport {
         client = setupTestClient();
         PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 2048);
         PropertyResolverUtils.updateProperty(client, FactoryManager.MAX_PACKET_SIZE, 256);
-        client.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
+        client.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         if (listener != null) {
             client.addPortForwardingEventListener(listener);
         }
