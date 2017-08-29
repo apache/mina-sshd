@@ -865,7 +865,14 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     error = showError(stderr, "bad syntax for option: " + opt);
                     break;
                 }
-                options.put(opt.substring(0, idx), opt.substring(idx + 1));
+
+                String optName = opt.substring(0, idx);
+                String optValue = opt.substring(idx + 1);
+                if (HostConfigEntry.IDENTITY_FILE_CONFIG_PROP.equals(optName)) {
+                    identities.add(resolveIdentityFile(optValue));
+                } else {
+                    options.put(optName, optValue);
+                }
             } else if ("-l".equals(argName)) {
                 if (login != null) {
                     error = showError(stderr, argName + " option value re-specified: " + port);
@@ -1030,8 +1037,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return provider;
     }
 
-    public static UserInteraction setupSessionUserInteraction(ClientAuthenticationManager client,
-            final BufferedReader stdin, final PrintStream stdout, final PrintStream stderr) {
+    public static UserInteraction setupSessionUserInteraction(
+            ClientAuthenticationManager client, BufferedReader stdin, PrintStream stdout, PrintStream stderr) {
         UserInteraction ui = new UserInteraction() {
             @Override
             public boolean isInteractionAllowed(ClientSession session) {
@@ -1080,8 +1087,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return ui;
     }
 
-    public static ServerKeyVerifier setupServerKeyVerifier(ClientAuthenticationManager manager, Map<String, ?> options,
-            final BufferedReader stdin, final PrintStream stdout, final PrintStream stderr) {
+    public static ServerKeyVerifier setupServerKeyVerifier(
+            ClientAuthenticationManager manager, Map<String, ?> options, BufferedReader stdin, PrintStream stdout, PrintStream stderr) {
         ServerKeyVerifier current = manager.getServerKeyVerifier();
         if (current == null) {
             current = ClientBuilder.DEFAULT_SERVER_KEY_VERIFIER;

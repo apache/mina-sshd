@@ -66,6 +66,7 @@ import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.config.SshServerConfigFileReader;
+import org.apache.sshd.server.config.keys.ServerIdentity;
 import org.apache.sshd.server.forward.ForwardingFilter;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
@@ -543,7 +544,17 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                     error = true;
                     break;
                 }
-                options.put(opt.substring(0, idx), opt.substring(idx + 1));
+
+                String optName = opt.substring(0, idx);
+                String optValue = opt.substring(idx + 1);
+                if (ServerIdentity.HOST_KEY_CONFIG_PROP.equals(optName)) {
+                    if (keyFiles == null) {
+                        keyFiles = new LinkedList<>();
+                    }
+                    keyFiles.add(optValue);
+                } else {
+                    options.put(optName, optValue);
+                }
             } else if (argName.startsWith("-")) {
                 System.err.println("illegal option: " + argName);
                 error = true;
