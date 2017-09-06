@@ -40,6 +40,8 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolver;
+import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolverManager;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -98,6 +100,8 @@ public abstract class AbstractChannel
 
     private final Window localWindow;
     private final Window remoteWindow;
+    private ChannelStreamPacketWriterResolver channelStreamPacketWriterResolver;
+
     /**
      * A {@link Map} of sent requests - key = request name, value = timestamp when
      * request was sent.
@@ -196,6 +200,27 @@ public abstract class AbstractChannel
     @Override
     public void setShutdownOnExit(boolean shutdown) {
         shutdownExecutor = shutdown;
+    }
+
+    @Override
+    public ChannelStreamPacketWriterResolver getChannelStreamPacketWriterResolver() {
+        return channelStreamPacketWriterResolver;
+    }
+
+    @Override
+    public void setChannelStreamPacketWriterResolver(ChannelStreamPacketWriterResolver resolver) {
+        channelStreamPacketWriterResolver = resolver;
+    }
+
+    @Override
+    public ChannelStreamPacketWriterResolver resolveChannelStreamPacketWriterResolver() {
+        ChannelStreamPacketWriterResolver resolver = getChannelStreamPacketWriterResolver();
+        if (resolver != null) {
+            return resolver;
+        }
+
+        ChannelStreamPacketWriterResolverManager manager = getSession();
+        return manager.resolveChannelStreamPacketWriterResolver();
     }
 
     /**
@@ -760,7 +785,8 @@ public abstract class AbstractChannel
         super.doCloseImmediately();
     }
 
-    protected IoWriteFuture writePacket(Buffer buffer) throws IOException {
+    @Override
+    public IoWriteFuture writePacket(Buffer buffer) throws IOException {
         if (!isClosing()) {
             Session s = getSession();
             return s.writePacket(buffer);
@@ -880,6 +906,7 @@ public abstract class AbstractChannel
 
         Window wRemote = getRemoteWindow();
         wRemote.expand(window);
+        notifyStateChanged("SSH_MSG_CHANNEL_WINDOW_ADJUST");
     }
 
     @Override

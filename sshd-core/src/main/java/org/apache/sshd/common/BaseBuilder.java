@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.RequestHandler;
+import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolver;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.Compression;
@@ -141,6 +142,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
     protected ForwardingFilterFactory forwarderFactory;
     protected List<RequestHandler<ConnectionService>> globalRequestHandlers;
     protected ForwardingFilter forwardingFilter;
+    protected ChannelStreamPacketWriterResolver channelStreamPacketWriterResolver;
 
     public BaseBuilder() {
         super();
@@ -238,7 +240,12 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
         return me();
     }
 
-    public T build(final boolean isFillWithDefaultValues) {
+    public S channelStreamPacketWriterResolver(ChannelStreamPacketWriterResolver resolver) {
+        channelStreamPacketWriterResolver = resolver;
+        return me();
+    }
+
+    public T build(boolean isFillWithDefaultValues) {
         if (isFillWithDefaultValues) {
             fillWithDefaultValues();
         }
@@ -256,6 +263,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
         ssh.setForwardingFilter(forwardingFilter);
         ssh.setForwarderFactory(forwarderFactory);
         ssh.setGlobalRequestHandlers(globalRequestHandlers);
+        ssh.setChannelStreamPacketWriterResolver(channelStreamPacketWriterResolver);
         return ssh;
     }
 

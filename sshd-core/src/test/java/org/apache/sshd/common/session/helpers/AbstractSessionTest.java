@@ -18,7 +18,9 @@
  */
 package org.apache.sshd.common.session.helpers;
 
+import java.io.EOFException;
 import java.io.IOException;
+import java.io.WriteAbortedException;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -359,12 +361,12 @@ public class AbstractSessionTest extends BaseTestSupport {
         }
 
         @Override
-        public IoWriteFuture write(Buffer buffer) {
+        public IoWriteFuture writePacket(Buffer buffer) throws IOException {
             if (!isOpen()) {
-                throw new IllegalStateException("Not open");
+                throw new EOFException("Not open");
             }
             if (!outgoing.offer(buffer)) {
-                throw new IllegalStateException("Failed to offer outgoing buffer");
+                throw new WriteAbortedException("Failed to offer outgoing buffer", new IllegalStateException("Offer failure"));
             }
 
             IoWriteFutureImpl future = new IoWriteFutureImpl(buffer);

@@ -482,6 +482,17 @@ injecting some dynamic data before the command is `start()`-ed.
 associated with this command.
 
 
+### Data stream(s) sizing consideration
+
+Some commands may send/receive large amounts of data over their STDIN/STDOUT/STDERR streams. Since (by default) the sending mechanism in SSHD is
+**asynchronous** it may cause _Out of memory_ errors due to one side (client/server) generating `SSH_MSG_CHANNEL_DATA` or `SSH_MSG_CHANNEL_EXTENDED_DATA`
+at a much higher rate than the other side can consume. This leads to a build-up of a packets backlog that eventually consumes all available memory
+(as described in [SSHD-754](https://issues.apache.org/jira/browse/SSHD-754) and [SSHD-768](https://issues.apache.org/jira/browse/SSHD-768)). As of
+version 1.7 one can register a `ChannelStreamPacketWriterResolver` at the client/server/session/channel level that can enable the user to replace
+the raw channel with some throttling mechanism that will be used for stream packets. Such an (experimental) example is the `ThrottlingPacketWriter`
+available in the `sshd-contrib` module. **Note:** if the `ChannelStreamPacketWriterResolver` returns a wrapper instance instead of a `Channel` then
+it will be **closed** automatically when the stream using it is closed.
+
 ## SCP
 
 Besides the `ScpTransferEventListener`, the SCP module also uses a `ScpFileOpener` instance in order to access
@@ -1219,6 +1230,9 @@ reading data - and those that modify it
 
 * `ProxyProtocolAcceptor` - A working prototype to support the PROXY protocol as described in [HAProxy Documentation](http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt)
 
+
+* `ThrottlingPacketWriter` - An example of a way to overcome big window sizes when sending data - as described in [SSHD-754](https://issues.apache.org/jira/browse/SSHD-754)
+and [SSHD-768](https://issues.apache.org/jira/browse/SSHD-768)
 
 # Builtin components
 

@@ -167,9 +167,10 @@ public abstract class AbstractServerSession extends AbstractSession implements S
      * identification string - ignored if {@code null}/empty
      * @return An {@link IoWriteFuture} that can be used to be notified of
      * identification data being written successfully or failing
+     * @throws IOException If failed to send identification
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>
      */
-    protected IoWriteFuture sendServerIdentification(String... headerLines) {
+    protected IoWriteFuture sendServerIdentification(String... headerLines) throws IOException {
         serverVersion = resolveIdentificationString(ServerFactoryManager.SERVER_IDENTIFICATION);
 
         String ident = serverVersion;
@@ -362,7 +363,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         }
 
         if (GenericUtils.length(errorMessage) > 0) {
-            ioSession.write(new ByteArrayBuffer((errorMessage + "\n").getBytes(StandardCharsets.UTF_8)))
+            ioSession.writePacket(new ByteArrayBuffer((errorMessage + "\n").getBytes(StandardCharsets.UTF_8)))
                      .addListener(future -> close(true));
             throw new SshException(errorMessage);
         }

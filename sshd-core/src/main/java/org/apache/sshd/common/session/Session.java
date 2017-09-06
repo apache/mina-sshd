@@ -28,12 +28,14 @@ import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.auth.MutableUserHolder;
 import org.apache.sshd.common.channel.ChannelListenerManager;
+import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolverManager;
 import org.apache.sshd.common.cipher.CipherInformation;
 import org.apache.sshd.common.compression.CompressionInformation;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.io.PacketWriter;
 import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyExchange;
@@ -52,12 +54,14 @@ public interface Session
                 SessionListenerManager,
                 ReservedSessionMessagesManager,
                 ChannelListenerManager,
+                ChannelStreamPacketWriterResolverManager,
                 PortForwardingEventListenerManager,
                 FactoryManagerHolder,
                 PropertyResolver,
                 AttributeStore,
                 Closeable,
-                MutableUserHolder {
+                MutableUserHolder,
+                PacketWriter {
 
     /**
      * Default prefix expected for the client / server identification string
@@ -197,17 +201,6 @@ public interface Session
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-11.2">RFC 4253 - section 11.2</A>
      */
     IoWriteFuture sendIgnoreMessage(byte... data) throws IOException;
-
-    /**
-     * Encode and send the given buffer.
-     * The buffer has to have 5 bytes free at the beginning to allow the encoding to take place.
-     * Also, the write position of the buffer has to be set to the position of the last byte to write.
-     *
-     * @param buffer the buffer to encode and send
-     * @return An {@code IoWriteFuture} that can be used to check when the packet has actually been sent
-     * @throws IOException if an error occurred when encoding sending the packet
-     */
-    IoWriteFuture writePacket(Buffer buffer) throws IOException;
 
     /**
      * Encode and send the given buffer with the specified timeout.

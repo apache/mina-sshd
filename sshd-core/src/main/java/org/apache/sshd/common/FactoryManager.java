@@ -26,6 +26,7 @@ import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListenerManager;
 import org.apache.sshd.common.channel.RequestHandler;
+import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolverManager;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.forward.ForwardingFilterFactory;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
@@ -51,6 +52,7 @@ public interface FactoryManager
                 SessionListenerManager,
                 ReservedSessionMessagesManager,
                 ChannelListenerManager,
+                ChannelStreamPacketWriterResolverManager,
                 PortForwardingEventListenerManager,
                 AttributeStore,
                 PropertyResolver {

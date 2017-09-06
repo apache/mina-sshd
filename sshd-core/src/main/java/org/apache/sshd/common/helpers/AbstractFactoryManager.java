@@ -40,6 +40,7 @@ import org.apache.sshd.common.SyspropsMapWrapper;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.RequestHandler;
+import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolver;
 import org.apache.sshd.common.config.VersionProperties;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.forward.ForwardingFilterFactory;
@@ -88,6 +89,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     private final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
     private PropertyResolver parentResolver = SyspropsMapWrapper.SYSPROPS_RESOLVER;
     private ReservedSessionMessagesHandler reservedSessionMessagesHandler;
+    private ChannelStreamPacketWriterResolver channelStreamPacketWriterResolver;
 
     protected AbstractFactoryManager() {
         ClassLoader loader = getClass().getClassLoader();
@@ -269,6 +271,16 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     @Override
     public void setReservedSessionMessagesHandler(ReservedSessionMessagesHandler handler) {
         reservedSessionMessagesHandler = handler;
+    }
+
+    @Override
+    public ChannelStreamPacketWriterResolver getChannelStreamPacketWriterResolver() {
+        return channelStreamPacketWriterResolver;
+    }
+
+    @Override
+    public void setChannelStreamPacketWriterResolver(ChannelStreamPacketWriterResolver resolver) {
+        channelStreamPacketWriterResolver = resolver;
     }
 
     @Override

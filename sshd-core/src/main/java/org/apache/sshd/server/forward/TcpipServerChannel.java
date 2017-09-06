@@ -286,7 +286,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
         // Make sure we copy the data as the incoming buffer may be reused
         Buffer buf = ByteArrayBuffer.getCompactClone(data, off, (int) len);
-        ioSession.write(buf).addListener(future -> {
+        ioSession.writePacket(buf).addListener(future -> {
             if (future.isWritten()) {
                 handleWriteDataSuccess(SshConstants.SSH_MSG_CHANNEL_DATA, buf.array(), 0, (int) len);
             } else {

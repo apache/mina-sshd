@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.io.PacketWriter;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -44,6 +45,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
     public static final long DEFAULT_WAIT_FOR_SPACE_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
 
     private final AbstractChannel channelInstance;
+    private final PacketWriter packetWriter;
     private final Window remoteWindow;
     private final long maxWaitTimeout;
     private final Logger log;
@@ -62,6 +64,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
 
     public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, long maxWaitTimeout, Logger log, byte cmd, boolean eofOnClose) {
         this.channelInstance = Objects.requireNonNull(channel, "No channel");
+        this.packetWriter = channelInstance.resolveChannelStreamPacketWriter(channel, cmd);
         this.remoteWindow = Objects.requireNonNull(remoteWindow, "No remote window");
         ValidateUtils.checkTrue(maxWaitTimeout > 0L, "Non-positive max. wait time: %d", maxWaitTimeout);
         this.maxWaitTimeout = maxWaitTimeout;
@@ -215,7 +218,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                 if (log.isTraceEnabled()) {
                     log.trace("flush({}) send {} len={}", channel, SshConstants.getCommandMessageName(cmd), length);
                 }
-                channel.writePacket(buf);
+                packetWriter.writePacket(buf);
             }
         } catch (WindowClosedException e) {
             if (!closedState.getAndSet(true)) {
@@ -237,17 +240,25 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
 
     @Override
     public synchronized void close() throws IOException {
-        if (isOpen()) {
-            if (log.isTraceEnabled()) {
-                log.trace("close({}) closing", this);
+        if (!isOpen()) {
+            return;
+        }
+
+        if (log.isTraceEnabled()) {
+            log.trace("close({}) closing", this);
+        }
+
+        try {
+            flush();
+
+            if (isEofOnClose()) {
+                AbstractChannel channel = getChannel();
+                channel.sendEof();
             }
-
+        } finally {
             try {
-                flush();
-
-                if (isEofOnClose()) {
-                    AbstractChannel channel = getChannel();
-                    channel.sendEof();
+                if (!(packetWriter instanceof Channel)) {
+                    packetWriter.close();
                 }
             } finally {
                 closedState.set(true);

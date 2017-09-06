@@ -130,7 +130,7 @@ public class ServerProxyAcceptorTest extends BaseTestSupport {
 
         client.setClientProxyConnector(session -> {
             IoSession ioSession = session.getIoSession();
-            ioSession.write(new ByteArrayBuffer(metaDataBytes));
+            ioSession.writePacket(new ByteArrayBuffer(metaDataBytes));
         });
         client.start();
 

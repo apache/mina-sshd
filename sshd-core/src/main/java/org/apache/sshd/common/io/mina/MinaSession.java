@@ -132,7 +132,7 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
     }
 
     @Override // NOTE !!! data buffer may NOT be re-used when method returns - at least until IoWriteFuture is signalled
-    public IoWriteFuture write(Buffer buffer) {
+    public IoWriteFuture writePacket(Buffer buffer) {
         return write(MinaSupport.asIoBuffer(buffer));
     }
 

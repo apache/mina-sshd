@@ -133,7 +133,7 @@ public class TcpipClientChannel extends AbstractClientChannel {
         Buffer buf = ByteArrayBuffer.getCompactClone(data, off, (int) len);
         Window wLocal = getLocalWindow();
         wLocal.consumeAndCheck(len);
-        serverSession.write(buf);
+        serverSession.writePacket(buf);
     }
 
     @Override

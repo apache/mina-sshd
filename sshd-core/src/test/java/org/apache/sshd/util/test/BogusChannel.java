@@ -23,6 +23,9 @@ import java.io.IOException;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.channel.AbstractChannel;
+import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolver;
+import org.apache.sshd.common.io.PacketWriter;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 public class BogusChannel extends AbstractChannel {
@@ -58,5 +61,15 @@ public class BogusChannel extends AbstractChannel {
     @Override
     public void handleOpenFailure(Buffer buffer) throws IOException {
         // ignored
+    }
+
+    @Override
+    public ChannelStreamPacketWriterResolver getChannelStreamPacketWriterResolver() {
+        return ChannelStreamPacketWriterResolver.NONE;
+    }
+
+    @Override
+    public PacketWriter resolveChannelStreamPacketWriter(Channel channel, byte cmd) {
+        return channel;
     }
 }

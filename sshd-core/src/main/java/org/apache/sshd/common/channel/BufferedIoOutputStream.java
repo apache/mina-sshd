@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.channel;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -43,22 +44,22 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
     }
 
     @Override
-    public IoWriteFuture write(Buffer buffer) {
-        IoWriteFutureImpl future = new IoWriteFutureImpl(buffer);
+    public IoWriteFuture writePacket(Buffer buffer) throws IOException {
         if (isClosing()) {
-            future.setValue(new IOException("Closed"));
-        } else {
-            writes.add(future);
-            startWriting();
+            throw new EOFException("Closed");
         }
+
+        IoWriteFutureImpl future = new IoWriteFutureImpl(buffer);
+        writes.add(future);
+        startWriting();
         return future;
     }
 
-    protected void startWriting() {
+    protected void startWriting() throws IOException {
         final IoWriteFutureImpl future = writes.peek();
         if (future != null) {
             if (currentWrite.compareAndSet(null, future)) {
-                out.write(future.getBuffer()).addListener(new SshFutureListener<IoWriteFuture>() {
+                out.writePacket(future.getBuffer()).addListener(new SshFutureListener<IoWriteFuture>() {
                     @Override
                     public void operationComplete(IoWriteFuture f) {
                         if (f.isWritten()) {
@@ -69,10 +70,15 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
                         finishWrite();
                     }
 
+                    @SuppressWarnings("synthetic-access")
                     private void finishWrite() {
                         writes.remove(future);
                         currentWrite.compareAndSet(future, null);
-                        startWriting();
+                        try {
+                            startWriting();
+                        } catch (IOException e) {
+                            log.error("finishWrite({}) failed ({}) re-start writing", out, e.getClass().getSimpleName());
+                        }
                     }
                 });
             }

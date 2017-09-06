@@ -77,6 +77,8 @@ import org.apache.sshd.common.channel.TestChannelListener;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.io.IoInputStream;
+import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoReadFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -509,15 +511,16 @@ public class ClientTest extends BaseTestSupport {
                  ByteArrayOutputStream baosErr = new ByteArrayOutputStream()) {
                 AtomicInteger writes = new AtomicInteger(nbMessages);
 
-                channel.getAsyncIn().write(new ByteArrayBuffer(message)).addListener(new SshFutureListener<IoWriteFuture>() {
+                IoOutputStream asyncIn = channel.getAsyncIn();
+                asyncIn.writePacket(new ByteArrayBuffer(message)).addListener(new SshFutureListener<IoWriteFuture>() {
                     @Override
                     public void operationComplete(IoWriteFuture future) {
                         try {
                             if (future.isWritten()) {
                                 if (writes.decrementAndGet() > 0) {
-                                    channel.getAsyncIn().write(new ByteArrayBuffer(message)).addListener(this);
+                                    asyncIn.writePacket(new ByteArrayBuffer(message)).addListener(this);
                                 } else {
-                                    channel.getAsyncIn().close(false);
+                                    asyncIn.close(false);
                                 }
                             } else {
                                 throw new SshException("Error writing", future.getException());
@@ -529,7 +532,9 @@ public class ClientTest extends BaseTestSupport {
                         }
                     }
                 });
-                channel.getAsyncOut().read(new ByteArrayBuffer()).addListener(new SshFutureListener<IoReadFuture>() {
+
+                IoInputStream asyncOut = channel.getAsyncOut();
+                asyncOut.read(new ByteArrayBuffer()).addListener(new SshFutureListener<IoReadFuture>() {
                     @Override
                     public void operationComplete(IoReadFuture future) {
                         try {
@@ -539,7 +544,7 @@ public class ClientTest extends BaseTestSupport {
                             baosOut.write(buffer.array(), buffer.rpos(), buffer.available());
                             buffer.rpos(buffer.rpos() + buffer.available());
                             buffer.compact();
-                            channel.getAsyncOut().read(buffer).addListener(this);
+                            asyncOut.read(buffer).addListener(this);
                         } catch (IOException e) {
                             if (!channel.isClosing()) {
                                 channel.close(true);
@@ -547,7 +552,9 @@ public class ClientTest extends BaseTestSupport {
                         }
                     }
                 });
-                channel.getAsyncErr().read(new ByteArrayBuffer()).addListener(new SshFutureListener<IoReadFuture>() {
+
+                IoInputStream asyncErr = channel.getAsyncErr();
+                asyncErr.read(new ByteArrayBuffer()).addListener(new SshFutureListener<IoReadFuture>() {
                     @Override
                     public void operationComplete(IoReadFuture future) {
                         try {
@@ -557,7 +564,7 @@ public class ClientTest extends BaseTestSupport {
                             baosErr.write(buffer.array(), buffer.rpos(), buffer.available());
                             buffer.rpos(buffer.rpos() + buffer.available());
                             buffer.compact();
-                            channel.getAsyncErr().read(buffer).addListener(this);
+                            asyncErr.read(buffer).addListener(this);
                         } catch (IOException e) {
                             if (!channel.isClosing()) {
                                 channel.close(true);

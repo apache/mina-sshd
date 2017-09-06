@@ -177,7 +177,13 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
             buffer.putByte((byte) 0x00);
             buffer.putByte((byte) 0x00);
             buffer.putByte((byte) 0x00);
-            session.write(buffer);
+            try {
+                session.writePacket(buffer);
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                log.error("Failed ({}) to send channel open packet for {}: {}", e.getClass().getSimpleName(), channel, e.getMessage());
+                throw new IllegalStateException("Failed to send packet", e);
+            }
         }
 
         private String getNTString(Buffer buffer) {
@@ -214,7 +220,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 buffer = new ByteArrayBuffer(Byte.SIZE, false);
                 buffer.putByte((byte) 0x05);
                 buffer.putByte((byte) (foundNoAuth ? 0x00 : 0xFF));
-                session.write(buffer);
+                session.writePacket(buffer);
                 if (!foundNoAuth) {
                     throw new IllegalStateException("Received socks5 greeting without NoAuth method");
                 } else {
@@ -284,7 +290,13 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 response.putByte((byte) 0x00);
             }
             response.wpos(wpos);
-            session.write(response);
+            try {
+                session.writePacket(response);
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                log.error("Failed ({}) to send channel open response for {}: {}", e.getClass().getSimpleName(), channel, e.getMessage());
+                throw new IllegalStateException("Failed to send packet", e);
+            }
         }
 
         private String getBLString(Buffer buffer) {

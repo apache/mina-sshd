@@ -130,7 +130,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     }
 
     @Override
-    public IoWriteFuture write(Buffer buffer) {
+    public IoWriteFuture writePacket(Buffer buffer) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Writing {} bytes", buffer.available());
         }

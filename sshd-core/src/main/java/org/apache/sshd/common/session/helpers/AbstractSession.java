@@ -55,6 +55,8 @@ import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelListener;
+import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolver;
+import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolverManager;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.cipher.CipherInformation;
 import org.apache.sshd.common.compression.Compression;
@@ -240,6 +242,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      */
     private final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
     private ReservedSessionMessagesHandler reservedSessionMessagesHandler;
+    private ChannelStreamPacketWriterResolver channelStreamPacketWriterResolver;
 
     /**
      * Create a new session.
@@ -431,6 +434,27 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     public void setAuthenticated() throws IOException {
         this.authed = true;
         signalSessionEvent(SessionListener.Event.Authenticated);
+    }
+
+    @Override
+    public ChannelStreamPacketWriterResolver getChannelStreamPacketWriterResolver() {
+        return channelStreamPacketWriterResolver;
+    }
+
+    @Override
+    public void setChannelStreamPacketWriterResolver(ChannelStreamPacketWriterResolver resolver) {
+        channelStreamPacketWriterResolver = resolver;
+    }
+
+    @Override
+    public ChannelStreamPacketWriterResolver resolveChannelStreamPacketWriterResolver() {
+        ChannelStreamPacketWriterResolver resolver = getChannelStreamPacketWriterResolver();
+        if (resolver != null) {
+            return resolver;
+        }
+
+        ChannelStreamPacketWriterResolverManager manager = getFactoryManager();
+        return manager.resolveChannelStreamPacketWriterResolver();
     }
 
     /**
@@ -1063,11 +1087,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         synchronized (encodeLock) {
             if (ignoreBuf != null) {
                 ignoreBuf = encode(ignoreBuf);
-                ioSession.write(ignoreBuf);
+                ioSession.writePacket(ignoreBuf);
             }
 
             buffer = encode(buffer);
-            future = ioSession.write(buffer);
+            future = ioSession.writePacket(buffer);
         }
 
         return future;
@@ -1447,13 +1471,14 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @param ident our identification to send
      * @return {@link IoWriteFuture} that can be used to wait for notification
      * that identification has been send
+     * @throws IOException If failed to send the packet
      */
-    protected IoWriteFuture sendIdentification(String ident) {
+    protected IoWriteFuture sendIdentification(String ident) throws IOException {
         byte[] data = (ident + "\r\n").getBytes(StandardCharsets.UTF_8);
         if (log.isDebugEnabled()) {
             log.debug("sendIdentification({}): {}", this, ident.replace('\r', '|').replace('\n', '|'));
         }
-        return ioSession.write(new ByteArrayBuffer(data));
+        return ioSession.writePacket(new ByteArrayBuffer(data));
     }
 
     /**

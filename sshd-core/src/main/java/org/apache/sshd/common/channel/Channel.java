@@ -26,6 +26,8 @@ import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.PropertyResolver;
+import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolverManager;
+import org.apache.sshd.common.io.PacketWriter;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
@@ -41,6 +43,8 @@ public interface Channel
         extends ChannelListenerManager,
                 PropertyResolver,
                 AttributeStore,
+                PacketWriter,
+                ChannelStreamPacketWriterResolverManager,
                 Closeable {
     // Known types of channels
     String CHANNEL_EXEC = "exec";

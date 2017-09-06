@@ -231,10 +231,23 @@ public class WindowAdjustTest extends BaseTestSupport {
             futureHolder.set(service.submit((Runnable) () -> {
                 log.info("Start heavy load sending " + sendCount + " messages of " + msg.length + " bytes");
                 for (int i = 0; i < sendCount; i++) {
-                    pendingWrapper.write(new ByteArrayBuffer(msg));
+                    try {
+                        pendingWrapper.write(new ByteArrayBuffer(msg));
+                    } catch (IOException e) {
+                        log.error("Failed ({}) to send message #{}/{}: {}",
+                                e.getClass().getSimpleName(), i + 1, sendCount, e.getMessage());
+                        throw new RuntimeException(e);
+                    }
                 }
                 log.info("Sending EOF signal");
-                pendingWrapper.write(new ByteArrayBuffer(new byte[]{eofSignal}));
+
+                try {
+                    pendingWrapper.write(new ByteArrayBuffer(new byte[]{eofSignal}));
+                } catch (IOException e) {
+                    log.error("Failed ({}) to send EOF message after {} messages: {}",
+                            e.getClass().getSimpleName(), sendCount, e.getMessage());
+                    throw new RuntimeException(e);
+                }
             }));
             log.info("Started");
         }
@@ -270,9 +283,9 @@ public class WindowAdjustTest extends BaseTestSupport {
             this.asyncIn = out;
         }
 
-        public synchronized void write(final Object msg) {
+        public synchronized void write(Object msg) throws IOException {
             if ((asyncIn != null) && (!asyncIn.isClosed()) && (!asyncIn.isClosing())) {
-                final Buffer byteBufferMsg = (Buffer) msg;
+                Buffer byteBufferMsg = (Buffer) msg;
                 if (!pending.isEmpty()) {
                     queueRequest(byteBufferMsg);
                     return;
@@ -282,14 +295,19 @@ public class WindowAdjustTest extends BaseTestSupport {
             }
         }
 
-        private void writeWithPendingDetection(final Buffer msg, final boolean wasPending) {
+        private void writeWithPendingDetection(Buffer msg, boolean wasPending) throws IOException {
             try {
-                asyncIn.write(msg).addListener(future -> {
+                asyncIn.writePacket(msg).addListener(future -> {
                     if (future.isWritten()) {
                         if (wasPending) {
                             pending.remove();
                         }
-                        writePendingIfAny();
+
+                        try {
+                            writePendingIfAny();
+                        } catch (IOException e) {
+                            log.error("Failed ({}) to re-write pending: {}", e.getClass().getSimpleName(), e.getMessage());
+                        }
                     } else {
                         Throwable t = future.getException();
                         log.warn("Failed to write message", t);
@@ -302,16 +320,16 @@ public class WindowAdjustTest extends BaseTestSupport {
             }
         }
 
-        private synchronized void writePendingIfAny() {
+        private synchronized void writePendingIfAny() throws IOException {
             if (pending.peek() == null) {
                 return;
             }
 
-            final Buffer msg = pending.peek();
+            Buffer msg = pending.peek();
             writeWithPendingDetection(msg, true);
         }
 
-        private void queueRequest(final Buffer msg) {
+        private void queueRequest(Buffer msg) {
             msg.rpos(0);
             pending.add(msg);
         }

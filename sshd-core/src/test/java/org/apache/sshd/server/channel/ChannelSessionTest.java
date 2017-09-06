@@ -45,7 +45,7 @@ public class ChannelSessionTest extends BaseTestSupport {
      */
     @Test
     public void testHandleWindowAdjust() throws Exception {
-        final Buffer buffer = new ByteArrayBuffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putInt(1234);
 
         try (ChannelSession channelSession = new ChannelSession() {
@@ -54,7 +54,7 @@ public class ChannelSessionTest extends BaseTestSupport {
                     wRemote.init(PropertyResolverUtils.toPropertyResolver(Collections.emptyMap()));
                 }
         }) {
-            final AtomicBoolean expanded = new AtomicBoolean(false);
+            AtomicBoolean expanded = new AtomicBoolean(false);
             channelSession.asyncOut = new ChannelAsyncOutputStream(new BogusChannel(), (byte) 0) {
                 @Override
                 public void onWindowExpanded() throws IOException {
@@ -69,7 +69,7 @@ public class ChannelSessionTest extends BaseTestSupport {
 
     @Test   // see SSHD-652
     public void testCloseFutureListenerRegistration() throws Exception {
-        final AtomicInteger closeCount = new AtomicInteger();
+        AtomicInteger closeCount = new AtomicInteger();
         try (ChannelSession session = new ChannelSession() {
             {
                 Window wRemote = getRemoteWindow();
