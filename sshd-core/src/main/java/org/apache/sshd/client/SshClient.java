@@ -44,10 +44,10 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
@@ -91,6 +91,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.channel.Channel;
@@ -800,7 +801,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         String password = null;
         boolean error = false;
         List<Path> identities = new ArrayList<>();
-        Map<String, String> options = new LinkedHashMap<>();
+        Map<String, Object> options = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         List<NamedFactory<Cipher>> ciphers = null;
         List<NamedFactory<Mac>> macs = null;
         List<NamedFactory<Compression>> compressions = null;
@@ -954,28 +955,29 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     // returns null if error encountered
     public static SshClient setupClient(
-            Map<String, ?> options,
+            Map<String, Object> options,
             List<NamedFactory<Cipher>> ciphers,
             List<NamedFactory<Mac>> macs,
             List<NamedFactory<Compression>> compressions,
             Collection<? extends Path> identities,
             BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
         if (GenericUtils.isEmpty(ciphers)) {
-            ciphers = setupCiphers(options, stderr);
+            ciphers = setupCiphers(resolver, stderr);
             if (ciphers == null) {
                 return null;
             }
         }
 
         if (GenericUtils.isEmpty(macs)) {
-            macs = setupMacs(options, stderr);
+            macs = setupMacs(resolver, stderr);
             if (macs == null) {
                 return null;
             }
         }
 
         if (GenericUtils.isEmpty(compressions)) {
-            compressions = setupCompressions(options, stderr);
+            compressions = setupCompressions(resolver, stderr);
             if (compressions == null) {
                 return null;
             }
@@ -1177,7 +1179,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return stderr;
     }
 
-    public static List<NamedFactory<Compression>> setupCompressions(Map<String, ?> options, PrintStream stderr) {
+    public static List<NamedFactory<Compression>> setupCompressions(PropertyResolver options, PrintStream stderr) {
         String argVal = PropertyResolverUtils.getString(options, SshConfigFileReader.COMPRESSION_PROP);
         if (GenericUtils.isEmpty(argVal)) {
             return Collections.emptyList();
@@ -1214,7 +1216,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return new ArrayList<>(available);
     }
 
-    public static List<NamedFactory<Mac>> setupMacs(Map<String, ?> options, PrintStream stderr) {
+    public static List<NamedFactory<Mac>> setupMacs(PropertyResolver options, PrintStream stderr) {
         String argVal = PropertyResolverUtils.getString(options, SshConfigFileReader.MACS_CONFIG_PROP);
         return GenericUtils.isEmpty(argVal)
              ? Collections.emptyList()
@@ -1242,7 +1244,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return new ArrayList<>(available);
     }
 
-    public static List<NamedFactory<Cipher>> setupCiphers(Map<String, ?> options, PrintStream stderr) {
+    public static List<NamedFactory<Cipher>> setupCiphers(PropertyResolver options, PrintStream stderr) {
         String argVal = PropertyResolverUtils.getString(options, SshConfigFileReader.CIPHERS_CONFIG_PROP);
         return GenericUtils.isEmpty(argVal)
              ? Collections.emptyList()

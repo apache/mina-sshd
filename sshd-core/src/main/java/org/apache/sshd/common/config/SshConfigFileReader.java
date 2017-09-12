@@ -40,10 +40,9 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import org.apache.sshd.client.ClientBuilder;
-import org.apache.sshd.client.SshClient;
 import org.apache.sshd.common.BuiltinFactory;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.BuiltinCompressions;
@@ -64,8 +63,6 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseReader;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
-import org.apache.sshd.server.ServerBuilder;
-import org.apache.sshd.server.SshServer;
 
 /**
  * Reads and interprets some useful configurations from an OpenSSH
@@ -228,120 +225,6 @@ public final class SshConfigFileReader {
     }
 
     /**
-     * @param props        The {@link Properties} - ignored if {@code null}/empty
-     * @param name         The property name
-     * @param defaultValue The default value to return if the specified property
-     *                     does not exist in the properties map or is an empty string
-     * @return The resolved property
-     * @throws NumberFormatException if malformed value
-     */
-    public static long getLongProperty(Properties props, String name, long defaultValue) {
-        String value = (props == null) ? null : props.getProperty(name);
-        if (GenericUtils.isEmpty(value)) {
-            return defaultValue;
-        } else {
-            return Long.parseLong(value);
-        }
-    }
-
-    /**
-     * @param props The {@link Properties} - ignored if {@code null}/empty
-     * @param name  The property name
-     * @return The {@link Long} value or {@code null} if property not found or
-     * empty string
-     * @throws NumberFormatException if malformed value
-     */
-    public static Long getLong(Properties props, String name) {
-        String value = (props == null) ? null : props.getProperty(name);
-        if (GenericUtils.isEmpty(value)) {
-            return null;
-        } else {
-            return Long.valueOf(value);
-        }
-    }
-
-    /**
-     * @param props        The {@link Properties} - ignored if {@code null}/empty
-     * @param name         The property name
-     * @param defaultValue The default value to return if the specified property
-     *                     does not exist in the properties map or is an empty string
-     * @return The resolved property
-     * @throws NumberFormatException if malformed value
-     */
-    public static int getIntProperty(Properties props, String name, int defaultValue) {
-        String value = (props == null) ? null : props.getProperty(name);
-        if (GenericUtils.isEmpty(value)) {
-            return defaultValue;
-        } else {
-            return Integer.parseInt(value);
-        }
-    }
-
-    /**
-     * @param props The {@link Properties} - ignored if {@code null}/empty
-     * @param name  The property name
-     * @return The {@link Integer} value or {@code null} if property not found or
-     * empty string
-     * @throws NumberFormatException if malformed value
-     */
-    public static Integer getInteger(Properties props, String name) {
-        String value = (props == null) ? null : props.getProperty(name);
-        if (GenericUtils.isEmpty(value)) {
-            return null;
-        } else {
-            return Integer.valueOf(value);
-        }
-    }
-
-    /**
-     * @param props        The {@link Properties} - ignored if {@code null}/empty
-     * @param name         The property name
-     * @param defaultValue The default value to return if the specified property
-     *                     does not exist in the properties map or is an empty string
-     * @return The resolved property
-     * @throws NumberFormatException if malformed value
-     */
-    public static boolean getBooleanProperty(Properties props, String name, boolean defaultValue) {
-        String value = (props == null) ? null : props.getProperty(name);
-        if (GenericUtils.isEmpty(value)) {
-            return defaultValue;
-        } else {
-            return parseBooleanValue(value);
-        }
-    }
-
-    /**
-     * @param props The {@link Properties} - ignored if {@code null}/empty
-     * @param name  The property name
-     * @return The {@link Boolean} value or {@code null} if property not found or
-     * empty string
-     * @throws NumberFormatException if malformed value
-     */
-    public static Boolean getBoolean(Properties props, String name) {
-        String value = (props == null) ? null : props.getProperty(name);
-        if (GenericUtils.isEmpty(value)) {
-            return null;
-        } else {
-            return parseBooleanValue(value);
-        }
-    }
-
-    /**
-     * @param v            The value to parse - if {@code null}/empty then the default
-     *                     value is returned, otherwise {@link #parseBooleanValue(String)} is used
-     * @param defaultValue The default value to return if {@code null}/empty
-     *                     input string
-     * @return The result
-     */
-    public static boolean parseBooleanValue(String v, boolean defaultValue) {
-        if (GenericUtils.isEmpty(v)) {
-            return defaultValue;
-        } else {
-            return parseBooleanValue(v);
-        }
-    }
-
-    /**
      * @param v Checks if the value is &quot;yes&quot;, &quot;y&quot;
      *          or &quot;on&quot; or &quot;true&quot;.
      * @return The result - <B>Note:</B> {@code null}/empty values are
@@ -366,7 +249,7 @@ public final class SshConfigFileReader {
     }
 
     /**
-     * @param props The {@link Properties} - ignored if {@code null}/empty
+     * @param props The {@link PropertyResolver} - ignored if {@code null}/empty
      * @return A {@code ParseResult} of all the {@link NamedFactory}-ies
      * whose name appears in the string and represent a built-in cipher.
      * Any unknown name is <U>ignored</U>. The order of the returned result
@@ -376,12 +259,12 @@ public final class SshConfigFileReader {
      * @see #CIPHERS_CONFIG_PROP
      * @see BuiltinCiphers#parseCiphersList(String)
      */
-    public static BuiltinCiphers.ParseResult getCiphers(Properties props) {
-        return BuiltinCiphers.parseCiphersList((props == null) ? null : props.getProperty(CIPHERS_CONFIG_PROP));
+    public static BuiltinCiphers.ParseResult getCiphers(PropertyResolver props) {
+        return BuiltinCiphers.parseCiphersList((props == null) ? null : props.getString(CIPHERS_CONFIG_PROP));
     }
 
     /**
-     * @param props The {@link Properties} - ignored if {@code null}/empty
+     * @param props The {@link PropertyResolver} - ignored if {@code null}/empty
      * @return A {@code ParseResult} of all the {@link NamedFactory}-ies
      * whose name appears in the string and represent a built-in MAC. Any
      * unknown name is <U>ignored</U>. The order of the returned result
@@ -391,12 +274,12 @@ public final class SshConfigFileReader {
      * @see #MACS_CONFIG_PROP
      * @see BuiltinMacs#parseMacsList(String)
      */
-    public static BuiltinMacs.ParseResult getMacs(Properties props) {
-        return BuiltinMacs.parseMacsList((props == null) ? null : props.getProperty(MACS_CONFIG_PROP));
+    public static BuiltinMacs.ParseResult getMacs(PropertyResolver props) {
+        return BuiltinMacs.parseMacsList((props == null) ? null : props.getString(MACS_CONFIG_PROP));
     }
 
     /**
-     * @param props The {@link Properties} - ignored if {@code null}/empty
+     * @param props The {@link PropertyResolver} - ignored if {@code null}/empty
      * @return A {@code ParseResult} of all the {@link NamedFactory}
      * whose name appears in the string and represent a built-in signature. Any
      * unknown name is <U>ignored</U>. The order of the returned result is the
@@ -405,12 +288,12 @@ public final class SshConfigFileReader {
      * @see #HOST_KEY_ALGORITHMS_CONFIG_PROP
      * @see BuiltinSignatures#parseSignatureList(String)
      */
-    public static BuiltinSignatures.ParseResult getSignatures(Properties props) {
-        return BuiltinSignatures.parseSignatureList((props == null) ? null : props.getProperty(HOST_KEY_ALGORITHMS_CONFIG_PROP));
+    public static BuiltinSignatures.ParseResult getSignatures(PropertyResolver props) {
+        return BuiltinSignatures.parseSignatureList((props == null) ? null : props.getString(HOST_KEY_ALGORITHMS_CONFIG_PROP));
     }
 
     /**
-     * @param props The {@link Properties} - ignored if {@code null}/empty
+     * @param props The {@link PropertyResolver} - ignored if {@code null}/empty
      * @return A {@code ParseResult} of all the {@link DHFactory}-ies
      * whose name appears in the string and represent a built-in value. Any
      * unknown name is <U>ignored</U>. The order of the returned result is the
@@ -419,29 +302,17 @@ public final class SshConfigFileReader {
      * @see #KEX_ALGORITHMS_CONFIG_PROP
      * @see BuiltinDHFactories#parseDHFactoriesList(String)
      */
-    public static BuiltinDHFactories.ParseResult getKexFactories(Properties props) {
-        return BuiltinDHFactories.parseDHFactoriesList((props == null) ? null : props.getProperty(KEX_ALGORITHMS_CONFIG_PROP));
+    public static BuiltinDHFactories.ParseResult getKexFactories(PropertyResolver props) {
+        return BuiltinDHFactories.parseDHFactoriesList((props == null) ? null : props.getString(KEX_ALGORITHMS_CONFIG_PROP));
     }
 
     /**
-     * @param props The {@link Properties} - ignored if {@code null}/empty
+     * @param props The {@link PropertyResolver} - ignored if {@code null}/empty
      * @return The matching {@link NamedFactory} for the configured value.
      * {@code null} if no configuration or unknown name specified
      */
-    public static CompressionFactory getCompression(Properties props) {
-        return CompressionConfigValue.fromName((props == null) ? null : props.getProperty(COMPRESSION_PROP));
-    }
-
-    public static <S extends SshServer> S configure(S server, Properties props, boolean lenient, boolean ignoreUnsupported) {
-        configure((AbstractFactoryManager) server, props, lenient, ignoreUnsupported);
-        configureKeyExchanges(server, props, lenient, ServerBuilder.DH2KEX, ignoreUnsupported);
-        return server;
-    }
-
-    public static <C extends SshClient> C configure(C client, Properties props, boolean lenient, boolean ignoreUnsupported) {
-        configure((AbstractFactoryManager) client, props, lenient, ignoreUnsupported);
-        configureKeyExchanges(client, props, lenient, ClientBuilder.DH2KEX, ignoreUnsupported);
-        return client;
+    public static CompressionFactory getCompression(PropertyResolver props) {
+        return CompressionConfigValue.fromName((props == null) ? null : props.getString(COMPRESSION_PROP));
     }
 
     /**
@@ -456,7 +327,7 @@ public final class SshConfigFileReader {
      *
      * @param <M>               The generic factory manager
      * @param manager           The {@link AbstractFactoryManager} to configure
-     * @param props             The {@link Properties} to use for configuration - <B>Note:</B>
+     * @param props             The {@link PropertyResolver} to use for configuration - <B>Note:</B>
      *                          if any known configuration value has a default and does not appear in the
      *                          properties, the default is used
      * @param lenient           If {@code true} then any unknown configuration values are ignored.
@@ -466,7 +337,7 @@ public final class SshConfigFileReader {
      *                          or unsupported values there is an empty configuration exception is thrown
      * @return The configured manager
      */
-    public static <M extends AbstractFactoryManager> M configure(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
+    public static <M extends AbstractFactoryManager> M configure(M manager, PropertyResolver props, boolean lenient, boolean ignoreUnsupported) {
         configureCiphers(manager, props, lenient, ignoreUnsupported);
         configureSignatures(manager, props, lenient, ignoreUnsupported);
         configureMacs(manager, props, lenient, ignoreUnsupported);
@@ -475,9 +346,9 @@ public final class SshConfigFileReader {
         return manager;
     }
 
-    public static <M extends AbstractFactoryManager> M configureCiphers(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
+    public static <M extends AbstractFactoryManager> M configureCiphers(M manager, PropertyResolver props, boolean lenient, boolean ignoreUnsupported) {
         Objects.requireNonNull(props, "No properties to configure");
-        return configureCiphers(manager, props.getProperty(CIPHERS_CONFIG_PROP, DEFAULT_CIPHERS), lenient, ignoreUnsupported);
+        return configureCiphers(manager, props.getStringProperty(CIPHERS_CONFIG_PROP, DEFAULT_CIPHERS), lenient, ignoreUnsupported);
     }
 
     public static <M extends AbstractFactoryManager> M configureCiphers(M manager, String value, boolean lenient, boolean ignoreUnsupported) {
@@ -493,9 +364,9 @@ public final class SshConfigFileReader {
         return manager;
     }
 
-    public static <M extends AbstractFactoryManager> M configureSignatures(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
+    public static <M extends AbstractFactoryManager> M configureSignatures(M manager, PropertyResolver props, boolean lenient, boolean ignoreUnsupported) {
         Objects.requireNonNull(props, "No properties to configure");
-        return configureSignatures(manager, props.getProperty(HOST_KEY_ALGORITHMS_CONFIG_PROP, DEFAULT_HOST_KEY_ALGORITHMS), lenient, ignoreUnsupported);
+        return configureSignatures(manager, props.getStringProperty(HOST_KEY_ALGORITHMS_CONFIG_PROP, DEFAULT_HOST_KEY_ALGORITHMS), lenient, ignoreUnsupported);
     }
 
     public static <M extends AbstractFactoryManager> M configureSignatures(M manager, String value, boolean lenient, boolean ignoreUnsupported) {
@@ -511,9 +382,9 @@ public final class SshConfigFileReader {
         return manager;
     }
 
-    public static <M extends AbstractFactoryManager> M configureMacs(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
-        Objects.requireNonNull(props, "No properties to configure");
-        return configureMacs(manager, props.getProperty(MACS_CONFIG_PROP, DEFAULT_MACS), lenient, ignoreUnsupported);
+    public static <M extends AbstractFactoryManager> M configureMacs(M manager, PropertyResolver resolver, boolean lenient, boolean ignoreUnsupported) {
+        Objects.requireNonNull(resolver, "No properties to configure");
+        return configureMacs(manager, resolver.getStringProperty(MACS_CONFIG_PROP, DEFAULT_MACS), lenient, ignoreUnsupported);
     }
 
     public static <M extends AbstractFactoryManager> M configureMacs(M manager, String value, boolean lenient, boolean ignoreUnsupported) {
@@ -532,7 +403,7 @@ public final class SshConfigFileReader {
     /**
      * @param <M>               The generic factory manager
      * @param manager           The {@link AbstractFactoryManager} to set up (may not be {@code null})
-     * @param props             The (non-{@code null}) {@link Properties} containing the configuration
+     * @param props             The (non-{@code null}) {@link PropertyResolver} containing the configuration
      * @param lenient           If {@code true} then any unknown/unsupported configuration
      *                          values are ignored. Otherwise an {@link IllegalArgumentException} is thrown
      * @param xformer           A {@link Function} to convert the configured {@link DHFactory}-ies
@@ -545,9 +416,9 @@ public final class SshConfigFileReader {
      * @see #DEFAULT_KEX_ALGORITHMS
      */
     public static <M extends AbstractFactoryManager> M configureKeyExchanges(
-            M manager, Properties props, boolean lenient, Function<? super DHFactory, ? extends NamedFactory<KeyExchange>> xformer, boolean ignoreUnsupported) {
+            M manager, PropertyResolver props, boolean lenient, Function<? super DHFactory, ? extends NamedFactory<KeyExchange>> xformer, boolean ignoreUnsupported) {
         Objects.requireNonNull(props, "No properties to configure");
-        return configureKeyExchanges(manager, props.getProperty(KEX_ALGORITHMS_CONFIG_PROP, DEFAULT_KEX_ALGORITHMS), lenient, xformer, ignoreUnsupported);
+        return configureKeyExchanges(manager, props.getStringProperty(KEX_ALGORITHMS_CONFIG_PROP, DEFAULT_KEX_ALGORITHMS), lenient, xformer, ignoreUnsupported);
     }
 
     public static <M extends AbstractFactoryManager> M configureKeyExchanges(
@@ -578,11 +449,11 @@ public final class SshConfigFileReader {
      * @return The configured manager - <B>Note:</B> if the result of filtering due
      * to lenient mode or ignored unsupported value is empty then no factories are set
      */
-    public static <M extends AbstractFactoryManager> M configureCompression(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
+    public static <M extends AbstractFactoryManager> M configureCompression(M manager, PropertyResolver props, boolean lenient, boolean ignoreUnsupported) {
         Objects.requireNonNull(manager, "No manager to configure");
         Objects.requireNonNull(props, "No properties to configure");
 
-        String value = props.getProperty(COMPRESSION_PROP, DEFAULT_COMPRESSION);
+        String value = props.getStringProperty(COMPRESSION_PROP, DEFAULT_COMPRESSION);
         CompressionFactory factory = CompressionConfigValue.fromName(value);
         ValidateUtils.checkTrue(lenient || (factory != null), "Unsupported compression value: %s", value);
         if ((factory != null) && factory.isSupported()) {

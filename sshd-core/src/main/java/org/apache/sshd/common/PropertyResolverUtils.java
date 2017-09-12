@@ -21,9 +21,12 @@ package org.apache.sshd.common;
 
 import java.nio.charset.Charset;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Properties;
+import java.util.TreeMap;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -426,19 +429,37 @@ public final class PropertyResolverUtils {
         return null;
     }
 
+    public static PropertyResolver toPropertyResolver(Properties props) {
+        if (GenericUtils.isEmpty(props)) {
+            return PropertyResolver.EMPTY;
+        }
+
+        Map<String, Object> propsMap = new TreeMap<>(Comparator.naturalOrder());
+        Collection<String> names = props.stringPropertyNames();
+        for (String key : names) {
+            String value = props.getProperty(key);
+            if (value == null) {
+                continue;
+            }
+            propsMap.put(key, value);
+        }
+
+        return toPropertyResolver(propsMap);
+    }
+
     /**
      * Wraps a {@link Map} into a {@link PropertyResolver} so it can be used
      * with these utilities
      *
      * @param props The properties map - may be {@code null}/empty if no properties
-     *              are updated
+     * are updated
      * @return The resolver wrapper
      */
-    public static PropertyResolver toPropertyResolver(final Map<String, Object> props) {
+    public static PropertyResolver toPropertyResolver(Map<String, Object> props) {
         return toPropertyResolver(props, null);
     }
 
-    public static PropertyResolver toPropertyResolver(final Map<String, Object> props, final PropertyResolver parent) {
+    public static PropertyResolver toPropertyResolver(Map<String, Object> props, PropertyResolver parent) {
         return new PropertyResolver() {
             @Override
             public PropertyResolver getParentPropertyResolver() {

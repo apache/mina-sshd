@@ -33,17 +33,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.ServiceFactory;
+import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
@@ -464,7 +466,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         String hostKeyType = AbstractGeneratorHostKeyProvider.DEFAULT_ALGORITHM;
         int hostKeySize = 0;
         Collection<String> keyFiles = null;
-        Map<String, String> options = new LinkedHashMap<>();
+        Map<String, Object> options = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
         int numArgs = GenericUtils.length(args);
         for (int i = 0; i < numArgs; i++) {
@@ -576,16 +578,22 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         Map<String, Object> props = sshd.getProperties();
         props.putAll(options);
 
+        PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
         KeyPairProvider hostKeyProvider = setupServerKeys(sshd, hostKeyType, hostKeySize, keyFiles);
         sshd.setKeyPairProvider(hostKeyProvider);
         // Should come AFTER key pair provider setup so auto-welcome can be generated if needed
-        setupServerBanner(sshd, options);
+        setupServerBanner(sshd, resolver);
         sshd.setPort(port);
+
+        String macsOverride = resolver.getString(SshConfigFileReader.MACS_CONFIG_PROP);
+        if (GenericUtils.isNotEmpty(macsOverride)) {
+            SshConfigFileReader.configureMacs(sshd, macsOverride, true, true);
+        }
 
         sshd.setShellFactory(InteractiveProcessShellFactory.INSTANCE);
         sshd.setPasswordAuthenticator((username, password, session) -> Objects.equals(username, password));
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
-        setupServerForwarding(sshd, options);
+        setupServerForwarding(sshd, resolver);
         sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(
             command -> new ProcessShellFactory(GenericUtils.split(command, ' ')).create()
         ).build());
@@ -595,13 +603,13 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         Thread.sleep(Long.MAX_VALUE);
     }
 
-    public static ForwardingFilter setupServerForwarding(SshServer server, Map<String, ?> options) {
+    public static ForwardingFilter setupServerForwarding(SshServer server, PropertyResolver options) {
         ForwardingFilter forwardFilter = SshServerConfigFileReader.resolveServerForwarding(options);
         server.setForwardingFilter(forwardFilter);
         return forwardFilter;
     }
 
-    public static Object setupServerBanner(ServerFactoryManager server, Map<String, ?> options) {
+    public static Object setupServerBanner(ServerFactoryManager server, PropertyResolver options) {
         Object banner = SshServerConfigFileReader.resolveBanner(options);
         PropertyResolverUtils.updateProperty(server, ServerAuthenticationManager.WELCOME_BANNER, banner);
         return banner;

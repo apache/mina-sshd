@@ -32,6 +32,7 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.BuiltinCompressions;
@@ -80,7 +81,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     public void testParseCiphersList() {
         List<? extends NamedResource> expected = BaseBuilder.DEFAULT_CIPHERS_PREFERENCE;
         Properties props = initNamedResourceProperties(SshConfigFileReader.CIPHERS_CONFIG_PROP, expected);
-        BuiltinCiphers.ParseResult result = SshConfigFileReader.getCiphers(props);
+        BuiltinCiphers.ParseResult result = SshConfigFileReader.getCiphers(PropertyResolverUtils.toPropertyResolver(props));
         testParsedFactoriesList(expected, result.getParsedFactories(), result.getUnsupportedFactories());
     }
 
@@ -88,7 +89,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     public void testParseMacsList() {
         List<? extends NamedResource> expected = BaseBuilder.DEFAULT_MAC_PREFERENCE;
         Properties props = initNamedResourceProperties(SshConfigFileReader.MACS_CONFIG_PROP, expected);
-        BuiltinMacs.ParseResult result = SshConfigFileReader.getMacs(props);
+        BuiltinMacs.ParseResult result = SshConfigFileReader.getMacs(PropertyResolverUtils.toPropertyResolver(props));
         testParsedFactoriesList(expected, result.getParsedFactories(), result.getUnsupportedFactories());
     }
 
@@ -96,7 +97,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     public void testParseSignaturesList() {
         List<? extends NamedResource> expected = BaseBuilder.DEFAULT_SIGNATURE_PREFERENCE;
         Properties props = initNamedResourceProperties(SshConfigFileReader.HOST_KEY_ALGORITHMS_CONFIG_PROP, expected);
-        BuiltinSignatures.ParseResult result = SshConfigFileReader.getSignatures(props);
+        BuiltinSignatures.ParseResult result = SshConfigFileReader.getSignatures(PropertyResolverUtils.toPropertyResolver(props));
         testParsedFactoriesList(expected, result.getParsedFactories(), result.getUnsupportedFactories());
     }
 
@@ -104,7 +105,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     public void testParseKexFactoriesList() {
         List<? extends NamedResource> expected = BaseBuilder.DEFAULT_KEX_PREFERENCE;
         Properties props = initNamedResourceProperties(SshConfigFileReader.KEX_ALGORITHMS_CONFIG_PROP, expected);
-        BuiltinDHFactories.ParseResult result = SshConfigFileReader.getKexFactories(props);
+        BuiltinDHFactories.ParseResult result = SshConfigFileReader.getKexFactories(PropertyResolverUtils.toPropertyResolver(props));
         testParsedFactoriesList(expected, result.getParsedFactories(), result.getUnsupportedFactories());
     }
 
@@ -114,7 +115,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
         for (CompressionConfigValue expected : CompressionConfigValue.VALUES) {
             props.setProperty(SshConfigFileReader.COMPRESSION_PROP, expected.name().toLowerCase());
 
-            NamedResource actual = SshConfigFileReader.getCompression(props);
+            NamedResource actual = SshConfigFileReader.getCompression(PropertyResolverUtils.toPropertyResolver(props));
             assertNotNull("No match for " + expected.name(), actual);
             assertEquals(expected.name(), expected.getName(), actual.getName());
         }
@@ -130,7 +131,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
             }
         };
         // must be lenient since we do not cover the full default spectrum
-        AbstractFactoryManager actual = SshConfigFileReader.configure(expected, props, true, true);
+        AbstractFactoryManager actual = SshConfigFileReader.configure(expected, PropertyResolverUtils.toPropertyResolver(props), true, true);
         assertSame("Mismatched configured result", expected, actual);
         validateAbstractFactoryManagerConfiguration(expected, props, true);
     }
