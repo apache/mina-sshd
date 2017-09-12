@@ -47,8 +47,10 @@ public enum BuiltinMacs implements MacFactory {
     hmacmd596(Constants.HMAC_MD5_96, "HmacMD5", 12, 16),
     hmacsha1(Constants.HMAC_SHA1, "HmacSHA1", 20, 20),
     hmacsha196(Constants.HMAC_SHA1_96, "HmacSHA1", 12, 20),
+    /** See <A HREF="https://tools.ietf.org/html/rfc6668">RFC 6668</A> */
     hmacsha256(Constants.HMAC_SHA2_256, "HmacSHA256", 32, 32),
-    hmacsha512(Constants.HMAC_SHA2_512, "HmacSHA512", 64, 65);
+    /** See <A HREF="https://tools.ietf.org/html/rfc6668">RFC 6668</A> */
+    hmacsha512(Constants.HMAC_SHA2_512, "HmacSHA512", 64, 64);
 
     public static final Set<BuiltinMacs> VALUES =
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinMacs.class));
