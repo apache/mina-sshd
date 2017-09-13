@@ -75,21 +75,39 @@ public class DERWriter extends FilterOutputStream {
         writeBigInteger(Objects.requireNonNull(value, "No value").toByteArray());
     }
 
+    /**
+     * The integer is always considered to be positive, so if the first byte is < 0,
+     * we pad with a zero to make it positive
+     */
     public void writeBigInteger(byte... bytes) throws IOException {
         writeBigInteger(bytes, 0, NumberUtils.length(bytes));
     }
 
+    /**
+     * The integer is always considered to be positive, so if the first byte is < 0,
+     * we pad with a zero to make it positive
+     */
     public void writeBigInteger(byte[] bytes, int off, int len) throws IOException {
-        // ASN.1 - zero padding if 1st byte is > 0x7F
-        int padLen = ((len > 0) && ((bytes[off] & 0x80) != 0)) ? 1 : 0;
-
-        write(0x02);    // indicate it is an INTEGER
-        writeLength(len + padLen);
-        for (int index = 0; index < padLen; index++) {
+        // Strip leading zeroes
+        while (len > 1 && bytes[off] == 0 && isPositive(bytes[off + 1])) {
+            off++;
+            len--;
+        }
+        // indicate it is an INTEGER
+        write(0x02);
+        // Pad with a zero if needed
+        if (isPositive(bytes[off])) {
+            writeLength(len);
+        } else {
+            writeLength(len + 1);
             write(0);
         }
-
+        // Write data
         write(bytes, off, len);
+    }
+
+    private boolean isPositive(byte b) {
+        return (b & 0x80) == 0;
     }
 
 
