@@ -25,35 +25,30 @@ import java.io.InputStream;
 import java.io.StreamCorruptedException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.Base64;
 import java.util.Base64.Decoder;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.impl.AbstractIdentityResourceLoader;
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceParser;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractPuttyKeyDecoder
-                extends AbstractLoggingBean
-                implements PuttyKeyPairResourceParser {
+public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends PrivateKey>
+                extends AbstractIdentityResourceLoader<PUB, PRV>
+                implements PuttyKeyPairResourceParser<PUB, PRV> {
     public static final String ENCRYPTION_HEADER = "Encryption";
 
-    private final String keyType;
-    protected AbstractPuttyKeyDecoder(String keyType) {
-        this.keyType = keyType;
-    }
-
-    @Override
-    public String getKeyType() {
-        return keyType;
+    protected AbstractPuttyKeyDecoder(Class<PUB> pubType, Class<PRV> prvType, Collection<String> names) {
+        super(pubType, prvType, names);
     }
 
     @Override
@@ -74,8 +69,9 @@ public abstract class AbstractPuttyKeyDecoder
                 return false;
             }
 
+            Collection<String> supported = getSupportedTypeNames();
             String typeValue = l.substring(pos + 1).trim();
-            return Objects.equals(getKeyType(), typeValue);
+            return supported.contains(typeValue);
         }
 
         return false;

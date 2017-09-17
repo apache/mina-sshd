@@ -55,7 +55,7 @@ public class PuttyKeyUtilsTest extends BaseTestSupport {
     private final String keyType;
     private final String regularFile;
     private final String encryptedFile;
-    private final PuttyKeyPairResourceParser parser;
+    private final PuttyKeyPairResourceParser<?, ?> parser;
 
     public PuttyKeyUtilsTest(String keyType) {
         this.keyType = keyType;
@@ -77,17 +77,24 @@ public class PuttyKeyUtilsTest extends BaseTestSupport {
     public void testCanDecodePuttyKeyFile() throws IOException, GeneralSecurityException {
         for (String resource : new String[]{regularFile, encryptedFile}) {
             URL url = getClass().getResource(resource);
-            assertNotNull("Missing test resource: " + resource, url);
+            if (GenericUtils.isSameReference(regularFile, resource)) {
+                assertNotNull("Missing test resource: " + resource, url);
+            } else {
+                if (url == null) {
+                    outputDebugMessage("Skip non-existing encrypted file: %s", resource);
+                    continue;
+                }
+            }
 
             List<String> lines = IoUtils.readAllLines(url);
             assertTrue(resource + " - can extract key pair", parser.canExtractKeyPairs(resource, lines));
 
-            for (PuttyKeyPairResourceParser other : PuttyKeyUtils.BY_KEY_TYPE.values()) {
+            for (PuttyKeyPairResourceParser<?, ?> other : PuttyKeyUtils.BY_KEY_TYPE.values()) {
                 if (parser == other) {
                     continue;
                 }
 
-                assertFalse(other.getKeyType() + "/" + resource + " - unexpected extraction capability",
+                assertFalse(other.getClass().getSimpleName() + "/" + resource + " - unexpected extraction capability",
                         other.canExtractKeyPairs(resource, lines));
             }
         }
@@ -107,6 +114,7 @@ public class PuttyKeyUtilsTest extends BaseTestSupport {
     public void testDecodeEncryptedPuttyKeyFile() throws IOException, GeneralSecurityException {
         Assume.assumeTrue(BuiltinCiphers.aes256cbc.getTransformation() + " N/A", BuiltinCiphers.aes256cbc.isSupported());
         URL url = getClass().getResource(encryptedFile);
+        Assume.assumeTrue("Skip non-existent encrypted file: " + encryptedFile, url != null);
         assertNotNull("Missing test resource: " + encryptedFile, url);
 
         Collection<KeyPair> keys = parser.loadKeyPairs(url, r -> PASSWORD);

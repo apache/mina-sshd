@@ -34,6 +34,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
@@ -425,7 +426,7 @@ public final class GenericUtils {
         return stream(values).map(mapper).collect(Collectors.toList());
     }
 
-    public static <T, U> SortedSet<U> mapSort(
+    public static <T, U> NavigableSet<U> mapSort(
             Collection<T> values, Function<? super T, ? extends U> mapper, Comparator<U> comparator) {
         return stream(values).map(mapper).collect(toSortedSet(comparator));
     }
@@ -446,7 +447,7 @@ public final class GenericUtils {
         };
     }
 
-    public static <T> Collector<T, ?, SortedSet<T>> toSortedSet(Comparator<T> comparator) {
+    public static <T> Collector<T, ?, NavigableSet<T>> toSortedSet(Comparator<T> comparator) {
         return Collectors.toCollection(() -> new TreeSet<>(comparator));
     }
 

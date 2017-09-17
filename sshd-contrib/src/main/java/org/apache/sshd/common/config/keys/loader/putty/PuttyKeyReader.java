@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StreamCorruptedException;
 import java.math.BigInteger;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Helper class for {@code Putty} key files decoders
@@ -45,15 +47,25 @@ public class PuttyKeyReader implements Closeable {
         }
     }
 
-    private byte[] read() throws IOException {
+    public String readString() throws IOException {
+        return readString(StandardCharsets.UTF_8);
+    }
+
+    public String readString(Charset cs) throws IOException {
+        byte[] data = read();
+        return new String(data, cs);
+    }
+
+    public BigInteger readInt() throws IOException {
+        byte[] bytes = read();
+        return new BigInteger(bytes);
+    }
+
+    public byte[] read() throws IOException {
         int len = di.readInt();
         byte[] r = new byte[len];
         di.readFully(r);
         return r;
-    }
-
-    public BigInteger readInt() throws IOException {
-        return new BigInteger(read());
     }
 
     @Override

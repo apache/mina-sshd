@@ -26,6 +26,8 @@ import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
@@ -39,11 +41,11 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class RSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder {
+public class RSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<RSAPublicKey, RSAPrivateKey> {
     public static final RSAPuttyKeyDecoder INSTANCE = new RSAPuttyKeyDecoder();
 
     public RSAPuttyKeyDecoder() {
-        super(KeyPairProvider.SSH_RSA);
+        super(RSAPublicKey.class, RSAPrivateKey.class, Collections.singletonList(KeyPairProvider.SSH_RSA));
     }
 
     @Override

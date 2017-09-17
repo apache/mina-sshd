@@ -20,9 +20,10 @@
 package org.apache.sshd.common.config.keys.loader.putty;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.SortedMap;
+import java.util.NavigableMap;
 import java.util.TreeMap;
 
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceParser;
@@ -31,20 +32,25 @@ import org.apache.sshd.common.config.keys.loader.KeyPairResourceParser;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class PuttyKeyUtils {
-    public static final List<PuttyKeyPairResourceParser> DEFAULT_PARSERS =
+    public static final List<PuttyKeyPairResourceParser<?, ?>> DEFAULT_PARSERS =
             Collections.unmodifiableList(
                     Arrays.asList(
                             RSAPuttyKeyDecoder.INSTANCE,
-                            DSSPuttyKeyDecoder.INSTANCE));
-    public static final SortedMap<String, PuttyKeyPairResourceParser> BY_KEY_TYPE =
-            Collections.unmodifiableSortedMap(
-                    new TreeMap<String, PuttyKeyPairResourceParser>(String.CASE_INSENSITIVE_ORDER) {
+                            DSSPuttyKeyDecoder.INSTANCE,
+                            ECDSAPuttyKeyDecoder.INSTANCE));
+
+    public static final NavigableMap<String, PuttyKeyPairResourceParser<?, ?>> BY_KEY_TYPE =
+            Collections.unmodifiableNavigableMap(
+                    new TreeMap<String, PuttyKeyPairResourceParser<?, ?>>(String.CASE_INSENSITIVE_ORDER) {
                         // Not serializing it
                         private static final long serialVersionUID = 1L;
 
                         {
-                            for (PuttyKeyPairResourceParser p : DEFAULT_PARSERS) {
-                                put(p.getKeyType(), p);
+                            for (PuttyKeyPairResourceParser<?, ?> p : DEFAULT_PARSERS) {
+                                Collection<String> supported = p.getSupportedTypeNames();
+                                for (String k : supported) {
+                                    put(k, p);
+                                }
                             }
                         }
             });

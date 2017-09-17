@@ -26,6 +26,8 @@ import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.interfaces.DSAPrivateKey;
+import java.security.interfaces.DSAPublicKey;
 import java.security.spec.DSAPrivateKeySpec;
 import java.security.spec.DSAPublicKeySpec;
 import java.util.Collection;
@@ -38,11 +40,11 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DSSPuttyKeyDecoder extends AbstractPuttyKeyDecoder {
+public class DSSPuttyKeyDecoder extends AbstractPuttyKeyDecoder<DSAPublicKey, DSAPrivateKey> {
     public static final DSSPuttyKeyDecoder INSTANCE = new DSSPuttyKeyDecoder();
 
     public DSSPuttyKeyDecoder() {
-        super(KeyPairProvider.SSH_DSS);
+        super(DSAPublicKey.class, DSAPrivateKey.class, Collections.singletonList(KeyPairProvider.SSH_DSS));
     }
 
     @Override

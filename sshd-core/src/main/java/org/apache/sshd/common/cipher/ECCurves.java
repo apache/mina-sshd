@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -110,8 +111,8 @@ public enum ECCurves implements NamedResource, OptionalFeature {
     /**
      * A {@link Set} of all the known curves names
      */
-    public static final Set<String> NAMES =
-            Collections.unmodifiableSet(GenericUtils.mapSort(
+    public static final NavigableSet<String> NAMES =
+            Collections.unmodifiableNavigableSet(GenericUtils.mapSort(
                     VALUES,
                     ECCurves::getName,
                     String.CASE_INSENSITIVE_ORDER));
@@ -119,8 +120,8 @@ public enum ECCurves implements NamedResource, OptionalFeature {
     /**
      * A {@link Set} of all the known curves key types
      */
-    public static final Set<String> KEY_TYPES =
-            Collections.unmodifiableSet(GenericUtils.mapSort(
+    public static final NavigableSet<String> KEY_TYPES =
+            Collections.unmodifiableNavigableSet(GenericUtils.mapSort(
                     VALUES,
                     ECCurves::getKeyType,
                     String.CASE_INSENSITIVE_ORDER));

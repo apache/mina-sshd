@@ -70,7 +70,6 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
         }
 
         String keyCurveName = curve.getName();
-        ECParameterSpec paramSpec = curve.getParameters();
         // see rfc5656 section 3.1
         String encCurveName = KeyEntryResolver.decodeString(keyData);
         if (!keyCurveName.equals(encCurveName)) {
@@ -92,6 +91,7 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
                     + ": " + e.getMessage());
         }
 
+        ECParameterSpec paramSpec = curve.getParameters();
         return generatePublicKey(new ECPublicKeySpec(w, paramSpec));
     }
 

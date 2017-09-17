@@ -25,11 +25,8 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.KeySpec;
 import java.util.Collection;
-import java.util.Objects;
 
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
-import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * @param <PUB> Type of {@link PublicKey}
@@ -37,31 +34,10 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractKeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
-            extends AbstractLoggingBean
+            extends AbstractIdentityResourceLoader<PUB, PRV>
             implements KeyEntryResolver<PUB, PRV>  {
-    private final Class<PUB> pubType;
-    private final Class<PRV> prvType;
-    private final Collection<String> names;
-
     protected AbstractKeyEntryResolver(Class<PUB> pubType, Class<PRV> prvType, Collection<String> names) {
-        this.pubType = Objects.requireNonNull(pubType, "No public key type specified");
-        this.prvType = Objects.requireNonNull(prvType, "No private key type specified");
-        this.names = ValidateUtils.checkNotNullAndNotEmpty(names, "No type names provided");
-    }
-
-    @Override
-    public final Class<PUB> getPublicKeyType() {
-        return pubType;
-    }
-
-    @Override
-    public final Class<PRV> getPrivateKeyType() {
-        return prvType;
-    }
-
-    @Override
-    public Collection<String> getSupportedTypeNames() {
-        return names;
+        super(pubType, prvType, names);
     }
 
     public PUB generatePublicKey(KeySpec keySpec) throws GeneralSecurityException {

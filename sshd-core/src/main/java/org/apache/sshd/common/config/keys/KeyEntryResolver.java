@@ -32,7 +32,6 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.Collection;
 
 import org.apache.sshd.common.util.io.IoUtils;
 
@@ -41,26 +40,7 @@ import org.apache.sshd.common.util.io.IoUtils;
  * @param <PRV> Type of {@link PrivateKey}
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey> {
-    /**
-     * @return The {@link Class} of the {@link PublicKey} that is the result
-     * of decoding
-     */
-    Class<PUB> getPublicKeyType();
-
-    /**
-     * @return The {@link Class} of the {@link PrivateKey} that matches the
-     * public one
-     */
-    Class<PRV> getPrivateKeyType();
-
-    /**
-     * @return The {@link Collection} of {@code OpenSSH} key type names that
-     * are supported by this decoder - e.g., ECDSA keys have several curve names.
-     * <B>Caveat:</B> this collection may be un-modifiable...
-     */
-    Collection<String> getSupportedTypeNames();
-
+public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey> extends IdentityResourceLoader<PUB, PRV> {
     /**
      * @param keySize Key size in bits
      * @return A {@link KeyPair} with the specified key size
