@@ -750,7 +750,7 @@ One can skip all the conditional code if a specific known extension is required:
 
 ### Standard port forwarding
 
-Port forwarding as specified in [RFC 4254 - section 7](https://tools.ietf.org/html/rfc4254#section-7) is fully supported by the client and server. From the client side, this capability is exposed via the `start/stopLocal/RemotePortForwarding` method. The key player in this capability is the configured `ForwardingFilter` that controls this feature - on **both** sides - client and server. By default, this capability is **disabled** - i.e., the user must provide an implementation and call the appropriate `setTcpipForwardingFilter` method on the client/server.
+Port forwarding as specified in [RFC 4254 - section 7](https://tools.ietf.org/html/rfc4254#section-7) is fully supported by the client and server. From the client side, this capability is exposed via the `start/stopLocal/RemotePortForwarding` method. The key player in this capability is the configured `ForwardingFilter` that controls this feature - on **both** sides - client and server. By default, this capability is **disabled** - i.e., the user must provide an implementation and call the appropriate `setForwardingFilter` method on the client/server.
 
 The code contains 2 simple implementations - an accept-all and a reject-all one that can be used for these trivial policies. **Note:** setting a _null_ filter is equivalent to rejecting all such attempts.
 
