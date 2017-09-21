@@ -322,7 +322,7 @@ public final class GenericUtils {
         }
     }
 
-    public static<T> boolean isNotEmpty(Iterable<? extends T> iter) {
+    public static <T> boolean isNotEmpty(Iterable<? extends T> iter) {
         return !isEmpty(iter);
     }
 

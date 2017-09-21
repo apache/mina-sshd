@@ -24,7 +24,7 @@ import org.apache.sshd.common.auth.AbstractUserAuthMethodFactory;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractUserAuthFactory extends AbstractUserAuthMethodFactory<UserAuth>implements UserAuthFactory {
+public abstract class AbstractUserAuthFactory extends AbstractUserAuthMethodFactory<UserAuth> implements UserAuthFactory {
     protected AbstractUserAuthFactory(String name) {
         super(name);
     }

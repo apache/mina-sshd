@@ -114,6 +114,7 @@
             <property name="tokens" value="ARRAY_INIT,BNOT,DEC,DOT,INC,LNOT,UNARY_MINUS,UNARY_PLUS" />
         </module>
         <module name="NoWhitespaceBefore" />
+        <module name="GenericWhitespace"/>
         <module name="OperatorWrap" />
         <module name="ParenPad" />
         <module name="TypecastParenPad" />
