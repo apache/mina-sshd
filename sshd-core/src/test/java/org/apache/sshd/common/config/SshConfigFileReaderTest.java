@@ -20,6 +20,7 @@
 package org.apache.sshd.common.config;
 
 import java.io.IOException;
+import java.io.StreamCorruptedException;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
@@ -75,6 +76,14 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
 
         String[] keys = GenericUtils.split(keysList, ',');
         assertTrue("No multiple keys", GenericUtils.length((Object[]) keys) > 1);
+    }
+
+    @Test(expected = StreamCorruptedException.class)
+    public void testReadFromURLInvalidDelimiter() throws IOException {
+        URL url = getClass().getResource("invalid_delimiter_sshd_config");
+        assertNotNull("Cannot locate test file", url);
+
+        SshConfigFileReader.readConfigFile(url);
     }
 
     @Test
