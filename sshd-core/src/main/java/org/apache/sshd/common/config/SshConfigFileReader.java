@@ -39,6 +39,8 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.sshd.common.BuiltinFactory;
 import org.apache.sshd.common.NamedFactory;
@@ -180,6 +182,8 @@ public final class SshConfigFileReader {
      */
     public static Properties readConfigFile(BufferedReader rdr) throws IOException {
         Properties props = new Properties();
+        Pattern keyValueDelimiter = Pattern.compile("\\s|=");
+        Matcher matcher = null;
         int lineNumber = 1;
         for (String line = rdr.readLine(); line != null; line = rdr.readLine(), lineNumber++) {
             line = GenericUtils.trimToEmpty(line);
@@ -198,17 +202,14 @@ public final class SshConfigFileReader {
             }
 
             /*
-             * Some options use '=', others use ' ' - try both
+             * try all whitespace delimiters and '='
              * NOTE: we do not validate the format for each option separately
              */
-            pos = line.indexOf(' ');
-            if (pos < 0) {
-                pos = line.indexOf('=');
-            }
-
-            if (pos < 0) {
+            matcher = keyValueDelimiter.matcher(line);
+            if (!matcher.find()) {
                 throw new StreamCorruptedException("No delimiter at line " + lineNumber + ": " + line);
             }
+            pos = matcher.start();
 
             String key = line.substring(0, pos);
             String value = line.substring(pos + 1).trim();
