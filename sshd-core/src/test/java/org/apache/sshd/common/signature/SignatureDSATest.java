@@ -25,22 +25,24 @@ import java.security.spec.DSAPublicKeySpec;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.junit.Assert;
+import org.apache.sshd.util.test.BaseTestSupport;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 /**
- * @author Kermit the frog
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SignatureDSATest {
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+public class SignatureDSATest extends BaseTestSupport {
     public SignatureDSATest() {
+        super();
     }
 
     @Test
     public void testTooShortSignature() throws Exception {
-
         KeyFactory kf = SecurityUtils.getKeyFactory(KeyUtils.DSS_ALGORITHM);
-
-        final SignatureDSA signatureDSA = new SignatureDSA("DSA") {
+        SignatureDSA signatureDSA = new SignatureDSA(KeyUtils.DSS_ALGORITHM) {
             @Override
             protected java.security.Signature doInitSignature(String algo, boolean forSigning) throws GeneralSecurityException {
                 return java.security.Signature.getInstance(algo);
@@ -99,6 +101,6 @@ public class SignatureDSATest {
             -1, -78, 112, -88, 14, -39, -78, -98, -80 };
         boolean verified = signatureDSA.verify(sig_of_h);
 
-        Assert.assertTrue(verified);
+        assertTrue(verified);
     }
 }
