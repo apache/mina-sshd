@@ -244,7 +244,9 @@ public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, S
 
                 client.start();
                 for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
-                    String[] hosts = GenericUtils.split(GenericUtils.trimToEmpty(line), ',');
+                    line = GenericUtils.replaceWhitespaceAndTrim(line);
+
+                    String[] hosts = GenericUtils.split(line, ',');
                     if (GenericUtils.isEmpty(hosts)) {
                         continue;
                     }

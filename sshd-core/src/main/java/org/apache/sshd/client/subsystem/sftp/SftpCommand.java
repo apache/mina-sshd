@@ -123,7 +123,7 @@ public class SftpCommand implements Channel {
                 break;
             }
 
-            line = line.trim();
+            line = GenericUtils.replaceWhitespaceAndTrim(line);
             if (GenericUtils.isEmpty(line)) {
                 continue;
             }

@@ -182,7 +182,7 @@ public final class SshConfigFileReader {
         Properties props = new Properties();
         int lineNumber = 1;
         for (String line = rdr.readLine(); line != null; line = rdr.readLine(), lineNumber++) {
-            line = GenericUtils.trimToEmpty(line);
+            line = GenericUtils.replaceWhitespaceAndTrim(line);
             if (GenericUtils.isEmpty(line)) {
                 continue;
             }

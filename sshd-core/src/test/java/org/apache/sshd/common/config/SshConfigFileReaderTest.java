@@ -20,6 +20,9 @@
 package org.apache.sshd.common.config;
 
 import java.io.IOException;
+import java.io.Reader;
+import java.io.StreamCorruptedException;
+import java.io.StringReader;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
@@ -185,6 +188,28 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     public void testConfigureCompressionFromStringAcceptsCombinedValues() {
         testConfigureCompressionFromStringAcceptsCombinedValues(CompressionConfigValue.class, Transformer.ENUM_NAME_EXTRACTOR);
         testConfigureCompressionFromStringAcceptsCombinedValues(BuiltinCompressions.class, NamedResource.NAME_EXTRACTOR);
+    }
+
+    @Test(expected = StreamCorruptedException.class)
+    public void testInvalidDelimiter() throws IOException {
+        String line = getClass().getSimpleName() + "+" + getCurrentTestName();
+        try (Reader rdr = new StringReader(line)) {
+            Properties props = SshConfigFileReader.readConfigFile(rdr, true);
+            fail("Unexpected success: " + props);
+        }
+    }
+
+    @Test   // SSHD-774
+    public void testTabDelimiter() throws IOException {
+        String name = getClass().getSimpleName();
+        String expected = getCurrentTestName();
+        Properties props;
+        try (Reader rdr = new StringReader(name + "\t" + expected)) {
+            props = SshConfigFileReader.readConfigFile(rdr, true);
+        }
+
+        String actual = props.getProperty(name);
+        assertEquals("Mismatched read configuration value", expected, actual);
     }
 
     private static <E extends Enum<E> & CompressionFactory> void testConfigureCompressionFromStringAcceptsCombinedValues(

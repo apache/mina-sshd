@@ -335,7 +335,7 @@ public class KnownHostsServerKeyVerifier
 
         List<String> lines = new ArrayList<>();
         synchronized (updateLock) {
-            int matchingIndex = -1; // read all lines but replace the
+            int matchingIndex = -1; // read all lines but replace the updated one
             try (BufferedReader rdr = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
                 for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
                     // skip if already replaced the original line
