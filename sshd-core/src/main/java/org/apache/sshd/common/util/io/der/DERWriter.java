@@ -78,6 +78,9 @@ public class DERWriter extends FilterOutputStream {
     /**
      * The integer is always considered to be positive, so if the first byte is < 0,
      * we pad with a zero to make it positive
+     *
+     * @param bytes {@link BigInteger} bytes
+     * @throws IOException If failed to write the bytes
      */
     public void writeBigInteger(byte... bytes) throws IOException {
         writeBigInteger(bytes, 0, NumberUtils.length(bytes));
@@ -86,6 +89,11 @@ public class DERWriter extends FilterOutputStream {
     /**
      * The integer is always considered to be positive, so if the first byte is < 0,
      * we pad with a zero to make it positive
+     *
+     * @param bytes {@link BigInteger} bytes
+     * @param off Offset in bytes data
+     * @param len Number of bytes to write
+     * @throws IOException If failed to write the bytes
      */
     public void writeBigInteger(byte[] bytes, int off, int len) throws IOException {
         // Strip leading zeroes

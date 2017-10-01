@@ -28,8 +28,8 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * TODO Add javadoc
- *
+ * @param <PUB> Generic public key type
+ * @param <PRV> Generic private key type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractIdentityResourceLoader<PUB extends PublicKey, PRV extends PrivateKey>

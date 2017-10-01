@@ -87,6 +87,8 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * Emdk
  * Private-MAC: 50c45751d18d74c00fca395deb7b7695e3ed6f77
  * </PRE>
+ * @param <PUB> Generic public key type
+ * @param <PRV> Generic private key type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 //CHECKSTYLE:ON
