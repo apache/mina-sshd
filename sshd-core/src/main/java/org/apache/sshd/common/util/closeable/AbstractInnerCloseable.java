@@ -41,6 +41,7 @@ public abstract class AbstractInnerCloseable extends AbstractCloseable {
     }
 
     @Override
+    @SuppressWarnings("synthetic-access")
     protected void doCloseImmediately() {
         getInnerCloseable().close(true).addListener(future -> AbstractInnerCloseable.super.doCloseImmediately());
     }
