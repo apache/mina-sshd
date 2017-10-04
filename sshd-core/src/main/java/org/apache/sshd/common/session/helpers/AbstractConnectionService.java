@@ -42,9 +42,10 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.channel.OpenChannelException;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.channel.exception.SshChannelNotFoundException;
+import org.apache.sshd.common.channel.exception.SshChannelOpenException;
 import org.apache.sshd.common.forward.ForwardingFilter;
 import org.apache.sshd.common.forward.ForwardingFilterFactory;
 import org.apache.sshd.common.forward.PortForwardingEventListener;
@@ -451,8 +452,15 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
      * @throws IOException if an error occurs
      */
     public void channelEof(Buffer buffer) throws IOException {
-        Channel channel = getChannel(buffer);
-        channel.handleEof();
+        // Do not use getChannel to avoid the session being closed
+        // if receiving the SSH_MSG_CHANNEL_EOF on an already closed channel
+        int recipient = buffer.getInt();
+        Channel channel = channels.get(recipient);
+        if (channel != null) {
+            channel.handleEof();
+        } else {
+            log.warn("Received SSH_MSG_CHANNEL_EOF on unknown channel " + recipient);
+        }
     }
 
     /**
@@ -523,7 +531,9 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
             byte[] data = buffer.array();
             int curPos = buffer.rpos();
             int cmd = (curPos >= 5) ? (data[curPos - 5] & 0xFF) : -1;
-            throw new SshException("Received " + SshConstants.getCommandMessageName(cmd) + " on unknown channel " + recipient);
+            // Throw a special exception - SSHD-776
+            throw new SshChannelNotFoundException(recipient,
+                "Received " + SshConstants.getCommandMessageName(cmd) + " on unknown channel " + recipient);
         }
 
         return channel;
@@ -583,8 +593,8 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
                     if (exception != null) {
                         String message = exception.getMessage();
                         int reasonCode = 0;
-                        if (exception instanceof OpenChannelException) {
-                            reasonCode = ((OpenChannelException) exception).getReasonCode();
+                        if (exception instanceof SshChannelOpenException) {
+                            reasonCode = ((SshChannelOpenException) exception).getReasonCode();
                         } else {
                             message = exception.getClass().getSimpleName() + " while opening channel: " + message;
                         }

@@ -16,23 +16,24 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.channel;
+package org.apache.sshd.common.channel.exception;
 
 /**
  * Documents failure of a channel to open as expected.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class OpenChannelException extends Exception {
-    private static final long serialVersionUID = 3861183351970782341L;
+public class SshChannelOpenException extends SshChannelException {
+    private static final long serialVersionUID = 3591321447714889771L;
+
     private final int code;
 
-    public OpenChannelException(int code, String message) {
-        this(code, message, null);
+    public SshChannelOpenException(int channelId, int code, String message) {
+        this(channelId, code, message, null);
     }
 
-    public OpenChannelException(int code, String message, Throwable cause) {
-        super(message, cause);
+    public SshChannelOpenException(int channelId, int code, String message, Throwable cause) {
+        super(channelId, message, cause);
         this.code = code;
     }
 

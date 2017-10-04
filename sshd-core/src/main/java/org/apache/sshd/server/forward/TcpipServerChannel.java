@@ -33,8 +33,8 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.ChannelOutputStream;
-import org.apache.sshd.common.channel.OpenChannelException;
 import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.channel.exception.SshChannelOpenException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
@@ -138,7 +138,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
                     log.debug("doInit(" + this + ")[" + type + "][haveFilter=" + (filter != null) + "] filtered out " + address);
                 }
                 super.close(true);
-                f.setException(new OpenChannelException(SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "Connection denied"));
+                f.setException(new SshChannelOpenException(getId(), SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "Connection denied"));
                 return f;
             }
         } catch (Error e) {
@@ -235,7 +235,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         closeImmediately0();
 
         if (problem instanceof ConnectException) {
-            f.setException(new OpenChannelException(SshConstants.SSH_OPEN_CONNECT_FAILED, problem.getMessage(), problem));
+            f.setException(new SshChannelOpenException(getId(), SshConstants.SSH_OPEN_CONNECT_FAILED, problem.getMessage(), problem));
         } else {
             f.setException(problem);
         }
