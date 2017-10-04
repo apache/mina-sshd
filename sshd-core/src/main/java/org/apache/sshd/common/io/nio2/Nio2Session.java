@@ -19,6 +19,7 @@
 package org.apache.sshd.common.io.nio2;
 
 import java.io.IOException;
+import java.io.WriteAbortedException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
@@ -193,9 +194,13 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     @Override
     protected void doCloseImmediately() {
         for (;;) {
+            // Cancel pending requests informing them of the cancellation
             Nio2DefaultIoWriteFuture future = writes.poll();
             if (future != null) {
-                future.setException(new ClosedChannelException());
+                Throwable error = future.getException();
+                if (error == null) {
+                    future.setException(new WriteAbortedException("Write request aborted due to immediate session close", null));
+                }
             } else {
                 break;
             }
