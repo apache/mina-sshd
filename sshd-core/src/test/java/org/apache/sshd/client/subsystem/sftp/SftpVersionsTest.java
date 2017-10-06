@@ -36,6 +36,7 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -58,6 +59,7 @@ import org.apache.sshd.server.subsystem.sftp.AbstractSftpEventListenerAdapter;
 import org.apache.sshd.server.subsystem.sftp.DefaultGroupPrincipal;
 import org.apache.sshd.server.subsystem.sftp.SftpEventListener;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
+import org.apache.sshd.server.subsystem.sftp.SftpSubsystemEnvironment;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.Utils;
@@ -78,9 +80,10 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class SftpVersionsTest extends AbstractSftpClientTestSupport {
     private static final List<Integer> VERSIONS =
-            Collections.unmodifiableList(
-                    IntStream.rangeClosed(SftpSubsystem.LOWER_SFTP_IMPL, SftpSubsystem.HIGHER_SFTP_IMPL)
-                            .boxed().collect(Collectors.toList()));
+        Collections.unmodifiableList(
+            IntStream.rangeClosed(SftpSubsystemEnvironment.LOWER_SFTP_IMPL, SftpSubsystemEnvironment.HIGHER_SFTP_IMPL)
+                .boxed()
+                .collect(Collectors.toList()));
 
     private final int testVersion;
 
@@ -224,10 +227,11 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         SftpSubsystemFactory factory = new SftpSubsystemFactory() {
             @Override
             public Command create() {
-                SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy(), getFileSystemAccessor()) {
+                SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(), isShutdownOnExit(),
+                        getUnsupportedAttributePolicy(), getFileSystemAccessor(), getErrorStatusDataHandler()) {
                     @Override
-                    protected Map<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options) throws IOException {
-                        Map<String, Object> attrs = super.resolveFileAttributes(file, flags, options);
+                    protected NavigableMap<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options) throws IOException {
+                        NavigableMap<String, Object> attrs = super.resolveFileAttributes(file, flags, options);
                         if (GenericUtils.isEmpty(attrs)) {
                             attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
                         }
@@ -342,10 +346,11 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         SftpSubsystemFactory factory = new SftpSubsystemFactory() {
             @Override
             public Command create() {
-                SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy(), getFileSystemAccessor()) {
+                SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(), isShutdownOnExit(),
+                        getUnsupportedAttributePolicy(), getFileSystemAccessor(), getErrorStatusDataHandler()) {
                     @Override
-                    protected Map<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options) throws IOException {
-                        Map<String, Object> attrs = super.resolveFileAttributes(file, flags, options);
+                    protected NavigableMap<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options) throws IOException {
+                        NavigableMap<String, Object> attrs = super.resolveFileAttributes(file, flags, options);
                         if (GenericUtils.isEmpty(attrs)) {
                             attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
                         }

@@ -68,7 +68,7 @@ import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.scp.ScpCommandFactory;
-import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
+import org.apache.sshd.server.subsystem.sftp.SftpSubsystemEnvironment;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.Utils;
@@ -136,7 +136,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
         params.put("test-pkg-name", getClass().getPackage().getName());
         params.put("test-name", getCurrentTestName());
 
-        int expectedVersion = (SftpSubsystem.LOWER_SFTP_IMPL + SftpSubsystem.HIGHER_SFTP_IMPL) / 2;
+        int expectedVersion = (SftpSubsystemEnvironment.LOWER_SFTP_IMPL + SftpSubsystemEnvironment.HIGHER_SFTP_IMPL) / 2;
         params.put(SftpFileSystemProvider.VERSION_PARAM, expectedVersion);
         try (SftpFileSystem fs = (SftpFileSystem) FileSystems.newFileSystem(createDefaultFileSystemURI(params), Collections.<String, Object>emptyMap())) {
             try (SftpClient sftpClient = fs.getClient()) {

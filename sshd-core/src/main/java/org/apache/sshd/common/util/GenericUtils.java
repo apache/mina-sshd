@@ -878,7 +878,7 @@ public final class GenericUtils {
             this.map = new LinkedHashMap<>();
         }
 
-        public MapBuilder(Comparator<K> comparator) {
+        public MapBuilder(Comparator<? super K> comparator) {
             this.map = new TreeMap<>(comparator);
         }
 

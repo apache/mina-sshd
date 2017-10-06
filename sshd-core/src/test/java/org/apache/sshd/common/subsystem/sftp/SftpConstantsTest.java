@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.subsystem.sftp;
 
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -58,6 +59,14 @@ public class SftpConstantsTest extends BaseTestSupport {
         for (int status = SftpConstants.SSH_FX_OK; status <= SftpConstants.SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK; status++) {
             String name = SftpConstants.getStatusName(status);
             assertTrue("Failed to convert status=" + status + ": " + name, name.startsWith("SSH_FX_"));
+        }
+    }
+
+    @Test
+    public void testSubstatusMessageResolution() {
+        for (int status = SftpConstants.SSH_FX_OK; status <= SftpConstants.SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK; status++) {
+            String message = SftpHelper.resolveStatusMessage(status);
+            assertTrue("Missing message for status=" + status, GenericUtils.isNotEmpty(message));
         }
     }
 }

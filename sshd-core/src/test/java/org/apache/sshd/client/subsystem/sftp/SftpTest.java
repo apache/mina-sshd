@@ -94,13 +94,14 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.subsystem.sftp.AbstractSftpEventListenerAdapter;
+import org.apache.sshd.server.subsystem.sftp.AbstractSftpSubsystemHelper;
 import org.apache.sshd.server.subsystem.sftp.DirectoryHandle;
 import org.apache.sshd.server.subsystem.sftp.FileHandle;
 import org.apache.sshd.server.subsystem.sftp.Handle;
 import org.apache.sshd.server.subsystem.sftp.SftpEventListener;
 import org.apache.sshd.server.subsystem.sftp.SftpEventListenerManager;
 import org.apache.sshd.server.subsystem.sftp.SftpFileSystemAccessor;
-import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
+import org.apache.sshd.server.subsystem.sftp.SftpSubsystemEnvironment;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.SimpleUserInfo;
 import org.apache.sshd.util.test.Utils;
@@ -116,7 +117,7 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SftpTest extends AbstractSftpClientTestSupport {
-    private static final Map<String, OptionalFeature> EXPECTED_EXTENSIONS = SftpSubsystem.DEFAULT_SUPPORTED_CLIENT_EXTENSIONS;
+    private static final Map<String, OptionalFeature> EXPECTED_EXTENSIONS = AbstractSftpSubsystemHelper.DEFAULT_SUPPORTED_CLIENT_EXTENSIONS;
 
     private com.jcraft.jsch.Session session;
 
@@ -209,7 +210,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 byte[] actual = new byte[expected.length];
                 int maxAllowed = actual.length / 4;
                 // allow less than actual
-                PropertyResolverUtils.updateProperty(sshd, SftpSubsystem.MAX_READDATA_PACKET_LENGTH_PROP, maxAllowed);
+                PropertyResolverUtils.updateProperty(sshd, AbstractSftpSubsystemHelper.MAX_READDATA_PACKET_LENGTH_PROP, maxAllowed);
                 try (CloseableHandle handle = sftp.open(file, OpenMode.Read)) {
                     int readLen = sftp.read(handle, 0L, actual);
                     assertEquals("Mismatched read len", maxAllowed, readLen);
@@ -224,7 +225,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                         }
                     }
                 } finally {
-                    PropertyResolverUtils.updateProperty(sshd, SftpSubsystem.MAX_READDATA_PACKET_LENGTH_PROP, SftpSubsystem.DEFAULT_MAX_READDATA_PACKET_LENGTH);
+                    PropertyResolverUtils.updateProperty(sshd,
+                        AbstractSftpSubsystemHelper.MAX_READDATA_PACKET_LENGTH_PROP,
+                        AbstractSftpSubsystemHelper.DEFAULT_MAX_READDATA_PACKET_LENGTH);
                 }
             }
         }
@@ -634,8 +637,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             @Override
             public void initialized(ServerSession session, int version) {
                 log.info("initialized(" + session + ") version: " + version);
-                assertTrue("Initialized version below minimum", version >= SftpSubsystem.LOWER_SFTP_IMPL);
-                assertTrue("Initialized version above maximum", version <= SftpSubsystem.HIGHER_SFTP_IMPL);
+                assertTrue("Initialized version below minimum", version >= SftpSubsystemEnvironment.LOWER_SFTP_IMPL);
+                assertTrue("Initialized version above maximum", version <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL);
                 assertTrue("Initializion re-called", versionHolder.getAndSet(version) < 0);
             }
 
@@ -1102,7 +1105,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     }
                 }
 
-                for (OpenSSHExtension expected : SftpSubsystem.DEFAULT_OPEN_SSH_EXTENSIONS) {
+                for (OpenSSHExtension expected : AbstractSftpSubsystemHelper.DEFAULT_OPEN_SSH_EXTENSIONS) {
                     String name = expected.getName();
                     Object value = data.get(name);
                     assertNotNull("OpenSSH extension not declared: " + name, value);
@@ -1121,11 +1124,13 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
                     if (instance.isSupported()) {
                         if (isOpenSSHExtension) {
-                            assertTrue("Unlisted default OpenSSH extension: " + extensionName, SftpSubsystem.DEFAULT_OPEN_SSH_EXTENSIONS_NAMES.contains(extensionName));
+                            assertTrue("Unlisted default OpenSSH extension: " + extensionName,
+                                AbstractSftpSubsystemHelper.DEFAULT_OPEN_SSH_EXTENSIONS_NAMES.contains(extensionName));
                         }
                     } else {
                         assertTrue("Unsupported non-OpenSSH extension: " + extensionName, isOpenSSHExtension);
-                        assertFalse("Unsupported default OpenSSH extension: " + extensionName, SftpSubsystem.DEFAULT_OPEN_SSH_EXTENSIONS_NAMES.contains(extensionName));
+                        assertFalse("Unsupported default OpenSSH extension: " + extensionName,
+                            AbstractSftpSubsystemHelper.DEFAULT_OPEN_SSH_EXTENSIONS_NAMES.contains(extensionName));
                     }
                 }
             }
@@ -1147,9 +1152,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     private static void assertSupportedVersions(Versions vers) {
         List<String> values = vers.getVersions();
         assertEquals("Mismatched reported versions size: " + values,
-                     1 + SftpSubsystem.HIGHER_SFTP_IMPL - SftpSubsystem.LOWER_SFTP_IMPL,
+                     1 + SftpSubsystemEnvironment.HIGHER_SFTP_IMPL - SftpSubsystemEnvironment.LOWER_SFTP_IMPL,
                      GenericUtils.size(values));
-        for (int expected = SftpSubsystem.LOWER_SFTP_IMPL, index = 0; expected <= SftpSubsystem.HIGHER_SFTP_IMPL; expected++, index++) {
+        for (int expected = SftpSubsystemEnvironment.LOWER_SFTP_IMPL, index = 0; expected <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL; expected++, index++) {
             String e = Integer.toString(expected);
             String a = values.get(index);
             assertEquals("Missing value at index=" + index + ": " + values, e, a);
@@ -1164,9 +1169,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     private static void assertSupportedAclCapabilities(AclCapabilities caps) {
         Set<Integer> actual = AclCapabilities.deconstructAclCapabilities(caps.getCapabilities());
-        assertEquals("Mismatched ACL capabilities count", SftpSubsystem.DEFAULT_ACL_SUPPORTED_MASK.size(), actual.size());
-        assertTrue("Missing capabilities - expected=" + SftpSubsystem.DEFAULT_ACL_SUPPORTED_MASK + ", actual=" + actual,
-                   actual.containsAll(SftpSubsystem.DEFAULT_ACL_SUPPORTED_MASK));
+        assertEquals("Mismatched ACL capabilities count", AbstractSftpSubsystemHelper.DEFAULT_ACL_SUPPORTED_MASK.size(), actual.size());
+        assertTrue("Missing capabilities - expected=" + AbstractSftpSubsystemHelper.DEFAULT_ACL_SUPPORTED_MASK + ", actual=" + actual,
+                   actual.containsAll(AbstractSftpSubsystemHelper.DEFAULT_ACL_SUPPORTED_MASK));
     }
 
     @Test

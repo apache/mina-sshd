@@ -33,8 +33,8 @@ import org.apache.sshd.server.subsystem.SubsystemFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SftpSubsystemFactory
-    extends AbstractSftpEventListenerManager
-    implements SubsystemFactory, ExecutorServiceConfigurer, SftpEventListenerManager, SftpFileSystemAccessorManager {
+        extends AbstractSftpEventListenerManager
+        implements SubsystemFactory, ExecutorServiceConfigurer, SftpEventListenerManager, SftpFileSystemAccessorManager {
     public static final String NAME = SftpConstants.SFTP_SUBSYSTEM_NAME;
     public static final UnsupportedAttributePolicy DEFAULT_POLICY = UnsupportedAttributePolicy.Warn;
 
@@ -43,6 +43,7 @@ public class SftpSubsystemFactory
         private boolean shutdownExecutor;
         private UnsupportedAttributePolicy policy = DEFAULT_POLICY;
         private SftpFileSystemAccessor fileSystemAccessor = SftpFileSystemAccessor.DEFAULT;
+        private SftpErrorStatusDataHandler errorStatusDataHandler = SftpErrorStatusDataHandler.DEFAULT;
 
         public Builder() {
             super();
@@ -68,6 +69,11 @@ public class SftpSubsystemFactory
             return this;
         }
 
+        public Builder withSftpErrorStatusDataHandler(SftpErrorStatusDataHandler handler) {
+            errorStatusDataHandler = Objects.requireNonNull(handler, "No error status handler");
+            return this;
+        }
+
         @Override
         public SftpSubsystemFactory build() {
             SftpSubsystemFactory factory = new SftpSubsystemFactory();
@@ -75,6 +81,7 @@ public class SftpSubsystemFactory
             factory.setShutdownOnExit(shutdownExecutor);
             factory.setUnsupportedAttributePolicy(policy);
             factory.setFileSystemAccessor(fileSystemAccessor);
+            factory.setErrorStatusDataHandler(errorStatusDataHandler);
             GenericUtils.forEach(getRegisteredListeners(), factory::addSftpEventListener);
             return factory;
         }
@@ -84,6 +91,7 @@ public class SftpSubsystemFactory
     private boolean shutdownExecutor;
     private UnsupportedAttributePolicy policy = DEFAULT_POLICY;
     private SftpFileSystemAccessor fileSystemAccessor = SftpFileSystemAccessor.DEFAULT;
+    private SftpErrorStatusDataHandler errorStatusDataHandler = SftpErrorStatusDataHandler.DEFAULT;
 
     public SftpSubsystemFactory() {
         super();
@@ -145,10 +153,20 @@ public class SftpSubsystemFactory
         fileSystemAccessor = Objects.requireNonNull(accessor, "No accessor");
     }
 
+    public SftpErrorStatusDataHandler getErrorStatusDataHandler() {
+        return errorStatusDataHandler;
+    }
+
+    public void setErrorStatusDataHandler(SftpErrorStatusDataHandler handler) {
+        errorStatusDataHandler = Objects.requireNonNull(handler, "No error status data handler provided");
+    }
+
     @Override
     public Command create() {
         SftpSubsystem subsystem =
-                new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy(), getFileSystemAccessor());
+            new SftpSubsystem(getExecutorService(), isShutdownOnExit(),
+                getUnsupportedAttributePolicy(), getFileSystemAccessor(),
+                getErrorStatusDataHandler());
         GenericUtils.forEach(getRegisteredListeners(), subsystem::addSftpEventListener);
         return subsystem;
     }

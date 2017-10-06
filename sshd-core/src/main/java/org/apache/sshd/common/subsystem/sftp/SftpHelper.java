@@ -20,6 +20,7 @@ package org.apache.sshd.common.subsystem.sftp;
 
 import java.io.EOFException;
 import java.io.FileNotFoundException;
+import java.net.UnknownServiceException;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
@@ -42,9 +43,11 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
@@ -76,6 +79,48 @@ public final class SftpHelper {
      * Default value for {@link #APPEND_END_OF_LIST_INDICATOR} if none configured
      */
     public static final boolean DEFAULT_APPEND_END_OF_LIST_INDICATOR = true;
+
+    public static final NavigableMap<Integer, String> DEFAULT_SUBSTATUS_MESSAGE =
+        Collections.unmodifiableNavigableMap(new TreeMap<Integer, String>(Comparator.naturalOrder()) {
+            // Not serializing it
+            private static final long serialVersionUID = 1L;
+
+            {
+                put(SftpConstants.SSH_FX_OK, "Success");
+                put(SftpConstants.SSH_FX_EOF, "End of file");
+                put(SftpConstants.SSH_FX_NO_SUCH_FILE, "No such file or directory");
+                put(SftpConstants.SSH_FX_PERMISSION_DENIED, "Permission denied");
+                put(SftpConstants.SSH_FX_FAILURE, "General failure");
+                put(SftpConstants.SSH_FX_BAD_MESSAGE, "Bad message data");
+                put(SftpConstants.SSH_FX_NO_CONNECTION, "No connection to server");
+                put(SftpConstants.SSH_FX_CONNECTION_LOST, "Connection lost");
+                put(SftpConstants.SSH_FX_OP_UNSUPPORTED, "Unsupported operation requested");
+                put(SftpConstants.SSH_FX_INVALID_HANDLE, "Invalid handle value");
+                put(SftpConstants.SSH_FX_NO_SUCH_PATH, "No such path");
+                put(SftpConstants.SSH_FX_FILE_ALREADY_EXISTS, "File/Directory already exists");
+                put(SftpConstants.SSH_FX_WRITE_PROTECT, "File/Directory is write-protected");
+                put(SftpConstants.SSH_FX_NO_MEDIA, "No such meadia");
+                put(SftpConstants.SSH_FX_NO_SPACE_ON_FILESYSTEM, "No space left on device");
+                put(SftpConstants.SSH_FX_QUOTA_EXCEEDED, "Quota exceeded");
+                put(SftpConstants.SSH_FX_UNKNOWN_PRINCIPAL, "Unknown user/group");
+                put(SftpConstants.SSH_FX_LOCK_CONFLICT, "Lock conflict");
+                put(SftpConstants.SSH_FX_DIR_NOT_EMPTY, "Directory not empty");
+                put(SftpConstants.SSH_FX_NOT_A_DIRECTORY, "Accessed location is not a directory");
+                put(SftpConstants.SSH_FX_INVALID_FILENAME, "Invalid filename");
+                put(SftpConstants.SSH_FX_LINK_LOOP, "Link loop");
+                put(SftpConstants.SSH_FX_CANNOT_DELETE, "Cannot remove");
+                put(SftpConstants.SSH_FX_INVALID_PARAMETER, "Invalid parameter");
+                put(SftpConstants.SSH_FX_FILE_IS_A_DIRECTORY, "Accessed location is a directory");
+                put(SftpConstants.SSH_FX_BYTE_RANGE_LOCK_CONFLICT, "Range lock conflict");
+                put(SftpConstants.SSH_FX_BYTE_RANGE_LOCK_REFUSED, "Range lock refused");
+                put(SftpConstants.SSH_FX_DELETE_PENDING, "Delete pending");
+                put(SftpConstants.SSH_FX_FILE_CORRUPT, "Corrupted file/directory");
+                put(SftpConstants.SSH_FX_OWNER_INVALID, "Invalid file/directory owner");
+                put(SftpConstants.SSH_FX_GROUP_INVALID, "Invalid file/directory group");
+                put(SftpConstants.SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK, "No matching byte range lock");
+            }
+        });
+
 
     private SftpHelper() {
         throw new UnsupportedOperationException("No instance allowed");
@@ -452,14 +497,13 @@ public final class SftpHelper {
             return SftpConstants.SSH_FX_EOF;
         } else if (t instanceof OverlappingFileLockException) {
             return SftpConstants.SSH_FX_LOCK_CONFLICT;
-        } else if (t instanceof UnsupportedOperationException) {
+        } else if ((t instanceof UnsupportedOperationException)
+                || (t instanceof UnknownServiceException)) {
             return SftpConstants.SSH_FX_OP_UNSUPPORTED;
         } else if (t instanceof InvalidPathException) {
             return SftpConstants.SSH_FX_INVALID_FILENAME;
         } else if (t instanceof IllegalArgumentException) {
             return SftpConstants.SSH_FX_INVALID_PARAMETER;
-        } else if (t instanceof UnsupportedOperationException) {
-            return SftpConstants.SSH_FX_OP_UNSUPPORTED;
         } else if (t instanceof UserPrincipalNotFoundException) {
             return SftpConstants.SSH_FX_UNKNOWN_PRINCIPAL;
         } else if (t instanceof FileSystemLoopException) {
@@ -471,18 +515,13 @@ public final class SftpHelper {
         }
     }
 
-    public static String resolveStatusMessage(Throwable t) {
-        if (t == null) {
-            return "";
-        } else if (t instanceof SftpException) {
-            return t.toString();
-        } else {
-            return "Internal " + t.getClass().getSimpleName() + ": " + t.getMessage();
-        }
+    public static String resolveStatusMessage(int subStatus) {
+        String message = DEFAULT_SUBSTATUS_MESSAGE.get(subStatus);
+        return GenericUtils.isEmpty(message) ? ("Unknown error: " + subStatus) : message;
     }
 
-    public static Map<String, Object> readAttrs(Buffer buffer, int version) {
-        Map<String, Object> attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    public static NavigableMap<String, Object> readAttrs(Buffer buffer, int version) {
+        NavigableMap<String, Object> attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         int flags = buffer.getInt();
         if (version >= SftpConstants.SFTP_V4) {
             int type = buffer.getUByte();
@@ -592,10 +631,10 @@ public final class SftpHelper {
         return attrs;
     }
 
-    public static Map<String, byte[]> readExtensions(Buffer buffer) {
+    public static NavigableMap<String, byte[]> readExtensions(Buffer buffer) {
         int count = buffer.getInt();
         // NOTE
-        Map<String, byte[]> extended = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        NavigableMap<String, byte[]> extended = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (int i = 0; i < count; i++) {
             String key = buffer.getString();
             byte[] val = buffer.getBytes();
@@ -623,13 +662,13 @@ public final class SftpHelper {
         }
     }
 
-    public static Map<String, String> toStringExtensions(Map<String, ?> extensions) {
+    public static NavigableMap<String, String> toStringExtensions(Map<String, ?> extensions) {
         if (GenericUtils.isEmpty(extensions)) {
-            return Collections.emptyMap();
+            return Collections.emptyNavigableMap();
         }
 
         // NOTE: even though extensions are probably case sensitive we do not allow duplicate name that differs only in case
-        Map<String, String> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        NavigableMap<String, String> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         extensions.forEach((key, value) -> {
             ValidateUtils.checkNotNull(value, "No value for extension=%s", key);
             String prev = map.put(key, (value instanceof byte[]) ? new String((byte[]) value, StandardCharsets.UTF_8) : value.toString());
@@ -639,13 +678,13 @@ public final class SftpHelper {
         return map;
     }
 
-    public static Map<String, byte[]> toBinaryExtensions(Map<String, String> extensions) {
+    public static NavigableMap<String, byte[]> toBinaryExtensions(Map<String, String> extensions) {
         if (GenericUtils.isEmpty(extensions)) {
-            return Collections.emptyMap();
+            return Collections.emptyNavigableMap();
         }
 
         // NOTE: even though extensions are probably case sensitive we do not allow duplicate name that differs only in case
-        Map<String, byte[]> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        NavigableMap<String, byte[]> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         extensions.forEach((key, value) -> {
             ValidateUtils.checkNotNull(value, "No value for extension=%s", key);
             byte[] prev = map.put(key, value.getBytes(StandardCharsets.UTF_8));

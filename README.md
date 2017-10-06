@@ -746,6 +746,13 @@ One can skip all the conditional code if a specific known extension is required:
     
 ```
 
+### Internal exceptions and error message handling
+
+If an exception is thrown during processing of an SFTP command, then the exception is translated into a `SSH_FXP_STATUS` message
+using a registered `SftpErrorStatusDataHandler`. The default implementation provides a short description of the failure based on the thrown
+exception type. However, users may override it when creating the `SftpSubsystemFactory` and provide their own codes and/or messages - e.g., for debugging one can register a `DetailedSftpErrorStatusDataHandler` (see `sshd-contrib`) that "leaks" more information in the generated message.
+
+
 ## Port forwarding
 
 ### Standard port forwarding

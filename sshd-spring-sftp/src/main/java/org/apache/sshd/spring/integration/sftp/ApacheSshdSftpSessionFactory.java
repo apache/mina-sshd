@@ -45,7 +45,7 @@ import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
-import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
+import org.apache.sshd.server.subsystem.sftp.SftpSubsystemEnvironment;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.Resource;
@@ -239,7 +239,8 @@ public class ApacheSshdSftpSessionFactory
             setSftpVersionSelector(SftpVersionSelector.MINIMUM);
         } else {
             int fixedVersion = Integer.parseInt(version);
-            ValidateUtils.checkTrue((fixedVersion >= SftpSubsystem.LOWER_SFTP_IMPL) && (fixedVersion <= SftpSubsystem.HIGHER_SFTP_IMPL),
+            ValidateUtils.checkTrue((fixedVersion >= SftpSubsystemEnvironment.LOWER_SFTP_IMPL)
+                && (fixedVersion <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL),
                     "Unsupported SFTP version: %s", version);
             setSftpVersionSelector(SftpVersionSelector.fixedVersionSelector(fixedVersion));
         }
