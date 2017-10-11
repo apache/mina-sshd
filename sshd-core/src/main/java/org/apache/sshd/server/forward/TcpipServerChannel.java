@@ -242,43 +242,43 @@ public class TcpipServerChannel extends AbstractServerChannel {
 
     }
 
-	@Override
-	public CloseFuture close(boolean immediately) {
-		final CloseFuture cosingFeature = super.close(immediately);
+    @Override
+    public CloseFuture close(boolean immediately) {
+        final CloseFuture cosingFeature = super.close(immediately);
 
-		// We also need to dispose of the connector, but unfortunately we
-		// are being invoked by the connector thread or the connector's
-		// own processor thread. Disposing of the connector within either
-		// causes deadlock. Instead create a thread to dispose of the
-		// connector in the background.
-		final ExecutorService service = getExecutorService();
+        // We also need to dispose of the connector, but unfortunately we
+        // are being invoked by the connector thread or the connector's
+        // own processor thread. Disposing of the connector within either
+        // causes deadlock. Instead create a thread to dispose of the
+        // connector in the background.
+        final ExecutorService service = getExecutorService();
 
-		// allocate a temporary executor service if none provided
-		final ExecutorService executors = (service == null)
-				? ThreadUtils.newSingleThreadExecutor("TcpIpServerChannel-ConnectorCleanup[" + getSession() + "]")
-				: service;
-		// shutdown the temporary executor service if had to create it
-		final boolean shutdown = executors != service || isShutdownOnExit();
+        // allocate a temporary executor service if none provided
+        final ExecutorService executors = (service == null)
+                ? ThreadUtils.newSingleThreadExecutor("TcpIpServerChannel-ConnectorCleanup[" + getSession() + "]")
+                : service;
+        // shutdown the temporary executor service if had to create it
+        final boolean shutdown = executors != service || isShutdownOnExit();
 
-		return builder().when(cosingFeature).run(() -> {
-			executors.submit(() -> {
-				try {
-					if (log.isDebugEnabled()) {
-						log.debug("disposing connector: {} for: {}", connector, TcpipServerChannel.this);
-					}
-					connector.close(immediately);
-				} finally {
-					if (shutdown && !executors.isShutdown()) {
-						Collection<Runnable> runners = executors.shutdownNow();
-						if (log.isDebugEnabled()) {
-							log.debug("destroy({}) - shutdown executor service - runners count={}",
-									TcpipServerChannel.this, runners.size());
-						}
-					}
-				}
-			});
-		}).build().close(false);
-	}
+        return builder().when(cosingFeature).run(() -> {
+            executors.submit(() -> {
+                try {
+                    if (log.isDebugEnabled()) {
+                        log.debug("disposing connector: {} for: {}", connector, TcpipServerChannel.this);
+                    }
+                    connector.close(immediately);
+                } finally {
+                    if (shutdown && !executors.isShutdown()) {
+                        Collection<Runnable> runners = executors.shutdownNow();
+                        if (log.isDebugEnabled()) {
+                            log.debug("destroy({}) - shutdown executor service - runners count={}",
+                                    TcpipServerChannel.this, runners.size());
+                        }
+                    }
+                }
+            });
+        }).build().close(false);
+    }
 
     @Override
     protected void doWriteData(byte[] data, int off, long len) throws IOException {
@@ -327,12 +327,12 @@ public class TcpipServerChannel extends AbstractServerChannel {
                     + " len=" + len + " write failure details", t);
         }
 
-		if (ioSession.isOpen()) {
-			session.exceptionCaught(t);
-		} else {
-			// In case remote entity has closed the socket (the ioSession), data coming from
-			// the SSH channel should be simply discarded
-			log.debug("Ignoring writeDataFailure {} because ioSession {} is already closing ", t, ioSession);
-		}
-	}
+        if (ioSession.isOpen()) {
+            session.exceptionCaught(t);
+        } else {
+            // In case remote entity has closed the socket (the ioSession), data coming from
+            // the SSH channel should be simply discarded
+            log.debug("Ignoring writeDataFailure {} because ioSession {} is already closing ", t, ioSession);
+        }
+    }
 }
