@@ -133,7 +133,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     @Override
     public IoWriteFuture writePacket(Buffer buffer) throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("Writing {} bytes", buffer.available());
+            log.debug("Writing {}, {} bytes", this, buffer.available());
         }
 
         ByteBuffer buf = ByteBuffer.wrap(buffer.array(), buffer.rpos(), buffer.available());
@@ -151,11 +151,10 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
     protected void exceptionCaught(Throwable exc) {
         if (!closeFuture.isClosed()) {
-            AsynchronousSocketChannel socket = getSocket();
-            if (isClosing() || !socket.isOpen()) {
-                close(true);
-            } else {
-                IoHandler handler = getIoHandler();
+            final AsynchronousSocketChannel socket = getSocket();
+
+            if (isOpen() && socket.isOpen()) {
+                final IoHandler handler = getIoHandler();
                 try {
                     if (log.isDebugEnabled()) {
                         log.debug("exceptionCaught({}) caught {}[{}] - calling handler",
@@ -172,9 +171,10 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
                     if (log.isTraceEnabled()) {
                         log.trace("exceptionCaught(" + this + ") exception handler failure details", t);
                     }
-                    close(true);
                 }
             }
+
+            close(true);
         }
     }
 
@@ -379,6 +379,11 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
             if (log.isDebugEnabled()) {
                 log.debug("handleCompletedWriteCycle({}) finished writing len={}", this, writeLen);
             }
+
+            // This should be called before future.setWritten() to avoid WriteAbortedException
+            // to be thrown by doCloseImmediately when called in the listener of doCloseGracefully
+            writes.remove(future);
+
             future.setWritten();
             finishWrite(future);
         }

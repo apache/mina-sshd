@@ -436,8 +436,16 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
      */
     public void channelWindowAdjust(Buffer buffer) throws IOException {
         try {
-            Channel channel = getChannel(buffer);
-            channel.handleWindowAdjust(buffer);
+            // Do not use getChannel to avoid the session being closed
+            // if receiving the SSH_MSG_CHANNEL_WINDOW_ADJUST on an already closed channel
+            int recipient = buffer.getInt();
+            Channel channel = channels.get(recipient);
+            if (channel != null) {
+                channel.handleWindowAdjust(buffer);
+            } else {
+                log.warn("Received SSH_MSG_CHANNEL_WINDOW_ADJUST on unknown channel " + recipient);
+            }
+
         } catch (SshException e) {
             if (log.isDebugEnabled()) {
                 log.debug("channelWindowAdjust {} error: {}", e.getClass().getSimpleName(), e.getMessage());
