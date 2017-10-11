@@ -50,7 +50,7 @@ public class BogusChannel extends AbstractChannel {
 
     @Override
     public OpenFuture open(int recipient, long rwsize, long rmpsize, Buffer buffer) {
-        return new DefaultOpenFuture(this.lock);
+        return new DefaultOpenFuture(this, this.lock);
     }
 
     @Override

@@ -32,8 +32,8 @@ public class SimpleCloseable extends IoBaseCloseable {
     protected final DefaultCloseFuture future;
     protected final AtomicBoolean closing;
 
-    public SimpleCloseable(Object lock) {
-        future = new DefaultCloseFuture(lock);
+    public SimpleCloseable(Object id, Object lock) {
+        future = new DefaultCloseFuture(id, lock);
         closing = new AtomicBoolean();
     }
 

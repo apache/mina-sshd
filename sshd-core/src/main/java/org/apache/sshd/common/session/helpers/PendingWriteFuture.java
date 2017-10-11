@@ -33,8 +33,8 @@ import org.apache.sshd.common.util.buffer.Buffer;
 public class PendingWriteFuture extends AbstractIoWriteFuture implements SshFutureListener<IoWriteFuture> {
     private final Buffer buffer;
 
-    public PendingWriteFuture(Buffer buffer) {
-        super(null);
+    public PendingWriteFuture(Object id, Buffer buffer) {
+        super(id, null);
         this.buffer = Objects.requireNonNull(buffer, "No buffer provided");
     }
 

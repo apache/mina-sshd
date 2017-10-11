@@ -349,21 +349,22 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     @Override
     protected Closeable getInnerCloseable() {
+        Object closeId = toString();
         return builder()
-                .run(() -> removeSessionTimeout(sessionFactory))
-                .sequential(acceptor, ioServiceFactory)
-                .run(() -> {
-                    acceptor = null;
-                    ioServiceFactory = null;
-                    if (shutdownExecutor && (executor != null) && (!executor.isShutdown())) {
-                        try {
-                            executor.shutdownNow();
-                        } finally {
-                            executor = null;
-                        }
+            .run(closeId, () -> removeSessionTimeout(sessionFactory))
+            .sequential(acceptor, ioServiceFactory)
+            .run(closeId, () -> {
+                acceptor = null;
+                ioServiceFactory = null;
+                if (shutdownExecutor && (executor != null) && (!executor.isShutdown())) {
+                    try {
+                        executor.shutdownNow();
+                    } finally {
+                        executor = null;
                     }
-                })
-                .build();
+                }
+            })
+            .build();
     }
 
     /**

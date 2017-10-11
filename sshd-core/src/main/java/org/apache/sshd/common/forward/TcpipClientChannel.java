@@ -83,10 +83,12 @@ public class TcpipClientChannel extends AbstractClientChannel {
             default:
                 throw new SshException("Unknown client channel type: " + typeEnum);
         }
+
         if (closeFuture.isClosed()) {
             throw new SshException("Session has been closed");
         }
-        openFuture = new DefaultOpenFuture(lock);
+
+        openFuture = new DefaultOpenFuture(src, lock);
         if (log.isDebugEnabled()) {
             log.debug("open({}) send SSH_MSG_CHANNEL_OPEN", this);
         }

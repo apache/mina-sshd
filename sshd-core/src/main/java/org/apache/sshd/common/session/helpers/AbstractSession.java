@@ -927,7 +927,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .parallel(getServices())
+                .parallel(toString(), getServices())
                 .close(ioSession)
                 .build();
     }
@@ -1018,13 +1018,14 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         if (!KexState.DONE.equals(kexState.get())) {
             byte cmd = buffer.array()[buffer.rpos()];
             if (cmd > SshConstants.SSH_MSG_KEX_LAST) {
+                String cmdName = SshConstants.getCommandMessageName(cmd & 0xFF);
                 synchronized (pendingPackets) {
                     if (!KexState.DONE.equals(kexState.get())) {
                         if (pendingPackets.isEmpty()) {
                             log.debug("writePacket({})[{}] Start flagging packets as pending until key exchange is done",
-                                      this, SshConstants.getCommandMessageName(cmd & 0xFF));
+                                      this, cmdName);
                         }
-                        PendingWriteFuture future = new PendingWriteFuture(buffer);
+                        PendingWriteFuture future = new PendingWriteFuture(cmdName, buffer);
                         pendingPackets.add(future);
                         return future;
                     }
@@ -2396,7 +2397,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         log.info("requestNewKeysExchange({}) Initiating key re-exchange", this);
         sendKexInit();
 
-        DefaultKeyExchangeFuture newFuture = new DefaultKeyExchangeFuture(null);
+        DefaultKeyExchangeFuture newFuture = new DefaultKeyExchangeFuture(toString(), null);
         DefaultKeyExchangeFuture kexFuture = kexFutureHolder.getAndSet(newFuture);
         if (kexFuture != null) {
             synchronized (kexFuture) {

@@ -538,7 +538,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         }
 
         if (kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
-            DefaultKeyExchangeFuture kexFuture = new DefaultKeyExchangeFuture(null);
+            DefaultKeyExchangeFuture kexFuture = new DefaultKeyExchangeFuture(toString(), null);
             DefaultKeyExchangeFuture prev = kexFutureHolder.getAndSet(kexFuture);
             if (prev != null) {
                 synchronized (prev) {

@@ -32,8 +32,8 @@ import org.apache.sshd.common.io.IoSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DefaultConnectFuture extends DefaultVerifiableSshFuture<ConnectFuture> implements ConnectFuture {
-    public DefaultConnectFuture(Object lock) {
-        super(lock);
+    public DefaultConnectFuture(Object id, Object lock) {
+        super(id, lock);
     }
 
     @Override

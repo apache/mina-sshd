@@ -28,8 +28,8 @@ import org.apache.sshd.common.future.DefaultVerifiableSshFuture;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractIoWriteFuture extends DefaultVerifiableSshFuture<IoWriteFuture> implements IoWriteFuture {
-    protected AbstractIoWriteFuture(Object lock) {
-        super(lock);
+    protected AbstractIoWriteFuture(Object id, Object lock) {
+        super(id, lock);
     }
 
     @Override

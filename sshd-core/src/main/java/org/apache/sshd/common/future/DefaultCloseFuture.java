@@ -28,11 +28,12 @@ public class DefaultCloseFuture extends DefaultSshFuture<CloseFuture> implements
     /**
      * Create a new instance
      *
+     * @param id Some identifier useful as {@link #toString()} value
      * @param lock A synchronization object for locking access - if {@code null}
      * then synchronization occurs on {@code this} instance
      */
-    public DefaultCloseFuture(Object lock) {
-        super(lock);
+    public DefaultCloseFuture(Object id, Object lock) {
+        super(id, lock);
     }
 
     @Override

@@ -37,8 +37,18 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
      */
     protected static final Object CANCELED = new Object();
 
-    protected AbstractSshFuture() {
-        super();
+    private final Object id;
+
+    /**
+     * @param id Some identifier useful as {@link #toString()} value
+     */
+    protected AbstractSshFuture(Object id) {
+        this.id = id;
+    }
+
+    @Override
+    public Object getId() {
+        return id;
     }
 
     @Override
@@ -153,5 +163,10 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
     @SuppressWarnings("unchecked")
     protected T asT() {
         return (T) this;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[id=" + getId() + "]";
     }
 }

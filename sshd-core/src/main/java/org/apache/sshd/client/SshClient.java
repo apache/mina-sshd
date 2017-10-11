@@ -456,21 +456,22 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     @Override
     protected Closeable getInnerCloseable() {
+        Object closeId = toString();
         return builder()
-                .run(() -> removeSessionTimeout(sessionFactory))
-                .sequential(connector, ioServiceFactory)
-                .run(() -> {
-                    connector = null;
-                    ioServiceFactory = null;
-                    if (shutdownExecutor && (executor != null) && (!executor.isShutdown())) {
-                        try {
-                            executor.shutdownNow();
-                        } finally {
-                            executor = null;
-                        }
+            .run(closeId, () -> removeSessionTimeout(sessionFactory))
+            .sequential(connector, ioServiceFactory)
+            .run(closeId, () -> {
+                connector = null;
+                ioServiceFactory = null;
+                if (shutdownExecutor && (executor != null) && (!executor.isShutdown())) {
+                    try {
+                        executor.shutdownNow();
+                    } finally {
+                        executor = null;
                     }
-                })
-                .build();
+                }
+            })
+            .build();
     }
 
     @Override
@@ -584,7 +585,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             throw new IllegalStateException("SshClient not started. Please call start() method before connecting to a server");
         }
 
-        ConnectFuture connectFuture = new DefaultConnectFuture(null);
+        ConnectFuture connectFuture = new DefaultConnectFuture(username + "@" + address, null);
         SshFutureListener<IoConnectFuture> listener = createConnectCompletionListener(connectFuture, username, address, identities, useDefaultIdentities);
         connector.connect(address).addListener(listener);
         return connectFuture;

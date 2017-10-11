@@ -83,7 +83,7 @@ public class ClientSessionImpl extends AbstractClientSession {
             nextServiceFactory = null;
         }
 
-        authFuture = new DefaultAuthFuture(lock);
+        authFuture = new DefaultAuthFuture(ioSession.getRemoteAddress(), lock);
         authFuture.setAuthed(false);
 
         signalSessionCreated(ioSession);

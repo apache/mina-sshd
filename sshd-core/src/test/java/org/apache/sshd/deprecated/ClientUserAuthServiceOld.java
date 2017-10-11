@@ -75,7 +75,7 @@ public class ClientUserAuthServiceOld extends AbstractCloseable implements Servi
         session = (ClientSessionImpl) s;
         lock = session.getLock();
         // Maintain the current auth status in the authFuture.
-        authFuture = new DefaultAuthFuture(lock);
+        authFuture = new DefaultAuthFuture(s.toString(), lock);
     }
 
     @Override
@@ -150,7 +150,7 @@ public class ClientUserAuthServiceOld extends AbstractCloseable implements Servi
         // Set up the next round of authentication.  Each round gets a new lock.
         this.userAuth = userAuth;
         // The new future !isDone() - i.e., in progress blocking out other waits.
-        this.authFuture = new DefaultAuthFuture(lock);
+        this.authFuture = new DefaultAuthFuture(getClass().getSimpleName(), lock);
         log.debug("ready to try authentication with new lock");
         return true;
     }

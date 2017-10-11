@@ -40,10 +40,12 @@ import org.apache.sshd.common.util.closeable.AbstractCloseable;
 public class ChannelAsyncInputStream extends AbstractCloseable implements IoInputStream, ChannelHolder {
     private final Channel channelInstance;
     private final Buffer buffer = new ByteArrayBuffer();
+    private final Object readFutureId;
     private IoReadFutureImpl pending;
 
     public ChannelAsyncInputStream(Channel channel) {
         this.channelInstance = Objects.requireNonNull(channel, "No channel");
+        this.readFutureId = toString();
     }
 
     @Override
@@ -60,7 +62,7 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
 
     @Override
     public IoReadFuture read(Buffer buf) {
-        IoReadFutureImpl future = new IoReadFutureImpl(buf);
+        IoReadFutureImpl future = new IoReadFutureImpl(readFutureId, buf);
         if (isClosing()) {
             future.setValue(new IOException("Closed"));
         } else {
@@ -140,8 +142,8 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
     public static class IoReadFutureImpl extends DefaultVerifiableSshFuture<IoReadFuture> implements IoReadFuture {
         private final Buffer buffer;
 
-        public IoReadFutureImpl(Buffer buffer) {
-            super(null);
+        public IoReadFutureImpl(Object id, Buffer buffer) {
+            super(id, null);
             this.buffer = buffer;
         }
 

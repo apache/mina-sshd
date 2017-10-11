@@ -39,11 +39,13 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
     private final PacketWriter packetWriter;
     private final byte cmd;
     private final AtomicReference<IoWriteFutureImpl> pendingWrite = new AtomicReference<>();
+    private final Object packetWriteId;
 
     public ChannelAsyncOutputStream(Channel channel, byte cmd) {
         this.channelInstance = Objects.requireNonNull(channel, "No channel");
         this.packetWriter = channelInstance.resolveChannelStreamPacketWriter(channel, cmd);
         this.cmd = cmd;
+        this.packetWriteId = channel.toString() + "[" + SshConstants.getCommandMessageName(cmd) + "]";
     }
 
     @Override
@@ -61,7 +63,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             throw new EOFException("Closed");
         }
 
-        IoWriteFutureImpl future = new IoWriteFutureImpl(buffer);
+        IoWriteFutureImpl future = new IoWriteFutureImpl(packetWriteId, buffer);
         if (!pendingWrite.compareAndSet(null, future)) {
             throw new WritePendingException("No write pending future");
         }
@@ -75,7 +77,8 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             try {
                 packetWriter.close();
             } catch (IOException e) {
-                log.error("preClose({}) Failed ({}) to pre-close packet writer: {}", this, e.getClass().getSimpleName(), e.getMessage());
+                log.error("preClose({}) Failed ({}) to pre-close packet writer: {}",
+                        this, e.getClass().getSimpleName(), e.getMessage());
             }
         }
 

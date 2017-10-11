@@ -95,7 +95,7 @@ public class ChannelSession extends AbstractServerChannel {
     protected Buffer tempBuffer;
     protected final AtomicBoolean commandStarted = new AtomicBoolean(false);
     protected final StandardEnvironment env = new StandardEnvironment();
-    protected final CloseFuture commandExitFuture = new DefaultCloseFuture(lock);
+    protected final CloseFuture commandExitFuture;
 
     public ChannelSession() {
         this(DEFAULT_HANDLERS);
@@ -103,6 +103,8 @@ public class ChannelSession extends AbstractServerChannel {
 
     public ChannelSession(Collection<? extends RequestHandler<Channel>> handlers) {
         super(handlers);
+
+        commandExitFuture = new DefaultCloseFuture(getClass().getSimpleName(), lock);
     }
 
     @Override

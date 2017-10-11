@@ -175,7 +175,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     protected Closeable getInnerCloseable() {
         return builder()
                 .when(openFuture)
-                .run(() -> {
+                .run(toString(), () -> {
                     // If the channel has not been opened yet,
                     // skip the SSH_MSG_CHANNEL_CLOSE exchange
                     if (openFuture == null) {
@@ -297,7 +297,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
             throw new SshException("Session has been closed");
         }
 
-        openFuture = new DefaultOpenFuture(lock);
+        openFuture = new DefaultOpenFuture(this.toString(), lock);
         if (log.isDebugEnabled()) {
             log.debug("open({}) Send SSH_MSG_CHANNEL_OPEN - type={}", this, type);
         }

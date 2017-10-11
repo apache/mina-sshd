@@ -137,7 +137,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         }
 
         ByteBuffer buf = ByteBuffer.wrap(buffer.array(), buffer.rpos(), buffer.available());
-        Nio2DefaultIoWriteFuture future = new Nio2DefaultIoWriteFuture(null, buf);
+        Nio2DefaultIoWriteFuture future = new Nio2DefaultIoWriteFuture(getRemoteAddress(), null, buf);
         if (isClosing()) {
             Throwable exc = new ClosedChannelException();
             future.setException(exc);
@@ -181,7 +181,8 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
     @Override
     protected CloseFuture doCloseGracefully() {
-        return builder().when(writes).run(() -> {
+        Object closeId = toString();
+        return builder().when(closeId, writes).run(closeId, () -> {
             try {
                 AsynchronousSocketChannel socket = getSocket();
                 socket.shutdownOutput();

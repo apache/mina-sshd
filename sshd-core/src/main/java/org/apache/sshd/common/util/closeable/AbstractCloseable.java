@@ -49,7 +49,7 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
     /**
      * A future that will be set 'closed' when the object is actually closed
      */
-    protected final CloseFuture closeFuture = new DefaultCloseFuture(lock);
+    protected final CloseFuture closeFuture;
 
     protected AbstractCloseable() {
         this("");
@@ -57,6 +57,7 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
 
     protected AbstractCloseable(String discriminator) {
         super(discriminator);
+        closeFuture = new DefaultCloseFuture(discriminator, lock);
     }
 
     @Override

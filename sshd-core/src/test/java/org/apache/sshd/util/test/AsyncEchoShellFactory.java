@@ -99,12 +99,12 @@ public class AsyncEchoShellFactory implements Factory<Command> {
 
         @Override
         public void setIoOutputStream(IoOutputStream out) {
-            this.out = new BufferedIoOutputStream(out);
+            this.out = new BufferedIoOutputStream("STDOUT", out);
         }
 
         @Override
         public void setIoErrorStream(IoOutputStream err) {
-            this.err = new BufferedIoOutputStream(err);
+            this.err = new BufferedIoOutputStream("STDERR", err);
         }
 
         @Override

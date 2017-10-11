@@ -48,7 +48,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
             log.debug("Connecting to {}", address);
         }
 
-        IoConnectFuture future = new DefaultIoConnectFuture(null);
+        IoConnectFuture future = new DefaultIoConnectFuture(address, null);
         AsynchronousSocketChannel channel = null;
         AsynchronousSocketChannel socket = null;
         try {
@@ -151,8 +151,8 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
     }
 
     public static class DefaultIoConnectFuture extends DefaultSshFuture<IoConnectFuture> implements IoConnectFuture {
-        public DefaultIoConnectFuture(Object lock) {
-            super(lock);
+        public DefaultIoConnectFuture(Object id, Object lock) {
+            super(id, lock);
         }
 
         @Override

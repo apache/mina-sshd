@@ -84,7 +84,7 @@ public abstract class AbstractChannel
     protected final AtomicBoolean eofReceived = new AtomicBoolean(false);
     protected final AtomicBoolean eofSent = new AtomicBoolean(false);
     protected AtomicReference<GracefulState> gracefulState = new AtomicReference<>(GracefulState.Opened);
-    protected final DefaultCloseFuture gracefulFuture = new DefaultCloseFuture(lock);
+    protected final DefaultCloseFuture gracefulFuture;
     /**
      * Channel events listener
      */
@@ -124,6 +124,7 @@ public abstract class AbstractChannel
 
     protected AbstractChannel(String discriminator, boolean client, Collection<? extends RequestHandler<Channel>> handlers) {
         super(discriminator);
+        gracefulFuture = new DefaultCloseFuture(discriminator, lock);
         localWindow = new Window(this, null, client, true);
         remoteWindow = new Window(this, null, client, false);
         channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, getClass().getClassLoader(), channelListeners);
@@ -352,7 +353,7 @@ public abstract class AbstractChannel
         }
 
         if (RequestHandler.Result.Replied.equals(result) || (!wantReply)) {
-            return new AbstractIoWriteFuture(null) {
+            return new AbstractIoWriteFuture(req, null) {
                 {
                     setValue(Boolean.TRUE);
                 }
@@ -788,14 +789,14 @@ public abstract class AbstractChannel
 
     @Override
     public IoWriteFuture writePacket(Buffer buffer) throws IOException {
+        Session s = getSession();
         if (!isClosing()) {
-            Session s = getSession();
             return s.writePacket(buffer);
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("writePacket({}) Discarding output packet because channel is being closed", this);
             }
-            return new AbstractIoWriteFuture(null) {
+            return new AbstractIoWriteFuture(s.toString(), null) {
                 {
                     setValue(new EOFException("Channel is being closed"));
                 }

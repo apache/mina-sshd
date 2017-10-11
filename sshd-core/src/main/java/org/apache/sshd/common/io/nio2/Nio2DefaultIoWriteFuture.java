@@ -29,8 +29,8 @@ import org.apache.sshd.common.io.AbstractIoWriteFuture;
 public class Nio2DefaultIoWriteFuture extends AbstractIoWriteFuture {
     private final ByteBuffer buffer;
 
-    public Nio2DefaultIoWriteFuture(Object lock, ByteBuffer buffer) {
-        super(lock);
+    public Nio2DefaultIoWriteFuture(Object id, Object lock, ByteBuffer buffer) {
+        super(id, lock);
         this.buffer = buffer;
     }
 

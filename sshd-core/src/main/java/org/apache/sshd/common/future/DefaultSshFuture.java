@@ -42,10 +42,13 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
     /**
      * Creates a new instance.
      *
+     * @param id Some identifier useful as {@link #toString()} value
      * @param lock A synchronization object for locking access - if {@code null}
      * then synchronization occurs on {@code this} instance
      */
-    public DefaultSshFuture(Object lock) {
+    public DefaultSshFuture(Object id, Object lock) {
+        super(id);
+
         this.lock = (lock != null) ? lock : this;
     }
 
@@ -224,6 +227,6 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[value=" + result + "]";
+        return super.toString() + "[value=" + result + "]";
     }
 }

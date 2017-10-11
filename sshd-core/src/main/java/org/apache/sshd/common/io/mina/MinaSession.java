@@ -38,15 +38,17 @@ import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 import org.apache.sshd.common.util.closeable.IoBaseCloseable;
 
 /**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class MinaSession extends AbstractInnerCloseable implements IoSession {
-
     private final MinaService service;
     private final org.apache.mina.core.session.IoSession session;
+    private final Object sessionWriteId;
 
     public MinaSession(MinaService service, org.apache.mina.core.session.IoSession session) {
         this.service = service;
         this.session = session;
+        this.sessionWriteId = Objects.toString(session);
     }
 
     public org.apache.mina.core.session.IoSession getSession() {
@@ -87,7 +89,7 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
     protected Closeable getInnerCloseable() {
         return new IoBaseCloseable() {
             @SuppressWarnings("synthetic-access")
-            private final DefaultCloseFuture future = new DefaultCloseFuture(lock);
+            private final DefaultCloseFuture future = new DefaultCloseFuture(MinaSession.this.toString(), lock);
 
             @SuppressWarnings("synthetic-access")
             @Override
@@ -138,7 +140,7 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
 
     // NOTE !!! data buffer may NOT be re-used when method returns - at least until IoWriteFuture is signalled
     public IoWriteFuture write(IoBuffer buffer) {
-        final Future future = new Future(null);
+        Future future = new Future(sessionWriteId, null);
         session.write(buffer).addListener((IoFutureListener<WriteFuture>) cf -> {
             Throwable t = cf.getException();
             if (t != null) {
@@ -151,8 +153,8 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
     }
 
     public static class Future extends AbstractIoWriteFuture {
-        public Future(Object lock) {
-            super(lock);
+        public Future(Object id, Object lock) {
+            super(id, lock);
         }
 
         public void setWritten() {

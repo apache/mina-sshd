@@ -32,6 +32,10 @@ import java.util.concurrent.TimeUnit;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface WaitableFuture {
+    /**
+     * @return Some identifier useful as {@link #toString()} value
+     */
+    Object getId();
 
     /**
      * Wait {@link Long#MAX_VALUE} msec. for the asynchronous operation to complete.

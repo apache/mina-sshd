@@ -123,7 +123,7 @@ public class ThrottlingPacketWriterTest extends BaseTestSupport {
 
         @Override
         public IoWriteFuture writePacket(Buffer buffer) throws IOException {
-            return new IoWriteFutureImpl(buffer);
+            return new IoWriteFutureImpl(MockPacketWriter.class.getSimpleName(), buffer);
         }
     }
 }

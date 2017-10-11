@@ -52,7 +52,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
 
     @Override
     protected OpenFuture doInit(Buffer buffer) {
-        OpenFuture f = new DefaultOpenFuture(this);
+        OpenFuture f = new DefaultOpenFuture(this, this);
         String changeEvent = "auth-agent";
         try {
             out = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);

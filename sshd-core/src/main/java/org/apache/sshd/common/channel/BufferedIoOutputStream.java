@@ -38,9 +38,15 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
     protected final IoOutputStream out;
     protected final Queue<IoWriteFutureImpl> writes = new ConcurrentLinkedQueue<>();
     protected final AtomicReference<IoWriteFutureImpl> currentWrite = new AtomicReference<>();
+    protected final Object id;
 
-    public BufferedIoOutputStream(IoOutputStream out) {
+    public BufferedIoOutputStream(Object id, IoOutputStream out) {
         this.out = out;
+        this.id = id;
+    }
+
+    public Object getId() {
+        return id;
     }
 
     @Override
@@ -49,46 +55,50 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
             throw new EOFException("Closed");
         }
 
-        IoWriteFutureImpl future = new IoWriteFutureImpl(buffer);
+        IoWriteFutureImpl future = new IoWriteFutureImpl(getId(), buffer);
         writes.add(future);
         startWriting();
         return future;
     }
 
     protected void startWriting() throws IOException {
-        final IoWriteFutureImpl future = writes.peek();
-        if (future != null) {
-            if (currentWrite.compareAndSet(null, future)) {
-                out.writePacket(future.getBuffer()).addListener(new SshFutureListener<IoWriteFuture>() {
-                    @Override
-                    public void operationComplete(IoWriteFuture f) {
-                        if (f.isWritten()) {
-                            future.setValue(Boolean.TRUE);
-                        } else {
-                            future.setValue(f.getException());
-                        }
-                        finishWrite();
-                    }
-
-                    @SuppressWarnings("synthetic-access")
-                    private void finishWrite() {
-                        writes.remove(future);
-                        currentWrite.compareAndSet(future, null);
-                        try {
-                            startWriting();
-                        } catch (IOException e) {
-                            log.error("finishWrite({}) failed ({}) re-start writing", out, e.getClass().getSimpleName());
-                        }
-                    }
-                });
-            }
+        IoWriteFutureImpl future = writes.peek();
+        if (future == null) {
+            return;
         }
+
+        if (!currentWrite.compareAndSet(null, future)) {
+            return;
+        }
+
+        out.writePacket(future.getBuffer()).addListener(new SshFutureListener<IoWriteFuture>() {
+            @Override
+            public void operationComplete(IoWriteFuture f) {
+                if (f.isWritten()) {
+                    future.setValue(Boolean.TRUE);
+                } else {
+                    future.setValue(f.getException());
+                }
+                finishWrite();
+            }
+
+            @SuppressWarnings("synthetic-access")
+            private void finishWrite() {
+                writes.remove(future);
+                currentWrite.compareAndSet(future, null);
+                try {
+                    startWriting();
+                } catch (IOException e) {
+                    log.error("finishWrite({}) failed ({}) re-start writing", out, e.getClass().getSimpleName());
+                }
+            }
+        });
     }
 
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .when(writes)
+                .when(getId(), writes)
                 .close(out)
                 .build();
     }

@@ -125,7 +125,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
     }
 
     @Override
-    public Map<String, byte[]> getServerExtensions() {
+    public NavigableMap<String, byte[]> getServerExtensions() {
         return exposedExtensions;
     }
 

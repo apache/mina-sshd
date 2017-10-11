@@ -110,9 +110,9 @@ public class CloseableUtilsTest extends BaseTestSupport {
 
     @Test
     public void testCloseImmediateCalledAndWait() throws Exception {
-        final DefaultCloseFuture future = new DefaultCloseFuture(this);
-        final AtomicInteger callsCount = new AtomicInteger(0);
-        final Closeable closeable = new IoBaseCloseable() {
+        DefaultCloseFuture future = new DefaultCloseFuture(this, this);
+        AtomicInteger callsCount = new AtomicInteger(0);
+        Closeable closeable = new IoBaseCloseable() {
             @Override
             public CloseFuture close(boolean immediately) {
                 assertTrue("Closure is not immediate", immediately);
@@ -140,6 +140,7 @@ public class CloseableUtilsTest extends BaseTestSupport {
                 return false;
             }
         };
+
         ExecutorService service = ThreadUtils.newSingleThreadExecutor(getCurrentTestName());
         try {
             Future<?> task = service.submit((Runnable) () -> {

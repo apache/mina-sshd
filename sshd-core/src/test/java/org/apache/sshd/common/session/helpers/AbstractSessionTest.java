@@ -298,7 +298,7 @@ public class AbstractSessionTest extends BaseTestSupport {
         private final CloseFuture closeFuture;
 
         public MyIoSession() {
-            closeFuture = new DefaultCloseFuture(open);
+            closeFuture = new DefaultCloseFuture(Test.class.getSimpleName(), open);
         }
 
         @Override
@@ -369,7 +369,7 @@ public class AbstractSessionTest extends BaseTestSupport {
                 throw new WriteAbortedException("Failed to offer outgoing buffer", new IllegalStateException("Offer failure"));
             }
 
-            IoWriteFutureImpl future = new IoWriteFutureImpl(buffer);
+            IoWriteFutureImpl future = new IoWriteFutureImpl(Test.class.getSimpleName(), buffer);
             future.setValue(Boolean.TRUE);
             return future;
         }

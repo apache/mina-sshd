@@ -131,7 +131,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         Session session = getSession();
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         TcpForwardingFilter filter = manager.getTcpForwardingFilter();
-        OpenFuture f = new DefaultOpenFuture(this);
+        OpenFuture f = new DefaultOpenFuture(this, this);
         try {
             if ((address == null) || (filter == null) || (!filter.canConnect(type, address, session))) {
                 if (log.isDebugEnabled()) {
@@ -260,7 +260,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         // shutdown the temporary executor service if had to create it
         boolean shutdown = (executors != service) || isShutdownOnExit();
 
-        return builder().when(closingFeature).run(() -> {
+        return builder().when(closingFeature).run(toString(), () -> {
             executors.submit(() -> {
                 try {
                     if (log.isDebugEnabled()) {

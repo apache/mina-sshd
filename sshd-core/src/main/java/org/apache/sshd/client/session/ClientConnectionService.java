@@ -88,8 +88,8 @@ public class ClientConnectionService extends AbstractConnectionService<AbstractC
                 log.debug("Error (" + e.getClass().getSimpleName() + ") sending keepalive message=" + request + ": " + e.getMessage());
             }
 
-            final Throwable t = e;
-            return new AbstractIoWriteFuture(null) {
+            Throwable t = e;
+            return new AbstractIoWriteFuture(request, null) {
                 {
                     setValue(t);
                 }

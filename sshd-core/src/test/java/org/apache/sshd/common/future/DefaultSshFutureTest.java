@@ -38,8 +38,8 @@ public class DefaultSshFutureTest extends BaseTestSupport {
     @Test
     @SuppressWarnings("rawtypes")
     public void testAwaitUninterrupted() {
-        final DefaultSshFuture future = new DefaultSshFuture(null);
-        final Object expected = new Object();
+        DefaultSshFuture future = new DefaultSshFuture(getCurrentTestName(), null);
+        Object expected = new Object();
         new Thread() {
             @Override
             public void run() {
@@ -59,16 +59,16 @@ public class DefaultSshFutureTest extends BaseTestSupport {
     @Test
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void testNotifyMultipleListeners() {
-        final DefaultSshFuture future = new DefaultSshFuture(null);
-        final AtomicInteger listenerCount = new AtomicInteger(0);
-        final Object expected = new Object();
-        final SshFutureListener listener = f -> {
+        DefaultSshFuture future = new DefaultSshFuture(getCurrentTestName(), null);
+        AtomicInteger listenerCount = new AtomicInteger(0);
+        Object expected = new Object();
+        SshFutureListener listener = f -> {
             assertSame("Mismatched future instance", future, f);
             assertSame("Mismatched value object", expected, future.getValue());
             listenerCount.incrementAndGet();
         };
 
-        final int numListeners = Byte.SIZE;
+        int numListeners = Byte.SIZE;
         for (int index = 0; index < numListeners; index++) {
             future.addListener(listener);
         }
@@ -80,10 +80,10 @@ public class DefaultSshFutureTest extends BaseTestSupport {
     @Test
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void testListenerInvokedDirectlyAfterResultSet() {
-        final DefaultSshFuture future = new DefaultSshFuture(null);
-        final AtomicInteger listenerCount = new AtomicInteger(0);
-        final Object expected = new Object();
-        final SshFutureListener listener = f -> {
+        DefaultSshFuture future = new DefaultSshFuture(getCurrentTestName(), null);
+        AtomicInteger listenerCount = new AtomicInteger(0);
+        Object expected = new Object();
+        SshFutureListener listener = f -> {
             assertSame("Mismatched future instance", future, f);
             assertSame("Mismatched value object", expected, future.getValue());
             listenerCount.incrementAndGet();
@@ -98,7 +98,7 @@ public class DefaultSshFutureTest extends BaseTestSupport {
     @Test
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void testAddAndRemoveRegisteredListenersBeforeResultSet() {
-        DefaultSshFuture future = new DefaultSshFuture(null);
+        DefaultSshFuture future = new DefaultSshFuture(getCurrentTestName(), null);
         SshFutureListener listener = Mockito.mock(SshFutureListener.class);
         for (int index = 1; index <= Byte.SIZE; index++) {
             future.addListener(listener);
@@ -114,10 +114,10 @@ public class DefaultSshFutureTest extends BaseTestSupport {
     @Test
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void testListenerNotRemovedIfResultSet() {
-        final DefaultSshFuture future = new DefaultSshFuture(null);
-        final AtomicInteger listenerCount = new AtomicInteger(0);
-        final Object expected = new Object();
-        final SshFutureListener listener = f -> {
+        DefaultSshFuture future = new DefaultSshFuture(getCurrentTestName(), null);
+        AtomicInteger listenerCount = new AtomicInteger(0);
+        Object expected = new Object();
+        SshFutureListener listener = f -> {
             assertSame("Mismatched future instance", future, f);
             assertSame("Mismatched value object", expected, future.getValue());
             listenerCount.incrementAndGet();
