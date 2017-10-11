@@ -416,6 +416,7 @@ public final class GenericUtils {
 
         return false;
     }
+
     public static <T> void forEach(Iterable<T> values, Consumer<T> consumer) {
         if (isNotEmpty(values)) {
             values.forEach(consumer);
@@ -842,6 +843,7 @@ public final class GenericUtils {
             public boolean hasNext() {
                 return iterator.hasNext();
             }
+
             @Override
             public V next() {
                 return mapper.apply(iterator.next());

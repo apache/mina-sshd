@@ -46,7 +46,7 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
      * then synchronization occurs on {@code this} instance
      */
     public DefaultSshFuture(Object lock) {
-        this.lock = lock != null ? lock : this;
+        this.lock = (lock != null) ? lock : this;
     }
 
     @Override
@@ -159,6 +159,7 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
         if (notifyNow) {
             notifyListener(listener);
         }
+
         return asT();
     }
 
@@ -219,5 +220,10 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
 
     public void cancel() {
         setValue(CANCELED);
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[value=" + result + "]";
     }
 }

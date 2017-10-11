@@ -77,6 +77,7 @@ public interface ClientAuthenticationManager extends KeyPairProviderHolder {
      * (i.e., no passwords available)
      */
     PasswordIdentityProvider getPasswordIdentityProvider();
+
     void setPasswordIdentityProvider(PasswordIdentityProvider provider);
 
     /**
@@ -116,6 +117,7 @@ public interface ClientAuthenticationManager extends KeyPairProviderHolder {
      * @return the {@link ServerKeyVerifier} to use - never {@code null}
      */
     ServerKeyVerifier getServerKeyVerifier();
+
     void setServerKeyVerifier(ServerKeyVerifier serverKeyVerifier);
 
     /**
@@ -123,6 +125,7 @@ public interface ClientAuthenticationManager extends KeyPairProviderHolder {
      * (may be {@code null} to indicate that no such communication is allowed)
      */
     UserInteraction getUserInteraction();
+
     void setUserInteraction(UserInteraction userInteraction);
 
     /**
@@ -130,20 +133,25 @@ public interface ClientAuthenticationManager extends KeyPairProviderHolder {
      * {@code null}/empty
      */
     List<NamedFactory<UserAuth>> getUserAuthFactories();
+
     default String getUserAuthFactoriesNameList() {
         return NamedResource.getNames(getUserAuthFactories());
     }
+
     default List<String> getUserAuthFactoriesNames() {
         return NamedResource.getNameList(getUserAuthFactories());
     }
 
     void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories);
+
     default void setUserAuthFactoriesNameList(String names) {
         setUserAuthFactoriesNames(GenericUtils.split(names, ','));
     }
+
     default void setUserAuthFactoriesNames(String... names) {
         setUserAuthFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.emptyList() : Arrays.asList(names));
     }
+
     default void setUserAuthFactoriesNames(Collection<String> names) {
         BuiltinUserAuthFactories.ParseResult result = BuiltinUserAuthFactories.parseFactoriesList(names);
         @SuppressWarnings({ "rawtypes", "unchecked" })

@@ -64,5 +64,6 @@ public interface ConnectionService extends Service, PortForwardingEventListenerM
     X11ForwardSupport getX11ForwardSupport();
 
     boolean isAllowMoreSessions();
+
     void setAllowMoreSessions(boolean allow);
 }

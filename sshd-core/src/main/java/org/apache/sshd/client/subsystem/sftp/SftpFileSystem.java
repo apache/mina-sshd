@@ -30,7 +30,7 @@ import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
@@ -236,7 +236,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
         }
 
         @Override
-        public Map<String, byte[]> getServerExtensions() {
+        public NavigableMap<String, byte[]> getServerExtensions() {
             return delegate.getServerExtensions();
         }
 

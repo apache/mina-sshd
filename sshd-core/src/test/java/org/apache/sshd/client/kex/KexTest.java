@@ -79,7 +79,6 @@ public class KexTest extends BaseTestSupport {
         return parameterize(BuiltinDHFactories.VALUES);
     }
 
-
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
         sshd = Utils.setupTestServer(KexTest.class);

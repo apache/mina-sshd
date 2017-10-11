@@ -121,7 +121,6 @@ public class WelcomeBannerPhaseTest extends BaseTestSupport {
             }
         });
 
-
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);

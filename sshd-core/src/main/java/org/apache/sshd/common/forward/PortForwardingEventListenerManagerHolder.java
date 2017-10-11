@@ -34,5 +34,6 @@ public interface PortForwardingEventListenerManagerHolder {
     Collection<PortForwardingEventListenerManager> getRegisteredManagers();
 
     boolean addPortForwardingEventListenerManager(PortForwardingEventListenerManager manager);
+
     boolean removePortForwardingEventListenerManager(PortForwardingEventListenerManager manager);
 }

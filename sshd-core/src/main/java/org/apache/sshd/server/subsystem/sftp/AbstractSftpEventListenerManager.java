@@ -44,7 +44,6 @@ public abstract class AbstractSftpEventListenerManager implements SftpEventListe
         return sftpEventListenerProxy;
     }
 
-
     @Override
     public boolean addSftpEventListener(SftpEventListener listener) {
         return sftpEventListeners.add(SftpEventListener.validateListener(listener));

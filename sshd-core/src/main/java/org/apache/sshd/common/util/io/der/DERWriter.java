@@ -118,7 +118,6 @@ public class DERWriter extends FilterOutputStream {
         return (b & 0x80) == 0;
     }
 
-
     public void writeObject(ASN1Object obj) throws IOException {
         Objects.requireNonNull(obj, "No ASN.1 object");
 

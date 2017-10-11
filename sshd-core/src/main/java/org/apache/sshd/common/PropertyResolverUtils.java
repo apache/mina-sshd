@@ -196,6 +196,7 @@ public final class PropertyResolverUtils {
             throw new IllegalArgumentException("Bad value type for enum conversion: " + value.getClass().getSimpleName());
         }
     }
+
     public static Object updateProperty(PropertyResolver resolver, String name, long value) {
         return updateProperty(resolver.getProperties(), name, value);
     }
@@ -306,6 +307,7 @@ public final class PropertyResolverUtils {
             return value;
         }
     }
+
     public static String getStringProperty(Map<String, ?> props, String name, String defaultValue) {
         Object value = resolvePropertyValue(props, name);
         if (value == null) {

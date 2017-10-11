@@ -214,6 +214,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         Path link = FileHelper.createLink(fileSystem.getPath("../" + getCurrentTestName() + "link"), existing);
         fail(String.format("Unexpected success in linking file %s", link.toString()));
     }
+
     @Test
     public void testNewByteChannelProviderMismatchException() throws IOException {
         RootedFileSystemProvider provider = new RootedFileSystemProvider();

@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeMap;
@@ -37,7 +37,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 public class PrivateKeyEncryptionContext implements Cloneable {
     public static final String  DEFAULT_CIPHER_MODE = "CBC";
 
-    private static final Map<String, PrivateKeyObfuscator> OBFUSCATORS =
+    private static final NavigableMap<String, PrivateKeyObfuscator> OBFUSCATORS =
         new TreeMap<String, PrivateKeyObfuscator>(String.CASE_INSENSITIVE_ORDER) {
             private static final long serialVersionUID = 1L;    // no serialization expected
 
@@ -211,6 +211,7 @@ public class PrivateKeyEncryptionContext implements Cloneable {
             throw new RuntimeException("Failed to clone: " + toString());
         }
     }
+
     @Override
     public int hashCode() {
         return GenericUtils.hashCode(getCipherName(), Boolean.TRUE)

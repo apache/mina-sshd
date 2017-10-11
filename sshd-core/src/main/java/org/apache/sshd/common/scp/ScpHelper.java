@@ -741,7 +741,6 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         out.write("E\n".getBytes(StandardCharsets.UTF_8));
         out.flush();
 
-
         readyCode = readAck(false);
         if (log.isDebugEnabled()) {
             log.debug("sendDir({})[{}] 'E' command reply code=", this, path, readyCode);

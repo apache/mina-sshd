@@ -48,6 +48,7 @@ public interface KexFactoryManager extends KeyPairProviderHolder, SignatureFacto
      * @return a list of named <code>KeyExchange</code> factories, never {@code null}
      */
     List<NamedFactory<KeyExchange>> getKeyExchangeFactories();
+
     void setKeyExchangeFactories(List<NamedFactory<KeyExchange>> keyExchangeFactories);
 
     /**
@@ -56,20 +57,25 @@ public interface KexFactoryManager extends KeyPairProviderHolder, SignatureFacto
      * @return a list of named <code>Cipher</code> factories, never {@code null}
      */
     List<NamedFactory<Cipher>> getCipherFactories();
+
     default String getCipherFactoriesNameList() {
         return NamedResource.getNames(getCipherFactories());
     }
+
     default List<String> getCipherFactoriesNames() {
         return NamedResource.getNameList(getCipherFactories());
     }
 
     void setCipherFactories(List<NamedFactory<Cipher>> cipherFactories);
+
     default void setCipherFactoriesNameList(String names) {
         setCipherFactoriesNames(GenericUtils.split(names, ','));
     }
+
     default void setCipherFactoriesNames(String... names) {
         setCipherFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.emptyList() : Arrays.asList(names));
     }
+
     default void setCipherFactoriesNames(Collection<String> names) {
         BuiltinCiphers.ParseResult result = BuiltinCiphers.parseCiphersList(names);
         @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -86,20 +92,25 @@ public interface KexFactoryManager extends KeyPairProviderHolder, SignatureFacto
      * @return a list of named <code>Compression</code> factories, never {@code null}
      */
     List<NamedFactory<Compression>> getCompressionFactories();
+
     default String getCompressionFactoriesNameList() {
         return NamedResource.getNames(getCompressionFactories());
     }
+
     default List<String> getCompressionFactoriesNames() {
         return NamedResource.getNameList(getCompressionFactories());
     }
 
     void setCompressionFactories(List<NamedFactory<Compression>> compressionFactories);
+
     default void setCompressionFactoriesNameList(String names) {
         setCompressionFactoriesNames(GenericUtils.split(names, ','));
     }
+
     default void setCompressionFactoriesNames(String... names) {
         setCompressionFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.emptyList() : Arrays.asList(names));
     }
+
     default void setCompressionFactoriesNames(Collection<String> names) {
         BuiltinCompressions.ParseResult result = BuiltinCompressions.parseCompressionsList(names);
         @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -116,20 +127,25 @@ public interface KexFactoryManager extends KeyPairProviderHolder, SignatureFacto
      * @return a list of named <code>Mac</code> factories, never {@code null}
      */
     List<NamedFactory<Mac>> getMacFactories();
+
     default String getMacFactoriesNameList() {
         return NamedResource.getNames(getMacFactories());
     }
+
     default List<String> getMacFactoriesNames() {
         return NamedResource.getNameList(getMacFactories());
     }
 
     void setMacFactories(List<NamedFactory<Mac>> macFactories);
+
     default void setMacFactoriesNameList(String names) {
         setMacFactoriesNames(GenericUtils.split(names, ','));
     }
+
     default void setMacFactoriesNames(String... names) {
         setMacFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.emptyList() : Arrays.asList(names));
     }
+
     default void setMacFactoriesNames(Collection<String> names) {
         BuiltinMacs.ParseResult result = BuiltinMacs.parseMacsList(names);
         @SuppressWarnings({ "rawtypes", "unchecked" })

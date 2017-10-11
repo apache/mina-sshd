@@ -111,6 +111,12 @@
         <module name="NoWhitespaceAfter">
             <property name="tokens" value="ARRAY_INIT,BNOT,DEC,DOT,INC,LNOT,UNARY_MINUS,UNARY_PLUS" />
         </module>
+        <module name="EmptyLineSeparator">
+            <property name="tokens" value="IMPORT,CLASS_DEF,INTERFACE_DEF,STATIC_INIT,INSTANCE_INIT,METHOD_DEF,CTOR_DEF" />
+            <property name="allowMultipleEmptyLines" value="false" />
+            <property name="allowNoEmptyLineBetweenFields" value="true" />
+            <property name="allowMultipleEmptyLinesInsideClassMembers" value="false" />
+        </module>
         <module name="NoWhitespaceBefore" />
         <module name="GenericWhitespace"/>
         <module name="OperatorWrap" />

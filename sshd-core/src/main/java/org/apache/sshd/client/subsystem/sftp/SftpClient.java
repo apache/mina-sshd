@@ -34,6 +34,7 @@ import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -537,10 +538,12 @@ public interface SftpClient extends SubsystemClient {
     default String getName() {
         return SftpConstants.SFTP_SUBSYSTEM_NAME;
     }
+
     /**
-     * @return An (unmodifiable) {@link Map} of the reported server extensions.
+     * @return An (unmodifiable) {@link NavigableMap} of the reported server extensions.
+     * where key=extension name (case <U>insensitive</U>)
      */
-    Map<String, byte[]> getServerExtensions();
+    NavigableMap<String, byte[]> getServerExtensions();
 
     boolean isClosing();
 
@@ -835,6 +838,7 @@ public interface SftpClient extends SubsystemClient {
 
     // see SSH_FXP_BLOCK / SSH_FXP_UNBLOCK for byte range locks
     void lock(Handle handle, long offset, long length, int mask) throws IOException;
+
     void unlock(Handle handle, long offset, long length) throws IOException;
 
     //

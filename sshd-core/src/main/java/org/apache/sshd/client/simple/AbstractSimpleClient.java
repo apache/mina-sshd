@@ -141,6 +141,7 @@ public abstract class AbstractSimpleClient extends AbstractLoggingBean implement
             return result;
         });
     }
+
     @Override
     public CloseableScpClient scpLogin(String host, String username, String password) throws IOException {
         return scpLogin(host, DEFAULT_PORT, username, password);

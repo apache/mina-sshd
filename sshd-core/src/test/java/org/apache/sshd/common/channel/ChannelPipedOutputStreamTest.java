@@ -43,19 +43,19 @@ public class ChannelPipedOutputStreamTest extends BaseTestSupport {
     @Test
     public void testNioChannelImplementation() throws IOException {
         ChannelPipedSink sink = Mockito.mock(ChannelPipedSink.class);
-        final AtomicBoolean eofCalled = new AtomicBoolean(false);
+        AtomicBoolean eofCalled = new AtomicBoolean(false);
         Mockito.doAnswer(invocation -> {
             assertFalse("Multiple EOF calls", eofCalled.getAndSet(true));
             return null;
         }).when(sink).eof();
 
-
-        final AtomicInteger receiveCount = new AtomicInteger(0);
+        AtomicInteger receiveCount = new AtomicInteger(0);
         Mockito.doAnswer(invocation -> {
             Number len = invocation.getArgumentAt(2, Number.class);
             receiveCount.addAndGet(len.intValue());
             return null;
         }).when(sink).receive(Matchers.any(byte[].class), Matchers.anyInt(), Matchers.anyInt());
+
         try (ChannelPipedOutputStream stream = new ChannelPipedOutputStream(sink)) {
             assertTrue("Stream not marked as initially open", stream.isOpen());
             assertEquals("Unexpected initial receive count", 0, receiveCount.intValue());

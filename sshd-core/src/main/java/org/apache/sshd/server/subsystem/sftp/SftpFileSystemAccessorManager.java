@@ -24,5 +24,6 @@ package org.apache.sshd.server.subsystem.sftp;
  */
 public interface SftpFileSystemAccessorManager {
     SftpFileSystemAccessor getFileSystemAccessor();
+
     void setFileSystemAccessor(SftpFileSystemAccessor accessor);
 }

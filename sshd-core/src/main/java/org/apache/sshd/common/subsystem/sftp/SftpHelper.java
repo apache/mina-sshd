@@ -121,7 +121,6 @@ public final class SftpHelper {
             }
         });
 
-
     private SftpHelper() {
         throw new UnsupportedOperationException("No instance allowed");
     }

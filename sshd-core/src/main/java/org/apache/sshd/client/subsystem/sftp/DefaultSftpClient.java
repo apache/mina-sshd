@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
@@ -64,8 +65,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
     private final byte[] workBuf = new byte[Integer.BYTES];
     private final AtomicInteger versionHolder = new AtomicInteger(0);
     private final AtomicBoolean closing = new AtomicBoolean(false);
-    private final Map<String, byte[]> extensions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    private final Map<String, byte[]> exposedExtensions = Collections.unmodifiableMap(extensions);
+    private final NavigableMap<String, byte[]> extensions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private final NavigableMap<String, byte[]> exposedExtensions = Collections.unmodifiableNavigableMap(extensions);
 
     public DefaultSftpClient(ClientSession clientSession) throws IOException {
         this.clientSession = Objects.requireNonNull(clientSession, "No client session");

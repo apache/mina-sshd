@@ -75,6 +75,7 @@ public abstract class AbstractUserAuth extends AbstractLoggingBean implements Us
     }
 
     protected abstract boolean sendAuthDataRequest(ClientSession session, String service) throws Exception;
+
     protected abstract boolean processAuthDataRequest(ClientSession session, String service, Buffer buffer) throws Exception;
 
     @Override

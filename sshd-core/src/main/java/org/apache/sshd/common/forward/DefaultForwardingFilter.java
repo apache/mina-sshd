@@ -789,7 +789,6 @@ public class DefaultForwardingFilter
             err = GenericUtils.accumulateException(err, e);
         }
 
-
         if (err != null) {
             throw err;
         }

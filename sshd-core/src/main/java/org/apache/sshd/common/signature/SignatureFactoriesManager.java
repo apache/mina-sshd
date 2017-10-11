@@ -39,20 +39,25 @@ public interface SignatureFactoriesManager {
      * @return The list of named <code>Signature</code> factories
      */
     List<NamedFactory<Signature>> getSignatureFactories();
+
     default String getSignatureFactoriesNameList() {
         return NamedResource.getNames(getSignatureFactories());
     }
+
     default List<String> getSignatureFactoriesNames() {
         return NamedResource.getNameList(getSignatureFactories());
     }
 
     void setSignatureFactories(List<NamedFactory<Signature>> factories);
+
     default void setSignatureFactoriesNameList(String names) {
         setSignatureFactoriesNames(GenericUtils.split(names, ','));
     }
+
     default void setSignatureFactoriesNames(String... names) {
         setSignatureFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.emptyList() : Arrays.asList(names));
     }
+
     default void setSignatureFactoriesNames(Collection<String> names) {
         BuiltinSignatures.ParseResult result = BuiltinSignatures.parseSignatureList(names);
         @SuppressWarnings({ "rawtypes", "unchecked" })

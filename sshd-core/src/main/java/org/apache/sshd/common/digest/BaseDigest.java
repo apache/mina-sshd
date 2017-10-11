@@ -104,7 +104,6 @@ public class BaseDigest implements Digest {
         return h;
     }
 
-
     @Override
     public int compareTo(Digest that) {
         if (that == null) {

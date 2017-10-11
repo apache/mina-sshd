@@ -24,5 +24,6 @@ package org.apache.sshd.client.session;
  */
 public interface ClientProxyConnectorHolder {
     ClientProxyConnector getClientProxyConnector();
+
     void setClientProxyConnector(ClientProxyConnector proxyConnector);
 }

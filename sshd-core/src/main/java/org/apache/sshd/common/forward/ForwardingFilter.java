@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.common.forward;
 
-
 import java.io.IOException;
 
 import org.apache.sshd.common.Closeable;

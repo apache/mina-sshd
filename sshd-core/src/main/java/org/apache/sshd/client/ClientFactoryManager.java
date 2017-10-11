@@ -83,6 +83,7 @@ public interface ClientFactoryManager
      * effective session parameters - never {@code null}
      */
     HostConfigEntryResolver getHostConfigEntryResolver();
+
     void setHostConfigEntryResolver(HostConfigEntryResolver resolver);
 
     /**
@@ -90,6 +91,7 @@ public interface ClientFactoryManager
      * key pair identities - never {@code null}
      */
     ClientIdentityLoader getClientIdentityLoader();
+
     void setClientIdentityLoader(ClientIdentityLoader loader);
 
     /**
@@ -98,5 +100,6 @@ public interface ClientFactoryManager
      * @see FilePasswordProvider#EMPTY
      */
     FilePasswordProvider getFilePasswordProvider();
+
     void setFilePasswordProvider(FilePasswordProvider provider);
 }

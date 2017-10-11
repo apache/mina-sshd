@@ -111,7 +111,6 @@ public class MacTest extends BaseTestSupport {
         return ret;
     }
 
-
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
         JSchLogger.init();

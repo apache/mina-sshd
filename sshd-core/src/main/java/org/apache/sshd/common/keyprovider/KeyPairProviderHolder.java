@@ -30,5 +30,6 @@ public interface KeyPairProviderHolder {
      * @return the <code>KeyPairProvider</code>, never {@code null}
      */
     KeyPairProvider getKeyPairProvider();
+
     void setKeyPairProvider(KeyPairProvider keyPairProvider);
 }

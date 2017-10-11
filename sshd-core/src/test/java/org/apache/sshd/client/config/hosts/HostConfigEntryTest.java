@@ -309,6 +309,7 @@ public class HostConfigEntryTest extends BaseTestSupport {
         assertNotNull("Missing resource " + resourceName, url);
         return HostConfigEntry.readHostConfigEntries(url);
     }
+
     private static void testCaseInsensitivePatternMatching(String value, Pattern pattern, boolean expected) {
         for (int index = 0; index < value.length(); index++) {
             boolean actual = HostPatternsHolder.isHostMatch(value, pattern);

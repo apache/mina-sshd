@@ -157,20 +157,25 @@ public interface ServerAuthenticationManager {
      * @return a list of named <code>UserAuth</code> factories, never {@code null}/empty
      */
     List<NamedFactory<UserAuth>> getUserAuthFactories();
+
     default String getUserAuthFactoriesNameList() {
         return NamedResource.getNames(getUserAuthFactories());
     }
+
     default List<String> getUserAuthFactoriesNames() {
         return NamedResource.getNameList(getUserAuthFactories());
     }
 
     void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories);
+
     default void setUserAuthFactoriesNameList(String names) {
         setUserAuthFactoriesNames(GenericUtils.split(names, ','));
     }
+
     default void setUserAuthFactoriesNames(String... names) {
         setUserAuthFactoriesNames(GenericUtils.isEmpty((Object[]) names) ? Collections.emptyList() : Arrays.asList(names));
     }
+
     default void setUserAuthFactoriesNames(Collection<String> names) {
         BuiltinUserAuthFactories.ParseResult result = BuiltinUserAuthFactories.parseFactoriesList(names);
         @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -190,6 +195,7 @@ public interface ServerAuthenticationManager {
      * @return the {@link PublickeyAuthenticator} or {@code null}
      */
     PublickeyAuthenticator getPublickeyAuthenticator();
+
     void setPasswordAuthenticator(PasswordAuthenticator passwordAuthenticator);
 
     /**
@@ -201,6 +207,7 @@ public interface ServerAuthenticationManager {
      * @return the {@link PasswordAuthenticator} or {@code null}
      */
     PasswordAuthenticator getPasswordAuthenticator();
+
     void setPublickeyAuthenticator(PublickeyAuthenticator publickeyAuthenticator);
 
     /**
@@ -212,6 +219,7 @@ public interface ServerAuthenticationManager {
      * @return The {@link KeyboardInteractiveAuthenticator} or {@code null}
      */
     KeyboardInteractiveAuthenticator getKeyboardInteractiveAuthenticator();
+
     void setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator interactiveAuthenticator);
 
     /**
@@ -223,6 +231,7 @@ public interface ServerAuthenticationManager {
      * @return the {@link GSSAuthenticator} or {@code null}
      */
     GSSAuthenticator getGSSAuthenticator();
+
     void setGSSAuthenticator(GSSAuthenticator gssAuthenticator);
 
     /**
@@ -233,6 +242,7 @@ public interface ServerAuthenticationManager {
      * @return the {@link HostBasedAuthenticator} or {@code null}
      */
     HostBasedAuthenticator getHostBasedAuthenticator();
+
     void setHostBasedAuthenticator(HostBasedAuthenticator hostBasedAuthenticator);
 
     /**

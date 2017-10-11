@@ -134,7 +134,6 @@ public abstract class AbstractPEMResourceKeyPairParser
                 throw new FailedLoginException("No password data for encrypted resource=" + resourceKey);
             }
 
-
             PrivateKeyEncryptionContext encContext = new PrivateKeyEncryptionContext(algInfo);
             encContext.setPassword(password);
             encContext.setInitVector(initVector);

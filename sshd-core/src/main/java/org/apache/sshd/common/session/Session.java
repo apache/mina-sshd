@@ -287,6 +287,7 @@ public interface Session
     long getIdleTimeout();
 
     boolean isAuthenticated();
+
     void setAuthenticated() throws IOException;
 
     /**

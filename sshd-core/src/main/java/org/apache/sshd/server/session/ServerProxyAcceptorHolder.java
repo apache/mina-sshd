@@ -24,5 +24,6 @@ package org.apache.sshd.server.session;
  */
 public interface ServerProxyAcceptorHolder {
     ServerProxyAcceptor getServerProxyAcceptor();
+
     void setServerProxyAcceptor(ServerProxyAcceptor proxyAcceptor);
 }

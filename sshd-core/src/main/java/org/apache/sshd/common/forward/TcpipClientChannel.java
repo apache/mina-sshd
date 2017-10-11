@@ -63,15 +63,14 @@ public class TcpipClientChannel extends AbstractClientChannel {
         this.remote = remote;
     }
 
-
     public OpenFuture getOpenFuture() {
         return openFuture;
     }
 
     @Override
     public synchronized OpenFuture open() throws IOException {
-        final InetSocketAddress src;
-        final InetSocketAddress dst;
+        InetSocketAddress src;
+        InetSocketAddress dst;
         switch (typeEnum) {
             case Direct:
                 src = (InetSocketAddress) serverSession.getRemoteAddress();

@@ -86,9 +86,7 @@ public class JaasPasswordAuthenticatorTest extends BaseTestSupport {
         assertFalse(auth.authenticate("sshd", "dummy"));
     }
 
-
     protected static class DummyLoginModule implements LoginModule {
-
         private Subject subject;
         private CallbackHandler callbackHandler;
 

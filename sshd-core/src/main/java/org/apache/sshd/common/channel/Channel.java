@@ -73,11 +73,13 @@ public interface Channel
     List<RequestHandler<Channel>> getRequestHandlers();
 
     void addRequestHandler(RequestHandler<Channel> handler);
+
     default void addRequestHandlers(Collection<? extends RequestHandler<Channel>> handlers) {
         GenericUtils.forEach(handlers, this::addRequestHandler);
     }
 
     void removeRequestHandler(RequestHandler<Channel> handler);
+
     default void removeRequestHandlers(Collection<? extends RequestHandler<Channel>> handlers) {
         GenericUtils.forEach(handlers, this::removeRequestHandler);
     }
