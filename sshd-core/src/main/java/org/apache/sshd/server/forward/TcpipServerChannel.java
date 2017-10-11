@@ -232,7 +232,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
     protected void handleChannelOpenFailure(OpenFuture f, Throwable problem) {
         signalChannelOpenFailure(problem);
         notifyStateChanged(problem.getClass().getSimpleName());
-        closeImmediately0();
+        close(true);
 
         if (problem instanceof ConnectException) {
             f.setException(new SshChannelOpenException(getId(), SshConstants.SSH_OPEN_CONNECT_FAILED, problem.getMessage(), problem));
@@ -241,45 +241,44 @@ public class TcpipServerChannel extends AbstractServerChannel {
         }
 
     }
-    private void closeImmediately0() {
-        // We need to close the channel immediately to remove it from the
-        // server session's channel table and *not* send a packet to the
-        // client.  A notification was already sent by our caller, or will
-        // be sent after we return.
-        //
-        super.close(true);
 
-        // We also need to dispose of the connector, but unfortunately we
-        // are being invoked by the connector thread or the connector's
-        // own processor thread.  Disposing of the connector within either
-        // causes deadlock.  Instead create a thread to dispose of the
-        // connector in the background.
+	@Override
+	public CloseFuture close(boolean immediately) {
+		final CloseFuture cosingFeature = super.close(immediately);
 
-        ExecutorService service = getExecutorService();
-        // allocate a temporary executor service if none provided
-        final ExecutorService executors = (service == null)
-                ? ThreadUtils.newSingleThreadExecutor("TcpIpServerChannel-ConnectorCleanup[" + getSession() + "]")
-                : service;
-        // shutdown the temporary executor service if had to create it
-        final boolean shutdown = executors != service || isShutdownOnExit();
-        executors.submit(() -> {
-            try {
-                connector.close(true);
-            } finally {
-                if (shutdown && !executors.isShutdown()) {
-                    Collection<Runnable> runners = executors.shutdownNow();
-                    if (log.isDebugEnabled()) {
-                        log.debug("destroy({}) - shutdown executor service - runners count={}", TcpipServerChannel.this, runners.size());
-                    }
-                }
-            }
-        });
-    }
+		// We also need to dispose of the connector, but unfortunately we
+		// are being invoked by the connector thread or the connector's
+		// own processor thread. Disposing of the connector within either
+		// causes deadlock. Instead create a thread to dispose of the
+		// connector in the background.
+		final ExecutorService service = getExecutorService();
 
-    @Override
-    public CloseFuture close(boolean immediately) {
-        return super.close(immediately).addListener(sshFuture -> closeImmediately0());
-    }
+		// allocate a temporary executor service if none provided
+		final ExecutorService executors = (service == null)
+				? ThreadUtils.newSingleThreadExecutor("TcpIpServerChannel-ConnectorCleanup[" + getSession() + "]")
+				: service;
+		// shutdown the temporary executor service if had to create it
+		final boolean shutdown = executors != service || isShutdownOnExit();
+
+		return builder().when(cosingFeature).run(() -> {
+			executors.submit(() -> {
+				try {
+					if (log.isDebugEnabled()) {
+						log.debug("disposing connector: {} for: {}", connector, TcpipServerChannel.this);
+					}
+					connector.close(immediately);
+				} finally {
+					if (shutdown && !executors.isShutdown()) {
+						Collection<Runnable> runners = executors.shutdownNow();
+						if (log.isDebugEnabled()) {
+							log.debug("destroy({}) - shutdown executor service - runners count={}",
+									TcpipServerChannel.this, runners.size());
+						}
+					}
+				}
+			});
+		}).build().close(false);
+	}
 
     @Override
     protected void doWriteData(byte[] data, int off, long len) throws IOException {
@@ -328,6 +327,12 @@ public class TcpipServerChannel extends AbstractServerChannel {
                     + " len=" + len + " write failure details", t);
         }
 
-        session.exceptionCaught(t);
-    }
+		if (ioSession.isOpen()) {
+			session.exceptionCaught(t);
+		} else {
+			// In case remote entity has closed the socket (the ioSession), data coming from
+			// the SSH channel should be simply discarded
+			log.debug("Ignoring writeDataFailure {} because ioSession {} is already closing ", t, ioSession);
+		}
+	}
 }
