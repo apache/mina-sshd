@@ -776,6 +776,7 @@ public abstract class AbstractChannel
             throw err;
         }
     }
+
     @Override
     protected void doCloseImmediately() {
         if (service != null) {
