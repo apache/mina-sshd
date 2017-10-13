@@ -55,7 +55,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
         OpenFuture f = new DefaultOpenFuture(this, this);
         String changeEvent = "auth-agent";
         try {
-            out = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+            out = new ChannelOutputStream(this, getFactoryManager(), getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
 
             Session session = getSession();
             FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
