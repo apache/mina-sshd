@@ -41,6 +41,8 @@ import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.random.SingletonRandomFactory;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.UnknownChannelReferenceHandler;
+import org.apache.sshd.common.session.helpers.DefaultUnknownChannelReferenceHandler;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.ObjectBuilder;
@@ -130,6 +132,9 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
             BuiltinSignatures.dsa
         ));
 
+    public static final UnknownChannelReferenceHandler DEFAULT_UNKNOWN_CHANNEL_REFERENCE_HANDLER =
+            DefaultUnknownChannelReferenceHandler.INSTANCE;
+
     protected Factory<T> factory;
     protected List<NamedFactory<KeyExchange>> keyExchangeFactories;
     protected List<NamedFactory<Cipher>> cipherFactories;
@@ -143,6 +148,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
     protected List<RequestHandler<ConnectionService>> globalRequestHandlers;
     protected ForwardingFilter forwardingFilter;
     protected ChannelStreamPacketWriterResolver channelStreamPacketWriterResolver;
+    protected UnknownChannelReferenceHandler unknownChannelReferenceHandler;
 
     public BaseBuilder() {
         super();
@@ -175,6 +181,10 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
 
         if (forwarderFactory == null) {
             forwarderFactory = DEFAULT_FORWARDER_FACTORY;
+        }
+
+        if (unknownChannelReferenceHandler == null) {
+            unknownChannelReferenceHandler = DEFAULT_UNKNOWN_CHANNEL_REFERENCE_HANDLER;
         }
 
         return me();
@@ -242,6 +252,11 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
 
     public S channelStreamPacketWriterResolver(ChannelStreamPacketWriterResolver resolver) {
         channelStreamPacketWriterResolver = resolver;
+        return me();
+    }
+
+    public S unknownChannelReferenceHandler(UnknownChannelReferenceHandler handler) {
+        unknownChannelReferenceHandler = handler;
         return me();
     }
 

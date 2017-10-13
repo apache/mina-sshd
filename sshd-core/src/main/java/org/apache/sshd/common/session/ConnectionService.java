@@ -33,7 +33,12 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ConnectionService extends Service, PortForwardingEventListenerManager, PortForwardingEventListenerManagerHolder {
+public interface ConnectionService
+        extends Service,
+        UnknownChannelReferenceHandlerManager,
+        PortForwardingEventListenerManager,
+        PortForwardingEventListenerManagerHolder {
+
     /**
      * Register a newly created channel with a new unique identifier
      *

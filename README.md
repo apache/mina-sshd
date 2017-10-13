@@ -930,6 +930,12 @@ Informs about session related events. One can modify the session - although the 
 Informs about channel related events - as with sessions, once can influence the channel to some extent, depending on the channel's **state**. The ability to influence channels is much more limited than sessions. In this context, it is worth mentioning that one can attach to channels **arbitrary attributes** that can be retrieved by the user's code later on - same was as it is done for sessions.
 
 
+### `UnknownChannelReferenceHandler`
+
+
+Invoked whenever a message intended for an unknown channel is received. By default, the code **ignores** the vast majority of such messages and logs them at DEBUG level. For a select few types of messages the code generates an `SSH_CHANNEL_MSG_FAILURE` packet that is sent to the peer session - see `DefaultUnknownChannelReferenceHandler` implementation. The user may register handlers at any level - client/server, session and/or connection service - the one registered "closest" to connection service will be used.
+
+
 ### `SignalListener`
 
 Informs about signal requests as described in [RFC 4254 - section 6.9](https://tools.ietf.org/html/rfc4254#section-6.9), break requests (sent as SIGINT) as described in [RFC 4335](https://tools.ietf.org/html/rfc4335) and "window-change" (sent as SIGWINCH) requests as described in [RFC 4254 - section 6.7](https://tools.ietf.org/html/rfc4254#section-6.7)
@@ -990,7 +996,6 @@ Inform about SCP related events. `ScpTransferEventListener`(s) can be registered
         ...scp.upload/download...
     }
 ```
-
 
 ### Reserved messages
 

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,7 +38,6 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.RequestHandler;
@@ -54,6 +52,7 @@ import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.UnknownChannelReferenceHandler;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
@@ -106,6 +105,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
     private final Collection<PortForwardingEventListenerManager> managersHolder = new CopyOnWriteArraySet<>();
     private final PortForwardingEventListener listenerProxy;
     private final S sessionInstance;
+    private UnknownChannelReferenceHandler unknownChannelReferenceHandler;
 
     protected AbstractConnectionService(S session) {
         sessionInstance = Objects.requireNonNull(session, "No session");
@@ -129,6 +129,16 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
         }
 
         listeners.remove(PortForwardingEventListener.validateListener(listener));
+    }
+
+    @Override
+    public UnknownChannelReferenceHandler getUnknownChannelReferenceHandler() {
+        return unknownChannelReferenceHandler;
+    }
+
+    @Override
+    public void setUnknownChannelReferenceHandler(UnknownChannelReferenceHandler handler) {
+        unknownChannelReferenceHandler = handler;
     }
 
     @Override
@@ -378,7 +388,11 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
     }
 
     public void channelOpenConfirmation(Buffer buffer) throws IOException {
-        Channel channel = getChannel(buffer);
+        Channel channel = getChannel(SshConstants.SSH_MSG_CHANNEL_OPEN_CONFIRMATION, buffer);
+        if (channel == null) {
+            return; // debug breakpoint
+        }
+
         int sender = buffer.getInt();
         long rwsize = buffer.getUInt();
         long rmpsize = buffer.getUInt();
@@ -398,7 +412,12 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
     }
 
     public void channelOpenFailure(Buffer buffer) throws IOException {
-        AbstractClientChannel channel = (AbstractClientChannel) getChannel(buffer);
+        AbstractClientChannel channel =
+            (AbstractClientChannel) getChannel(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, buffer);
+        if (channel == null) {
+            return; // debug breakpoint
+        }
+
         int id = channel.getId();
         if (log.isDebugEnabled()) {
             log.debug("channelOpenFailure({}) Received SSH_MSG_CHANNEL_OPEN_FAILURE", channel);
@@ -414,7 +433,11 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
      * @throws IOException if an error occurs
      */
     public void channelData(Buffer buffer) throws IOException {
-        Channel channel = getChannel(buffer);
+        Channel channel = getChannel(SshConstants.SSH_MSG_CHANNEL_DATA, buffer);
+        if (channel == null) {
+            return; // debug breakpoint
+        }
+
         channel.handleData(buffer);
     }
 
@@ -425,7 +448,11 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
      * @throws IOException if an error occurs
      */
     public void channelExtendedData(Buffer buffer) throws IOException {
-        Channel channel = getChannel(buffer);
+        Channel channel = getChannel(SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA, buffer);
+        if (channel == null) {
+            return; // debug breakpoint
+        }
+
         channel.handleExtendedData(buffer);
     }
 
@@ -436,22 +463,12 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
      * @throws IOException if an error occurs
      */
     public void channelWindowAdjust(Buffer buffer) throws IOException {
-        try {
-            // Do not use getChannel to avoid the session being closed
-            // if receiving the SSH_MSG_CHANNEL_WINDOW_ADJUST on an already closed channel
-            int recipient = buffer.getInt();
-            Channel channel = channels.get(recipient);
-            if (channel != null) {
-                channel.handleWindowAdjust(buffer);
-            } else {
-                log.warn("Received SSH_MSG_CHANNEL_WINDOW_ADJUST on unknown channel " + recipient);
-            }
-
-        } catch (SshException e) {
-            if (log.isDebugEnabled()) {
-                log.debug("channelWindowAdjust {} error: {}", e.getClass().getSimpleName(), e.getMessage());
-            }
+        Channel channel = getChannel(SshConstants.SSH_MSG_CHANNEL_WINDOW_ADJUST, buffer);
+        if (channel == null) {
+            return; // debug breakpoint
         }
+
+        channel.handleWindowAdjust(buffer);
     }
 
     /**
@@ -461,15 +478,12 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
      * @throws IOException if an error occurs
      */
     public void channelEof(Buffer buffer) throws IOException {
-        // Do not use getChannel to avoid the session being closed
-        // if receiving the SSH_MSG_CHANNEL_EOF on an already closed channel
-        int recipient = buffer.getInt();
-        Channel channel = channels.get(recipient);
-        if (channel != null) {
-            channel.handleEof();
-        } else {
-            log.warn("Received SSH_MSG_CHANNEL_EOF on unknown channel " + recipient);
+        Channel channel = getChannel(SshConstants.SSH_MSG_CHANNEL_EOF, buffer);
+        if (channel == null) {
+            return; // debug breakpoint
         }
+
+        channel.handleEof();
     }
 
     /**
@@ -479,15 +493,12 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
      * @throws IOException if an error occurs
      */
     public void channelClose(Buffer buffer) throws IOException {
-        // Do not use getChannel to avoid the session being closed
-        // if receiving the SSH_MSG_CHANNEL_CLOSE on an already closed channel
-        int recipient = buffer.getInt();
-        Channel channel = channels.get(recipient);
-        if (channel != null) {
-            channel.handleClose();
-        } else {
-            log.warn("Received SSH_MSG_CHANNEL_CLOSE on unknown channel " + recipient);
+        Channel channel = getChannel(SshConstants.SSH_MSG_CHANNEL_CLOSE, buffer);
+        if (channel == null) {
+            return; // debug breakpoint
         }
+
+        channel.handleClose();
     }
 
     /**
@@ -497,7 +508,11 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
      * @throws IOException if an error occurs
      */
     public void channelRequest(Buffer buffer) throws IOException {
-        Channel channel = getChannel(buffer);
+        Channel channel = getChannel(SshConstants.SSH_MSG_CHANNEL_REQUEST, buffer);
+        if (channel == null) {
+            return; // debug breakpoint
+        }
+
         channel.handleRequest(buffer);
     }
 
@@ -508,7 +523,11 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
      * @throws IOException if an error occurs
      */
     public void channelFailure(Buffer buffer) throws IOException {
-        Channel channel = getChannel(buffer);
+        Channel channel = getChannel(SshConstants.SSH_MSG_CHANNEL_FAILURE, buffer);
+        if (channel == null) {
+            return; // debug breakpoint
+        }
+
         channel.handleFailure();
     }
 
@@ -519,40 +538,60 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
      * @throws IOException if an error occurs
      */
     public void channelSuccess(Buffer buffer) throws IOException {
-        Channel channel = getChannel(buffer);
+        Channel channel = getChannel(SshConstants.SSH_MSG_CHANNEL_SUCCESS, buffer);
+        if (channel == null) {
+            return; // debug breakpoint
+        }
+
         channel.handleSuccess();
     }
 
     /**
      * Retrieve the channel designated by the given packet
      *
+     * @param cmd The command being processed for the channel
      * @param buffer the incoming packet
      * @return the target channel
      * @throws IOException if the channel does not exists
      */
-    protected Channel getChannel(Buffer buffer) throws IOException {
-        return getChannel(buffer.getInt(), buffer);
+    protected Channel getChannel(byte cmd, Buffer buffer) throws IOException {
+        return getChannel(cmd, buffer.getInt(), buffer);
     }
 
-    protected Channel getChannel(int recipient, Buffer buffer) throws IOException {
+    protected Channel getChannel(byte cmd, int recipient, Buffer buffer) throws IOException {
         Channel channel = channels.get(recipient);
-        if (channel == null) {
-            byte[] data = buffer.array();
-            int curPos = buffer.rpos();
-            int cmd = (curPos >= 5) ? (data[curPos - 5] & 0xFF) : -1;
-            // Throw a special exception - SSHD-776
-            throw new SshChannelNotFoundException(recipient,
-                "Received " + SshConstants.getCommandMessageName(cmd) + " on unknown channel " + recipient);
+        if (channel != null) {
+            return channel;
         }
 
+        UnknownChannelReferenceHandler handler = resolveUnknownChannelReferenceHandler();
+        if (handler == null) {
+            // Throw a special exception - SSHD-777
+            throw new SshChannelNotFoundException(recipient,
+                    "Received " + SshConstants.getCommandMessageName(cmd) + " on unknown channel " + recipient);
+
+        }
+
+        channel = handler.handleUnknownChannelCommand(this, cmd, recipient, buffer);
         return channel;
+    }
+
+    @Override
+    public UnknownChannelReferenceHandler resolveUnknownChannelReferenceHandler() {
+        UnknownChannelReferenceHandler handler = getUnknownChannelReferenceHandler();
+        if (handler != null) {
+            return handler;
+        }
+
+        Session s = getSession();
+        return (s == null) ? null : s.resolveUnknownChannelReferenceHandler();
     }
 
     protected void channelOpen(Buffer buffer) throws Exception {
         String type = buffer.getString();
-        final int sender = buffer.getInt();
-        final long rwsize = buffer.getUInt();
-        final long rmpsize = buffer.getUInt();
+        int sender = buffer.getInt();
+        long rwsize = buffer.getUInt();
+        long rmpsize = buffer.getUInt();
         /*
          * NOTE: the 'sender' is the identifier assigned by the remote side - the server in this case
          */
@@ -562,27 +601,27 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
         }
 
         if (isClosing()) {
-            // TODO add language tag
+            // TODO add language tag configurable control
             sendChannelOpenFailure(buffer, sender, SshConstants.SSH_OPEN_CONNECT_FAILED, "Server is shutting down while attempting to open channel type=" + type, "");
             return;
         }
 
         if (!isAllowMoreSessions()) {
-            // TODO add language tag
+            // TODO add language tag configurable control
             sendChannelOpenFailure(buffer, sender, SshConstants.SSH_OPEN_CONNECT_FAILED, "additional sessions disabled", "");
             return;
         }
 
-        final Session session = getSession();
+        Session session = getSession();
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
-        final Channel channel = NamedFactory.create(manager.getChannelFactories(), type);
+        Channel channel = NamedFactory.create(manager.getChannelFactories(), type);
         if (channel == null) {
-            // TODO add language tag
+            // TODO add language tag configurable control
             sendChannelOpenFailure(buffer, sender, SshConstants.SSH_OPEN_UNKNOWN_CHANNEL_TYPE, "Unsupported channel type: " + type, "");
             return;
         }
 
-        final int channelId = registerChannel(channel);
+        int channelId = registerChannel(channel);
         channel.open(sender, rwsize, rmpsize, buffer).addListener(future -> {
             try {
                 if (future.isOpened()) {
@@ -653,9 +692,8 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
         }
 
         Session session = getSession();
-        FactoryManager manager =
-                Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
-        List<RequestHandler<ConnectionService>> handlers = manager.getGlobalRequestHandlers();
+        FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
+        Collection<RequestHandler<ConnectionService>> handlers = manager.getGlobalRequestHandlers();
         if (GenericUtils.size(handlers) > 0) {
             for (RequestHandler<ConnectionService> handler : handlers) {
                 RequestHandler.Result result;
@@ -713,11 +751,13 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
     }
 
     protected void requestSuccess(Buffer buffer) throws Exception {
-        getSession().requestSuccess(buffer);
+        S s = getSession();
+        s.requestSuccess(buffer);
     }
 
     protected void requestFailure(Buffer buffer) throws Exception {
-        getSession().requestFailure(buffer);
+        S s = getSession();
+        s.requestFailure(buffer);
     }
 
     @Override

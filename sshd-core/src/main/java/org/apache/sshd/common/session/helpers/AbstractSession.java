@@ -79,6 +79,7 @@ import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.SessionWorkBuffer;
+import org.apache.sshd.common.session.UnknownChannelReferenceHandler;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Invoker;
@@ -243,6 +244,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     private final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
     private ReservedSessionMessagesHandler reservedSessionMessagesHandler;
     private ChannelStreamPacketWriterResolver channelStreamPacketWriterResolver;
+    private UnknownChannelReferenceHandler unknownChannelReferenceHandler;
 
     /**
      * Create a new session.
@@ -397,6 +399,27 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     @Override
     public Map<String, Object> getProperties() {
         return properties;
+    }
+
+    @Override
+    public UnknownChannelReferenceHandler getUnknownChannelReferenceHandler() {
+        return unknownChannelReferenceHandler;
+    }
+
+    @Override
+    public void setUnknownChannelReferenceHandler(UnknownChannelReferenceHandler unknownChannelReferenceHandler) {
+        this.unknownChannelReferenceHandler = unknownChannelReferenceHandler;
+    }
+
+    @Override
+    public UnknownChannelReferenceHandler resolveUnknownChannelReferenceHandler() {
+        UnknownChannelReferenceHandler handler = getUnknownChannelReferenceHandler();
+        if (handler != null) {
+            return handler;
+        }
+
+        FactoryManager mgr = getFactoryManager();
+        return (mgr == null) ? null : mgr.resolveUnknownChannelReferenceHandler();
     }
 
     @Override

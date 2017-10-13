@@ -36,6 +36,7 @@ import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.ReservedSessionMessagesManager;
 import org.apache.sshd.common.session.SessionListenerManager;
+import org.apache.sshd.common.session.UnknownChannelReferenceHandlerManager;
 import org.apache.sshd.server.forward.AgentForwardingFilter;
 import org.apache.sshd.server.forward.ForwardingFilter;
 import org.apache.sshd.server.forward.TcpForwardingFilter;
@@ -53,6 +54,7 @@ public interface FactoryManager
                 ReservedSessionMessagesManager,
                 ChannelListenerManager,
                 ChannelStreamPacketWriterResolverManager,
+                UnknownChannelReferenceHandlerManager,
                 PortForwardingEventListenerManager,
                 AttributeStore,
                 PropertyResolver {

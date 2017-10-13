@@ -56,6 +56,7 @@ public interface Session
                 ChannelListenerManager,
                 ChannelStreamPacketWriterResolverManager,
                 PortForwardingEventListenerManager,
+                UnknownChannelReferenceHandlerManager,
                 FactoryManagerHolder,
                 PropertyResolver,
                 AttributeStore,

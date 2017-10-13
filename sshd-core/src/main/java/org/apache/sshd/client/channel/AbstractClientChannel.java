@@ -43,6 +43,7 @@ import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.channel.exception.SshChannelOpenException;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.session.Session;
@@ -361,7 +362,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         this.openFailureReason = reason;
         this.openFailureMsg = msg;
         this.openFailureLang = lang;
-        this.openFuture.setException(new SshException(msg));
+        this.openFuture.setException(new SshChannelOpenException(getId(), reason, msg));
         this.closeFuture.setClosed();
         this.doCloseImmediately();
         notifyStateChanged("SSH_MSG_CHANNEL_OPEN_FAILURE");

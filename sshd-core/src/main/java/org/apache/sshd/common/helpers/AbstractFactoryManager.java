@@ -53,6 +53,7 @@ import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
 import org.apache.sshd.common.session.SessionListener;
+import org.apache.sshd.common.session.UnknownChannelReferenceHandler;
 import org.apache.sshd.common.session.helpers.AbstractSessionFactory;
 import org.apache.sshd.common.session.helpers.SessionTimeoutListener;
 import org.apache.sshd.common.util.EventListenerUtils;
@@ -90,6 +91,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     private PropertyResolver parentResolver = SyspropsMapWrapper.SYSPROPS_RESOLVER;
     private ReservedSessionMessagesHandler reservedSessionMessagesHandler;
     private ChannelStreamPacketWriterResolver channelStreamPacketWriterResolver;
+    private UnknownChannelReferenceHandler unknownChannelReferenceHandler;
 
     protected AbstractFactoryManager() {
         ClassLoader loader = getClass().getClassLoader();
@@ -281,6 +283,21 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     @Override
     public void setChannelStreamPacketWriterResolver(ChannelStreamPacketWriterResolver resolver) {
         channelStreamPacketWriterResolver = resolver;
+    }
+
+    @Override
+    public UnknownChannelReferenceHandler getUnknownChannelReferenceHandler() {
+        return unknownChannelReferenceHandler;
+    }
+
+    @Override
+    public void setUnknownChannelReferenceHandler(UnknownChannelReferenceHandler unknownChannelReferenceHandler) {
+        this.unknownChannelReferenceHandler = unknownChannelReferenceHandler;
+    }
+
+    @Override
+    public UnknownChannelReferenceHandler resolveUnknownChannelReferenceHandler() {
+        return getUnknownChannelReferenceHandler();
     }
 
     @Override

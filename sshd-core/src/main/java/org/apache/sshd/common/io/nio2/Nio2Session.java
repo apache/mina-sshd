@@ -331,23 +331,27 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
     protected void startWriting() {
         Nio2DefaultIoWriteFuture future = writes.peek();
-        if (future != null) {
-            if (currentWrite.compareAndSet(null, future)) {
-                try {
-                    AsynchronousSocketChannel socket = getSocket();
-                    ByteBuffer buffer = future.getBuffer();
-                    Nio2CompletionHandler<Integer, Object> handler =
-                            Objects.requireNonNull(createWriteCycleCompletionHandler(future, socket, buffer),
-                                                       "No write cycle completion handler created");
-                    doWriteCycle(buffer, handler);
-                } catch (Throwable e) {
-                    future.setWritten();
-                    if (e instanceof RuntimeException) {
-                        throw (RuntimeException) e;
-                    } else {
-                        throw new RuntimeSshException(e);
-                    }
-                }
+        if (future == null) {
+            return;
+        }
+
+        if (!currentWrite.compareAndSet(null, future)) {
+            return;
+        }
+
+        try {
+            AsynchronousSocketChannel socket = getSocket();
+            ByteBuffer buffer = future.getBuffer();
+            Nio2CompletionHandler<Integer, Object> handler =
+                    Objects.requireNonNull(createWriteCycleCompletionHandler(future, socket, buffer),
+                                               "No write cycle completion handler created");
+            doWriteCycle(buffer, handler);
+        } catch (Throwable e) {
+            future.setWritten();
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            } else {
+                throw new RuntimeSshException(e);
             }
         }
     }
