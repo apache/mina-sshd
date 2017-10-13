@@ -651,8 +651,8 @@ public class ChannelSession extends AbstractServerChannel {
             ((AsyncCommand) command).setIoErrorStream(asyncErr);
         } else {
             Window wRemote = getRemoteWindow();
-            out = new ChannelOutputStream(this, wRemote, log, SshConstants.SSH_MSG_CHANNEL_DATA, false);
-            err = new ChannelOutputStream(this, wRemote, log, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA, false);
+            out = new ChannelOutputStream(this, getFactoryManager(), wRemote, log, SshConstants.SSH_MSG_CHANNEL_DATA, false);
+            err = new ChannelOutputStream(this, getFactoryManager(), wRemote, log, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA, false);
             if (log.isTraceEnabled()) {
                 // Wrap in logging filters
                 out = new LoggingFilterOutputStream(out, "OUT(" + this + ")", log, this);
