@@ -80,7 +80,7 @@ public class ChannelForwardedX11 extends AbstractClientChannel {
         if (Streaming.Async.equals(streaming)) {
             throw new IllegalArgumentException("Asynchronous streaming isn't supported yet on this channel");
         }
-        out = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+        out = new ChannelOutputStream(this, getFactoryManager(), getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
         invertedIn = out;
     }
 
