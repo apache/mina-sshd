@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.io.PacketWriter;
@@ -38,11 +39,6 @@ import org.slf4j.Logger;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelOutputStream extends OutputStream implements java.nio.channels.Channel, ChannelHolder {
-    /**
-     * Configure max. wait time (millis) to wait for space to become available
-     */
-    public static final String WAIT_FOR_SPACE_TIMEOUT = "channel-output-wait-for-space-timeout";
-    public static final long DEFAULT_WAIT_FOR_SPACE_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
 
     private final AbstractChannel channelInstance;
     private final PacketWriter packetWriter;
@@ -58,8 +54,8 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
     private int lastSize;
     private boolean noDelay;
 
-    public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, Logger log, byte cmd, boolean eofOnClose) {
-        this(channel, remoteWindow, channel.getLongProperty(WAIT_FOR_SPACE_TIMEOUT, DEFAULT_WAIT_FOR_SPACE_TIMEOUT), log, cmd, eofOnClose);
+    public ChannelOutputStream(AbstractChannel channel, FactoryManager manager, Window remoteWindow, Logger log, byte cmd, boolean eofOnClose) {
+        this(channel, remoteWindow, manager.getLongProperty(FactoryManager.WAIT_FOR_SPACE_TIMEOUT, FactoryManager.DEFAULT_WAIT_FOR_SPACE_TIMEOUT), log, cmd, eofOnClose);
     }
 
     public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, long maxWaitTimeout, Logger log, byte cmd, boolean eofOnClose) {
