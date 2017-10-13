@@ -153,6 +153,8 @@ public interface FactoryManager
     String NIO2_READ_TIMEOUT = "nio2-read-timeout";
 
     String WAIT_FOR_SPACE_TIMEOUT = "channel-output-wait-for-space-timeout";
+                        
+    String DEFAULT_WAIT_FOR_SPACE_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
 
     /**
      * Default value for {@value #NIO2_READ_TIMEOUT} if none set
