@@ -151,7 +151,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         }
 
         // TODO: revisit for better threading. Use async io ?
-        out = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+        out = new ChannelOutputStream(this, getFactoryManager(), getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
         IoHandler handler = new IoHandler() {
             @SuppressWarnings("synthetic-access")
             @Override
