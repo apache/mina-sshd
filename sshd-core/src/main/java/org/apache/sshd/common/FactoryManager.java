@@ -152,6 +152,8 @@ public interface FactoryManager
      */
     String NIO2_READ_TIMEOUT = "nio2-read-timeout";
 
+    String WAIT_FOR_SPACE_TIMEOUT = "channel-output-wait-for-space-timeout";
+
     /**
      * Default value for {@value #NIO2_READ_TIMEOUT} if none set
      */
