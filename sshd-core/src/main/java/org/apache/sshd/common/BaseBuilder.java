@@ -279,6 +279,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
         ssh.setForwarderFactory(forwarderFactory);
         ssh.setGlobalRequestHandlers(globalRequestHandlers);
         ssh.setChannelStreamPacketWriterResolver(channelStreamPacketWriterResolver);
+        ssh.setUnknownChannelReferenceHandler(unknownChannelReferenceHandler);
         return ssh;
     }
 
