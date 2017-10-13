@@ -99,7 +99,7 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
             asyncIn = new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA);
             asyncOut = new ChannelAsyncInputStream(this);
         } else {
-            out = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+            out = new ChannelOutputStream(this, getFactoryManager(), getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
             invertedIn = out;
             ChannelPipedInputStream pis = new ChannelPipedInputStream(this, getLocalWindow());
             pipe = new ChannelPipedOutputStream(pis);
