@@ -73,6 +73,7 @@
         <module name="ImportOrder">
             <property name="groups" value="java,javax,org.w3c,org.xml,junit,antlr,com.,net,org,*" />
             <property name="ordered" value="true" />
+            <property name="separated" value="true" />
         </module>
 	
             <!--
@@ -109,7 +110,7 @@
         <module name="EmptyForInitializerPad" />
         <module name="MethodParamPad" />
         <module name="NoWhitespaceAfter">
-            <property name="tokens" value="ARRAY_INIT,BNOT,DEC,DOT,INC,LNOT,UNARY_MINUS,UNARY_PLUS" />
+            <property name="tokens" value="ARRAY_INIT,BNOT,DEC,DOT,INC,AT,LNOT,UNARY_MINUS,UNARY_PLUS" />
         </module>
         <module name="EmptyLineSeparator">
             <property name="tokens" value="IMPORT,CLASS_DEF,INTERFACE_DEF,STATIC_INIT,INSTANCE_INIT,METHOD_DEF,CTOR_DEF" />
