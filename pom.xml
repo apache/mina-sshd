@@ -113,7 +113,7 @@
         <spring.version>4.3.8.RELEASE</spring.version>
         <jgit.version>4.7.0.201704051617-r</jgit.version>
         <junit.version>4.12</junit.version>
-        <surefire.plugin.version>2.20</surefire.plugin.version>
+        <surefire.plugin.version>2.20.1</surefire.plugin.version>
         <!-- See https://pmd.github.io/ for available latest version -->
         <pmd.version>5.6.1</pmd.version>
         <httpcomps.version>4.4.1</httpcomps.version>
@@ -509,7 +509,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>animal-sniffer-maven-plugin</artifactId>
-                    <version>1.15</version>
+                    <version>1.16</version>
                     <configuration>
                         <signature>
                             <groupId>org.codehaus.mojo.signature</groupId>
@@ -821,7 +821,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.6.1</version>
+                <version>3.7.0</version>
                 <configuration>
                     <source>${javac.source}</source>
                     <target>${javac.target}</target>
@@ -834,7 +834,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.0.1</version>
+                <version>3.0.2</version>
                 <executions>
                     <execution>
                         <id>install</id>
@@ -889,7 +889,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.1.0</version>
                 <executions>
                     <execution>
                         <id>source-release-assembly</id>
