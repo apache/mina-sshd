@@ -740,7 +740,14 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected void handleDisconnect(Buffer buffer) throws Exception  {
         int code = buffer.getInt();
         String message = buffer.getString();
-        String languageTag = buffer.getString();
+        String languageTag;
+        // SSHD-738: avoid spamming the log with uninteresting
+        // messages caused by buggy OpenSSH < 5.5
+        if (buffer.available() > 0) {
+            languageTag = buffer.getString();
+        } else {
+            languageTag = "";
+        }
         handleDisconnect(code, message, languageTag, buffer);
     }
 
