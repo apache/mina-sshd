@@ -20,6 +20,7 @@ package org.apache.sshd.client.session;
 
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.agent.common.AgentForwardSupport;
@@ -39,6 +40,9 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ClientConnectionService extends AbstractConnectionService<AbstractClientSession> implements ClientSessionHolder {
+
+    private ScheduledFuture<?> heartBeat;
+
     public ClientConnectionService(AbstractClientSession s) throws SshException {
         super(s);
     }
@@ -57,16 +61,30 @@ public class ClientConnectionService extends AbstractConnectionService<AbstractC
         startHeartBeat();
     }
 
-    protected void startHeartBeat() {
+    @Override
+    protected void preClose() {
+        stopHeartBeat();
+        super.preClose();
+    }
+
+    protected synchronized void startHeartBeat() {
+        stopHeartBeat();
         ClientSession session = getClientSession();
         long interval = session.getLongProperty(ClientFactoryManager.HEARTBEAT_INTERVAL, ClientFactoryManager.DEFAULT_HEARTBEAT_INTERVAL);
         if (interval > 0L) {
             FactoryManager manager = session.getFactoryManager();
             ScheduledExecutorService service = manager.getScheduledExecutorService();
-            service.scheduleAtFixedRate(this::sendHeartBeat, interval, interval, TimeUnit.MILLISECONDS);
+            heartBeat = service.scheduleAtFixedRate(this::sendHeartBeat, interval, interval, TimeUnit.MILLISECONDS);
             if (log.isDebugEnabled()) {
                 log.debug("startHeartbeat - started at interval={}", interval);
             }
+        }
+    }
+
+    protected synchronized void stopHeartBeat() {
+        if (heartBeat != null) {
+            heartBeat.cancel(true);
+            heartBeat = null;
         }
     }
 
@@ -82,18 +100,27 @@ public class ClientConnectionService extends AbstractConnectionService<AbstractC
             Buffer buf = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST, request.length() + Byte.SIZE);
             buf.putString(request);
             buf.putBoolean(false);
-            return session.writePacket(buf);
+            IoWriteFuture future = session.writePacket(buf);
+            future.addListener(this::futureDone);
+            return future;
         } catch (IOException e) {
+            getSession().exceptionCaught(e);
             if (log.isDebugEnabled()) {
                 log.debug("Error (" + e.getClass().getSimpleName() + ") sending keepalive message=" + request + ": " + e.getMessage());
             }
-
             Throwable t = e;
             return new AbstractIoWriteFuture(request, null) {
                 {
                     setValue(t);
                 }
             };
+        }
+    }
+
+    protected void futureDone(IoWriteFuture future) {
+        Throwable t = future.getException();
+        if (t != null) {
+            getSession().exceptionCaught(t);
         }
     }
 
