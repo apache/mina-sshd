@@ -274,7 +274,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         doReadCycle(buffer, completion);
     }
 
-    protected Nio2CompletionHandler<Integer, Object> createReadCycleCompletionHandler(final ByteBuffer buffer, final Readable bufReader) {
+    protected Nio2CompletionHandler<Integer, Object> createReadCycleCompletionHandler(ByteBuffer buffer, Readable bufReader) {
         return new Nio2CompletionHandler<Integer, Object>() {
             @Override
             protected void onCompleted(Integer result, Object attachment) {
@@ -348,6 +348,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
             doWriteCycle(buffer, handler);
         } catch (Throwable e) {
             future.setWritten();
+
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
             } else {
@@ -363,8 +364,8 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     }
 
     protected Nio2CompletionHandler<Integer, Object> createWriteCycleCompletionHandler(
-            final Nio2DefaultIoWriteFuture future, final AsynchronousSocketChannel socket, final ByteBuffer buffer) {
-        final int writeLen = buffer.remaining();
+            Nio2DefaultIoWriteFuture future, AsynchronousSocketChannel socket, ByteBuffer buffer) {
+        int writeLen = buffer.remaining();
         return new Nio2CompletionHandler<Integer, Object>() {
             @Override
             protected void onCompleted(Integer result, Object attachment) {
@@ -417,7 +418,16 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         }
         future.setException(exc);
         exceptionCaught(exc);
-        finishWrite(future);
+
+        // see SSHD-743
+        try {
+            finishWrite(future);
+        } catch (RuntimeException e) {
+            if (log.isTraceEnabled()) {
+                log.trace("handleWriteCycleFailure({}) failed ({}) to finish writing: {}",
+                        this, e.getClass().getSimpleName(), e.getMessage());
+            }
+        }
     }
 
     protected void finishWrite(Nio2DefaultIoWriteFuture future) {
