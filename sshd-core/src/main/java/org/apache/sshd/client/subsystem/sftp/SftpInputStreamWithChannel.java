@@ -162,6 +162,7 @@ public class SftpInputStreamWithChannel extends InputStreamWithChannel {
             idx += nb;
             len -= nb;
         }
+
         return idx - off;
     }
 

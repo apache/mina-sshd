@@ -107,6 +107,10 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
+        if (len == 0) {
+            return 0;
+        }
+
         long startTime = System.currentTimeMillis();
         lock.lock();
         try {
