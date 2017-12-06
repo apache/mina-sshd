@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,6 +38,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.sshd.common.Closeable;
@@ -158,6 +160,14 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
      */
     public void setPort(int port) {
         this.port = port;
+    }
+
+    /**
+     * @return The currently bound addresses - valid only after server {@link #start() started}
+     * and while not {@link #stop() stopped}
+     */
+    public Set<SocketAddress> getBoundAddresses() {
+        return (acceptor == null) ? Collections.emptySet() : acceptor.getBoundAddresses();
     }
 
     @Override

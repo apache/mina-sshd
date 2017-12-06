@@ -33,7 +33,7 @@ public abstract class Nio2CompletionHandler<V, A> implements CompletionHandler<V
     }
 
     @Override
-    public void completed(final V result, final A attachment) {
+    public void completed(V result, A attachment) {
         AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
             onCompleted(result, attachment);
             return null;
@@ -41,7 +41,7 @@ public abstract class Nio2CompletionHandler<V, A> implements CompletionHandler<V
     }
 
     @Override
-    public void failed(final Throwable exc, final A attachment) {
+    public void failed(Throwable exc, A attachment) {
         AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
             onFailed(exc, attachment);
             return null;

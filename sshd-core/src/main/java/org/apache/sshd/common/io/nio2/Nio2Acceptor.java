@@ -58,16 +58,16 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                 log.debug("Binding Nio2Acceptor to address {}", address);
             }
 
-            AsynchronousServerSocketChannel socket =
-                    setSocketOptions(openAsynchronousServerSocketChannel(address, group));
+            AsynchronousServerSocketChannel asyncChannel = openAsynchronousServerSocketChannel(address, group);
+            AsynchronousServerSocketChannel socket = setSocketOptions(asyncChannel);
             socket.bind(address, backlog);
             SocketAddress local = socket.getLocalAddress();
             channels.put(local, socket);
 
             CompletionHandler<AsynchronousSocketChannel, ? super SocketAddress> handler =
-                    ValidateUtils.checkNotNull(createSocketCompletionHandler(channels, socket),
-                                               "No completion handler created for address=%s",
-                                               address);
+                ValidateUtils.checkNotNull(createSocketCompletionHandler(channels, socket),
+                    "No completion handler created for address=%s",
+                    address);
             socket.accept(local, handler);
         }
     }
@@ -112,7 +112,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                 }
             } else {
                 if (log.isTraceEnabled()) {
-                    log.trace("No active channel to unbind {}", address);
+                    log.trace("No active channel to unbind for {}", address);
                 }
             }
         }
@@ -136,11 +136,20 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
 
     @Override
     public void doCloseImmediately() {
-        for (SocketAddress address : channels.keySet()) {
+        Collection<SocketAddress> boundAddresses = getBoundAddresses();
+        for (SocketAddress address : boundAddresses) {
+            AsynchronousServerSocketChannel asyncChannel = channels.remove(address);
+            if (asyncChannel == null) {
+                continue;   // debug breakpoint
+            }
+
             try {
-                channels.get(address).close();
+                asyncChannel.close();
+                if (log.isDebugEnabled()) {
+                    log.debug("doCloseImmediately({}) closed channel", address);
+                }
             } catch (IOException e) {
-                log.debug("Exception caught while closing channel", e);
+                log.debug("Exception caught while closing channel of " + address, e);
             }
         }
         super.doCloseImmediately();
@@ -204,12 +213,22 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
 
         @Override
         @SuppressWarnings("synthetic-access")
-        protected void onFailed(final Throwable exc, final SocketAddress address) {
-            if (channels.containsKey(address) && !disposing.get()) {
+        protected void onFailed(Throwable exc, SocketAddress address) {
+            AsynchronousServerSocketChannel channel = channels.get(address);
+            if (channel == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Caught {} for untracked channel of {}: {}",
+                        exc.getClass().getSimpleName(), address, exc.getMessage());
+                }
+                return;
+            }
+
+            if (!disposing.get()) {
                 log.warn("Caught " + exc.getClass().getSimpleName()
                        + " while accepting incoming connection from " + address
                        + ": " + exc.getMessage(),
                         exc);
+                // TODO (SSHD-786) consider closing the channel
             }
         }
     }
