@@ -93,6 +93,10 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
 
     public void dispose() {
         try {
+            if (disposing.getAndSet(true)) {
+                log.warn("dispose({}) already disposing", this);
+            }
+
             long maxWait = Closeable.getMaxCloseWaitTime(getFactoryManager());
             boolean successful = close(true).await(maxWait);
             if (!successful) {
@@ -100,11 +104,11 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
             }
         } catch (IOException e) {
             if (log.isDebugEnabled()) {
-                log.debug(e.getClass().getSimpleName() + " while stopping service: " + e.getMessage());
+                log.debug("dispose({}) {} while stopping service: {}", this, e.getClass().getSimpleName(), e.getMessage());
             }
 
             if (log.isTraceEnabled()) {
-                log.trace("Stop exception details", e);
+                log.trace("dispose(" + this + ") Stop exception details", e);
             }
         }
     }
