@@ -515,8 +515,8 @@ public class AuthenticationTest extends BaseTestSupport {
     @Test   // see SSHD-600
     public void testAuthExceptionPropagation() throws Exception {
         try (SshClient client = setupTestClient()) {
-            final RuntimeException expected = new RuntimeException("Synthetic exception");
-            final AtomicInteger invocations = new AtomicInteger(0);
+            RuntimeException expected = new RuntimeException("Synthetic exception");
+            AtomicInteger invocations = new AtomicInteger(0);
             client.addSessionListener(new SessionListener() {
                 @Override
                 public void sessionEvent(Session session, Event event) {
@@ -533,11 +533,15 @@ public class AuthenticationTest extends BaseTestSupport {
                 assertTrue("Failed to complete auth in allocated time", future.await(11L, TimeUnit.SECONDS));
                 assertFalse("Unexpected authentication success", future.isSuccess());
 
-                Throwable actual = future.getException();
+                Throwable signalled = future.getException();
+                Throwable actual = signalled;
                 if (actual instanceof IOException) {
                     actual = actual.getCause();
                 }
-                assertSame("Mismatched authentication failure reason", expected, actual);
+
+                if (expected != actual) {
+                    fail("Mismatched authentication failure reason: signalled=" + signalled + ", actual=" + actual);
+                }
             } finally {
                 client.stop();
             }

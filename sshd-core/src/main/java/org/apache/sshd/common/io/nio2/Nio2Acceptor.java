@@ -245,8 +245,17 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
 
             log.warn("Caught " + exc.getClass().getSimpleName()
                    + " while accepting incoming connection from " + address
-                   + ": " + exc.getMessage(),
-                    exc);
+                   + ": " + exc.getMessage(), exc);
+
+            try {
+                // Accept new connections
+                socket.accept(address, this);
+            } catch (Throwable t) {
+                // Do not call failed(t, address) to avoid infinite recursion
+                log.error("Failed (" + t.getClass().getSimpleName()
+                    + " to re-accept new connections on " + address
+                    + ": " + t.getMessage(), t);
+            }
         }
     }
 }
