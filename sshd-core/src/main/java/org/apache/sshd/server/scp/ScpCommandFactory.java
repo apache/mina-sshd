@@ -25,6 +25,8 @@ import java.util.concurrent.ExecutorService;
 import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpFileOpenerHolder;
 import org.apache.sshd.common.scp.ScpHelper;
+import org.apache.sshd.common.scp.ScpStreamResolverFactory;
+import org.apache.sshd.common.scp.ScpStreamResolverFactoryHolder;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
@@ -40,7 +42,12 @@ import org.apache.sshd.server.CommandFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see ScpCommand
  */
-public class ScpCommandFactory implements ScpFileOpenerHolder, CommandFactory, Cloneable, ExecutorServiceConfigurer {
+public class ScpCommandFactory
+        implements ScpFileOpenerHolder,
+        ScpStreamResolverFactoryHolder,
+        CommandFactory,
+        Cloneable,
+        ExecutorServiceConfigurer {
     /**
      * A useful {@link ObjectBuilder} for {@link ScpCommandFactory}
      */
@@ -53,6 +60,11 @@ public class ScpCommandFactory implements ScpFileOpenerHolder, CommandFactory, C
 
         public Builder withFileOpener(ScpFileOpener opener) {
             factory.setScpFileOpener(opener);
+            return this;
+        }
+
+        public Builder withScpStreamResolverFactory(ScpStreamResolverFactory streamFactory) {
+            factory.setScpStreamResolverFactory(streamFactory);
             return this;
         }
 
@@ -105,6 +117,7 @@ public class ScpCommandFactory implements ScpFileOpenerHolder, CommandFactory, C
     private ExecutorService executors;
     private boolean shutdownExecutor;
     private ScpFileOpener fileOpener;
+    private ScpStreamResolverFactory streamFactory;
     private int sendBufferSize = ScpHelper.MIN_SEND_BUFFER_SIZE;
     private int receiveBufferSize = ScpHelper.MIN_RECEIVE_BUFFER_SIZE;
     private Collection<ScpTransferEventListener> listeners = new CopyOnWriteArraySet<>();
@@ -122,6 +135,16 @@ public class ScpCommandFactory implements ScpFileOpenerHolder, CommandFactory, C
     @Override
     public void setScpFileOpener(ScpFileOpener fileOpener) {
         this.fileOpener = fileOpener;
+    }
+
+    @Override
+    public ScpStreamResolverFactory getScpStreamResolverFactory() {
+        return streamFactory;
+    }
+
+    @Override
+    public void setScpStreamResolverFactory(ScpStreamResolverFactory streamFactory) {
+        this.streamFactory = streamFactory;
     }
 
     public CommandFactory getDelegateCommandFactory() {
@@ -242,7 +265,7 @@ public class ScpCommandFactory implements ScpFileOpenerHolder, CommandFactory, C
             return new ScpCommand(command,
                     getExecutorService(), isShutdownOnExit(),
                     getSendBufferSize(), getReceiveBufferSize(),
-                    getScpFileOpener(), listenerProxy);
+                    getScpFileOpener(), getScpStreamResolverFactory(), listenerProxy);
         }
 
         CommandFactory factory = getDelegateCommandFactory();

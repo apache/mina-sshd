@@ -53,8 +53,10 @@ import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.scp.ScpException;
 import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpHelper;
+import org.apache.sshd.common.scp.ScpStreamResolverFactory;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.scp.helpers.DefaultScpFileOpener;
+import org.apache.sshd.common.scp.helpers.DefaultScpStreamResolverFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
@@ -768,8 +770,9 @@ public class ScpTest extends BaseTestSupport {
             private ExitCallback delegate;
 
             InternalScpCommand(String command, ExecutorService executorService, boolean shutdownOnExit,
-                    int sendSize, int receiveSize, ScpFileOpener opener, ScpTransferEventListener eventListener) {
-                super(command, executorService, shutdownOnExit, sendSize, receiveSize, opener, eventListener);
+                    int sendSize, int receiveSize, ScpFileOpener opener,
+                    ScpStreamResolverFactory factory, ScpTransferEventListener eventListener) {
+                super(command, executorService, shutdownOnExit, sendSize, receiveSize, opener, factory, eventListener);
             }
 
             @Override
@@ -808,7 +811,9 @@ public class ScpTest extends BaseTestSupport {
                 return new InternalScpCommand(command,
                         getExecutorService(), isShutdownOnExit(),
                         getSendBufferSize(), getReceiveBufferSize(),
-                        DefaultScpFileOpener.INSTANCE, ScpTransferEventListener.EMPTY);
+                        DefaultScpFileOpener.INSTANCE,
+                        DefaultScpStreamResolverFactory.INSTANCE,
+                        ScpTransferEventListener.EMPTY);
             }
         });
 

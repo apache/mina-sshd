@@ -47,9 +47,11 @@ import org.apache.sshd.common.file.util.MockPath;
 import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpLocation;
+import org.apache.sshd.common.scp.ScpStreamResolverFactory;
 import org.apache.sshd.common.scp.ScpTimestamp;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.scp.helpers.DefaultScpFileOpener;
+import org.apache.sshd.common.scp.helpers.DefaultScpStreamResolverFactory;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
@@ -64,12 +66,16 @@ public class DefaultScpClient extends AbstractScpClient {
     public static final String SCP_PORT_OPTION = "-P";
 
     protected final ScpFileOpener opener;
+    protected final ScpStreamResolverFactory streamFactory;
     protected final ScpTransferEventListener listener;
     private final ClientSession clientSession;
 
-    public DefaultScpClient(ClientSession clientSession, ScpFileOpener fileOpener, ScpTransferEventListener eventListener) {
+    public DefaultScpClient(
+            ClientSession clientSession, ScpFileOpener fileOpener,
+            ScpStreamResolverFactory streamFactory, ScpTransferEventListener eventListener) {
         this.clientSession = Objects.requireNonNull(clientSession, "No client session");
         this.opener = (fileOpener == null) ? DefaultScpFileOpener.INSTANCE : fileOpener;
+        this.streamFactory = (streamFactory == null) ? DefaultScpStreamResolverFactory.INSTANCE : streamFactory;
         this.listener = (eventListener == null) ? ScpTransferEventListener.EMPTY : eventListener;
     }
 
@@ -86,7 +92,7 @@ public class DefaultScpClient extends AbstractScpClient {
         try (InputStream invOut = channel.getInvertedOut();
              OutputStream invIn = channel.getInvertedIn()) {
             // NOTE: we use a mock file system since we expect no invocations for it
-            ScpHelper helper = new ScpHelper(session, invOut, invIn, new MockFileSystem(remote), opener, listener);
+            ScpHelper helper = new ScpHelper(session, invOut, invIn, new MockFileSystem(remote), opener, streamFactory, listener);
             helper.receiveFileStream(local, ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE);
             handleCommandExitStatus(cmd, channel);
         } finally {
@@ -101,7 +107,7 @@ public class DefaultScpClient extends AbstractScpClient {
         ChannelExec channel = openCommandChannel(session, cmd);
         try (InputStream invOut = channel.getInvertedOut();
              OutputStream invIn = channel.getInvertedIn()) {
-            ScpHelper helper = new ScpHelper(session, invOut, invIn, fs, opener, listener);
+            ScpHelper helper = new ScpHelper(session, invOut, invIn, fs, opener, streamFactory, listener);
             helper.receive(local,
                     options.contains(Option.Recursive),
                     options.contains(Option.TargetIsDirectory),
@@ -126,7 +132,7 @@ public class DefaultScpClient extends AbstractScpClient {
         try (InputStream invOut = channel.getInvertedOut();
              OutputStream invIn = channel.getInvertedIn()) {
             // NOTE: we use a mock file system since we expect no invocations for it
-            ScpHelper helper = new ScpHelper(session, invOut, invIn, new MockFileSystem(remote), opener, listener);
+            ScpHelper helper = new ScpHelper(session, invOut, invIn, new MockFileSystem(remote), opener, streamFactory, listener);
             Path mockPath = new MockPath(remote);
             helper.sendStream(new DefaultScpStreamResolver(name, mockPath, perms, time, size, local, cmd),
                     options.contains(Option.PreserveAttributes), ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
@@ -154,7 +160,7 @@ public class DefaultScpClient extends AbstractScpClient {
 
             try (InputStream invOut = channel.getInvertedOut();
                  OutputStream invIn = channel.getInvertedIn()) {
-                ScpHelper helper = new ScpHelper(session, invOut, invIn, fs, opener, listener);
+                ScpHelper helper = new ScpHelper(session, invOut, invIn, fs, opener, streamFactory, listener);
                 executor.execute(helper, local, options);
             } finally {
                 try {

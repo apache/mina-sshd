@@ -24,6 +24,7 @@ import org.apache.sshd.client.session.ClientProxyConnectorHolder;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.scp.ScpFileOpenerHolder;
+import org.apache.sshd.common.scp.ScpStreamResolverFactoryHolder;
 
 /**
  * The <code>ClientFactoryManager</code> enable the retrieval of additional
@@ -34,6 +35,7 @@ import org.apache.sshd.common.scp.ScpFileOpenerHolder;
 public interface ClientFactoryManager
         extends FactoryManager,
                 ScpFileOpenerHolder,
+                ScpStreamResolverFactoryHolder,
                 ClientProxyConnectorHolder,
                 ClientAuthenticationManager {
 
