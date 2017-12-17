@@ -34,6 +34,7 @@ import java.util.function.IntUnaryOperator;
 import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.agent.common.DefaultAgentForwardSupport;
 import org.apache.sshd.client.channel.AbstractClientChannel;
+import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
@@ -622,7 +623,8 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
         }
 
         int channelId = registerChannel(channel);
-        channel.open(sender, rwsize, rmpsize, buffer).addListener(future -> {
+        OpenFuture openFuture = channel.open(sender, rwsize, rmpsize, buffer);
+        openFuture.addListener(future -> {
             try {
                 if (future.isOpened()) {
                     Window window = channel.getLocalWindow();
@@ -683,7 +685,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
      * @param buffer The request {@link Buffer}
      * @throws Exception If failed to process the request
      */
-    protected void globalRequest(Buffer buffer) throws Exception {
+    protected IoWriteFuture globalRequest(Buffer buffer) throws Exception {
         String req = buffer.getString();
         boolean wantReply = buffer.getBoolean();
         if (log.isDebugEnabled()) {
@@ -715,18 +717,17 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
                                   this, handler.getClass().getSimpleName(), req, wantReply, result);
                     }
                 } else {
-                    sendGlobalResponse(buffer, req, result, wantReply);
-                    return;
+                    return sendGlobalResponse(buffer, req, result, wantReply);
                 }
             }
         }
 
-        handleUnknownRequest(buffer, req, wantReply);
+        return handleUnknownRequest(buffer, req, wantReply);
     }
 
-    protected void handleUnknownRequest(Buffer buffer, String req, boolean wantReply) throws IOException {
+    protected IoWriteFuture handleUnknownRequest(Buffer buffer, String req, boolean wantReply) throws IOException {
         log.warn("handleUnknownRequest({}) unknown global request: {}", this, req);
-        sendGlobalResponse(buffer, req, RequestHandler.Result.Unsupported, wantReply);
+        return sendGlobalResponse(buffer, req, RequestHandler.Result.Unsupported, wantReply);
     }
 
     protected IoWriteFuture sendGlobalResponse(Buffer buffer, String req, RequestHandler.Result result, boolean wantReply) throws IOException {

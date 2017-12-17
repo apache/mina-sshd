@@ -66,6 +66,7 @@ import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.KeyExchangeFuture;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.AbstractKexFactoryManager;
@@ -844,25 +845,49 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
 
         signalSessionEvent(SessionListener.Event.KeyEstablished);
+        Collection<? extends Map.Entry<? extends SshFutureListener<IoWriteFuture>, IoWriteFuture>> pendingWrites;
         synchronized (pendingPackets) {
-            if (!pendingPackets.isEmpty()) {
-                if (log.isDebugEnabled()) {
-                    log.debug("handleNewKeys({}) Dequeing {} pending packets", this, pendingPackets.size());
-                }
-                synchronized (encodeLock) {
-                    for (PendingWriteFuture future = pendingPackets.poll();
-                            future != null;
-                            future = pendingPackets.poll()) {
-                        doWritePacket(future.getBuffer()).addListener(future);
-                    }
+            pendingWrites = sendPendingPackets(pendingPackets);
+            kexState.set(KexState.DONE);
+        }
+
+        int pendingCount = pendingWrites.size();
+        if (pendingCount > 0) {
+            if (log.isDebugEnabled()) {
+                log.debug("handleNewKeys({}) sent {} pending packets", this, pendingCount);
+            }
+
+            for (Map.Entry<? extends SshFutureListener<IoWriteFuture>, IoWriteFuture> pe : pendingWrites) {
+                SshFutureListener<IoWriteFuture> listener = pe.getKey();
+                IoWriteFuture future = pe.getValue();
+                if (listener != null) {
+                    future.addListener(listener);
                 }
             }
-            kexState.set(KexState.DONE);
         }
 
         synchronized (lock) {
             lock.notifyAll();
         }
+    }
+
+    protected List<Pair<PendingWriteFuture, IoWriteFuture>> sendPendingPackets(Queue<PendingWriteFuture> packetsQueue) throws IOException {
+        if (GenericUtils.isEmpty(packetsQueue)) {
+            return Collections.emptyList();
+        }
+
+        int numPending = packetsQueue.size();
+        List<Pair<PendingWriteFuture, IoWriteFuture>> pendingWrites = new ArrayList<>(numPending);
+        synchronized (encodeLock) {
+            for (PendingWriteFuture future = pendingPackets.poll();
+                    future != null;
+                    future = pendingPackets.poll()) {
+                IoWriteFuture writeFuture = doWritePacket(future.getBuffer());
+                pendingWrites.add(new Pair<>(future, writeFuture));
+            }
+        }
+
+        return pendingWrites;
     }
 
     protected void validateKexState(int cmd, KexState expected) {
@@ -1034,11 +1059,15 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     @Override
     public <T extends Service> T getService(Class<T> clazz) {
-        for (Service s : getServices()) {
+        Collection<? extends Service> registeredServices = getServices();
+        ValidateUtils.checkState(GenericUtils.isNotEmpty(registeredServices), "No registered services to look for %s", clazz.getSimpleName());
+
+        for (Service s : registeredServices) {
             if (clazz.isInstance(s)) {
                 return clazz.cast(s);
             }
         }
+
         throw new IllegalStateException("Attempted to access unknown service " + clazz.getSimpleName());
     }
 
@@ -1084,7 +1113,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             }
             future.setValue(t);
         }, timeout, unit);
-        future.addListener(future1 -> sched.cancel(false));
+        future.addListener(f -> sched.cancel(false));
         return writeFuture;
     }
 
@@ -1176,13 +1205,14 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
 
         Object result;
+        boolean traceEnabled = log.isTraceEnabled();
         synchronized (requestLock) {
             try {
                 writePacket(buffer);
 
                 synchronized (requestResult) {
                     while (isOpen() && (maxWaitMillis > 0L) && (requestResult.get() == null)) {
-                        if (log.isTraceEnabled()) {
+                        if (traceEnabled) {
                             log.trace("request({})[{}] remaining wait={}", this, request, maxWaitMillis);
                         }
 
