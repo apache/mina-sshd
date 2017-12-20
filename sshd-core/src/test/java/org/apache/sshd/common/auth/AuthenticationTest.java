@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.auth.hostbased.HostKeyIdentityProvider;
@@ -517,11 +518,19 @@ public class AuthenticationTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             RuntimeException expected = new RuntimeException("Synthetic exception");
             AtomicInteger invocations = new AtomicInteger(0);
+            AtomicReference<Throwable> caughtException = new AtomicReference<>();
             client.addSessionListener(new SessionListener() {
                 @Override
                 public void sessionEvent(Session session, Event event) {
                     assertEquals("Mismatched invocations count", 1, invocations.incrementAndGet());
                     throw expected;
+                }
+
+                @Override
+                public void sessionException(Session session, Throwable t) {
+                    if (t == expected) {
+                        caughtException.set(t);
+                    }
                 }
             });
 
@@ -540,7 +549,11 @@ public class AuthenticationTest extends BaseTestSupport {
                 }
 
                 if (expected != actual) {
-                    fail("Mismatched authentication failure reason: signalled=" + signalled + ", actual=" + actual);
+                    // Possible race condition between session close and session exception signalled
+                    Throwable caught = caughtException.get();
+                    if (caught == null) {
+                        fail("Mismatched authentication failure reason: signalled=" + signalled + ", actual=" + actual);
+                    }
                 }
             } finally {
                 client.stop();
