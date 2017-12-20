@@ -28,7 +28,7 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
 /**
@@ -51,10 +51,10 @@ public class ChannelPipedOutputStreamTest extends BaseTestSupport {
 
         AtomicInteger receiveCount = new AtomicInteger(0);
         Mockito.doAnswer(invocation -> {
-            Number len = invocation.getArgumentAt(2, Number.class);
+            Number len = invocation.getArgument(2);
             receiveCount.addAndGet(len.intValue());
             return null;
-        }).when(sink).receive(Matchers.any(byte[].class), Matchers.anyInt(), Matchers.anyInt());
+        }).when(sink).receive(ArgumentMatchers.any(byte[].class), ArgumentMatchers.anyInt(), ArgumentMatchers.anyInt());
 
         try (ChannelPipedOutputStream stream = new ChannelPipedOutputStream(sink)) {
             assertTrue("Stream not marked as initially open", stream.isOpen());

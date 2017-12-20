@@ -29,7 +29,7 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
 /**
@@ -50,7 +50,7 @@ public class DefaultCloseableHandleTest extends BaseTestSupport {
             Handle handle = (Handle) args[0];
             assertArrayEquals("Mismatched closing handle", id, handle.getIdentifier());
             return null;
-        }).when(client).close(Matchers.any(Handle.class));
+        }).when(client).close(ArgumentMatchers.any(Handle.class));
 
         CloseableHandle handle = new DefaultCloseableHandle(client, getCurrentTestName(), id);
         try {
@@ -71,7 +71,7 @@ public class DefaultCloseableHandleTest extends BaseTestSupport {
             Object[] args = invocation.getArguments();
             assertFalse("Close already called on handle=" + args[0], closeCalled.getAndSet(true));
             return null;
-        }).when(client).close(Matchers.any(Handle.class));
+        }).when(client).close(ArgumentMatchers.any(Handle.class));
 
         CloseableHandle handle = new DefaultCloseableHandle(client, getCurrentTestName(), getCurrentTestName().getBytes(StandardCharsets.UTF_8));
         for (int index = 0; index < Byte.SIZE; index++) {

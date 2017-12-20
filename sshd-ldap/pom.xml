@@ -58,7 +58,7 @@
                         <artifactId>xpp3</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency> 
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -75,19 +75,19 @@
             <artifactId>apacheds-test-framework</artifactId>
             <version>${apacheds.version}</version>
             <scope>test</scope>
-        </dependency> 
+        </dependency>
         <dependency>
             <groupId>org.apache.directory.server</groupId>
             <artifactId>apacheds-server-integ</artifactId>
             <version>${apacheds.version}</version>
             <scope>test</scope>
-        </dependency> 
+        </dependency>
         <dependency>
             <groupId>org.apache.directory.server</groupId>
             <artifactId>apacheds-core-integ</artifactId>
             <version>${apacheds.version}</version>
             <scope>test</scope>
-        </dependency> 
+        </dependency>
 
         <dependency>
             <groupId>org.apache.sshd</groupId>
@@ -103,7 +103,7 @@
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
+            <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

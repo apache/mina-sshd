@@ -28,7 +28,7 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
 /**
@@ -101,7 +101,7 @@ public class AttributeStoreTest extends BaseTestSupport {
     }
 
     private static String setAttributeValue(AttributeStore store, String value) {
-        Mockito.when(store.getAttribute(Matchers.eq(KEY))).thenReturn(value);
+        Mockito.when(store.getAttribute(ArgumentMatchers.eq(KEY))).thenReturn(value);
         return value;
     }
 }

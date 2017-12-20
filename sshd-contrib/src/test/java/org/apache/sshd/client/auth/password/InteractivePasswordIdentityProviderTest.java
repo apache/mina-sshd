@@ -28,7 +28,7 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -51,8 +51,8 @@ public class InteractivePasswordIdentityProviderTest extends BaseTestSupport {
         AtomicInteger passwordIndex = new AtomicInteger(0);
         String prompt = getCurrentTestName();
         UserInteraction userInteraction = Mockito.mock(UserInteraction.class);
-        Mockito.when(userInteraction.isInteractionAllowed(Matchers.any(ClientSession.class))).thenReturn(Boolean.TRUE);
-        Mockito.when(userInteraction.getUpdatedPassword(Matchers.any(ClientSession.class), Matchers.anyString(), Matchers.anyString()))
+        Mockito.when(userInteraction.isInteractionAllowed(ArgumentMatchers.any(ClientSession.class))).thenReturn(Boolean.TRUE);
+        Mockito.when(userInteraction.getUpdatedPassword(ArgumentMatchers.any(ClientSession.class), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()))
             .thenAnswer(new Answer<String>() {
                 @Override
                 public String answer(InvocationOnMock invocation) throws Throwable {
@@ -87,8 +87,8 @@ public class InteractivePasswordIdentityProviderTest extends BaseTestSupport {
     public void testInteractionAllowedConsultation() {
         ClientSession session = Mockito.mock(ClientSession.class);
         UserInteraction userInteraction = Mockito.mock(UserInteraction.class);
-        Mockito.when(userInteraction.isInteractionAllowed(Matchers.any(ClientSession.class))).thenReturn(Boolean.FALSE);
-        Mockito.when(userInteraction.getUpdatedPassword(Matchers.any(ClientSession.class), Matchers.anyString(), Matchers.anyString()))
+        Mockito.when(userInteraction.isInteractionAllowed(ArgumentMatchers.any(ClientSession.class))).thenReturn(Boolean.FALSE);
+        Mockito.when(userInteraction.getUpdatedPassword(ArgumentMatchers.any(ClientSession.class), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()))
             .thenThrow(new UnsupportedOperationException("Unexpected call"));
         PasswordIdentityProvider provider = InteractivePasswordIdentityProvider.providerOf(session, userInteraction, getCurrentTestName());
         Iterable<String> passwords = provider.loadPasswords();
