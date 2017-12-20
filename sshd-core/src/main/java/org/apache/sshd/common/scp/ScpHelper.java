@@ -26,7 +26,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AccessDeniedException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -44,7 +43,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.file.util.MockPath;
 import org.apache.sshd.common.scp.ScpTransferEventListener.FileOperation;
 import org.apache.sshd.common.scp.helpers.DefaultScpFileOpener;
@@ -167,21 +165,8 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     }
 
     public void receive(Path local, boolean recursive, boolean shouldBeDir, boolean preserve, int bufferSize) throws IOException {
-        Path path = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
-        if (shouldBeDir) {
-            LinkOption[] options = IoUtils.getLinkOptions(true);
-            Boolean status = IoUtils.checkFileExists(path, options);
-            if (status == null) {
-                throw new SshException("Target directory " + path + " is most like inaccessible");
-            }
-            if (!status) {
-                throw new SshException("Target directory " + path + " does not exist");
-            }
-            if (!Files.isDirectory(path, options)) {
-                throw new SshException("Target directory " + path + " is not a directory");
-            }
-        }
-
+        Path localPath = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
+        Path path = opener.resolveIncomingReceiveLocation(localPath, recursive, shouldBeDir, preserve);
         receive((line, isDir, time) -> {
             if (recursive && isDir) {
                 receiveDir(line, path, time, preserve, bufferSize);
@@ -255,50 +240,11 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         Set<PosixFilePermission> perms = parseOctalPermissions(header.substring(1, 5));
         int length = Integer.parseInt(header.substring(6, header.indexOf(' ', 6)));
         String name = header.substring(header.indexOf(' ', 6) + 1);
-
         if (length != 0) {
-            throw new IOException("Expected 0 length for directory but got " + length);
+            throw new IOException("Expected 0 length for directory=" + name + " but got " + length);
         }
 
-        LinkOption[] options = IoUtils.getLinkOptions(true);
-        Boolean status = IoUtils.checkFileExists(path, options);
-        if (status == null) {
-            throw new AccessDeniedException("Receive directory existence status cannot be determined: " + path);
-        }
-
-        Path file = null;
-        if (status && Files.isDirectory(path, options)) {
-            String localName = name.replace('/', File.separatorChar);
-            file = path.resolve(localName);
-        } else if (!status) {
-            Path parent = path.getParent();
-
-            status = IoUtils.checkFileExists(parent, options);
-            if (status == null) {
-                throw new AccessDeniedException("Receive directory parent (" + parent + ") existence status cannot be determined for " + path);
-            }
-
-            if (status && Files.isDirectory(parent, options)) {
-                file = path;
-            }
-        }
-
-        if (file == null) {
-            throw new IOException("Cannot write to " + path);
-        }
-
-        status = IoUtils.checkFileExists(file, options);
-        if (status == null) {
-            throw new AccessDeniedException("Receive directory file existence status cannot be determined: " + file);
-        }
-
-        if (!(status && Files.isDirectory(file, options))) {
-            Files.createDirectory(file);
-        }
-
-        if (preserve) {
-            updateFileProperties(file, perms, time);
-        }
+        Path file = opener.resolveIncomingFilePath(path, name, preserve, perms, time);
 
         ack();
 
@@ -353,7 +299,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         }
 
         Set<PosixFilePermission> perms = parseOctalPermissions(header.substring(1, 5));
-        final long length = Long.parseLong(header.substring(6, header.indexOf(' ', 6)));
+        long length = Long.parseLong(header.substring(6, header.indexOf(' ', 6)));
         String name = header.substring(header.indexOf(' ', 6) + 1);
         if (length < 0L) { // TODO consider throwing an exception...
             log.warn("receiveStream({})[{}] bad length in header: {}", this, resolver, header);
@@ -403,23 +349,6 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             log.debug("receiveStream({})[{}] ack reply code={}", this, resolver, replyCode);
         }
         validateAckReplyCode("receiveStream", resolver, replyCode, false);
-    }
-
-    protected void updateFileProperties(Path file, Set<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
-        if (log.isTraceEnabled()) {
-            log.trace("updateFileProperties({}) {} permissions={}, time={}", this, file, perms, time);
-        }
-        IoUtils.setPermissions(file, perms);
-
-        if (time != null) {
-            BasicFileAttributeView view = Files.getFileAttributeView(file, BasicFileAttributeView.class);
-            FileTime lastModified = FileTime.from(time.getLastModifiedTime(), TimeUnit.MILLISECONDS);
-            FileTime lastAccess = FileTime.from(time.getLastAccessTime(), TimeUnit.MILLISECONDS);
-            if (log.isTraceEnabled()) {
-                log.trace("updateFileProperties({}) {} last-modified={}, last-access={}", this, file, lastModified, lastAccess);
-            }
-            view.setTimes(lastModified, lastAccess, null);
-        }
     }
 
     public String readLine() throws IOException {
@@ -506,15 +435,8 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     }
 
     protected void send(Path local, boolean recursive, boolean preserve, int bufferSize, LinkOption... options) throws IOException {
-        Path file = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
-        Boolean status = IoUtils.checkFileExists(file, options);
-        if (status == null) {
-            throw new AccessDeniedException("Send file existence status cannot be determined: " + file);
-        }
-        if (!status) {
-            throw new IOException(file + ": no such file or directory");
-        }
-
+        Path localPath = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
+        Path file = opener.resolveOutgoingFilePath(localPath, options);
         if (Files.isRegularFile(file, options)) {
             sendFile(file, preserve, bufferSize);
         } else if (Files.isDirectory(file, options)) {
