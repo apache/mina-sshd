@@ -46,7 +46,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.file.util.MockPath;
 import org.apache.sshd.common.scp.ScpTransferEventListener.FileOperation;
 import org.apache.sshd.common.scp.helpers.DefaultScpFileOpener;
-import org.apache.sshd.common.scp.helpers.DefaultScpStreamResolverFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
@@ -101,20 +100,17 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     protected final OutputStream out;
     protected final FileSystem fileSystem;
     protected final ScpFileOpener opener;
-    protected final ScpStreamResolverFactory streamFactory;
     protected final ScpTransferEventListener listener;
 
     private final Session sessionInstance;
 
     public ScpHelper(Session session, InputStream in, OutputStream out,
-            FileSystem fileSystem, ScpFileOpener opener,
-            ScpStreamResolverFactory streamFactory, ScpTransferEventListener eventListener) {
+            FileSystem fileSystem, ScpFileOpener opener, ScpTransferEventListener eventListener) {
         this.sessionInstance = Objects.requireNonNull(session, "No session");
         this.in = Objects.requireNonNull(in, "No input stream");
         this.out = Objects.requireNonNull(out, "No output stream");
         this.fileSystem = fileSystem;
         this.opener = (opener == null) ? DefaultScpFileOpener.INSTANCE : opener;
-        this.streamFactory = (streamFactory == null) ? DefaultScpStreamResolverFactory.INSTANCE : streamFactory;
         this.listener = (eventListener == null) ? ScpTransferEventListener.EMPTY : eventListener;
     }
 
@@ -286,7 +282,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                       this, header, path, preserve, time, bufferSize);
         }
 
-        receiveStream(header, streamFactory.createScpTargetStreamResolver(path, opener), time, preserve, bufferSize);
+        receiveStream(header, opener.createScpTargetStreamResolver(path), time, preserve, bufferSize);
     }
 
     public void receiveStream(String header, ScpTargetStreamResolver resolver, ScpTimestamp time, boolean preserve, int bufferSize) throws IOException {
@@ -482,7 +478,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             log.debug("sendFile({})[preserve={},buffer-size={}] Sending file {}", this, preserve, bufferSize, path);
         }
 
-        sendStream(streamFactory.createScpSourceStreamResolver(path, opener), preserve, bufferSize);
+        sendStream(opener.createScpSourceStreamResolver(path), preserve, bufferSize);
     }
 
     public void sendStream(ScpSourceStreamResolver resolver, boolean preserve, int bufferSize) throws IOException {

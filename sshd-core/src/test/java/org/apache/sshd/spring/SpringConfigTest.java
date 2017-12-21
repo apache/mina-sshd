@@ -67,7 +67,7 @@ public class SpringConfigTest extends BaseTestSupport {
     @After
     public void tearDown() throws Exception {
         if (context != null) {
-            context.destroy();
+            context.close();
         }
     }
 

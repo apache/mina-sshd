@@ -31,10 +31,8 @@ import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.scp.ScpException;
 import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpHelper;
-import org.apache.sshd.common.scp.ScpStreamResolverFactory;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.scp.helpers.DefaultScpFileOpener;
-import org.apache.sshd.common.scp.helpers.DefaultScpStreamResolverFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
@@ -63,7 +61,6 @@ public class ScpCommand
     protected final int sendBufferSize;
     protected final int receiveBufferSize;
     protected final ScpFileOpener opener;
-    protected final ScpStreamResolverFactory streamFactory;
     protected boolean optR;
     protected boolean optT;
     protected boolean optF;
@@ -93,7 +90,6 @@ public class ScpCommand
      * @param sendSize        Size (in bytes) of buffer to use when sending files
      * @param receiveSize     Size (in bytes) of buffer to use when receiving files
      * @param fileOpener      The {@link ScpFileOpener} - if {@code null} then {@link DefaultScpFileOpener} is used
-     * @param factory         The {@link ScpStreamResolverFactory} - if {@code null} then {@link DefaultScpStreamResolverFactory} is used
      * @param eventListener   An {@link ScpTransferEventListener} - may be {@code null}
      * @see ThreadUtils#newSingleThreadExecutor(String)
      * @see ScpHelper#MIN_SEND_BUFFER_SIZE
@@ -102,7 +98,7 @@ public class ScpCommand
     public ScpCommand(String command,
             ExecutorService executorService, boolean shutdownOnExit,
             int sendSize, int receiveSize,
-            ScpFileOpener fileOpener, ScpStreamResolverFactory factory, ScpTransferEventListener eventListener) {
+            ScpFileOpener fileOpener, ScpTransferEventListener eventListener) {
         name = command;
 
         if (executorService == null) {
@@ -129,7 +125,6 @@ public class ScpCommand
         receiveBufferSize = receiveSize;
 
         opener = (fileOpener == null) ? DefaultScpFileOpener.INSTANCE : fileOpener;
-        streamFactory = (factory == null) ? DefaultScpStreamResolverFactory.INSTANCE : factory;
         listener = (eventListener == null) ? ScpTransferEventListener.EMPTY : eventListener;
 
         if (log.isDebugEnabled()) {
@@ -273,7 +268,7 @@ public class ScpCommand
     public void run() {
         int exitValue = ScpHelper.OK;
         String exitMessage = null;
-        ScpHelper helper = new ScpHelper(getServerSession(), in, out, fileSystem, opener, streamFactory, listener);
+        ScpHelper helper = new ScpHelper(getServerSession(), in, out, fileSystem, opener, listener);
         try {
             if (optT) {
                 helper.receive(helper.resolveLocalPath(path), optR, optD, optP, receiveBufferSize);

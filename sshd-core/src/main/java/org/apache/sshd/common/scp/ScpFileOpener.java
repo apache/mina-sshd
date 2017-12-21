@@ -166,6 +166,8 @@ public interface ScpFileOpener {
      */
     InputStream openRead(Session session, Path file, OpenOption... options) throws IOException;
 
+    ScpSourceStreamResolver createScpSourceStreamResolver(Path path) throws IOException;
+
     /**
      * Create an output stream to write to a file
      *
@@ -176,6 +178,8 @@ public interface ScpFileOpener {
      * @throws IOException If failed to open the file
      */
     OutputStream openWrite(Session session, Path file, OpenOption... options) throws IOException;
+
+    ScpTargetStreamResolver createScpTargetStreamResolver(Path path) throws IOException;
 
     static void updateFileProperties(Path file, Set<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
         IoUtils.setPermissions(file, perms);

@@ -21,63 +21,49 @@ package org.apache.sshd.client.scp;
 
 import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpFileOpenerHolder;
-import org.apache.sshd.common.scp.ScpStreamResolverFactory;
-import org.apache.sshd.common.scp.ScpStreamResolverFactoryHolder;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ScpClientCreator extends ScpFileOpenerHolder, ScpStreamResolverFactoryHolder {
+public interface ScpClientCreator extends ScpFileOpenerHolder {
     /**
      * Create an SCP client from this session.
      *
      * @return An {@link ScpClient} instance. <B>Note:</B> uses the currently
      * registered {@link ScpTransferEventListener}, {@link ScpStreamResolverFactoryHolder}
-     *  and {@link ScpFileOpener} if any
+     * and {@link ScpFileOpener} if any
      * @see #setScpFileOpener(ScpFileOpener)
-     * @see #setScpStreamResolverFactory(ScpStreamResolverFactory)
      * @see #setScpTransferEventListener(ScpTransferEventListener)
      */
     default ScpClient createScpClient() {
-        return createScpClient(getScpFileOpener(), getScpStreamResolverFactory(), getScpTransferEventListener());
+        return createScpClient(getScpFileOpener(), getScpTransferEventListener());
     }
 
     /**
      * Create an SCP client from this session.
      *
      * @param listener A {@link ScpTransferEventListener} that can be used
-     *                 to receive information about the SCP operations - may be {@code null}
-     *                 to indicate no more events are required. <B>Note:</B> this listener
-     *                 is used <U>instead</U> of any listener set via {@link #setScpTransferEventListener(ScpTransferEventListener)}
+     * to receive information about the SCP operations - may be {@code null}
+     * to indicate no more events are required. <B>Note:</B> this listener
+     * is used <U>instead</U> of any listener set via {@link #setScpTransferEventListener(ScpTransferEventListener)}
      * @return An {@link ScpClient} instance
      */
     default ScpClient createScpClient(ScpTransferEventListener listener) {
-        return createScpClient(getScpFileOpener(), getScpStreamResolverFactory(), listener);
+        return createScpClient(getScpFileOpener(), listener);
     }
 
     /**
      * Create an SCP client from this session.
      *
      * @param opener The {@link ScpFileOpener} to use to control how local files
-     *               are read/written. If {@code null} then a default opener is used.
-     *               <B>Note:</B> this opener is used <U>instead</U> of any instance
-     *               set via {@link #setScpFileOpener(ScpFileOpener)}
+     * are read/written. If {@code null} then a default opener is used.
+     * <B>Note:</B> this opener is used <U>instead</U> of any instance
+     * set via {@link #setScpFileOpener(ScpFileOpener)}
      * @return An {@link ScpClient} instance
      */
     default ScpClient createScpClient(ScpFileOpener opener) {
-        return createScpClient(opener, getScpStreamResolverFactory(), getScpTransferEventListener());
-    }
-
-    /**
-     * Create an SCP client from this session.
-     *
-     * @param factory The {@link ScpStreamResolverFactory} used to create input/output stream
-     *                for incoming/outgoing files
-     * @return An {@link ScpClient} instance
-     */
-    default ScpClient createScpClient(ScpStreamResolverFactory factory) {
-        return createScpClient(getScpFileOpener(), factory, getScpTransferEventListener());
+        return createScpClient(opener, getScpTransferEventListener());
     }
 
     /**
@@ -87,15 +73,14 @@ public interface ScpClientCreator extends ScpFileOpenerHolder, ScpStreamResolver
      *                 are read/written. If {@code null} then a default opener is used.
      *                 <B>Note:</B> this opener is used <U>instead</U> of any instance
      *                 set via {@link #setScpFileOpener(ScpFileOpener)}
-     * @param factory  The {@link ScpStreamResolverFactory} to use in order to create
-     *                 incoming/outgoing streams for received/sent files
      * @param listener A {@link ScpTransferEventListener} that can be used
      *                 to receive information about the SCP operations - may be {@code null}
      *                 to indicate no more events are required. <B>Note:</B> this listener
-     *                 is used <U>instead</U> of any listener set via {@link #setScpTransferEventListener(ScpTransferEventListener)}
+     *                 is used <U>instead</U> of any listener set via
+     *                 {@link #setScpTransferEventListener(ScpTransferEventListener)}
      * @return An {@link ScpClient} instance
      */
-    ScpClient createScpClient(ScpFileOpener opener, ScpStreamResolverFactory factory, ScpTransferEventListener listener);
+    ScpClient createScpClient(ScpFileOpener opener, ScpTransferEventListener listener);
 
     /**
      * @return The last {@link ScpTransferEventListener} set via

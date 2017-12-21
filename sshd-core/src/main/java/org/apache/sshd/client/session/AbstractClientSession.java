@@ -66,7 +66,6 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.scp.ScpFileOpener;
-import org.apache.sshd.common.scp.ScpStreamResolverFactory;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
@@ -91,7 +90,6 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     private List<NamedFactory<UserAuth>> userAuthFactories;
     private ScpTransferEventListener scpListener;
     private ScpFileOpener scpOpener;
-    private ScpStreamResolverFactory scpStreamFactory;
     private SocketAddress connectAddress;
     private ClientProxyConnector proxyConnector;
 
@@ -319,16 +317,6 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     @Override
-    public ScpStreamResolverFactory getScpStreamResolverFactory() {
-        return resolveEffectiveProvider(ScpStreamResolverFactory.class, scpStreamFactory, getFactoryManager().getScpStreamResolverFactory());
-    }
-
-    @Override
-    public void setScpStreamResolverFactory(ScpStreamResolverFactory factory) {
-        scpStreamFactory = factory;
-    }
-
-    @Override
     public ScpTransferEventListener getScpTransferEventListener() {
         return scpListener;
     }
@@ -339,8 +327,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     @Override
-    public ScpClient createScpClient(ScpFileOpener opener, ScpStreamResolverFactory factory, ScpTransferEventListener listener) {
-        return new DefaultScpClient(this, opener, factory, listener);
+    public ScpClient createScpClient(ScpFileOpener opener, ScpTransferEventListener listener) {
+        return new DefaultScpClient(this, opener, listener);
     }
 
     @Override

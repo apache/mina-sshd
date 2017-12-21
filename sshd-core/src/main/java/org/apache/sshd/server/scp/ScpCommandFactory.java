@@ -25,8 +25,6 @@ import java.util.concurrent.ExecutorService;
 import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpFileOpenerHolder;
 import org.apache.sshd.common.scp.ScpHelper;
-import org.apache.sshd.common.scp.ScpStreamResolverFactory;
-import org.apache.sshd.common.scp.ScpStreamResolverFactoryHolder;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
@@ -44,7 +42,6 @@ import org.apache.sshd.server.CommandFactory;
  */
 public class ScpCommandFactory
         implements ScpFileOpenerHolder,
-        ScpStreamResolverFactoryHolder,
         CommandFactory,
         Cloneable,
         ExecutorServiceConfigurer {
@@ -60,11 +57,6 @@ public class ScpCommandFactory
 
         public Builder withFileOpener(ScpFileOpener opener) {
             factory.setScpFileOpener(opener);
-            return this;
-        }
-
-        public Builder withScpStreamResolverFactory(ScpStreamResolverFactory streamFactory) {
-            factory.setScpStreamResolverFactory(streamFactory);
             return this;
         }
 
@@ -117,7 +109,6 @@ public class ScpCommandFactory
     private ExecutorService executors;
     private boolean shutdownExecutor;
     private ScpFileOpener fileOpener;
-    private ScpStreamResolverFactory streamFactory;
     private int sendBufferSize = ScpHelper.MIN_SEND_BUFFER_SIZE;
     private int receiveBufferSize = ScpHelper.MIN_RECEIVE_BUFFER_SIZE;
     private Collection<ScpTransferEventListener> listeners = new CopyOnWriteArraySet<>();
@@ -137,25 +128,15 @@ public class ScpCommandFactory
         this.fileOpener = fileOpener;
     }
 
-    @Override
-    public ScpStreamResolverFactory getScpStreamResolverFactory() {
-        return streamFactory;
-    }
-
-    @Override
-    public void setScpStreamResolverFactory(ScpStreamResolverFactory streamFactory) {
-        this.streamFactory = streamFactory;
-    }
-
     public CommandFactory getDelegateCommandFactory() {
         return delegate;
     }
 
     /**
      * @param factory A {@link CommandFactory} to be used if the
-     *                command is not an SCP one. If {@code null} then an {@link IllegalArgumentException}
-     *                will be thrown when attempting to invoke {@link #createCommand(String)}
-     *                with a non-SCP command
+     * command is not an SCP one. If {@code null} then an {@link IllegalArgumentException}
+     * will be thrown when attempting to invoke {@link #createCommand(String)}
+     * with a non-SCP command
      */
     public void setDelegateCommandFactory(CommandFactory factory) {
         delegate = factory;
@@ -168,10 +149,10 @@ public class ScpCommandFactory
 
     /**
      * @param service An {@link ExecutorService} to be used when
-     *                starting {@link ScpCommand} execution. If {@code null} then a single-threaded
-     *                ad-hoc service is used. <B>Note:</B> the service will <U>not</U> be shutdown
-     *                when the command is terminated - unless it is the ad-hoc service, which will be
-     *                shutdown regardless
+     * starting {@link ScpCommand} execution. If {@code null} then a single-threaded
+     * ad-hoc service is used. <B>Note:</B> the service will <U>not</U> be shutdown
+     * when the command is terminated - unless it is the ad-hoc service, which will be
+     * shutdown regardless
      */
     @Override
     public void setExecutorService(ExecutorService service) {
@@ -265,7 +246,7 @@ public class ScpCommandFactory
             return new ScpCommand(command,
                     getExecutorService(), isShutdownOnExit(),
                     getSendBufferSize(), getReceiveBufferSize(),
-                    getScpFileOpener(), getScpStreamResolverFactory(), listenerProxy);
+                    getScpFileOpener(), listenerProxy);
         }
 
         CommandFactory factory = getDelegateCommandFactory();

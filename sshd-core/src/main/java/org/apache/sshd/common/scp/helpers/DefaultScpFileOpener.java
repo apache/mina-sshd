@@ -28,6 +28,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 
 import org.apache.sshd.common.scp.ScpFileOpener;
+import org.apache.sshd.common.scp.ScpSourceStreamResolver;
+import org.apache.sshd.common.scp.ScpTargetStreamResolver;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
@@ -59,5 +61,15 @@ public class DefaultScpFileOpener extends AbstractLoggingBean implements ScpFile
         }
 
         return Files.newOutputStream(file, options);
+    }
+
+    @Override
+    public ScpSourceStreamResolver createScpSourceStreamResolver(Path path) throws IOException {
+        return new LocalFileScpSourceStreamResolver(path, this);
+    }
+
+    @Override
+    public ScpTargetStreamResolver createScpTargetStreamResolver(Path path) throws IOException {
+        return new LocalFileScpTargetStreamResolver(path, this);
     }
 }
