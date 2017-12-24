@@ -55,9 +55,9 @@ public class KeyPairProviderTest extends BaseTestSupport {
 
     @Test
     public void testMapToKeyPairProvider() {
-        final PublicKey pubKey = Mockito.mock(PublicKey.class);
-        final PrivateKey prvKey = Mockito.mock(PrivateKey.class);
-        final String[] testKeys = {getCurrentTestName(), getClass().getSimpleName()};
+        PublicKey pubKey = Mockito.mock(PublicKey.class);
+        PrivateKey prvKey = Mockito.mock(PrivateKey.class);
+        String[] testKeys = {getCurrentTestName(), getClass().getSimpleName()};
         Map<String, KeyPair> pairsMap = GenericUtils.toSortedMap(
             Arrays.asList(testKeys),
             Function.identity(),

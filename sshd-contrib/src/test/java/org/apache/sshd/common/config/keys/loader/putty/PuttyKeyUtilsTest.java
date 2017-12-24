@@ -30,6 +30,8 @@ import java.util.List;
 
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
+import org.apache.sshd.common.config.keys.loader.openssh.OpenSSHKeyPairResourceParser;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -123,7 +125,7 @@ public class PuttyKeyUtilsTest extends BaseTestSupport {
         assertLoadedKeyPair(encryptedFile, keys.iterator().next());
     }
 
-    private void assertLoadedKeyPair(String prefix, KeyPair kp) {
+    private void assertLoadedKeyPair(String prefix, KeyPair kp) throws GeneralSecurityException {
         assertNotNull(prefix + ": no key pair loaded", kp);
 
         PublicKey pubKey = kp.getPublic();
@@ -133,5 +135,16 @@ public class PuttyKeyUtilsTest extends BaseTestSupport {
         PrivateKey prvKey = kp.getPrivate();
         assertNotNull(prefix + ": no private key loaded", prvKey);
         assertEquals(prefix + ": mismatched private key type", keyType, KeyUtils.getKeyType(prvKey));
+
+        @SuppressWarnings("rawtypes")
+        PrivateKeyEntryDecoder decoder =
+            OpenSSHKeyPairResourceParser.getPrivateKeyEntryDecoder(prvKey);
+        assertNotNull("No private key decoder", decoder);
+
+        if (decoder.isPublicKeyRecoverySupported()) {
+            @SuppressWarnings("unchecked")
+            PublicKey recKey = decoder.recoverPublicKey(prvKey);
+            assertKeyEquals("Mismatched recovered public key", pubKey, recKey);
+        }
     }
 }

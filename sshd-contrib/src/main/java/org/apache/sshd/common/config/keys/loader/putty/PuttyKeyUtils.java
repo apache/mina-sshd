@@ -19,7 +19,7 @@
 
 package org.apache.sshd.common.config.keys.loader.putty;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -27,17 +27,30 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceParser;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class PuttyKeyUtils {
     public static final List<PuttyKeyPairResourceParser<?, ?>> DEFAULT_PARSERS =
-            Collections.unmodifiableList(
-                    Arrays.asList(
-                            RSAPuttyKeyDecoder.INSTANCE,
-                            DSSPuttyKeyDecoder.INSTANCE,
-                            ECDSAPuttyKeyDecoder.INSTANCE));
+            Collections.unmodifiableList(new ArrayList<PuttyKeyPairResourceParser<?, ?>>() {
+                // Not serializing it
+                private static final long serialVersionUID = 1L;
+
+                {
+                    add(RSAPuttyKeyDecoder.INSTANCE);
+                    add(DSSPuttyKeyDecoder.INSTANCE);
+
+                    if (SecurityUtils.isECCSupported()) {
+                        add(ECDSAPuttyKeyDecoder.INSTANCE);
+                    }
+
+                    if (SecurityUtils.isEDDSACurveSupported()) {
+                        add(EdDSAPuttyKeyDecoder.INSTANCE);
+                    }
+                }
+            });
 
     public static final NavigableMap<String, PuttyKeyPairResourceParser<?, ?>> BY_KEY_TYPE =
             Collections.unmodifiableNavigableMap(

@@ -92,7 +92,7 @@ public class OpenSSHKeyPairResourceParserTest extends BaseTestSupport {
             PrivateKey prvKey = ValidateUtils.checkInstanceOf(kp.getPrivate(), prvType, "Mismatched private key type");
             @SuppressWarnings("rawtypes")
             PrivateKeyEntryDecoder decoder =
-                    OpenSSHKeyPairResourceParser.getPrivateKeyEntryDecoder(prvKey);
+                OpenSSHKeyPairResourceParser.getPrivateKeyEntryDecoder(prvKey);
             assertNotNull("No private key decoder", decoder);
 
             if (decoder.isPublicKeyRecoverySupported()) {

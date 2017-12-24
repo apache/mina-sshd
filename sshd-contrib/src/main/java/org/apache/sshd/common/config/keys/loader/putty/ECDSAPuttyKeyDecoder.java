@@ -23,7 +23,7 @@ import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
-import java.security.NoSuchProviderException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.ECPrivateKey;
@@ -56,14 +56,14 @@ public class ECDSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<ECPublicKey, E
     @Override
     public Collection<KeyPair> loadKeyPairs(String resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader)
             throws IOException, GeneralSecurityException {
+        if (!SecurityUtils.isECCSupported()) {
+            throw new NoSuchAlgorithmException("ECC not supported for " + resourceKey);
+        }
+
         String keyType = pubReader.readString();
         ECCurves curve = ECCurves.fromKeyType(keyType);
         if (curve == null) {
             throw new InvalidKeySpecException("Not an EC curve name: " + keyType);
-        }
-
-        if (!SecurityUtils.isECCSupported()) {
-            throw new NoSuchProviderException("ECC not supported");
         }
 
         String encCurveName = pubReader.readString();

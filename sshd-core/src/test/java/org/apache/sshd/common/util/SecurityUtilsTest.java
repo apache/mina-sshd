@@ -160,7 +160,6 @@ public class SecurityUtilsTest extends BaseTestSupport {
         Class<?> clazz = getClass();
         Package pkg = clazz.getPackage();
         KeyPair kpResource = testLoadPrivateKeyResource(pkg.getName().replace('.', '/') + "/" + name, pubType, prvType);
-
         assertTrue(name + ": Mismatched key file vs. resource values", KeyUtils.compareKeyPairs(kpFile, kpResource));
         return kpResource;
     }
