@@ -22,6 +22,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SelectorUtils;
 
 /**
@@ -250,8 +251,8 @@ public class DirectoryScanner {
      */
     protected void scandir(File dir, String vpath) {
         String[] newfiles = dir.list();
-        if (newfiles == null) {
-            newfiles = new String[0];
+        if (GenericUtils.isEmpty(newfiles)) {
+            newfiles = GenericUtils.EMPTY_STRING_ARRAY;
         }
 
         for (String newfile : newfiles) {
@@ -282,8 +283,7 @@ public class DirectoryScanner {
      */
     public String[] getIncludedFiles() {
         String[] files = new String[filesIncluded.size()];
-        filesIncluded.toArray(files);
-        return files;
+        return filesIncluded.toArray(files);
     }
 
     /**

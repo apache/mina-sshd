@@ -28,12 +28,10 @@ import java.io.StreamCorruptedException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
@@ -49,8 +47,6 @@ import org.apache.sshd.common.scp.helpers.DefaultScpFileOpener;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.SelectorUtils;
-import org.apache.sshd.common.util.io.DirectoryScanner;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.LimitInputStream;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -390,12 +386,12 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                     pattern = pattern.substring(lastSep + 1);
                 }
 
-                String[] included = new DirectoryScanner(basedir, pattern).scan();
+                Iterable<String> included = opener.getMatchingFilesToSend(basedir, pattern);
                 for (String path : included) {
                     Path file = resolveLocalPath(basedir, path);
-                    if (Files.isRegularFile(file, options)) {
+                    if (opener.sendAsRegularFile(file, options)) {
                         sendFile(file, preserve, bufferSize);
-                    } else if (Files.isDirectory(file, options)) {
+                    } else if (opener.sendAsDirectory(file, options)) {
                         if (!recursive) {
                             if (log.isDebugEnabled()) {
                                 log.debug("send({}) {}: not a regular file", this, path);
@@ -433,9 +429,9 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     protected void send(Path local, boolean recursive, boolean preserve, int bufferSize, LinkOption... options) throws IOException {
         Path localPath = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
         Path file = opener.resolveOutgoingFilePath(localPath, options);
-        if (Files.isRegularFile(file, options)) {
+        if (opener.sendAsRegularFile(file, options)) {
             sendFile(file, preserve, bufferSize);
-        } else if (Files.isDirectory(file, options)) {
+        } else if (opener.sendAsDirectory(file, options)) {
             if (!recursive) {
                 throw new IOException(file + " not a regular file");
             } else {
@@ -456,15 +452,12 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
 
     /**
      * @param commandPath The command path using the <U>local</U> file separator
-     * @return The resolved absolute and normalized local path {@link Path}
+     * @return The resolved absolute and normalized local {@link Path}
      * @throws IOException If failed to resolve the path
      * @throws InvalidPathException If invalid local path value
      */
     public Path resolveLocalPath(String commandPath) throws IOException, InvalidPathException {
-        String path = SelectorUtils.translateToLocalFileSystemPath(commandPath, File.separatorChar, fileSystem);
-        Path lcl = fileSystem.getPath(path);
-        Path abs = lcl.isAbsolute() ? lcl : lcl.toAbsolutePath();
-        Path p = abs.normalize();
+        Path p = opener.resolveLocalPath(fileSystem, commandPath);
         if (log.isTraceEnabled()) {
             log.trace("resolveLocalPath({}) {}: {}", this, commandPath, p);
         }
@@ -593,8 +586,9 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                       this, path, preserve, bufferSize);
         }
 
-        BasicFileAttributes basic = Files.getFileAttributeView(path, BasicFileAttributeView.class).readAttributes();
+        LinkOption[] options = IoUtils.getLinkOptions(true);
         if (preserve) {
+            BasicFileAttributes basic = opener.getLocalBasicFileAttributes(path, options);
             FileTime lastModified = basic.lastModifiedTime();
             FileTime lastAccess = basic.lastAccessTime();
             String cmd = "T" + lastModified.to(TimeUnit.SECONDS) + " "
@@ -618,8 +612,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             validateAckReplyCode(cmd, path, readyCode, false);
         }
 
-        LinkOption[] options = IoUtils.getLinkOptions(true);
-        Set<PosixFilePermission> perms = IoUtils.getPermissions(path, options);
+        Set<PosixFilePermission> perms = opener.getLocalFilePermissions(path, options);
         String octalPerms = (preserve || GenericUtils.isEmpty(perms)) ? DEFAULT_DIR_OCTAL_PERMISSIONS : getOctalPermissions(perms);
         String cmd = "D" + octalPerms + " " + "0" + " " + Objects.toString(path.getFileName(), null);
         if (log.isDebugEnabled()) {
@@ -636,14 +629,14 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         }
         validateAckReplyCode(cmd, path, readyCode, false);
 
-        try (DirectoryStream<Path> children = Files.newDirectoryStream(path)) {
+        try (DirectoryStream<Path> children = opener.getLocalFolderChildren(path)) {
             listener.startFolderEvent(FileOperation.SEND, path, perms);
 
             try {
                 for (Path child : children) {
-                    if (Files.isRegularFile(child, options)) {
+                    if (opener.sendAsRegularFile(child, options)) {
                         sendFile(child, preserve, bufferSize);
-                    } else if (Files.isDirectory(child, options)) {
+                    } else if (opener.sendAsDirectory(child, options)) {
                         sendDir(child, preserve, bufferSize);
                     }
                 }
@@ -666,11 +659,6 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             log.debug("sendDir({})[{}] 'E' command reply code=", this, path, readyCode);
         }
         validateAckReplyCode("E", path, readyCode, false);
-    }
-
-    public static String getOctalPermissions(Path path, LinkOption... options) throws IOException {
-        Collection<PosixFilePermission> perms = IoUtils.getPermissions(path, options);
-        return getOctalPermissions(perms);
     }
 
     public static String getOctalPermissions(Collection<PosixFilePermission> perms) {
@@ -710,12 +698,6 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         }
 
         return String.format("%04o", pf);
-    }
-
-    public static Set<PosixFilePermission> setOctalPermissions(Path path, String str) throws IOException {
-        Set<PosixFilePermission> perms = parseOctalPermissions(str);
-        IoUtils.setPermissions(path, perms);
-        return perms;
     }
 
     public static Set<PosixFilePermission> parseOctalPermissions(String str) {

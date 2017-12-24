@@ -24,18 +24,27 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.AccessDeniedException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.SelectorUtils;
+import org.apache.sshd.common.util.io.DirectoryScanner;
 import org.apache.sshd.common.util.io.IoUtils;
 
 /**
@@ -54,7 +63,7 @@ public interface ScpFileOpener {
      * @param boolean preserve Whether requested to preserve the permissions and timestamp
      * @param permissions The requested file permissions
      * @param time The requested {@link ScpTimestamp} - may be {@code null} if nothing to update
-     * @return The actual target file path
+     * @return The actual target file path for the incoming file/directory
      * @throws IOException If failed to resolve the file path
      * @see #updateFileProperties(Path, Set, ScpTimestamp) updateFileProperties
      */
@@ -102,6 +111,87 @@ public interface ScpFileOpener {
         }
 
         return file;
+    }
+
+    /**
+     * Invoked when required to send a pattern of files
+     *
+     * @param basedir The base directory - may be {@code null}/empty to indicate CWD
+     * @param pattern The required pattern
+     * @return The matching <U>relative paths</U> of the children to send
+     */
+    default Iterable<String> getMatchingFilesToSend(String basedir, String pattern) {
+        String[] matches = new DirectoryScanner(basedir, pattern).scan();
+        if (GenericUtils.isEmpty(matches)) {
+            return Collections.emptyList();
+        }
+
+        return Arrays.asList(matches);
+    }
+
+    /**
+     * Invoked on a local path in order to decide whether it should be sent
+     * as a file or as a directory
+     *
+     * @param path The local {@link Path}
+     * @param options The {@link LinkOption}-s
+     * @return Whether to send the file as a regular one - <B>Note:</B> if {@code false}
+     * then the {@link #sendAsDirectory(Path, LinkOption...)} is consulted.
+     * @throws IOException If failed to decide
+     */
+    default boolean sendAsRegularFile(Path path, LinkOption... options) throws IOException {
+        return Files.isRegularFile(path, options);
+    }
+
+    /**
+     * Invoked on a local path in order to decide whether it should be sent
+     * as a file or as a directory
+     *
+     * @param path The local {@link Path}
+     * @param options The {@link LinkOption}-s
+     * @return Whether to send the file as a directory - <B>Note:</B> if {@code true}
+     * then {@link #getLocalFolderChildren(Path)} is consulted
+     * @throws IOException If failed to decide
+     */
+    default boolean sendAsDirectory(Path path, LinkOption... options) throws IOException {
+        return Files.isDirectory(path, options);
+    }
+
+    /**
+     * Invoked when required to send all children of a local directory
+     *
+     * @param path The local folder {@link Path}{
+     * @return The {@link DirectoryStream} of children to send - <B>Note:</B> for each child
+     * the decision whether to send it as a file or a directory will be reached by consulting
+     * the respective {@link #sendAsRegularFile(Path, LinkOption...) sendAsRegularFile} and
+     * {@link #sendAsDirectory(Path, LinkOption...) sendAsDirectory} methods
+     * @throws IOException If failed to provide the children stream
+     * @see #sendAsDirectory(Path, LinkOption...) sendAsDirectory
+     */
+    default DirectoryStream<Path> getLocalFolderChildren(Path path) throws IOException {
+        return Files.newDirectoryStream(path);
+    }
+
+    default BasicFileAttributes getLocalBasicFileAttributes(Path path, LinkOption... options) throws IOException {
+        return Files.getFileAttributeView(path, BasicFileAttributeView.class, options).readAttributes();
+    }
+
+    default Set<PosixFilePermission> getLocalFilePermissions(Path path, LinkOption... options) throws IOException {
+        return IoUtils.getPermissions(path, options);
+    }
+
+    /**
+     * @param fileSystem The <U>local</U> {@link FileSystem} on which local file should reside
+     * @param commandPath The command path using the <U>local</U> file separator
+     * @return The resolved absolute and normalized local {@link Path}
+     * @throws IOException If failed to resolve the path
+     * @throws InvalidPathException If invalid local path value
+     */
+    default Path resolveLocalPath(FileSystem fileSystem, String commandPath) throws IOException, InvalidPathException {
+        String path = SelectorUtils.translateToLocalFileSystemPath(commandPath, File.separatorChar, fileSystem);
+        Path lcl = fileSystem.getPath(path);
+        Path abs = lcl.isAbsolute() ? lcl : lcl.toAbsolutePath();
+        return abs.normalize();
     }
 
     /**
