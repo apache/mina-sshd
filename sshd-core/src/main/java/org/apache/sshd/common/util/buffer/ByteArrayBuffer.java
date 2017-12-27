@@ -22,6 +22,7 @@ package org.apache.sshd.common.util.buffer;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
 import org.apache.sshd.common.util.GenericUtils;
@@ -175,6 +176,8 @@ public class ByteArrayBuffer extends Buffer {
             throw new BufferException("Bad item length: " + len);
         }
         ensureAvailable(len);
+
+        Objects.requireNonNull(charset, "No charset specified");
         String s = new String(data, rpos, len, charset);
         rpos += len;
         return s;

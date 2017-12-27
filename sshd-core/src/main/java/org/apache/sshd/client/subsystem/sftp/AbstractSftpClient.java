@@ -19,6 +19,7 @@
 package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -103,6 +104,11 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         }
 
         return parsed;
+    }
+
+    protected String getReferencedName(Buffer buf) {
+        Charset cs = getNameDecodingCharset();
+        return buf.getString(cs);
     }
 
     /**
@@ -285,11 +291,11 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             if (len != 1) {
                 throw new SshException("SFTP error: received " + len + " names instead of 1");
             }
-            String name = buffer.getString();
+            String name = getReferencedName(buffer);
             String longName = null;
             int version = getVersion();
             if (version == SftpConstants.SFTP_V3) {
-                longName = buffer.getString();
+                longName = getReferencedName(buffer);
             }
 
             Attributes attrs = readAttributes(buffer);
@@ -417,7 +423,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
                 }
                 if ((flags & SftpConstants.SSH_FILEXFER_ATTR_UNTRANSLATED_NAME) != 0) {
                     @SuppressWarnings("unused")
-                    String untranslated = buffer.getString(); // TODO: handle untranslated-name
+                    String untranslated = getReferencedName(buffer); // TODO: handle untranslated-name
                 }
             }
         } else {
@@ -893,8 +899,8 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
 
             List<DirEntry> entries = new ArrayList<>(len);
             for (int i = 0; i < len; i++) {
-                String name = buffer.getString();
-                String longName = (version == SftpConstants.SFTP_V3) ? buffer.getString() : null;
+                String name = getReferencedName(buffer);
+                String longName = (version == SftpConstants.SFTP_V3) ? getReferencedName(buffer) : null;
                 Attributes attrs = readAttributes(buffer);
                 if (log.isTraceEnabled()) {
                     log.trace("checkDirResponse({})[id={}][{}] ({})[{}]: {}",

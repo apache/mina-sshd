@@ -25,6 +25,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.AccessMode;
 import java.nio.file.CopyOption;
@@ -59,9 +60,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
@@ -100,6 +101,9 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     public static final long DEFAULT_CONNECT_TIME = SftpClient.DEFAULT_WAIT_TIMEOUT;
     public static final String AUTH_TIME_PROP_NAME = "sftp-fs-auth-time";
     public static final long DEFAULT_AUTH_TIME = SftpClient.DEFAULT_WAIT_TIMEOUT;
+    public static final String NAME_DECORDER_CHARSET_PROP_NAME = "sftp-fs-name-decoder-charset";
+    public static final Charset DEFAULT_NAME_DECODER_CHARSET = SftpClient.DEFAULT_NAME_DECODING_CHARSET;
+
     /**
      * <P>
      * URI parameter that can be used to specify a special version selection. Options are:
@@ -125,7 +129,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     private final SshClient client;
     private final SftpVersionSelector selector;
-    private final Map<String, SftpFileSystem> fileSystems = new HashMap<>();
+    private final NavigableMap<String, SftpFileSystem> fileSystems = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     public SftpFileSystemProvider() {
         this((SshClient) null);
@@ -183,6 +187,10 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         Map<String, Object> params = resolveFileSystemParameters(env, parseURIParameters(uri));
         PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(params);
         SftpVersionSelector selector = resolveSftpVersionSelector(uri, getSftpVersionSelector(), resolver);
+        Charset decodingCharset =
+            PropertyResolverUtils.getCharset(resolver, NAME_DECORDER_CHARSET_PROP_NAME, DEFAULT_NAME_DECODER_CHARSET);
+        long maxConnectTime = resolver.getLongProperty(CONNECT_TIME_PROP_NAME, DEFAULT_CONNECT_TIME);
+        long maxAuthTime = resolver.getLongProperty(AUTH_TIME_PROP_NAME, DEFAULT_AUTH_TIME);
 
         SftpFileSystem fileSystem;
         synchronized (fileSystems) {
@@ -194,7 +202,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             ClientSession session = null;
             try {
                 session = client.connect(username, host, port)
-                        .verify(resolver.getLongProperty(CONNECT_TIME_PROP_NAME, DEFAULT_CONNECT_TIME))
+                        .verify(maxConnectTime)
                         .getSession();
                 if (GenericUtils.size(params) > 0) {
                     // Cannot use forEach because the session is not effectively final
@@ -207,9 +215,12 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
                         PropertyResolverUtils.updateProperty(session, key, value);
                     }
+
+                    PropertyResolverUtils.updateProperty(session, SftpClient.NAME_DECODING_CHARSET, decodingCharset);
                 }
+
                 session.addPasswordIdentity(password);
-                session.auth().verify(resolver.getLongProperty(AUTH_TIME_PROP_NAME, DEFAULT_AUTH_TIME));
+                session.auth().verify(maxAuthTime);
 
                 fileSystem = new SftpFileSystem(this, id, session, selector);
                 fileSystems.put(id, fileSystem);

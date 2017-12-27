@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
+import java.nio.charset.Charset;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystemException;
 import java.nio.file.attribute.GroupPrincipal;
@@ -238,6 +239,16 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
         @Override
         public NavigableMap<String, byte[]> getServerExtensions() {
             return delegate.getServerExtensions();
+        }
+
+        @Override
+        public Charset getNameDecodingCharset() {
+            return delegate.getNameDecodingCharset();
+        }
+
+        @Override
+        public void setNameDecodingCharset(Charset cs) {
+            delegate.setNameDecodingCharset(cs);
         }
 
         @Override

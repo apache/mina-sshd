@@ -664,6 +664,57 @@ throughout the SFTP server subsystem code. The accessor is registered/overwritte
 
 ```
 
+### SFTP received names encoding
+
+By default, the SFTP client uses UTF-8 to decode any referenced file/folder name. However, some servers do not properly encode such names, and
+thus the "decoded" names by the client become corrupted, or even worse - cause an exception upon decoding attempt. The `SftpClient` exposes
+a `get/setNameDecodingCharset` method which enables the user to modify the charset - even while the SFTP session is in progress - e.g.:
+
+```java
+
+    try (SftpClient client = ...obtain an instance...) {
+        client.setNameDecodingCharset(Charset.forName("ISO-8859-8"));
+        for (DirEntry entry : client.readDir(...some path...)) {
+            ...handle entry assuming ISO-8859-8 encoded names...
+        }
+
+        client.setNameDecodingCharset(Charset.forName("ISO-8859-4"));
+        for (DirEntry entry : client.readDir(...some other path...)) {
+            ...handle entry assuming ISO-8859-4 encoded names...
+        }
+    }
+
+```
+
+The initial charset can be pre-configured on the client/session by using the `sftp-name-decoding-charset` property - if none specified then
+UTF-8 is used. **Note:** the value can be a charset name or a `java.nio.charset.Charset` instance - e.g.:
+
+```java
+
+    SshClient client = ... setup/obtain an instance...
+    // default for ALL SFTP clients obtained through this client
+    PropertyResolverUtils.updateProperty(client, SftpClient.NAME_DECODING_CHARSET, "ISO-8859-8");
+    
+    try (ClientSession session = client.connect(...)) {
+         // default for ALL SFTP clients obtained through the session - overrides client setting
+         PropertyResolverUtils.updateProperty(session, SftpClient.NAME_DECODING_CHARSET, "ISO-8859-4");
+         session.authenticate(...);
+         
+         try (SftpClient sftp = session.createSftpClient()) {
+             for (DirEntry entry : sftp.readDir(...some path...)) {
+                 ...handle entry assuming ISO-8859-4 (inherited from the session) encoded names...
+             }
+             
+             // override the inherited default from the session
+             sftp.setNameDecodingCharset(Charset.forName("ISO-8859-1"));
+             
+             for (DirEntry entry : sftp.readDir(...some other path...)) {
+                 ...handle entry assuming ISO-8859-1 encoded names...
+             }
+         }
+    }
+
+```
 
 ### Supported SFTP extensions
 

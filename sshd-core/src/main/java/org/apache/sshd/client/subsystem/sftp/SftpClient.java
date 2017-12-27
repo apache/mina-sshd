@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.Channel;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.AclEntry;
@@ -53,6 +55,21 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface SftpClient extends SubsystemClient {
+    /**
+     * Used to indicate the {@link Charset} (or its name) for decoding
+     * referenced files/folders names - extracted from the client session
+     * when 1st initialized.
+     * @see #DEFAULT_NAME_DECODING_CHARSET
+     * @see #getNameDecodingCharset()
+     * @see #setNameDecodingCharset(Charset)
+     */
+    String NAME_DECODING_CHARSET = "sftp-name-decoding-charset";
+
+    /**
+     * Default value of {@value #NAME_DECODING_CHARSET}
+     */
+    Charset DEFAULT_NAME_DECODING_CHARSET = StandardCharsets.UTF_8;
+
     enum OpenMode {
         Read,
         Write,
@@ -538,6 +555,14 @@ public interface SftpClient extends SubsystemClient {
     default String getName() {
         return SftpConstants.SFTP_SUBSYSTEM_NAME;
     }
+
+    /**
+     * @return The (never {@code null}) {@link Charset} used to decode referenced files/folders names
+     * @see #NAME_DECODING_CHARSET
+     */
+    Charset getNameDecodingCharset();
+
+    void setNameDecodingCharset(Charset cs);
 
     /**
      * @return An (unmodifiable) {@link NavigableMap} of the reported server extensions.

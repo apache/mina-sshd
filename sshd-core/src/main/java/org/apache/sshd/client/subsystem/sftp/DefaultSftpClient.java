@@ -26,6 +26,7 @@ import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.net.SocketTimeoutException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -43,6 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
@@ -67,8 +69,10 @@ public class DefaultSftpClient extends AbstractSftpClient {
     private final AtomicBoolean closing = new AtomicBoolean(false);
     private final NavigableMap<String, byte[]> extensions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private final NavigableMap<String, byte[]> exposedExtensions = Collections.unmodifiableNavigableMap(extensions);
+    private Charset nameDecodingCharset = DEFAULT_NAME_DECODING_CHARSET;
 
     public DefaultSftpClient(ClientSession clientSession) throws IOException {
+        this.nameDecodingCharset = PropertyResolverUtils.getCharset(clientSession, NAME_DECODING_CHARSET, DEFAULT_NAME_DECODING_CHARSET);
         this.clientSession = Objects.requireNonNull(clientSession, "No client session");
         this.channel = clientSession.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME);
         this.channel.setOut(new OutputStream() {
@@ -127,6 +131,16 @@ public class DefaultSftpClient extends AbstractSftpClient {
     @Override
     public NavigableMap<String, byte[]> getServerExtensions() {
         return exposedExtensions;
+    }
+
+    @Override
+    public Charset getNameDecodingCharset() {
+        return nameDecodingCharset;
+    }
+
+    @Override
+    public void setNameDecodingCharset(Charset nameDecodingCharset) {
+        this.nameDecodingCharset = Objects.requireNonNull(nameDecodingCharset, "No charset provided");
     }
 
     @Override
