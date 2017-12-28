@@ -42,8 +42,8 @@ import org.eclipse.jgit.pgm.opt.SubcommandHandler;
 import org.eclipse.jgit.util.io.ThrowingPrintWriter;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
-import org.kohsuke.args4j.ExampleMode;
 import org.kohsuke.args4j.Option;
+import org.kohsuke.args4j.OptionHandlerFilter;
 
 /**
  * TODO Add javadoc
@@ -75,16 +75,11 @@ public class EmbeddedCommandRunner {
     /**
      * Execute a command.
      *
-     * @param argv
-     *          the command and its arguments
-     * @param in
-     *          the input stream, may be null in which case the system input stream will be used
-     * @param out
-     *          the output stream, may be null in which case the system output stream will be used
-     * @param err
-     *          the error stream, may be null in which case the system error stream will be used
-     * @throws Exception
-     *          if an error occurs
+     * @param argv the command and its arguments
+     * @param in the input stream, may be null in which case the system input stream will be used
+     * @param out the output stream, may be null in which case the system output stream will be used
+     * @param err the error stream, may be null in which case the system error stream will be used
+     * @throws Exception if an error occurs
      */
     public void execute(final String[] argv, InputStream in, OutputStream out, OutputStream err) throws Exception {
         final CmdLineParser clp = new CmdLineParser(this);
@@ -100,7 +95,7 @@ public class EmbeddedCommandRunner {
         }
 
         if (argv.length == 0 || help) {
-            final String ex = clp.printExample(ExampleMode.ALL, CLIText.get().resourceBundle());
+            final String ex = clp.printExample(OptionHandlerFilter.ALL, CLIText.get().resourceBundle());
             writer.println("jgit" + ex + " command [ARG ...]"); //$NON-NLS-1$
             if (help) {
                 writer.println();
@@ -152,8 +147,8 @@ public class EmbeddedCommandRunner {
         set(cmd, "ins", in);
         set(cmd, "outs", out);
         set(cmd, "errs", err);
-        
-        Boolean success = (Boolean) call(cmd, "requiresRepository"); 
+
+        Boolean success = (Boolean) call(cmd, "requiresRepository");
         if (success) {
             call(cmd, "init", new Class[] {Repository.class, String.class}, new Object[] {openGitDir(gitdir), gitdir});
         } else {
