@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
+import org.apache.sshd.client.subsystem.sftp.impl.AbstractSftpClient;
 import org.apache.sshd.common.file.util.BaseFileSystem;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;

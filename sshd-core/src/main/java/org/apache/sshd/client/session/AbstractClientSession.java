@@ -43,10 +43,8 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.scp.DefaultScpClient;
 import org.apache.sshd.client.scp.ScpClient;
-import org.apache.sshd.client.subsystem.sftp.DefaultSftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
-import org.apache.sshd.client.subsystem.sftp.SftpFileSystem;
-import org.apache.sshd.client.subsystem.sftp.SftpFileSystemProvider;
+import org.apache.sshd.client.subsystem.sftp.SftpClientFactory;
 import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
@@ -92,6 +90,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     private ScpFileOpener scpOpener;
     private SocketAddress connectAddress;
     private ClientProxyConnector proxyConnector;
+    private SftpClientFactory sftpClientFactory;
 
     protected AbstractClientSession(ClientFactoryManager factoryManager, IoSession ioSession) {
         super(false, factoryManager, ioSession);
@@ -165,6 +164,16 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     @Override
     public void setClientProxyConnector(ClientProxyConnector proxyConnector) {
         this.proxyConnector = proxyConnector;
+    }
+
+    @Override
+    public SftpClientFactory getSftpClientFactory() {
+        return resolveEffectiveProvider(SftpClientFactory.class, sftpClientFactory, getFactoryManager().getSftpClientFactory());
+    }
+
+    @Override
+    public void setSftpClientFactory(SftpClientFactory sftpClientFactory) {
+        this.sftpClientFactory = sftpClientFactory;
     }
 
     @Override
@@ -333,57 +342,14 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     public SftpClient createSftpClient(SftpVersionSelector selector) throws IOException {
-        DefaultSftpClient client = new DefaultSftpClient(this);
-        try {
-            client.negotiateVersion(selector);
-        } catch (IOException | RuntimeException e) {
-            if (log.isDebugEnabled()) {
-                log.debug("createSftpClient({}) failed ({}) to negotiate version: {}",
-                          this, e.getClass().getSimpleName(), e.getMessage());
-            }
-            if (log.isTraceEnabled()) {
-                log.trace("createSftpClient(" + this + ") version negotiation failure details", e);
-            }
-
-            client.close();
-            throw e;
-        }
-
-        return client;
-    }
-
-    @Override
-    public FileSystem createSftpFileSystem() throws IOException {
-        return createSftpFileSystem(SftpVersionSelector.CURRENT);
-    }
-
-    @Override
-    public FileSystem createSftpFileSystem(int version) throws IOException {
-        return createSftpFileSystem(SftpVersionSelector.fixedVersionSelector(version));
-    }
-
-    @Override
-    public FileSystem createSftpFileSystem(SftpVersionSelector selector) throws IOException {
-        return createSftpFileSystem(selector, SftpClient.DEFAULT_READ_BUFFER_SIZE, SftpClient.DEFAULT_WRITE_BUFFER_SIZE);
-    }
-
-    @Override
-    public FileSystem createSftpFileSystem(int version, int readBufferSize, int writeBufferSize) throws IOException {
-        return createSftpFileSystem(SftpVersionSelector.fixedVersionSelector(version), readBufferSize, writeBufferSize);
-    }
-
-    @Override
-    public FileSystem createSftpFileSystem(int readBufferSize, int writeBufferSize) throws IOException {
-        return createSftpFileSystem(SftpVersionSelector.CURRENT, readBufferSize, writeBufferSize);
+        SftpClientFactory factory = getSftpClientFactory();
+        return factory.createSftpClient(this, selector);
     }
 
     @Override
     public FileSystem createSftpFileSystem(SftpVersionSelector selector, int readBufferSize, int writeBufferSize) throws IOException {
-        SftpFileSystemProvider provider = new SftpFileSystemProvider((org.apache.sshd.client.SshClient) getFactoryManager(), selector);
-        SftpFileSystem fs = provider.newFileSystem(this);
-        fs.setReadBufferSize(readBufferSize);
-        fs.setWriteBufferSize(writeBufferSize);
-        return fs;
+        SftpClientFactory factory = getSftpClientFactory();
+        return factory.createSftpFileSystem(this, selector, readBufferSize, writeBufferSize);
     }
 
     @Override

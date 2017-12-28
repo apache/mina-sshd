@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.subsystem.sftp;
+package org.apache.sshd.client.subsystem.sftp.impl;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -32,6 +32,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.subsystem.AbstractSubsystemClient;
+import org.apache.sshd.client.subsystem.sftp.RawSftpClient;
+import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensions;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtensionFactory;
@@ -106,7 +108,12 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         return parsed;
     }
 
-    protected String getReferencedName(Buffer buf) {
+    /**
+     * @param cmd The command that was sent whose response contains the name to be decoded
+     * @param buf The {@link Buffer} containing the encoded name
+     * @return The decoded referenced name
+     */
+    protected String getReferencedName(int cmd, Buffer buf) {
         Charset cs = getNameDecodingCharset();
         return buf.getString(cs);
     }
@@ -240,7 +247,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         int type = buffer.getUByte();
         int id = buffer.getInt();
         if (type == SftpConstants.SSH_FXP_ATTRS) {
-            return readAttributes(buffer);
+            return readAttributes(cmd, buffer);
         }
 
         if (type == SftpConstants.SSH_FXP_STATUS) {
@@ -291,14 +298,14 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             if (len != 1) {
                 throw new SshException("SFTP error: received " + len + " names instead of 1");
             }
-            String name = getReferencedName(buffer);
+            String name = getReferencedName(cmd, buffer);
             String longName = null;
             int version = getVersion();
             if (version == SftpConstants.SFTP_V3) {
-                longName = getReferencedName(buffer);
+                longName = getReferencedName(cmd, buffer);
             }
 
-            Attributes attrs = readAttributes(buffer);
+            Attributes attrs = readAttributes(cmd, buffer);
             Boolean indicator = SftpHelper.getEndOfListIndicatorValue(buffer, version);
             // TODO decide what to do if not-null and not TRUE
             if (log.isTraceEnabled()) {
@@ -334,7 +341,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         return null;
     }
 
-    protected Attributes readAttributes(Buffer buffer) throws IOException {
+    protected Attributes readAttributes(int cmd, Buffer buffer) throws IOException {
         Attributes attrs = new Attributes();
         int flags = buffer.getInt();
         int version = getVersion();
@@ -423,7 +430,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
                 }
                 if ((flags & SftpConstants.SSH_FILEXFER_ATTR_UNTRANSLATED_NAME) != 0) {
                     @SuppressWarnings("unused")
-                    String untranslated = getReferencedName(buffer); // TODO: handle untranslated-name
+                    String untranslated = getReferencedName(cmd, buffer); // TODO: handle untranslated-name
                 }
             }
         } else {
@@ -899,9 +906,9 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
 
             List<DirEntry> entries = new ArrayList<>(len);
             for (int i = 0; i < len; i++) {
-                String name = getReferencedName(buffer);
-                String longName = (version == SftpConstants.SFTP_V3) ? getReferencedName(buffer) : null;
-                Attributes attrs = readAttributes(buffer);
+                String name = getReferencedName(cmd, buffer);
+                String longName = (version == SftpConstants.SFTP_V3) ? getReferencedName(cmd, buffer) : null;
+                Attributes attrs = readAttributes(cmd, buffer);
                 if (log.isTraceEnabled()) {
                     log.trace("checkDirResponse({})[id={}][{}] ({})[{}]: {}",
                               channel, id, i, name, longName, attrs);

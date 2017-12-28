@@ -29,6 +29,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.Set;
 
+import org.apache.sshd.client.subsystem.sftp.impl.AbstractSftpFileAttributeView;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**

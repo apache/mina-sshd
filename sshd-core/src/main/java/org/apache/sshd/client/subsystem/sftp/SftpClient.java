@@ -496,7 +496,7 @@ public interface SftpClient extends SubsystemClient {
         private final String longFilename;
         private final Attributes attributes;
 
-        DirEntry(String filename, String longFilename, Attributes attributes) {
+        public DirEntry(String filename, String longFilename, Attributes attributes) {
             this.filename = filename;
             this.longFilename = longFilename;
             this.attributes = attributes;

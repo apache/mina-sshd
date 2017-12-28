@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.subsystem.sftp;
+package org.apache.sshd.client.subsystem.sftp.impl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;

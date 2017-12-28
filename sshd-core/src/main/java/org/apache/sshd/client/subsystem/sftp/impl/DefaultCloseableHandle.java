@@ -17,11 +17,12 @@
  * under the License.
  */
 
-package org.apache.sshd.client.subsystem.sftp;
+package org.apache.sshd.client.subsystem.sftp.impl;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
 import org.apache.sshd.common.util.ValidateUtils;
 

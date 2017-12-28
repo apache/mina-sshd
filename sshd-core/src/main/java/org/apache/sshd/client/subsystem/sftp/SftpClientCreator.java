@@ -61,15 +61,25 @@ public interface SftpClientCreator {
      */
     SftpClient createSftpClient(SftpVersionSelector selector) throws IOException;
 
-    FileSystem createSftpFileSystem() throws IOException;
+    default FileSystem createSftpFileSystem() throws IOException {
+        return createSftpFileSystem(SftpVersionSelector.CURRENT);
+    }
 
-    FileSystem createSftpFileSystem(int version) throws IOException;
+    default FileSystem createSftpFileSystem(int version) throws IOException {
+        return createSftpFileSystem(SftpVersionSelector.fixedVersionSelector(version));
+    }
 
-    FileSystem createSftpFileSystem(SftpVersionSelector selector) throws IOException;
+    default FileSystem createSftpFileSystem(SftpVersionSelector selector) throws IOException {
+        return createSftpFileSystem(selector, SftpClient.DEFAULT_READ_BUFFER_SIZE, SftpClient.DEFAULT_WRITE_BUFFER_SIZE);
+    }
 
-    FileSystem createSftpFileSystem(int readBufferSize, int writeBufferSize) throws IOException;
+    default FileSystem createSftpFileSystem(int version, int readBufferSize, int writeBufferSize) throws IOException {
+        return createSftpFileSystem(SftpVersionSelector.fixedVersionSelector(version), readBufferSize, writeBufferSize);
+    }
 
-    FileSystem createSftpFileSystem(int version, int readBufferSize, int writeBufferSize) throws IOException;
+    default FileSystem createSftpFileSystem(int readBufferSize, int writeBufferSize) throws IOException {
+        return createSftpFileSystem(SftpVersionSelector.CURRENT, readBufferSize, writeBufferSize);
+    }
 
     FileSystem createSftpFileSystem(SftpVersionSelector selector, int readBufferSize, int writeBufferSize) throws IOException;
 }

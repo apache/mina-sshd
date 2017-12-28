@@ -831,7 +831,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         return map;
     }
 
-    protected SftpClient.Attributes readRemoteAttributes(SftpPath path, LinkOption... options) throws IOException {
+    public SftpClient.Attributes readRemoteAttributes(SftpPath path, LinkOption... options) throws IOException {
         SftpFileSystem fs = path.getFileSystem();
         try (SftpClient client = fs.getClient()) {
             try {
