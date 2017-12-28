@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -38,7 +39,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -209,14 +209,14 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
      * @param path    The {@link Path} to be checked - ignored if {@code null}
      *                or does not exist
      * @param options The {@link LinkOption}s to use to query the file's permissions
-     * @return The violated permission as {@link Pair} where {@link Pair#getClass()}
-     * is a loggable message and {@link Pair#getSecond()} is the offending object
+     * @return The violated permission as {@link SimpleImmutableEntry} where key
+     * is a loggable message and value is the offending object
      * - e.g., {@link PosixFilePermission} or {@link String} for owner. Return
      * value is {@code null} if no violations detected
      * @throws IOException If failed to retrieve the permissions
      * @see #STRICTLY_PROHIBITED_FILE_PERMISSION
      */
-    public static Pair<String, Object> validateStrictConfigFilePermissions(Path path, LinkOption... options) throws IOException {
+    public static SimpleImmutableEntry<String, Object> validateStrictConfigFilePermissions(Path path, LinkOption... options) throws IOException {
         if ((path == null) || (!Files.exists(path, options))) {
             return null;
         }
@@ -229,7 +229,7 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
         if (OsUtils.isUNIX()) {
             PosixFilePermission p = IoUtils.validateExcludedPermissions(perms, STRICTLY_PROHIBITED_FILE_PERMISSION);
             if (p != null) {
-                return new Pair<>(String.format("Permissions violation (%s)", p), p);
+                return new SimpleImmutableEntry<>(String.format("Permissions violation (%s)", p), p);
             }
         }
 
@@ -250,7 +250,7 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
         }
 
         if (!expected.contains(owner)) {
-            return new Pair<>(String.format("Owner violation (%s)", owner), owner);
+            return new SimpleImmutableEntry<>(String.format("Owner violation (%s)", owner), owner);
         }
 
         return null;

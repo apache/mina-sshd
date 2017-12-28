@@ -18,7 +18,9 @@
  */
 package org.apache.sshd.common.util;
 
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
+import java.util.Map;
 
 /**
  * The complement to the {@code Callable} interface - accepts one argument
@@ -74,7 +76,7 @@ public interface Invoker<ARG, RET> {
 
     static <ARG> Invoker<ARG, Void> wrapFirst(Collection<? extends Invoker<? super ARG, ?>> invokers) {
         return arg -> {
-            Pair<Invoker<? super ARG, ?>, Throwable> result = invokeTillFirstFailure(arg, invokers);
+            Map.Entry<Invoker<? super ARG, ?>, Throwable> result = invokeTillFirstFailure(arg, invokers);
             if (result != null) {
                 throw result.getValue();
             }
@@ -89,10 +91,10 @@ public interface Invoker<ARG, RET> {
      * @param arg The argument to pass to the {@link #invoke(Object)} method
      * @param invokers The invokers to scan - ignored if {@code null}/empty
      * (also ignores {@code null} members)
-     * @return A {@link Pair} representing the <U>first</U> failed invocation
-     * - {@code null} if all were successful (or none invoked).
+     * @return A {@link SimpleImmutableEntry} representing the <U>first</U> failed
+     * invocation - {@code null} if all were successful (or none invoked).
      */
-    static <ARG> Pair<Invoker<? super ARG, ?>, Throwable> invokeTillFirstFailure(ARG arg, Collection<? extends Invoker<? super ARG, ?>> invokers) {
+    static <ARG> SimpleImmutableEntry<Invoker<? super ARG, ?>, Throwable> invokeTillFirstFailure(ARG arg, Collection<? extends Invoker<? super ARG, ?>> invokers) {
         if (GenericUtils.isEmpty(invokers)) {
             return null;
         }
@@ -105,7 +107,7 @@ public interface Invoker<ARG, RET> {
             try {
                 i.invoke(arg);
             } catch (Throwable t) {
-                return new Pair<>(i, t);
+                return new SimpleImmutableEntry<>(i, t);
             }
         }
 

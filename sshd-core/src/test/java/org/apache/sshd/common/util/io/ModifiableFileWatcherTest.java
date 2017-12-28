@@ -27,10 +27,10 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Map;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -60,7 +60,7 @@ public class ModifiableFileWatcherTest extends BaseTestSupport {
         if (GenericUtils.isEmpty(perms)) {
             assertNull("Unexpected violation for no permissions file: " + file, ModifiableFileWatcher.validateStrictConfigFilePermissions(file));
         } else if (OsUtils.isUNIX()) {
-            Pair<String, Object> violation = null;
+            Map.Entry<String, Object> violation = null;
             for (PosixFilePermission p : ModifiableFileWatcher.STRICTLY_PROHIBITED_FILE_PERMISSION) {
                 if (perms.contains(p)) {
                     violation = ModifiableFileWatcher.validateStrictConfigFilePermissions(file);

@@ -20,13 +20,13 @@
 package org.apache.sshd.client.subsystem.sftp.extensions.helpers;
 
 import java.io.IOException;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
 
 import org.apache.sshd.client.subsystem.sftp.RawSftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.extensions.CheckFileNameExtension;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
-import org.apache.sshd.common.util.Pair;
 
 /**
  * Implements &quot;check-file-name&quot; extension
@@ -40,7 +40,9 @@ public class CheckFileNameExtensionImpl extends AbstractCheckFileExtension imple
     }
 
     @Override
-    public Pair<String, Collection<byte[]>> checkFileName(String name, Collection<String> algorithms, long startOffset, long length, int blockSize) throws IOException {
+    public SimpleImmutableEntry<String, Collection<byte[]>> checkFileName(
+            String name, Collection<String> algorithms, long startOffset, long length, int blockSize)
+                throws IOException {
         return doGetHash(name, algorithms, startOffset, length, blockSize);
     }
 }

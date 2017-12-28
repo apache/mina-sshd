@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common;
 
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
@@ -28,7 +29,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Pair;
+import org.apache.sshd.common.util.MapEntryUtils;
 
 /**
  * A wrapper that exposes a read-only {@link Map} access to the system
@@ -105,8 +106,7 @@ public final class SyspropsMapWrapper implements Map<String, Object> {
     public Set<Entry<String, Object>> entrySet() {
         Properties props = System.getProperties();
         // return a copy in order to avoid concurrent modifications
-        Set<Entry<String, Object>> entries =
-                new TreeSet<>(Pair.byKeyEntryComparator());
+        Set<Entry<String, Object>> entries = new TreeSet<>(MapEntryUtils.byKeyEntryComparator());
         for (String key : props.stringPropertyNames()) {
             if (!isMappedSyspropKey(key)) {
                 continue;
@@ -114,7 +114,7 @@ public final class SyspropsMapWrapper implements Map<String, Object> {
 
             Object v = props.getProperty(key);
             if (v != null) {
-                entries.add(new Pair<>(getUnmappedSyspropKey(key), v));
+                entries.add(new SimpleImmutableEntry<>(getUnmappedSyspropKey(key), v));
             }
         }
 

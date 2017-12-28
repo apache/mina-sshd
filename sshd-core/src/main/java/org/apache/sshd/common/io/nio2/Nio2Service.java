@@ -24,6 +24,7 @@ import java.net.SocketTimeoutException;
 import java.net.StandardSocketOptions;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.NetworkChannel;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -40,25 +41,25 @@ import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class Nio2Service extends AbstractInnerCloseable implements IoService, FactoryManagerHolder {
-    public static final Map<String, Pair<SocketOption<?>, Object>> CONFIGURABLE_OPTIONS =
-            Collections.unmodifiableMap(new LinkedHashMap<String, Pair<SocketOption<?>, Object>>() {
+    // Note: order may be important so that's why we use a LinkedHashMap
+    public static final Map<String, SimpleImmutableEntry<SocketOption<?>, Object>> CONFIGURABLE_OPTIONS =
+            Collections.unmodifiableMap(new LinkedHashMap<String, SimpleImmutableEntry<SocketOption<?>, Object>>() {
                 // Not serializing it
                 private static final long serialVersionUID = 1L;
 
                 {
-                    put(FactoryManager.SOCKET_KEEPALIVE, new Pair<SocketOption<?>, Object>(StandardSocketOptions.SO_KEEPALIVE, null));
-                    put(FactoryManager.SOCKET_LINGER, new Pair<SocketOption<?>, Object>(StandardSocketOptions.SO_LINGER, null));
-                    put(FactoryManager.SOCKET_RCVBUF, new Pair<SocketOption<?>, Object>(StandardSocketOptions.SO_RCVBUF, null));
-                    put(FactoryManager.SOCKET_REUSEADDR, new Pair<SocketOption<?>, Object>(StandardSocketOptions.SO_REUSEADDR, DEFAULT_REUSE_ADDRESS));
-                    put(FactoryManager.SOCKET_SNDBUF, new Pair<SocketOption<?>, Object>(StandardSocketOptions.SO_SNDBUF, null));
-                    put(FactoryManager.TCP_NODELAY, new Pair<SocketOption<?>, Object>(StandardSocketOptions.TCP_NODELAY, null));
+                    put(FactoryManager.SOCKET_KEEPALIVE, new SimpleImmutableEntry<>(StandardSocketOptions.SO_KEEPALIVE, null));
+                    put(FactoryManager.SOCKET_LINGER, new SimpleImmutableEntry<>(StandardSocketOptions.SO_LINGER, null));
+                    put(FactoryManager.SOCKET_RCVBUF, new SimpleImmutableEntry<>(StandardSocketOptions.SO_RCVBUF, null));
+                    put(FactoryManager.SOCKET_REUSEADDR, new SimpleImmutableEntry<>(StandardSocketOptions.SO_REUSEADDR, DEFAULT_REUSE_ADDRESS));
+                    put(FactoryManager.SOCKET_SNDBUF, new SimpleImmutableEntry<>(StandardSocketOptions.SO_SNDBUF, null));
+                    put(FactoryManager.TCP_NODELAY, new SimpleImmutableEntry<>(StandardSocketOptions.TCP_NODELAY, null));
                 }
             });
 
@@ -134,9 +135,9 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
             return socket;
         }
 
-        for (Map.Entry<String, Pair<SocketOption<?>, Object>> ce : CONFIGURABLE_OPTIONS.entrySet()) {
+        for (Map.Entry<String, ? extends Map.Entry<SocketOption<?>, ?>> ce : CONFIGURABLE_OPTIONS.entrySet()) {
             String property = ce.getKey();
-            Pair<SocketOption<?>, Object> defConfig = ce.getValue();
+            Map.Entry<SocketOption<?>, ?> defConfig = ce.getValue();
             @SuppressWarnings("rawtypes")
             SocketOption option = defConfig.getKey();
             setOption(socket, property, option, defConfig.getValue());

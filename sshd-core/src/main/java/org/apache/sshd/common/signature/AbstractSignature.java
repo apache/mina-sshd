@@ -23,10 +23,10 @@ import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Objects;
 
 import org.apache.sshd.common.util.NumberUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -101,10 +101,10 @@ public abstract class AbstractSignature implements Signature {
      * Makes an attempt to detect if the signature is encoded or pure data
      *
      * @param sig The original signature
-     * @return A {@link Pair} where first value is the key type and second
+     * @return A {@link SimpleImmutableEntry} where first value is the key type and second
      * value is the data - {@code null} if not encoded
      */
-    protected Pair<String, byte[]> extractEncodedSignature(byte[] sig) {
+    protected SimpleImmutableEntry<String, byte[]> extractEncodedSignature(byte[] sig) {
         final int dataLen = NumberUtils.length(sig);
         // if it is encoded then we must have at least 2 UINT32 values
         if (dataLen < (2 * Integer.BYTES)) {
@@ -134,7 +134,7 @@ public abstract class AbstractSignature implements Signature {
         String keyType = new String(sig, keyTypeStartPos, (int) keyTypeLen, StandardCharsets.UTF_8);
         byte[] data = new byte[(int) dataBytesLen];
         System.arraycopy(sig, keyTypeEndPos + Integer.BYTES, data, 0, (int) dataBytesLen);
-        return new Pair<>(keyType, data);
+        return new SimpleImmutableEntry<>(keyType, data);
     }
 
     protected boolean doVerify(byte[] data) throws SignatureException {

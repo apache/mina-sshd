@@ -22,10 +22,10 @@ package org.apache.sshd.common.config.keys;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.PublicKey;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.junit.BeforeClass;
@@ -88,6 +88,6 @@ public class KeyUtilsFingerprintCaseSensitivityTest extends BaseTestSupport {
 
     @Test
     public void testCase() throws Exception {
-        assertEquals("Check failed", new Pair<>(true, expected), KeyUtils.checkFingerPrint(test, key));
+        assertEquals("Check failed", new SimpleImmutableEntry<>(true, expected), KeyUtils.checkFingerPrint(test, key));
     }
 }

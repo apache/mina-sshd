@@ -31,6 +31,7 @@ import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -48,7 +49,6 @@ import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.loader.AbstractKeyPairResourceParser;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -185,7 +185,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
                         resourceKey, keyIndex, pubType);
             }
 
-            Pair<PrivateKey, String> prvData = readPrivateKey(resourceKey, context, pubType, passwordProvider, stream);
+            Map.Entry<PrivateKey, String> prvData = readPrivateKey(resourceKey, context, pubType, passwordProvider, stream);
             PrivateKey prvKey = (prvData == null) ? null : prvData.getKey();
             ValidateUtils.checkNotNull(prvKey, "Empty private key #%d in %s", keyIndex, resourceKey);
 
@@ -204,7 +204,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         return keyPairs;
     }
 
-    protected Pair<PrivateKey, String> readPrivateKey(
+    protected SimpleImmutableEntry<PrivateKey, String> readPrivateKey(
             String resourceKey, OpenSSHParserContext context, String keyType, FilePasswordProvider passwordProvider, InputStream stream)
                     throws IOException, GeneralSecurityException {
         String prvType = KeyEntryResolver.decodeString(stream);
@@ -225,7 +225,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         }
 
         String comment = KeyEntryResolver.decodeString(stream);
-        return new Pair<>(prvKey, comment);
+        return new SimpleImmutableEntry<>(prvKey, comment);
     }
 
     protected <S extends InputStream> S validateStreamMagicMarker(String resourceKey, S stream) throws IOException {

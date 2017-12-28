@@ -32,7 +32,6 @@ import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.server.auth.BaseAuthenticatorTest;
 import org.apache.sshd.server.session.ServerSession;
 import org.junit.AfterClass;
@@ -47,7 +46,7 @@ import org.mockito.Mockito;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
-    private static final AtomicReference<Pair<LdapServer, DirectoryService>> LDAP_CONTEX_HOLDER = new AtomicReference<>();
+    private static final AtomicReference<Map.Entry<LdapServer, DirectoryService>> LDAP_CONTEX_HOLDER = new AtomicReference<>();
     private static final Map<String, PublicKey> KEYS_MAP = new TreeMap<>(Comparator.naturalOrder());
     // we use this instead of the default since the default requires some extra LDIF manipulation which we don't need
     private static final String TEST_ATTR_NAME = "description";
@@ -60,7 +59,7 @@ public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
     public static void startApacheDs() throws Exception {
         LDAP_CONTEX_HOLDER.set(startApacheDs(LdapPublickeyAuthenticatorTest.class));
         Map<String, String> credentials =
-                populateUsers(LDAP_CONTEX_HOLDER.get().getSecond(), LdapPublickeyAuthenticatorTest.class, TEST_ATTR_NAME);
+                populateUsers(LDAP_CONTEX_HOLDER.get().getValue(), LdapPublickeyAuthenticatorTest.class, TEST_ATTR_NAME);
         assertFalse("No keys retrieved", GenericUtils.isEmpty(credentials));
 
         // Cannot use forEach because of the potential GeneraSecurityException being thrown
@@ -79,7 +78,7 @@ public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
 
     @Test
     public void testPublicKeyComparison() throws Exception {
-        Pair<LdapServer, DirectoryService> ldapContext = LDAP_CONTEX_HOLDER.get();
+        Map.Entry<LdapServer, DirectoryService> ldapContext = LDAP_CONTEX_HOLDER.get();
         LdapPublickeyAuthenticator auth = new LdapPublickeyAuthenticator();
         auth.setHost(getHost(ldapContext));
         auth.setPort(getPort(ldapContext));

@@ -25,9 +25,9 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.io.IoUtils;
 
 /**
@@ -81,10 +81,10 @@ public class DefaultConfigFileHostEntryResolver extends ConfigFileHostEntryResol
                 log.debug("reloadHostConfigEntries({}@{}:{}) check permissions of {}", username, host, port, path);
             }
 
-            Pair<String, Object> violation = validateStrictConfigFilePermissions(path);
+            Map.Entry<String, ?> violation = validateStrictConfigFilePermissions(path);
             if (violation != null) {
                 log.warn("reloadHostConfigEntries({}@{}:{}) invalid file={} permissions: {}",
-                         username, host, port, path, violation.getFirst());
+                         username, host, port, path, violation.getKey());
                 updateReloadAttributes();
                 return Collections.emptyList();
             }

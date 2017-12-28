@@ -21,10 +21,10 @@ package org.apache.sshd.common.signature;
 import java.io.StreamCorruptedException;
 import java.math.BigInteger;
 import java.security.SignatureException;
+import java.util.Map;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.NumberUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.io.der.DERParser;
@@ -101,11 +101,11 @@ public class SignatureDSA extends AbstractSignature {
 
         if (sigLen != DSA_SIGNATURE_LENGTH) {
             // probably some encoded data
-            Pair<String, byte[]> encoding = extractEncodedSignature(sig);
+            Map.Entry<String, byte[]> encoding = extractEncodedSignature(sig);
             if (encoding != null) {
-                String keyType = encoding.getFirst();
+                String keyType = encoding.getKey();
                 ValidateUtils.checkTrue(KeyPairProvider.SSH_DSS.equals(keyType), "Mismatched key type: %s", keyType);
-                data = encoding.getSecond();
+                data = encoding.getValue();
                 sigLen = NumberUtils.length(data);
             }
         }

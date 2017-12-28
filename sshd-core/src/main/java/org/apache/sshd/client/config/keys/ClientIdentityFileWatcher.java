@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -31,7 +32,6 @@ import java.util.function.Supplier;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.ModifiableFileWatcher;
 
@@ -105,10 +105,10 @@ public class ClientIdentityFileWatcher extends ModifiableFileWatcher implements 
 
     protected KeyPair reloadClientIdentity(Path path) throws IOException, GeneralSecurityException {
         if (isStrict()) {
-            Pair<String, Object> violation = KeyUtils.validateStrictKeyFilePermissions(path, IoUtils.EMPTY_LINK_OPTIONS);
+            Map.Entry<String, Object> violation = KeyUtils.validateStrictKeyFilePermissions(path, IoUtils.EMPTY_LINK_OPTIONS);
             if (violation != null) {
                 if (log.isDebugEnabled()) {
-                    log.debug("reloadClientIdentity({}) ignore due to {}", path, violation.getFirst());
+                    log.debug("reloadClientIdentity({}) ignore due to {}", path, violation.getKey());
                 }
                 return null;
             }

@@ -47,6 +47,7 @@ import java.security.spec.DSAPublicKeySpec;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -71,7 +72,6 @@ import org.apache.sshd.common.digest.DigestUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -186,13 +186,13 @@ public final class KeyUtils {
      * @param path    The {@link Path} to be checked - ignored if {@code null}
      *                or does not exist
      * @param options The {@link LinkOption}s to use to query the file's permissions
-     * @return The violated permission as {@link Pair} first is a message second is
-     * offending object {@link PosixFilePermission} or {@link String} for owner - {@code null} if
-     * no violations detected
+     * @return The violated permission as {@link SimpleImmutableEntry} where key is a message and
+     * value is the offending object {@link PosixFilePermission} or {@link String} for owner - {@code null}
+     * if no violations detected
      * @throws IOException If failed to retrieve the permissions
      * @see #STRICTLY_PROHIBITED_FILE_PERMISSION
      */
-    public static Pair<String, Object> validateStrictKeyFilePermissions(Path path, LinkOption... options) throws IOException {
+    public static SimpleImmutableEntry<String, Object> validateStrictKeyFilePermissions(Path path, LinkOption... options) throws IOException {
         if ((path == null) || (!Files.exists(path, options))) {
             return null;
         }
@@ -204,20 +204,20 @@ public final class KeyUtils {
 
         if (perms.contains(PosixFilePermission.OTHERS_EXECUTE)) {
             PosixFilePermission p = PosixFilePermission.OTHERS_EXECUTE;
-            return new Pair<>(String.format("Permissions violation (%s)", p), p);
+            return new SimpleImmutableEntry<>(String.format("Permissions violation (%s)", p), p);
         }
 
         if (OsUtils.isUNIX()) {
             PosixFilePermission p = IoUtils.validateExcludedPermissions(perms, STRICTLY_PROHIBITED_FILE_PERMISSION);
             if (p != null) {
-                return new Pair<>(String.format("Permissions violation (%s)", p), p);
+                return new SimpleImmutableEntry<>(String.format("Permissions violation (%s)", p), p);
             }
 
             if (Files.isRegularFile(path, options)) {
                 Path parent = path.getParent();
                 p = IoUtils.validateExcludedPermissions(IoUtils.getPermissions(parent, options), STRICTLY_PROHIBITED_FILE_PERMISSION);
                 if (p != null) {
-                    return new Pair<>(String.format("Parent permissions violation (%s)", p), p);
+                    return new SimpleImmutableEntry<>(String.format("Parent permissions violation (%s)", p), p);
                 }
             }
         }
@@ -239,14 +239,14 @@ public final class KeyUtils {
         }
 
         if (!expected.contains(owner)) {
-            return new Pair<>(String.format("Owner violation (%s)", owner), owner);
+            return new SimpleImmutableEntry<>(String.format("Owner violation (%s)", owner), owner);
         }
 
         if (OsUtils.isUNIX()) {
             if (Files.isRegularFile(path, options)) {
                 String parentOwner = IoUtils.getFileOwner(path.getParent(), options);
                 if ((!GenericUtils.isEmpty(parentOwner)) && (!expected.contains(parentOwner))) {
-                    return new Pair<>(String.format("Parent owner violation (%s)", parentOwner), parentOwner);
+                    return new SimpleImmutableEntry<>(String.format("Parent owner violation (%s)", parentOwner), parentOwner);
                 }
             }
         }
@@ -581,12 +581,12 @@ public final class KeyUtils {
      * @param expected The expected fingerprint if {@code null} or empty then returns a failure
      * with the default fingerprint.
      * @param key the {@link PublicKey} - if {@code null} then returns null.
-     * @return Pair<Boolean, String> - first is success indicator, second is actual fingerprint,
+     * @return SimpleImmutableEntry<Boolean, String> - key is success indicator, value is actual fingerprint,
      * {@code null} if no key.
      * @see #getDefaultFingerPrintFactory()
      * @see #checkFingerPrint(String, Factory, PublicKey)
      */
-    public static Pair<Boolean, String> checkFingerPrint(String expected, PublicKey key) {
+    public static SimpleImmutableEntry<Boolean, String> checkFingerPrint(String expected, PublicKey key) {
         return checkFingerPrint(expected, getDefaultFingerPrintFactory(), key);
     }
 
@@ -595,10 +595,10 @@ public final class KeyUtils {
      * with the default fingerprint.
      * @param f The {@link Factory} to be used to generate the default {@link Digest} for the key
      * @param key the {@link PublicKey} - if {@code null} then returns null.
-     * @return Pair<Boolean, String> - first is success indicator, second is actual fingerprint,
+     * @return SimpleImmutableEntry<Boolean, String> - key is success indicator, value is actual fingerprint,
      * {@code null} if no key.
      */
-    public static Pair<Boolean, String> checkFingerPrint(String expected, Factory<? extends Digest> f, PublicKey key) {
+    public static SimpleImmutableEntry<Boolean, String> checkFingerPrint(String expected, Factory<? extends Digest> f, PublicKey key) {
         return checkFingerPrint(expected, Objects.requireNonNull(f, "No digest factory").create(), key);
     }
 
@@ -607,22 +607,22 @@ public final class KeyUtils {
      * with the default fingerprint.
      * @param d The {@link Digest} to be used to generate the default fingerprint for the key
      * @param key the {@link PublicKey} - if {@code null} then returns null.
-     * @return Pair<Boolean, String> - first is success indicator, second is actual fingerprint,
+     * @return SimpleImmutableEntry<Boolean, String> - key is success indicator, value is actual fingerprint,
      * {@code null} if no key.
      */
-    public static Pair<Boolean, String> checkFingerPrint(String expected, Digest d, PublicKey key) {
+    public static SimpleImmutableEntry<Boolean, String> checkFingerPrint(String expected, Digest d, PublicKey key) {
         if (key == null) {
             return null;
         }
 
         if (GenericUtils.isEmpty(expected)) {
-            return new Pair<>(false, getFingerPrint(d, key));
+            return new SimpleImmutableEntry<>(false, getFingerPrint(d, key));
         }
 
         // de-construct fingerprint
         int pos = expected.indexOf(':');
         if ((pos < 0) || (pos >= (expected.length() - 1))) {
-            return new Pair<>(false, getFingerPrint(d, key));
+            return new SimpleImmutableEntry<>(false, getFingerPrint(d, key));
         }
 
         String name = expected.substring(0, pos);
@@ -632,7 +632,7 @@ public final class KeyUtils {
         if (name.length() > 2) {
             expectedFactory = BuiltinDigests.fromFactoryName(name);
             if (expectedFactory == null) {
-                return new Pair<>(false, getFingerPrint(d, key));
+                return new SimpleImmutableEntry<>(false, getFingerPrint(d, key));
             }
 
             expected = name.toUpperCase() + ":" + value;
@@ -645,7 +645,7 @@ public final class KeyUtils {
         boolean matches = BuiltinDigests.md5.getName().equals(expectedFactory.getName())
                         ? expected.equalsIgnoreCase(fingerprint)    // HEX is case insensitive
                         : expected.equals(fingerprint);
-        return new Pair<>(matches, fingerprint);
+        return new SimpleImmutableEntry<>(matches, fingerprint);
     }
 
     /**

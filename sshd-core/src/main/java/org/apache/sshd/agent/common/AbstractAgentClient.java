@@ -21,12 +21,12 @@ package org.apache.sshd.agent.common;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
-import java.util.List;
+import java.util.Collection;
+import java.util.Map;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -96,12 +96,12 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
         }
         switch (cmd) {
             case SshAgentConstants.SSH2_AGENTC_REQUEST_IDENTITIES: {
-                List<Pair<PublicKey, String>> keys = agent.getIdentities();
+                Collection<? extends Map.Entry<PublicKey, String>> keys = agent.getIdentities();
                 rep.putByte(SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSWER);
                 rep.putInt(keys.size());
-                for (Pair<PublicKey, String> key : keys) {
-                    rep.putPublicKey(key.getFirst());
-                    rep.putString(key.getSecond());
+                for (Map.Entry<PublicKey, String> key : keys) {
+                    rep.putPublicKey(key.getKey());
+                    rep.putString(key.getValue());
                 }
                 break;
             }

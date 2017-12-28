@@ -22,9 +22,9 @@ import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.sshd.agent.SshAgent;
-import org.apache.sshd.common.util.Pair;
 
 public class AgentDelegate implements SshAgent {
 
@@ -45,7 +45,7 @@ public class AgentDelegate implements SshAgent {
     }
 
     @Override
-    public List<Pair<PublicKey, String>> getIdentities() throws IOException {
+    public List<? extends Map.Entry<PublicKey, String>> getIdentities() throws IOException {
         return agent.getIdentities();
     }
 

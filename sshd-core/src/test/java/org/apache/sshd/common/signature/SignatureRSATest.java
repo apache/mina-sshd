@@ -25,10 +25,10 @@ import java.security.Provider;
 import java.security.PublicKey;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Base64;
+import java.util.Map;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.BeforeClass;
@@ -108,9 +108,9 @@ public class SignatureRSATest extends BaseTestSupport {
         assertTrue("Verifier signature size not initialized", vSize > 0);
 
         // make sure padding is required
-        Pair<String, byte[]> encoding = rsa.extractEncodedSignature(TEST_SIGNATURE);
+        Map.Entry<String, byte[]> encoding = rsa.extractEncodedSignature(TEST_SIGNATURE);
         assertNotNull("Signature is not encoded", encoding);
-        byte[] data = encoding.getSecond();
+        byte[] data = encoding.getValue();
         assertTrue("Signature data size (" + data.length + ") not below verifier size (" + vSize + ")", data.length < vSize);
 
         rsa.update(TEST_MSG);

@@ -21,9 +21,9 @@ package org.apache.sshd.common.signature;
 import java.math.BigInteger;
 import java.security.PublicKey;
 import java.security.interfaces.RSAKey;
+import java.util.Map;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -68,11 +68,11 @@ public class SignatureRSA extends AbstractSignature {
     @Override
     public boolean verify(byte[] sig) throws Exception {
         byte[] data = sig;
-        Pair<String, byte[]> encoding = extractEncodedSignature(data);
+        Map.Entry<String, byte[]> encoding = extractEncodedSignature(data);
         if (encoding != null) {
-            String keyType = encoding.getFirst();
+            String keyType = encoding.getKey();
             ValidateUtils.checkTrue(KeyPairProvider.SSH_RSA.equals(keyType), "Mismatched key type: %s", keyType);
-            data = encoding.getSecond();
+            data = encoding.getValue();
         }
 
         int expectedSize = getVerifierSignatureSize();

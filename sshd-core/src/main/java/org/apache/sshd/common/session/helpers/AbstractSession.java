@@ -23,6 +23,7 @@ import java.io.InterruptedIOException;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -85,7 +86,6 @@ import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Invoker;
 import org.apache.sshd.common.util.NumberUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -633,11 +633,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
          *      the next packet MUST be silently ignored
          */
         for (KexProposalOption option : new KexProposalOption[]{KexProposalOption.ALGORITHMS, KexProposalOption.SERVERKEYS}) {
-            Pair<String, String> result = comparePreferredKexProposalOption(option);
+            Map.Entry<String, String> result = comparePreferredKexProposalOption(option);
             if (result != null) {
                 if (log.isDebugEnabled()) {
                     log.debug("handleFirstKexPacketFollows({})[{}] 1st follow KEX packet {} option mismatch: client={}, server={}",
-                              this, SshConstants.getCommandMessageName(cmd), option, result.getFirst(), result.getSecond());
+                              this, SshConstants.getCommandMessageName(cmd), option, result.getKey(), result.getValue());
                 }
                 return false;
             }
@@ -646,12 +646,12 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         return true;
     }
 
-    protected Pair<String, String> comparePreferredKexProposalOption(KexProposalOption option) {
+    protected SimpleImmutableEntry<String, String> comparePreferredKexProposalOption(KexProposalOption option) {
         String[] clientPreferences = GenericUtils.split(clientProposal.get(option), ',');
         String clientValue = clientPreferences[0];
         String[] serverPreferences = GenericUtils.split(serverProposal.get(option), ',');
         String serverValue = serverPreferences[0];
-        return clientValue.equals(serverValue) ? null : new Pair<>(clientValue, serverValue);
+        return clientValue.equals(serverValue) ? null : new SimpleImmutableEntry<>(clientValue, serverValue);
     }
 
     protected void handleKexMessage(int cmd, Buffer buffer) throws Exception {
@@ -871,19 +871,19 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
     }
 
-    protected List<Pair<PendingWriteFuture, IoWriteFuture>> sendPendingPackets(Queue<PendingWriteFuture> packetsQueue) throws IOException {
+    protected List<SimpleImmutableEntry<PendingWriteFuture, IoWriteFuture>> sendPendingPackets(Queue<PendingWriteFuture> packetsQueue) throws IOException {
         if (GenericUtils.isEmpty(packetsQueue)) {
             return Collections.emptyList();
         }
 
         int numPending = packetsQueue.size();
-        List<Pair<PendingWriteFuture, IoWriteFuture>> pendingWrites = new ArrayList<>(numPending);
+        List<SimpleImmutableEntry<PendingWriteFuture, IoWriteFuture>> pendingWrites = new ArrayList<>(numPending);
         synchronized (encodeLock) {
             for (PendingWriteFuture future = pendingPackets.poll();
                     future != null;
                     future = pendingPackets.poll()) {
                 IoWriteFuture writeFuture = doWritePacket(future.getBuffer());
-                pendingWrites.add(new Pair<>(future, writeFuture));
+                pendingWrites.add(new SimpleImmutableEntry<>(future, writeFuture));
             }
         }
 
@@ -2648,12 +2648,12 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
 
         long now = System.currentTimeMillis();
-        Pair<TimeoutStatus, String> result = checkAuthenticationTimeout(now, getAuthTimeout());
+        Map.Entry<TimeoutStatus, String> result = checkAuthenticationTimeout(now, getAuthTimeout());
         if (result == null) {
             result = checkIdleTimeout(now, getIdleTimeout());
         }
 
-        TimeoutStatus status = (result == null) ? TimeoutStatus.NoTimeout : result.getFirst();
+        TimeoutStatus status = (result == null) ? TimeoutStatus.NoTimeout : result.getKey();
         if ((status == null) || TimeoutStatus.NoTimeout.equals(status)) {
             return;
         }
@@ -2663,7 +2663,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
 
         timeoutStatus.set(status);
-        disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, result.getSecond());
+        disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, result.getValue());
     }
 
     /**
@@ -2672,15 +2672,15 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @param now           The current time in millis
      * @param authTimeoutMs The configured timeout in millis - if non-positive
      *                      then no timeout
-     * @return A {@link Pair} specifying the timeout status and disconnect reason
+     * @return A {@link SimpleImmutableEntry} specifying the timeout status and disconnect reason
      * message if timeout expired, {@code null} or {@code NoTimeout} if no timeout
      * occurred
      * @see #getAuthTimeout()
      */
-    protected Pair<TimeoutStatus, String> checkAuthenticationTimeout(long now, long authTimeoutMs) {
+    protected SimpleImmutableEntry<TimeoutStatus, String> checkAuthenticationTimeout(long now, long authTimeoutMs) {
         long authDiff = now - authTimeoutStart;
         if ((!authed) && (authTimeoutMs > 0L) && (authDiff > authTimeoutMs)) {
-            return new Pair<>(TimeoutStatus.AuthTimeout, "Session has timed out waiting for authentication after " + authTimeoutMs + " ms.");
+            return new SimpleImmutableEntry<>(TimeoutStatus.AuthTimeout, "Session has timed out waiting for authentication after " + authTimeoutMs + " ms.");
         } else {
             return null;
         }
@@ -2692,15 +2692,15 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @param now           The current time in millis
      * @param idleTimeoutMs The configured timeout in millis - if non-positive
      *                      then no timeout
-     * @return A {@link Pair} specifying the timeout status and disconnect reason
+     * @return A {@link SimpleImmutableEntry} specifying the timeout status and disconnect reason
      * message if timeout expired, {@code null} or {@code NoTimeout} if no timeout
      * occurred
      * @see #getIdleTimeout()
      */
-    protected Pair<TimeoutStatus, String> checkIdleTimeout(long now, long idleTimeoutMs) {
+    protected SimpleImmutableEntry<TimeoutStatus, String> checkIdleTimeout(long now, long idleTimeoutMs) {
         long idleDiff = now - idleTimeoutStart;
         if ((idleTimeoutMs > 0L) && (idleDiff > idleTimeoutMs)) {
-            return new Pair<>(TimeoutStatus.IdleTimeout, "User session has timed out idling after " + idleTimeoutMs + " ms.");
+            return new SimpleImmutableEntry<>(TimeoutStatus.IdleTimeout, "User session has timed out idling after " + idleTimeoutMs + " ms.");
         } else {
             return null;
         }

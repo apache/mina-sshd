@@ -32,14 +32,15 @@ import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECPoint;
 import java.security.spec.ECPrivateKeySpec;
 import java.security.spec.ECPublicKeySpec;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.der.ASN1Object;
 import org.apache.sshd.common.util.io.der.ASN1Type;
@@ -73,14 +74,14 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
     public Collection<KeyPair> extractKeyPairs(
             String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, InputStream stream)
                     throws IOException, GeneralSecurityException {
-        Pair<ECPublicKeySpec, ECPrivateKeySpec> spec = decodeECPrivateKeySpec(stream, false);
+        Map.Entry<ECPublicKeySpec, ECPrivateKeySpec> spec = decodeECPrivateKeySpec(stream, false);
         if (!SecurityUtils.isECCSupported()) {
             throw new NoSuchProviderException("ECC not supported");
         }
 
         KeyFactory kf = SecurityUtils.getKeyFactory(KeyUtils.EC_ALGORITHM);
-        ECPublicKey pubKey = (ECPublicKey) kf.generatePublic(spec.getFirst());
-        ECPrivateKey prvKey = (ECPrivateKey) kf.generatePrivate(spec.getSecond());
+        ECPublicKey pubKey = (ECPublicKey) kf.generatePublic(spec.getKey());
+        ECPrivateKey prvKey = (ECPrivateKey) kf.generatePrivate(spec.getValue());
         KeyPair kp = new KeyPair(pubKey, prvKey);
         return Collections.singletonList(kp);
     }
@@ -105,10 +106,10 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
      * </CODE></PRE>
      * @param inputStream The {@link InputStream} containing the DER encoded data
      * @param okToClose {@code true} if OK to close the DER stream once parsing complete
-     * @return The decoded {@link Pair} of {@link ECPublicKeySpec} and {@link ECPrivateKeySpec}
+     * @return The decoded {@link SimpleImmutableEntry} of {@link ECPublicKeySpec} and {@link ECPrivateKeySpec}
      * @throws IOException If failed to to decode the DER stream
      */
-    public static Pair<ECPublicKeySpec, ECPrivateKeySpec> decodeECPrivateKeySpec(InputStream inputStream, boolean okToClose) throws IOException {
+    public static SimpleImmutableEntry<ECPublicKeySpec, ECPrivateKeySpec> decodeECPrivateKeySpec(InputStream inputStream, boolean okToClose) throws IOException {
         ASN1Object sequence;
         try (DERParser parser = new DERParser(NoCloseInputStream.resolveInputStream(inputStream, okToClose))) {
             sequence = parser.readObject();
@@ -128,7 +129,7 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
 
             ECPoint w = decodeECPublicKeyValue(curve, parser);
             ECPublicKeySpec pubSpec = new ECPublicKeySpec(w, prvSpec.getParams());
-            return new Pair<>(pubSpec, prvSpec);
+            return new SimpleImmutableEntry<>(pubSpec, prvSpec);
         }
     }
 

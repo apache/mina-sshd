@@ -21,12 +21,13 @@ package org.apache.sshd.client.auth.hostbased;
 
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Pair;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -34,11 +35,11 @@ import org.apache.sshd.common.util.Pair;
 @FunctionalInterface
 public interface HostKeyIdentityProvider {
     /**
-     * @return The host keys as a {@link Pair} of key + certificates (which can be {@code null}/empty)
+     * @return The host keys as a {@link Map.Entry} of key + certificates (which can be {@code null}/empty)
      */
-    Iterable<Pair<KeyPair, List<X509Certificate>>> loadHostKeys();
+    Iterable<? extends Map.Entry<KeyPair, List<X509Certificate>>> loadHostKeys();
 
-    static Iterator<Pair<KeyPair, List<X509Certificate>>> iteratorOf(HostKeyIdentityProvider provider) {
+    static Iterator<? extends Map.Entry<KeyPair, List<X509Certificate>>> iteratorOf(HostKeyIdentityProvider provider) {
         return GenericUtils.iteratorOf((provider == null) ? null : provider.loadHostKeys());
     }
 
@@ -47,6 +48,6 @@ public interface HostKeyIdentityProvider {
     }
 
     static HostKeyIdentityProvider wrap(Iterable<? extends KeyPair> pairs) {
-        return () -> GenericUtils.wrapIterable(pairs, kp -> new Pair<>(kp, Collections.<X509Certificate>emptyList()));
+        return () -> GenericUtils.wrapIterable(pairs, kp -> new SimpleImmutableEntry<>(kp, Collections.<X509Certificate>emptyList()));
     }
 }

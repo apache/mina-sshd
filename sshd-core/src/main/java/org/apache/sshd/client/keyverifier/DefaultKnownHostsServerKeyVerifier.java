@@ -26,10 +26,10 @@ import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.apache.sshd.client.config.hosts.KnownHostEntry;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.io.IoUtils;
 
 /**
@@ -76,9 +76,9 @@ public class DefaultKnownHostsServerKeyVerifier extends KnownHostsServerKeyVerif
                 log.debug("reloadKnownHosts({}) check permissions", file);
             }
 
-            Pair<String, Object> violation = validateStrictConfigFilePermissions(file);
+            Map.Entry<String, ?> violation = validateStrictConfigFilePermissions(file);
             if (violation != null) {
-                log.warn("reloadKnownHosts({}) invalid file permissions: {}", file, violation.getFirst());
+                log.warn("reloadKnownHosts({}) invalid file permissions: {}", file, violation.getKey());
                 updateReloadAttributes();
                 return Collections.emptyList();
             }

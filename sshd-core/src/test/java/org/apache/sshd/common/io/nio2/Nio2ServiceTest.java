@@ -23,6 +23,7 @@ import java.io.Flushable;
 import java.net.Socket;
 import java.net.SocketOption;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,7 +37,6 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.session.ServerSessionImpl;
 import org.apache.sshd.server.session.SessionFactory;
@@ -76,7 +76,7 @@ public class Nio2ServiceTest extends BaseTestSupport {
             }
 
             Semaphore sigSem = new Semaphore(0, true);
-            Map<SocketOption<?>, Pair<Object, Object>> actualOptionValues = new HashMap<>(expectedOptions.size());
+            Map<SocketOption<?>, Map.Entry<?, ?>> actualOptionValues = new HashMap<>(expectedOptions.size());
             sshd.setSessionFactory(new SessionFactory(sshd) {
                 @Override
                 protected ServerSessionImpl doCreateSession(IoSession ioSession) throws Exception {
@@ -99,14 +99,14 @@ public class Nio2ServiceTest extends BaseTestSupport {
                     for (Map.Entry<String, ?> oe : expectedOptions.entrySet()) {
                         String propName = oe.getKey();
                         Object expValue = oe.getValue();
-                        Pair<SocketOption<?>, ?> optionEntry = Nio2Service.CONFIGURABLE_OPTIONS.get(propName);
+                        Map.Entry<SocketOption<?>, ?> optionEntry = Nio2Service.CONFIGURABLE_OPTIONS.get(propName);
                         SocketOption<?> option = optionEntry.getKey();
                         if (!supported.contains(option)) {
                             continue;
                         }
 
                         Object actValue = socket.getOption(option);
-                        actualOptionValues.put(option, new Pair<>(expValue, actValue));
+                        actualOptionValues.put(option, new SimpleImmutableEntry<>(expValue, actValue));
                     }
                 }
             });
@@ -123,9 +123,9 @@ public class Nio2ServiceTest extends BaseTestSupport {
             }
 
             // NOTE: we do not fail the test since some O/S implementations treat the value as a recommendation - i.e., they might ignore it
-            for (Map.Entry<SocketOption<?>, Pair<Object, Object>> mme : actualOptionValues.entrySet()) {
+            for (Map.Entry<SocketOption<?>, ? extends Map.Entry<?, ?>> mme : actualOptionValues.entrySet()) {
                 SocketOption<?> option = mme.getKey();
-                Pair<?, ?> vp = mme.getValue();
+                Map.Entry<?, ?> vp = mme.getValue();
                 Object expValue = vp.getKey();
                 Object actValue = vp.getValue();
                 Appendable output = Objects.equals(expValue, actValue) ? System.out : System.err;

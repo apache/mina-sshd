@@ -56,8 +56,9 @@ public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKey
         if (factory != null) {
             try {
                 agent = Objects.requireNonNull(factory.createClient(manager), "No agent created");
-                identities.add(agent.getIdentities().stream()
-                        .map(kp -> new KeyAgentIdentity(agent, kp.getFirst(), kp.getSecond())));
+                identities.add(agent.getIdentities()
+                    .stream()
+                    .map(kp -> new KeyAgentIdentity(agent, kp.getKey(), kp.getValue())));
             } catch (Exception e) {
                 try {
                     closeAgent();
@@ -70,9 +71,9 @@ public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKey
         }
 
         identities.add(Stream.of(KeyIdentityProvider.providerOf(session))
-                .map(KeyIdentityProvider::loadKeys)
-                .flatMap(GenericUtils::stream)
-                .map(kp -> new KeyPairIdentity(signatureFactories, session, kp)));
+            .map(KeyIdentityProvider::loadKeys)
+            .flatMap(GenericUtils::stream)
+            .map(kp -> new KeyPairIdentity(signatureFactories, session, kp)));
 
         current = identities.stream().flatMap(r -> r).iterator();
     }

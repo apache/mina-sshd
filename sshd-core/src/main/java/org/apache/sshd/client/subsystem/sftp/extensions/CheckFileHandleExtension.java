@@ -21,9 +21,9 @@ package org.apache.sshd.client.subsystem.sftp.extensions;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Map;
 
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Handle;
-import org.apache.sshd.common.util.Pair;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -37,10 +37,10 @@ public interface CheckFileHandleExtension extends SftpClientExtension {
      * @param length      Length of data to hash - if zero then till EOF
      * @param blockSize   Input block size to calculate individual hashes - if
      *                    zero the <U>one</U> hash of <U>all</U> the data
-     * @return A {@link Pair} where left=hash algorithm name, right=the calculated
-     * hashes.
+     * @return An <U>immutable</U> {@link Map.Entry} where key=hash algorithm name,
+     * value=the calculated hashes.
      * @throws IOException If failed to execute the command
      */
-    Pair<String, Collection<byte[]>> checkFileHandle(Handle handle, Collection<String> algorithms, long startOffset, long length, int blockSize) throws IOException;
+    Map.Entry<String, Collection<byte[]>> checkFileHandle(Handle handle, Collection<String> algorithms, long startOffset, long length, int blockSize) throws IOException;
 
 }

@@ -20,8 +20,10 @@
 package org.apache.sshd.common.session;
 
 import java.nio.charset.StandardCharsets;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -29,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.session.helpers.ReservedSessionMessagesHandlerAdapter;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.SshServer;
@@ -165,12 +166,12 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
         StringBuilder sb = new StringBuilder(Byte.MAX_VALUE)
                 .append(getClass().getName()).append('#').append(getCurrentTestName()).append("-debug-");
         int sbLen = sb.length();
-        List<Pair<String, Boolean>> expected = new ArrayList<>();
+        List<Map.Entry<String, Boolean>> expected = new ArrayList<>();
         for (int index = 1; index <= Byte.SIZE; index++) {
             sb.setLength(sbLen);
             sb.append(index);
 
-            Pair<String, Boolean> entry = new Pair<>(sb.toString(), (index & 0x01) == 0);
+            Map.Entry<String, Boolean> entry = new SimpleImmutableEntry<>(sb.toString(), (index & 0x01) == 0);
             expected.add(entry);
             session.sendDebugMessage(entry.getValue(), entry.getKey(), null);
         }
@@ -178,12 +179,12 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
         assertTrue("Failed to accumulate debug messages on time",
                 handler.waitForDebugCount(expected.size(), TimeUnit.SECONDS, expected.size() * 2));
 
-        List<Pair<String, Boolean>> actual = handler.getDebugMessages();
+        List<? extends Map.Entry<String, Boolean>> actual = handler.getDebugMessages();
         assertEquals("Mismatched size of debug messages", expected.size(), actual.size());
 
         for (int index = 0; index < actual.size(); index++) {
-            Pair<String, Boolean> expEntry = expected.get(index);
-            Pair<String, Boolean> actEntry = actual.get(index);
+            Map.Entry<String, Boolean> expEntry = expected.get(index);
+            Map.Entry<String, Boolean> actEntry = actual.get(index);
             assertEquals("Mismatched debug entry at index " + index, expEntry, actEntry);
         }
     }
@@ -192,7 +193,7 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
         private final Semaphore ignoredSignal = new Semaphore(0);
         private final List<byte[]> ignoredMessages = new ArrayList<>();
         private final Semaphore debugSignal = new Semaphore(0);
-        private final List<Pair<String, Boolean>> debugMessages = new ArrayList<>();
+        private final List<SimpleImmutableEntry<String, Boolean>> debugMessages = new ArrayList<>();
 
         public AccumulatingHandler() {
             super();
@@ -213,7 +214,7 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
             ignoredSignal.release();
         }
 
-        public List<Pair<String, Boolean>> getDebugMessages() {
+        public List<SimpleImmutableEntry<String, Boolean>> getDebugMessages() {
             return debugMessages;
         }
 
@@ -223,7 +224,7 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
 
         @Override
         public void handleDebugMessage(Session session, boolean display, String msg, String lang, Buffer buffer) throws Exception {
-            debugMessages.add(new Pair<>(msg, display));
+            debugMessages.add(new SimpleImmutableEntry<>(msg, display));
             super.handleDebugMessage(session, display, msg, lang, buffer);
             debugSignal.release();
         }

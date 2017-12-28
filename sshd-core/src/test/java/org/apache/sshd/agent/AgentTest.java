@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.agent.local.LocalAgentFactory;
@@ -36,7 +37,6 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
@@ -82,7 +82,7 @@ public class AgentTest extends BaseTestSupport {
             String authSocket = agent.start();
 
             try (SshAgent client = new AgentClient(authSocket)) {
-                List<Pair<PublicKey, String>> keys = client.getIdentities();
+                List<? extends Map.Entry<PublicKey, String>> keys = client.getIdentities();
                 assertNotNull("No initial identities", keys);
                 assertEquals("Unexpected initial identities size", 0, keys.size());
 

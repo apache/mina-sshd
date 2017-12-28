@@ -20,6 +20,7 @@
 package org.apache.sshd.client.subsystem.sftp.extensions.helpers;
 
 import java.io.IOException;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
 
 import org.apache.sshd.client.subsystem.sftp.RawSftpClient;
@@ -27,7 +28,6 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Handle;
 import org.apache.sshd.client.subsystem.sftp.extensions.CheckFileHandleExtension;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
-import org.apache.sshd.common.util.Pair;
 
 /**
  * Implements &quot;check-file-handle&quot; extension
@@ -41,7 +41,9 @@ public class CheckFileHandleExtensionImpl extends AbstractCheckFileExtension imp
     }
 
     @Override
-    public Pair<String, Collection<byte[]>> checkFileHandle(Handle handle, Collection<String> algorithms, long startOffset, long length, int blockSize) throws IOException {
+    public SimpleImmutableEntry<String, Collection<byte[]>> checkFileHandle(
+            Handle handle, Collection<String> algorithms, long startOffset, long length, int blockSize)
+                throws IOException {
         return doGetHash(handle.getIdentifier(), algorithms, startOffset, length, blockSize);
     }
 }

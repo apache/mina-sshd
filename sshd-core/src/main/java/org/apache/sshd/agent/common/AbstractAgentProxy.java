@@ -21,9 +21,11 @@ package org.apache.sshd.agent.common;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.agent.SshAgent;
@@ -32,7 +34,6 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -81,7 +82,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
     }
 
     @Override
-    public List<Pair<PublicKey, String>> getIdentities() throws IOException {
+    public List<? extends Map.Entry<PublicKey, String>> getIdentities() throws IOException {
         int cmd = SshAgentConstants.SSH2_AGENTC_REQUEST_IDENTITIES;
         int okcmd = SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSWER;
         if (FactoryManager.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {
@@ -101,7 +102,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
             throw new SshException("Bad identities count: " + nbIdentities);
         }
 
-        List<Pair<PublicKey, String>> keys = new ArrayList<>(nbIdentities);
+        List<SimpleImmutableEntry<PublicKey, String>> keys = new ArrayList<>(nbIdentities);
         for (int i = 0; i < nbIdentities; i++) {
             PublicKey key = buffer.getPublicKey();
             String comment = buffer.getString();
@@ -109,7 +110,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
                 log.debug("getIdentities() key type={}, comment={}, fingerprint={}",
                           KeyUtils.getKeyType(key), comment, KeyUtils.getFingerPrint(key));
             }
-            keys.add(new Pair<>(key, comment));
+            keys.add(new SimpleImmutableEntry<>(key, comment));
         }
 
         return keys;

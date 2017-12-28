@@ -18,9 +18,10 @@
  */
 package org.apache.sshd.util.test;
 
+import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.sshd.common.util.Pair;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.TestClass;
@@ -30,7 +31,7 @@ import org.junit.runners.model.TestClass;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class JUnit4SingleInstanceClassRunner extends BlockJUnit4ClassRunner {
-    private final AtomicReference<Pair<Class<?>, Object>> testHolder = new AtomicReference<>();
+    private final AtomicReference<Map.Entry<Class<?>, ?>> testHolder = new AtomicReference<>();
 
     public JUnit4SingleInstanceClassRunner(Class<?> klass) throws InitializationError {
         super(klass);
@@ -38,7 +39,7 @@ public class JUnit4SingleInstanceClassRunner extends BlockJUnit4ClassRunner {
 
     @Override
     protected Object createTest() throws Exception {
-        Pair<Class<?>, Object> lastTest = testHolder.get();
+        Map.Entry<Class<?>, ?> lastTest = testHolder.get();
         Class<?> lastTestClass = (lastTest == null) ? null : lastTest.getKey();
         TestClass curTest = getTestClass();
         Class<?> curTestClass = curTest.getJavaClass();
@@ -47,7 +48,7 @@ public class JUnit4SingleInstanceClassRunner extends BlockJUnit4ClassRunner {
         }
 
         Object instance = super.createTest();
-        testHolder.set(new Pair<>(curTestClass, instance));
+        testHolder.set(new SimpleImmutableEntry<>(curTestClass, instance));
         return instance;
     }
 }

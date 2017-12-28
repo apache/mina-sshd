@@ -22,8 +22,7 @@ import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.List;
-
-import org.apache.sshd.common.util.Pair;
+import java.util.Map;
 
 /**
  * SSH key agent server
@@ -32,7 +31,7 @@ public interface SshAgent extends java.nio.channels.Channel {
 
     String SSH_AUTHSOCKET_ENV_NAME = "SSH_AUTH_SOCK";
 
-    List<Pair<PublicKey, String>> getIdentities() throws IOException;
+    List<? extends Map.Entry<PublicKey, String>> getIdentities() throws IOException;
 
     byte[] sign(PublicKey key, byte[] data) throws IOException;
 

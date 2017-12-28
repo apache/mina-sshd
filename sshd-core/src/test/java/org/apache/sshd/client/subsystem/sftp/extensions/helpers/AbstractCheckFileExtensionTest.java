@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.session.ClientSession;
@@ -46,7 +47,6 @@ import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
@@ -184,8 +184,8 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
             try (SftpClient sftp = session.createSftpClient()) {
                 CheckFileNameExtension file = assertExtensionCreated(sftp, CheckFileNameExtension.class);
                 try {
-                    Pair<String, ?> result = file.checkFileName(srcFolder, algorithms, 0L, 0L, hashBlockSize);
-                    fail("Unexpected success to hash folder=" + srcFolder + ": " + result.getFirst());
+                    Map.Entry<String, ?> result = file.checkFileName(srcFolder, algorithms, 0L, 0L, hashBlockSize);
+                    fail("Unexpected success to hash folder=" + srcFolder + ": " + result.getKey());
                 } catch (IOException e) {    // expected - not allowed to hash a folder
                     assertTrue("Not an SftpException", e instanceof SftpException);
                 }
@@ -193,8 +193,8 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
                 CheckFileHandleExtension hndl = assertExtensionCreated(sftp, CheckFileHandleExtension.class);
                 try (CloseableHandle dirHandle = sftp.openDir(srcFolder)) {
                     try {
-                        Pair<String, ?> result = hndl.checkFileHandle(dirHandle, algorithms, 0L, 0L, hashBlockSize);
-                        fail("Unexpected handle success on folder=" + srcFolder + ": " + result.getFirst());
+                        Map.Entry<String, ?> result = hndl.checkFileHandle(dirHandle, algorithms, 0L, 0L, hashBlockSize);
+                        fail("Unexpected handle success on folder=" + srcFolder + ": " + result.getKey());
                     } catch (IOException e) {    // expected - not allowed to hash a folder
                         assertTrue("Not an SftpException", e instanceof SftpException);
                     }
@@ -208,13 +208,13 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
         }
     }
 
-    private void validateHashResult(NamedResource hasher, Pair<String, Collection<byte[]>> result, String expectedAlgorithm, byte[] expectedHash) {
+    private void validateHashResult(NamedResource hasher, Map.Entry<String, ? extends Collection<byte[]>> result, String expectedAlgorithm, byte[] expectedHash) {
         String name = hasher.getName();
         assertNotNull("No result for hash=" + name, result);
-        assertEquals("Mismatched hash algorithms for " + name, expectedAlgorithm, result.getFirst());
+        assertEquals("Mismatched hash algorithms for " + name, expectedAlgorithm, result.getKey());
 
         if (NumberUtils.length(expectedHash) > 0) {
-            Collection<byte[]> values = result.getSecond();
+            Collection<byte[]> values = result.getValue();
             assertEquals("Mismatched hash values count for " + name, 1, GenericUtils.size(values));
 
             byte[] actualHash = values.iterator().next();

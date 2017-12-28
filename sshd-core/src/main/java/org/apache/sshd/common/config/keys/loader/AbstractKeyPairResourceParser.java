@@ -30,11 +30,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -88,7 +88,7 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
         Collection<KeyPair> keyPairs = Collections.emptyList();
         List<String> beginMarkers = getBeginners();
         List<List<String>> endMarkers = getEndingMarkers();
-        for (Pair<Integer, Integer> markerPos = KeyPairResourceParser.findMarkerLine(lines, beginMarkers); markerPos != null;) {
+        for (Map.Entry<Integer, Integer> markerPos = KeyPairResourceParser.findMarkerLine(lines, beginMarkers); markerPos != null;) {
             int startIndex = markerPos.getKey();
             String startLine = lines.get(startIndex);
             startIndex++;

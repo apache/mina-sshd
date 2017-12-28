@@ -25,9 +25,11 @@ import java.security.interfaces.DSAPublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -37,7 +39,6 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
@@ -46,7 +47,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  */
 public class AgentImpl implements SshAgent {
 
-    private final List<Pair<KeyPair, String>> keys = new ArrayList<>();
+    private final List<Map.Entry<KeyPair, String>> keys = new ArrayList<>();
     private final AtomicBoolean open = new AtomicBoolean(true);
 
     public AgentImpl() {
@@ -59,12 +60,12 @@ public class AgentImpl implements SshAgent {
     }
 
     @Override
-    public List<Pair<PublicKey, String>> getIdentities() throws IOException {
+    public List<? extends Map.Entry<PublicKey, String>> getIdentities() throws IOException {
         if (!isOpen()) {
             throw new SshException("Agent closed");
         }
 
-        return GenericUtils.map(keys, kp -> new Pair<>(kp.getFirst().getPublic(), kp.getSecond()));
+        return GenericUtils.map(keys, kp -> new SimpleImmutableEntry<>(kp.getKey().getPublic(), kp.getValue()));
     }
 
     @Override
@@ -74,9 +75,9 @@ public class AgentImpl implements SshAgent {
         }
 
         try {
-            Pair<KeyPair, String> pp = Objects.requireNonNull(getKeyPair(keys, key), "Key not found");
-            KeyPair kp = ValidateUtils.checkNotNull(pp.getFirst(), "No key pair for agent=%s", pp.getSecond());
-            PublicKey pubKey = ValidateUtils.checkNotNull(kp.getPublic(), "No public key for agent=%s", pp.getSecond());
+            Map.Entry<KeyPair, String> pp = Objects.requireNonNull(getKeyPair(keys, key), "Key not found");
+            KeyPair kp = ValidateUtils.checkNotNull(pp.getKey(), "No key pair for agent=%s", pp.getValue());
+            PublicKey pubKey = ValidateUtils.checkNotNull(kp.getPublic(), "No public key for agent=%s", pp.getValue());
 
             final Signature verif;
             if (pubKey instanceof DSAPublicKey) {
@@ -106,7 +107,7 @@ public class AgentImpl implements SshAgent {
         if (!isOpen()) {
             throw new SshException("Agent closed");
         }
-        keys.add(new Pair<>(Objects.requireNonNull(key, "No key"), comment));
+        keys.add(new SimpleImmutableEntry<>(Objects.requireNonNull(key, "No key"), comment));
     }
 
     @Override
@@ -115,7 +116,7 @@ public class AgentImpl implements SshAgent {
             throw new SshException("Agent closed");
         }
 
-        Pair<KeyPair, String> kp = getKeyPair(keys, key);
+        Map.Entry<KeyPair, String> kp = getKeyPair(keys, key);
         if (kp == null) {
             throw new SshException("Key not found");
         }
@@ -137,13 +138,13 @@ public class AgentImpl implements SshAgent {
         }
     }
 
-    protected static Pair<KeyPair, String> getKeyPair(Collection<Pair<KeyPair, String>> keys, PublicKey key) {
+    protected static Map.Entry<KeyPair, String> getKeyPair(Collection<? extends Map.Entry<KeyPair, String>> keys, PublicKey key) {
         if (GenericUtils.isEmpty(keys) || (key == null)) {
             return null;
         }
 
-        for (Pair<KeyPair, String> k : keys) {
-            KeyPair kp = k.getFirst();
+        for (Map.Entry<KeyPair, String> k : keys) {
+            KeyPair kp = k.getKey();
             if (KeyUtils.compareKeys(key, kp.getPublic())) {
                 return k;
             }

@@ -22,6 +22,7 @@ package org.apache.sshd.common.config.keys.loader;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -31,7 +32,6 @@ import java.util.List;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -106,11 +106,11 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
      *
      * @param lines The list of lines to scan - ignored if {@code null}/empty
      * @param markers The markers to match - ignored if {@code null}/empty
-     * @return A {@link Pair} whose key is the <U>first</U> line index
+     * @return A {@link SimpleImmutableEntry} whose key is the <U>first</U> line index
      * that matched and value the matched marker index - {@code null} if no match found
      * @see #findMarkerLine(List, int, List)
      */
-    static Pair<Integer, Integer> findMarkerLine(List<String> lines, List<String> markers) {
+    static SimpleImmutableEntry<Integer, Integer> findMarkerLine(List<String> lines, List<String> markers) {
         return findMarkerLine(lines, 0, markers);
     }
 
@@ -120,10 +120,10 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
      * @param lines The list of lines to scan - ignored if {@code null}/empty
      * @param startLine The scan start line index
      * @param markers The markers to match - ignored if {@code null}/empty
-     * @return A {@link Pair} whose key is the <U>first</U> line index
+     * @return A {@link SimpleImmutableEntry} whose key is the <U>first</U> line index
      * that matched and value the matched marker index - {@code null} if no match found
      */
-    static Pair<Integer, Integer> findMarkerLine(List<String> lines, int startLine, List<String> markers) {
+    static SimpleImmutableEntry<Integer, Integer> findMarkerLine(List<String> lines, int startLine, List<String> markers) {
         if (GenericUtils.isEmpty(lines) || GenericUtils.isEmpty(markers)) {
             return null;
         }
@@ -133,7 +133,7 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
             for (int markerIndex = 0; markerIndex < markers.size(); markerIndex++) {
                 String m = markers.get(markerIndex);
                 if (l.contains(m)) {
-                    return new Pair<>(lineIndex, markerIndex);
+                    return new SimpleImmutableEntry<>(lineIndex, markerIndex);
                 }
             }
         }

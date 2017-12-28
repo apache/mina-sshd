@@ -25,6 +25,7 @@ import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.sshd.client.auth.AbstractUserAuth;
 import org.apache.sshd.client.session.ClientSession;
@@ -35,7 +36,6 @@ import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -48,7 +48,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
 public class UserAuthHostBased extends AbstractUserAuth implements SignatureFactoriesManager {
     public static final String NAME = UserAuthHostBasedFactory.NAME;
 
-    private Iterator<Pair<KeyPair, List<X509Certificate>>> keys;
+    private Iterator<? extends Map.Entry<KeyPair, ? extends Collection<X509Certificate>>> keys;
     private final HostKeyIdentityProvider clientHostKeys;
     private List<NamedFactory<Signature>> factories;
     private String clientUsername;
@@ -102,8 +102,8 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
             return false;
         }
 
-        Pair<KeyPair, List<X509Certificate>> keyInfo = keys.next();
-        KeyPair kp = keyInfo.getFirst();
+        Map.Entry<KeyPair, ? extends Collection<X509Certificate>> keyInfo = keys.next();
+        KeyPair kp = keyInfo.getKey();
         PublicKey pub = kp.getPublic();
         String keyType = KeyUtils.getKeyType(pub);
         if (log.isTraceEnabled()) {
@@ -137,7 +137,7 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
 
         buffer.putRawPublicKey(pub);
 
-        List<X509Certificate> certs = keyInfo.getSecond();
+        Collection<X509Certificate> certs = keyInfo.getValue();
         if (GenericUtils.size(certs) > 0) {
             for (X509Certificate c : certs) {
                 // TODO make sure this yields DER encoding

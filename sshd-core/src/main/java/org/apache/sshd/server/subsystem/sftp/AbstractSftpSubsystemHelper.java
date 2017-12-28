@@ -51,6 +51,7 @@ import java.nio.file.attribute.UserPrincipal;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.security.Principal;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -91,7 +92,6 @@ import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.OsUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -1180,7 +1180,7 @@ public abstract class AbstractSftpSubsystemHelper
         }
 
         Map<String, ?> attrs = Collections.emptyMap();
-        Pair<Path, Boolean> result;
+        Map.Entry<Path, Boolean> result;
         try {
             int version = getVersion();
             if (version < SftpConstants.SFTP_V6) {
@@ -1222,9 +1222,9 @@ public abstract class AbstractSftpSubsystemHelper
                     getPathResolutionLinkOption(SftpConstants.SSH_FXP_REALPATH, "", p);
                 result = doRealPathV6(id, path, extraPaths, p, options);
 
-                p = result.getFirst();
+                p = result.getKey();
                 options = getPathResolutionLinkOption(SftpConstants.SSH_FXP_REALPATH, "", p);
-                Boolean status = result.getSecond();
+                Boolean status = result.getValue();
                 switch (control) {
                     case SftpConstants.SSH_FXP_REALPATH_STAT_IF:
                         if (status == null) {
@@ -1268,10 +1268,10 @@ public abstract class AbstractSftpSubsystemHelper
             return;
         }
 
-        sendPath(BufferUtils.clear(buffer), id, result.getFirst(), attrs);
+        sendPath(BufferUtils.clear(buffer), id, result.getKey(), attrs);
     }
 
-    protected Pair<Path, Boolean> doRealPathV6(
+    protected SimpleImmutableEntry<Path, Boolean> doRealPathV6(
             int id, String path, Collection<String> extraPaths, Path p, LinkOption... options) throws IOException {
         int numExtra = GenericUtils.size(extraPaths);
         if (numExtra > 0) {
@@ -1294,7 +1294,7 @@ public abstract class AbstractSftpSubsystemHelper
         return validateRealPath(id, path, p, options);
     }
 
-    protected Pair<Path, Boolean> doRealPathV345(int id, String path, Path p, LinkOption... options) throws IOException {
+    protected SimpleImmutableEntry<Path, Boolean> doRealPathV345(int id, String path, Path p, LinkOption... options) throws IOException {
         return validateRealPath(id, path, p, options);
     }
 
@@ -1303,15 +1303,15 @@ public abstract class AbstractSftpSubsystemHelper
      * @param path    The original path
      * @param f       The resolve {@link Path}
      * @param options The {@link LinkOption}s to use to verify file existence and access
-     * @return A {@link Pair} whose left-hand is the <U>absolute <B>normalized</B></U>
-     * {@link Path} and right-hand is a {@link Boolean} indicating its status
+     * @return A {@link SimpleImmutableEntry} whose key is the <U>absolute <B>normalized</B></U>
+     * {@link Path} and value is a {@link Boolean} indicating its status
      * @throws IOException If failed to validate the file
      * @see IoUtils#checkFileExists(Path, LinkOption...)
      */
-    protected Pair<Path, Boolean> validateRealPath(int id, String path, Path f, LinkOption... options) throws IOException {
+    protected SimpleImmutableEntry<Path, Boolean> validateRealPath(int id, String path, Path f, LinkOption... options) throws IOException {
         Path p = normalize(f);
         Boolean status = IoUtils.checkFileExists(p, options);
-        return new Pair<>(p, status);
+        return new SimpleImmutableEntry<>(p, status);
     }
 
     protected void doRemoveDirectory(Buffer buffer, int id) throws IOException {

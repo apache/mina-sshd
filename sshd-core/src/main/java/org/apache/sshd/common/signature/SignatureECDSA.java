@@ -20,9 +20,9 @@ package org.apache.sshd.common.signature;
 
 import java.io.StreamCorruptedException;
 import java.math.BigInteger;
+import java.util.Map;
 
 import org.apache.sshd.common.cipher.ECCurves;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -101,12 +101,12 @@ public class SignatureECDSA extends AbstractSignature {
     @Override
     public boolean verify(byte[] sig) throws Exception {
         byte[] data = sig;
-        Pair<String, byte[]> encoding = extractEncodedSignature(data);
+        Map.Entry<String, byte[]> encoding = extractEncodedSignature(data);
         if (encoding != null) {
-            String keyType = encoding.getFirst();
+            String keyType = encoding.getKey();
             ECCurves curve = ECCurves.fromKeyType(keyType);
             ValidateUtils.checkNotNull(curve, "Unknown curve type: %s", keyType);
-            data = encoding.getSecond();
+            data = encoding.getValue();
         }
 
         Buffer rsBuf = new ByteArrayBuffer(data);

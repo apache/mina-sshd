@@ -21,6 +21,7 @@ package org.apache.sshd.client.subsystem.sftp.extensions.helpers;
 
 import java.io.IOException;
 import java.io.StreamCorruptedException;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
 import java.util.LinkedList;
 
@@ -28,7 +29,6 @@ import org.apache.sshd.client.subsystem.sftp.RawSftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 
@@ -40,7 +40,7 @@ public abstract class AbstractCheckFileExtension extends AbstractSftpClientExten
         super(name, client, raw, extras);
     }
 
-    protected Pair<String, Collection<byte[]>> doGetHash(Object target, Collection<String> algorithms, long offset, long length, int blockSize) throws IOException {
+    protected SimpleImmutableEntry<String, Collection<byte[]>> doGetHash(Object target, Collection<String> algorithms, long offset, long length, int blockSize) throws IOException {
         Buffer buffer = getCommandBuffer(target, Byte.MAX_VALUE);
         putTarget(buffer, target);
         buffer.putString(GenericUtils.join(algorithms, ','));
@@ -71,6 +71,6 @@ public abstract class AbstractCheckFileExtension extends AbstractSftpClientExten
             hashes.add(hashValue);
         }
 
-        return new Pair<>(algo, hashes);
+        return new SimpleImmutableEntry<>(algo, hashes);
     }
 }

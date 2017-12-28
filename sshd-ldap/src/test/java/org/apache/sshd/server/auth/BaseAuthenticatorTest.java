@@ -20,9 +20,11 @@
 package org.apache.sshd.server.auth;
 
 import java.io.File;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
 
@@ -51,7 +53,6 @@ import org.apache.directory.shared.ldap.schema.loader.ldif.LdifSchemaLoader;
 import org.apache.directory.shared.ldap.schema.manager.impl.DefaultSchemaManager;
 import org.apache.directory.shared.ldap.schema.registries.SchemaLoader;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.Utils;
@@ -69,8 +70,8 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
         super();
     }
 
-    public static String getHost(Pair<LdapServer, DirectoryService> context) {
-        return getHost((context == null) ? null : context.getFirst());
+    public static String getHost(Map.Entry<LdapServer, DirectoryService> context) {
+        return getHost((context == null) ? null : context.getKey());
     }
 
     public static String getHost(LdapServer ldapServer) {
@@ -81,8 +82,8 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
         return GenericUtils.isEmpty(transports) ? null : transports[0].getAddress();
     }
 
-    public static int getPort(Pair<LdapServer, DirectoryService> context) {
-        return getPort((context == null) ? null : context.getFirst());
+    public static int getPort(Map.Entry<LdapServer, DirectoryService> context) {
+        return getPort((context == null) ? null : context.getKey());
     }
 
     public static int getPort(LdapServer ldapServer) {
@@ -97,7 +98,7 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
     // see https://cwiki.apache.org/confluence/display/DIRxSRVx11/4.1.+Embedding+ApacheDS+into+an+application
     // see http://stackoverflow.com/questions/1560230/running-apache-ds-embedded-in-my-application
     @SuppressWarnings("checkstyle:avoidnestedblocks")
-    public static Pair<LdapServer, DirectoryService> startApacheDs(Class<?> anchor) throws Exception {
+    public static SimpleImmutableEntry<LdapServer, DirectoryService> startApacheDs(Class<?> anchor) throws Exception {
         Logger log = LoggerFactory.getLogger(anchor);
         File targetFolder = Objects.requireNonNull(Utils.detectTargetFolder(anchor), "Failed to detect target folder");
         File workingDirectory = assertHierarchyTargetFolderExists(Utils.deleteRecursive(Utils.resolve(targetFolder, anchor.getSimpleName(), "apacheds-work")));
@@ -172,14 +173,14 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
             throw e;
         }
 
-        return new Pair<>(ldapServer, directoryService);
+        return new SimpleImmutableEntry<>(ldapServer, directoryService);
     }
 
     // see http://users.directory.apache.narkive.com/GkyqAkot/how-to-import-ldif-file-programmatically
-    public static Map<String, String> populateUsers(DirectoryService service, Class<?> anchor, String credentialName) throws Exception {
+    public static NavigableMap<String, String> populateUsers(DirectoryService service, Class<?> anchor, String credentialName) throws Exception {
         Logger log = LoggerFactory.getLogger(anchor);
         CoreSession session = Objects.requireNonNull(service.getAdminSession(), "No core session");
-        Map<String, String> usersMap = new TreeMap<>(Comparator.naturalOrder());
+        NavigableMap<String, String> usersMap = new TreeMap<>(Comparator.naturalOrder());
         try (LdifReader reader = new LdifReader(Objects.requireNonNull(anchor.getResourceAsStream("/auth-users.ldif"), "No users ldif"))) {
             int id = 1;
             for (LdifEntry entry : reader) {
@@ -218,9 +219,9 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
         return usersMap;
     }
 
-    public static void stopApacheDs(Pair<LdapServer, DirectoryService> context) throws Exception {
-        stopApacheDs((context == null) ? null : context.getFirst());
-        stopApacheDs((context == null) ? null : context.getSecond());
+    public static void stopApacheDs(Map.Entry<LdapServer, DirectoryService> context) throws Exception {
+        stopApacheDs((context == null) ? null : context.getKey());
+        stopApacheDs((context == null) ? null : context.getValue());
     }
 
     public static void stopApacheDs(LdapServer ldapServer) throws Exception {

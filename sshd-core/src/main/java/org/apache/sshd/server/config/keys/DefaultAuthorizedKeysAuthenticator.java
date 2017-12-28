@@ -27,13 +27,13 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 
 import org.apache.sshd.common.auth.UsernameHolder;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.OsUtils;
-import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.session.ServerSession;
@@ -113,10 +113,10 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
                 log.debug("reloadAuthorizedKeys({})[{}] check permissions of {}", username, session, path);
             }
 
-            Pair<String, Object> violation = KeyUtils.validateStrictKeyFilePermissions(path);
+            Map.Entry<String, ?> violation = KeyUtils.validateStrictKeyFilePermissions(path);
             if (violation != null) {
                 log.warn("reloadAuthorizedKeys({})[{}] invalid file={} permissions: {}",
-                         username, session, path, violation.getFirst());
+                         username, session, path, violation.getKey());
                 updateReloadAttributes();
                 return Collections.emptyList();
             }

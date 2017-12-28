@@ -21,8 +21,7 @@ package org.apache.sshd.client.subsystem.sftp.extensions;
 
 import java.io.IOException;
 import java.util.Collection;
-
-import org.apache.sshd.common.util.Pair;
+import java.util.Map;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -36,9 +35,9 @@ public interface CheckFileNameExtension extends SftpClientExtension {
      * @param length      Length of data to hash - if zero then till EOF
      * @param blockSize   Input block size to calculate individual hashes - if
      *                    zero the <U>one</U> hash of <U>all</U> the data
-     * @return A {@link Pair} where left=hash algorithm name, right=the calculated
-     * hashes.
+     * @return An <U>immutable</U> {@link Map.Entry} key left=hash algorithm name,
+     * value=the calculated hashes.
      * @throws IOException If failed to execute the command
      */
-    Pair<String, Collection<byte[]>> checkFileName(String name, Collection<String> algorithms, long startOffset, long length, int blockSize) throws IOException;
+    Map.Entry<String, Collection<byte[]>> checkFileName(String name, Collection<String> algorithms, long startOffset, long length, int blockSize) throws IOException;
 }
