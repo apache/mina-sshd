@@ -683,6 +683,9 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
      * Process global requests
      *
      * @param buffer The request {@link Buffer}
+     * @return An {@link IoWriteFuture} representing the sent packet - <B>Note:</B> if
+     * no reply sent then an &quot;empty&quot; future is returned - i.e., any added
+     * listeners are triggered immediately with a synthetic &quot;success&quot;
      * @throws Exception If failed to process the request
      */
     protected IoWriteFuture globalRequest(Buffer buffer) throws Exception {

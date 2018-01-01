@@ -60,7 +60,7 @@ public interface ScpFileOpener {
      *
      * @param localPath The target local path
      * @param name The target file name
-     * @param boolean preserve Whether requested to preserve the permissions and timestamp
+     * @param preserve Whether requested to preserve the permissions and timestamp
      * @param permissions The requested file permissions
      * @param time The requested {@link ScpTimestamp} - may be {@code null} if nothing to update
      * @return The actual target file path for the incoming file/directory

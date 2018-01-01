@@ -77,12 +77,10 @@ public class CipherTest extends BaseTestSupport {
                     new Object[]{BuiltinCiphers.arcfour256, com.jcraft.jsch.jce.ARCFOUR256.class, NUM_LOADTEST_ROUNDS}
             ));
 
-    @SuppressWarnings("synthetic-access")
     private static final List<NamedResource> TEST_CIPHERS =
-            Collections.unmodifiableList(
-                    Stream.concat(PARAMETERS.stream().map(params -> (NamedResource) params[0]),
-                                  Stream.of(BuiltinCiphers.none))
-                          .collect(Collectors.toList()));
+        Collections.unmodifiableList(
+            Stream.concat(PARAMETERS.stream().map(params -> (NamedResource) params[0]), Stream.of(BuiltinCiphers.none))
+                  .collect(Collectors.toList()));
 
     private static final String CRYPT_NAMES = NamedResource.getNames(TEST_CIPHERS);
     private static SshServer sshd;

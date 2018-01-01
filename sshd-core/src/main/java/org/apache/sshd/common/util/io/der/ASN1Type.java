@@ -67,7 +67,7 @@ public enum ASN1Type {
         return typeValue;
     }
 
-    public static final ASN1Type fromName(String s) {
+    public static ASN1Type fromName(String s) {
         if (GenericUtils.isEmpty(s)) {
             return null;
         }

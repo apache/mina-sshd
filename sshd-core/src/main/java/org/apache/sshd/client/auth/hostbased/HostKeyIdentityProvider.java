@@ -35,7 +35,7 @@ import org.apache.sshd.common.util.GenericUtils;
 @FunctionalInterface
 public interface HostKeyIdentityProvider {
     /**
-     * @return The host keys as a {@link Map.Entry} of key + certificates (which can be {@code null}/empty)
+     * @return The host keys as a {@link java.util.Map.Entry} of key + certificates (which can be {@code null}/empty)
      */
     Iterable<? extends Map.Entry<KeyPair, List<X509Certificate>>> loadHostKeys();
 

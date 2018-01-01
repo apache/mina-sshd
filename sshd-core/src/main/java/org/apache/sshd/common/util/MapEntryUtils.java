@@ -24,8 +24,6 @@ import java.util.Map;
 /**
  * Represents an un-modifiable pair of values
  *
- * @param <F> First value type
- * @param <S> Second value type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class MapEntryUtils {

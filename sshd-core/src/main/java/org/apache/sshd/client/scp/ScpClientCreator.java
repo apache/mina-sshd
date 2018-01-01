@@ -31,8 +31,7 @@ public interface ScpClientCreator extends ScpFileOpenerHolder {
      * Create an SCP client from this session.
      *
      * @return An {@link ScpClient} instance. <B>Note:</B> uses the currently
-     * registered {@link ScpTransferEventListener}, {@link ScpStreamResolverFactoryHolder}
-     * and {@link ScpFileOpener} if any
+     * registered {@link ScpTransferEventListener} and {@link ScpFileOpener} if any
      * @see #setScpFileOpener(ScpFileOpener)
      * @see #setScpTransferEventListener(ScpTransferEventListener)
      */

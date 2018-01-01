@@ -37,10 +37,9 @@ public interface CheckFileHandleExtension extends SftpClientExtension {
      * @param length      Length of data to hash - if zero then till EOF
      * @param blockSize   Input block size to calculate individual hashes - if
      *                    zero the <U>one</U> hash of <U>all</U> the data
-     * @return An <U>immutable</U> {@link Map.Entry} where key=hash algorithm name,
+     * @return An <U>immutable</U> {@link java.util.Map.Entry} where key=hash algorithm name,
      * value=the calculated hashes.
      * @throws IOException If failed to execute the command
      */
     Map.Entry<String, Collection<byte[]>> checkFileHandle(Handle handle, Collection<String> algorithms, long startOffset, long length, int blockSize) throws IOException;
-
 }
