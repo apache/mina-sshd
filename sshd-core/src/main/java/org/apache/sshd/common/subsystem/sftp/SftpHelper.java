@@ -195,17 +195,19 @@ public final class SftpHelper {
     /**
      * Writes a file / folder's attributes to a buffer
      *
-     * @param buffer The target {@link Buffer}
+     * @param <B> Type of {@link Buffer} being updated
+     * @param buffer The target buffer instance
      * @param version The output encoding version
      * @param attributes The {@link Map} of attributes
+     * @return The updated buffer
      * @see #writeAttrsV3(Buffer, int, Map)
      * @see #writeAttrsV4(Buffer, int, Map)
      */
-    public static void writeAttrs(Buffer buffer, int version, Map<String, ?> attributes) {
+    public static <B extends Buffer> B writeAttrs(B buffer, int version, Map<String, ?> attributes) {
         if (version == SftpConstants.SFTP_V3) {
-            writeAttrsV3(buffer, version, attributes);
+            return writeAttrsV3(buffer, version, attributes);
         } else if (version >= SftpConstants.SFTP_V4) {
-            writeAttrsV4(buffer, version, attributes);
+            return writeAttrsV4(buffer, version, attributes);
         } else {
             throw new IllegalStateException("Unsupported SFTP version: " + version);
         }
@@ -214,11 +216,13 @@ public final class SftpHelper {
     /**
      * Writes the retrieved file / directory attributes in V3 format
      *
-     * @param buffer The target {@link Buffer}
+     * @param <B> Type of {@link Buffer} being updated
+     * @param buffer The target buffer instance
      * @param version The actual version - must be {@link SftpConstants#SFTP_V3}
      * @param attributes The {@link Map} of attributes
+     * @return The updated buffer
      */
-    public static void writeAttrsV3(Buffer buffer, int version, Map<String, ?> attributes) {
+    public static <B extends Buffer> B writeAttrsV3(B buffer, int version, Map<String, ?> attributes) {
         ValidateUtils.checkTrue(version == SftpConstants.SFTP_V3, "Illegal version: %d", version);
 
         boolean isReg = getBool((Boolean) attributes.get("isRegularFile"));
@@ -247,22 +251,26 @@ public final class SftpHelper {
             buffer.putInt(attributesToPermissions(isReg, isDir, isLnk, perms));
         }
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
-            writeTime(buffer, version, flags, lastAccessTime);
-            writeTime(buffer, version, flags, lastModifiedTime);
+            buffer = writeTime(buffer, version, flags, lastAccessTime);
+            buffer = writeTime(buffer, version, flags, lastModifiedTime);
         }
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_EXTENDED) != 0) {
-            writeExtensions(buffer, extensions);
+            buffer = writeExtensions(buffer, extensions);
         }
+
+        return buffer;
     }
 
     /**
      * Writes the retrieved file / directory attributes in V4+ format
      *
-     * @param buffer The target {@link Buffer}
+     * @param <B> Type of {@link Buffer} being updated
+     * @param buffer The target buffer instance
      * @param version The actual version - must be at least {@link SftpConstants#SFTP_V4}
      * @param attributes The {@link Map} of attributes
+     * @return The updated buffer
      */
-    public static void writeAttrsV4(Buffer buffer, int version, Map<String, ?> attributes) {
+    public static <B extends Buffer> B writeAttrsV4(B buffer, int version, Map<String, ?> attributes) {
         ValidateUtils.checkTrue(version >= SftpConstants.SFTP_V4, "Illegal version: %d", version);
 
         boolean isReg = getBool((Boolean) attributes.get("isRegularFile"));
@@ -302,23 +310,25 @@ public final class SftpHelper {
         }
 
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME) != 0) {
-            writeTime(buffer, version, flags, lastAccessTime);
+            buffer = writeTime(buffer, version, flags, lastAccessTime);
         }
 
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_CREATETIME) != 0) {
-            writeTime(buffer, version, flags, lastAccessTime);
+            buffer = writeTime(buffer, version, flags, lastAccessTime);
         }
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME) != 0) {
-            writeTime(buffer, version, flags, lastModifiedTime);
+            buffer = writeTime(buffer, version, flags, lastModifiedTime);
         }
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACL) != 0) {
-            writeACLs(buffer, version, acl);
+            buffer = writeACLs(buffer, version, acl);
         }
         // TODO: ctime
         // TODO: bits
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_EXTENDED) != 0) {
-            writeExtensions(buffer, extensions);
+            buffer = writeExtensions(buffer, extensions);
         }
+
+        return buffer;
     }
 
     /**
@@ -644,21 +654,25 @@ public final class SftpHelper {
         return extended;
     }
 
-    public static void writeExtensions(Buffer buffer, Map<?, ?> extensions) {
+    public static  <B extends Buffer> B writeExtensions(B buffer, Map<?, ?> extensions) {
         int numExtensions = GenericUtils.size(extensions);
         buffer.putInt(numExtensions);
-        if (numExtensions > 0) {
-            extensions.forEach((key, value) -> {
-                Objects.requireNonNull(key, "No extension type");
-                Objects.requireNonNull(value, "No extension value");
-                buffer.putString(key.toString());
-                if (value instanceof byte[]) {
-                    buffer.putBytes((byte[]) value);
-                } else {
-                    buffer.putString(value.toString());
-                }
-            });
+        if (numExtensions <= 0) {
+            return buffer;
         }
+
+        extensions.forEach((key, value) -> {
+            Objects.requireNonNull(key, "No extension type");
+            Objects.requireNonNull(value, "No extension value");
+            buffer.putString(key.toString());
+            if (value instanceof byte[]) {
+                buffer.putBytes((byte[]) value);
+            } else {
+                buffer.putString(value.toString());
+            }
+        });
+
+        return buffer;
     }
 
     public static NavigableMap<String, String> toStringExtensions(Map<String, ?> extensions) {
@@ -834,14 +848,15 @@ public final class SftpHelper {
         return mask;
     }
 
-    public static void writeACLs(Buffer buffer, int version, Collection<? extends AclEntry> acl) {
+    public static <B extends Buffer> B writeACLs(B buffer, int version, Collection<? extends AclEntry> acl) {
         int lenPos = buffer.wpos();
         buffer.putInt(0);   // length placeholder
-        encodeACLs(buffer, version, acl);
+        buffer = encodeACLs(buffer, version, acl);
         BufferUtils.updateLengthPlaceholder(buffer, lenPos);
+        return buffer;
     }
 
-    public static void encodeACLs(Buffer buffer, int version, Collection<? extends AclEntry> acl) {
+    public static <B extends Buffer> B encodeACLs(B buffer, int version, Collection<? extends AclEntry> acl) {
         Objects.requireNonNull(acl, "No ACL");
         if (version >= SftpConstants.SFTP_V6) {
             buffer.putInt(0);   // TODO handle ACL flags
@@ -851,12 +866,14 @@ public final class SftpHelper {
         buffer.putInt(numEntries);
         if (numEntries > 0) {
             for (AclEntry e : acl) {
-                writeAclEntry(buffer, e);
+                buffer = writeAclEntry(buffer, e);
             }
         }
+
+        return buffer;
     }
 
-    public static void writeAclEntry(Buffer buffer, AclEntry acl) {
+    public static <B extends Buffer> B writeAclEntry(B buffer, AclEntry acl) {
         Objects.requireNonNull(acl, "No ACL");
 
         AclEntryType type = acl.type();
@@ -868,6 +885,7 @@ public final class SftpHelper {
 
         Principal user = acl.principal();
         buffer.putString(user.getName());
+        return buffer;
     }
 
     /**
@@ -982,12 +1000,14 @@ public final class SftpHelper {
     /**
      * Encodes a {@link FileTime} value into a buffer
      *
-     * @param buffer The target {@link Buffer}
+     * @param <B> Type of {@link Buffer} being updated
+     * @param buffer The target buffer instance
      * @param version The encoding version
      * @param flags The encoding flags
      * @param time The value to encode
+     * @return The updated buffer
      */
-    public static void writeTime(Buffer buffer, int version, int flags, FileTime time) {
+    public static <B extends Buffer> B writeTime(B buffer, int version, int flags, FileTime time) {
         // for v3 see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-02#page-8
         // for v6 see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-16
         if (version >= SftpConstants.SFTP_V4) {
@@ -1000,6 +1020,8 @@ public final class SftpHelper {
         } else {
             buffer.putInt(time.to(TimeUnit.SECONDS));
         }
+
+        return buffer;
     }
 
     /**

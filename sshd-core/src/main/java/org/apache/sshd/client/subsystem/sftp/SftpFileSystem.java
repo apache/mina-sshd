@@ -210,7 +210,6 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
     }
 
     private final class Wrapper extends AbstractSftpClient {
-
         private final SftpClient delegate;
         private final AtomicInteger count = new AtomicInteger(1);
         private final int readSize;

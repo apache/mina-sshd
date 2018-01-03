@@ -732,10 +732,10 @@ throughout the SFTP server subsystem code. The accessor is registered/overwritte
 
 ```
 
-### SFTP received names encoding
+### SFTP sent/received names encoding
 
-By default, the SFTP client uses UTF-8 to decode any referenced file/folder name. However, some servers do not properly encode such names, and
-thus the "decoded" names by the client become corrupted, or even worse - cause an exception upon decoding attempt. The `SftpClient` exposes
+By default, the SFTP client uses UTF-8 to encode/decode any referenced file/folder name. However, some servers do not properly encode such names,
+and thus the "visible" names by the client become corrupted, or even worse - cause an exception upon decoding attempt. The `SftpClient` exposes
 a `get/setNameDecodingCharset` method which enables the user to modify the charset - even while the SFTP session is in progress - e.g.:
 
 ```java
@@ -798,6 +798,13 @@ public class MyCustomSftpClient extends DefaultSftpClient {
         byte[] bytes = buf.getBytes();
         Charset cs = detectCharset(bytes);
         return new String(bytes, cs);
+    }
+    
+    @Override
+    protected <B extends Buffer> B putReferencedName(int cmd, B buf, String name) {
+        Charset cs = detectCharset(name);
+        buf.putString(name, cs);
+        return buf;
     }
 }
 

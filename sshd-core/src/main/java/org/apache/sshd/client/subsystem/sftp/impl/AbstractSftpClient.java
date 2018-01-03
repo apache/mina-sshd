@@ -119,6 +119,19 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
     }
 
     /**
+     * @param <B> Type of {@link Buffer} being updated
+     * @param cmd The command for which this name is being added
+     * @param buf The buffer instance to update
+     * @param name The name to place in the buffer
+     * @return The updated buffer
+     */
+    protected <B extends Buffer> B putReferencedName(int cmd, B buf, String name) {
+        Charset cs = getNameDecodingCharset();
+        buf.putString(name, cs);
+        return buf;
+    }
+
+    /**
      * Sends the specified command, waits for the response and then invokes {@link #checkResponseStatus(int, Buffer)}
      * @param cmd The command to send
      * @param request The request {@link Buffer}
@@ -444,7 +457,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         return attrs;
     }
 
-    protected void writeAttributes(Buffer buffer, Attributes attributes) throws IOException {
+    protected <B extends Buffer> B writeAttributes(int cmd, B buffer, Attributes attributes) throws IOException {
         int version = getVersion();
         int flagsMask = 0;
         Collection<Attribute> flags = Objects.requireNonNull(attributes, "No attributes").getFlags();
@@ -489,8 +502,8 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             }
 
             if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
-                SftpHelper.writeTime(buffer, version, flagsMask, attributes.getAccessTime());
-                SftpHelper.writeTime(buffer, version, flagsMask, attributes.getModifyTime());
+                buffer = SftpHelper.writeTime(buffer, version, flagsMask, attributes.getAccessTime());
+                buffer = SftpHelper.writeTime(buffer, version, flagsMask, attributes.getModifyTime());
             }
         } else if (version >= SftpConstants.SFTP_V4) {
             for (Attribute a : flags) {
@@ -538,26 +551,28 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
                 buffer.putInt(attributes.getPermissions());
             }
             if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME) != 0) {
-                SftpHelper.writeTime(buffer, version, flagsMask, attributes.getAccessTime());
+                buffer = SftpHelper.writeTime(buffer, version, flagsMask, attributes.getAccessTime());
             }
             if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_CREATETIME) != 0) {
-                SftpHelper.writeTime(buffer, version, flagsMask, attributes.getCreateTime());
+                buffer = SftpHelper.writeTime(buffer, version, flagsMask, attributes.getCreateTime());
             }
             if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME) != 0) {
-                SftpHelper.writeTime(buffer, version, flagsMask, attributes.getModifyTime());
+                buffer = SftpHelper.writeTime(buffer, version, flagsMask, attributes.getModifyTime());
             }
             if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_ACL) != 0) {
-                SftpHelper.writeACLs(buffer, version, attributes.getAcl());
+                buffer = SftpHelper.writeACLs(buffer, version, attributes.getAcl());
             }
 
-            // TODO: for v6+ add CTIME (see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-21)
+            // TODO: for v5 ? 6? add CTIME (see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-16 - v6)
         } else {
             throw new UnsupportedOperationException("writeAttributes(" + attributes + ") unsupported version: " + version);
         }
 
         if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_EXTENDED) != 0) {
-            SftpHelper.writeExtensions(buffer, attributes.getExtensions());
+            buffer = SftpHelper.writeExtensions(buffer, attributes.getExtensions());
         }
+
+        return buffer;
     }
 
     @Override
@@ -574,7 +589,8 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         }
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
-        buffer.putString(path);
+        buffer = putReferencedName(SftpConstants.SSH_FXP_OPEN, buffer, path);
+
         int version = getVersion();
         int mode = 0;
         if (version < SftpConstants.SFTP_V5) {
@@ -627,7 +643,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             }
         }
         buffer.putInt(mode);
-        writeAttributes(buffer, fileOpenAttributes);
+        buffer = writeAttributes(SftpConstants.SSH_FXP_OPEN, buffer, fileOpenAttributes);
 
         CloseableHandle handle = new DefaultCloseableHandle(this, path, checkHandle(SftpConstants.SSH_FXP_OPEN, buffer));
         if (log.isTraceEnabled()) {
@@ -663,7 +679,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         }
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
-        buffer.putString(path);
+        buffer = putReferencedName(SftpConstants.SSH_FXP_REMOVE, buffer, path);
         checkCommandStatus(SftpConstants.SSH_FXP_REMOVE, buffer);
     }
 
@@ -678,8 +694,8 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         }
 
         Buffer buffer = new ByteArrayBuffer(oldPath.length() + newPath.length() + Long.SIZE /* some extra fields */, false);
-        buffer.putString(oldPath);
-        buffer.putString(newPath);
+        buffer = putReferencedName(SftpConstants.SSH_FXP_RENAME, buffer, oldPath);
+        buffer = putReferencedName(SftpConstants.SSH_FXP_RENAME, buffer, newPath);
 
         int numOptions = GenericUtils.size(options);
         int version = getVersion();
@@ -827,7 +843,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         }
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
-        buffer.putString(path);
+        buffer = putReferencedName(SftpConstants.SSH_FXP_MKDIR, buffer, path);
         buffer.putInt(0);
 
         int version = getVersion();
@@ -849,7 +865,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         }
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
-        buffer.putString(path);
+        buffer = putReferencedName(SftpConstants.SSH_FXP_RMDIR, buffer, path);
         checkCommandStatus(SftpConstants.SSH_FXP_RMDIR, buffer);
     }
 
@@ -860,7 +876,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         }
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
-        buffer.putString(path);
+        buffer = putReferencedName(SftpConstants.SSH_FXP_OPENDIR, buffer, path);
 
         CloseableHandle handle = new DefaultCloseableHandle(this, path, checkHandle(SftpConstants.SSH_FXP_OPENDIR, buffer));
         if (log.isTraceEnabled()) {
@@ -968,7 +984,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         }
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE, false);
-        buffer.putString(path);
+        buffer = putReferencedName(SftpConstants.SSH_FXP_REALPATH, buffer, path);
         return checkOneName(SftpConstants.SSH_FXP_REALPATH, buffer);
     }
 
@@ -979,7 +995,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         }
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE, false);
-        buffer.putString(path);
+        buffer = putReferencedName(SftpConstants.SSH_FXP_STAT, buffer, path);
 
         int version = getVersion();
         if (version >= SftpConstants.SFTP_V4) {
@@ -996,7 +1012,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         }
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE, false);
-        buffer.putString(path);
+        buffer = putReferencedName(SftpConstants.SSH_FXP_LSTAT, buffer, path);
 
         int version = getVersion();
         if (version >= SftpConstants.SFTP_V4) {
@@ -1035,8 +1051,8 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         }
 
         Buffer buffer = new ByteArrayBuffer();
-        buffer.putString(path);
-        writeAttributes(buffer, attributes);
+        buffer = putReferencedName(SftpConstants.SSH_FXP_SETSTAT, buffer, path);
+        buffer = writeAttributes(SftpConstants.SSH_FXP_SETSTAT, buffer, attributes);
         checkCommandStatus(SftpConstants.SSH_FXP_SETSTAT, buffer);
     }
 
@@ -1052,7 +1068,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         byte[] id = Objects.requireNonNull(handle, "No handle").getIdentifier();
         Buffer buffer = new ByteArrayBuffer(id.length + (2 * Long.SIZE) /* some extras */, false);
         buffer.putBytes(id);
-        writeAttributes(buffer, attributes);
+        buffer = writeAttributes(SftpConstants.SSH_FXP_FSETSTAT, buffer, attributes);
         checkCommandStatus(SftpConstants.SSH_FXP_FSETSTAT, buffer);
     }
 
@@ -1063,7 +1079,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         }
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
-        buffer.putString(path);
+        buffer = putReferencedName(SftpConstants.SSH_FXP_READLINK, buffer, path);
         return checkOneName(SftpConstants.SSH_FXP_READLINK, buffer);
     }
 
@@ -1083,13 +1099,15 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             if (!symbolic) {
                 throw new UnsupportedOperationException("Hard links are not supported in sftp v" + version);
             }
-            buffer.putString(targetPath);
-            buffer.putString(linkPath);
+            buffer = putReferencedName(SftpConstants.SSH_FXP_SYMLINK, buffer, targetPath);
+            buffer = putReferencedName(SftpConstants.SSH_FXP_SYMLINK, buffer, linkPath);
+
             checkCommandStatus(SftpConstants.SSH_FXP_SYMLINK, buffer);
         } else {
-            buffer.putString(targetPath);
-            buffer.putString(linkPath);
+            buffer = putReferencedName(SftpConstants.SSH_FXP_SYMLINK, buffer, targetPath);
+            buffer = putReferencedName(SftpConstants.SSH_FXP_SYMLINK, buffer, linkPath);
             buffer.putBoolean(symbolic);
+
             checkCommandStatus(SftpConstants.SSH_FXP_LINK, buffer);
         }
     }
