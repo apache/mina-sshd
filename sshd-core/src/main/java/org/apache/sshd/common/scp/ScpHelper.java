@@ -123,10 +123,11 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
 
             Path path = new MockPath(line);
             receiveStream(line, new ScpTargetStreamResolver() {
-                @SuppressWarnings("synthetic-access")
                 @Override
-                public OutputStream resolveTargetStream(Session session, String name, long length,
-                        Set<PosixFilePermission> perms, OpenOption... options) throws IOException {
+                @SuppressWarnings("synthetic-access")
+                public OutputStream resolveTargetStream(
+                        Session session, String name, long length, Set<PosixFilePermission> perms, OpenOption... options)
+                            throws IOException {
                     if (log.isDebugEnabled()) {
                         log.debug("resolveTargetStream({}) name={}, perms={}, len={} - started local stream download",
                                   ScpHelper.this, name, perms, length);
@@ -139,8 +140,8 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                     return path;
                 }
 
-                @SuppressWarnings("synthetic-access")
                 @Override
+                @SuppressWarnings("synthetic-access")
                 public void postProcessReceivedData(String name, boolean preserve, Set<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
                     if (log.isDebugEnabled()) {
                         log.debug("postProcessReceivedData({}) name={}, perms={}, preserve={} time={}",
