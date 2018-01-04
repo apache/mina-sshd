@@ -41,8 +41,10 @@
         <dependencies>
             <dependency>
                 <groupId>org.springframework.integration</groupId>
-                <artifactId>spring-integration-stream</artifactId>
+                <artifactId>spring-integration-bom</artifactId>
                 <version>${spring.integration.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -63,19 +65,16 @@
         <dependency>
             <groupId>org.springframework.integration</groupId>
             <artifactId>spring-integration-core</artifactId>
-            <version>${spring.integration.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.integration</groupId>
             <artifactId>spring-integration-file</artifactId>
-            <version>${spring.integration.version}</version>
         </dependency>
 
             <!-- Test dependencies -->
         <dependency>
             <groupId>org.springframework.integration</groupId>
             <artifactId>spring-integration-sftp</artifactId>
-            <version>${spring.integration.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
