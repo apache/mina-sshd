@@ -747,7 +747,7 @@
                    <execution> 
                        <id>pmd-checker</id> 
                        <!-- Note: phase must be AFTER detection of workspace root dir --> 
-                       <phase>verify</phase> 
+                       <phase>process-test-classes</phase>
                        <goals> 
                            <goal>check</goal> 
                        </goals> 
