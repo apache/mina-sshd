@@ -56,6 +56,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
+import org.apache.commons.validator.routines.InetAddressValidator;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
 import org.apache.sshd.client.auth.UserAuth;
@@ -495,9 +496,14 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             if (log.isDebugEnabled()) {
                 log.debug("connect({}@{}:{}) no overrides", username, host, port);
             }
-
-            // generate a synthetic entry
-            entry = new HostConfigEntry(host, host, port, username);
+            //IPv6 addresses have a format which means they need special treatment, separate from pattern validation
+            if (InetAddressValidator.getInstance().isValidInet6Address(host)) {
+                // generate a synthetic entry, not using a pattern as the hostname passed in was a valid IPv6 address
+                entry = new HostConfigEntry("", host, port, username);
+            } else {
+                // generate a synthetic entry
+                entry = new HostConfigEntry(host, host, port, username);
+            }
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("connect({}@{}:{}) effective: {}", username, host, port, entry);

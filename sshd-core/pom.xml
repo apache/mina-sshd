@@ -63,8 +63,13 @@
             <artifactId>bcpkix-jdk15on</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>commons-validator</groupId>
+            <artifactId>commons-validator</artifactId>
+        </dependency>
 
-            <!-- For ed25519 support -->
+
+        <!-- For ed25519 support -->
         <dependency>
             <groupId>net.i2p.crypto</groupId>
             <artifactId>eddsa</artifactId>
