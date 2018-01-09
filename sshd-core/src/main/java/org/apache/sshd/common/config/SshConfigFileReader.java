@@ -83,7 +83,7 @@ public final class SshConfigFileReader {
     public static final String DEFAULT_PASSWORD_AUTH = "no";
     public static final boolean DEFAULT_PASSWORD_AUTH_VALUE = parseBooleanValue(DEFAULT_PASSWORD_AUTH);
     public static final String LISTEN_ADDRESS_CONFIG_PROP = "ListenAddress";
-    public static final String DEFAULT_BIND_ADDRESS = SshdSocketAddress.IP_ANYADDR;
+    public static final String DEFAULT_BIND_ADDRESS = SshdSocketAddress.IPV4_ANYADDR;
     public static final String PORT_CONFIG_PROP = "Port";
     public static final int DEFAULT_PORT = 22;
     public static final String KEEP_ALIVE_CONFIG_PROP = "TCPKeepAlive";

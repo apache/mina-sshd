@@ -25,11 +25,14 @@ import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.NavigableSet;
 import java.util.Objects;
+import java.util.TreeSet;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
@@ -56,8 +59,19 @@ import org.apache.sshd.common.util.ValidateUtils;
  */
 public class SshdSocketAddress extends SocketAddress {
     public static final String LOCALHOST_NAME = "localhost";
-    public static final String LOCALHOST_IP = "127.0.0.1";
-    public static final String IP_ANYADDR = "0.0.0.0";
+    public static final String LOCALHOST_IPV4 = "127.0.0.1";
+    public static final String IPV4_ANYADDR = "0.0.0.0";
+
+    public static final NavigableSet<String> WELL_KNOWN_IPV4_ADDRESSES =
+        Collections.unmodifiableNavigableSet(
+            new TreeSet<String>(String.CASE_INSENSITIVE_ORDER) {
+                // Not serializing it
+                private static final long serialVersionUID = 1L;
+
+                {
+                    addAll(Arrays.asList(LOCALHOST_IPV4, IPV4_ANYADDR));
+                }
+        });
 
     // 10.0.0.0 - 10.255.255.255
     public static final String PRIVATE_CLASS_A_PREFIX = "10.";
@@ -70,10 +84,35 @@ public class SshdSocketAddress extends SocketAddress {
     // The IPv4 broadcast address
     public static final String BROADCAST_ADDRESS = "255.255.255.255";
 
+    /** Max. number of hex groups (separated by &quot;:&quot;) in an IPV6 address */
+    public static final int IPV6_MAX_HEX_GROUPS = 8;
+
+    /** Max. hex digits in each IPv6 group */
+    public static final int IPV6_MAX_HEX_DIGITS_PER_GROUP = 4;
+
+    public static final String IPV6_LONG_ANY_ADDRESS = "0:0:0:0:0:0:0:0";
+    public static final String IPV6_SHORT_ANY_ADDRESS = "::";
+
+    public static final String IPV6_LONG_LOCALHOST = "0:0:0:0:0:0:0:1";
+    public static final String IPV6_SHORT_LOCALHOST = "::1";
+
+    public static final NavigableSet<String> WELL_KNOWN_IPV6_ADDRESSES =
+        Collections.unmodifiableNavigableSet(
+            new TreeSet<String>(String.CASE_INSENSITIVE_ORDER) {
+                // Not serializing it
+                private static final long serialVersionUID = 1L;
+
+                {
+                    addAll(Arrays.asList(
+                        IPV6_LONG_LOCALHOST, IPV6_SHORT_LOCALHOST,
+                        IPV6_LONG_ANY_ADDRESS, IPV6_SHORT_ANY_ADDRESS));
+                }
+        });
+
     /**
      * A dummy placeholder that can be used instead of {@code null}s
      */
-    public static final SshdSocketAddress LOCALHOST_ADDRESS = new SshdSocketAddress(LOCALHOST_IP, 0);
+    public static final SshdSocketAddress LOCALHOST_ADDRESS = new SshdSocketAddress(LOCALHOST_IPV4, 0);
 
     /**
      * Compares {@link InetAddress}-es according to their {@link InetAddress#getHostAddress()}
@@ -118,12 +157,12 @@ public class SshdSocketAddress extends SocketAddress {
     private final int port;
 
     public SshdSocketAddress(int port) {
-        this(IP_ANYADDR, port);
+        this(IPV4_ANYADDR, port);
     }
 
     public SshdSocketAddress(String hostName, int port) {
         Objects.requireNonNull(hostName, "Host name may not be null");
-        this.hostName = GenericUtils.isEmpty(hostName) ? IP_ANYADDR : hostName;
+        this.hostName = GenericUtils.isEmpty(hostName) ? IPV4_ANYADDR : hostName;
 
         ValidateUtils.checkTrue(port >= 0, "Port must be >= 0: %d", port);
         this.port = port;
@@ -153,7 +192,7 @@ public class SshdSocketAddress extends SocketAddress {
             return true;
         } else {
             return (this.getPort() == that.getPort())
-                    && Objects.equals(this.getHostName(), that.getHostName());
+                && Objects.equals(this.getHostName(), that.getHostName());
         }
     }
 
@@ -246,7 +285,7 @@ public class SshdSocketAddress extends SocketAddress {
         }
 
         if (!(addr instanceof Inet4Address)) {
-            return false;
+            return false;   // TODO add support for IPv6 - see SSHD-746
         }
 
         return !isLoopback(addr);
@@ -284,10 +323,11 @@ public class SshdSocketAddress extends SocketAddress {
             return false;
         }
 
-        if (LOCALHOST_NAME.equals(ip) || LOCALHOST_IP.equals(ip)) {
+        if (LOCALHOST_NAME.equals(ip) || LOCALHOST_IPV4.equals(ip)) {
             return true;
         }
 
+        // TODO add support for IPv6 - see SSHD-746
         String[] values = GenericUtils.split(ip, '.');
         if (GenericUtils.length(values) != 4) {
             return false;
@@ -387,8 +427,13 @@ public class SshdSocketAddress extends SocketAddress {
     }
 
     public static boolean isIPv4Address(String addr) {
+        addr = GenericUtils.trimToEmpty(addr);
         if (GenericUtils.isEmpty(addr)) {
             return false;
+        }
+
+        if (WELL_KNOWN_IPV4_ADDRESSES.contains(addr)) {
+            return true;
         }
 
         String[] comps = GenericUtils.split(addr, '.');
@@ -499,5 +544,103 @@ public class SshdSocketAddress extends SocketAddress {
 
         int v = Integer.parseInt(c.toString());
         return (v >= 0) && (v <= 255);
+    }
+
+    // Based on org.apache.commons.validator.routines.InetAddressValidator#isValidInet6Address
+    public static boolean isIPv6Address(String address) {
+        address = GenericUtils.trimToEmpty(address);
+        if (GenericUtils.isEmpty(address)) {
+            return false;
+        }
+
+        if (WELL_KNOWN_IPV6_ADDRESSES.contains(address)) {
+            return true;
+        }
+
+        boolean containsCompressedZeroes = address.contains("::");
+        if (containsCompressedZeroes && (address.indexOf("::") != address.lastIndexOf("::"))) {
+            return false;
+        }
+
+        if (((address.indexOf(':') == 0) && (!address.startsWith("::")))
+                || (address.endsWith(":") && (!address.endsWith("::")))) {
+            return false;
+        }
+
+        String[] splitOctets = GenericUtils.split(address, ':');
+        List<String> octetList = new ArrayList<>(Arrays.asList(splitOctets));
+        if (containsCompressedZeroes) {
+            if (address.endsWith("::")) {
+                // String.split() drops ending empty segments
+                octetList.add("");
+            } else if (address.startsWith("::") && (!octetList.isEmpty())) {
+                octetList.remove(0);
+            }
+        }
+
+        int numOctests = octetList.size();
+        if (numOctests > IPV6_MAX_HEX_GROUPS) {
+            return false;
+        }
+
+        int validOctets = 0;
+        int emptyOctets = 0; // consecutive empty chunks
+        for (int index = 0; index < numOctests; index++) {
+            String octet = octetList.get(index);
+            int pos = octet.indexOf('%');   // is it a zone index
+            if (pos >= 0) {
+                // zone index must come last
+                if (index != (numOctests - 1)) {
+                    return false;
+                }
+
+                octet = (pos > 0) ? octet.substring(0, pos) : "";
+            }
+
+            int octetLength = octet.length();
+            if (octetLength == 0) {
+                emptyOctets++;
+                if (emptyOctets > 1) {
+                    return false;
+                }
+
+                validOctets++;
+                continue;
+            }
+
+            emptyOctets = 0;
+
+            // Is last chunk an IPv4 address?
+            if ((index == (numOctests - 1)) && (octet.indexOf('.') > 0)) {
+                if (!isIPv4Address(octet)) {
+                    return false;
+                }
+                validOctets += 2;
+                continue;
+            }
+
+            if (octetLength > IPV6_MAX_HEX_DIGITS_PER_GROUP) {
+                return false;
+            }
+
+            int octetInt = 0;
+            try {
+                octetInt = Integer.parseInt(octet, 16);
+            } catch (NumberFormatException e) {
+                return false;
+            }
+
+            if ((octetInt < 0) || (octetInt > 0x000ffff)) {
+                return false;
+            }
+
+            validOctets++;
+        }
+
+        if ((validOctets > IPV6_MAX_HEX_GROUPS)
+                || ((validOctets < IPV6_MAX_HEX_GROUPS) && (!containsCompressedZeroes))) {
+            return false;
+        }
+        return true;
     }
 }

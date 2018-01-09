@@ -69,7 +69,7 @@ public class GitPgmCommandTest extends BaseTestSupport {
                 try (SshClient client = setupTestClient()) {
                     client.start();
 
-                    try (ClientSession session = client.connect(getCurrentTestName(), SshdSocketAddress.LOCALHOST_IP, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                    try (ClientSession session = client.connect(getCurrentTestName(), SshdSocketAddress.LOCALHOST_IPV4, port).verify(7L, TimeUnit.SECONDS).getSession()) {
                         session.addPasswordIdentity(getCurrentTestName());
                         session.auth().verify(5L, TimeUnit.SECONDS);
 

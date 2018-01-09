@@ -70,7 +70,7 @@ import org.junit.runner.RunWith;
 public abstract class BaseTestSupport extends Assert {
     public static final String TEMP_SUBFOLDER_NAME = "temp";
     // can be used to override the 'localhost' with an address other than 127.0.0.1 in case it is required
-    public static final String TEST_LOCALHOST = System.getProperty("org.apache.sshd.test.localhost", SshdSocketAddress.LOCALHOST_IP);
+    public static final String TEST_LOCALHOST = System.getProperty("org.apache.sshd.test.localhost", SshdSocketAddress.LOCALHOST_IPV4);
     public static final boolean OUTPUT_DEBUG_MESSAGES = Boolean.parseBoolean(System.getProperty("org.apache.sshd.test.outputDebugMessages", "false"));
     public static final String MAIN_SUBFOLDER = "main";
     public static final String TEST_SUBFOLDER = "test";

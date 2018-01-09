@@ -68,7 +68,7 @@ public interface X11ForwardSupport extends Closeable, IoHandler {
      * is used
      */
     String X11_BIND_HOST = "x11-fwd-bind-host";
-    String DEFAULT_X11_BIND_HOST = SshdSocketAddress.LOCALHOST_IP;
+    String DEFAULT_X11_BIND_HOST = SshdSocketAddress.LOCALHOST_IPV4;
 
     /**
      * Key for the user DISPLAY variable

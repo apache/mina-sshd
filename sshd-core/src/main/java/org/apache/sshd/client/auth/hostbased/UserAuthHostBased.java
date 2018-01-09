@@ -212,6 +212,6 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
             value = SshdSocketAddress.toAddressString(SshdSocketAddress.getFirstExternalNetwork4Address());
         }
 
-        return GenericUtils.isEmpty(value) ? SshdSocketAddress.LOCALHOST_IP : value;
+        return GenericUtils.isEmpty(value) ? SshdSocketAddress.LOCALHOST_IPV4 : value;
     }
 }

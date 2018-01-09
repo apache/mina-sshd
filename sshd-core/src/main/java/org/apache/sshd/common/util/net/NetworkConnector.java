@@ -27,7 +27,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class NetworkConnector extends AbstractLoggingBean {
-    public static final String DEFAULT_HOST = SshdSocketAddress.LOCALHOST_IP;
+    public static final String DEFAULT_HOST = SshdSocketAddress.LOCALHOST_IPV4;
     public static final long DEFAULT_CONNECT_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
     public static final long DEFAULT_READ_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
 
