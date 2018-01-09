@@ -253,8 +253,8 @@ public class KnownHostEntry extends HostPatternsHolder {
 
         if (hostPattern.charAt(0) == KnownHostHashValue.HASHED_HOST_DELIMITER) {
             KnownHostHashValue hash =
-                    ValidateUtils.checkNotNull(KnownHostHashValue.parse(hostPattern),
-                            "Failed to extract host hash value from line=%s", data);
+                ValidateUtils.checkNotNull(KnownHostHashValue.parse(hostPattern),
+                    "Failed to extract host hash value from line=%s", data);
             entry.setHashedEntry(hash);
             entry.setPatterns(null);
         } else {
@@ -263,8 +263,8 @@ public class KnownHostEntry extends HostPatternsHolder {
         }
 
         AuthorizedKeyEntry key =
-                ValidateUtils.checkNotNull(AuthorizedKeyEntry.parseAuthorizedKeyEntry(line),
-                        "No valid key entry recovered from line=%s", data);
+            ValidateUtils.checkNotNull(AuthorizedKeyEntry.parseAuthorizedKeyEntry(line),
+                "No valid key entry recovered from line=%s", data);
         entry.setKeyEntry(key);
         return entry;
     }

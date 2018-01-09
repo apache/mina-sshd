@@ -142,9 +142,9 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
 
     /**
      * @param ignoreUnsupported If {@code true} then all the default
-     *                          key exchanges are included, regardless of whether they are currently
-     *                          supported by the JCE. Otherwise, only the supported ones out of the
-     *                          list are included
+     * key exchanges are included, regardless of whether they are currently
+     * supported by the JCE. Otherwise, only the supported ones out of the
+     * list are included
      * @return A {@link List} of the default {@link NamedFactory}
      * instances of the {@link KeyExchange}s according to the preference
      * order defined by {@link #DEFAULT_KEX_PREFERENCE}.

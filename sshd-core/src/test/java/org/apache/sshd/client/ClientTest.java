@@ -26,13 +26,17 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -236,8 +240,8 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testPropertyResolutionHierarchy() throws Exception {
-        final String sessionPropName = getCurrentTestName() + "-session";
-        final AtomicReference<Object> sessionConfigValueHolder = new AtomicReference<>(null);
+        String sessionPropName = getCurrentTestName() + "-session";
+        AtomicReference<Object> sessionConfigValueHolder = new AtomicReference<>(null);
         client.addSessionListener(new SessionListener() {
             @Override
             public void sessionEvent(Session session, Event event) {
@@ -260,8 +264,8 @@ public class ClientTest extends BaseTestSupport {
             }
         });
 
-        final String channelPropName = getCurrentTestName() + "-channel";
-        final AtomicReference<Object> channelConfigValueHolder = new AtomicReference<>(null);
+        String channelPropName = getCurrentTestName() + "-channel";
+        AtomicReference<Object> channelConfigValueHolder = new AtomicReference<>(null);
         client.addChannelListener(new ChannelListener() {
             @Override
             public void channelOpenSuccess(Channel channel) {
@@ -314,9 +318,9 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testClientStillActiveIfListenerExceptions() throws Exception {
-        final Map<String, Integer> eventsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        final Collection<String> failuresSet = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-        final Logger log = LoggerFactory.getLogger(getClass());
+        Map<String, Integer> eventsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        Collection<String> failuresSet = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        Logger log = LoggerFactory.getLogger(getClass());
         client.addChannelListener(new ChannelListener() {
             @Override
             public void channelInitialized(Channel channel) {
@@ -412,7 +416,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testSimpleClientListener() throws Exception {
-        final AtomicReference<Channel> channelHolder = new AtomicReference<>(null);
+        AtomicReference<Channel> channelHolder = new AtomicReference<>(null);
         client.addChannelListener(new ChannelListener() {
             @Override
             public void channelOpenSuccess(Channel channel) {
@@ -506,7 +510,6 @@ public class ClientTest extends BaseTestSupport {
 
             final byte[] message = "0123456789\n".getBytes(StandardCharsets.UTF_8);
             final int nbMessages = 1000;
-
             try (ByteArrayOutputStream baosOut = new ByteArrayOutputStream();
                  ByteArrayOutputStream baosErr = new ByteArrayOutputStream()) {
                 AtomicInteger writes = new AtomicInteger(nbMessages);
@@ -1124,8 +1127,8 @@ public class ClientTest extends BaseTestSupport {
     public void testDefaultKeyboardInteractiveWithFailures() throws Exception {
         client.setUserAuthFactories(Collections.singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
 
-        final AtomicInteger count = new AtomicInteger();
-        final AtomicReference<ClientSession> interactionSessionHolder = new AtomicReference<>(null);
+        AtomicInteger count = new AtomicInteger();
+        AtomicReference<ClientSession> interactionSessionHolder = new AtomicReference<>(null);
         client.setUserInteraction(new UserInteraction() {
             private final String[] badResponse = {"bad"};
 
@@ -1185,7 +1188,6 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testDefaultKeyboardInteractiveInSessionUserInteractive() throws Exception {
-        final AtomicInteger count = new AtomicInteger();
         final int maxPrompts = 3;
         PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PASSWORD_PROMPTS, maxPrompts);
 
@@ -1194,6 +1196,7 @@ public class ClientTest extends BaseTestSupport {
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
+            AtomicInteger count = new AtomicInteger();
             session.setUserInteraction(new UserInteraction() {
                 @Override
                 public boolean isInteractionAllowed(ClientSession session) {
@@ -1237,7 +1240,6 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testKeyboardInteractiveInSessionUserInteractiveFailure() throws Exception {
-        final AtomicInteger count = new AtomicInteger();
         final int maxPrompts = 3;
         PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PASSWORD_PROMPTS, maxPrompts);
         client.setUserAuthFactories(Collections.singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
@@ -1245,6 +1247,7 @@ public class ClientTest extends BaseTestSupport {
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
+            AtomicInteger count = new AtomicInteger();
             session.setUserInteraction(new UserInteraction() {
                 @Override
                 public boolean isInteractionAllowed(ClientSession session) {
@@ -1326,7 +1329,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testWaitAuth() throws Exception {
-        final AtomicBoolean ok = new AtomicBoolean();
+        AtomicBoolean ok = new AtomicBoolean();
         client.setServerKeyVerifier(
             (sshClientSession, remoteAddress, serverKey) -> {
                 outputDebugMessage("verifyServerKey(%s): %s", remoteAddress, serverKey);
@@ -1415,6 +1418,44 @@ public class ClientTest extends BaseTestSupport {
         assertListenerSizes("ClientStop", clientListeners, 0, 1);
     }
 
+    @Test
+    public void testConnectUsingIPv6Address() throws IOException {
+        client.start();
+
+        try {
+            testConnectUsingIPv6Address(SshdSocketAddress.IPV6_SHORT_LOCALHOST);
+
+            for (Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces(); (nets != null) && nets.hasMoreElements();) {
+                NetworkInterface netint = nets.nextElement();
+                if (!netint.isUp()) {
+                    continue;    // ignore non-running interfaces
+                }
+
+                for (Enumeration<InetAddress> inetAddresses = netint.getInetAddresses(); (inetAddresses != null) && inetAddresses.hasMoreElements();) {
+                    InetAddress inetAddress = inetAddresses.nextElement();
+                    if (!(inetAddress instanceof Inet6Address)) {
+                        continue;
+                    }
+
+                    try {
+                        testConnectUsingIPv6Address(inetAddress.getHostAddress());
+                    } catch (IOException e) {
+                        outputDebugMessage("Failed (%s) to connect to %s: %s",
+                            e.getClass().getSimpleName(), inetAddress, e.getMessage());
+                    }
+                }
+            }
+        } finally {
+            client.stop();
+        }
+    }
+
+    private void testConnectUsingIPv6Address(String address) throws IOException {
+        try (ClientSession session = createTestClientSession(address)) {
+            outputDebugMessage("Successfully connected to %s", address);
+        }
+    }
+
     private static void assertListenerSizes(String phase, Map<String, ? extends TestChannelListener> listeners, int activeSize, int openSize) {
         assertListenerSizes(phase, listeners.values(), activeSize, openSize);
     }
@@ -1444,7 +1485,23 @@ public class ClientTest extends BaseTestSupport {
     }
 
     private ClientSession createTestClientSession() throws IOException {
-        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession();
+        ClientSession session = createTestClientSession(TEST_LOCALHOST);
+        try {
+            InetSocketAddress addr = SshdSocketAddress.toInetSocketAddress(session.getConnectAddress());
+            assertEquals("Mismatched connect host", TEST_LOCALHOST, addr.getHostString());
+
+            ClientSession returnValue = session;
+            session = null; // avoid 'finally' close
+            return returnValue;
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
+    }
+
+    private ClientSession createTestClientSession(String host) throws IOException {
+        ClientSession session = client.connect(getCurrentTestName(), host, port).verify(7L, TimeUnit.SECONDS).getSession();
         try {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.addPasswordIdentity(getCurrentTestName());
@@ -1452,7 +1509,6 @@ public class ClientTest extends BaseTestSupport {
 
             InetSocketAddress addr = SshdSocketAddress.toInetSocketAddress(session.getConnectAddress());
             assertNotNull("No reported connect address", addr);
-            assertEquals("Mismatched connect host", TEST_LOCALHOST, addr.getHostString());
             assertEquals("Mismatched connect port", port, addr.getPort());
 
             ClientSession returnValue = session;

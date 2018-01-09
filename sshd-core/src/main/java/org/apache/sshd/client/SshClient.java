@@ -492,12 +492,18 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         HostConfigEntryResolver resolver = getHostConfigEntryResolver();
         HostConfigEntry entry = resolver.resolveEffectiveHost(host, port, username);
         if (entry == null) {
+            // generate a synthetic entry
             if (log.isDebugEnabled()) {
                 log.debug("connect({}@{}:{}) no overrides", username, host, port);
             }
 
-            // generate a synthetic entry
-            entry = new HostConfigEntry(host, host, port, username);
+            // IPv6 addresses have a format which means they need special treatment, separate from pattern validation
+            if (SshdSocketAddress.isIPv6Address(host)) {
+                // Not using a pattern as the host name passed in was a valid IPv6 address
+                entry = new HostConfigEntry("", host, port, username);
+            } else {
+                entry = new HostConfigEntry(host, host, port, username);
+            }
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("connect({}@{}:{}) effective: {}", username, host, port, entry);
