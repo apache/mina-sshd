@@ -110,13 +110,22 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
             @Override
             @SuppressWarnings("synthetic-access")
             protected void onCompleted(Void result, Object attachment) {
+                Long sessionId = null;
                 try {
                     Nio2Session session = createSession(manager, handler, socket);
                     handler.sessionCreated(session);
-                    long sessionId = session.getId();
+                    sessionId = session.getId();
                     sessions.put(sessionId, session);
                     future.setSession(session);
-                    session.startReading();
+                    if (session.isClosing()) {
+                        try {
+                            handler.sessionClosed(session);
+                        } finally {
+                            unmapSession(sessionId);
+                        }
+                    } else {
+                        session.startReading();
+                    }
                 } catch (Throwable exc) {
                     Throwable t = GenericUtils.peelException(exc);
                     if (log.isDebugEnabled()) {
@@ -136,11 +145,12 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                     }
 
                     future.setException(t);
+                    unmapSession(sessionId);
                 }
             }
 
             @Override
-            protected void onFailed(final Throwable exc, final Object attachment) {
+            protected void onFailed(Throwable exc, Object attachment) {
                 future.setException(exc);
             }
         };
