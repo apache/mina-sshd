@@ -189,8 +189,12 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                 setSocketOptions(result);
                 session = Objects.requireNonNull(createSession(Nio2Acceptor.this, address, result, handler), "No NIO2 session created");
                 handler.sessionCreated(session);
-                sessions.put(session.getId(), session);
-                session.startReading();
+                if (!session.isClosing()) {
+                    sessions.put(session.getId(), session);
+                    session.startReading();
+                } else {
+                    handler.sessionClosed(session);
+                }
             } catch (Throwable exc) {
                 failed(exc, address);
 
