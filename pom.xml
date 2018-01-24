@@ -92,7 +92,7 @@
         <javac.source>${java.major.version}.${java.minor.version}</javac.source>
         <project.build.java.source>${javac.source}</project.build.java.source>
         <maven.compiler.source>${javac.source}</maven.compiler.source>
-        <ant.version>1.9.7</ant.version>
+        <ant.version>1.10.1</ant.version>
         <ant.build.javac.source>${javac.source}</ant.build.javac.source>
 
         <javac.target>${javac.source}</javac.target>
@@ -104,19 +104,18 @@
         <gmaven.plugin.version>2.0</gmaven.plugin.version>
         <groovy.major.version>2</groovy.major.version>
         <groovy.minor.version>4</groovy.minor.version>
-        <groovy.release.version>11</groovy.release.version>
+        <groovy.release.version>13</groovy.release.version>
         <groovy.compliance.level>2.0</groovy.compliance.level>
         <groovy.version>${groovy.major.version}.${groovy.minor.version}.${groovy.release.version}</groovy.version>        
 
-        <bouncycastle.version>1.58</bouncycastle.version>
+        <bouncycastle.version>1.59</bouncycastle.version>
         <slf4j.version>1.7.25</slf4j.version>
-        <spring.version>5.0.2.RELEASE</spring.version>
-        <jgit.version>4.9.2.201712150930-r</jgit.version>
+        <spring.version>5.0.3.RELEASE</spring.version>
+        <jgit.version>4.10.0.201712302008-r</jgit.version>
         <junit.version>4.12</junit.version>
         <surefire.plugin.version>2.20.1</surefire.plugin.version>
         <!-- See https://pmd.github.io/ for available latest version -->
         <pmd.version>5.6.1</pmd.version>
-        <httpcomps.version>4.4.1</httpcomps.version>
     </properties>
 
     <profiles>
@@ -329,7 +328,7 @@
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
-                <version>${httpcomps.version}</version>
+                <version>4.5.5</version>
                 <exclusions>
                     <exclusion>    <!-- we are using jcl-over-slf4j -->
                         <groupId>commons-logging</groupId>
@@ -340,7 +339,7 @@
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpcore</artifactId>
-                <version>${httpcomps.version}</version>
+                <version>4.4.9</version>
             </dependency>
             <dependency>
                 <groupId>ch.ethz.ganymed</groupId>
