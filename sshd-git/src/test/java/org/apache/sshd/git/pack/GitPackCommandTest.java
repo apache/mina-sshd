@@ -24,6 +24,7 @@ import java.util.Collections;
 
 import com.jcraft.jsch.JSch;
 
+import org.apache.sshd.client.SshClient;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.git.transport.GitSshdSessionFactory;
 import org.apache.sshd.server.SshServer;
@@ -83,26 +84,34 @@ public class GitPackCommandTest extends BaseTestSupport {
 
                 JSch.setConfig("StrictHostKeyChecking", "no");
                 CredentialsProvider.setDefault(new UsernamePasswordCredentialsProvider(getCurrentTestName(), getCurrentTestName()));
-                SshSessionFactory.setInstance(new GitSshdSessionFactory());
-
                 Path localRootDir = gitRootDir.resolve("local");
                 Path localDir = localRootDir.resolve(serverDir.getFileName());
                 Utils.deleteRecursive(localDir);
-                Git.cloneRepository()
+
+                SshClient client = SshClient.setUpDefaultClient();
+                SshSessionFactory.setInstance(new GitSshdSessionFactory(client));
+                try (Git git = Git.cloneRepository()
                         .setURI("ssh://" + getCurrentTestName() + "@" + TEST_LOCALHOST + ":" + port + "/" + serverDir.getFileName())
                         .setDirectory(localDir.toFile())
-                        .call();
+                        .call()) {
+                    assertTrue("Client not started after clone", client.isStarted());
+                    git.commit().setMessage("First Commit").setCommitter(getCurrentTestName(), "sshd@apache.org").call();
+                    git.push().call();
+                    assertTrue("Client not started after 1st push", client.isStarted());
 
-                Git git = Git.open(localDir.toFile());
-                git.commit().setMessage("First Commit").setCommitter(getCurrentTestName(), "sshd@apache.org").call();
-                git.push().call();
+                    Path readmeFile = Files.createFile(localDir.resolve("readme.txt"));
+                    git.add().addFilepattern(readmeFile.getFileName().toString()).call();
+                    git.commit().setMessage(getCurrentTestName()).setCommitter(getCurrentTestName(), "sshd@apache.org").call();
+                    git.push().call();
+                    assertTrue("Client not started after 2nd push", client.isStarted());
 
-                Path readmeFile = Files.createFile(localDir.resolve("readme.txt"));
-                git.add().addFilepattern(readmeFile.getFileName().toString()).call();
-                git.commit().setMessage(getCurrentTestName()).setCommitter(getCurrentTestName(), "sshd@apache.org").call();
-                git.push().call();
+                    git.pull().setRebase(true).call();
+                    assertTrue("Client not started after rebase", client.isStarted());
+                } finally {
+                    client.stop();
+                }
 
-                git.pull().setRebase(true).call();
+                assertFalse("Client not stopped after exit", client.isStarted());
             } finally {
                 sshd.stop();
             }
