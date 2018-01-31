@@ -34,6 +34,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.PublicKey;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -57,8 +58,10 @@ import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
  * comment and/or login options are not considered part of equality
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @see <A HREF="http://man.openbsd.org/sshd.8#AUTHORIZED_KEYS_FILE_FORMAT">sshd(8) - AUTHORIZED_KEYS_FILE_FORMAT</A>
  */
 public class AuthorizedKeyEntry extends PublicKeyEntry {
+    public static final char BOOLEAN_OPTION_NEGATION_INDICATOR = '!';
 
     private static final long serialVersionUID = -9007505285002809156L;
 
@@ -325,10 +328,12 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         String keyType = line.substring(0, startPos);
         PublicKeyEntryDecoder<?, ?> decoder = KeyUtils.getPublicKeyEntryDecoder(keyType);
         AuthorizedKeyEntry entry;
-        if (decoder == null) {  // assume this is due to the fact that it starts with login options
-            entry = parseAuthorizedKeyEntry(line.substring(startPos + 1).trim());
+        // assume this is due to the fact that it starts with login options
+        if (decoder == null) {
+            Map.Entry<String, String> comps = resolveEntryComponents(line);
+            entry = parseAuthorizedKeyEntry(comps.getValue());
             ValidateUtils.checkTrue(entry != null, "Bad format (no key data after login options): %s", line);
-            entry.setLoginOptions(parseLoginOptions(keyType));
+            entry.setLoginOptions(parseLoginOptions(comps.getKey()));
         } else {
             String encData = (endPos < (line.length() - 1)) ? line.substring(0, endPos).trim() : line;
             String comment = (endPos < (line.length() - 1)) ? line.substring(endPos + 1).trim() : null;
@@ -339,34 +344,149 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         return entry;
     }
 
+    /**
+     * Parses a single line from an <code>authorized_keys</code> file that is <U>known</U>
+     * to contain login options and separates it to the options and the rest of the line.
+     *
+     * @param line The line to be parsed
+     * @return A {@link SimpleImmutableEntry} representing the parsed data where key=login options part
+     * and value=rest of the data - {@code null} if no data in line or line starts with comment character
+     * @see <A HREF="http://man.openbsd.org/sshd.8#AUTHORIZED_KEYS_FILE_FORMAT">sshd(8) - AUTHORIZED_KEYS_FILE_FORMAT</A>
+     */
+    public static SimpleImmutableEntry<String, String> resolveEntryComponents(String value) {
+        String line = GenericUtils.replaceWhitespaceAndTrim(value);
+        if (GenericUtils.isEmpty(line) || (line.charAt(0) == COMMENT_CHAR) /* comment ? */) {
+            return null;
+        }
+
+        for (int lastPos = 0; lastPos < line.length();) {
+            int startPos = line.indexOf(' ', lastPos);
+            if (startPos < lastPos) {
+                throw new IllegalArgumentException("Bad format (no key data delimiter): " + line);
+            }
+
+            int quotePos = line.indexOf('"', startPos + 1);
+            // If found quotes after the space then assume part of a login option
+            if (quotePos > startPos) {
+                lastPos = quotePos + 1;
+                continue;
+            }
+
+            String loginOptions = line.substring(0, startPos).trim();
+            String remainder = line.substring(startPos + 1).trim();
+            return new SimpleImmutableEntry<>(loginOptions, remainder);
+        }
+
+        throw new IllegalArgumentException("Bad format (no key data contents): " + line);
+    }
+
+    /**
+     * <P>
+     * Parses login options line according to
+     * <A HREF="http://man.openbsd.org/sshd.8#AUTHORIZED_KEYS_FILE_FORMAT">sshd(8) - AUTHORIZED_KEYS_FILE_FORMAT</A>
+     * guidelines. <B>Note:</B>
+     * </P>
+     *
+     * <UL>
+     *      <P><LI>
+     *      Options that have a value are automatically stripped of any surrounding double quotes./
+     *      </LI></P>
+     *
+     *      <P><LI>
+     *      Options that have no value are marked as {@code true/false} - according
+     *      to the {@link #BOOLEAN_OPTION_NEGATION_INDICATOR}.
+     *      </LI></P>
+     *
+     *      <P><LI>
+     *      Options that appear multiple times are simply concatenated using comma as separator.
+     *      </LI></P>
+     * </UL>
+     *
+     * @param options The options line to parse - ignored if {@code null}/empty/blank
+     * @param A {@link NavigableMap} where key=case <U>insensitive</U> option name and value=the parsed value.
+     * @see #addLoginOption(Map, String) addLoginOption
+     */
     public static NavigableMap<String, String> parseLoginOptions(String options) {
-        // TODO add support if quoted values contain ','
-        String[] pairs = GenericUtils.split(GenericUtils.replaceWhitespaceAndTrim(options), ',');
-        if (GenericUtils.isEmpty(pairs)) {
+        String line = GenericUtils.replaceWhitespaceAndTrim(options);
+        int len = GenericUtils.length(line);
+        if (len <= 0) {
             return Collections.emptyNavigableMap();
         }
 
         NavigableMap<String, String> optsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (String p : pairs) {
-            p = GenericUtils.trimToEmpty(p);
-            if (GenericUtils.isEmpty(p)) {
-                continue;
+        int lastPos = 0;
+        for (int curPos = 0; curPos < len; curPos++) {
+            int nextPos = line.indexOf(',', curPos);
+            if (nextPos < curPos) {
+                break;
             }
 
-            int pos = p.indexOf('=');
-            String name = (pos < 0) ? p : GenericUtils.trimToEmpty(p.substring(0, pos));
-            CharSequence value = (pos < 0) ? null : GenericUtils.trimToEmpty(p.substring(pos + 1));
-            value = GenericUtils.stripQuotes(value);
-            if (value == null) {
-                value = Boolean.TRUE.toString();
+            // check if "true" comma or one inside quotes
+            int quotePos = line.indexOf('"', curPos);
+            if ((quotePos >= lastPos) && (quotePos < nextPos)) {
+                nextPos = line.indexOf('"', quotePos + 1);
+                if (nextPos <= quotePos) {
+                    throw new IllegalArgumentException("Bad format (imbalanced quoted command): " + line);
+                }
+
+                // Make sure either comma or no more options follow the 2nd quote
+                for (nextPos++; nextPos < len; nextPos++) {
+                    char ch = line.charAt(nextPos);
+                    if (ch == ',') {
+                        break;
+                    }
+
+                    if (ch != ' ') {
+                        throw new IllegalArgumentException("Bad format (incorrect list format): " + line);
+                    }
+                }
             }
 
-            String prev = optsMap.put(name, value.toString());
-            if (prev != null) {
-                throw new IllegalArgumentException("Multiple values for key=" + name + ": old=" + prev + ", new=" + value);
-            }
+            addLoginOption(optsMap, line.substring(lastPos, nextPos));
+            lastPos = nextPos + 1;
+            curPos = lastPos;
+        }
+
+        // Any leftovers at end of line ?
+        if (lastPos < len) {
+            addLoginOption(optsMap, line.substring(lastPos));
         }
 
         return optsMap;
+    }
+
+    /**
+     * Parses and adds a new option to the options map. If a valued option is re-specified then
+     * its value(s) are concatenated using comma as separator.
+     *
+     * @param optsMap Options map to add to
+     * @param option The option data to parse - ignored if {@code null}/empty/blank
+     * @return The updated entry - {@code null} if no option updated in the map
+     * @throws IllegalStateException If a boolean option is re-specified
+     */
+    public static SimpleImmutableEntry<String, String> addLoginOption(Map<String, String> optsMap, String option) {
+        String p = GenericUtils.trimToEmpty(option);
+        if (GenericUtils.isEmpty(p)) {
+            return null;
+        }
+
+        int pos = p.indexOf('=');
+        String name = (pos < 0) ? p : GenericUtils.trimToEmpty(p.substring(0, pos));
+        CharSequence value = (pos < 0) ? null : GenericUtils.trimToEmpty(p.substring(pos + 1));
+        value = GenericUtils.stripQuotes(value);
+        if (value == null) {
+            value = Boolean.toString(name.charAt(0) != BOOLEAN_OPTION_NEGATION_INDICATOR);
+        }
+
+        SimpleImmutableEntry<String, String> entry = new SimpleImmutableEntry<>(name, value.toString());
+        String prev = optsMap.put(entry.getKey(), entry.getValue());
+        if (prev != null) {
+            if (pos < 0) {
+                throw new IllegalStateException("Bad format (boolean option (" + name + ") re-specified): " + p);
+            }
+            optsMap.put(entry.getKey(), prev + "," + entry.getValue());
+        }
+
+        return entry;
     }
 }
