@@ -239,6 +239,18 @@ public class ClientTest extends BaseTestSupport {
     }
 
     @Test
+    public void testClientStartedIndicator() throws Exception {
+        client.start();
+        try {
+            assertTrue("Client not marked as started", client.isStarted());
+        } finally {
+            client.stop();
+        }
+
+        assertFalse("Client not marked as stopped", client.isStarted());
+    }
+
+    @Test
     public void testPropertyResolutionHierarchy() throws Exception {
         String sessionPropName = getCurrentTestName() + "-session";
         AtomicReference<Object> sessionConfigValueHolder = new AtomicReference<>(null);

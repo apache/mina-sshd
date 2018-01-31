@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -64,7 +65,7 @@ public class GitSshdSession extends AbstractLoggingBean implements RemoteSession
 
     public GitSshdSession(URIish uri, CredentialsProvider credentialsProvider, FS fs, int tms) throws IOException, InterruptedException {
         String user = uri.getUser();
-        final String pass = uri.getPass();
+        final String pass1 = uri.getPass();
         String host = uri.getHost();
         int port = uri.getPort();
         char[] pass2 = null;
@@ -82,47 +83,135 @@ public class GitSshdSession extends AbstractLoggingBean implements RemoteSession
         }
 
         client = createClient();
+        try {
+            if (!client.isStarted()) {
+                client.start();
+            }
 
-        client.start();
+            session = createClientSession(client, host, user, port, pass1, (pass2 != null) ? new String(pass2) : null);
+        } catch (IOException | InterruptedException e) {
+            disconnectClient(client);
+            throw e;
+        }
+    }
 
-        session = client.connect(user, host, port)
-                        .verify(client.getLongProperty(CONNECT_TIMEOUT_PROP, DEFAULT_CONNECT_TIMEOUT))
-                        .getSession();
-        if (log.isDebugEnabled()) {
+    protected ClientSession createClientSession(
+            SshClient clientInstance, String host, String username, int port, String... passwords)
+                throws IOException, InterruptedException {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
+            log.debug("Connecting to {}:{}", host, port);
+        }
+
+        ClientSession s = clientInstance.connect(username, host, port)
+            .verify(clientInstance.getLongProperty(CONNECT_TIMEOUT_PROP, DEFAULT_CONNECT_TIMEOUT))
+            .getSession();
+
+        if (debugEnabled) {
             log.debug("Connected to {}:{}", host, port);
         }
-        if (pass != null) {
-            session.addPasswordIdentity(pass);
-        }
-        if (pass2 != null) {
-            session.addPasswordIdentity(new String(pass2));
-        }
-        session.auth().verify(session.getLongProperty(AUTH_TIMEOUT_PROP, DEFAULT_AUTH_TIMEOUT));
-        if (log.isDebugEnabled()) {
-            log.debug("Authenticated: {}", session);
+
+        try {
+            if (passwords == null) {
+                passwords = GenericUtils.EMPTY_STRING_ARRAY;
+            }
+
+            for (String p : passwords) {
+                if (p == null) {
+                    continue;
+                }
+                s.addPasswordIdentity(p);
+            }
+
+            if (debugEnabled) {
+                log.debug("Authenticating: {}", s);
+            }
+
+            s.auth().verify(s.getLongProperty(AUTH_TIMEOUT_PROP, DEFAULT_AUTH_TIMEOUT));
+
+            if (debugEnabled) {
+                log.debug("Authenticated: {}", s);
+            }
+
+            ClientSession result = s;
+            s = null;   // avoid auto-close at finally clause
+            return result;
+        } finally {
+            if (s != null) {
+                s.close(true);
+            }
         }
     }
 
     @Override
     public Process exec(String commandName, int timeout) throws IOException {
-        if (log.isTraceEnabled()) {
+        boolean traceEnabled = log.isTraceEnabled();
+        if (traceEnabled) {
             log.trace("exec({}) session={}, timeout={} sec.", commandName, session, timeout);
         }
 
         ChannelExec channel = session.createExecChannel(commandName);
-        channel.open().verify(channel.getLongProperty(CHANNEL_OPEN_TIMEOUT_PROPT, DEFAULT_CHANNEL_OPEN_TIMEOUT));
-        return new GitSshdSessionProcess(channel, commandName, timeout);
+        if (traceEnabled) {
+            log.trace("exec({}) session={} - open channel", commandName, session);
+        }
+
+        try {
+            channel.open().verify(channel.getLongProperty(CHANNEL_OPEN_TIMEOUT_PROPT, DEFAULT_CHANNEL_OPEN_TIMEOUT));
+            if (traceEnabled) {
+                log.trace("exec({}) session={} - channel open", commandName, session);
+            }
+
+            GitSshdSessionProcess process = new GitSshdSessionProcess(channel, commandName, timeout);
+            channel = null; // disable auto-close on finally clause
+            return process;
+        } finally {
+            if (channel != null) {
+                channel.close(true);
+            }
+        }
     }
 
     @Override
     public void disconnect() {
-        if (session.isOpen()) {
-            if (log.isDebugEnabled()) {
-                log.debug("Disconnecting from {}", session);
-            }
+        try {
+            disconnectSession(session);
+        } finally {
+            disconnectClient(client);
+        }
+    }
+
+    protected void disconnectSession(ClientSession sessionInstance) {
+        if ((sessionInstance == null) || (!sessionInstance.isOpen())) {
+            return; // debug breakpoint
         }
 
-        client.close(true);
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
+            log.debug("Disconnecting from {}", sessionInstance);
+        }
+
+        sessionInstance.close(true);
+
+        if (debugEnabled) {
+            log.debug("Disconnected from {}", sessionInstance);
+        }
+    }
+
+    protected void disconnectClient(SshClient clientInstance) {
+        if ((clientInstance == null) || (!clientInstance.isStarted())) {
+            return; // debug breakpoint
+        }
+
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
+            log.debug("Stopping {}", clientInstance);
+        }
+
+        clientInstance.stop();
+
+        if (debugEnabled) {
+            log.debug("Stopped {}", clientInstance);
+        }
     }
 
     protected SshClient createClient() {

@@ -114,6 +114,18 @@ public class ServerTest extends BaseTestSupport {
         }
     }
 
+    @Test
+    public void testServerStartedIndicator() throws Exception {
+        sshd.start();
+        try {
+            assertTrue("Server not marked as started", sshd.isStarted());
+        } finally {
+            sshd.stop();
+        }
+
+        assertFalse("Server not marked as stopped", sshd.isStarted());
+    }
+
     /*
      * Send bad password.  The server should disconnect after a few attempts
      */

@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
@@ -136,6 +137,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     private KeyboardInteractiveAuthenticator interactiveAuthenticator;
     private HostBasedAuthenticator hostBasedAuthenticator;
     private GSSAuthenticator gssAuthenticator;
+    private final AtomicBoolean started = new AtomicBoolean(false);
 
     public SshServer() {
         super();
@@ -293,12 +295,21 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         }
     }
 
+    public boolean isStarted() {
+        return started.get();
+    }
+
     /**
      * Start the SSH server and accept incoming exceptions on the configured port.
+     * Ignored if already {@link #isStarted() started}
      *
      * @throws IOException If failed to start
      */
     public void start() throws IOException {
+        if (isStarted()) {
+            return;
+        }
+
         checkConfig();
         if (sessionFactory == null) {
             sessionFactory = createSessionFactory();
@@ -335,6 +346,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 log.info("start() listen on auto-allocated port=" + port);
             }
         }
+
+        started.set(true);
     }
 
     /**
@@ -346,6 +359,10 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     public void stop(boolean immediately) throws IOException {
+        if (!started.getAndSet(false)) {
+            return;
+        }
+
         long maxWait = immediately ? this.getLongProperty(STOP_WAIT_TIME, DEFAULT_STOP_WAIT_TIME) : Long.MAX_VALUE;
         boolean successful = close(immediately).await(maxWait);
         if (!successful) {

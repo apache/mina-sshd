@@ -49,6 +49,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -217,6 +218,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     private final List<Object> identities = new CopyOnWriteArrayList<>();
     private final AuthenticationIdentitiesProvider identitiesProvider;
+    private final AtomicBoolean started = new AtomicBoolean(false);
 
     public SshClient() {
         identitiesProvider = AuthenticationIdentitiesProvider.wrap(identities);
@@ -434,7 +436,19 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
     }
 
+    public boolean isStarted() {
+        return started.get();
+    }
+
+    /**
+     * Starts the SSH client and can start creating sessions using it.
+     * Ignored if already {@link #isStarted() started}.
+     */
     public void start() {
+        if (isStarted()) {
+            return;
+        }
+
         checkConfig();
         if (sessionFactory == null) {
             sessionFactory = createSessionFactory();
@@ -443,9 +457,14 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         setupSessionTimeout(sessionFactory);
 
         connector = createConnector();
+        started.set(true);
     }
 
     public void stop() {
+        if (!started.getAndSet(false)) {
+            return;
+        }
+
         try {
             long maxWait = this.getLongProperty(STOP_WAIT_TIME, DEFAULT_STOP_WAIT_TIME);
             boolean successful = close(true).await(maxWait);
