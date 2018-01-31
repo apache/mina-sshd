@@ -1333,7 +1333,38 @@ The distribution also includes also an _sshd_ script that can be used to launch 
 
 ## GIT support
 
-The _sshd-git_ artifact contains server-side command factories for handling some _git_ commands - see `GitPackCommandFactory` and `GitPgmCommandFactory`. These command factories accept a delegate to which non-_git_ commands are routed:
+The _sshd-git_ artifact contains both client and server-side command factories for issuing and handling some _git_ commands. The code is based on [JGit](https://github.com/eclipse/jgit)
+and iteracts with it smoothly.
+
+### Client-side
+
+This module provides SSHD-based replacements for the SSH and SFTP transports used by the JGIT client - see `GitSshdSessionFactory` - it can be used as a drop-in replacement
+for the [JSCH](http://www.jcraft.com/jsch/) based built-in session factory provided by _jgit_. In this context, it is worth noting that the `GitSshdSessionFactory` has been tailored so as to provide
+flexible control over which `SshClient` instance to use, and even which `ClientSession`. The default instance allocates a **new** client every time a new `GitSshdSession` is created - which is
+started and stopped as necessary. However, this can be pretty wasteful, so if one intends to issue several commands that access GIT repositories via SSH, one should maintain a **single**
+client instance and re-use it:
+
+
+```java
+
+    SshClient client = ...create and setup the client...
+    try {
+        client.start();
+        
+        GitSshdSessionFactory sshdFactory = new GitSshdSessionFactory(client);  // re-use the same client for all SSH sessions
+        org.eclipse.jgit.transport.SshSessionFactory.setInstance(sshdFactory);  // replace the JSCH-based factory
+
+        ... issue GIT commands that access remote repositories via SSH ....
+        
+    } finally {
+        client.stop();
+    }
+
+```
+
+### Server-side
+
+See `GitPackCommandFactory` and `GitPgmCommandFactory`. These command factories accept a delegate to which non-_git_ commands are routed:
 
 
 ```java
@@ -1348,7 +1379,6 @@ The _sshd-git_ artifact contains server-side command factories for handling some
     sshd.setCommandFactory(new GitPackCommandFactory(rootDir, new ScpCommandFactory(new MyCommandFactory())))
     // or any other combination ...
 ```
-
 
 ## LDAP adaptors
 
