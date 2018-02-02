@@ -21,6 +21,7 @@ package org.apache.sshd.common.session.helpers;
 
 import java.io.IOException;
 
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -36,6 +37,15 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 public class DefaultUnknownChannelReferenceHandler
         extends AbstractLoggingBean
         implements UnknownChannelReferenceHandler {
+    /**
+     * RFC4254 does not clearly specify how to handle {@code SSH_MSG_CHANNEL_DATA}
+     * and {@code SSH_MSG_CHANNEL_EXTENDED_DATA} received through an unknown channel.
+     * Therefore, we provide a configurable approach to it with the default set to ignore it.
+     */
+    public static final String SEND_REPLY_FOR_CHANNEL_DATA = "send-unknown-channel-data-reply";
+    // Not sure if entirely compliant with RFC4254, but try to stem the flood
+    public static final boolean DEFAULT_SEND_REPLY_FOR_CHANNEL_DATA = false;
+
     public static final DefaultUnknownChannelReferenceHandler INSTANCE = new DefaultUnknownChannelReferenceHandler();
 
     public DefaultUnknownChannelReferenceHandler() {
@@ -74,8 +84,11 @@ public class DefaultUnknownChannelReferenceHandler
 
             case SshConstants.SSH_MSG_CHANNEL_DATA:
             case SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA:
-                // Not sure if entirely compliant with RFC4254, but try to stem the flood
-                wantReply = true;
+                wantReply = PropertyResolverUtils.getBooleanProperty(session, SEND_REPLY_FOR_CHANNEL_DATA, DEFAULT_SEND_REPLY_FOR_CHANNEL_DATA);
+                // Use TRACE level to avoid log overflow due to invalid messages flood
+                if (log.isTraceEnabled()) {
+                    log.trace("handleUnknownChannelCommand({}) received msg channel data (opcode={}) reply={}", session, cmd, wantReply);
+                }
                 break;
 
             default: // do nothing
