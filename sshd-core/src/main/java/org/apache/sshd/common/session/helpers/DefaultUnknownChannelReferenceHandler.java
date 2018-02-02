@@ -74,8 +74,8 @@ public class DefaultUnknownChannelReferenceHandler
 
             case SshConstants.SSH_MSG_CHANNEL_DATA:
             case SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA:
-                // Not sure if entirely compliant with RFC4254, but try to stem the flood	
-                wantReply = false;
+                // Not sure if entirely compliant with RFC4254, but try to stem the flood
+                wantReply = true;
                 break;
 
             default: // do nothing
