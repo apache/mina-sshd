@@ -180,18 +180,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
 
             @Override
             public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
-            	if( isOpen() ) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("exceptionCaught({}) Channel is opened, performing gracefull close", TcpipServerChannel.this);
-                    }
-            		close(false);
-            	}
-            	else {
-                    if (log.isDebugEnabled()) {
-                        log.debug("exceptionCaught({}) Channel is closed, performing immediate close", TcpipServerChannel.this);
-                    }
-            		close(true);
-            	}
+                close(true);
             }
         };
 
@@ -339,12 +328,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         }
 
         if (ioSession.isOpen()) {
-			// SSHD-795 IOException (Broken pipe) on a socket local forwarding channel
-			// causes SSH client-server connection down...
-        	if(log.isDebugEnabled()) {
-        		log.debug("handleWriteDataFailure Ignoring {}", t.getMessage());
-        	}
-			// session.exceptionCaught(t);
+            session.exceptionCaught(t);
         } else {
             // In case remote entity has closed the socket (the ioSession), data coming from
             // the SSH channel should be simply discarded
