@@ -21,11 +21,16 @@ package org.apache.sshd.common.forward;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Objects;
+import java.util.Set;
 
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelOutputStream;
@@ -43,13 +48,27 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class TcpipClientChannel extends AbstractClientChannel {
-
     /**
-     * Type of channel being created
+     * Type of channel being created. The type's {@link #getName()}
+     * method returns the SSH request type
      */
-    public enum Type {
-        Direct,
-        Forwarded
+    public enum Type implements NamedResource {
+        Direct("direct-tcpip"),
+        Forwarded("forwarded-tcpip");
+
+        public static final Set<Type> VALUES =
+                Collections.unmodifiableSet(EnumSet.allOf(Type.class));
+
+        private final String channelType;
+
+        Type(String channelType) {
+            this.channelType = channelType;
+        }
+
+        @Override
+        public String getName() {
+            return channelType;
+        }
     }
 
     private final Type typeEnum;
@@ -57,9 +76,9 @@ public class TcpipClientChannel extends AbstractClientChannel {
     private final SshdSocketAddress remote;
 
     public TcpipClientChannel(Type type, IoSession serverSession, SshdSocketAddress remote) {
-        super(type == Type.Direct ? "direct-tcpip" : "forwarded-tcpip");
+        super(Objects.requireNonNull(type, "No type specified").getName());
         this.typeEnum = type;
-        this.serverSession = serverSession;
+        this.serverSession = Objects.requireNonNull(serverSession, "No server session provided");
         this.remote = remote;
     }
 
@@ -67,11 +86,16 @@ public class TcpipClientChannel extends AbstractClientChannel {
         return openFuture;
     }
 
+    public Type getTcpipChannelType() {
+        return typeEnum;
+    }
+
     @Override
     public synchronized OpenFuture open() throws IOException {
         InetSocketAddress src;
         InetSocketAddress dst;
-        switch (typeEnum) {
+        Type openType = getTcpipChannelType();
+        switch (openType) {
             case Direct:
                 src = (InetSocketAddress) serverSession.getRemoteAddress();
                 dst = this.remote.toInetSocketAddress();
@@ -81,7 +105,7 @@ public class TcpipClientChannel extends AbstractClientChannel {
                 dst = (InetSocketAddress) serverSession.getLocalAddress();
                 break;
             default:
-                throw new SshException("Unknown client channel type: " + typeEnum);
+                throw new SshException("Unknown client channel type: " + openType);
         }
 
         if (closeFuture.isClosed()) {
@@ -99,8 +123,9 @@ public class TcpipClientChannel extends AbstractClientChannel {
         InetAddress dstAddress = dst.getAddress();
         String dstHost = dstAddress.getHostAddress();
         Window wLocal = getLocalWindow();
+        String type = getChannelType();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN,
-                type.length() + srcHost.length() + dstHost.length() + Long.SIZE);
+            type.length() + srcHost.length() + dstHost.length() + Long.SIZE);
         buffer.putString(type);
         buffer.putInt(getId());
         buffer.putInt(wLocal.getSize());
@@ -139,6 +164,6 @@ public class TcpipClientChannel extends AbstractClientChannel {
 
     @Override
     protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
-        throw new UnsupportedOperationException(type + "Tcpip channel does not support extended data");
+        throw new UnsupportedOperationException(getChannelType() + "Tcpip channel does not support extended data");
     }
 }

@@ -39,6 +39,7 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
+import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
@@ -50,6 +51,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.channel.AbstractServerChannel;
+import org.apache.sshd.server.forward.TcpForwardingFilter.Type;
 
 /**
  * TODO Add javadoc
@@ -98,10 +100,10 @@ public class TcpipServerChannel extends AbstractServerChannel {
     private OutputStream out;
 
     public TcpipServerChannel(ForwardingFilter.Type type) {
-        this.type = type;
+        this.type = Objects.requireNonNull(type, "No channel type specified");
     }
 
-    public final ForwardingFilter.Type getChannelType() {
+    public ForwardingFilter.Type getTcpipChannelType() {
         return type;
     }
 
@@ -116,16 +118,19 @@ public class TcpipServerChannel extends AbstractServerChannel {
                       this, hostToConnect, portToConnect, originatorIpAddress, originatorPort);
         }
 
-        final SshdSocketAddress address;
+        SshdSocketAddress address;
+        Type channelType = getTcpipChannelType();
         switch (type) {
             case Direct:
                 address = new SshdSocketAddress(hostToConnect, portToConnect);
                 break;
-            case Forwarded:
-                address = service.getForwardingFilter().getForwardedPort(portToConnect);
+            case Forwarded: {
+                org.apache.sshd.common.forward.ForwardingFilter ff = service.getForwardingFilter();
+                address = ff.getForwardedPort(portToConnect);
                 break;
+            }
             default:
-                throw new IllegalStateException("Unknown server channel type: " + type);
+                throw new IllegalStateException("Unknown server channel type: " + channelType);
         }
 
         Session session = getSession();
@@ -133,7 +138,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         TcpForwardingFilter filter = manager.getTcpForwardingFilter();
         OpenFuture f = new DefaultOpenFuture(this, this);
         try {
-            if ((address == null) || (filter == null) || (!filter.canConnect(type, address, session))) {
+            if ((address == null) || (filter == null) || (!filter.canConnect(channelType, address, session))) {
                 if (log.isDebugEnabled()) {
                     log.debug("doInit(" + this + ")[" + type + "][haveFilter=" + (filter != null) + "] filtered out " + address);
                 }
@@ -143,7 +148,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
             }
         } catch (Error e) {
             log.warn("doInit({})[{}] failed ({}) to consult forwarding filter: {}",
-                     session, type, e.getClass().getSimpleName(), e.getMessage());
+                     session, channelType, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("doInit(" + this + ")[" + type + "] filter consultation failure details", e);
             }
@@ -184,7 +189,8 @@ public class TcpipServerChannel extends AbstractServerChannel {
             }
         };
 
-        connector = manager.getIoServiceFactory().createConnector(handler);
+        IoServiceFactory ioServiceFactory = manager.getIoServiceFactory();
+        connector = ioServiceFactory.createConnector(handler);
         IoConnectFuture future = connector.connect(address.toInetSocketAddress());
         future.addListener(future1 -> handleChannelConnectResult(f, future1));
         return f;
@@ -239,7 +245,6 @@ public class TcpipServerChannel extends AbstractServerChannel {
         } else {
             f.setException(problem);
         }
-
     }
 
     @Override
@@ -296,7 +301,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
 
     @Override
     protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
-        throw new UnsupportedOperationException(type + "Tcpip channel does not support extended data");
+        throw new UnsupportedOperationException(getTcpipChannelType() + "Tcpip channel does not support extended data");
     }
 
     protected void handleWriteDataSuccess(byte cmd, byte[] data, int off, int len) {

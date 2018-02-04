@@ -934,7 +934,7 @@ public class DefaultForwardingFilter
                 log.debug("sessionCreated({}) remote={}", session, remote);
             }
 
-            final TcpipClientChannel channel;
+            TcpipClientChannel channel;
             if (remote != null) {
                 channel = new TcpipClientChannel(TcpipClientChannel.Type.Direct, session, remote);
             } else {

@@ -62,7 +62,6 @@ import org.apache.sshd.common.util.io.IoUtils;
 public abstract class AbstractClientChannel extends AbstractChannel implements ClientChannel {
 
     protected final AtomicBoolean opened = new AtomicBoolean();
-    protected final String type;
 
     protected Streaming streaming;
 
@@ -83,13 +82,15 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     protected String openFailureLang;
     protected OpenFuture openFuture;
 
+    private final String channelType;
+
     protected AbstractClientChannel(String type) {
         this(type, Collections.emptyList());
     }
 
     protected AbstractClientChannel(String type, Collection<? extends RequestHandler<Channel>> handlers) {
         super(true, handlers);
-        this.type = ValidateUtils.checkNotNullAndNotEmpty(type, "No channel type specified");
+        this.channelType = ValidateUtils.checkNotNullAndNotEmpty(type, "No channel type specified");
         this.streaming = Streaming.Sync;
 
         addChannelSignalRequestHandlers(event -> {
@@ -103,6 +104,11 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     protected void addChannelSignalRequestHandlers(EventNotifier<String> notifier) {
         addRequestHandler(new ExitStatusChannelRequestHandler(exitStatusHolder, notifier));
         addRequestHandler(new ExitSignalChannelRequestHandler(exitSignalHolder, notifier));
+    }
+
+    @Override
+    public String getChannelType() {
+        return channelType;
     }
 
     @Override
@@ -299,6 +305,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         }
 
         openFuture = new DefaultOpenFuture(this.toString(), lock);
+        String type = getChannelType();
         if (log.isDebugEnabled()) {
             log.debug("open({}) Send SSH_MSG_CHANNEL_OPEN - type={}", this, type);
         }
