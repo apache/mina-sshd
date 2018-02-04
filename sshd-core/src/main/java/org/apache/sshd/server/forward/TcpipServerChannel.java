@@ -142,8 +142,11 @@ public class TcpipServerChannel extends AbstractServerChannel {
                 if (log.isDebugEnabled()) {
                     log.debug("doInit(" + this + ")[" + type + "][haveFilter=" + (filter != null) + "] filtered out " + address);
                 }
-                super.close(true);
-                f.setException(new SshChannelOpenException(getId(), SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "Connection denied"));
+                try {
+                    f.setException(new SshChannelOpenException(getId(), SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "Connection denied"));
+                } finally {
+                    super.close(true);
+                }
                 return f;
             }
         } catch (Error e) {
@@ -244,12 +247,14 @@ public class TcpipServerChannel extends AbstractServerChannel {
     protected void handleChannelOpenFailure(OpenFuture f, Throwable problem) {
         signalChannelOpenFailure(problem);
         notifyStateChanged(problem.getClass().getSimpleName());
-        close(true);
-
-        if (problem instanceof ConnectException) {
-            f.setException(new SshChannelOpenException(getId(), SshConstants.SSH_OPEN_CONNECT_FAILED, problem.getMessage(), problem));
-        } else {
-            f.setException(problem);
+        try {
+            if (problem instanceof ConnectException) {
+                f.setException(new SshChannelOpenException(getId(), SshConstants.SSH_OPEN_CONNECT_FAILED, problem.getMessage(), problem));
+            } else {
+                f.setException(problem);
+            }
+        } finally {
+            close(true);
         }
     }
 
