@@ -331,24 +331,28 @@ public class TcpipServerChannel extends AbstractServerChannel {
     }
 
     protected void handleWriteDataFailure(byte cmd, byte[] data, int off, int len, Throwable t) {
-        Session session = getSession();
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("handleWriteDataFailure({})[{}] failed ({}) to write len={}: {}",
                       this, SshConstants.getCommandMessageName(cmd & 0xFF),
                       t.getClass().getSimpleName(), len, t.getMessage());
         }
 
         if (log.isTraceEnabled()) {
-            log.trace("doWriteData(" + this + ")[" + SshConstants.getCommandMessageName(cmd & 0xFF) + "]"
+            log.trace("handleWriteDataFailure(" + this + ")[" + SshConstants.getCommandMessageName(cmd & 0xFF) + "]"
                     + " len=" + len + " write failure details", t);
         }
 
         if (ioSession.isOpen()) {
-            session.exceptionCaught(t);
+            // SSHD-795 IOException (Broken pipe) on a socket local forwarding channel causes SSH client-server connection down
+            if (debugEnabled) {
+                log.debug("handleWriteDataFailure({})[{}] closing session={}",
+                        this, SshConstants.getCommandMessageName(cmd & 0xFF), ioSession);
+            }
+            close(false);
         } else {
-            // In case remote entity has closed the socket (the ioSession), data coming from
-            // the SSH channel should be simply discarded
-            if (log.isDebugEnabled()) {
+            // In case remote entity has closed the socket (the ioSession), data coming from the SSH channel should be simply discarded
+            if (debugEnabled) {
                 log.debug("Ignoring writeDataFailure {} because ioSession {} is already closing ", t, ioSession);
             }
         }

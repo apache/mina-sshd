@@ -66,5 +66,4 @@ public abstract class StaticServerKeyVerifier extends AbstractLoggingBean implem
                       remoteAddress, (serverKey == null) ? null : serverKey.getAlgorithm(), KeyUtils.getFingerPrint(serverKey));
         }
     }
-
 }
