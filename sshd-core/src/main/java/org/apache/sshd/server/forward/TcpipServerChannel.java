@@ -158,8 +158,8 @@ public class TcpipServerChannel extends AbstractServerChannel {
         // TODO: revisit for better threading. Use async io ?
         out = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
         IoHandler handler = new IoHandler() {
-            @SuppressWarnings("synthetic-access")
             @Override
+            @SuppressWarnings("synthetic-access")
             public void messageReceived(IoSession session, Readable message) throws Exception {
                 if (isClosing()) {
                     if (log.isDebugEnabled()) {
@@ -184,8 +184,14 @@ public class TcpipServerChannel extends AbstractServerChannel {
             }
 
             @Override
+            @SuppressWarnings("synthetic-access")
             public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
-                close(true);
+                boolean immediately = !session.isOpen();
+                if (log.isDebugEnabled()) {
+                    log.debug("exceptionCaught({}) signal close immediately={} due to {}[{}]",
+                            TcpipServerChannel.this, immediately, cause.getClass().getSimpleName(), cause.getMessage());
+                }
+                close(immediately);
             }
         };
 
