@@ -44,8 +44,8 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.spi.FileSystemProvider;
-import java.util.Iterator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -175,8 +175,9 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     }
 
     @Override
-    public AsynchronousFileChannel newAsynchronousFileChannel(Path path, Set<? extends OpenOption> options,
-                                                              ExecutorService executor, FileAttribute<?>... attrs) throws IOException {
+    public AsynchronousFileChannel newAsynchronousFileChannel(
+            Path path, Set<? extends OpenOption> options, ExecutorService executor, FileAttribute<?>... attrs)
+                throws IOException {
         Path r = unroot(path);
         FileSystemProvider p = provider(r);
         return p.newAsynchronousFileChannel(r, options, executor, attrs);
@@ -202,6 +203,7 @@ public class RootedFileSystemProvider extends FileSystemProvider {
             public Iterator<Path> iterator() {
                 return root(rfs, ds.iterator());
             }
+
             @Override
             public void close() throws IOException {
                 ds.close();
@@ -215,6 +217,7 @@ public class RootedFileSystemProvider extends FileSystemProvider {
             public boolean hasNext() {
                 return iter.hasNext();
             }
+
             @Override
             public Path next() {
                 return root(rfs, iter.next());
