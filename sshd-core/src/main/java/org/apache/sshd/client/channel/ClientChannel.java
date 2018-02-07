@@ -45,6 +45,11 @@ public interface ClientChannel extends Channel {
         Sync
     }
 
+    /**
+     * @return The type of channel reported when it was created
+     */
+    String getChannelType();
+
     Streaming getStreaming();
 
     void setStreaming(Streaming streaming);

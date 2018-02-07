@@ -639,19 +639,22 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
                     buf.putInt(window.getPacketSize());
                     session.writePacket(buf);
                 } else {
+                    int reasonCode = 0;
+                    String message = "Generic error while opening channel: " + channelId;
                     Throwable exception = future.getException();
                     if (exception != null) {
-                        String message = exception.getMessage();
-                        int reasonCode = 0;
                         if (exception instanceof SshChannelOpenException) {
                             reasonCode = ((SshChannelOpenException) exception).getReasonCode();
                         } else {
                             message = exception.getClass().getSimpleName() + " while opening channel: " + message;
                         }
-
-                        Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, message.length() + Long.SIZE);
-                        sendChannelOpenFailure(buf, sender, reasonCode, message, "");
+                    } else {
+                        log.warn("operationComplete({}) no exception on closed future={}",
+                                 AbstractConnectionService.this, future);
                     }
+
+                    Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, message.length() + Long.SIZE);
+                    sendChannelOpenFailure(buf, sender, reasonCode, message, "");
                 }
             } catch (IOException e) {
                 if (log.isDebugEnabled()) {

@@ -226,6 +226,19 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         }
     }
 
+    @Test
+    public void testResolveRoot() throws IOException {
+        Path root = fileSystem.getRootDirectories().iterator().next();
+        Path dir = root.resolve("tsd");
+        FileHelper.createDirectory(dir);
+        Path f1 = FileHelper.createFile(dir.resolve("test.txt"));
+        Path f2 = Files.newDirectoryStream(dir).iterator().next();
+        assertTrue("Unrooted path found", f2 instanceof RootedPath);
+        assertEquals(f1, f2);
+        FileHelper.deleteFile(f1);
+        FileHelper.deleteDirectory(dir);
+    }
+
     /* Private helper */
 
     /**

@@ -45,6 +45,7 @@ import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -174,8 +175,9 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     }
 
     @Override
-    public AsynchronousFileChannel newAsynchronousFileChannel(Path path, Set<? extends OpenOption> options,
-                                                              ExecutorService executor, FileAttribute<?>... attrs) throws IOException {
+    public AsynchronousFileChannel newAsynchronousFileChannel(
+            Path path, Set<? extends OpenOption> options, ExecutorService executor, FileAttribute<?>... attrs)
+                throws IOException {
         Path r = unroot(path);
         FileSystemProvider p = provider(r);
         return p.newAsynchronousFileChannel(r, options, executor, attrs);
@@ -192,7 +194,35 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
         Path r = unroot(dir);
         FileSystemProvider p = provider(r);
-        return p.newDirectoryStream(r, filter);
+        return root(((RootedPath) dir).getFileSystem(), p.newDirectoryStream(r, filter));
+    }
+
+    protected DirectoryStream<Path> root(RootedFileSystem rfs, DirectoryStream<Path> ds) {
+        return new DirectoryStream<Path>() {
+            @Override
+            public Iterator<Path> iterator() {
+                return root(rfs, ds.iterator());
+            }
+
+            @Override
+            public void close() throws IOException {
+                ds.close();
+            }
+        };
+    }
+
+    protected Iterator<Path> root(RootedFileSystem rfs, Iterator<Path> iter) {
+        return new Iterator<Path>() {
+            @Override
+            public boolean hasNext() {
+                return iter.hasNext();
+            }
+
+            @Override
+            public Path next() {
+                return root(rfs, iter.next());
+            }
+        };
     }
 
     @Override
