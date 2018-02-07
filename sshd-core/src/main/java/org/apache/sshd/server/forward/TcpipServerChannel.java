@@ -260,6 +260,20 @@ public class TcpipServerChannel extends AbstractServerChannel {
 
     @Override
     public CloseFuture close(boolean immediately) {
+
+        if (!immediately && (out != null)) {
+            try {
+                if (log.isDebugEnabled()) {
+                    log.debug("Closing ChannelOutputStream: {}", TcpipServerChannel.this);
+                }
+                out.close();
+            } catch (IOException ignored) {
+                if (log.isErrorEnabled()) {
+                    log.error("Error closing ChannelOutputStream: {}", TcpipServerChannel.this, ignored);
+                }
+            }
+        }
+
         CloseFuture closingFeature = super.close(immediately);
 
         // We also need to dispose of the connector, but unfortunately we
