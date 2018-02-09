@@ -309,10 +309,16 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
                     }
                 }
             } else {
+                // In case remote socket has reached eof, we have to close the session
+                // gracefully (eg. TcpipServerChannel need to send and ordered
+                // SSH_MSG_CHANNEL_EOF and SSH_MSG_CHANNEL_CLOSE sequence).
+                boolean immediately = false;
+
                 if (log.isDebugEnabled()) {
                     log.debug("handleReadCycleCompletion({}) Socket has been disconnected (result={}), closing IoSession now", this, result);
                 }
-                close(false);
+
+                close(immediately);
             }
         } catch (Throwable exc) {
             completionHandler.failed(exc, attachment);

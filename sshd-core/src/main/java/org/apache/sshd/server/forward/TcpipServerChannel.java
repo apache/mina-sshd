@@ -260,16 +260,19 @@ public class TcpipServerChannel extends AbstractServerChannel {
 
     @Override
     public CloseFuture close(boolean immediately) {
-
-        if (!immediately && (out != null)) {
+        // In case of graceful shutdown (e.g. when the remote channel is gently closed)
+        // we also need to close the ChannelOutputStream which flushes remaining buffer
+        // and sends SSH_MSG_CHANNEL_EOF back to the client.
+        if ((!immediately) && (out != null)) {
             try {
                 if (log.isDebugEnabled()) {
                     log.debug("Closing ChannelOutputStream: {}", TcpipServerChannel.this);
                 }
+
                 out.close();
             } catch (IOException ignored) {
-                if (log.isErrorEnabled()) {
-                    log.error("Error closing ChannelOutputStream: {}", TcpipServerChannel.this, ignored);
+                if (log.isDebugEnabled()) {
+                    log.debug("Error closing ChannelOutputStream: {}", TcpipServerChannel.this, ignored);
                 }
             }
         }
