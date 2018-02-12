@@ -260,6 +260,27 @@ public class TcpipServerChannel extends AbstractServerChannel {
 
     @Override
     public CloseFuture close(boolean immediately) {
+        boolean debugEnabled = log.isDebugEnabled();
+        /*
+         * In case of graceful shutdown (e.g. when the remote channel is gently closed)
+         * we also need to close the ChannelOutputStream which flushes remaining buffer
+         * and sends SSH_MSG_CHANNEL_EOF back to the client.
+         */
+        if ((!immediately) && (out != null)) {
+            try {
+                if (debugEnabled) {
+                    log.debug("Closing channel output stream of {}", this);
+                }
+
+                out.close();
+            } catch (IOException | RuntimeException ignored) {
+                if (debugEnabled) {
+                    log.debug("{} while closing channel output stream of {}: {}",
+                        ignored.getClass().getSimpleName(), this, ignored.getMessage());
+                }
+            }
+        }
+
         CloseFuture closingFeature = super.close(immediately);
 
         // We also need to dispose of the connector, but unfortunately we
@@ -279,14 +300,14 @@ public class TcpipServerChannel extends AbstractServerChannel {
         return builder().when(closingFeature).run(toString(), () -> {
             executors.submit(() -> {
                 try {
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("disposing connector: {} for: {}", connector, TcpipServerChannel.this);
                     }
                     connector.close(immediately);
                 } finally {
                     if (shutdown && (!executors.isShutdown())) {
                         Collection<Runnable> runners = executors.shutdownNow();
-                        if (log.isDebugEnabled()) {
+                        if (debugEnabled) {
                             log.debug("destroy({}) - shutdown executor service - runners count={}",
                                       TcpipServerChannel.this, runners.size());
                         }
