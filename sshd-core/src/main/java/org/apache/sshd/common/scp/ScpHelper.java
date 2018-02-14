@@ -519,7 +519,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         }
 
         Set<PosixFilePermission> perms = EnumSet.copyOf(resolver.getPermissions());
-        String octalPerms = (preserve || GenericUtils.isEmpty(perms)) ? DEFAULT_FILE_OCTAL_PERMISSIONS : getOctalPermissions(perms);
+        String octalPerms = ((!preserve) || GenericUtils.isEmpty(perms)) ? DEFAULT_FILE_OCTAL_PERMISSIONS : getOctalPermissions(perms);
         String fileName = resolver.getFileName();
         String cmd = "C" + octalPerms + " " + fileSize + " " + fileName;
         if (log.isDebugEnabled()) {
@@ -614,7 +614,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         }
 
         Set<PosixFilePermission> perms = opener.getLocalFilePermissions(path, options);
-        String octalPerms = (preserve || GenericUtils.isEmpty(perms)) ? DEFAULT_DIR_OCTAL_PERMISSIONS : getOctalPermissions(perms);
+        String octalPerms = ((!preserve) || GenericUtils.isEmpty(perms)) ? DEFAULT_DIR_OCTAL_PERMISSIONS : getOctalPermissions(perms);
         String cmd = "D" + octalPerms + " " + "0" + " " + Objects.toString(path.getFileName(), null);
         if (log.isDebugEnabled()) {
             log.debug("sendDir({})[{}] send 'D' command: {}", this, path, cmd);

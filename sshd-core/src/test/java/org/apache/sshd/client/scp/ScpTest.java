@@ -958,7 +958,7 @@ public class ScpTest extends BaseTestSupport {
         ));
 
         ch.ethz.ssh2.log.Logger.enabled = true;
-        final Connection conn = new Connection(TEST_LOCALHOST, port);
+        Connection conn = new Connection(TEST_LOCALHOST, port);
         try {
             ConnectionInfo info = conn.connect(null, (int) TimeUnit.SECONDS.toMillis(5L), (int) TimeUnit.SECONDS.toMillis(11L));
             outputDebugMessage("Connected: kex=%s, key-type=%s, c2senc=%s, s2cenc=%s, c2mac=%s, s2cmac=%s",
@@ -1003,9 +1003,7 @@ public class ScpTest extends BaseTestSupport {
             os.flush();
 
             String header = readLine(is);
-            Collection<PosixFilePermission> perms = IoUtils.getPermissions(target.toPath());
-            String octalPerms = ScpHelper.getOctalPermissions(perms);
-            String expHeader = "C" + octalPerms + " " + target.length() + " " + fileName;
+            String expHeader = "C" + ScpHelper.DEFAULT_FILE_OCTAL_PERMISSIONS + " " + target.length() + " " + fileName;
             assertEquals("Mismatched header for " + path, expHeader, header);
 
             String lenValue = header.substring(6, header.indexOf(' ', 6));
@@ -1038,18 +1036,13 @@ public class ScpTest extends BaseTestSupport {
             os.flush();
 
             String header = readLine(is);
-            File parent = target.getParentFile();
-            Collection<PosixFilePermission> perms = IoUtils.getPermissions(parent.toPath());
-            String octalPerms = ScpHelper.getOctalPermissions(perms);
-            String expPrefix = "D" + octalPerms + " 0 ";
+            String expPrefix = "D" + ScpHelper.DEFAULT_DIR_OCTAL_PERMISSIONS + " 0 ";
             assertTrue("Bad header prefix for " + path + ": " + header, header.startsWith(expPrefix));
             os.write(0);
             os.flush();
 
             header = readLine(is);
-            perms = IoUtils.getPermissions(target.toPath());
-            octalPerms = ScpHelper.getOctalPermissions(perms);
-            String expHeader = "C" + octalPerms + " " + target.length() + " " + target.getName();
+            String expHeader = "C" + ScpHelper.DEFAULT_FILE_OCTAL_PERMISSIONS + " " + target.length() + " " + target.getName();
             assertEquals("Mismatched dir header for " + path, expHeader, header);
             int length = Integer.parseInt(header.substring(6, header.indexOf(' ', 6)));
             os.write(0);
