@@ -32,39 +32,23 @@ import org.apache.sshd.server.scp.UnknownCommand;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractGitCommandFactory implements CommandFactory, ExecutorServiceCarrier {
-    private final String rootDir;
-    private final CommandFactory delegate;
+public abstract class AbstractGitCommandFactory implements CommandFactory, ExecutorServiceCarrier, GitLocationResolverCarrier {
     private final String cmdPrefix;
+    private GitLocationResolver rootDirResolver;
+    private CommandFactory delegate;
     private ExecutorService executorService;
     private boolean shutdownOnExit;
 
-    protected AbstractGitCommandFactory(String rootDir, CommandFactory delegate, String cmdPrefix) {
-        this.rootDir = rootDir;
-        this.delegate = delegate;
+    /**
+     * @param cmdPrefix The command prefix used to detect and intercept GIT commands handled by this
+     * factory (never {@code null}/empty)
+     */
+    protected AbstractGitCommandFactory(String cmdPrefix) {
         this.cmdPrefix = ValidateUtils.checkNotNullAndNotEmpty(cmdPrefix, "No command prefix provided");
-    }
-
-    public AbstractGitCommandFactory withExecutorService(ExecutorService executorService) {
-        this.executorService = executorService;
-        return this;
-    }
-
-    public String getRootDir() {
-        return rootDir;
-    }
-
-    public CommandFactory getDelegate() {
-        return delegate;
     }
 
     public String getCommandPrefix() {
         return cmdPrefix;
-    }
-
-    public AbstractGitCommandFactory withShutdownOnExit(boolean shutdownOnExit) {
-        this.shutdownOnExit = shutdownOnExit;
-        return this;
     }
 
     @Override
@@ -75,6 +59,35 @@ public abstract class AbstractGitCommandFactory implements CommandFactory, Execu
     @Override
     public boolean isShutdownOnExit() {
         return shutdownOnExit;
+    }
+
+    public AbstractGitCommandFactory withExecutorService(ExecutorService executorService) {
+        this.executorService = executorService;
+        return this;
+    }
+
+    public AbstractGitCommandFactory withShutdownOnExit(boolean shutdownOnExit) {
+        this.shutdownOnExit = shutdownOnExit;
+        return this;
+    }
+
+    @Override
+    public GitLocationResolver getGitLocationResolver() {
+        return rootDirResolver;
+    }
+
+    public AbstractGitCommandFactory withGitLocationResolver(GitLocationResolver rootDirResolver) {
+        this.rootDirResolver = rootDirResolver;
+        return this;
+    }
+
+    public CommandFactory getDelegate() {
+        return delegate;
+    }
+
+    public AbstractGitCommandFactory withDelegate(CommandFactory delegate) {
+        this.delegate = delegate;
+        return this;
     }
 
     @Override

@@ -18,11 +18,15 @@
  */
 package org.apache.sshd.git.pack;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.git.AbstractGitCommand;
+import org.apache.sshd.git.GitLocationResolver;
 import org.apache.sshd.server.Environment;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryCache;
@@ -38,15 +42,15 @@ import org.eclipse.jgit.util.FS;
  */
 public class GitPackCommand extends AbstractGitCommand {
     /**
-     * @param rootDir Root directory for the command
+     * @param rootDirResolver Resolver for GIT root directory
      * @param command Command to execute
      * @param executorService An {@link ExecutorService} to be used when {@link #start(Environment)}-ing
      * execution. If {@code null} an ad-hoc single-threaded service is created and used.
      * @param shutdownOnExit  If {@code true} the {@link ExecutorService#shutdownNow()} will be called when
      * command terminates - unless it is the ad-hoc service, which will be shutdown regardless
      */
-    public GitPackCommand(String rootDir, String command, ExecutorService executorService, boolean shutdownOnExit) {
-        super(rootDir, command, executorService, shutdownOnExit);
+    public GitPackCommand(GitLocationResolver rootDirResolver, String command, ExecutorService executorService, boolean shutdownOnExit) {
+        super(rootDirResolver, command, executorService, shutdownOnExit);
     }
 
     @Override
@@ -71,13 +75,13 @@ public class GitPackCommand extends AbstractGitCommand {
                 throw new IllegalArgumentException("Invalid git command line: " + command);
             }
 
-            String rootDir = getRootDir();
-            File srcGitdir = new File(rootDir, args[1]);
-            RepositoryCache.FileKey key = RepositoryCache.FileKey.lenient(srcGitdir, FS.DETECTED);
+            String subCommand = args[0];
+            Path rootDir = resolveRootDirectory(command, subCommand, args[1]);
+            RepositoryCache.FileKey key = RepositoryCache.FileKey.lenient(rootDir.toFile(), FS.DETECTED);
             Repository db = key.open(true /* must exist */);
-            if (RemoteConfig.DEFAULT_UPLOAD_PACK.equals(args[0])) {
+            if (RemoteConfig.DEFAULT_UPLOAD_PACK.equals(subCommand)) {
                 new UploadPack(db).upload(getInputStream(), getOutputStream(), getErrorStream());
-            } else if (RemoteConfig.DEFAULT_RECEIVE_PACK.equals(args[0])) {
+            } else if (RemoteConfig.DEFAULT_RECEIVE_PACK.equals(subCommand)) {
                 new ReceivePack(db).receive(getInputStream(), getOutputStream(), getErrorStream());
             } else {
                 throw new IllegalArgumentException("Unknown git command: " + command);
@@ -87,5 +91,20 @@ public class GitPackCommand extends AbstractGitCommand {
         } catch (Throwable t) {
             onExit(-1, t.getClass().getSimpleName());
         }
+    }
+
+    protected Path resolveRootDirectory(String command, String subCommand, String pathArg) throws IOException {
+        GitLocationResolver resolver = getGitLocationResolver();
+        Path rootDir = resolver.resolveRootDirectory(command, getServerSession(), getFileSystem());
+        ValidateUtils.checkState(rootDir != null, "No root directory provided for %s command", command);
+        int len = GenericUtils.length(pathArg);
+        // Strip any leading path separator since we use relative to root
+        if ((len > 0) && (pathArg.charAt(0) == '/')) {
+            pathArg = (len > 1) ? pathArg.substring(1) : "";
+            len--;
+        }
+
+        ValidateUtils.checkNotNullAndNotEmpty(pathArg, "No %s command sub-path specified", subCommand);
+        return rootDir.resolve(pathArg);
     }
 }

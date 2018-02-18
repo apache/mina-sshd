@@ -21,6 +21,7 @@ package org.apache.sshd.git.pgm;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.git.AbstractGitCommandFactory;
+import org.apache.sshd.git.GitLocationResolver;
 import org.apache.sshd.server.CommandFactory;
 
 /**
@@ -31,12 +32,23 @@ import org.apache.sshd.server.CommandFactory;
 public class GitPgmCommandFactory extends AbstractGitCommandFactory {
     public static final String GIT_COMMAND_PREFIX = "git ";
 
-    public GitPgmCommandFactory(String rootDir) {
-        this(rootDir,  null);
+    public GitPgmCommandFactory() {
+        super(GIT_COMMAND_PREFIX);
     }
 
-    public GitPgmCommandFactory(String rootDir, CommandFactory delegate) {
-        super(rootDir, delegate, GIT_COMMAND_PREFIX);
+    public GitPgmCommandFactory(GitLocationResolver resolver) {
+        super(GIT_COMMAND_PREFIX);
+        withGitLocationResolver(resolver);
+    }
+
+    @Override
+    public GitPgmCommandFactory withDelegate(CommandFactory delegate) {
+        return (GitPgmCommandFactory) super.withDelegate(delegate);
+    }
+
+    @Override
+    public GitPgmCommandFactory withGitLocationResolver(GitLocationResolver rootDirResolver) {
+        return (GitPgmCommandFactory) super.withGitLocationResolver(rootDirResolver);
     }
 
     @Override
@@ -51,6 +63,6 @@ public class GitPgmCommandFactory extends AbstractGitCommandFactory {
 
     @Override
     public GitPgmCommand createGitCommand(String command) {
-        return new GitPgmCommand(getRootDir(), command.substring(GIT_COMMAND_PREFIX.length()), getExecutorService(), isShutdownOnExit());
+        return new GitPgmCommand(getGitLocationResolver(), command.substring(GIT_COMMAND_PREFIX.length()), getExecutorService(), isShutdownOnExit());
     }
 }

@@ -1364,20 +1364,41 @@ client instance and re-use it:
 
 ### Server-side
 
-See `GitPackCommandFactory` and `GitPgmCommandFactory`. These command factories accept a delegate to which non-_git_ commands are routed:
+See `GitPackCommandFactory` and `GitPgmCommandFactory` - in order for the various commands to function correctly, they require a `GitLocationResolver`
+that is invoked in order to allow the user to decide which is the correct GIT repository root location for a given command. The resolver is provided
+with all the relevant details - including the command and server session through which the command was received:
 
 
 ```java
 
-    sshd.setCommandFactory(new GitPackCommandFactory(rootDir, new MyCommandFactory()));
+    GitLocationResolver resolver = (cmd, session, fs) -> ...consult some code - perhaps based on the authenticated username...
+    sshd.setCommandFactory(new GitPackCommandFactory().withGitLocationResolver(resolver));
+
+```
+
+ These command factories also accept a delegate to which non-_git_ commands are routed:
+
+
+```java
+
+    sshd.setCommandFactory(new GitPackCommandFactory()
+        .withDelegate(new MyCommandFactory())
+        .withGitLocationResolver(resolver));
 
     // Here is how it looks if SCP is also requested
-    sshd.setCommandFactory(new GitPackCommandFactory(rootDir, new ScpCommandFactory(new MyCommandFactory())))
+    sshd.setCommandFactory(new GitPackCommandFactory()
+        .withDelegate(new ScpCommandFactory()
+            .withDelegate(new MyCommandFactory()))
+        .withGitLocationResolver(resolver));
+        
     // or
-    sshd.setCommandFactory(new ScpCommandFactory(new GitPackCommandFactory(rootDir, new MyCommandFactory())))
-    // or
-    sshd.setCommandFactory(new GitPackCommandFactory(rootDir, new ScpCommandFactory(new MyCommandFactory())))
+    sshd.setCommandFactory(new ScpCommandFactory()
+        .withDelegate(new GitPackCommandFactory()
+            .withDelegate(new MyCommandFactory())
+            .withGitLocationResolver(resolver)));
+            
     // or any other combination ...
+
 ```
 
 as with all other built-in commands, the factories allow the user to provide an `ExecutorService` in order to control the spwaned threads
@@ -1387,11 +1408,13 @@ is completed (regardless of whether successful or not):
 
 ```java
 
-    sshd.setCommandFactory(new GitPackCommandFactory(rootDir, new MyCommandFactory())
+    sshd.setCommandFactory(new GitPackCommandFactory(resolver)
+        .withDelegate(new MyCommandFactory())
         .withExecutorService(myService)
         .withShutdownOnExit(false));
 
 ```
+
 
 ## LDAP adaptors
 

@@ -21,12 +21,14 @@ package org.apache.sshd.git.pgm;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.git.AbstractGitCommand;
+import org.apache.sshd.git.GitLocationResolver;
 import org.apache.sshd.server.Environment;
-import org.apache.sshd.server.ExitCallback;
 
 /**
  * TODO Add javadoc
@@ -35,49 +37,52 @@ import org.apache.sshd.server.ExitCallback;
  */
 public class GitPgmCommand extends AbstractGitCommand {
     /**
-     * @param rootDir Root directory for the command
+     * @param rootDirResolver Resolver for GIT root directory
      * @param command Command to execute
      * @param executorService An {@link ExecutorService} to be used when {@link #start(Environment)}-ing
      * execution. If {@code null} an ad-hoc single-threaded service is created and used.
      * @param shutdownOnExit  If {@code true} the {@link ExecutorService#shutdownNow()} will be called when
      * command terminates - unless it is the ad-hoc service, which will be shutdown regardless
      */
-    public GitPgmCommand(String rootDir, String command, ExecutorService executorService, boolean shutdownOnExit) {
-        super(rootDir, command, executorService, shutdownOnExit);
+    public GitPgmCommand(GitLocationResolver rootDirResolver, String command, ExecutorService executorService, boolean shutdownOnExit) {
+        super(rootDirResolver, command, executorService, shutdownOnExit);
     }
 
     @Override
     public void run() {
         String command = getCommand();
-        ExitCallback callback = getExitCallback();
         OutputStream err = getErrorStream();
         try {
             List<String> strs = parseDelimitedString(command, " ", true);
             String[] args = strs.toArray(new String[strs.size()]);
             for (int i = 0; i < args.length; i++) {
-                if (args[i].startsWith("'") && args[i].endsWith("'")) {
-                    args[i] = args[i].substring(1, args[i].length() - 1);
+                String argVal = args[i];
+                if (argVal.startsWith("'") && argVal.endsWith("'")) {
+                    args[i] = argVal.substring(1, argVal.length() - 1);
+                    argVal = args[i];
                 }
-                if (args[i].startsWith("\"") && args[i].endsWith("\"")) {
-                    args[i] = args[i].substring(1, args[i].length() - 1);
+
+                if (argVal.startsWith("\"") && argVal.endsWith("\"")) {
+                    args[i] = argVal.substring(1, argVal.length() - 1);
+                    argVal = args[i];
                 }
             }
 
-            new EmbeddedCommandRunner(getRootDir()).execute(args, getInputStream(), getOutputStream(), err);
-            if (callback != null) {
-                callback.onExit(0);
-            }
+            GitLocationResolver resolver = getGitLocationResolver();
+            Path rootDir = resolver.resolveRootDirectory(command, getServerSession(), getFileSystem());
+            ValidateUtils.checkState(rootDir != null, "No root directory provided for %s command", command);
+
+            new EmbeddedCommandRunner(rootDir).execute(args, getInputStream(), getOutputStream(), err);
+            onExit(0);
         } catch (Throwable t) {
             try {
                 err.write((t.getMessage() + "\n").getBytes(StandardCharsets.UTF_8));
                 err.flush();
             } catch (IOException e) {
                 log.warn("Failed {} to flush command={} failure: {}",
-                        e.getClass().getSimpleName(), command, e.getMessage());
+                    e.getClass().getSimpleName(), command, e.getMessage());
             }
-            if (callback != null) {
-                callback.onExit(-1);
-            }
+            onExit(-1, t.getMessage());
         }
     }
 }

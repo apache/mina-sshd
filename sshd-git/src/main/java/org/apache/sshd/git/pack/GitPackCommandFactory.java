@@ -21,6 +21,7 @@ package org.apache.sshd.git.pack;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.git.AbstractGitCommandFactory;
+import org.apache.sshd.git.GitLocationResolver;
 import org.apache.sshd.server.CommandFactory;
 
 /**
@@ -31,12 +32,23 @@ import org.apache.sshd.server.CommandFactory;
 public class GitPackCommandFactory extends AbstractGitCommandFactory {
     public static final String GIT_COMMAND_PREFIX = "git-";
 
-    public GitPackCommandFactory(String rootDir) {
-        this(rootDir,  null);
+    public GitPackCommandFactory() {
+        super(GIT_COMMAND_PREFIX);
     }
 
-    public GitPackCommandFactory(String rootDir, CommandFactory delegate) {
-        super(rootDir, delegate, GIT_COMMAND_PREFIX);
+    public GitPackCommandFactory(GitLocationResolver resolver) {
+        super(GIT_COMMAND_PREFIX);
+        withGitLocationResolver(resolver);
+    }
+
+    @Override
+    public GitPackCommandFactory withDelegate(CommandFactory delegate) {
+        return (GitPackCommandFactory) super.withDelegate(delegate);
+    }
+
+    @Override
+    public GitPackCommandFactory withGitLocationResolver(GitLocationResolver rootDirResolver) {
+        return (GitPackCommandFactory) super.withGitLocationResolver(rootDirResolver);
     }
 
     @Override
@@ -51,6 +63,6 @@ public class GitPackCommandFactory extends AbstractGitCommandFactory {
 
     @Override
     public GitPackCommand createGitCommand(String command) {
-        return new GitPackCommand(getRootDir(), command, getExecutorService(), isShutdownOnExit());
+        return new GitPackCommand(getGitLocationResolver(), command, getExecutorService(), isShutdownOnExit());
     }
 }
