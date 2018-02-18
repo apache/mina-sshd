@@ -18,38 +18,39 @@
  */
 package org.apache.sshd.git.pgm;
 
-import org.apache.sshd.server.Command;
+import java.util.concurrent.ExecutorService;
+
+import org.apache.sshd.git.AbstractGitCommandFactory;
 import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.server.scp.UnknownCommand;
 
 /**
- * TODO Add javadoc
+ * Runs a GIT command locally using an embedded executor
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class GitPgmCommandFactory implements CommandFactory {
+public class GitPgmCommandFactory extends AbstractGitCommandFactory {
     public static final String GIT_COMMAND_PREFIX = "git ";
-
-    private final String rootDir;
-    private final CommandFactory delegate;
 
     public GitPgmCommandFactory(String rootDir) {
         this(rootDir,  null);
     }
 
     public GitPgmCommandFactory(String rootDir, CommandFactory delegate) {
-        this.rootDir = rootDir;
-        this.delegate = delegate;
+        super(rootDir, delegate, GIT_COMMAND_PREFIX);
     }
 
     @Override
-    public Command createCommand(String command) {
-        if (command.startsWith(GIT_COMMAND_PREFIX)) {
-            return new GitPgmCommand(rootDir, command.substring(GIT_COMMAND_PREFIX.length()));
-        } else if (delegate != null) {
-            return delegate.createCommand(command);
-        } else {
-            return new UnknownCommand(command);
-        }
+    public GitPgmCommandFactory withExecutorService(ExecutorService executorService) {
+        return (GitPgmCommandFactory) super.withExecutorService(executorService);
+    }
+
+    @Override
+    public GitPgmCommandFactory withShutdownOnExit(boolean shutdownOnExit) {
+        return (GitPgmCommandFactory) super.withShutdownOnExit(shutdownOnExit);
+    }
+
+    @Override
+    public GitPgmCommand createGitCommand(String command) {
+        return new GitPgmCommand(getRootDir(), command.substring(GIT_COMMAND_PREFIX.length()), getExecutorService(), isShutdownOnExit());
     }
 }

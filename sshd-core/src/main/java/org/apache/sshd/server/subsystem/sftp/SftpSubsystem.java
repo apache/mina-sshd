@@ -59,6 +59,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
@@ -73,7 +74,7 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public class SftpSubsystem
         extends AbstractSftpSubsystemHelper
-        implements Command, Runnable, SessionAware, FileSystemAware {
+        implements Command, Runnable, SessionAware, FileSystemAware, ExecutorServiceCarrier {
 
     /**
      * Properties key for the maximum of available open handles per session.
@@ -120,8 +121,6 @@ public class SftpSubsystem
     protected Random randomizer;
     protected int fileHandleSize = DEFAULT_FILE_HANDLE_SIZE;
     protected int maxFileHandleRounds = DEFAULT_FILE_HANDLE_ROUNDS;
-    protected ExecutorService executors;
-    protected boolean shutdownExecutor;
     protected Future<?> pendingFuture;
     protected byte[] workBuf = new byte[Math.max(DEFAULT_FILE_HANDLE_SIZE, Integer.BYTES)];
     protected FileSystem fileSystem = FileSystems.getDefault();
@@ -133,6 +132,8 @@ public class SftpSubsystem
 
     private ServerSession serverSession;
     private final AtomicBoolean closed = new AtomicBoolean(false);
+    private ExecutorService executorService;
+    private boolean shutdownOnExit;
 
     /**
      * @param executorService The {@link ExecutorService} to be used by
@@ -153,11 +154,11 @@ public class SftpSubsystem
         super(policy, accessor, errorStatusDataHandler);
 
         if (executorService == null) {
-            executors = ThreadUtils.newSingleThreadExecutor(getClass().getSimpleName());
-            shutdownExecutor = true;    // we always close the ad-hoc executor service
+            this.executorService = ThreadUtils.newSingleThreadExecutor(getClass().getSimpleName());
+            this.shutdownOnExit = true;    // we always close the ad-hoc executor service
         } else {
-            executors = executorService;
-            shutdownExecutor = shutdownOnExit;
+            this.executorService = executorService;
+            this.shutdownOnExit = shutdownOnExit;
         }
     }
 
@@ -169,6 +170,16 @@ public class SftpSubsystem
     @Override
     public Path getDefaultDirectory() {
         return defaultDir;
+    }
+
+    @Override
+    public ExecutorService getExecutorService() {
+        return executorService;
+    }
+
+    @Override
+    public boolean isShutdownOnExit() {
+        return shutdownOnExit;
     }
 
     @Override
@@ -233,7 +244,8 @@ public class SftpSubsystem
     public void start(Environment env) throws IOException {
         this.env = env;
         try {
-            pendingFuture = executors.submit(this);
+            ExecutorService executor = getExecutorService();
+            pendingFuture = executor.submit(this);
         } catch (RuntimeException e) {    // e.g., RejectedExecutionException
             log.error("Failed (" + e.getClass().getSimpleName() + ") to start command: " + e.toString(), e);
             throw new IOException(e);
@@ -1029,14 +1041,14 @@ public class SftpSubsystem
 
         pendingFuture = null;
 
-        if ((executors != null) && (!executors.isShutdown()) && shutdownExecutor) {
+        ExecutorService executors = getExecutorService();
+        if ((executors != null) && (!executors.isShutdown()) && isShutdownOnExit()) {
             Collection<Runnable> runners = executors.shutdownNow();
             if (log.isDebugEnabled()) {
                 log.debug("destroy(" + session + ") - shutdown executor service - runners count=" + runners.size());
             }
         }
-
-        executors = null;
+        this.executorService = null;
 
         try {
             fileSystem.close();

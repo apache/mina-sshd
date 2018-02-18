@@ -159,9 +159,9 @@ public class AgentTest extends BaseTestSupport {
                                         session2.auth().verify(15L, TimeUnit.SECONDS);
 
                                         try (ChannelShell channel2 = session2.createShellChannel()) {
-                                            channel2.setIn(shellFactory.shell.getIn());
-                                            channel2.setOut(shellFactory.shell.getOut());
-                                            channel2.setErr(shellFactory.shell.getErr());
+                                            channel2.setIn(shellFactory.shell.getInputStream());
+                                            channel2.setOut(shellFactory.shell.getOutputStream());
+                                            channel2.setErr(shellFactory.shell.getErrorStream());
                                             channel2.setAgentForwarding(true);
                                             channel2.open().verify(9L, TimeUnit.SECONDS);
 

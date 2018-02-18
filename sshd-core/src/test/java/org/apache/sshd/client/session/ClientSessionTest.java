@@ -91,7 +91,7 @@ public class ClientSessionTest extends BaseTestSupport {
             protected boolean handleCommandLine(String command) throws Exception {
                 assertEquals("Mismatched incoming command", expectedCommand, command);
                 assertFalse("Duplicated command call", cmdProcessed);
-                OutputStream stdout = getOut();
+                OutputStream stdout = getOutputStream();
                 stdout.write(expectedResponse.getBytes(StandardCharsets.US_ASCII));
                 stdout.flush();
                 cmdProcessed = true;
@@ -120,7 +120,7 @@ public class ClientSessionTest extends BaseTestSupport {
             protected boolean handleCommandLine(String command) throws Exception {
                 assertEquals("Mismatched incoming command", expectedCommand, command);
                 assertFalse("Duplicated command call", cmdProcessed);
-                OutputStream stderr = getErr();
+                OutputStream stderr = getErrorStream();
                 stderr.write(expectedErrorMessage.getBytes(StandardCharsets.US_ASCII));
                 stderr.flush();
                 cmdProcessed = true;
@@ -171,7 +171,7 @@ public class ClientSessionTest extends BaseTestSupport {
                     protected boolean handleCommandLine(String command) throws Exception {
                         assertEquals("Mismatched incoming command", expectedCommand, command);
                         assertFalse("Duplicated command call", cmdProcessed);
-                        OutputStream stdout = getOut();
+                        OutputStream stdout = getOutputStream();
                         stdout.write(command.getBytes(StandardCharsets.US_ASCII));
                         stdout.flush();
                         cmdProcessed = true;

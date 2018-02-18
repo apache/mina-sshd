@@ -37,6 +37,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
@@ -55,7 +56,7 @@ import org.apache.sshd.server.session.ServerSessionHolder;
 public class ScpCommand
         extends AbstractLoggingBean
         implements Command, Runnable, FileSystemAware, SessionAware,
-                   SessionHolder<Session>, ServerSessionHolder {
+                   SessionHolder<Session>, ServerSessionHolder, ExecutorServiceCarrier {
 
     protected final String name;
     protected final int sendBufferSize;
@@ -73,11 +74,12 @@ public class ScpCommand
     protected OutputStream err;
     protected ExitCallback callback;
     protected IOException error;
-    protected ExecutorService executors;
-    protected boolean shutdownExecutor;
     protected Future<?> pendingFuture;
     protected ScpTransferEventListener listener;
     protected ServerSession serverSession;
+
+    private ExecutorService executorService;
+    private boolean shutdownOnExit;
 
     /**
      * @param command         The command to be executed
@@ -103,11 +105,11 @@ public class ScpCommand
 
         if (executorService == null) {
             String poolName = command.replace(' ', '_').replace('/', ':');
-            executors = ThreadUtils.newSingleThreadExecutor(poolName);
-            shutdownExecutor = true;    // we always close the ad-hoc executor service
+            this.executorService = ThreadUtils.newSingleThreadExecutor(poolName);
+            this.shutdownOnExit = true;    // we always close the ad-hoc executor service
         } else {
-            executors = executorService;
-            shutdownExecutor = shutdownOnExit;
+            this.executorService = executorService;
+            this.shutdownOnExit = shutdownOnExit;
         }
 
         if (sendSize < ScpHelper.MIN_SEND_BUFFER_SIZE) {
@@ -174,9 +176,20 @@ public class ScpCommand
                 break;
             }
         }
-        if (!optF && !optT) {
+
+        if ((!optF) && (!optT)) {
             error = new IOException("Either -f or -t option should be set for " + command);
         }
+    }
+
+    @Override
+    public ExecutorService getExecutorService() {
+        return executorService;
+    }
+
+    @Override
+    public boolean isShutdownOnExit() {
+        return shutdownOnExit;
     }
 
     @Override
@@ -226,6 +239,7 @@ public class ScpCommand
         }
 
         try {
+            ExecutorService executors = getExecutorService();
             pendingFuture = executors.submit(this);
         } catch (RuntimeException e) {    // e.g., RejectedExecutionException
             log.error("Failed (" + e.getClass().getSimpleName() + ") to start command=" + name + ": " + e.getMessage(), e);
@@ -246,14 +260,14 @@ public class ScpCommand
 
         pendingFuture = null;
 
-        if ((executors != null) && (!executors.isShutdown()) && shutdownExecutor) {
+        ExecutorService executors = getExecutorService();
+        if ((executors != null) && (!executors.isShutdown()) && isShutdownOnExit()) {
             Collection<Runnable> runners = executors.shutdownNow();
             if (log.isDebugEnabled()) {
                 log.debug("destroy() - shutdown executor service - runners count=" + runners.size());
             }
         }
-
-        executors = null;
+        this.executorService = null;
 
         try {
             fileSystem.close();

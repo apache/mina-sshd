@@ -81,8 +81,8 @@ public class EmbeddedCommandRunner {
      * @param err the error stream, may be null in which case the system error stream will be used
      * @throws Exception if an error occurs
      */
-    public void execute(final String[] argv, InputStream in, OutputStream out, OutputStream err) throws Exception {
-        final CmdLineParser clp = new CmdLineParser(this);
+    public void execute(String[] argv, InputStream in, OutputStream out, OutputStream err) throws Exception {
+        CmdLineParser clp = new CmdLineParser(this);
         PrintWriter writer = new PrintWriter(err != null ? err : System.err);
         try {
             clp.parseArgument(argv);
@@ -95,7 +95,7 @@ public class EmbeddedCommandRunner {
         }
 
         if (argv.length == 0 || help) {
-            final String ex = clp.printExample(OptionHandlerFilter.ALL, CLIText.get().resourceBundle());
+            String ex = clp.printExample(OptionHandlerFilter.ALL, CLIText.get().resourceBundle());
             writer.println("jgit" + ex + " command [ARG ...]"); //$NON-NLS-1$
             if (help) {
                 writer.println();

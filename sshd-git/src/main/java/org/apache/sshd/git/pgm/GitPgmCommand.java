@@ -19,15 +19,12 @@
 package org.apache.sshd.git.pgm;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
-import org.apache.sshd.common.channel.ChannelOutputStream;
-import org.apache.sshd.common.util.logging.AbstractLoggingBean;
-import org.apache.sshd.server.Command;
+import org.apache.sshd.git.AbstractGitCommand;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 
@@ -36,60 +33,24 @@ import org.apache.sshd.server.ExitCallback;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class GitPgmCommand extends AbstractLoggingBean implements Command, Runnable {
-
-    private static final int CHAR = 1;
-    private static final int DELIMITER = 2;
-    private static final int STARTQUOTE = 4;
-    private static final int ENDQUOTE = 8;
-
-    private String rootDir;
-    private String command;
-    private InputStream in;
-    private OutputStream out;
-    private OutputStream err;
-    private ExitCallback callback;
-
-    public GitPgmCommand(String rootDir, String command) {
-        this.rootDir = rootDir;
-        this.command = command;
-    }
-
-    @Override
-    public void setInputStream(InputStream in) {
-        this.in = in;
-    }
-
-    @Override
-    public void setOutputStream(OutputStream out) {
-        this.out = out;
-        if (out instanceof ChannelOutputStream) {
-            ((ChannelOutputStream) out).setNoDelay(true);
-        }
-    }
-
-    @Override
-    public void setErrorStream(OutputStream err) {
-        this.err = err;
-        if (err instanceof ChannelOutputStream) {
-            ((ChannelOutputStream) err).setNoDelay(true);
-        }
-    }
-
-    @Override
-    public void setExitCallback(ExitCallback callback) {
-        this.callback = callback;
-    }
-
-    @Override
-    public void start(Environment env) throws IOException {
-        Thread thread = new Thread(this);
-        thread.setDaemon(true);
-        thread.start();
+public class GitPgmCommand extends AbstractGitCommand {
+    /**
+     * @param rootDir Root directory for the command
+     * @param command Command to execute
+     * @param executorService An {@link ExecutorService} to be used when {@link #start(Environment)}-ing
+     * execution. If {@code null} an ad-hoc single-threaded service is created and used.
+     * @param shutdownOnExit  If {@code true} the {@link ExecutorService#shutdownNow()} will be called when
+     * command terminates - unless it is the ad-hoc service, which will be shutdown regardless
+     */
+    public GitPgmCommand(String rootDir, String command, ExecutorService executorService, boolean shutdownOnExit) {
+        super(rootDir, command, executorService, shutdownOnExit);
     }
 
     @Override
     public void run() {
+        String command = getCommand();
+        ExitCallback callback = getExitCallback();
+        OutputStream err = getErrorStream();
         try {
             List<String> strs = parseDelimitedString(command, " ", true);
             String[] args = strs.toArray(new String[strs.size()]);
@@ -102,7 +63,7 @@ public class GitPgmCommand extends AbstractLoggingBean implements Command, Runna
                 }
             }
 
-            new EmbeddedCommandRunner(rootDir).execute(args, in, out, err);
+            new EmbeddedCommandRunner(getRootDir()).execute(args, getInputStream(), getOutputStream(), err);
             if (callback != null) {
                 callback.onExit(0);
             }
@@ -118,77 +79,5 @@ public class GitPgmCommand extends AbstractLoggingBean implements Command, Runna
                 callback.onExit(-1);
             }
         }
-    }
-
-    @Override
-    public void destroy() {
-        //To change body of implemented methods use File | Settings | File Templates.
-    }
-
-    /**
-     * Parses delimited string and returns an array containing the tokens. This
-     * parser obeys quotes, so the delimiter character will be ignored if it is
-     * inside of a quote. This method assumes that the quote character is not
-     * included in the set of delimiter characters.
-     *
-     * @param value the delimited string to parse.
-     * @param delim the characters delimiting the tokens.
-     * @param trim {@code true} if the strings are trimmed before being added to the list
-     * @return a list of string or an empty list if there are none.
-     */
-    private static List<String> parseDelimitedString(String value, String delim, boolean trim) {
-        if (value == null) {
-            value = "";
-        }
-
-        List<String> list = new ArrayList<>();
-        StringBuilder sb = new StringBuilder();
-        int expecting = CHAR | DELIMITER | STARTQUOTE;
-        boolean isEscaped = false;
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            boolean isDelimiter = delim.indexOf(c) >= 0;
-
-            if (!isEscaped && (c == '\\')) {
-                isEscaped = true;
-                continue;
-            }
-
-            if (isEscaped) {
-                sb.append(c);
-            } else if (isDelimiter && ((expecting & DELIMITER) != 0)) {
-                if (trim) {
-                    String str = sb.toString();
-                    list.add(str.trim());
-                } else {
-                    list.add(sb.toString());
-                }
-                sb.delete(0, sb.length());
-                expecting = CHAR | DELIMITER | STARTQUOTE;
-            } else if ((c == '"') && ((expecting & STARTQUOTE) != 0)) {
-                sb.append(c);
-                expecting = CHAR | ENDQUOTE;
-            } else if ((c == '"') && ((expecting & ENDQUOTE) != 0)) {
-                sb.append(c);
-                expecting = CHAR | STARTQUOTE | DELIMITER;
-            } else if ((expecting & CHAR) != 0) {
-                sb.append(c);
-            } else {
-                throw new IllegalArgumentException("Invalid delimited string: " + value);
-            }
-
-            isEscaped = false;
-        }
-
-        if (sb.length() > 0) {
-            if (trim) {
-                String str = sb.toString();
-                list.add(str.trim());
-            } else {
-                list.add(sb.toString());
-            }
-        }
-
-        return list;
     }
 }

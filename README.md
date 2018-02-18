@@ -1380,6 +1380,19 @@ See `GitPackCommandFactory` and `GitPgmCommandFactory`. These command factories 
     // or any other combination ...
 ```
 
+as with all other built-in commands, the factories allow the user to provide an `ExecutorService` in order to control the spwaned threads
+for servicing the commands. If none provided, an internal single-threaded "pool" is created ad-hoc and destroyed once the command execution
+is completed (regardless of whether successful or not):
+
+
+```java
+
+    sshd.setCommandFactory(new GitPackCommandFactory(rootDir, new MyCommandFactory())
+        .withExecutorService(myService)
+        .withShutdownOnExit(false));
+
+```
+
 ## LDAP adaptors
 
 The _sshd-ldap_ artifact contains an [LdapPasswordAuthenticator](https://issues.apache.org/jira/browse/SSHD-607) and an [LdapPublicKeyAuthenticator](https://issues.apache.org/jira/browse/SSHD-608) that have been written along the same lines as the [openssh-ldap-publickey](https://github.com/AndriiGrytsenko/openssh-ldap-publickey) project. The authenticators can be easily configured to match most LDAP schemes, or alternatively serve as base classes for code that extends them and adds proprietary logic.

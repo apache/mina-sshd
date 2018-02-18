@@ -54,7 +54,7 @@ public class ChannelExecTest extends BaseTestSupport {
         sshd.setCommandFactory(command -> new CommandExecutionHelper(command) {
             @Override
             protected boolean handleCommandLine(String command) throws Exception {
-                OutputStream stdout = getOut();
+                OutputStream stdout = getOutputStream();
                 stdout.write(command.getBytes(StandardCharsets.US_ASCII));
                 stdout.flush();
                 return false;

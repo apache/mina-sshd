@@ -31,7 +31,7 @@ public class EchoShell extends CommandExecutionHelper {
 
     @Override
     protected boolean handleCommandLine(String command) throws Exception {
-        OutputStream out = getOut();
+        OutputStream out = getOutputStream();
         out.write((command + "\n").getBytes(StandardCharsets.UTF_8));
         out.flush();
 
