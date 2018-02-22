@@ -1786,13 +1786,11 @@ public abstract class AbstractSftpSubsystemHelper
     protected void sendLink(Buffer buffer, int id, String link) throws IOException {
         //in case we are running on Windows
         String unixPath = link.replace(File.separatorChar, '/');
-        //normalize the given path, use *nix style separator
-        String normalizedPath = SelectorUtils.normalizePath(unixPath, "/");
 
         buffer.putByte((byte) SftpConstants.SSH_FXP_NAME);
         buffer.putInt(id);
         buffer.putInt(1);   // one response
-        buffer.putString(normalizedPath);
+        buffer.putString(unixPath);
 
         /*
          * As per the spec (https://tools.ietf.org/html/draft-ietf-secsh-filexfer-02#section-6.10):
@@ -1803,7 +1801,7 @@ public abstract class AbstractSftpSubsystemHelper
         Map<String, Object> attrs = Collections.emptyMap();
         int version = getVersion();
         if (version == SftpConstants.SFTP_V3) {
-            buffer.putString(SftpHelper.getLongName(normalizedPath, attrs));
+            buffer.putString(SftpHelper.getLongName(unixPath, attrs));
         }
 
         writeAttrs(buffer, attrs);
@@ -1819,16 +1817,10 @@ public abstract class AbstractSftpSubsystemHelper
         String originalPath = f.toString();
         //in case we are running on Windows
         String unixPath = originalPath.replace(File.separatorChar, '/');
-        //normalize the given path, use *nix style separator
-        String normalizedPath = SelectorUtils.normalizePath(unixPath, "/");
-        if (normalizedPath.length() == 0) {
-            normalizedPath = "/";
-        }
-        buffer.putString(normalizedPath);
+        buffer.putString(unixPath);
 
         int version = getVersion();
         if (version == SftpConstants.SFTP_V3) {
-            f = resolveFile(normalizedPath);
             buffer.putString(getLongName(f, getShortName(f), attrs));
         }
 

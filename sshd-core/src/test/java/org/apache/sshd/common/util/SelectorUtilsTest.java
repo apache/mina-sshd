@@ -141,11 +141,4 @@ public class SelectorUtilsTest extends BaseTestSupport {
         }
     }
 
-    @Test
-    public void testNormalizeWindowsPath() {
-        Assume.assumeTrue("Not tested on Windows", OsUtils.isWin32());
-        String path = detectTargetFolder().toString().replace(File.separatorChar, '/');
-        String actual = SelectorUtils.normalizePath(path, "/");
-        assertEquals("Mismatched result", "/" + path, actual);
-    }
 }
