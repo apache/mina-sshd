@@ -192,7 +192,7 @@ public class SshdSocketAddress extends SocketAddress {
             return true;
         } else {
             return (this.getPort() == that.getPort())
-                && Objects.equals(this.getHostName(), that.getHostName());
+                && (GenericUtils.safeCompare(this.getHostName(), that.getHostName(), false) == 0);
         }
     }
 
@@ -209,7 +209,7 @@ public class SshdSocketAddress extends SocketAddress {
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(getHostName()) + getPort();
+        return GenericUtils.hashCode(getHostName(), Boolean.FALSE) + getPort();
     }
 
 
