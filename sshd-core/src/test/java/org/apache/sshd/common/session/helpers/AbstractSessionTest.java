@@ -351,6 +351,11 @@ public class AbstractSessionTest extends BaseTestSupport {
         }
 
         @Override
+        public Object removeAttribute(Object key) {
+            return null;
+        }
+
+        @Override
         public SocketAddress getRemoteAddress() {
             return null;
         }

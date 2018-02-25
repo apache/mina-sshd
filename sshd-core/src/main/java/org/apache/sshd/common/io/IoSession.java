@@ -48,6 +48,14 @@ public interface IoSession extends PacketWriter, Closeable {
     Object setAttribute(Object key, Object value);
 
     /**
+     * Removes a user-defined attribute with the specified key.
+     *
+     * @param key The key of the attribute we want to remove
+     * @return The old value of the attribute - <tt>null</tt> if not found.
+     */
+    Object removeAttribute(Object key);
+
+    /**
      * @return the socket address of remote peer.
      */
     SocketAddress getRemoteAddress();

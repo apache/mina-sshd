@@ -83,12 +83,23 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
     @Override
     public Object getAttribute(Object key) {
-        return attributes.get(key);
+        synchronized (attributes) {
+            return attributes.get(key);
+        }
     }
 
     @Override
     public Object setAttribute(Object key, Object value) {
-        return attributes.put(key, value);
+        synchronized (attributes) {
+            return attributes.put(key, value);
+        }
+    }
+
+    @Override
+    public Object removeAttribute(Object key) {
+        synchronized (attributes) {
+            return attributes.remove(key);
+        }
     }
 
     @Override
@@ -241,6 +252,8 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
                 log.trace("doCloseImmediately(" + this + ") IoHandler#sessionClosed failure details", e);
             }
         }
+
+        attributes.clear();
     }
 
     @Override   // co-variant return

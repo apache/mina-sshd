@@ -71,6 +71,11 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
     }
 
     @Override
+    public Object removeAttribute(Object key) {
+        return session.removeAttribute(key);
+    }
+
+    @Override
     public SocketAddress getRemoteAddress() {
         return session.getRemoteAddress();
     }
