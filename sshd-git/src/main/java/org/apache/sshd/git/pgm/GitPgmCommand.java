@@ -69,7 +69,7 @@ public class GitPgmCommand extends AbstractGitCommand {
             }
 
             GitLocationResolver resolver = getGitLocationResolver();
-            Path rootDir = resolver.resolveRootDirectory(command, getServerSession(), getFileSystem());
+            Path rootDir = resolver.resolveRootDirectory(command, args, getServerSession(), getFileSystem());
             ValidateUtils.checkState(rootDir != null, "No root directory provided for %s command", command);
 
             new EmbeddedCommandRunner(rootDir).execute(args, getInputStream(), getOutputStream(), err);

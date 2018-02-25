@@ -72,13 +72,13 @@ public class GitPackCommand extends AbstractGitCommand {
             }
 
             if (args.length != 2) {
-                throw new IllegalArgumentException("Invalid git command line: " + command);
+                throw new IllegalArgumentException("Invalid git command line (no arguments): " + command);
             }
 
-            String subCommand = args[0];
-            Path rootDir = resolveRootDirectory(command, subCommand, args[1]);
+            Path rootDir = resolveRootDirectory(command, args);
             RepositoryCache.FileKey key = RepositoryCache.FileKey.lenient(rootDir.toFile(), FS.DETECTED);
             Repository db = key.open(true /* must exist */);
+            String subCommand = args[0];
             if (RemoteConfig.DEFAULT_UPLOAD_PACK.equals(subCommand)) {
                 new UploadPack(db).upload(getInputStream(), getOutputStream(), getErrorStream());
             } else if (RemoteConfig.DEFAULT_RECEIVE_PACK.equals(subCommand)) {
@@ -93,10 +93,12 @@ public class GitPackCommand extends AbstractGitCommand {
         }
     }
 
-    protected Path resolveRootDirectory(String command, String subCommand, String pathArg) throws IOException {
+    protected Path resolveRootDirectory(String command, String[] args) throws IOException {
         GitLocationResolver resolver = getGitLocationResolver();
-        Path rootDir = resolver.resolveRootDirectory(command, getServerSession(), getFileSystem());
+        Path rootDir = resolver.resolveRootDirectory(command, args, getServerSession(), getFileSystem());
         ValidateUtils.checkState(rootDir != null, "No root directory provided for %s command", command);
+
+        String pathArg = args[1];
         int len = GenericUtils.length(pathArg);
         // Strip any leading path separator since we use relative to root
         if ((len > 0) && (pathArg.charAt(0) == '/')) {
@@ -104,7 +106,7 @@ public class GitPackCommand extends AbstractGitCommand {
             len--;
         }
 
-        ValidateUtils.checkNotNullAndNotEmpty(pathArg, "No %s command sub-path specified", subCommand);
+        ValidateUtils.checkNotNullAndNotEmpty(pathArg, "No %s command sub-path specified", args[0]);
         return rootDir.resolve(pathArg);
     }
 }

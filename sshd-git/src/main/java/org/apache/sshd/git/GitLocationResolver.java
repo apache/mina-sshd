@@ -33,13 +33,18 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public interface GitLocationResolver {
     /**
-     * @param command The received command
+     * @param command The complete received command
+     * @param args The command split into arguments - {@code args[0]} is the
+     * &quot;pure&quot; command itself without any other arguments. <B>Note:</B>
+     * changing the content of the arguments array may affect command execution
+     * in undetermined ways, due to invocation code changes without prior notice,
+     * so <U>highly recommended to avoid it</U>.
      * @param session The {@link ServerSession} through which the command was received
      * @param fs The {@link FileSystem} associated with the server session
      * @return The local GIT repository root path
      * @throws IOException If failed to resolve
      */
-    Path resolveRootDirectory(String command, ServerSession session, FileSystem fs) throws IOException;
+    Path resolveRootDirectory(String command, String[] args, ServerSession session, FileSystem fs) throws IOException;
 
     /**
      * Creates a resolver that returns the same root directory for any invocation of
@@ -50,6 +55,6 @@ public interface GitLocationResolver {
      */
     static GitLocationResolver constantPath(Path rootDir) {
         Objects.requireNonNull(rootDir, "No root directory provided");
-        return (cmd, session, fs) -> rootDir;
+        return (cmd, args, session, fs) -> rootDir;
     }
 }
