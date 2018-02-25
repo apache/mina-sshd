@@ -26,13 +26,15 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import org.apache.sshd.common.PropertyResolver;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.mina.MinaServiceFactory;
@@ -244,13 +246,12 @@ public final class SshFsMounter {
     public static void main(String[] args) throws Exception {
         int port = SshConfigFileReader.DEFAULT_PORT;
         boolean error = false;
-        Map<String, String> options = new LinkedHashMap<>();
-
+        Map<String, Object> options = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         int numArgs = GenericUtils.length(args);
         for (int i = 0; i < numArgs; i++) {
             String argName = args[i];
             if ("-p".equals(argName)) {
-                if (i + 1 >= numArgs) {
+                if ((i + 1) >= numArgs) {
                     System.err.println("option requires an argument: " + argName);
                     break;
                 }
@@ -272,7 +273,7 @@ public final class SshFsMounter {
                     break;
                 }
             } else if ("-o".equals(argName)) {
-                if (i + 1 >= numArgs) {
+                if ((i + 1) >= numArgs) {
                     System.err.println("option requires and argument: " + argName);
                     error = true;
                     break;
@@ -300,28 +301,28 @@ public final class SshFsMounter {
             System.exit(-1);
         }
 
-        System.err.println("Starting SSHD on port " + port);
-
         SshServer sshd = Utils.setupTestServer(SshFsMounter.class);
         Map<String, Object> props = sshd.getProperties();
-//        FactoryManagerUtils.updateProperty(props, ServerFactoryManager.WELCOME_BANNER, "Welcome to SSH-FS Mounter\n");
         props.putAll(options);
-        sshd.setPort(port);
-
+        PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
         File targetFolder = Objects.requireNonNull(Utils.detectTargetFolder(MounterCommandFactory.class), "Failed to detect target folder");
         if (SecurityUtils.isBouncyCastleRegistered()) {
             sshd.setKeyPairProvider(SecurityUtils.createGeneratorHostKeyProvider(new File(targetFolder, "key.pem").toPath()));
         } else {
             sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(new File(targetFolder, "key.ser")));
         }
+        // Should come AFTER key pair provider setup so auto-welcome can be generated if needed
+        SshServer.setupServerBanner(sshd, resolver);
 
         sshd.setShellFactory(InteractiveProcessShellFactory.INSTANCE);
         sshd.setPasswordAuthenticator(AcceptAllPasswordAuthenticator.INSTANCE);
         sshd.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(MounterCommandFactory.INSTANCE).build());
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
-        sshd.start();
+        sshd.setPort(port);
 
+        System.err.println("Starting SSHD on port " + port);
+        sshd.start();
         Thread.sleep(Long.MAX_VALUE);
     }
 }

@@ -600,8 +600,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             System.exit(-1);
         }
 
-        System.err.println("Starting SSHD on port " + port);
-
         SshServer sshd = SshServer.setUpDefaultServer();
         Map<String, Object> props = sshd.getProperties();
         props.putAll(options);
@@ -626,8 +624,9 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             command -> new ProcessShellFactory(GenericUtils.split(command, ' ')).create()
         ).build());
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
-        sshd.start();
 
+        System.err.println("Starting SSHD on port " + port);
+        sshd.start();
         Thread.sleep(Long.MAX_VALUE);
     }
 
