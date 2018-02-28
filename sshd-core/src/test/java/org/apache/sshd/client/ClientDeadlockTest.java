@@ -19,27 +19,28 @@
 package org.apache.sshd.client;
 
 import java.io.IOException;
-import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.session.ClientSessionImpl;
+import org.apache.sshd.client.session.SessionFactory;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.session.ServerSessionImpl;
-import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ClientDeadlockTest extends BaseTestSupport {
-
     private SshServer sshd;
     private SshClient client;
     private int port;
@@ -51,16 +52,16 @@ public class ClientDeadlockTest extends BaseTestSupport {
     @Before
     public void setUp() throws Exception {
         sshd = setupTestServer();
-        sshd.setSessionFactory(new SessionFactory(sshd) {
-            @Override
-            protected ServerSessionImpl doCreateSession(IoSession ioSession) throws Exception {
-                throw new IOException("Closing");
-            }
-        });
         sshd.start();
         port = sshd.getPort();
 
         client = setupTestClient();
+        client.setSessionFactory(new SessionFactory(client) {
+            @Override
+            protected ClientSessionImpl doCreateSession(IoSession ioSession) throws Exception {
+                throw new SimulatedException(getCurrentTestName());
+            }
+        });
     }
 
     @After
@@ -73,13 +74,21 @@ public class ClientDeadlockTest extends BaseTestSupport {
         }
     }
 
-    @Test
+    @Test(expected = SimulatedException.class)
     public void testSimpleClient() throws Exception {
         client.start();
 
         ConnectFuture future = client.connect(getCurrentTestName(), TEST_LOCALHOST, port);
-        ClientSession session = future.verify(5L, TimeUnit.SECONDS).getSession();
-        session.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), TimeUnit.SECONDS.toMillis(7L));
-        assertFalse(session.isOpen());
+        try (ClientSession session = future.verify(5L, TimeUnit.SECONDS).getSession()) {
+            fail("Unexpected session established: " + session);
+        }
+    }
+
+    static class SimulatedException extends IOException {
+        private static final long serialVersionUID = 2460966941758520525L;
+
+        SimulatedException(String message) {
+            super(message);
+        }
     }
 }
