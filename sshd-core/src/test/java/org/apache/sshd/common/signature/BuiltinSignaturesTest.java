@@ -102,7 +102,7 @@ public class BuiltinSignaturesTest extends BaseTestSupport {
         for (SignatureFactory expected : BuiltinSignatures.VALUES) {
             try {
                 BuiltinSignatures.registerExtension(expected);
-                fail("Unexpected sucess for " + expected.getName());
+                fail("Unexpected success for " + expected.getName());
             } catch (IllegalArgumentException e) {
                 // expected - ignored
             }

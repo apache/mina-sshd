@@ -93,7 +93,7 @@ public class KeyRandomArtTest extends BaseTestSupport {
     @Test
     public void testRandomArtString() throws Exception {
         KeyRandomArt art = new KeyRandomArt(keyPair.getPublic());
-        assertEquals("Mismatched algorithem", algorithm, art.getAlgorithm());
+        assertEquals("Mismatched algorithm", algorithm, art.getAlgorithm());
         assertEquals("Mismatched key size", keySize, art.getKeySize());
 
         String s = art.toString();

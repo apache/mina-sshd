@@ -68,7 +68,7 @@ public class UserAuthPassword extends AbstractUserAuth {
                 return Result.Failure;
             } else {
                 if (log.isDebugEnabled()) {
-                    log.debug("Received unkown packet {}", cmd & 0xFF);
+                    log.debug("Received unknown packet {}", cmd & 0xFF);
                 }
                 // TODO: check packets
                 return Result.Continued;

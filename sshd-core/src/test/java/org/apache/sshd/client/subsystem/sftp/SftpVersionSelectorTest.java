@@ -122,7 +122,7 @@ public class SftpVersionSelectorTest extends BaseTestSupport {
         ClientSession session = Mockito.mock(ClientSession.class);
         for (int current = SftpSubsystemEnvironment.LOWER_SFTP_IMPL; current <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL; current++) {
             for (int index = 0; index < available.size(); index++) {
-                assertEquals("Mismatched selection for current=" + current + ", availble=" + available,
+                assertEquals("Mismatched selection for current=" + current + ", available=" + available,
                         expected, selector.selectVersion(session, current, available));
                 Collections.shuffle(available, rnd);
             }

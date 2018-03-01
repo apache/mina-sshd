@@ -256,7 +256,7 @@ public class PrivateKeyEncryptionContext implements Cloneable {
         ValidateUtils.checkNotNullAndNotEmpty(algInfo, "No encryption algorithm data");
 
         String[] cipherData = GenericUtils.split(algInfo, '-');
-        ValidateUtils.checkTrue(cipherData.length == 3, "Bad encryption alogrithm data: %s", algInfo);
+        ValidateUtils.checkTrue(cipherData.length == 3, "Bad encryption algorithm data: %s", algInfo);
 
         context.setCipherName(cipherData[0]);
         context.setCipherType(cipherData[1]);
