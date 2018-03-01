@@ -119,7 +119,7 @@ public class BuiltinDHFactoriesTest extends BaseTestSupport {
         for (DHFactory expected : BuiltinDHFactories.VALUES) {
             try {
                 BuiltinDHFactories.registerExtension(expected);
-                fail("Unexpected sucess for " + expected.getName());
+                fail("Unexpected success for " + expected.getName());
             } catch (IllegalArgumentException e) {
                 // expected - ignored
             }

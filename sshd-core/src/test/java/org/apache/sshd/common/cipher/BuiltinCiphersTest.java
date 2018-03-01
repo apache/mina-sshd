@@ -248,7 +248,7 @@ public class BuiltinCiphersTest extends BaseTestSupport {
         for (CipherFactory expected : BuiltinCiphers.VALUES) {
             try {
                 BuiltinCiphers.registerExtension(expected);
-                fail("Unexpected sucess for " + expected.getName());
+                fail("Unexpected success for " + expected.getName());
             } catch (IllegalArgumentException e) {
                 // expected - ignored
             }

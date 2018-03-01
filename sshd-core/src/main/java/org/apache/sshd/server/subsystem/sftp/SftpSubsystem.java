@@ -768,7 +768,7 @@ public class SftpSubsystem
             }
 
             if (!status) {
-                throw new NoSuchFileException(file.toString(), file.toString(), "Non-existant directory");
+                throw new NoSuchFileException(file.toString(), file.toString(), "Non-existent directory");
             } else if (!Files.isDirectory(file, options)) {
                 throw new NotDirectoryException(file.toString());
             } else if (!Files.isReadable(file)) {
