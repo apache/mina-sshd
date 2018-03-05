@@ -19,6 +19,7 @@
 package org.apache.sshd.common.kex;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
@@ -122,21 +123,23 @@ public final class DHGroupData {
         return readOakleyGroup("group18.prime");
     }
 
-    static byte[] readOakleyGroup(String name) {
-        return OAKLEY_GROUPS.computeIfAbsent(name, DHGroupData::doReadOakleyGroup);
+    public static byte[] readOakleyGroup(String name) {
+        byte[] value = OAKLEY_GROUPS.computeIfAbsent(name, DHGroupData::doReadOakleyGroup);
+        return (value == null) ? null : value.clone();
     }
 
-    private static byte[] doReadOakleyGroup(String name) {
+    public static byte[] doReadOakleyGroup(String name) {
         try (InputStream is = DHGroupData.class.getResourceAsStream(name)) {
             if (is == null) {
-                throw new IOException("Resource not found: " + name);
+                throw new FileNotFoundException("Resource not found: " + name);
             }
+
             try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
                 String str = br.lines()
-                        .filter(s -> !s.startsWith("#"))
-                        .map(s -> s.replaceAll("\\s", ""))
-                        .collect(Collectors.joining());
-                byte[] group = new byte[str.length() / 2 + 1];
+                    .filter(s -> !s.startsWith("#"))
+                    .map(s -> s.replaceAll("\\s", ""))
+                    .collect(Collectors.joining());
+                byte[] group = new byte[(str.length() / 2) + 1];
                 group[0] = 0;
                 for (int l = 1; l < group.length; l++) {
                     group[l] = (byte) Integer.parseInt(str.substring(l * 2 - 2, l * 2), 16);
@@ -147,5 +150,4 @@ public final class DHGroupData {
             throw new IOError(e);
         }
     }
-
 }

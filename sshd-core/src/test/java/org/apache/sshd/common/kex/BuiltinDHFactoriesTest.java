@@ -174,7 +174,7 @@ public class BuiltinDHFactoriesTest extends BaseTestSupport {
 
     @Test
     public void testDHGRead() throws Exception {
-        assertArrayEquals(DHGroupData.getP1(), DHGroupData.readOakleyGroup("group2.prime"));
-        assertArrayEquals(DHGroupData.getP14(), DHGroupData.readOakleyGroup("group14.prime"));
+        assertArrayEquals("P1", DHGroupData.getP1(), DHGroupData.readOakleyGroup("group2.prime"));
+        assertArrayEquals("P14", DHGroupData.getP14(), DHGroupData.readOakleyGroup("group14.prime"));
     }
 }
