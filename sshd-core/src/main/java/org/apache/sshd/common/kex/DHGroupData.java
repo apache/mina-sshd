@@ -18,12 +18,22 @@
  */
 package org.apache.sshd.common.kex;
 
+import java.io.BufferedReader;
+import java.io.IOError;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
 /**
  * Simple class holding the data for DH group key exchanges.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class DHGroupData {
+
+    private static final ConcurrentHashMap<String, byte[]> OAKLEY_GROUPS = new ConcurrentHashMap<>();
 
     private DHGroupData() {
         throw new UnsupportedOperationException("No instance allowed");
@@ -93,6 +103,48 @@ public final class DHGroupData {
             (byte) 0x15, (byte) 0x72, (byte) 0x8E, (byte) 0x5A, (byte) 0x8A, (byte) 0xAC, (byte) 0xAA, (byte) 0x68,
             (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF,
         };
+    }
+
+    public static byte[] getP15() {
+        return readOakleyGroup("group15.prime");
+    }
+
+    public static byte[] getP16() {
+        return readOakleyGroup("group16.prime");
+    }
+
+    public static byte[] getP17() {
+        return readOakleyGroup("group17.prime");
+    }
+
+    public static byte[] getP18() {
+        return readOakleyGroup("group18.prime");
+    }
+
+    static byte[] readOakleyGroup(String name) {
+        return OAKLEY_GROUPS.computeIfAbsent(name, DHGroupData::doReadOakleyGroup);
+    }
+
+    private static byte[] doReadOakleyGroup(String name) {
+        try (InputStream is = DHGroupData.class.getResourceAsStream(name)) {
+            if (is == null) {
+                throw new IOException("Resource not found: " + name);
+            }
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+                String str = br.lines()
+                        .filter(s -> !s.startsWith("#"))
+                        .map(s -> s.replaceAll("\\s", ""))
+                        .collect(Collectors.joining());
+                byte[] group = new byte[str.length() / 2 + 1];
+                group[0] = 0;
+                for (int l = 1; l < group.length; l++) {
+                    group[l] = (byte) Integer.parseInt(str.substring(l * 2 - 2, l * 2), 16);
+                }
+                return group;
+            }
+        } catch (IOException e) {
+            throw new IOError(e);
+        }
     }
 
 }

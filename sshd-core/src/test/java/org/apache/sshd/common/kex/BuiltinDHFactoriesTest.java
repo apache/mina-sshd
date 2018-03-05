@@ -160,4 +160,21 @@ public class BuiltinDHFactoriesTest extends BaseTestSupport {
             assertNull("Extension not un-registered", BuiltinDHFactories.resolveFactory(name));
         }
     }
+
+    @Test
+    public void testDHG() throws Exception {
+        for (DHFactory expected : BuiltinDHFactories.VALUES) {
+            if (!expected.isGroupExchange()) {
+                if (expected.isSupported()) {
+                    assertNotNull("Null DH created", expected.create());
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDHGRead() throws Exception {
+        assertArrayEquals(DHGroupData.getP1(), DHGroupData.readOakleyGroup("group2.prime"));
+        assertArrayEquals(DHGroupData.getP14(), DHGroupData.readOakleyGroup("group14.prime"));
+    }
 }

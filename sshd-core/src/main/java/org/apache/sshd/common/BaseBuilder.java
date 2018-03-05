@@ -98,6 +98,11 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
             BuiltinDHFactories.dhgex256,
             BuiltinDHFactories.dhgex,
 
+            BuiltinDHFactories.dhg18_512,
+            BuiltinDHFactories.dhg17_512,
+            BuiltinDHFactories.dhg16_512,
+            BuiltinDHFactories.dhg15_512,
+            BuiltinDHFactories.dhg14_256,
             BuiltinDHFactories.dhg14,
             BuiltinDHFactories.dhg1
         ));

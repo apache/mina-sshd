@@ -72,6 +72,76 @@ public enum BuiltinDHFactories implements DHFactory {
             return SecurityUtils.isDHOakelyGroupSupported(2048) && BuiltinDigests.sha1.isSupported();
         }
     },
+    dhg14_256(Constants.DIFFIE_HELLMAN_GROUP14_SHA256) {
+        @Override
+        public DHG create(Object... params) throws Exception {
+            if (!GenericUtils.isEmpty(params)) {
+                throw new IllegalArgumentException("No accepted parameters for " + getName());
+            }
+            return new DHG(BuiltinDigests.sha256, new BigInteger(DHGroupData.getP14()), new BigInteger(DHGroupData.getG()));
+        }
+
+        @Override   // see https://tools.ietf.org/html/rfc4253#page-23
+        public boolean isSupported() {
+            return SecurityUtils.isDHOakelyGroupSupported(2048) && BuiltinDigests.sha256.isSupported();
+        }
+    },
+    dhg15_512(Constants.DIFFIE_HELLMAN_GROUP15_SHA512) {
+        @Override
+        public DHG create(Object... params) throws Exception {
+            if (!GenericUtils.isEmpty(params)) {
+                throw new IllegalArgumentException("No accepted parameters for " + getName());
+            }
+            return new DHG(BuiltinDigests.sha512, new BigInteger(DHGroupData.getP15()), new BigInteger(DHGroupData.getG()));
+        }
+
+        @Override   // see https://tools.ietf.org/html/rfc4253#page-23
+        public boolean isSupported() {
+            return SecurityUtils.isDHOakelyGroupSupported(3072) && BuiltinDigests.sha512.isSupported();
+        }
+    },
+    dhg16_512(Constants.DIFFIE_HELLMAN_GROUP16_SHA512) {
+        @Override
+        public DHG create(Object... params) throws Exception {
+            if (!GenericUtils.isEmpty(params)) {
+                throw new IllegalArgumentException("No accepted parameters for " + getName());
+            }
+            return new DHG(BuiltinDigests.sha512, new BigInteger(DHGroupData.getP16()), new BigInteger(DHGroupData.getG()));
+        }
+
+        @Override   // see https://tools.ietf.org/html/rfc4253#page-23
+        public boolean isSupported() {
+            return SecurityUtils.isDHOakelyGroupSupported(4096) && BuiltinDigests.sha512.isSupported();
+        }
+    },
+    dhg17_512(Constants.DIFFIE_HELLMAN_GROUP17_SHA512) {
+        @Override
+        public DHG create(Object... params) throws Exception {
+            if (!GenericUtils.isEmpty(params)) {
+                throw new IllegalArgumentException("No accepted parameters for " + getName());
+            }
+            return new DHG(BuiltinDigests.sha512, new BigInteger(DHGroupData.getP17()), new BigInteger(DHGroupData.getG()));
+        }
+
+        @Override   // see https://tools.ietf.org/html/rfc4253#page-23
+        public boolean isSupported() {
+            return SecurityUtils.isDHOakelyGroupSupported(6144) && BuiltinDigests.sha512.isSupported();
+        }
+    },
+    dhg18_512(Constants.DIFFIE_HELLMAN_GROUP18_SHA512) {
+        @Override
+        public DHG create(Object... params) throws Exception {
+            if (!GenericUtils.isEmpty(params)) {
+                throw new IllegalArgumentException("No accepted parameters for " + getName());
+            }
+            return new DHG(BuiltinDigests.sha512, new BigInteger(DHGroupData.getP18()), new BigInteger(DHGroupData.getG()));
+        }
+
+        @Override   // see https://tools.ietf.org/html/rfc4253#page-23
+        public boolean isSupported() {
+            return SecurityUtils.isDHOakelyGroupSupported(8192) && BuiltinDigests.sha512.isSupported();
+        }
+    },
     dhgex(Constants.DIFFIE_HELLMAN_GROUP_EXCHANGE_SHA1) {
         @Override
         public DHG create(Object... params) throws Exception {
@@ -328,6 +398,11 @@ public enum BuiltinDHFactories implements DHFactory {
     public static final class Constants {
         public static final String DIFFIE_HELLMAN_GROUP1_SHA1 = "diffie-hellman-group1-sha1";
         public static final String DIFFIE_HELLMAN_GROUP14_SHA1 = "diffie-hellman-group14-sha1";
+        public static final String DIFFIE_HELLMAN_GROUP14_SHA256 = "diffie-hellman-group14-sha256";
+        public static final String DIFFIE_HELLMAN_GROUP15_SHA512 = "diffie-hellman-group15-sha512";
+        public static final String DIFFIE_HELLMAN_GROUP16_SHA512 = "diffie-hellman-group16-sha512";
+        public static final String DIFFIE_HELLMAN_GROUP17_SHA512 = "diffie-hellman-group17-sha512";
+        public static final String DIFFIE_HELLMAN_GROUP18_SHA512 = "diffie-hellman-group18-sha512";
         public static final String DIFFIE_HELLMAN_GROUP_EXCHANGE_SHA1 = "diffie-hellman-group-exchange-sha1";
         public static final String DIFFIE_HELLMAN_GROUP_EXCHANGE_SHA256 = "diffie-hellman-group-exchange-sha256";
         public static final String ECDH_SHA2_NISTP256 = "ecdh-sha2-nistp256";
