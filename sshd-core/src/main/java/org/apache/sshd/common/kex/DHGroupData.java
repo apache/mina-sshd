@@ -23,6 +23,7 @@ import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -130,7 +131,7 @@ public final class DHGroupData {
             if (is == null) {
                 throw new IOException("Resource not found: " + name);
             }
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
                 String str = br.lines()
                         .filter(s -> !s.startsWith("#"))
                         .map(s -> s.replaceAll("\\s", ""))

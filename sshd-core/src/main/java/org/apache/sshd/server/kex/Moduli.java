@@ -26,6 +26,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Helper class to load DH group primes from a file.
@@ -38,9 +39,32 @@ public final class Moduli {
     public static final int MODULI_TESTS_COMPOSITE = 0x01;
 
     public static class DhGroup {
-        int size;
-        BigInteger g;
-        BigInteger p;
+        private final int size;
+        private final BigInteger g;
+        private final BigInteger p;
+
+        public DhGroup(int size, BigInteger g, BigInteger p) {
+            this.size = size;
+            this.g = Objects.requireNonNull(g, "No G value provided");
+            this.p = Objects.requireNonNull(p, "No P value provided");
+        }
+
+        public int getSize() {
+            return size;
+        }
+
+        public BigInteger getG() {
+            return g;
+        }
+
+        public BigInteger getP() {
+            return p;
+        }
+
+        @Override
+        public String toString() {
+            return "[size=" + getSize() + ",G=" + getG() + ",P=" + getP() + "]";
+        }
     }
 
     // Private constructor
@@ -69,9 +93,9 @@ public final class Moduli {
                     continue;
                 }
 
-                // Discard untested modulis
+                // Discard untested moduli
                 int tests = Integer.parseInt(parts[2]);
-                if ((tests & MODULI_TESTS_COMPOSITE) != 0 || (tests & ~MODULI_TESTS_COMPOSITE) == 0) {
+                if (((tests & MODULI_TESTS_COMPOSITE) != 0) || ((tests & ~MODULI_TESTS_COMPOSITE) == 0)) {
                     continue;
                 }
 
@@ -81,10 +105,7 @@ public final class Moduli {
                     continue;
                 }
 
-                DhGroup group = new DhGroup();
-                group.size = Integer.parseInt(parts[4]) + 1;
-                group.g = new BigInteger(parts[5], 16);
-                group.p = new BigInteger(parts[6], 16);
+                DhGroup group = new DhGroup(Integer.parseInt(parts[4]) + 1, new BigInteger(parts[5], 16), new BigInteger(parts[6], 16));
                 groups.add(group);
             }
 

@@ -141,7 +141,8 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
 
             buffer = new ByteArrayBuffer(k_s);
             serverKey = buffer.getRawPublicKey();
-            final String keyAlg = KeyUtils.getKeyType(serverKey);
+
+            String keyAlg = KeyUtils.getKeyType(serverKey);
             if (GenericUtils.isEmpty(keyAlg)) {
                 throw new SshException("Unsupported server key type");
             }

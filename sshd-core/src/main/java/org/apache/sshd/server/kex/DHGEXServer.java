@@ -103,7 +103,8 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
     @Override
     public boolean next(int cmd, Buffer buffer) throws Exception {
         ServerSession session = getServerSession();
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("next({})[{}] process command={}", this, session, KeyExchange.getGroupKexOpcodeName(cmd));
         }
 
@@ -122,7 +123,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             hash = dh.getHash();
             hash.init();
 
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("next({})[{}] send SSH_MSG_KEX_DH_GEX_GROUP", this, session);
             }
 
@@ -148,7 +149,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             hash = dh.getHash();
             hash.init();
 
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("next({})[{}] Send SSH_MSG_KEX_DH_GEX_GROUP", this, session);
             }
             buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP);
@@ -219,7 +220,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             }
 
             // Send response
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("next({})[{}] Send SSH_MSG_KEX_DH_GEX_REPLY", this, session);
             }
 
@@ -234,7 +235,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         return false;
     }
 
-    private DHG chooseDH(int min, int prf, int max) throws Exception {
+    protected DHG chooseDH(int min, int prf, int max) throws Exception {
         List<Moduli.DhGroup> groups = loadModuliGroups();
 
         min = Math.max(min, SecurityUtils.MIN_DHGEX_KEY_SIZE);
@@ -243,15 +244,28 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         max = Math.min(max, SecurityUtils.getMaxDHGroupExchangeKeySize());
         int bestSize = 0;
         List<Moduli.DhGroup> selected = new ArrayList<>();
+        boolean traceEnabled = log.isTraceEnabled();
         for (Moduli.DhGroup group : groups) {
-            if (group.size < min || group.size > max) {
+            int size = group.getSize();
+            if ((size < min) || (size > max)) {
+                if (traceEnabled) {
+                    log.trace("chooseDH - skip group={} - size not in range [{}-{}]", group, min, max);
+                }
                 continue;
             }
-            if ((group.size > prf && group.size < bestSize) || (group.size > bestSize && bestSize < prf)) {
-                bestSize = group.size;
+
+            if (((size > prf) && (size < bestSize)) || ((size > bestSize) && (bestSize < prf))) {
+                bestSize = size;
+                if (traceEnabled) {
+                    log.trace("chooseDH(prf={}, min={}, max={}) new best size={} from group={}", prf, min, max, bestSize, group);
+                }
                 selected.clear();
             }
-            if (group.size == bestSize) {
+
+            if (size == bestSize) {
+                if (traceEnabled) {
+                    log.trace("chooseDH(prf={}, min={}, max={}) selected {}", prf, min, max, group);
+                }
                 selected.add(group);
             }
         }
@@ -267,7 +281,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         Random random = Objects.requireNonNull(factory.create(), "No random generator");
         int which = random.random(selected.size());
         Moduli.DhGroup group = selected.get(which);
-        return getDH(group.p, group.g);
+        return getDH(group.getP(), group.getG());
     }
 
     protected List<Moduli.DhGroup> loadModuliGroups() throws IOException {
