@@ -78,6 +78,7 @@ public final class SshAgentConstants {
     public static final byte SSH_AGENT_OPERATION_COMPLETE = 105;
 
     private SshAgentConstants() {
+        throw new UnsupportedOperationException("N/A instance");
     }
 
     private static class LazyMessagesMapHolder {
