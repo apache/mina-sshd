@@ -43,7 +43,6 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.subsystem.sftp.SftpHelper;
-import org.apache.sshd.common.subsystem.sftp.SftpUniversalOwnerAndGroup;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -528,9 +527,22 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
                     case Size:
                         flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_SIZE;
                         break;
-                    case OwnerGroup:
-                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP;
+                    case OwnerGroup: {
+                        /*
+                         * According to https://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-13.txt
+                         * section 7.5
+                         *
+                         *      If either the owner or group field is zero length, the field
+                         *      should be considered absent, and no change should be made to
+                         *      that specific field during a modification operation.
+                         */
+                        String owner = attributes.getOwner();
+                        String group = attributes.getGroup();
+                        if (GenericUtils.isNotEmpty(owner) && GenericUtils.isNotEmpty(group)) {
+                            flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP;
+                        }
                         break;
+                    }
                     case Perms:
                         flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS;
                         break;
@@ -559,10 +571,10 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             }
             if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
                 String owner = attributes.getOwner();
-                buffer.putString(GenericUtils.isEmpty(owner) ? SftpUniversalOwnerAndGroup.Owner.getName() : owner);
+                buffer.putString(owner);
 
                 String group = attributes.getGroup();
-                buffer.putString(GenericUtils.isEmpty(group) ? SftpUniversalOwnerAndGroup.Group.getName() : group);
+                buffer.putString(group);
             }
             if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
                 buffer.putInt(attributes.getPermissions());

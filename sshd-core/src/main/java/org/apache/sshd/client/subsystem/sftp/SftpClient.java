@@ -46,7 +46,6 @@ import org.apache.sshd.client.subsystem.SubsystemClient;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpHelper;
-import org.apache.sshd.common.subsystem.sftp.SftpUniversalOwnerAndGroup;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -245,6 +244,11 @@ public interface SftpClient extends SubsystemClient {
             return this;
         }
 
+        public Attributes removeFlag(Attribute flag) {
+            flags.remove(flag);
+            return this;
+        }
+
         public int getType() {
             return type;
         }
@@ -277,10 +281,19 @@ public interface SftpClient extends SubsystemClient {
         }
 
         public void setOwner(String owner) {
-            this.owner = ValidateUtils.checkNotNullAndNotEmpty(owner, "No owner");
-            addFlag(Attribute.OwnerGroup);
-            if (GenericUtils.isEmpty(getGroup())) {
-                setGroup(SftpUniversalOwnerAndGroup.Group.getName());
+            this.owner = owner;
+            /*
+             * According to https://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-13.txt
+             * section 7.5
+             *
+             *      If either the owner or group field is zero length, the field
+             *      should be considered absent, and no change should be made to
+             *      that specific field during a modification operation.
+             */
+            if (GenericUtils.isEmpty(owner)) {
+                removeFlag(Attribute.OwnerGroup);
+            } else {
+                addFlag(Attribute.OwnerGroup);
             }
         }
 
@@ -294,10 +307,19 @@ public interface SftpClient extends SubsystemClient {
         }
 
         public void setGroup(String group) {
-            this.group = ValidateUtils.checkNotNullAndNotEmpty(group, "No group");
-            addFlag(Attribute.OwnerGroup);
-            if (GenericUtils.isEmpty(getOwner())) {
-                setOwner(SftpUniversalOwnerAndGroup.Owner.getName());
+            this.group = group;
+            /*
+             * According to https://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-13.txt
+             * section 7.5
+             *
+             *      If either the owner or group field is zero length, the field
+             *      should be considered absent, and no change should be made to
+             *      that specific field during a modification operation.
+             */
+            if (GenericUtils.isEmpty(group)) {
+                removeFlag(Attribute.OwnerGroup);
+            } else {
+                addFlag(Attribute.OwnerGroup);
             }
         }
 
