@@ -166,7 +166,7 @@ public class BuiltinDHFactoriesTest extends BaseTestSupport {
         for (DHFactory expected : BuiltinDHFactories.VALUES) {
             if (!expected.isGroupExchange()) {
                 if (expected.isSupported()) {
-                    assertNotNull("Null DH created", expected.create());
+                    assertNotNull(expected + ": Null DH created", expected.create());
                 }
             }
         }
@@ -174,7 +174,7 @@ public class BuiltinDHFactoriesTest extends BaseTestSupport {
 
     @Test
     public void testDHGRead() throws Exception {
-        assertArrayEquals("P1", DHGroupData.getP1(), DHGroupData.readOakleyGroup("group2.prime"));
-        assertArrayEquals("P14", DHGroupData.getP14(), DHGroupData.readOakleyGroup("group14.prime"));
+        assertArrayEquals("P1", DHGroupData.getP1(), DHGroupData.getOakleyGroupPrimeValue("group2.prime"));
+        assertArrayEquals("P14", DHGroupData.getP14(), DHGroupData.getOakleyGroupPrimeValue("group14.prime"));
     }
 }
