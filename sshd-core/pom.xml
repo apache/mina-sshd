@@ -157,7 +157,7 @@
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <reportsDirectory>${project.build.directory}/surefire-reports-nio2</reportsDirectory>
                     <systemProperties>
-                        <org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.nio2.Nio2ServiceFactory</org.apache.sshd.common.io.IoServiceFactory>
+                        <org.apache.sshd.common.io.IoServiceFactoryFactory>org.apache.sshd.common.io.nio2.Nio2ServiceFactoryFactory</org.apache.sshd.common.io.IoServiceFactoryFactory>
                     </systemProperties>
                     <excludes>
                         <exclude>**/*LoadTest.java</exclude>
@@ -205,6 +205,7 @@
                 </plugins>
             </build>
         </profile>
+        <!--
         <profile>
             <id>test-mina</id>
             <activation>
@@ -224,7 +225,7 @@
                                 <configuration>
                                     <reportsDirectory>${project.build.directory}/surefire-reports-mina</reportsDirectory>
                                     <systemProperties>
-                                        <org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.mina.MinaServiceFactory</org.apache.sshd.common.io.IoServiceFactory>
+                                        <org.apache.sshd.common.io.IoServiceFactoryFactory>org.apache.sshd.common.io.mina.MinaServiceFactoryFactory</org.apache.sshd.common.io.IoServiceFactoryFactory>
                                     </systemProperties>
                                 </configuration>
                             </execution>
@@ -233,6 +234,7 @@
                 </plugins>
             </build>
         </profile>
+        -->
         <profile>
             <id>load-test</id>
             <build>
