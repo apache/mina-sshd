@@ -28,8 +28,8 @@
         <relativePath>..</relativePath>
     </parent>
 
-    <artifactId>sshd-core</artifactId>
-    <name>Apache Mina SSHD :: Core</name>
+    <artifactId>sshd-mina</artifactId>
+    <name>Apache Mina SSHD :: Mina</name>
     <packaging>jar</packaging>
     <inceptionYear>2008</inceptionYear>
 
@@ -39,37 +39,19 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-core</artifactId>
+            <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>tomcat</groupId>
-            <artifactId>tomcat-apr</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpg-jdk15on</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk15on</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-            <!-- For ed25519 support -->
-        <dependency>
-            <groupId>net.i2p.crypto</groupId>
-            <artifactId>eddsa</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-            <!-- test dependencies -->
         <dependency>
             <groupId>org.apache.mina</groupId>
             <artifactId>mina-core</artifactId>
+        </dependency>
+
+        <!-- test dependencies -->
+        <dependency>
+            <groupId>net.i2p.crypto</groupId>
+            <artifactId>eddsa</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -125,39 +107,30 @@
     </dependencies>
 
     <build>
+        <!--
+        <testSourceDirectory>${basedir}/../sshd-core/src/test/java</testSourceDirectory>
+        -->
         <resources>
             <resource>
                 <directory>src/main/filtered-resources</directory>
                 <filtering>true</filtering>
             </resource>
+            <!--
+            <resource>
+                <directory>${basedir}/../sshd-core/src/test/resources</directory>
+                <targetPath>${basedir}/target/test-classes</targetPath>
+            </resource>
+            -->
         </resources>
         <plugins>
-            <!-- publish the test-jar since it contains some classes used by other
-                artifacts tests -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                        <configuration>
-                            <includes>
-                                <include>org/apache/sshd/util/test/**/*</include>
-                            </includes>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    <reportsDirectory>${project.build.directory}/surefire-reports-nio2</reportsDirectory>
+                    <reportsDirectory>${project.build.directory}/surefire-reports-mina</reportsDirectory>
                     <systemProperties>
-                        <org.apache.sshd.common.io.IoServiceFactoryFactory>org.apache.sshd.common.io.nio2.Nio2ServiceFactoryFactory</org.apache.sshd.common.io.IoServiceFactoryFactory>
+                        <org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.mina.MinaServiceFactory</org.apache.sshd.common.io.IoServiceFactory>
                     </systemProperties>
                     <excludes>
                         <exclude>**/*LoadTest.java</exclude>
@@ -174,52 +147,4 @@
         </plugins>
     </build>
 
-    <profiles>
-        <profile>
-            <id>test-jce</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>jce</id>
-                                <goals>
-                                    <goal>test</goal>
-                                </goals>
-                                <configuration>
-                                    <reportsDirectory>${project.build.directory}/surefire-reports-jce</reportsDirectory>
-                                    <systemProperties>
-                                        <org.apache.sshd.security.provider.BC.enabled>false</org.apache.sshd.security.provider.BC.enabled>
-                                            <!-- deprecated -->
-                                        <org.apache.sshd.registerBouncyCastle>false</org.apache.sshd.registerBouncyCastle>
-                                    </systemProperties>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>load-test</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <excludes>
-                                <exclude>foo</exclude>
-                            </excludes>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

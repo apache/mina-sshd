@@ -48,6 +48,9 @@ public class BuiltinIoServiceFactoryFactoriesTest extends BaseTestSupport {
     @Test
     public void testFromFactoryClass() {
         for (BuiltinIoServiceFactoryFactories expected : BuiltinIoServiceFactoryFactories.VALUES) {
+            if (!expected.isSupported()) {
+                continue;
+            }
             Class<?> clazz = expected.getFactoryClass();
             assertSame(clazz.getSimpleName(), expected, BuiltinIoServiceFactoryFactories.fromFactoryClass(clazz));
         }

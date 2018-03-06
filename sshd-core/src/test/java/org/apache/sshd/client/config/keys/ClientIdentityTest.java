@@ -49,7 +49,7 @@ public class ClientIdentityTest extends BaseTestSupport {
 
     @Test
     public void testLoadClientIdentities() throws Exception {
-        Path resFolder = getClassResourcesFolder(TEST_SUBFOLDER, getClass());
+        Path resFolder = getTestResourcesFolder();
         LinkOption[] options = IoUtils.getLinkOptions(true);
         Collection<BuiltinIdentities> expected = EnumSet.noneOf(BuiltinIdentities.class);
         for (BuiltinIdentities type : BuiltinIdentities.VALUES) {

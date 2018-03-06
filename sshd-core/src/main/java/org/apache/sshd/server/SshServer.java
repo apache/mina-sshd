@@ -52,11 +52,10 @@ import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
+import org.apache.sshd.common.io.BuiltinIoServiceFactoryFactories;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.io.mina.MinaServiceFactory;
-import org.apache.sshd.common.io.nio2.Nio2ServiceFactory;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.keyprovider.MappedKeyPairProvider;
 import org.apache.sshd.common.session.helpers.AbstractSession;
@@ -553,9 +552,9 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 }
                 provider = args[++i];
                 if ("mina".equals(provider)) {
-                    System.setProperty(IoServiceFactory.class.getName(), MinaServiceFactory.class.getName());
+                    System.setProperty(IoServiceFactory.class.getName(), BuiltinIoServiceFactoryFactories.MINA.getFactoryClassName());
                 } else if ("nio2".endsWith(provider)) {
-                    System.setProperty(IoServiceFactory.class.getName(), Nio2ServiceFactory.class.getName());
+                    System.setProperty(IoServiceFactory.class.getName(), BuiltinIoServiceFactoryFactories.NIO2.getFactoryClassName());
                 } else {
                     System.err.println("provider should be mina or nio2: " + argName);
                     error = true;

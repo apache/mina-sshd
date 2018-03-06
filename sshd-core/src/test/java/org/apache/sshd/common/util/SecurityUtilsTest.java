@@ -145,7 +145,7 @@ public class SecurityUtilsTest extends BaseTestSupport {
 
     private KeyPair testLoadPrivateKey(String name, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType)
             throws IOException, GeneralSecurityException {
-        Path folder = getClassResourcesFolder(TEST_SUBFOLDER);
+        Path folder = getTestResourcesFolder();
         Path file = folder.resolve(name);
         KeyPair kpFile = testLoadPrivateKeyFile(file, pubType, prvType);
         if (SecurityUtils.isBouncyCastleRegistered()) {

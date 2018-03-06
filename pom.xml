@@ -1004,6 +1004,7 @@
 
     <modules>
         <module>sshd-core</module>
+        <module>sshd-mina</module>
         <module>sshd-ldap</module>
         <module>sshd-git</module>
         <module>sshd-contrib</module>

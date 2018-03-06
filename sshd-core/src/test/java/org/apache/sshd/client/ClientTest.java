@@ -86,8 +86,6 @@ import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoReadFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.io.mina.MinaSession;
-import org.apache.sshd.common.io.nio2.Nio2Session;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
@@ -1534,10 +1532,10 @@ public class ClientTest extends BaseTestSupport {
     }
 
     private void suspend(IoSession ioSession) {
-        if (ioSession instanceof MinaSession) {
-            ((MinaSession) ioSession).suspend();
-        } else {
-            ((Nio2Session) ioSession).suspend();
+        try {
+            ioSession.getClass().getMethod("suspend").invoke(ioSession);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

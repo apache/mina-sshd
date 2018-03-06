@@ -25,27 +25,55 @@ import java.util.Set;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.io.mina.MinaServiceFactoryFactory;
+import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.io.nio2.Nio2ServiceFactoryFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public enum BuiltinIoServiceFactoryFactories implements NamedFactory<IoServiceFactoryFactory> {
+public enum BuiltinIoServiceFactoryFactories implements NamedFactory<IoServiceFactoryFactory>, OptionalFeature {
     NIO2(Nio2ServiceFactoryFactory.class),
-    NMINA(MinaServiceFactoryFactory.class);
+    MINA("org.apache.sshd.common.io.mina.MinaServiceFactoryFactory");
 
     public static final Set<BuiltinIoServiceFactoryFactories> VALUES =
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinIoServiceFactoryFactories.class));
 
     private final Class<? extends IoServiceFactoryFactory> factoryClass;
+    private final String factoryClassName;
 
     BuiltinIoServiceFactoryFactories(Class<? extends IoServiceFactoryFactory> clazz) {
         factoryClass = clazz;
+        factoryClassName = null;
     }
 
+    BuiltinIoServiceFactoryFactories(String clazz) {
+        factoryClass = null;
+        factoryClassName = clazz;
+    }
+
+    public final String getFactoryClassName() {
+        if (factoryClass != null) {
+            return factoryClass.getName();
+        } else {
+            return factoryClassName;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
     public final Class<? extends IoServiceFactoryFactory> getFactoryClass() {
-        return factoryClass;
+        if (factoryClass != null) {
+            return factoryClass;
+        }
+        try {
+            return (Class) Class.forName(factoryClassName, true, BuiltinIoServiceFactoryFactories.class.getClassLoader());
+        } catch (ClassNotFoundException e) {
+            try {
+                return (Class) Class.forName(factoryClassName, true, Thread.currentThread().getContextClassLoader());
+            } catch (ClassNotFoundException e1) {
+                throw new RuntimeException(e);
+
+            }
+        }
     }
 
     @Override
@@ -67,6 +95,15 @@ public enum BuiltinIoServiceFactoryFactories implements NamedFactory<IoServiceFa
         }
     }
 
+    @Override
+    public boolean isSupported() {
+        try {
+            return getFactoryClass() != null;
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
     public static BuiltinIoServiceFactoryFactories fromFactoryName(String name) {
         return NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
@@ -84,4 +121,5 @@ public enum BuiltinIoServiceFactoryFactories implements NamedFactory<IoServiceFa
 
         return null;
     }
+
 }

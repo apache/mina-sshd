@@ -50,7 +50,7 @@ public class ServerIdentityTest extends BaseTestSupport {
 
     @Test
     public void testLoadServerIdentities() throws Exception {
-        Path resFolder = getClassResourcesFolder(TEST_SUBFOLDER, getClass());
+        Path resFolder = getTestResourcesFolder();
         Collection<Path> paths = new ArrayList<>(BuiltinIdentities.VALUES.size());
         LinkOption[] options = IoUtils.getLinkOptions(true);
         Collection<BuiltinIdentities> expected = EnumSet.noneOf(BuiltinIdentities.class);

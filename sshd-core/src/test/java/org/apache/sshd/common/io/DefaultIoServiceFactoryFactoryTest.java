@@ -43,6 +43,9 @@ public class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
     @Test
     public void testBuiltinIoServiceFactoryFactories() {
         for (BuiltinIoServiceFactoryFactories f : BuiltinIoServiceFactoryFactories.VALUES) {
+            if (!f.isSupported()) {
+                continue;
+            }
             String name = f.getName();
             IoServiceFactoryFactory factoryInstance =
                     DefaultIoServiceFactoryFactory.newInstance(IoServiceFactoryFactory.class, name);
@@ -65,6 +68,9 @@ public class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
 
         String propName = IoServiceFactoryFactory.class.getName();
         for (BuiltinIoServiceFactoryFactories f : BuiltinIoServiceFactoryFactories.VALUES) {
+            if (!f.isSupported()) {
+                continue;
+            }
             String name = f.getName();
             try {
                 System.setProperty(propName, name);
