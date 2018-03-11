@@ -26,8 +26,10 @@ import java.util.Map;
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.channel.SttySupport;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 
 /**
@@ -36,6 +38,7 @@ import org.junit.runners.MethodSorters;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class SttySupportTest extends BaseTestSupport {
     public SttySupportTest() {
         super();

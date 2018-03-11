@@ -42,10 +42,13 @@ import org.apache.sshd.common.util.io.NoCloseReader;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.config.keys.AuthorizedKeysAuthenticator;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
+import org.junit.experimental.categories.Category;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@Category({ NoIoTestCase.class })
 public abstract class AuthorizedKeysTestSupport extends BaseTestSupport {
     protected AuthorizedKeysTestSupport() {
         super();

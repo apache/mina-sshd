@@ -33,8 +33,10 @@ import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
 import org.apache.sshd.server.auth.pubkey.StaticPublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 import org.mockito.Mockito;
 
@@ -42,6 +44,7 @@ import org.mockito.Mockito;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class PublickeyAuthenticatorTest extends BaseTestSupport {
     public PublickeyAuthenticatorTest() {
         super();

@@ -42,7 +42,7 @@
     <inceptionYear>2016</inceptionYear>
 
     <properties>
-        <projectRoot>${basedir}/..</projectRoot>
+        <projectRoot>${project.basedir}/..</projectRoot>
     </properties>
 
     <dependencies>

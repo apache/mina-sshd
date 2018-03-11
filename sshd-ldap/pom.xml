@@ -33,7 +33,7 @@
     <inceptionYear>2016</inceptionYear>
 
     <properties>
-        <projectRoot>${basedir}/..</projectRoot>
+        <projectRoot>${project.basedir}/..</projectRoot>
         <apacheds.version>1.5.7</apacheds.version>
         <apache.shared.version>0.9.19</apache.shared.version>
     </properties>

@@ -37,10 +37,12 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.TreeSet;
 
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.apache.sshd.util.test.Utils;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 
 /**
@@ -53,6 +55,7 @@ import org.junit.runners.MethodSorters;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class RootedFileSystemProviderTest extends AssertableFile {
     private static RootedFileSystem fileSystem;
     private static Path rootSandbox;

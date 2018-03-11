@@ -30,11 +30,14 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.Cipher.Mode;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.Assume;
+import org.junit.experimental.categories.Category;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@Category({ NoIoTestCase.class })
 public abstract class BaseCipherTest extends BaseTestSupport {
     protected BaseCipherTest() {
         super();

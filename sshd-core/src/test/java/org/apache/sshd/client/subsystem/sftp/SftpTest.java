@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.SocketTimeoutException;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
@@ -61,7 +60,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 
-import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
@@ -978,31 +976,30 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testReadDir() throws Exception {
+        Path cwdPath = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
+        Path tgtPath = detectTargetFolder();
+        Collection<String> expNames = OsUtils.isUNIX()
+            ? new LinkedList<>()
+            : new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(tgtPath)) {
+            for (Path p : ds) {
+                String n = Objects.toString(p.getFileName());
+                if (".".equals(n) || "..".equals(n)) {
+                    continue;
+                }
+
+                assertTrue("Failed to accumulate " + n, expNames.add(n));
+            }
+        }
+
+        Path baseDir = cwdPath.relativize(tgtPath);
+        String path = baseDir + "/";
+        path = path.replace('\\', '/');
+
         ChannelSftp c = (ChannelSftp) session.openChannel(SftpConstants.SFTP_SUBSYSTEM_NAME);
         c.connect();
         try {
-            URI url = getClass().getClassLoader().getResource(SshClient.class.getName().replace('.', '/') + ".class").toURI();
-            URI base = new File(System.getProperty("user.dir")).getAbsoluteFile().toURI();
-            File baseDir = new File(base.relativize(url).getPath());
-            String path = baseDir.getParent() + "/";
-            path = path.replace('\\', '/');
-
             Vector<?> res = c.ls(path);
-            File dir = baseDir.getParentFile();
-            Collection<String> expNames = OsUtils.isUNIX()
-                                        ? new LinkedList<>()
-                                        : new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-            String[] names = dir.list();
-            if (GenericUtils.length(names) > 0) {
-                for (String n : names) {
-                    if (".".equals(n) || "..".equals(n)) {
-                        continue;
-                    }
-
-                    assertTrue("Failed to accumulate " + n, expNames.add(n));
-                }
-            }
-
             for (Object f : res) {
                 outputDebugMessage("LsEntry: %s", f);
 

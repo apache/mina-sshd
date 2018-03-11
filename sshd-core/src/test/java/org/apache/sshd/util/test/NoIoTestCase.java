@@ -17,28 +17,14 @@
  * under the License.
  */
 
-package org.apache.sshd.common.util;
-
-import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+package org.apache.sshd.util.test;
 
 /**
+ * Marker interface used as <A HREF="https://github.com/junit-team/junit4/wiki/categories">jUnit category</A>
+ * to indicate a test that does not require real client/server interaction.
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
-public class ValidateUtilsTest extends BaseTestSupport {
-    public ValidateUtilsTest() {
-        super();
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void checkNotNull() {
-        ValidateUtils.checkNotNull(getClass(), getCurrentTestName());
-        ValidateUtils.checkNotNull(null, getCurrentTestName());
-    }
+public interface NoIoTestCase {
+    // Marker interface
 }

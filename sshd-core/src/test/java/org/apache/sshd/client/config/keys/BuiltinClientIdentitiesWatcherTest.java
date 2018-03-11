@@ -44,15 +44,18 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.apache.sshd.util.test.Utils;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class BuiltinClientIdentitiesWatcherTest extends BaseTestSupport {
     public BuiltinClientIdentitiesWatcherTest() {
         super();
@@ -64,8 +67,8 @@ public class BuiltinClientIdentitiesWatcherTest extends BaseTestSupport {
         String keyType = ValidateUtils.checkNotNullAndNotEmpty(KeyUtils.getKeyType(identity), "Cannot determine identity key type");
 
         Path dir = assertHierarchyTargetFolderExists(getTempTargetRelativeFile(getClass().getSimpleName()));
-        final Map<BuiltinIdentities, Path> locationsMap = new EnumMap<>(BuiltinIdentities.class);
-        final Map<BuiltinIdentities, KeyPair> idsMap = new EnumMap<>(BuiltinIdentities.class);
+        Map<BuiltinIdentities, Path> locationsMap = new EnumMap<>(BuiltinIdentities.class);
+        Map<BuiltinIdentities, KeyPair> idsMap = new EnumMap<>(BuiltinIdentities.class);
         for (BuiltinIdentities id : BuiltinIdentities.VALUES) {
             Path idFile = dir.resolve(ClientIdentity.getIdentityFileName(id));
             Files.deleteIfExists(idFile);

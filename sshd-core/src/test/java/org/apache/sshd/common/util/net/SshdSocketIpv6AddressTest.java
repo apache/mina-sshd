@@ -25,8 +25,10 @@ import java.util.List;
 
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
@@ -39,6 +41,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class SshdSocketIpv6AddressTest extends BaseTestSupport {
     public static final List<String> VALID_ADDRESSES =
         Collections.unmodifiableList(

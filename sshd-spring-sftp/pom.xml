@@ -33,7 +33,7 @@
     <inceptionYear>2017</inceptionYear>
 
     <properties>
-        <projectRoot>${basedir}/..</projectRoot>
+        <projectRoot>${project.basedir}/..</projectRoot>
         <spring.integration.version>5.0.0.RELEASE</spring.integration.version>
     </properties>
 

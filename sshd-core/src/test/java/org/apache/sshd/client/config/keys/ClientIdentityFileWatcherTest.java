@@ -35,15 +35,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.apache.sshd.util.test.Utils;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class ClientIdentityFileWatcherTest extends BaseTestSupport {
     public ClientIdentityFileWatcherTest() {
         super();
@@ -52,8 +55,8 @@ public class ClientIdentityFileWatcherTest extends BaseTestSupport {
     @Test
     public void testIdentityReload() throws Exception {
         Path dir = assertHierarchyTargetFolderExists(getTempTargetRelativeFile(getClass().getSimpleName()));
-        final Path idFile = dir.resolve(getCurrentTestName() + ".pem");
-        final KeyPair identity = Utils.getFirstKeyPair(createTestHostKeyProvider());
+        Path idFile = dir.resolve(getCurrentTestName() + ".pem");
+        KeyPair identity = Utils.getFirstKeyPair(createTestHostKeyProvider());
         ClientIdentityLoader loader = new ClientIdentityLoader() {
             @Override
             public KeyPair loadClientIdentity(String location, FilePasswordProvider provider) throws IOException, GeneralSecurityException {
@@ -72,7 +75,7 @@ public class ClientIdentityFileWatcherTest extends BaseTestSupport {
             }
         };
 
-        final AtomicInteger reloadCount = new AtomicInteger(0);
+        AtomicInteger reloadCount = new AtomicInteger(0);
         ClientIdentityProvider idProvider = new ClientIdentityFileWatcher(idFile, loader, FilePasswordProvider.EMPTY, false) {
             @Override
             protected KeyPair reloadClientIdentity(Path path) throws IOException, GeneralSecurityException {

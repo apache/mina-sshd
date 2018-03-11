@@ -34,7 +34,7 @@
     <inceptionYear>2008</inceptionYear>
 
     <properties>
-        <projectRoot>${basedir}/..</projectRoot>
+        <projectRoot>${project.basedir}/..</projectRoot>
     </properties>
 
     <dependencies>
@@ -107,20 +107,16 @@
     </dependencies>
 
     <build>
-        <!--
-        <testSourceDirectory>${basedir}/../sshd-core/src/test/java</testSourceDirectory>
-        -->
+        <testSourceDirectory>${projectRoot}/sshd-core/src/test/java</testSourceDirectory>
         <resources>
             <resource>
                 <directory>src/main/filtered-resources</directory>
                 <filtering>true</filtering>
             </resource>
-            <!--
             <resource>
-                <directory>${basedir}/../sshd-core/src/test/resources</directory>
-                <targetPath>${basedir}/target/test-classes</targetPath>
+                <directory>${projectRoot}/sshd-core/src/test/resources</directory>
+                <targetPath>${project.build.testOutputDirectory}</targetPath>
             </resource>
-            -->
         </resources>
         <plugins>
             <plugin>
@@ -133,8 +129,13 @@
                         <org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.mina.MinaServiceFactory</org.apache.sshd.common.io.IoServiceFactory>
                     </systemProperties>
                     <excludes>
+                        <!-- These tests use NIO explicitly -->
                         <exclude>**/*LoadTest.java</exclude>
+                        <exclude>**/ProxyTest.java</exclude>
+                        <!-- TODO need some more research as to why this fails on MINA but not on NIO2 -->
+                        <exclude>**/ApacheServer*Test.java</exclude>
                     </excludes>
+                    <excludedGroups>org.apache.sshd.util.test.NoIoTestCase</excludedGroups>
                 </configuration>
             </plugin>
             <plugin>
