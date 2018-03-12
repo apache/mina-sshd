@@ -31,12 +31,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.logging.LoggingUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -274,9 +276,9 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                 return false;
             }
 
-            log.warn("Caught " + exc.getClass().getSimpleName()
-                   + " while accepting incoming connection from " + address
-                   + ": " + exc.getMessage(), exc);
+            log.warn("Caught {} while accepting incoming connection from {}: {}",
+                exc.getClass().getSimpleName(), address, exc.getMessage());
+            LoggingUtils.logExceptionStackTrace(log, Level.WARNING, exc);
             return true;
         }
     }

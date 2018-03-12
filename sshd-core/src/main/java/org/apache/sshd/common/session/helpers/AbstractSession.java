@@ -305,34 +305,35 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     /**
-     * Retrieve the session from the MINA session.
-     * If the session has not been attached, an {@link IllegalStateException}
-     * will be thrown
+     * Retrieve the SSH session from the I/O session. If the session has not been attached,
+     * an exception will be thrown
      *
-     * @param ioSession the MINA session
-     * @return the session attached to the MINA session
+     * @param ioSession The {@link IoSession}
+     * @return The SSH session attached to the I/O session
      * @see #getSession(IoSession, boolean)
+     * @throws MissingAttachedSessionException if no attached SSH session
      */
-    public static AbstractSession getSession(IoSession ioSession) {
+    public static AbstractSession getSession(IoSession ioSession) throws MissingAttachedSessionException {
         return getSession(ioSession, false);
     }
 
     /**
-     * Retrieve the session from the MINA session.
-     * If the session has not been attached and <tt>allowNull</tt> is <code>false</code>,
-     * an {@link IllegalStateException} will be thrown, else a {@code null} will
-     * be returned
+     * Retrieve the session SSH from the I/O session. If the session has not been attached
+     * and <tt>allowNull</tt> is <code>false</code>, an exception will be thrown, otherwise
+     * a {@code null} will be returned.
      *
-     * @param ioSession the MINA session
-     * @param allowNull if <code>true</code>, a {@code null} value may be
-     *                  returned if no session is attached
-     * @return the session attached to the MINA session or {@code null}
+     * @param ioSession The {@link IoSession}
+     * @param allowNull If <code>true</code>, a {@code null} value may be returned if no
+     * session is attached
+     * @return the session attached to the I/O session or {@code null}
+     * @throws MissingAttachedSessionException if no attached session and <tt>allowNull=false</tt>
      */
-    public static AbstractSession getSession(IoSession ioSession, boolean allowNull) {
+    public static AbstractSession getSession(IoSession ioSession, boolean allowNull) throws MissingAttachedSessionException {
         AbstractSession session = (AbstractSession) ioSession.getAttribute(SESSION);
         if ((session == null) && (!allowNull)) {
-            throw new IllegalStateException("No session available");
+            throw new MissingAttachedSessionException("No session available");
         }
+
         return session;
     }
 
@@ -343,7 +344,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @param session   the session to attach
      */
     public static void attachSession(IoSession ioSession, AbstractSession session) {
-        Objects.requireNonNull(ioSession, "No I/O session").setAttribute(SESSION, Objects.requireNonNull(session, "No SSH session"));
+        Objects.requireNonNull(ioSession, "No I/O session");
+        Objects.requireNonNull(session, "No SSH session");
+        ioSession.setAttribute(SESSION, session);
     }
 
     @Override

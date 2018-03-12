@@ -32,6 +32,7 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.RuntimeSshException;
@@ -43,6 +44,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
+import org.apache.sshd.common.util.logging.LoggingUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -206,7 +208,8 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
     @Override
     protected void doCloseImmediately() {
-        for (boolean debugEnabled = log.isDebugEnabled();;) {
+        boolean debugEnabled = log.isDebugEnabled();
+        while (true) {
             // Cancel pending requests informing them of the cancellation
             Nio2DefaultIoWriteFuture future = writes.poll();
             if (future != null) {
@@ -231,9 +234,20 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
         AsynchronousSocketChannel socket = getSocket();
         try {
+            if (debugEnabled) {
+                log.debug("doCloseImmediately({}) closing socket={}", this, socket);
+            }
+
             socket.close();
+
+            if (debugEnabled) {
+                log.debug("doCloseImmediately({}) socket={} closed", this, socket);
+            }
+
         } catch (IOException e) {
-            log.info("doCloseImmediately(" + this + ") exception caught while closing socket", e);
+            log.info("doCloseImmediately({}) {} caught while closing socket={}: {}",
+                    this, e.getClass().getSimpleName(), socket, e.getMessage());
+            LoggingUtils.logExceptionStackTrace(log, Level.INFO, e);
         }
 
         service.sessionClosed(this);
@@ -243,7 +257,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         try {
             handler.sessionClosed(this);
         } catch (Throwable e) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("doCloseImmediately({}) {} while calling IoHandler#sessionClosed: {}",
                           this, e.getClass().getSimpleName(), e.getMessage());
             }

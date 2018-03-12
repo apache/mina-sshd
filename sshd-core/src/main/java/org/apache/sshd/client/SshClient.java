@@ -630,23 +630,44 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     protected SshFutureListener<IoConnectFuture> createConnectCompletionListener(
-            final ConnectFuture connectFuture, final String username, final SocketAddress address,
-            final Collection<? extends KeyPair> identities, final boolean useDefaultIdentities) {
-        return future -> {
-            if (future.isCanceled()) {
-                connectFuture.cancel();
-                return;
+            ConnectFuture connectFuture, String username, SocketAddress address,
+            Collection<? extends KeyPair> identities, boolean useDefaultIdentities) {
+        return new SshFutureListener<IoConnectFuture>() {
+            @Override
+            @SuppressWarnings("synthetic-access")
+            public void operationComplete(IoConnectFuture future) {
+                if (future.isCanceled()) {
+                    connectFuture.cancel();
+                    return;
+                }
+
+                Throwable t = future.getException();
+                if (t != null) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("operationComplete({}@{}) failed ({}): {}",
+                                  username, address, t.getClass().getSimpleName(), t.getMessage());
+                    }
+                    connectFuture.setException(t);
+                } else {
+                    IoSession ioSession = future.getSession();
+                    try {
+                        onConnectOperationComplete(ioSession, connectFuture, username, address, identities, useDefaultIdentities);
+                    } catch (RuntimeException e) {
+                        log.warn("operationComplete({}@{}) failed ({}) to signal completion of session={}: {}",
+                                username, address, e.getClass().getSimpleName(), ioSession, e.getMessage());
+                        if (log.isDebugEnabled()) {
+                            log.debug("operationComplete(" + username + "@" + address + ") session=" + ioSession + " completion signal failure details", e);
+                        }
+                        connectFuture.setException(e);
+
+                        ioSession.close(true);
+                    }
+                }
             }
 
-            Throwable t = future.getException();
-            if (t != null) {
-                if (log.isDebugEnabled()) {
-                    log.debug("operationComplete({}@{}) failed ({}): {}",
-                              username, address, t.getClass().getSimpleName(), t.getMessage());
-                }
-                connectFuture.setException(t);
-            } else {
-                onConnectOperationComplete(future.getSession(), connectFuture, username, address, identities, useDefaultIdentities);
+            @Override
+            public String toString() {
+                return "ConnectCompletionListener[" + username + "@" + address + "]";
             }
         };
     }
@@ -666,8 +687,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             if (log.isDebugEnabled()) {
                 log.debug("onConnectOperationComplete({}) adding {} identities", session, numIds);
             }
+
+            boolean traceEnabled = log.isTraceEnabled();
             for (KeyPair kp : identities) {
-                if (log.isTraceEnabled()) {
+                if (traceEnabled) {
                     log.trace("onConnectOperationComplete({}) add identity type={}, fingerprint={}",
                               session, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
                 }
