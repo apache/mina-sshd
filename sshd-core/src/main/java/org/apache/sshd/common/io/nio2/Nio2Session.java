@@ -98,6 +98,13 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     }
 
     @Override
+    public Object setAttributeIfAbsent(Object key, Object value) {
+        synchronized (attributes) {
+            return attributes.putIfAbsent(key, value);
+        }
+    }
+
+    @Override
     public Object removeAttribute(Object key) {
         synchronized (attributes) {
             return attributes.remove(key);

@@ -71,6 +71,11 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
     }
 
     @Override
+    public Object setAttributeIfAbsent(Object key, Object value) {
+        return session.setAttributeIfAbsent(key, value);
+    }
+
+    @Override
     public Object removeAttribute(Object key) {
         return session.removeAttribute(key);
     }

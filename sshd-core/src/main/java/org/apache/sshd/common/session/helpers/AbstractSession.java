@@ -258,7 +258,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         super(Objects.requireNonNull(factoryManager, "No factory manager provided"));
         this.isServer = isServer;
         this.factoryManager = factoryManager;
-        this.ioSession = ioSession;
+        this.ioSession = Objects.requireNonNull(ioSession, "No IoSession provided");
         this.decoderBuffer = new SessionWorkBuffer(this);
 
         attachSession(ioSession, this);
@@ -338,15 +338,19 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     /**
-     * Attach a session to the MINA session
+     * Attach an SSH {@link AbstractSession} to the I/O session
      *
-     * @param ioSession the MINA session
-     * @param session   the session to attach
+     * @param ioSession The {@link IoSession}
+     * @param session The SSH session to attach
+     * @throws MultipleAttachedSessionException If a previous session already attached
      */
-    public static void attachSession(IoSession ioSession, AbstractSession session) {
+    public static void attachSession(IoSession ioSession, AbstractSession session) throws MultipleAttachedSessionException {
         Objects.requireNonNull(ioSession, "No I/O session");
         Objects.requireNonNull(session, "No SSH session");
-        ioSession.setAttribute(SESSION, session);
+        Object prev = ioSession.setAttributeIfAbsent(SESSION, session);
+        if (prev != null) {
+            throw new MultipleAttachedSessionException("Multiple attached session to " + ioSession + ": " + prev + " and " + session);
+        }
     }
 
     @Override

@@ -354,6 +354,11 @@ public class AbstractSessionTest extends BaseTestSupport {
         }
 
         @Override
+        public Object setAttributeIfAbsent(Object key, Object value) {
+            return null;
+        }
+
+        @Override
         public Object removeAttribute(Object key) {
             return null;
         }
