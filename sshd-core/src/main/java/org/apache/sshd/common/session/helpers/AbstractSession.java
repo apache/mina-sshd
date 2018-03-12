@@ -331,7 +331,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     public static AbstractSession getSession(IoSession ioSession, boolean allowNull) throws MissingAttachedSessionException {
         AbstractSession session = (AbstractSession) ioSession.getAttribute(SESSION);
         if ((session == null) && (!allowNull)) {
-            throw new MissingAttachedSessionException("No session available");
+            throw new MissingAttachedSessionException("No session attached to " + ioSession);
         }
 
         return session;

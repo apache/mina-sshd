@@ -32,6 +32,9 @@ import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class MinaServiceFactory extends AbstractIoServiceFactory {
 
@@ -39,8 +42,8 @@ public class MinaServiceFactory extends AbstractIoServiceFactory {
 
     public MinaServiceFactory(FactoryManager factoryManager, ExecutorService service, boolean shutdownOnExit) {
         super(factoryManager,
-                service == null ? ThreadUtils.newCachedThreadPool(factoryManager.toString() + "-mina") : service,
-                service == null || shutdownOnExit);
+                (service == null) ? ThreadUtils.newCachedThreadPool(factoryManager.toString() + "-mina") : service,
+                (service == null) || shutdownOnExit);
         ioProcessor = new SimpleIoProcessorPool<>(NioProcessor.class, getExecutorService(), getNioWorkers(factoryManager), null);
     }
 

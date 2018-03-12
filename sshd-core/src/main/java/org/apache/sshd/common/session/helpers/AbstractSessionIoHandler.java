@@ -37,14 +37,12 @@ public abstract class AbstractSessionIoHandler extends AbstractLoggingBean imple
 
     @Override
     public void sessionCreated(IoSession ioSession) throws Exception {
-        ValidateUtils.checkNotNull(
-                createSession(ioSession), "No session created for %s", ioSession);
+        ValidateUtils.checkNotNull(createSession(ioSession), "No session created for %s", ioSession);
     }
 
     @Override
     public void sessionClosed(IoSession ioSession) throws Exception {
-        AbstractSession session = ValidateUtils.checkNotNull(
-                AbstractSession.getSession(ioSession), "No abstract session to handle closure of %s", ioSession);
+        AbstractSession session = AbstractSession.getSession(ioSession);
         session.close(true);
     }
 
@@ -60,14 +58,13 @@ public abstract class AbstractSessionIoHandler extends AbstractLoggingBean imple
 
     @Override
     public void messageReceived(IoSession ioSession, Readable message) throws Exception {
-        AbstractSession session = ValidateUtils.checkNotNull(
-                AbstractSession.getSession(ioSession), "No abstract session to handle incoming message for %s", ioSession);
+        AbstractSession session = AbstractSession.getSession(ioSession);
         try {
             session.messageReceived(message);
         } catch (Error e) {
             if (log.isDebugEnabled()) {
                 log.debug("messageReceived({}) failed {} to handle message: {}",
-                          ioSession, e.getClass().getSimpleName(), e.getMessage());
+                      ioSession, e.getClass().getSimpleName(), e.getMessage());
             }
 
             if (log.isTraceEnabled()) {

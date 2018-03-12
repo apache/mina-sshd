@@ -20,6 +20,7 @@ package org.apache.sshd.common.io.mina;
 
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 
 import org.apache.mina.core.RuntimeIoException;
@@ -35,6 +36,7 @@ import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
 /**
@@ -47,9 +49,9 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
     protected IoSessionConfig sessionConfig;
 
     public MinaService(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler, IoProcessor<NioSession> ioProcessor) {
-        this.manager = manager;
-        this.handler = handler;
-        this.ioProcessor = ioProcessor;
+        this.manager = Objects.requireNonNull(manager, "No factory manager provided");
+        this.handler = Objects.requireNonNull(handler, "No IoHandler provided");
+        this.ioProcessor = Objects.requireNonNull(ioProcessor, "No IoProcessor provided");
     }
 
     protected abstract IoService getIoService();
@@ -61,9 +63,11 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
 
     @Override
     protected void doCloseImmediately() {
-        IoService ioService = getIoService();
-        ioService.dispose();
-        super.doCloseImmediately();
+        try {
+            dispose();
+        } finally {
+            super.doCloseImmediately();
+        }
     }
 
     @Override
@@ -106,28 +110,39 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
     @Override
     public void sessionCreated(IoSession session) throws Exception {
         org.apache.sshd.common.io.IoSession ioSession = new MinaSession(this, session);
-        session.setAttribute(org.apache.sshd.common.io.IoSession.class, ioSession);
-        handler.sessionCreated(ioSession);
+        try {
+            session.setAttribute(org.apache.sshd.common.io.IoSession.class, ioSession);
+            handler.sessionCreated(ioSession);
+        } catch (Exception e) {
+            log.warn("sessionCreated({}) failed {} to handle creation event: {}",
+                    session, e.getClass().getSimpleName(), e.getMessage());
+            ioSession.close(true);
+            throw e;
+        }
     }
 
     @Override
-    public void sessionClosed(IoSession session) throws Exception {
-        handler.sessionClosed(getSession(session));
+    public void sessionClosed(IoSession ioSession) throws Exception {
+        org.apache.sshd.common.io.IoSession session = getSession(ioSession);
+        handler.sessionClosed(session);
     }
 
     @Override
-    public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
-        handler.exceptionCaught(getSession(session), cause);
+    public void exceptionCaught(IoSession ioSession, Throwable cause) throws Exception {
+        org.apache.sshd.common.io.IoSession session = getSession(ioSession);
+        handler.exceptionCaught(session, cause);
     }
 
     @Override
-    public void messageReceived(IoSession session, Object message) throws Exception {
-        handler.messageReceived(getSession(session), MinaSupport.asReadable((IoBuffer) message));
+    public void messageReceived(IoSession ioSession, Object message) throws Exception {
+        org.apache.sshd.common.io.IoSession session = getSession(ioSession);
+        Readable ioBuffer = MinaSupport.asReadable((IoBuffer) message);
+        handler.messageReceived(session, ioBuffer);
     }
 
     protected org.apache.sshd.common.io.IoSession getSession(IoSession session) {
         return (org.apache.sshd.common.io.IoSession)
-                session.getAttribute(org.apache.sshd.common.io.IoSession.class);
+            session.getAttribute(org.apache.sshd.common.io.IoSession.class);
     }
 
     protected void configure(SocketSessionConfig config) {

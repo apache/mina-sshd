@@ -19,11 +19,13 @@
 package org.apache.sshd.client;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.session.ClientSession.ClientSessionEvent;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.helpers.MissingAttachedSessionException;
@@ -83,8 +85,9 @@ public class ClientDeadlockTest extends BaseTestSupport {
 
         ConnectFuture future = client.connect(getCurrentTestName(), TEST_LOCALHOST, port);
         try (ClientSession session = future.verify(5L, TimeUnit.SECONDS).getSession()) {
-            session.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), TimeUnit.SECONDS.toMillis(7L));
-            assertFalse(session.isOpen());
+            Collection<ClientSessionEvent> events = session.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), TimeUnit.SECONDS.toMillis(7L));
+            assertTrue("Close event not signalled: " + events, events.contains(ClientSession.ClientSessionEvent.CLOSED));
+            assertFalse("Session not marked as closed", session.isOpen());
         } catch (SshException e) {
             Throwable cause = e.getCause();
             // Due to a race condition we might get this exception
