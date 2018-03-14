@@ -56,12 +56,27 @@ Optional dependency to enable choosing between NIO asynchronous sockets (the def
 
 ```xml
 
-    <dependency>    <!-- For async. sockets I/O -->
+    <dependency>
         <groupId>org.apache.mina</groupId>
         <artifactId>mina-core</artifactId>
+            <!-- see SSHD POM for latest tested known version of MINA core -->
+        <version>2.0.6</version>
     </dependency>
 
 ```
+
+**NOTE:** in order to use this library one must also add the `sshd-mina` artifact
+
+```xml
+
+    <dependency>
+        <groupId>org.apache.sshd</groupId>
+        <artifactId>sshd-mina</artifactId>
+        <version>...same as sshd-core...</version>
+    </dependency>
+
+```
+
 
 * [ed25519-java](https://github.com/str4d/ed25519-java)
 
