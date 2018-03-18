@@ -274,7 +274,9 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
             }
         }
 
-        attributes.clear();
+        synchronized (attributes) {
+            attributes.clear();
+        }
     }
 
     @Override   // co-variant return
