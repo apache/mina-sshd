@@ -92,11 +92,23 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     }
 
     @Test
+    public void testKnownDefaultCipherFactoriesList() {
+        testKnownDefaultFactoriesList(SshConfigFileReader.DEFAULT_CIPHERS, BuiltinCiphers::fromFactoryName,
+            GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, "cast128-cbc", "arcfour"));
+    }
+
+    @Test
     public void testParseMacsList() {
         List<? extends NamedResource> expected = BaseBuilder.DEFAULT_MAC_PREFERENCE;
         Properties props = initNamedResourceProperties(SshConfigFileReader.MACS_CONFIG_PROP, expected);
         BuiltinMacs.ParseResult result = SshConfigFileReader.getMacs(PropertyResolverUtils.toPropertyResolver(props));
         testParsedFactoriesList(expected, result.getParsedFactories(), result.getUnsupportedFactories());
+    }
+
+    @Test
+    public void testKnownDefaultMacFactoriesList() {
+        testKnownDefaultFactoriesList(SshConfigFileReader.DEFAULT_MACS, BuiltinMacs::fromFactoryName,
+            GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, "umac-64@openssh.com", "hmac-ripemd160", "hmac-sha2-256-96", "hmac-sha2-512-96"));
     }
 
     @Test
@@ -108,11 +120,39 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     }
 
     @Test
+    public void testKnownDefaultSignatureFactoriesList() {
+        testKnownDefaultFactoriesList(SshConfigFileReader.DEFAULT_HOST_KEY_ALGORITHMS, BuiltinSignatures::fromFactoryName);
+    }
+
+    @Test
     public void testParseKexFactoriesList() {
         List<? extends NamedResource> expected = BaseBuilder.DEFAULT_KEX_PREFERENCE;
         Properties props = initNamedResourceProperties(SshConfigFileReader.KEX_ALGORITHMS_CONFIG_PROP, expected);
         BuiltinDHFactories.ParseResult result = SshConfigFileReader.getKexFactories(PropertyResolverUtils.toPropertyResolver(props));
         testParsedFactoriesList(expected, result.getParsedFactories(), result.getUnsupportedFactories());
+    }
+
+    @Test
+    public void testKnownDefaultKexFactoriesList() {
+        testKnownDefaultFactoriesList(SshConfigFileReader.DEFAULT_KEX_ALGORITHMS, BuiltinDHFactories::fromFactoryName);
+    }
+
+    private void testKnownDefaultFactoriesList(String factories, Function<? super String, ? extends NamedResource> resolver) {
+        testKnownDefaultFactoriesList(factories, resolver, Collections.emptySet());
+    }
+
+    private void testKnownDefaultFactoriesList(
+            String factories, Function<? super String, ? extends NamedResource> resolver, Collection<String> excludedNames) {
+        String[] names = GenericUtils.split(factories, ',');
+        assertTrue("No default names", GenericUtils.length(names) > 0);
+        for (String n : names) {
+            NamedResource facInstance = resolver.apply(n);
+            if (excludedNames.contains(n)) {
+                assertNull("Unexpected excluded factory instance: " + n, facInstance);
+            } else {
+                assertNotNull("Unknown factory: " + n, facInstance);
+            }
+        }
     }
 
     @Test
