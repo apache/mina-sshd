@@ -24,8 +24,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.NavigableMap;
+import java.util.NavigableSet;
 import java.util.Objects;
-import java.util.SortedSet;
 import java.util.TreeMap;
 
 import org.apache.sshd.common.util.GenericUtils;
@@ -170,7 +170,7 @@ public class PrivateKeyEncryptionContext implements Cloneable {
         }
     }
 
-    public static final SortedSet<String> getRegisteredPrivateKeyObfuscatorCiphers() {
+    public static final NavigableSet<String> getRegisteredPrivateKeyObfuscatorCiphers() {
         synchronized (OBFUSCATORS) {
             Collection<String> names = OBFUSCATORS.keySet();
             return GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, names);

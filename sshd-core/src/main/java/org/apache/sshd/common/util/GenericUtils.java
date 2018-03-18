@@ -34,11 +34,10 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
@@ -432,12 +431,12 @@ public final class GenericUtils {
         return stream(values).map(mapper).collect(toSortedSet(comparator));
     }
 
-    public static <T, K, U> SortedMap<K, U> toSortedMap(
+    public static <T, K, U> NavigableMap<K, U> toSortedMap(
             Iterable<T> values, Function<? super T, ? extends K> keyMapper, Function<? super T, ? extends U> valueMapper, Comparator<K> comparator) {
         return stream(values).collect(toSortedMap(keyMapper, valueMapper, comparator));
     }
 
-    public static <T, K, U> Collector<T, ?, SortedMap<K, U>> toSortedMap(
+    public static <T, K, U> Collector<T, ?, NavigableMap<K, U>> toSortedMap(
             Function<? super T, ? extends K> keyMapper, Function<? super T, ? extends U> valueMapper, Comparator<K> comparator) {
         return Collectors.toMap(keyMapper, valueMapper, throwingMerger(), () -> new TreeMap<>(comparator));
     }
@@ -490,11 +489,11 @@ public final class GenericUtils {
     }
 
     @SafeVarargs
-    public static <V extends Comparable<V>> SortedSet<V> asSortedSet(V... values) {
+    public static <V extends Comparable<V>> NavigableSet<V> asSortedSet(V... values) {
         return asSortedSet(Comparator.naturalOrder(), values);
     }
 
-    public static <V extends Comparable<V>> SortedSet<V> asSortedSet(Collection<? extends V> values) {
+    public static <V extends Comparable<V>> NavigableSet<V> asSortedSet(Collection<? extends V> values) {
         return asSortedSet(Comparator.naturalOrder(), values);
     }
 
@@ -502,11 +501,11 @@ public final class GenericUtils {
      * @param <V>    The element type
      * @param comp   The (non-{@code null}) {@link Comparator} to use
      * @param values The values to be added (ignored if {@code null})
-     * @return A {@link SortedSet} containing the values (if any) sorted
+     * @return A {@link NavigableSet} containing the values (if any) sorted
      * using the provided comparator
      */
     @SafeVarargs
-    public static <V> SortedSet<V> asSortedSet(Comparator<? super V> comp, V... values) {
+    public static <V> NavigableSet<V> asSortedSet(Comparator<? super V> comp, V... values) {
         return asSortedSet(comp, isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
     }
 
@@ -514,11 +513,11 @@ public final class GenericUtils {
      * @param <V>    The element type
      * @param comp   The (non-{@code null}) {@link Comparator} to use
      * @param values The values to be added (ignored if {@code null}/empty)
-     * @return A {@link SortedSet} containing the values (if any) sorted
+     * @return A {@link NavigableSet} containing the values (if any) sorted
      * using the provided comparator
      */
-    public static <V> SortedSet<V> asSortedSet(Comparator<? super V> comp, Collection<? extends V> values) {
-        SortedSet<V> set = new TreeSet<>(Objects.requireNonNull(comp, "No comparator"));
+    public static <V> NavigableSet<V> asSortedSet(Comparator<? super V> comp, Collection<? extends V> values) {
+        NavigableSet<V> set = new TreeSet<>(Objects.requireNonNull(comp, "No comparator"));
         if (size(values) > 0) {
             set.addAll(values);
         }
@@ -527,11 +526,11 @@ public final class GenericUtils {
 
     /**
      * @param <V> Type of mapped value
-     * @return A {@link Supplier} that returns a <U>new</U> {@link SortedMap}
+     * @return A {@link Supplier} that returns a <U>new</U> {@link NavigableMap}
      * whenever its {@code get()} method is invoked
      */
     @SuppressWarnings("unchecked")
-    public static <V> Supplier<SortedMap<String, V>> caseInsensitiveMap() {
+    public static <V> Supplier<NavigableMap<String, V>> caseInsensitiveMap() {
         return CASE_INSENSITIVE_MAP_FACTORY;
     }
 

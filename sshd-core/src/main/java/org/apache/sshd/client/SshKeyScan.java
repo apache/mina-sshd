@@ -48,9 +48,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.SortedSet;
+import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -182,8 +181,8 @@ public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, S
          * key, so pre-create the factories map according to the selected
          * key types
          */
-        Map<String, List<NamedFactory<Signature>>> sigFactories = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        SortedSet<String> sigTypes = new TreeSet<>(pairsMap.keySet());
+        SortedMap<String, List<NamedFactory<Signature>>> sigFactories = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        Collection<String> sigTypes = GenericUtils.asSortedSet(sigFactories.comparator(), pairsMap.keySet());
         for (String kt : sigTypes) {
             List<NamedFactory<Signature>> factories = resolveSignatureFactories(kt);
             if (GenericUtils.isEmpty(factories)) {
