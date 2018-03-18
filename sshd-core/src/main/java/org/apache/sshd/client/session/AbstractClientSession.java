@@ -483,7 +483,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     @Override
     protected void checkKeys() throws SshException {
         ServerKeyVerifier serverKeyVerifier = Objects.requireNonNull(getServerKeyVerifier(), "No server key verifier");
-        SocketAddress remoteAddress = ioSession.getRemoteAddress();
+        IoSession networkSession = getIoSession();
+        SocketAddress remoteAddress = networkSession.getRemoteAddress();
         PublicKey serverKey = kex.getServerKey();
         boolean verified = serverKeyVerifier.verifyServerKey(this, remoteAddress, serverKey);
         if (log.isDebugEnabled()) {

@@ -120,10 +120,6 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      */
     protected final boolean isServer;
     /**
-     * The underlying MINA session
-     */
-    protected final IoSession ioSession;
-    /**
      * The pseudo random generator
      */
     protected final Random random;
@@ -224,6 +220,10 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected final AtomicLong maxRekeyBlocks = new AtomicLong(FactoryManager.DEFAULT_REKEY_BYTES_LIMIT / 16);
     protected final AtomicLong ignorePacketsCount = new AtomicLong(FactoryManager.DEFAULT_IGNORE_MESSAGE_FREQUENCY);
 
+    /**
+     * The underlying network session
+     */
+    private final IoSession ioSession;
     /**
      * The factory manager used to retrieve factories of Ciphers, Macs and other objects
      */
@@ -990,7 +990,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected Closeable getInnerCloseable() {
         return builder()
                 .parallel(toString(), getServices())
-                .close(ioSession)
+                .close(getIoSession())
                 .build();
     }
 
@@ -1151,14 +1151,15 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         // and also queue the write request in this synchronized block to ensure
         // packets are sent in the correct order
         IoWriteFuture future;
+        IoSession networkSession = getIoSession();
         synchronized (encodeLock) {
             if (ignoreBuf != null) {
                 ignoreBuf = encode(ignoreBuf);
-                ioSession.writePacket(ignoreBuf);
+                networkSession.writePacket(ignoreBuf);
             }
 
             buffer = encode(buffer);
-            future = ioSession.writePacket(buffer);
+            future = networkSession.writePacket(buffer);
         }
 
         return future;
@@ -1546,7 +1547,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         if (log.isDebugEnabled()) {
             log.debug("sendIdentification({}): {}", this, ident.replace('\r', '|').replace('\n', '|'));
         }
-        return ioSession.writePacket(new ByteArrayBuffer(data));
+
+        IoSession networkSession = getIoSession();
+        return networkSession.writePacket(new ByteArrayBuffer(data));
     }
 
     /**
@@ -2735,8 +2738,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
     @Override
     public String toString() {
-        IoSession ioSession = getIoSession();
-        SocketAddress peerAddress = (ioSession == null) ? null : ioSession.getRemoteAddress();
+        IoSession networkSession = getIoSession();
+        SocketAddress peerAddress = (networkSession == null) ? null : networkSession.getRemoteAddress();
         return getClass().getSimpleName() + "[" + getUsername() + "@" + peerAddress + "]";
     }
 }

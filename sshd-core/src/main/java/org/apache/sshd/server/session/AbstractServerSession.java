@@ -363,7 +363,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         }
 
         if (GenericUtils.length(errorMessage) > 0) {
-            ioSession.writePacket(new ByteArrayBuffer((errorMessage + "\n").getBytes(StandardCharsets.UTF_8)))
+            IoSession networkSession = getIoSession();
+            networkSession.writePacket(new ByteArrayBuffer((errorMessage + "\n").getBytes(StandardCharsets.UTF_8)))
                      .addListener(future -> close(true));
             throw new SshException(errorMessage);
         }
@@ -402,7 +403,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             return 0;
         }
 
-        IoService service = ioSession.getService();
+        IoSession networkSession = getIoSession();
+        IoService service = networkSession.getService();
         Map<?, IoSession> sessionsMap = service.getManagedSessions();
         if (GenericUtils.isEmpty(sessionsMap)) {
             return 0;
@@ -430,6 +432,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
      * @return The session id.
      */
     public long getId() {
-        return ioSession.getId();
+        IoSession networkSession = getIoSession();
+        return networkSession.getId();
     }
 }

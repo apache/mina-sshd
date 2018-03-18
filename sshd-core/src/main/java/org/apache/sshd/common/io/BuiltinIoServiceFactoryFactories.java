@@ -59,11 +59,12 @@ public enum BuiltinIoServiceFactoryFactories implements NamedFactory<IoServiceFa
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public final Class<? extends IoServiceFactoryFactory> getFactoryClass() {
         if (factoryClass != null) {
             return factoryClass;
         }
+
         try {
             return (Class) Class.forName(factoryClassName, true, BuiltinIoServiceFactoryFactories.class.getClassLoader());
         } catch (ClassNotFoundException e) {
