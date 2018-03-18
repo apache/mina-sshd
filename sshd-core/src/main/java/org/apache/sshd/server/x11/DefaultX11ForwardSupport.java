@@ -67,7 +67,8 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
     @Override
     public synchronized String createDisplay(
             boolean singleConnection, String authenticationProtocol, String authenticationCookie, int screen)
-                    throws IOException {
+                throws IOException {
+        boolean debugEnabled = log.isDebugEnabled();
         if (isClosed()) {
             throw new IllegalStateException("X11ForwardSupport is closed");
         }
@@ -77,7 +78,7 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
 
         // only support non windows systems
         if (OsUtils.isWin32()) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("createDisplay(auth={}, cookie={}, screen={}) Windows O/S N/A",
                           authenticationProtocol, authenticationCookie, screen);
             }
@@ -105,7 +106,7 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
                 acceptor.bind(addr);
                 break;
             } catch (BindException bindErr) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("createDisplay(auth={}, cookie={}, screen={}) failed ({}) to bind to address={}: {}",
                               authenticationProtocol, authenticationCookie, screen,
                               bindErr.getClass().getSimpleName(), addr, bindErr.getMessage());
@@ -122,13 +123,13 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
                      minDisplayNumber, maxDisplayNumber);
             Collection<SocketAddress> boundAddresses = acceptor.getBoundAddresses();
             if (GenericUtils.isEmpty(boundAddresses)) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("createDisplay(auth={}, cookie={}, screen={}) closing - no more bound addresses",
                               authenticationProtocol, authenticationCookie, screen);
                 }
                 close();
             } else {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("createDisplay(auth={}, cookie={}, screen={}) closing - remaining bound addresses: {}",
                               authenticationProtocol, authenticationCookie, screen, boundAddresses);
                 }
@@ -143,7 +144,7 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
         try {
             Process p = new ProcessBuilder(XAUTH_COMMAND, "remove", authDisplay).start();
             int result = p.waitFor();
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("createDisplay({}) {} remove result={}", authDisplay, XAUTH_COMMAND, result);
             }
 
@@ -151,7 +152,7 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
                 p = new ProcessBuilder(XAUTH_COMMAND, "add", authDisplay, authenticationProtocol, authenticationCookie).start();
                 result = p.waitFor();
 
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("createDisplay({}) {} add result={}", authDisplay, XAUTH_COMMAND, result);
                 }
             }
@@ -164,7 +165,7 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
         } catch (Throwable e) {
             log.warn("createDisplay({}) failed ({}) run xauth: {}",
                      authDisplay, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("createDisplay(" + authDisplay + ") xauth failure details", e);
             }
             return null;
@@ -184,12 +185,15 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
 
     @Override
     public void sessionClosed(IoSession session) throws Exception {
-        ChannelForwardedX11 channel = (ChannelForwardedX11) session.getAttribute(ChannelForwardedX11.class);
+        ChannelForwardedX11 channel = (ChannelForwardedX11) session.removeAttribute(ChannelForwardedX11.class);
+        Throwable cause = (Throwable) session.removeAttribute(X11ForwardingExceptionMarker.class);
         if (channel != null) {
             if (log.isDebugEnabled()) {
-                log.debug("sessionClosed({}) close channel={}", session, channel);
+                log.debug("sessionClosed({}) close channel={} - cause={}",
+                        session, channel, (cause == null) ? null : cause.getClass().getSimpleName());
             }
-            channel.close(false);
+            // If exception signaled then close channel immediately
+            channel.close(cause != null);
         }
     }
 
@@ -209,13 +213,14 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
 
     @Override
     public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
+        session.setAttribute(X11ForwardingExceptionMarker.class, cause);
         if (log.isDebugEnabled()) {
             log.debug("exceptionCaught({}) {}: {}", session, cause.getClass().getSimpleName(), cause.getMessage());
         }
         if (log.isTraceEnabled()) {
             log.trace("exceptionCaught(" + session + ") caught exception details", cause);
         }
-        session.close(false);
+        session.close(true);
     }
 
     @Override

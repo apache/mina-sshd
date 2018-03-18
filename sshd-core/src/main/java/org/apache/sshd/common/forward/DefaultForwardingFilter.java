@@ -956,8 +956,8 @@ public class DefaultForwardingFilter
         @Override
         public void sessionClosed(IoSession session) throws Exception {
             TcpipClientChannel channel = (TcpipClientChannel) session.removeAttribute(TcpipClientChannel.class);
+            Throwable cause = (Throwable) session.removeAttribute(TcpipForwardingExceptionMarker.class);
             if (channel != null) {
-                Throwable cause = (Throwable) session.getAttribute(Throwable.class);
                 if (log.isDebugEnabled()) {
                     log.debug("sessionClosed({}) closing channel={} after {} messages - cause={}",
                             session, channel, messagesCounter, (cause == null) ? null : cause.getClass().getSimpleName());
@@ -992,7 +992,7 @@ public class DefaultForwardingFilter
 
         @Override
         public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
-            session.setAttribute(Throwable.class, cause);
+            session.setAttribute(TcpipForwardingExceptionMarker.class, cause);
             if (log.isDebugEnabled()) {
                 log.debug("exceptionCaught({}) {}: {}", session, cause.getClass().getSimpleName(), cause.getMessage());
             }
