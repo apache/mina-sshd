@@ -130,7 +130,10 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
 
     protected void unmapSession(Long sessionId) {
         if (sessionId != null) {
-            sessions.remove(sessionId);
+            IoSession ioSession = sessions.remove(sessionId);
+            if (log.isDebugEnabled()) {
+                log.debug("unmapSession(id={}): {}", sessionId, ioSession);
+            }
         }
     }
 

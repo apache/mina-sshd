@@ -46,10 +46,11 @@ public class SequentialCloseable extends SimpleCloseable {
             @SuppressWarnings("synthetic-access")
             @Override
             public void operationComplete(CloseFuture previousFuture) {
+                boolean traceEnabled = log.isTraceEnabled();
                 while (iterator.hasNext()) {
                     Closeable c = iterator.next();
                     if (c != null) {
-                        if (log.isTraceEnabled()) {
+                        if (traceEnabled) {
                             log.trace("doClose(" + immediately + ") closing " + c);
                         }
                         CloseFuture nextFuture = c.close(immediately);
