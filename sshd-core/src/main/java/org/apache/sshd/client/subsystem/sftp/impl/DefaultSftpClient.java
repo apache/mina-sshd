@@ -179,8 +179,9 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
         // Process commands
         int rpos = incoming.rpos();
+        boolean traceEnabled = log.isTraceEnabled();
         for (int count = 1; receive(incoming); count++) {
-            if (log.isTraceEnabled()) {
+            if (traceEnabled) {
                 log.trace("data({}) Processed {} data messages", getClientChannel(), count);
             }
         }
@@ -188,7 +189,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         int read = incoming.rpos() - rpos;
         // Compact and add remaining data
         receiveBuffer.compact();
-        if (receiveBuffer != incoming && incoming.available() > 0) {
+        if ((receiveBuffer != incoming) && (incoming.available() > 0)) {
             receiveBuffer.putBuffer(incoming);
         }
 
@@ -373,7 +374,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
-        if (log.isTraceEnabled()) {
+        boolean traceEnabled = log.isTraceEnabled();
+        if (traceEnabled) {
             log.trace("init({}) id={} type={} len={}",
                       getClientChannel(), id, SftpConstants.getCommandMessageName(type), length);
         }
@@ -384,14 +386,14 @@ public class DefaultSftpClient extends AbstractSftpClient {
             }
             versionHolder.set(id);
 
-            if (log.isTraceEnabled()) {
+            if (traceEnabled) {
                 log.trace("init({}) version={}", getClientChannel(), versionHolder);
             }
 
             while (buffer.available() > 0) {
                 String name = buffer.getString();
                 byte[] data = buffer.getBytes();
-                if (log.isTraceEnabled()) {
+                if (traceEnabled) {
                     log.trace("init({}) added extension=", getClientChannel(), name);
                 }
                 extensions.put(name, data);
@@ -400,7 +402,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
-            if (log.isTraceEnabled()) {
+            if (traceEnabled) {
                 log.trace("init({})[id={}] - status: {} [{}] {}",
                           getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
             }

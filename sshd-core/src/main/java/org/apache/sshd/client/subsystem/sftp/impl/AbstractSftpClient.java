@@ -941,11 +941,13 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
+        boolean traceEnabled = log.isTraceEnabled();
         if (type == SftpConstants.SSH_FXP_NAME) {
             int len = buffer.getInt();
             int version = getVersion();
             ClientChannel channel = getClientChannel();
-            if (log.isDebugEnabled()) {
+            boolean debugEnabled = log.isDebugEnabled();
+            if (debugEnabled) {
                 log.debug("checkDirResponse({}}[id={}] reading {} entries", channel, id, len);
             }
 
@@ -959,7 +961,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
                 }
 
                 Attributes attrs = readAttributes(cmd, buffer, nameIndex);
-                if (log.isTraceEnabled()) {
+                if (traceEnabled) {
                     log.trace("checkDirResponse({})[id={}][{}] ({})[{}]: {}",
                               channel, id, i, name, longName, attrs);
                 }
@@ -972,7 +974,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
                 eolIndicator.set(indicator);
             }
 
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("checkDirResponse({}}[id={}] read count={}, eol={}", channel, entries.size(), indicator);
             }
             return entries;
@@ -982,7 +984,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
-            if (log.isTraceEnabled()) {
+            if (traceEnabled) {
                 log.trace("checkDirResponse({})[id={}] - status: {} [{}] {}",
                           getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
             }

@@ -40,7 +40,7 @@ public class FuturesCloseable<T extends SshFuture> extends SimpleCloseable {
     }
 
     @Override
-    protected void doClose(final boolean immediately) {
+    protected void doClose(boolean immediately) {
         if (immediately) {
             for (SshFuture<?> f : futures) {
                 if (f instanceof DefaultSshFuture) {
@@ -49,20 +49,22 @@ public class FuturesCloseable<T extends SshFuture> extends SimpleCloseable {
             }
             future.setClosed();
         } else {
-            final AtomicInteger count = new AtomicInteger(1);
+            AtomicInteger count = new AtomicInteger(1);
+            boolean traceEnabled = log.isTraceEnabled();
             SshFutureListener<T> listener = f -> {
                 int pendingCount = count.decrementAndGet();
-                if (log.isTraceEnabled()) {
+                if (traceEnabled) {
                     log.trace("doClose(" + immediately + ") complete pending: " + pendingCount);
                 }
                 if (pendingCount == 0) {
                     future.setClosed();
                 }
             };
+
             for (SshFuture<T> f : futures) {
                 if (f != null) {
                     int pendingCount = count.incrementAndGet();
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("doClose(" + immediately + ") future pending: " + pendingCount);
                     }
                     f.addListener(listener);

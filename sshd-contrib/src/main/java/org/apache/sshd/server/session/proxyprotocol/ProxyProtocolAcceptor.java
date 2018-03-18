@@ -95,7 +95,8 @@ public class ProxyProtocolAcceptor extends AbstractLoggingBean implements Server
     }
 
     protected boolean parseProxyHeader(ServerSession session, String proxyHeader, int markPosition, Buffer buffer) throws Exception {
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("parseProxyHeader(session={}) parsing header='{}'", session, proxyHeader);
         }
 
@@ -115,7 +116,7 @@ public class ProxyProtocolAcceptor extends AbstractLoggingBean implements Server
             String layer3DstAddress = proxyFields[3];
             String layer3SrcPort = proxyFields[4];
             String layer3DstPort = proxyFields[5];
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("parseProxyHeader(session={}) using {}:{} -> {}:{} proxy",
                           session, layer3SrcAddress, layer3SrcPort, layer3DstAddress, layer3DstPort);
             }

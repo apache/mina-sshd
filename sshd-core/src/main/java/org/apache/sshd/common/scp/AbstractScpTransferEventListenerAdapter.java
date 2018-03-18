@@ -53,7 +53,6 @@ public abstract class AbstractScpTransferEventListenerAdapter
         if (log.isTraceEnabled()) {
             log.trace("endFileEvent(op=" + op + ", file=" + file + ", length=" + length + ", permissions=" + perms + ")"
                     + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
-
         }
     }
 
@@ -70,7 +69,6 @@ public abstract class AbstractScpTransferEventListenerAdapter
         if (log.isTraceEnabled()) {
             log.trace("endFolderEvent(op=" + op + ", file=" + file + ", permissions=" + perms + ")"
                     + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
-
         }
     }
 }

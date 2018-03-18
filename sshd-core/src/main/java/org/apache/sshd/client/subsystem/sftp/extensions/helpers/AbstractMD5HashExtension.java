@@ -46,7 +46,8 @@ public abstract class AbstractMD5HashExtension extends AbstractSftpClientExtensi
         buffer.putLong(length);
         buffer.putBytes((quickHash == null) ? GenericUtils.EMPTY_BYTE_ARRAY : quickHash);
 
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("doGetHash({})[{}] - offset={}, length={}, quick-hash={}",
                       opcode, (target instanceof CharSequence) ? target : BufferUtils.toHex(BufferUtils.EMPTY_HEX_SEPARATOR, (byte[]) target),
                       offset, length, BufferUtils.toHex(':', quickHash));
@@ -63,7 +64,7 @@ public abstract class AbstractMD5HashExtension extends AbstractSftpClientExtensi
         }
 
         byte[] hashValue = buffer.getBytes();
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("doGetHash({})[{}] - offset={}, length={}, quick-hash={} - result={}",
                       opcode, target, offset, length,
                       BufferUtils.toHex(':', quickHash), BufferUtils.toHex(':', hashValue));

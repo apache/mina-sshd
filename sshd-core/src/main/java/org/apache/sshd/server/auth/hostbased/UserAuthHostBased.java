@@ -98,7 +98,8 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
         String clientUsername = buffer.getString();
 
         byte[] signature = buffer.getBytes();
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("doAuth({}@{}) authenticate key type={}, fingerprint={}, client={}@{}, num-certs={}",
                       username, session, keyType, KeyUtils.getFingerPrint(clientKey),
                       clientUsername, clientHostName, GenericUtils.size(certs));
@@ -106,7 +107,7 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
 
         HostBasedAuthenticator authenticator = session.getHostBasedAuthenticator();
         if (authenticator == null) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("doAuth({}@{}) key type={}, fingerprint={}, client={}@{}, num-certs={} - no authenticator",
                           username, session, keyType, KeyUtils.getFingerPrint(clientKey),
                           clientUsername, clientHostName, GenericUtils.size(certs));
@@ -121,14 +122,14 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
             log.warn("doAuth({}@{}) failed ({}) to consult authenticator for {} key={}: {}",
                     username, session, e.getClass().getSimpleName(),
                     keyType, KeyUtils.getFingerPrint(clientKey), e.getMessage());
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("doAuth(" + username + "@" + session + ") delegate consultation failure details", e);
             }
 
             throw new RuntimeSshException(e);
         }
 
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("doAuth({}@{}) key type={}, fingerprint={}, client={}@{}, num-certs={} - authentication result: {}",
                       username, session, keyType, KeyUtils.getFingerPrint(clientKey),
                       clientUsername, clientHostName, GenericUtils.size(certs), authed);
@@ -177,7 +178,7 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
             throw new Exception("Key verification failed");
         }
 
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("doAuth({}@{}) key type={}, fingerprint={}, client={}@{}, num-certs={} - verified signature",
                     username, session, keyType, KeyUtils.getFingerPrint(clientKey),
                     clientUsername, clientHostName, GenericUtils.size(certs));

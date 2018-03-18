@@ -58,7 +58,8 @@ public class DefaultUnknownChannelReferenceHandler
                     throws IOException {
         Session session = service.getSession();
         // Use DEBUG level to avoid log overflow due to invalid messages flood
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("handleUnknownChannelCommand({}) received {} command for unknown channel: {}",
                     session, SshConstants.getCommandMessageName(cmd), channelId);
         }
@@ -75,7 +76,7 @@ public class DefaultUnknownChannelReferenceHandler
                 String req = buffer.getString();
                 wantReply = buffer.getBoolean();
                 // Use DEBUG level to avoid log overflow due to invalid messages flood
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("handleUnknownChannelCommand({}) Received SSH_MSG_CHANNEL_REQUEST={} (wantReply={}) for unknown channel: {}",
                         session, req, wantReply, channelId);
                 }

@@ -113,7 +113,8 @@ public class TcpipServerChannel extends AbstractServerChannel {
         int portToConnect = buffer.getInt();
         String originatorIpAddress = buffer.getString();
         int originatorPort = buffer.getInt();
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("doInit({}) Receiving request for direct tcpip: hostToConnect={}, portToConnect={}, originatorIpAddress={}, originatorPort={}",
                       this, hostToConnect, portToConnect, originatorIpAddress, originatorPort);
         }
@@ -139,7 +140,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         OpenFuture f = new DefaultOpenFuture(this, this);
         try {
             if ((address == null) || (filter == null) || (!filter.canConnect(channelType, address, session))) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("doInit(" + this + ")[" + type + "][haveFilter=" + (filter != null) + "] filtered out " + address);
                 }
                 try {
@@ -152,7 +153,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         } catch (Error e) {
             log.warn("doInit({})[{}] failed ({}) to consult forwarding filter: {}",
                      session, channelType, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("doInit(" + this + ")[" + type + "] filter consultation failure details", e);
             }
             throw new RuntimeSshException(e);
@@ -165,7 +166,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
             @SuppressWarnings("synthetic-access")
             public void messageReceived(IoSession session, Readable message) throws Exception {
                 if (isClosing()) {
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("doInit({}) Ignoring write to channel in CLOSING state", TcpipServerChannel.this);
                     }
                 } else {
@@ -190,7 +191,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
             @SuppressWarnings("synthetic-access")
             public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
                 boolean immediately = !session.isOpen();
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("exceptionCaught({}) signal close immediately={} due to {}[{}]",
                             TcpipServerChannel.this, immediately, cause.getClass().getSimpleName(), cause.getMessage());
                 }

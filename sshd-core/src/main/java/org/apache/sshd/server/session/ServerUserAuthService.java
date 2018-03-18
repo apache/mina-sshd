@@ -77,6 +77,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     private int nbAuthRequests;
 
     public ServerUserAuthService(Session s) throws IOException {
+        boolean debugEnabled = log.isDebugEnabled();
         serverSession = ValidateUtils.checkInstanceOf(s, ServerSession.class, "Server side service used on client side: %s", s);
         if (s.isAuthenticated()) {
             throw new SshException("Session already authenticated");
@@ -99,7 +100,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 authMethods.add(new ArrayList<>(Collections.singletonList(uaf.getName())));
             }
         } else {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("ServerUserAuthService({}) using configured methods={}", s, mths);
             }
             for (String mthl : mths.split("\\s")) {
@@ -116,7 +117,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             }
         }
 
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("ServerUserAuthService({}) authorized authentication methods: {}",
                       s, NamedResource.getNames(userAuthFactories));
         }
@@ -145,7 +146,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     public void process(int cmd, Buffer buffer) throws Exception {
         Boolean authed = Boolean.FALSE;
         ServerSession session = getServerSession();
-
+        boolean debugEnabled = log.isDebugEnabled();
         if (cmd == SshConstants.SSH_MSG_USERAUTH_REQUEST) {
             if (WelcomeBannerPhase.FIRST_REQUEST.equals(getWelcomePhase())) {
                 sendWelcomeBanner(session);
@@ -162,7 +163,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             String username = buffer.getString();
             String service = buffer.getString();
             String method = buffer.getString();
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("process({}) Received SSH_MSG_USERAUTH_REQUEST user={}, service={}, method={}",
                           session, username, service, method);
             }
@@ -185,7 +186,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
             // TODO: verify that the service is supported
             this.authMethod = method;
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("process({}) Authenticating user '{}' with service '{}' and method '{}' (attempt {} / {})",
                           session, username, service, method, nbAuthRequests, maxAuthRequests);
             }
@@ -196,7 +197,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 try {
                     authed = currentAuth.auth(session, username, service, buffer);
                 } catch (Exception e) {
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("process({}) Failed ({}) to authenticate using factory method={}: {}",
                                   session, e.getClass().getSimpleName(), method, e.getMessage());
                     }
@@ -205,7 +206,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                     }
                 }
             } else {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("process({}) no authentication factory for method={}", session, method);
                 }
             }
@@ -219,7 +220,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 throw new IllegalStateException("No current authentication mechanism for cmd=" + SshConstants.getCommandMessageName(cmd));
             }
 
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("process({}) Received authentication message={} for mechanism={}",
                           session, SshConstants.getCommandMessageName(cmd), currentAuth.getName());
             }
@@ -229,7 +230,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 authed = currentAuth.next(buffer);
             } catch (Exception e) {
                 // Continue
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("process({}) Failed ({}) to authenticate using current method={}: {}",
                               session, e.getClass().getSimpleName(), currentAuth.getName(), e.getMessage());
                 }
@@ -259,7 +260,8 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     protected void handleAuthenticationSuccess(int cmd, Buffer buffer) throws Exception {
         String username = Objects.requireNonNull(currentAuth, "No current auth").getUsername();
         ServerSession session = getServerSession();
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("handleAuthenticationSuccess({}@{}) {}",
                       username, session, SshConstants.getCommandMessageName(cmd));
         }
@@ -300,7 +302,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                     .map(l -> l.get(0))
                     .collect(Collectors.joining(","));
 
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("handleAuthenticationSuccess({}@{}) remaining methods={}", username, session, remaining);
             }
 
@@ -319,12 +321,13 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
     protected void handleAuthenticationFailure(int cmd, Buffer buffer) throws Exception {
         ServerSession session = getServerSession();
+        boolean debugEnabled = log.isDebugEnabled();
         if (WelcomeBannerPhase.FIRST_FAILURE.equals(getWelcomePhase())) {
             sendWelcomeBanner(session);
         }
 
         String username = (currentAuth == null) ? null : currentAuth.getUsername();
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("handleAuthenticationFailure({}@{}) {}",
                       username, session, SshConstants.getCommandMessageName(cmd));
         }
@@ -343,7 +346,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         }
 
         String remaining = sb.toString();
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("handleAuthenticationFailure({}@{}) remaining methods: {}", username, session, remaining);
         }
 

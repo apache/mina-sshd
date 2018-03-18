@@ -72,25 +72,26 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
 
     @Override
     public CloseFuture close(boolean immediately) {
+        boolean debugEnabled = log.isDebugEnabled();
         if (immediately) {
             if (state.compareAndSet(State.Opened, State.Immediate)
                     || state.compareAndSet(State.Graceful, State.Immediate)) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("close({}) Closing immediately", this);
                 }
                 preClose();
                 doCloseImmediately();
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("close({})[Immediately] closed", this);
                 }
             } else {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("close({})[Immediately] state already {}", this, state.get());
                 }
             }
         } else {
             if (state.compareAndSet(State.Opened, State.Graceful)) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("close({}) Closing gracefully", this);
                 }
                 preClose();
@@ -99,7 +100,7 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
                     grace.addListener(future -> {
                         if (state.compareAndSet(State.Graceful, State.Immediate)) {
                             doCloseImmediately();
-                            if (log.isDebugEnabled()) {
+                            if (debugEnabled) {
                                 log.debug("close({}][Graceful] - operationComplete() closed", AbstractCloseable.this);
                             }
                         }
@@ -107,13 +108,13 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
                 } else {
                     if (state.compareAndSet(State.Graceful, State.Immediate)) {
                         doCloseImmediately();
-                        if (log.isDebugEnabled()) {
+                        if (debugEnabled) {
                             log.debug("close({})[Graceful] closed", this);
                         }
                     }
                 }
             } else {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("close({})[Graceful] state already {}", this, state.get());
                 }
             }

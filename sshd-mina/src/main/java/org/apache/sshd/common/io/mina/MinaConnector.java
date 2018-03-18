@@ -63,7 +63,7 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("Created IoConnector");
+            log.debug("Created IoConnector: {}", connector);
         }
         return connector;
     }

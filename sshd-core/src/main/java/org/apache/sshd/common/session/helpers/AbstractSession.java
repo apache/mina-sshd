@@ -639,10 +639,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
          *      If the other party's guess was wrong, and this field was TRUE,
          *      the next packet MUST be silently ignored
          */
+        boolean debugEnabled = log.isDebugEnabled();
         for (KexProposalOption option : new KexProposalOption[]{KexProposalOption.ALGORITHMS, KexProposalOption.SERVERKEYS}) {
             Map.Entry<String, String> result = comparePreferredKexProposalOption(option);
             if (result != null) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("handleFirstKexPacketFollows({})[{}] 1st follow KEX packet {} option mismatch: client={}, server={}",
                               this, SshConstants.getCommandMessageName(cmd), option, result.getKey(), result.getValue());
                 }
@@ -774,14 +775,15 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     protected boolean handleServiceRequest(String serviceName, Buffer buffer) throws Exception {
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("handleServiceRequest({}) SSH_MSG_SERVICE_REQUEST '{}'", this, serviceName);
         }
         validateKexState(SshConstants.SSH_MSG_SERVICE_REQUEST, KexState.DONE);
         try {
             startService(serviceName);
         } catch (Throwable e) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("handleServiceRequest({}) Service {} rejected: {} = {}",
                           this, serviceName, e.getClass().getSimpleName(), e.getMessage());
             }
@@ -793,7 +795,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             return false;
         }
 
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("handleServiceRequest({}) Accepted service {}", this, serviceName);
         }
 
@@ -835,7 +837,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     protected void handleNewKeys(int cmd, Buffer buffer) throws Exception {
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("handleNewKeys({}) SSH_MSG_NEWKEYS command={}", this, SshConstants.getCommandMessageName(cmd));
         }
         validateKexState(cmd, KexState.KEYS);
@@ -860,7 +863,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
         int pendingCount = pendingWrites.size();
         if (pendingCount > 0) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("handleNewKeys({}) sent {} pending packets", this, pendingCount);
             }
 
@@ -1208,7 +1211,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             throw new IllegalArgumentException("Requested timeout for " + request + " below 1 msec: " + timeout + " " + unit);
         }
 
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("request({}) request={}, timeout={} {}", this, request, timeout, unit);
         }
 
@@ -1247,7 +1251,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             throw new IOException("Session is closed or closing while awaiting reply for request=" + request);
         }
 
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("request({}) request={}, timeout={} {}, result received={}",
                       this, request, timeout, unit, result != null);
         }
@@ -1700,14 +1704,16 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         synchronized (random) {
             random.fill(buffer.array(), p, SshConstants.MSG_KEX_COOKIE_SIZE);
         }
-        if (log.isTraceEnabled()) {
+
+        boolean traceEnabled = log.isTraceEnabled();
+        if (traceEnabled) {
             log.trace("sendKexInit({}) cookie={}",
                       this, BufferUtils.toHex(buffer.array(), p, SshConstants.MSG_KEX_COOKIE_SIZE, ':'));
         }
 
         for (KexProposalOption paramType : KexProposalOption.VALUES) {
             String s = proposal.get(paramType);
-            if (log.isTraceEnabled()) {
+            if (traceEnabled) {
                 log.trace("sendKexInit({})[{}] {}", this, paramType.getDescription(), s);
             }
             buffer.putString(GenericUtils.trimToEmpty(s));
@@ -1740,7 +1746,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         // Skip random cookie data
         buffer.rpos(cookieStartPos + SshConstants.MSG_KEX_COOKIE_SIZE);
         size += SshConstants.MSG_KEX_COOKIE_SIZE;
-        if (log.isTraceEnabled()) {
+
+        boolean traceEnabled = log.isTraceEnabled();
+        if (traceEnabled) {
             log.trace("receiveKexInit({}) cookie={}",
                       this, BufferUtils.toHex(d, cookieStartPos, SshConstants.MSG_KEX_COOKIE_SIZE, ':'));
         }
@@ -1749,7 +1757,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         for (KexProposalOption paramType : KexProposalOption.VALUES) {
             int lastPos = buffer.rpos();
             String value = buffer.getString();
-            if (log.isTraceEnabled()) {
+            if (traceEnabled) {
                 log.trace("receiveKexInit({})[{}] {}", this, paramType.getDescription(), value);
             }
             int curPos = buffer.rpos();
@@ -1759,13 +1767,13 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
 
         firstKexPacketFollows = buffer.getBoolean();
-        if (log.isTraceEnabled()) {
+        if (traceEnabled) {
             log.trace("receiveKexInit({}) first kex packet follows: {}", this, firstKexPacketFollows);
         }
 
         long reserved = buffer.getUInt();
         if (reserved != 0) {
-            if (log.isTraceEnabled()) {
+            if (traceEnabled) {
                 log.trace("receiveKexInit({}) non-zero reserved value: {}", this, reserved);
             }
         }
@@ -1803,9 +1811,10 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         byte[] h = kex.getH();
         Digest hash = kex.getHash();
 
+        boolean debugEnabled = log.isDebugEnabled();
         if (sessionId == null) {
             sessionId = h.clone();
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("receiveNewKeys({}) session ID={}", this, BufferUtils.toHex(':', sessionId));
             }
         }
@@ -1912,7 +1921,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         int avgCipherBlockSize = Math.min(inBlockSize, outBlockSize);
         long recommendedByteRekeyBlocks = 1L << Math.min((avgCipherBlockSize * Byte.SIZE) / 4, 63);    // in case (block-size / 4) > 63
         maxRekeyBlocks.set(this.getLongProperty(FactoryManager.REKEY_BLOCKS_LIMIT, recommendedByteRekeyBlocks));
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("receiveNewKeys({}) inCipher={}, outCipher={}, recommended blocks limit={}, actual={}",
                       this, inCipher, outCipher, recommendedByteRekeyBlocks, maxRekeyBlocks);
         }
@@ -1959,7 +1968,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     @Override
-    public void disconnect(final int reason, final String msg) throws IOException {
+    public void disconnect(int reason, String msg) throws IOException {
         log.info("Disconnecting({}): {} - {}", this, SshConstants.getDisconnectReasonName(reason), msg);
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_DISCONNECT, msg.length() + Short.SIZE);
         buffer.putInt(reason);
@@ -2033,6 +2042,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         Map<KexProposalOption, String> guess = new EnumMap<>(KexProposalOption.class);
         Map<KexProposalOption, String> negotiatedGuess = Collections.unmodifiableMap(guess);
         try {
+            boolean traceEnabled = log.isTraceEnabled();
             for (KexProposalOption paramType : KexProposalOption.VALUES) {
                 String clientParamValue = c2sOptions.get(paramType);
                 String serverParamValue = s2cOptions.get(paramType);
@@ -2059,14 +2069,14 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                             + " (client: " + clientParamValue + " / server: " + serverParamValue + ")";
                     // OK if could not negotiate languages
                     if (KexProposalOption.S2CLANG.equals(paramType) || KexProposalOption.C2SLANG.equals(paramType)) {
-                        if (log.isTraceEnabled()) {
+                        if (traceEnabled) {
                             log.trace("negotiate({}) {}", this, message);
                         }
                     } else {
                         throw new IllegalStateException(message);
                     }
                 } else {
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("negotiate(" + this + ")[" + paramType.getDescription() + "] guess=" + value
                                 + " (client: " + clientParamValue + " / server: " + serverParamValue + ")");
                     }

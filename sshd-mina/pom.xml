@@ -129,12 +129,13 @@
                         <org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.mina.MinaServiceFactory</org.apache.sshd.common.io.IoServiceFactory>
                     </systemProperties>
                     <excludes>
-                        <!-- These tests use NIO explicitly -->
+                            <!-- These tests use NIO explicitly -->
                         <exclude>**/*LoadTest.java</exclude>
                         <exclude>**/ProxyTest.java</exclude>
-                        <!-- TODO need some more research as to why this fails on MINA but not on NIO2 -->
+                            <!-- TODO need some more research as to why this fails on MINA but not on NIO2 -->
                         <exclude>**/ApacheServer*Test.java</exclude>
                     </excludes>
+                        <!-- No need to re-run core tests that do not involve session creation -->
                     <excludedGroups>org.apache.sshd.util.test.NoIoTestCase</excludedGroups>
                 </configuration>
             </plugin>
@@ -147,5 +148,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

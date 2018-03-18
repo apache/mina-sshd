@@ -134,7 +134,8 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
     }
 
     protected void updateFileProperties(String name, Path path, Set<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
-        if (log.isTraceEnabled()) {
+        boolean traceEnabled = log.isTraceEnabled();
+        if (traceEnabled) {
             log.trace("updateFileProperties(" + name + ")[" + path + "] permissions: " + perms);
         }
         IoUtils.setPermissions(path, perms);
@@ -143,7 +144,7 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
             BasicFileAttributeView view = Files.getFileAttributeView(path, BasicFileAttributeView.class);
             FileTime lastModified = FileTime.from(time.getLastModifiedTime(), TimeUnit.MILLISECONDS);
             FileTime lastAccess = FileTime.from(time.getLastAccessTime(), TimeUnit.MILLISECONDS);
-            if (log.isTraceEnabled()) {
+            if (traceEnabled) {
                 log.trace("updateFileProperties(" + name + ")[" + path + "] last-modified=" + lastModified + ", last-access=" + lastAccess);
             }
 

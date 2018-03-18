@@ -129,7 +129,8 @@ public class ScpCommand
         opener = (fileOpener == null) ? DefaultScpFileOpener.INSTANCE : fileOpener;
         listener = (eventListener == null) ? ScpTransferEventListener.EMPTY : eventListener;
 
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("Executing command {}", command);
         }
 
@@ -157,7 +158,7 @@ public class ScpCommand
                             optD = true;
                             break;
                         default:  // ignored
-                            if (log.isDebugEnabled()) {
+                            if (debugEnabled) {
                                 log.debug("Unknown flag ('{}') in command={}", option, command);
                             }
                     }
@@ -250,10 +251,11 @@ public class ScpCommand
     @Override
     public void destroy() {
         // if thread has not completed, cancel it
+        boolean debugEnabled = log.isDebugEnabled();
         if ((pendingFuture != null) && (!pendingFuture.isDone())) {
             boolean result = pendingFuture.cancel(true);
             // TODO consider waiting some reasonable (?) amount of time for cancellation
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("destroy() - cancel pending future=" + result);
             }
         }
@@ -263,7 +265,7 @@ public class ScpCommand
         ExecutorService executors = getExecutorService();
         if ((executors != null) && (!executors.isShutdown()) && isShutdownOnExit()) {
             Collection<Runnable> runners = executors.shutdownNow();
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("destroy() - shutdown executor service - runners count=" + runners.size());
             }
         }
@@ -293,6 +295,7 @@ public class ScpCommand
             }
         } catch (IOException e) {
             ServerSession session = getServerSession();
+            boolean debugEnabled = log.isDebugEnabled();
             try {
                 Integer statusCode = null;
                 if (e instanceof ScpException) {
@@ -301,7 +304,7 @@ public class ScpCommand
                 exitValue = (statusCode == null) ? ScpHelper.ERROR : statusCode;
                 // this is an exception so status cannot be OK/WARNING
                 if ((exitValue == ScpHelper.OK) || (exitValue == ScpHelper.WARNING)) {
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("run({})[{}] normalize status code={}", session, name, exitValue);
                     }
                     exitValue = ScpHelper.ERROR;
@@ -309,7 +312,7 @@ public class ScpCommand
                 exitMessage = GenericUtils.trimToEmpty(e.getMessage());
                 writeCommandResponseMessage(name, exitValue, exitMessage);
             } catch (IOException e2) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("run({})[{}] Failed ({}) to send error response: {}",
                               session, name, e.getClass().getSimpleName(), e.getMessage());
                 }
@@ -318,7 +321,7 @@ public class ScpCommand
                 }
             }
 
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("run({})[{}] Failed ({}) to run command: {}",
                           session, name, e.getClass().getSimpleName(), e.getMessage());
             }

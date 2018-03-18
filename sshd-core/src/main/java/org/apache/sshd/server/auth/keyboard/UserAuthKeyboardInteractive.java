@@ -48,90 +48,103 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         String username = getUsername();
         KeyboardInteractiveAuthenticator auth = session.getKeyboardInteractiveAuthenticator();
         if (init) {
-            String lang = buffer.getString();
-            String subMethods = buffer.getString();
-            if (auth == null) {
-                if (log.isDebugEnabled()) {
-                    log.debug("doAuth({}@{})[methods={}, lang={}] - no interactive authenticator to generate challenge",
-                              username, session, subMethods, lang);
-                }
-                return false;
-            }
-
-            InteractiveChallenge challenge;
-            try {
-                challenge = auth.generateChallenge(session, username, lang, subMethods);
-            } catch (Error e) {
-                log.warn("doAuth({}@{}) failed ({}) to generate authenticator challenge: {}",
-                         username, session, e.getClass().getSimpleName(), e.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.debug("doAuth(" + username + "@" + session + ") authenticator challenge failure details", e);
-                }
-                throw new RuntimeSshException(e);
-            }
-
-            if (challenge == null) {
-                if (log.isDebugEnabled()) {
-                    log.debug("doAuth({}@{})[methods={}, lang={}] - no interactive challenge generated",
-                              username, session, subMethods, lang);
-                }
-                return false;
-            }
-
-            if (log.isDebugEnabled()) {
-                log.debug("doAuth({}@{})[methods={}, lang={}] challenge name={}, instruction={}, lang={}, num. prompts={}",
-                          username, session, subMethods, lang,
-                          challenge.getInteractionName(), challenge.getInteractionInstruction(),
-                          challenge.getLanguageTag(), GenericUtils.size(challenge.getPrompts()));
-            }
-
-            // Prompt for password
-            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST);
-            challenge.append(buffer);
-            session.writePacket(buffer);
-            return null;
+            return doInitialAuth(session, username, auth, buffer);
         } else {
-            int cmd = buffer.getUByte();
-            if (cmd != SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE) {
-                throw new SshException("Received unexpected message: " + SshConstants.getCommandMessageName(cmd));
-            }
-
-            int num = buffer.getInt();
-            List<String> responses = (num <= 0) ? Collections.emptyList() : new ArrayList<>(num);
-            for (int index = 0; index < num; index++) {
-                String value = buffer.getString();
-                if (log.isTraceEnabled()) {
-                    log.trace("doAuth({}@{}) response #{}: {}", username, session, index + 1, value);
-                }
-                responses.add(value);
-            }
-
-            if (auth == null) {
-                if (log.isDebugEnabled()) {
-                    log.debug("doAuth({}@{}) no interactive authenticator to validate {} responses",
-                              username, session, num);
-                }
-                return false;
-            }
-
-            boolean authed;
-            try {
-                authed = auth.authenticate(session, username, responses);
-            } catch (Error e) {
-                log.warn("doAuth({}@{}) failed ({}) to consult authenticator: {}",
-                         username, session, e.getClass().getSimpleName(), e.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.debug("doAuth(" + username + "@" + session + ") authenticator consultation failure details", e);
-                }
-                throw new RuntimeSshException(e);
-            }
-
-            if (log.isDebugEnabled()) {
-                log.debug("doAuth({}@{}) authenticate {} responses result: {}",
-                          username, session, num, authed);
-            }
-
-            return authed;
+            return doValidateAuthResponse(session, username, auth, buffer);
         }
+    }
+
+    protected Boolean doInitialAuth(
+            ServerSession session, String username, KeyboardInteractiveAuthenticator auth, Buffer buffer)
+                throws Exception {
+        String lang = buffer.getString();
+        String subMethods = buffer.getString();
+        if (auth == null) {
+            if (log.isDebugEnabled()) {
+                log.debug("doAuth({}@{})[methods={}, lang={}] - no interactive authenticator to generate challenge",
+                          username, session, subMethods, lang);
+            }
+            return false;
+        }
+
+        InteractiveChallenge challenge;
+        try {
+            challenge = auth.generateChallenge(session, username, lang, subMethods);
+        } catch (Error e) {
+            log.warn("doAuth({}@{}) failed ({}) to generate authenticator challenge: {}",
+                     username, session, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("doAuth(" + username + "@" + session + ") authenticator challenge failure details", e);
+            }
+            throw new RuntimeSshException(e);
+        }
+
+        if (challenge == null) {
+            if (log.isDebugEnabled()) {
+                log.debug("doAuth({}@{})[methods={}, lang={}] - no interactive challenge generated",
+                          username, session, subMethods, lang);
+            }
+            return false;
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("doAuth({}@{})[methods={}, lang={}] challenge name={}, instruction={}, lang={}, num. prompts={}",
+                      username, session, subMethods, lang,
+                      challenge.getInteractionName(), challenge.getInteractionInstruction(),
+                      challenge.getLanguageTag(), GenericUtils.size(challenge.getPrompts()));
+        }
+
+        // Prompt for password
+        buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST);
+        challenge.append(buffer);
+        session.writePacket(buffer);
+        return null;
+    }
+
+    protected Boolean doValidateAuthResponse(
+            ServerSession session, String username, KeyboardInteractiveAuthenticator auth, Buffer buffer)
+                throws Exception {
+        int cmd = buffer.getUByte();
+        if (cmd != SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE) {
+            throw new SshException("Received unexpected message: " + SshConstants.getCommandMessageName(cmd));
+        }
+
+        int num = buffer.getInt();
+        List<String> responses = (num <= 0) ? Collections.emptyList() : new ArrayList<>(num);
+        boolean traceEnabled = log.isTraceEnabled();
+        for (int index = 0; index < num; index++) {
+            String value = buffer.getString();
+            if (traceEnabled) {
+                log.trace("doAuth({}@{}) response #{}: {}", username, session, index + 1, value);
+            }
+            responses.add(value);
+        }
+
+        if (auth == null) {
+            if (log.isDebugEnabled()) {
+                log.debug("doAuth({}@{}) no interactive authenticator to validate {} responses",
+                          username, session, num);
+            }
+            return false;
+        }
+
+        boolean authed;
+        try {
+            authed = auth.authenticate(session, username, responses);
+        } catch (Error e) {
+            log.warn("doAuth({}@{}) failed ({}) to consult authenticator: {}",
+                     username, session, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("doAuth(" + username + "@" + session + ") authenticator consultation failure details", e);
+            }
+            throw new RuntimeSshException(e);
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("doAuth({}@{}) authenticate {} responses result: {}",
+                      username, session, num, authed);
+        }
+
+        return authed;
     }
 }

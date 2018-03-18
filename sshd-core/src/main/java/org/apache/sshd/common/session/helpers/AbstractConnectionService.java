@@ -596,7 +596,8 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
         /*
          * NOTE: the 'sender' is the identifier assigned by the remote side - the server in this case
          */
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("channelOpen({}) SSH_MSG_CHANNEL_OPEN sender={}, type={}, window-size={}, packet-size={}",
                       this, sender, type, rwsize, rmpsize);
         }
@@ -628,7 +629,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
             try {
                 if (future.isOpened()) {
                     Window window = channel.getLocalWindow();
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("operationComplete({}) send SSH_MSG_CHANNEL_OPEN_CONFIRMATION recipient={}, sender={}, window-size={}, packet-size={}",
                                   channel, sender, channelId, window.getSize(), window.getPacketSize());
                     }
@@ -657,7 +658,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
                     sendChannelOpenFailure(buf, sender, reasonCode, message, "");
                 }
             } catch (IOException e) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("operationComplete({}) {}: {}",
                               AbstractConnectionService.this, e.getClass().getSimpleName(), e.getMessage());
                 }
@@ -694,7 +695,8 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
     protected IoWriteFuture globalRequest(Buffer buffer) throws Exception {
         String req = buffer.getString();
         boolean wantReply = buffer.getBoolean();
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("globalRequest({}) received SSH_MSG_GLOBAL_REQUEST {} want-reply={}",
                       this, req, wantReply);
         }
@@ -703,6 +705,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         Collection<RequestHandler<ConnectionService>> handlers = manager.getGlobalRequestHandlers();
         if (GenericUtils.size(handlers) > 0) {
+            boolean traceEnabled = log.isTraceEnabled();
             for (RequestHandler<ConnectionService> handler : handlers) {
                 RequestHandler.Result result;
                 try {
@@ -710,7 +713,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
                 } catch (Throwable e) {
                     log.warn("globalRequest({})[{}, want-reply={}] failed ({}) to process: {}",
                              this, req, wantReply, e.getClass().getSimpleName(), e.getMessage());
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("globalRequest(" + this + ")[" + req + ", want-reply=" + wantReply + "] failure details", e);
                     }
                     result = RequestHandler.Result.ReplyFailure;
@@ -718,7 +721,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
 
                 // if Unsupported then check the next handler in line
                 if (RequestHandler.Result.Unsupported.equals(result)) {
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("globalRequest({}) {}#process({})[want-reply={}] : {}",
                                   this, handler.getClass().getSimpleName(), req, wantReply, result);
                     }

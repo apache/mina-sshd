@@ -101,6 +101,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
 
     @Override
     public void unbind(Collection<? extends SocketAddress> addresses) {
+        boolean debugEnabled = log.isDebugEnabled();
         boolean traceEnabled = log.isTraceEnabled();
         for (SocketAddress address : addresses) {
             AsynchronousServerSocketChannel channel = channels.remove(address);
@@ -113,7 +114,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                 } catch (IOException e) {
                     log.warn("unbind({}) {} while unbinding channel: {}",
                          address, e.getClass().getSimpleName(), e.getMessage());
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("unbind(" + address + ") failure details", e);
                     }
                 }
@@ -157,7 +158,9 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                     log.debug("doCloseImmediately({}) closed channel", address);
                 }
             } catch (IOException e) {
-                log.debug("Exception caught while closing channel of " + address, e);
+                if (debugEnabled) {
+                    log.debug("Exception caught while closing channel of " + address, e);
+                }
             }
         }
         super.doCloseImmediately();

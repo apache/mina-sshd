@@ -584,10 +584,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         boolean ignoreNonExisting = this.getBooleanProperty(IGNORE_INVALID_IDENTITIES, DEFAULT_IGNORE_INVALID_IDENTITIES);
         ClientIdentityLoader loader = Objects.requireNonNull(getClientIdentityLoader(), "No ClientIdentityLoader");
         FilePasswordProvider provider = Objects.requireNonNull(getFilePasswordProvider(), "No FilePasswordProvider");
+        boolean debugEnabled = log.isDebugEnabled();
         for (String l : locations) {
             if (!loader.isValidLocation(l)) {
                 if (ignoreNonExisting) {
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("loadClientIdentities - skip non-existing identity location: {}", l);
                     }
                     continue;
@@ -602,7 +603,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     throw new IOException("No identity loaded from " + l);
                 }
 
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("loadClientIdentities({}) type={}, fingerprint={}",
                               l, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
                 }
@@ -705,11 +706,12 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         // check if session listener intervened
         KeyPairProvider kpSession = session.getKeyPairProvider();
         KeyPairProvider kpClient = getKeyPairProvider();
+        boolean debugEnabled = log.isDebugEnabled();
         if (kpSession == null) {
             session.setKeyPairProvider(kpClient);
         } else {
             if (kpSession != kpClient) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("setupDefaultSessionIdentities({}) key-pair provider override", session);
                 }
             }
@@ -721,30 +723,31 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             session.setPasswordIdentityProvider(passClient);
         } else {
             if (passSession != passClient) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("setupDefaultSessionIdentities({}) password provider override", session);
                 }
             }
         }
 
         AuthenticationIdentitiesProvider idsClient = getRegisteredIdentities();
+        boolean traceEnabled = log.isTraceEnabled();
         for (Iterator<?> iter = GenericUtils.iteratorOf((idsClient == null) ? null : idsClient.loadIdentities()); iter.hasNext();) {
             Object id = iter.next();
             if (id instanceof String) {
-                if (log.isTraceEnabled()) {
+                if (traceEnabled) {
                     log.trace("setupDefaultSessionIdentities({}) add password fingerprint={}",
                               session, KeyUtils.getFingerPrint(id.toString()));
                 }
                 session.addPasswordIdentity((String) id);
             } else if (id instanceof KeyPair) {
                 KeyPair kp = (KeyPair) id;
-                if (log.isTraceEnabled()) {
+                if (traceEnabled) {
                     log.trace("setupDefaultSessionIdentities({}) add identity type={}, fingerprint={}",
                               session, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
                 }
                 session.addPublicKeyIdentity(kp);
             } else {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("setupDefaultSessionIdentities({}) ignored identity={}", session, id);
                 }
             }

@@ -772,6 +772,7 @@ public abstract class AbstractSftpSubsystemHelper
             Digest digest = factory.create();
             digest.init();
 
+            boolean traceEnabled = log.isTraceEnabled();
             if (blockSize == 0) {
                 while (effectiveLength > 0L) {
                     int remainLen = Math.min(digestBuf.length, (int) effectiveLength);
@@ -791,7 +792,7 @@ public abstract class AbstractSftpSubsystemHelper
                 }
 
                 byte[] hashValue = digest.digest();
-                if (log.isTraceEnabled()) {
+                if (traceEnabled) {
                     log.trace("doCheckFileHash({})[{}] offset={}, length={} - algo={}, hash={}",
                               getServerSession(), file, startOffset, length,
                               digest.getAlgorithm(), BufferUtils.toHex(':', hashValue));
@@ -815,7 +816,7 @@ public abstract class AbstractSftpSubsystemHelper
                     digest.update(digestBuf, 0, readLen);
 
                     byte[] hashValue = digest.digest(); // NOTE: this also resets the hash for the next read
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("doCheckFileHash({})({})[{}] offset={}, length={} - algo={}, hash={}",
                                   getServerSession(), file, count, startOffset, length,
                                   digest.getAlgorithm(), BufferUtils.toHex(':', hashValue));
@@ -876,6 +877,7 @@ public abstract class AbstractSftpSubsystemHelper
         boolean hashMatches = false;
         byte[] hashValue = null;
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        boolean traceEnabled = log.isTraceEnabled();
         try (SeekableByteChannel channel = accessor.openFile(getServerSession(), this, path, null, EnumSet.of(StandardOpenOption.READ))) {
             channel.position(startOffset);
 
@@ -915,7 +917,7 @@ public abstract class AbstractSftpSubsystemHelper
                         hashValue = null;   // start again
                     }
                 } else {
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("doMD5Hash({})({}) offset={}, length={} - quick-hash mismatched expected={}, actual={}",
                                   getServerSession(), path, startOffset, length,
                                   BufferUtils.toHex(':', quickCheckHash),
@@ -949,7 +951,7 @@ public abstract class AbstractSftpSubsystemHelper
             }
         }
 
-        if (log.isTraceEnabled()) {
+        if (traceEnabled) {
             log.trace("doMD5Hash({})({}) offset={}, length={} - matches={}, quick={} hash={}",
                       getServerSession(), path, startOffset, length, hashMatches,
                       BufferUtils.toHex(':', quickCheckHash),
@@ -1171,7 +1173,8 @@ public abstract class AbstractSftpSubsystemHelper
 
     protected void doRealPath(Buffer buffer, int id) throws IOException {
         String path = buffer.getString();
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("doRealPath({})[id={}] SSH_FXP_REALPATH (path={})", getServerSession(), id, path);
         }
         path = GenericUtils.trimToEmpty(path);
@@ -1206,9 +1209,9 @@ public abstract class AbstractSftpSubsystemHelper
                 int control = SftpConstants.SSH_FXP_REALPATH_NO_CHECK;
                 if (buffer.available() > 0) {
                     control = buffer.getUByte();
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("doRealPath({}) - control=0x{} for path={}",
-                                  getServerSession(), Integer.toHexString(control), path);
+                              getServerSession(), Integer.toHexString(control), path);
                     }
                 }
 
@@ -1233,7 +1236,7 @@ public abstract class AbstractSftpSubsystemHelper
                             try {
                                 attrs = getAttributes(p, options);
                             } catch (IOException e) {
-                                if (log.isDebugEnabled()) {
+                                if (debugEnabled) {
                                     log.debug("doRealPath({}) - failed ({}) to retrieve attributes of {}: {}",
                                               getServerSession(), e.getClass().getSimpleName(), p, e.getMessage());
                                 }
@@ -1242,7 +1245,7 @@ public abstract class AbstractSftpSubsystemHelper
                                 }
                             }
                         } else {
-                            if (log.isDebugEnabled()) {
+                            if (debugEnabled) {
                                 log.debug("doRealPath({}) - dummy attributes for non-existing file: {}", getServerSession(), p);
                             }
                         }
@@ -1260,7 +1263,7 @@ public abstract class AbstractSftpSubsystemHelper
                         break;
                     default:
                         log.warn("doRealPath({}) unknown control value 0x{} for path={}",
-                                 getServerSession(), Integer.toHexString(control), p);
+                             getServerSession(), Integer.toHexString(control), p);
                 }
             }
         } catch (IOException | RuntimeException e) {
@@ -1465,9 +1468,10 @@ public abstract class AbstractSftpSubsystemHelper
         List<String> extras = (numExtensions <= 0) ? Collections.emptyList() : new ArrayList<>(numExtensions);
         if (numExtensions > 0) {
             ServerSession session = getServerSession();
+            boolean debugEnabled = log.isDebugEnabled();
             extensions.forEach((name, f) -> {
                 if (!f.isSupported()) {
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("appendExtensions({}) skip unsupported extension={}", session, name);
                     }
                     return;
@@ -2053,6 +2057,7 @@ public abstract class AbstractSftpSubsystemHelper
      */
     protected NavigableMap<String, Object> resolveMissingFileAttributes(
             Path file, int flags, Map<String, Object> current, LinkOption... options) throws IOException {
+        boolean debugEnabled = log.isDebugEnabled();
         NavigableMap<String, Object> attrs = null;
         // Cannot use forEach because the attrs variable is not effectively final
         for (Map.Entry<String, FileInfoExtractor<?>> re : SftpFileSystemAccessor.FILEATTRS_RESOLVERS.entrySet()) {
@@ -2071,12 +2076,12 @@ public abstract class AbstractSftpSubsystemHelper
 
                 attrs.put(name, resolved);
 
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("resolveMissingFileAttributes({})[{}[{}]] replace {} with {}",
                               getServerSession(), file, name, value, resolved);
                 }
             } catch (IOException e) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("resolveMissingFileAttributes({})[{}[{}]] failed ({}) to resolve missing value: {}",
                               getServerSession(), file, name, e.getClass().getSimpleName(), e.getMessage());
                 }
@@ -2243,8 +2248,9 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected void handleSetFileAttributeFailure(Path file, String view, String attribute, Object value, Collection<String> unsupported, Exception e) throws IOException {
+        boolean debugEnabled = log.isDebugEnabled();
         if (e instanceof UnsupportedOperationException) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("handleSetFileAttributeFailure({})[{}] {}:{}={} unsupported: {}",
                           getServerSession(), file, view, attribute, value, e.getMessage());
             }
@@ -2252,7 +2258,7 @@ public abstract class AbstractSftpSubsystemHelper
         } else {
             log.warn("handleSetFileAttributeFailure({})[{}] {}:{}={} - failed ({}) to set: {}",
                      getServerSession(), file, view, attribute, value, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("handleSetFileAttributeFailure(" + getServerSession() + ")"
                         + "[" + file + "] " + view + ":" + attribute + "=" + value
                         + " failure details", e);

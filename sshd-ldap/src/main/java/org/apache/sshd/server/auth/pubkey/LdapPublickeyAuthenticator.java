@@ -117,19 +117,21 @@ public class LdapPublickeyAuthenticator extends LdapAuthenticator implements Pub
      * @return {@code true} whether to accept the presented public key
      */
     protected boolean authenticate(String username, PublicKey expected, ServerSession session, Map<String, ?> attrs, Collection<? extends PublicKey> keys) {
+        boolean debugEnabled = log.isDebugEnabled();
         if (GenericUtils.isEmpty(keys)) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("authenticate({}@{}) no registered keys", username, session);
             }
             return false;
         }
 
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("authenticate({}@{}) check {} registered keys", username, session, keys.size());
         }
 
+        boolean traceEnabled = log.isTraceEnabled();
         for (PublicKey actual : keys) {
-            if (log.isTraceEnabled()) {
+            if (traceEnabled) {
                 log.trace("authenticate({}@{}) expected={}-{}, actual={}-{}",
                           username, session,
                           KeyUtils.getKeyType(expected), KeyUtils.getFingerPrint(expected),
@@ -141,7 +143,7 @@ public class LdapPublickeyAuthenticator extends LdapAuthenticator implements Pub
             }
         }
 
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("authenticate({}@{}) no matching keys", username, session);
         }
 

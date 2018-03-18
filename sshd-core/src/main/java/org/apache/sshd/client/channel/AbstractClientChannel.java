@@ -206,10 +206,12 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     public Set<ClientChannelEvent> waitFor(Collection<ClientChannelEvent> mask, long timeout) {
         Objects.requireNonNull(mask, "No mask specified");
         long t = 0;
+        boolean debugEnabled = log.isDebugEnabled();
+        boolean traceEnabled = log.isTraceEnabled();
         synchronized (lock) {
             for (Set<ClientChannelEvent> cond = EnumSet.noneOf(ClientChannelEvent.class);; cond.clear()) {
                 updateCurrentChannelState(cond);
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     if (cond.contains(ClientChannelEvent.EXIT_STATUS)) {
                         log.debug("waitFor({}) mask={} - exit status={}", this, mask, exitStatusHolder);
                     }
@@ -220,7 +222,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
                 boolean nothingInCommon = Collections.disjoint(mask, cond);
                 if (!nothingInCommon) {
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("WaitFor call returning on channel {}, mask={}, cond={}", this, mask, cond);
                     }
                     return cond;
@@ -232,7 +234,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                     } else {
                         timeout = t - System.currentTimeMillis();
                         if (timeout <= 0L) {
-                            if (log.isTraceEnabled()) {
+                            if (traceEnabled) {
                                 log.trace("WaitFor call timeout on channel {}, mask={}", this, mask);
                             }
                             cond.add(ClientChannelEvent.TIMEOUT);
@@ -241,7 +243,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                     }
                 }
 
-                if (log.isTraceEnabled()) {
+                if (traceEnabled) {
                     log.trace("Waiting {} millis for lock on channel {}, mask={}, cond={}", timeout, this, mask, cond);
                 }
 
@@ -255,13 +257,13 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
                     long nanoEnd = System.nanoTime();
                     long nanoDuration = nanoEnd - nanoStart;
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("Lock notified on channel {} after {} nanos", this, nanoDuration);
                     }
                 } catch (InterruptedException e) {
                     long nanoEnd = System.nanoTime();
                     long nanoDuration = nanoEnd - nanoStart;
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("waitFor({}) mask={} - ignoring interrupted exception after {} nanos", this, mask, nanoDuration);
                     }
                 }

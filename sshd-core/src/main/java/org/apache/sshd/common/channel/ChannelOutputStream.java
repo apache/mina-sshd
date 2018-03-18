@@ -110,6 +110,8 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
 
         Channel channel = getChannel();
         Session session = channel.getSession();
+        boolean debugEnabled = log.isDebugEnabled();
+        boolean traceEnabled = log.isTraceEnabled();
         while (l > 0) {
             // The maximum amount we should admit without flushing again
             // is enough to make up one full packet within our allowed
@@ -125,17 +127,17 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                     session.resetIdleTimeout();
                     try {
                         long available = remoteWindow.waitForSpace(maxWaitTimeout);
-                        if (log.isTraceEnabled()) {
+                        if (traceEnabled) {
                             log.trace("write({}) len={} - available={}", this, l, available);
                         }
                     } catch (IOException e) {
-                        if (log.isDebugEnabled()) {
+                        if (debugEnabled) {
                             log.debug("write({}) failed ({}) to wait for space of len={}: {}",
                                       this, e.getClass().getSimpleName(), l, e.getMessage());
                         }
 
                         if ((e instanceof WindowClosedException) && (!closedState.getAndSet(true))) {
-                            if (log.isDebugEnabled()) {
+                            if (debugEnabled) {
                                 log.debug("write({})[len={}] closing due to window closed", this, l);
                             }
                         }
@@ -172,6 +174,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
         try {
             AbstractChannel channel = getChannel();
             Session session = channel.getSession();
+            boolean traceEnabled = log.isTraceEnabled();
             while (bufferLength > 0) {
                 session.resetIdleTimeout();
 
@@ -180,7 +183,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                 long available;
                 try {
                     available = remoteWindow.waitForSpace(maxWaitTimeout);
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("flush({}) len={}, available={}", this, total, available);
                     }
                 } catch (IOException e) {
@@ -215,7 +218,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
 
                 session.resetIdleTimeout();
                 remoteWindow.waitAndConsume(length, maxWaitTimeout);
-                if (log.isTraceEnabled()) {
+                if (traceEnabled) {
                     log.trace("flush({}) send {} len={}", channel, SshConstants.getCommandMessageName(cmd), length);
                 }
                 packetWriter.writePacket(buf);

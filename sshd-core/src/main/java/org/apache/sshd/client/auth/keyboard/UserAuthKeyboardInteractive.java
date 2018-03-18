@@ -147,7 +147,8 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         String instruction = buffer.getString();
         String lang = buffer.getString();
         int num = buffer.getInt();
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("processAuthDataRequest({})[{}] SSH_MSG_USERAUTH_INFO_REQUEST name={}, instruction={}, language={}, num-prompts={}",
                       session, service, name, instruction, lang, num);
         }
@@ -160,14 +161,15 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             echo[i] = buffer.getBoolean();
         }
 
-        if (log.isTraceEnabled()) {
+        boolean traceEnabled = log.isTraceEnabled();
+        if (traceEnabled) {
             log.trace("processAuthDataRequest({})[{}] Prompt: {}", session, service, Arrays.toString(prompt));
             log.trace("processAuthDataRequest({})[{}] Echo: {}", session, service, Arrays.toString(echo));
         }
 
         String[] rep = getUserResponses(name, instruction, lang, prompt, echo);
         if (rep == null) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("processAuthDataRequest({})[{}] no responses for {}", session, service, name);
             }
             return false;
@@ -191,7 +193,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         buffer.putInt(rep.length);
         for (int index = 0; index < rep.length; index++) {
             String r = rep[index];
-            if (log.isTraceEnabled()) {
+            if (traceEnabled) {
                 log.trace("processAuthDataRequest({})[{}] response #{}: {}", session, service, index + 1, r);
             }
             buffer.putString(r);

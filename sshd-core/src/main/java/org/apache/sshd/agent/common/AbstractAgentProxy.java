@@ -103,10 +103,11 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
         }
 
         List<SimpleImmutableEntry<PublicKey, String>> keys = new ArrayList<>(nbIdentities);
+        boolean debugEnabled = log.isDebugEnabled();
         for (int i = 0; i < nbIdentities; i++) {
             PublicKey key = buffer.getPublicKey();
             String comment = buffer.getString();
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("getIdentities() key type={}, comment={}, fingerprint={}",
                           KeyUtils.getKeyType(key), comment, KeyUtils.getFingerPrint(key));
             }
@@ -240,5 +241,4 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
     }
 
     protected abstract Buffer request(Buffer buffer) throws IOException;
-
 }

@@ -281,16 +281,16 @@ public class SftpSubsystem
                 }
             }
         } finally {
+            boolean debugEnabled = log.isDebugEnabled();
             handles.forEach((id, handle) -> {
                 try {
                     handle.close();
-                    if (log.isDebugEnabled()) {
-                        log.debug("run({}) closed pending handle {} [{}]",
-                                  getServerSession(), id, handle);
+                    if (debugEnabled) {
+                        log.debug("run({}) closed pending handle {} [{}]", getServerSession(), id, handle);
                     }
                 } catch (IOException ioe) {
                     log.error("run({}) failed ({}) to close handle={}[{}]: {}",
-                              getServerSession(), ioe.getClass().getSimpleName(), id, handle, ioe.getMessage());
+                          getServerSession(), ioe.getClass().getSimpleName(), id, handle, ioe.getMessage());
                 }
             });
 
@@ -746,7 +746,8 @@ public class SftpSubsystem
     protected void doReadDir(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
         Handle h = handles.get(handle);
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("doReadDir({})[id={}] SSH_FXP_READDIR (handle={}[{}])",
                       getServerSession(), id, handle, h);
         }
@@ -797,7 +798,7 @@ public class SftpSubsystem
 
                 Boolean indicator =
                     SftpHelper.indicateEndOfNamesList(reply, getVersion(), session, dh.isDone());
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("doReadDir({})({})[{}] - seding {} entries - eol={}", session, handle, h, count, indicator);
                 }
             } else {
@@ -1015,7 +1016,8 @@ public class SftpSubsystem
         }
 
         ServerSession session = getServerSession();
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("destroy({}) - mark as closed", session);
         }
 
@@ -1024,8 +1026,8 @@ public class SftpSubsystem
             listener.destroying(session);
         } catch (Exception e) {
             log.warn("destroy({}) Failed ({}) to announce destruction event: {}",
-                    session, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
+                session, e.getClass().getSimpleName(), e.getMessage());
+            if (debugEnabled) {
                 log.debug("destroy(" + session + ") destruction announcement failure details", e);
             }
         }
@@ -1034,7 +1036,7 @@ public class SftpSubsystem
         if ((pendingFuture != null) && (!pendingFuture.isDone())) {
             boolean result = pendingFuture.cancel(true);
             // TODO consider waiting some reasonable (?) amount of time for cancellation
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("destroy(" + session + ") - cancel pending future=" + result);
             }
         }
@@ -1044,7 +1046,7 @@ public class SftpSubsystem
         ExecutorService executors = getExecutorService();
         if ((executors != null) && (!executors.isShutdown()) && isShutdownOnExit()) {
             Collection<Runnable> runners = executors.shutdownNow();
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("destroy(" + session + ") - shutdown executor service - runners count=" + runners.size());
             }
         }
@@ -1053,11 +1055,11 @@ public class SftpSubsystem
         try {
             fileSystem.close();
         } catch (UnsupportedOperationException e) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("destroy(" + session + ") closing the file system is not supported");
             }
         } catch (IOException e) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("destroy(" + session + ")"
                         + " failed (" + e.getClass().getSimpleName() + ")"
                         + " to close file system: " + e.getMessage(), e);

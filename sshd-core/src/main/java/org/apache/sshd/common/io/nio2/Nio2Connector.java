@@ -44,7 +44,8 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
 
     @Override
     public IoConnectFuture connect(SocketAddress address) {
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("Connecting to {}", address);
         }
 
@@ -62,7 +63,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
             socket.connect(address, null, completionHandler);
         } catch (Throwable exc) {
             Throwable t = GenericUtils.peelException(exc);
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("connect({}) failed ({}) to schedule connection: {}",
                           address, t.getClass().getSimpleName(), t.getMessage());
             }
@@ -75,7 +76,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                     socket.close();
                 }
             } catch (IOException err) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("connect({}) - failed ({}) to close socket: {}",
                             address, err.getClass().getSimpleName(), err.getMessage());
                 }
@@ -86,7 +87,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                     channel.close();
                 }
             } catch (IOException err) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("connect({}) - failed ({}) to close channel: {}",
                             address, err.getClass().getSimpleName(), err.getMessage());
                 }
@@ -128,7 +129,8 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                     }
                 } catch (Throwable exc) {
                     Throwable t = GenericUtils.peelException(exc);
-                    if (log.isDebugEnabled()) {
+                    boolean debugEnabled = log.isDebugEnabled();
+                    if (debugEnabled) {
                         log.debug("onCompleted - failed {} to start session: {}",
                                   t.getClass().getSimpleName(), t.getMessage());
                     }
@@ -139,7 +141,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                     try {
                         socket.close();
                     } catch (IOException err) {
-                        if (log.isDebugEnabled()) {
+                        if (debugEnabled) {
                             log.debug("onCompleted - failed {} to close socket: {}", err.getClass().getSimpleName(), err.getMessage());
                         }
                     }

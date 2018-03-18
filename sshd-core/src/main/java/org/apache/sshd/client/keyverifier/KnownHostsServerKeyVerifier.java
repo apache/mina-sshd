@@ -194,7 +194,8 @@ public class KnownHostsServerKeyVerifier
      */
     protected List<HostEntryPair> reloadKnownHosts(Path file) throws IOException, GeneralSecurityException {
         Collection<KnownHostEntry> entries = KnownHostEntry.readKnownHostEntries(file);
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("reloadKnownHosts({}) loaded {} entries", file, entries.size());
         }
         updateReloadAttributes();
@@ -214,7 +215,7 @@ public class KnownHostsServerKeyVerifier
             } catch (Throwable t) {
                 log.warn("reloadKnownHosts({}) failed ({}) to load key of {}: {}",
                          file, t.getClass().getSimpleName(), entry, t.getMessage());
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("reloadKnownHosts(" + file + ") key=" + entry + " load failure details", t);
                 }
             }
@@ -492,7 +493,8 @@ public class KnownHostsServerKeyVerifier
         }
 
         Collection<SshdSocketAddress> candidates = resolveHostNetworkIdentities(clientSession, remoteAddress);
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("findKnownHostEntry({})[{}] host network identities: {}",
                       clientSession, remoteAddress, candidates);
         }
@@ -506,7 +508,7 @@ public class KnownHostsServerKeyVerifier
             for (SshdSocketAddress host : candidates) {
                 try {
                     if (entry.isHostMatch(host.getHostName(), host.getPort())) {
-                        if (log.isDebugEnabled()) {
+                        if (debugEnabled) {
                             log.debug("findKnownHostEntry({})[{}] matched host={} for entry={}",
                                        clientSession, remoteAddress, host, entry);
                         }
@@ -516,7 +518,7 @@ public class KnownHostsServerKeyVerifier
                     log.warn("findKnownHostEntry({})[{}] failed ({}) to check host={} for entry={}: {}",
                              clientSession, remoteAddress, e.getClass().getSimpleName(),
                              host, entry.getConfigLine(), e.getMessage());
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("findKnownHostEntry(" + clientSession + ") host=" + host + ", entry=" + entry + " match failure details", e);
                     }
                 }

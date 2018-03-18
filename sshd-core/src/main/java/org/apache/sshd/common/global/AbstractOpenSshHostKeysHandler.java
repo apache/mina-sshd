@@ -66,9 +66,10 @@ public abstract class AbstractOpenSshHostKeysHandler extends AbstractConnectionS
         Collection<PublicKey> keys = new LinkedList<>();
         BufferPublicKeyParser<? extends PublicKey> p = getPublicKeysParser();
         if (p != null) {
+            boolean debugEnabled = log.isDebugEnabled();
             while (buffer.available() > 0) {
                 PublicKey key = buffer.getPublicKey(p);
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("process({})[{}] key type={}, fingerprint={}",
                               connectionService, request, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
                 }

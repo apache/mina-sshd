@@ -202,6 +202,7 @@ public class ClientSessionImpl extends AbstractClientSession {
     public Set<ClientSessionEvent> waitFor(Collection<ClientSessionEvent> mask, long timeout) {
         Objects.requireNonNull(mask, "No mask specified");
         long t = 0L;
+        boolean traceEnabled = log.isTraceEnabled();
         synchronized (lock) {
             for (Set<ClientSessionEvent> cond = EnumSet.noneOf(ClientSessionEvent.class);; cond.clear()) {
                 if (closeFuture.isClosed()) {
@@ -216,7 +217,7 @@ public class ClientSessionImpl extends AbstractClientSession {
 
                 boolean nothingInCommon = Collections.disjoint(cond, mask);
                 if (!nothingInCommon) {
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("waitFor(}{}) call return mask={}, cond={}", this, mask, cond);
                     }
                     return cond;
@@ -228,7 +229,7 @@ public class ClientSessionImpl extends AbstractClientSession {
                     } else {
                         timeout = t - System.currentTimeMillis();
                         if (timeout <= 0L) {
-                            if (log.isTraceEnabled()) {
+                            if (traceEnabled) {
                                 log.trace("WaitFor({}) call timeout mask={}", this, mask);
                             }
                             cond.add(ClientSessionEvent.TIMEOUT);
@@ -237,7 +238,7 @@ public class ClientSessionImpl extends AbstractClientSession {
                     }
                 }
 
-                if (log.isTraceEnabled()) {
+                if (traceEnabled) {
                     log.trace("waitFor({}) Waiting {} millis for lock on mask={}, cond={}", this, timeout, mask, cond);
                 }
 
@@ -251,13 +252,13 @@ public class ClientSessionImpl extends AbstractClientSession {
 
                     long nanoEnd = System.nanoTime();
                     long nanoDuration = nanoEnd - nanoStart;
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("waitFor({}) Lock notified after {} nanos", this, nanoDuration);
                     }
                 } catch (InterruptedException e) {
                     long nanoEnd = System.nanoTime();
                     long nanoDuration = nanoEnd - nanoStart;
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("waitFor({}) mask={} - ignoring interrupted exception after {} nanos", this, mask, nanoDuration);
                     }
                 }

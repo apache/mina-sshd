@@ -75,12 +75,13 @@ public class ClientUserAuthService
         clientMethods = new ArrayList<>();
 
         String prefs = s.getString(ClientAuthenticationManager.PREFERRED_AUTHS);
+        boolean debugEnabled = log.isDebugEnabled();
         if (GenericUtils.isEmpty(prefs)) {
             for (NamedFactory<UserAuth> factory : authFactories) {
                 clientMethods.add(factory.getName());
             }
         } else {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("ClientUserAuthService({}) use configured preferences: {}", s, prefs);
             }
 
@@ -89,14 +90,14 @@ public class ClientUserAuthService
                 if (factory != null) {
                     clientMethods.add(pref);
                 } else {
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("ClientUserAuthService({}) skip unknown preferred authentication method: {}", s, pref);
                     }
                 }
             }
         }
 
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("ClientUserAuthService({}) client methods: {}", s, clientMethods);
         }
     }
@@ -123,9 +124,10 @@ public class ClientUserAuthService
         // check if any previous future in use
         AuthFuture authFuture = new DefaultAuthFuture(service, clientSession.getLock());
         AuthFuture currentFuture = authFutureHolder.getAndSet(authFuture);
+        boolean debugEnabled = log.isDebugEnabled();
         if (currentFuture != null) {
             if (currentFuture.isDone()) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("auth({})[{}] request new authentication", session, service);
                 }
             } else {
@@ -144,7 +146,7 @@ public class ClientUserAuthService
             }
         }
 
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("auth({})[{}] send SSH_MSG_USERAUTH_REQUEST for 'none'", session, service);
         }
 
@@ -162,20 +164,21 @@ public class ClientUserAuthService
     public void process(int cmd, Buffer buffer) throws Exception {
         ClientSession session = getClientSession();
         AuthFuture authFuture = authFutureHolder.get();
+        boolean debugEnabled = log.isDebugEnabled();
         if ((authFuture != null) && authFuture.isSuccess()) {
             log.error("process({}) unexpected authenticated client command: {}",
                       session, SshConstants.getCommandMessageName(cmd));
             throw new IllegalStateException("UserAuth message delivered to authenticated client");
         } else if ((authFuture != null) && authFuture.isDone()) {
             // ignore for now; TODO: random packets
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("process({}) Ignoring random message - cmd={}",
                           session, SshConstants.getCommandMessageName(cmd));
             }
         } else if (cmd == SshConstants.SSH_MSG_USERAUTH_BANNER) {
             String welcome = buffer.getString();
             String lang = buffer.getString();
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("process({}) Welcome banner(lang={}): {}", session, lang, welcome);
             }
 
@@ -187,7 +190,7 @@ public class ClientUserAuthService
             } catch (Error e) {
                 log.warn("process({}) failed ({}) to consult interaction: {}",
                          session, e.getClass().getSimpleName(), e.getMessage());
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("process(" + session + ") interaction consultation failure details", e);
                 }
 
@@ -269,15 +272,16 @@ public class ClientUserAuthService
 
     protected void tryNext(int cmd) throws Exception {
         ClientSession session = getClientSession();
+        boolean debugEnabled = log.isDebugEnabled();
         // Loop until we find something to try
         while (true) {
             if (userAuth == null) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("tryNext({}) starting authentication mechanisms: client={}, server={}",
                               session, clientMethods, serverMethods);
                 }
             } else if (!userAuth.process(null)) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("tryNext({}) no initial request sent by method={}", session, userAuth.getName());
                 }
 
@@ -289,7 +293,7 @@ public class ClientUserAuthService
 
                 currentMethod++;
             } else {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("tryNext({}) successfully processed initial buffer by method={}", session, userAuth.getName());
                 }
                 return;
@@ -304,7 +308,7 @@ public class ClientUserAuthService
             }
 
             if (currentMethod >= clientMethods.size()) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("tryNext({}) exhausted all methods - client={}, server={}",
                               session, clientMethods, serverMethods);
                 }
@@ -320,7 +324,7 @@ public class ClientUserAuthService
                 throw new UnsupportedOperationException("Failed to find a user-auth factory for method=" + method);
             }
 
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("tryNext({}) attempting method={}", session, method);
             }
 

@@ -63,6 +63,7 @@ public class UserAuthGSS extends AbstractUserAuth {
         ServerSession session = getServerSession();
         GSSAuthenticator auth = Objects.requireNonNull(session.getGSSAuthenticator(), "No GSSAuthenticator configured");
 
+        boolean debugEnabled = log.isDebugEnabled();
         if (initial) {
             // Get mechanism count from buffer and look for Kerberos 5.
 
@@ -72,7 +73,7 @@ public class UserAuthGSS extends AbstractUserAuth {
                 Oid oid = new Oid(buffer.getBytes());
 
                 if (oid.equals(KRB5_MECH)) {
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("doAuth({}@{}) found Kerberos 5", getUsername(), session);
                     }
 
@@ -113,7 +114,7 @@ public class UserAuthGSS extends AbstractUserAuth {
                         "Packet not supported by user authentication method: " + SshConstants.getCommandMessageName(msg));
             }
 
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("doAuth({}@{}) In krb5.next: msg = {}", getUsername(), session, SshConstants.getCommandMessageName(msg));
             }
 
@@ -137,12 +138,12 @@ public class UserAuthGSS extends AbstractUserAuth {
                 byte[] inmic = buffer.getBytes();
                 try {
                     context.verifyMIC(inmic, 0, inmic.length, msgbytes, 0, msgbytes.length, new MessageProp(false));
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("doAuth({}@{}) MIC verified", getUsername(), session);
                     }
                     return Boolean.TRUE;
                 } catch (GSSException e) {
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("doAuth({}@{}) GSS verification {} error: {}",
                                   getUsername(), session, e.getClass().getSimpleName(), e.getMessage());
                     }
@@ -157,7 +158,7 @@ public class UserAuthGSS extends AbstractUserAuth {
                 // Validate identity if context is now established
                 if (established && (identity == null)) {
                     identity = context.getSrcName().toString();
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("doAuth({}@{}) GSS identity is {}", getUsername(), session, identity);
                     }
 

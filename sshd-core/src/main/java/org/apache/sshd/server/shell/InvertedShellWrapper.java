@@ -155,13 +155,14 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
 
     @Override
     public synchronized void destroy() throws Exception {
+        boolean debugEnabled = log.isDebugEnabled();
         Throwable err = null;
         try {
             shell.destroy();
         } catch (Throwable e) {
             log.warn("destroy({}) failed ({}) to destroy shell: {}",
                      this, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("destroy(" + this + ") shell destruction failure details", e);
             }
             err = GenericUtils.accumulateException(err, e);
@@ -173,7 +174,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
             } catch (Exception e) {
                 log.warn("destroy({}) failed ({}) to shut down executor: {}",
                          this, e.getClass().getSimpleName(), e.getMessage());
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("destroy(" + this + ") executor shutdown failure details", e);
                 }
                 err = GenericUtils.accumulateException(err, e);
@@ -220,18 +221,19 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
                 Thread.sleep(pumpSleepTime);
             }
         } catch (Throwable e) {
+            boolean debugEnabled = log.isDebugEnabled();
             try {
                 shell.destroy();
             } catch (Throwable err) {
                 log.warn("pumpStreams({}) failed ({}) to destroy shell: {}",
                          this, e.getClass().getSimpleName(), e.getMessage());
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("pumpStreams(" + this + ") shell destruction failure details", err);
                 }
             }
 
             int exitValue = shell.exitValue();
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug(e.getClass().getSimpleName() + " while pumping the streams (exit=" + exitValue + "): " + e.getMessage(), e);
             }
             callback.onExit(exitValue, e.getClass().getSimpleName());

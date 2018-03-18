@@ -795,7 +795,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         throw new UnsupportedOperationException("readCustomViewAttributes(" + path + ")[" + view + ":" + attrs + "] view not supported");
     }
 
-    protected Map<String, Object> readAclViewAttributes(SftpPath path, String view, String attrs, LinkOption... options) throws IOException {
+    protected NavigableMap<String, Object> readAclViewAttributes(SftpPath path, String view, String attrs, LinkOption... options) throws IOException {
         if ("*".equals(attrs)) {
             attrs = "acl,owner";
         }
@@ -806,8 +806,10 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             attributes = readRemoteAttributes(path, options);
         }
 
-        Map<String, Object> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (String attr : attrs.split(",")) {
+        NavigableMap<String, Object> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        String[] attrValues = GenericUtils.split(attrs, ',');
+        boolean traceEnabled = log.isTraceEnabled();
+        for (String attr : attrValues) {
             switch (attr) {
                 case "acl":
                     List<AclEntry> acl = attributes.getAcl();
@@ -822,7 +824,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                     }
                     break;
                 default:
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("readAclViewAttributes({})[{}] unknown attribute: {}", fs, attrs, attr);
                     }
             }
@@ -854,14 +856,18 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         }
     }
 
-    protected Map<String, Object> readPosixViewAttributes(SftpPath path, String view, String attrs, LinkOption... options) throws IOException {
+    protected NavigableMap<String, Object> readPosixViewAttributes(
+            SftpPath path, String view, String attrs, LinkOption... options)
+                throws IOException {
         PosixFileAttributes v = readAttributes(path, PosixFileAttributes.class, options);
         if ("*".equals(attrs)) {
             attrs = "lastModifiedTime,lastAccessTime,creationTime,size,isRegularFile,isDirectory,isSymbolicLink,isOther,fileKey,owner,permissions,group";
         }
 
-        Map<String, Object> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (String attr : attrs.split(",")) {
+        NavigableMap<String, Object> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        boolean traceEnabled = log.isTraceEnabled();
+        String[] attrValues = GenericUtils.split(attrs, ',');
+        for (String attr : attrValues) {
             switch (attr) {
                 case "lastModifiedTime":
                     map.put(attr, v.lastModifiedTime());
@@ -900,7 +906,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                     map.put(attr, v.group());
                     break;
                 default:
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("readPosixViewAttributes({})[{}:{}] ignored for {}", path, view, attr, attrs);
                     }
             }
@@ -946,23 +952,25 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             case "size":
                 attributes.size(((Number) value).longValue());
                 break;
-            case "permissions":
+            case "permissions": {
                 @SuppressWarnings("unchecked")
                 Set<PosixFilePermission> attrSet = (Set<PosixFilePermission>) value;
                 attributes.perms(attributesToPermissions(path, attrSet));
                 break;
+            }
             case "owner":
                 attributes.owner(((UserPrincipal) value).getName());
                 break;
             case "group":
                 attributes.group(((GroupPrincipal) value).getName());
                 break;
-            case "acl":
+            case "acl": {
                 ValidateUtils.checkTrue("acl".equalsIgnoreCase(view), "ACL cannot be set via view=%s", view);
                 @SuppressWarnings("unchecked")
                 List<AclEntry> acl = (List<AclEntry>) value;
                 attributes.acl(acl);
                 break;
+            }
             case "isRegularFile":
             case "isDirectory":
             case "isSymbolicLink":
@@ -998,6 +1006,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         }
 
         int pf = 0;
+        boolean traceEnabled = log.isTraceEnabled();
         for (PosixFilePermission p : perms) {
             switch (p) {
                 case OWNER_READ:
@@ -1028,7 +1037,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                     pf |= SftpConstants.S_IXOTH;
                     break;
                 default:
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("attributesToPermissions(" + path + ") ignored " + p);
                     }
             }

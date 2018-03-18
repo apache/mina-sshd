@@ -107,13 +107,14 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
             updateSize(size);
         }
 
+        boolean debugEnabled = log.isDebugEnabled();
         if (initialized.getAndSet(true)) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("init({}) re-initializing", this);
             }
         }
 
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("init({}) size={}, max={}, packet={}", this, getSize(), getMaxSize(), getPacketSize());
         }
     }
@@ -219,13 +220,14 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         BufferUtils.validateUint32Value(len, "Invalid wait consume length: %d", len);
         checkInitialized("waitAndConsume");
 
+        boolean debugEnabled = log.isDebugEnabled();
         synchronized (lock) {
             waitForCondition(input -> {
                 // NOTE: we do not call "getSize()" on purpose in order to avoid the lock
                 return input.sizeHolder.get() >= len;
             }, maxWaitTime);
 
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("waitAndConsume({}) - requested={}, available={}", this, len, sizeHolder);
             }
 
