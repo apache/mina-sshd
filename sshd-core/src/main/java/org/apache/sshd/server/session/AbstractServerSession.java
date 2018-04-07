@@ -236,7 +236,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
     @Override
     protected void setKexSeed(byte... seed) {
-        i_s = ValidateUtils.checkNotNullAndNotEmpty(seed, "No KEX seed");
+        setServerKexData(seed);
     }
 
     @Override
@@ -379,7 +379,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     @Override
     protected void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed) throws IOException {
         mergeProposals(clientProposal, proposal);
-        i_c = seed;
+        setClientKexData(seed);
     }
 
     @Override

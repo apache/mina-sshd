@@ -471,13 +471,13 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     protected void setKexSeed(byte... seed) {
-        i_c = ValidateUtils.checkNotNullAndNotEmpty(seed, "No KEX seed");
+        setClientKexData(seed);
     }
 
     @Override
     protected void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed) throws IOException {
         mergeProposals(serverProposal, proposal);
-        i_s = seed;
+        setServerKexData(seed);
     }
 
     @Override
@@ -550,8 +550,11 @@ public abstract class AbstractClientSession extends AbstractSession implements C
                 proposal.put(KexProposalOption.C2SENC, BuiltinCiphers.Constants.NONE);
                 proposal.put(KexProposalOption.S2CENC, BuiltinCiphers.Constants.NONE);
 
-                byte[] seed = sendKexInit(proposal);
-                setKexSeed(seed);
+                byte[] seed;
+                synchronized (kexState) {
+                    seed = sendKexInit(proposal);
+                    setKexSeed(seed);
+                }
             }
 
             return Objects.requireNonNull(kexFutureHolder.get(), "No current KEX future");

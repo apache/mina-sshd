@@ -160,8 +160,6 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected final Map<KexProposalOption, String> serverProposal = new EnumMap<>(KexProposalOption.class);
     protected final Map<KexProposalOption, String> clientProposal = new EnumMap<>(KexProposalOption.class);
     protected final Map<KexProposalOption, String> negotiationResult = new EnumMap<>(KexProposalOption.class);
-    protected byte[] i_c; // the payload of the client's SSH_MSG_KEXINIT
-    protected byte[] i_s; // the payload of the factoryManager's SSH_MSG_KEXINIT
     protected KeyExchange kex;
     protected Boolean firstKexPacketFollows;
     protected final AtomicReference<KexState> kexState = new AtomicReference<>(KexState.UNKNOWN);
@@ -246,6 +244,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     private ReservedSessionMessagesHandler reservedSessionMessagesHandler;
     private ChannelStreamPacketWriterResolver channelStreamPacketWriterResolver;
     private UnknownChannelReferenceHandler unknownChannelReferenceHandler;
+
+    private byte[] clientKexData;    // the payload of the client's SSH_MSG_KEXINIT
+    private byte[] serverKexData; // the payload of the factoryManager's SSH_MSG_KEXINIT
 
     /**
      * Create a new session.
@@ -780,6 +781,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             log.debug("handleServiceRequest({}) SSH_MSG_SERVICE_REQUEST '{}'", this, serviceName);
         }
         validateKexState(SshConstants.SSH_MSG_SERVICE_REQUEST, KexState.DONE);
+
         try {
             startService(serviceName);
         } catch (Throwable e) {
@@ -821,6 +823,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             log.debug("handleKexInit({}) SSH_MSG_KEXINIT", this);
         }
         receiveKexInit(buffer);
+
         if (kexState.compareAndSet(KexState.DONE, KexState.RUN)) {
             sendKexInit();
         } else if (!kexState.compareAndSet(KexState.INIT, KexState.RUN)) {
@@ -829,10 +832,21 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
         Map<KexProposalOption, String> result = negotiate();
         String kexAlgorithm = result.get(KexProposalOption.ALGORITHMS);
-        kex = ValidateUtils.checkNotNull(NamedFactory.create(getKeyExchangeFactories(), kexAlgorithm),
+        Collection<? extends NamedFactory<KeyExchange>> kexFactories = getKeyExchangeFactories();
+        kex = ValidateUtils.checkNotNull(NamedFactory.create(kexFactories, kexAlgorithm),
                 "Unknown negotiated KEX algorithm: %s",
                 kexAlgorithm);
-        kex.init(this, serverVersion.getBytes(StandardCharsets.UTF_8), clientVersion.getBytes(StandardCharsets.UTF_8), i_s, i_c);
+
+        byte[] v_s = serverVersion.getBytes(StandardCharsets.UTF_8);
+        byte[] v_c = clientVersion.getBytes(StandardCharsets.UTF_8);
+        byte[] i_s;
+        byte[] i_c;
+        synchronized (kexState) {
+            i_s = getServerKexData();
+            i_c = getClientKexData();
+        }
+        kex.init(this, v_s, v_c, i_s, i_c);
+
         signalSessionEvent(SessionListener.Event.KexCompleted);
     }
 
@@ -855,6 +869,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
 
         signalSessionEvent(SessionListener.Event.KeyEstablished);
+
         Collection<? extends Map.Entry<? extends SshFutureListener<IoWriteFuture>, IoWriteFuture>> pendingWrites;
         synchronized (pendingPackets) {
             pendingWrites = sendPendingPackets(pendingPackets);
@@ -1085,7 +1100,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     public IoWriteFuture writePacket(Buffer buffer) throws IOException {
         // While exchanging key, queue high level packets
         if (!KexState.DONE.equals(kexState.get())) {
-            byte cmd = buffer.array()[buffer.rpos()];
+            byte[] bufData = buffer.array();
+            byte cmd = bufData[buffer.rpos()];
             if (cmd > SshConstants.SSH_MSG_KEX_LAST) {
                 String cmdName = SshConstants.getCommandMessageName(cmd & 0xFF);
                 synchronized (pendingPackets) {
@@ -1179,7 +1195,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
 
         synchronized (random) {
-            ignorePacketsCount.set(calculateNextIgnorePacketCount(random, ignorePacketsFrequency, ignorePacketsVariance));
+            count = calculateNextIgnorePacketCount(random, ignorePacketsFrequency, ignorePacketsVariance);
+            ignorePacketsCount.set(count);
             return ignorePacketDataLength + random.random(ignorePacketDataLength);
         }
     }
@@ -2583,17 +2600,46 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
 
         Map<KexProposalOption, String> proposal = createProposal(resolvedAlgorithms);
-        byte[] seed = sendKexInit(proposal);
+        byte[] seed;
+        synchronized (kexState) {
+            seed = sendKexInit(proposal);
+            setKexSeed(seed);
+        }
+
         if (log.isTraceEnabled()) {
             log.trace("sendKexInit({}) proposal={} seed: {}", this, proposal, BufferUtils.toHex(':', seed));
         }
-        setKexSeed(seed);
         return seed;
     }
 
+    protected byte[] getClientKexData() {
+        synchronized (kexState) {
+            return (clientKexData == null) ? null : clientKexData.clone();
+        }
+    }
+
+    protected void setClientKexData(byte[] data) {
+        ValidateUtils.checkNotNullAndNotEmpty(data, "No client KEX seed");
+        synchronized (kexState) {
+            clientKexData = data.clone();
+        }
+    }
+
+    protected byte[] getServerKexData() {
+        synchronized (kexState) {
+            return (serverKexData == null) ? null : serverKexData.clone();
+        }
+    }
+
+    protected void setServerKexData(byte[] data) {
+        ValidateUtils.checkNotNullAndNotEmpty(data, "No server KEX seed");
+        synchronized (kexState) {
+            serverKexData = data.clone();
+        }
+    }
+
     /**
-     * @param seed The result of the KEXINIT handshake - required for correct
-     *             session key establishment
+     * @param seed The result of the KEXINIT handshake - required for correct session key establishment
      */
     protected abstract void setKexSeed(byte... seed);
 
@@ -2622,10 +2668,20 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      */
     protected abstract void checkKeys() throws IOException;
 
-    protected void receiveKexInit(Buffer buffer) throws IOException {
+    protected byte[] receiveKexInit(Buffer buffer) throws IOException {
         Map<KexProposalOption, String> proposal = new EnumMap<>(KexProposalOption.class);
-        byte[] seed = receiveKexInit(buffer, proposal);
-        receiveKexInit(proposal, seed);
+
+        byte[] seed;
+        synchronized (kexState) {
+            seed = receiveKexInit(buffer, proposal);
+            receiveKexInit(proposal, seed);
+        }
+
+        if (log.isTraceEnabled()) {
+            log.trace("receiveKexInit({}) proposal={} seed: {}", this, proposal, BufferUtils.toHex(':', seed));
+        }
+
+        return seed;
     }
 
     protected abstract void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed) throws IOException;
