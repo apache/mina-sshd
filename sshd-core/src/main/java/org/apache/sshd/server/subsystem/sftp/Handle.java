@@ -39,13 +39,13 @@ public abstract class Handle implements java.nio.channels.Channel {
         this.handle = ValidateUtils.checkNotNullAndNotEmpty(handle, "No assigned handle for %s", file);
     }
 
-    protected void signalHandleOpening(SftpSubsystem subsystem) throws IOException {
+    protected void signalHandleOpening(AbstractSftpSubsystemExecutor subsystem) throws IOException {
         SftpEventListener listener = subsystem.getSftpEventListenerProxy();
         ServerSession session = subsystem.getServerSession();
         listener.opening(session, handle, this);
     }
 
-    protected void signalHandleOpen(SftpSubsystem subsystem) throws IOException {
+    protected void signalHandleOpen(AbstractSftpSubsystemExecutor subsystem) throws IOException {
         SftpEventListener listener = subsystem.getSftpEventListenerProxy();
         ServerSession session = subsystem.getServerSession();
         listener.open(session, handle, this);

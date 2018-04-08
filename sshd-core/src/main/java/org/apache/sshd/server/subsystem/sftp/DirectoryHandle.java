@@ -37,7 +37,7 @@ public class DirectoryHandle extends Handle implements Iterator<Path> {
     private DirectoryStream<Path> ds;
     private Iterator<Path> fileList;
 
-    public DirectoryHandle(SftpSubsystem subsystem, Path dir, String handle) throws IOException {
+    public DirectoryHandle(AbstractSftpSubsystemExecutor subsystem, Path dir, String handle) throws IOException {
         super(dir, handle);
         signalHandleOpening(subsystem);
 

@@ -38,7 +38,7 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
  */
 public abstract class AbstractCommandSupport
         extends AbstractLoggingBean
-        implements Command, Runnable, ExitCallback, ExecutorServiceCarrier {
+        implements Command, ExitCallbackHolder, Runnable, ExitCallback, ExecutorServiceCarrier {
     private final String command;
     private InputStream in;
     private OutputStream out;
@@ -104,6 +104,7 @@ public abstract class AbstractCommandSupport
         this.err = err;
     }
 
+    @Override
     public ExitCallback getExitCallback() {
         return callback;
     }

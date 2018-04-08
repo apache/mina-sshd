@@ -33,7 +33,7 @@ import java.io.OutputStream;
  * </p>
  * see {@link org.apache.sshd.server.shell.InvertedShellWrapper}.
  */
-public interface Command extends CommandLifecycle {
+public interface Command extends CommandLifecycle, ExitCallbackAware {
 
     /**
      * Set the input stream that can be used by the shell to read input.
@@ -55,11 +55,4 @@ public interface Command extends CommandLifecycle {
      * @param err The {@link OutputStream} used by the shell to write its errors
      */
     void setErrorStream(OutputStream err);
-
-    /**
-     * Set the callback that the shell has to call when it is closed.
-     *
-     * @param callback The {@link ExitCallback} to call when shell is closed
-     */
-    void setExitCallback(ExitCallback callback);
 }

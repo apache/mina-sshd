@@ -49,11 +49,11 @@ public class FileHandle extends Handle {
     private final int access;
     private final SeekableByteChannel fileChannel;
     private final List<FileLock> locks = new ArrayList<>();
-    private final SftpSubsystem subsystem;
+    private final AbstractSftpSubsystemExecutor subsystem;
     private final Set<StandardOpenOption> openOptions;
     private final Collection<FileAttribute<?>> fileAttributes;
 
-    public FileHandle(SftpSubsystem subsystem, Path file, String handle, int flags, int access, Map<String, Object> attrs) throws IOException {
+    public FileHandle(AbstractSftpSubsystemExecutor subsystem, Path file, String handle, int flags, int access, Map<String, Object> attrs) throws IOException {
         super(file, handle);
         this.subsystem = Objects.requireNonNull(subsystem, "No subsystem instance provided");
         this.access = access;

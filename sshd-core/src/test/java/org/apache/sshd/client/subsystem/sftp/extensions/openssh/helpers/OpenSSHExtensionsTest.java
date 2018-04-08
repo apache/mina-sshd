@@ -143,7 +143,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
                     }
 
                     @Override
-                    protected void executeExtendedCommand(Buffer buffer, int id, String extension) throws IOException {
+                    protected Buffer executeExtendedCommand(Buffer buffer, int id, String extension) throws IOException {
                         if (StatVfsExtensionParser.NAME.equals(extension)
                                 || FstatVfsExtensionParser.NAME.equals(extension)) {
                             String prev = extensionHolder.getAndSet(extension);
@@ -155,9 +155,9 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
                             buffer.putByte((byte) SftpConstants.SSH_FXP_EXTENDED_REPLY);
                             buffer.putInt(id);
                             OpenSSHStatExtensionInfo.encode(buffer, expected);
-                            send(buffer);
+                            return send(buffer);
                         } else {
-                            super.executeExtendedCommand(buffer, id, extension);
+                            return super.executeExtendedCommand(buffer, id, extension);
                         }
                     }
                 };
