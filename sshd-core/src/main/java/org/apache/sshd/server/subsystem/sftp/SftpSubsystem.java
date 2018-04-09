@@ -800,20 +800,17 @@ public class SftpSubsystem
                 if (debugEnabled) {
                     log.debug("doReadDir({})({})[{}] - seding {} entries - eol={}", session, handle, h, count, indicator);
                 }
+
+                send(buffer);
             } else {
                 // empty directory
                 dh.markDone();
                 sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_EOF, "Empty directory");
-                return;
             }
 
-            Objects.requireNonNull(buffer, "No reply buffer created");
         } catch (IOException | RuntimeException e) {
             sendStatus(BufferUtils.clear(buffer), id, e, SftpConstants.SSH_FXP_READDIR, handle);
-            return;
         }
-
-        send(buffer);
     }
 
     @Override
