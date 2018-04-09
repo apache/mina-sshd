@@ -383,7 +383,7 @@ public class SftpSubsystem
                 String name = SftpConstants.getCommandMessageName(type);
                 log.warn("process({})[length={}, type={}, id={}] unknown command",
                          getServerSession(), length, name, id);
-                sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OP_UNSUPPORTED, "Command " + name + " is unsupported or not implemented");
+                sendStatus(buffer, id, SftpConstants.SSH_FX_OP_UNSUPPORTED, "Command " + name + " is unsupported or not implemented");
             }
         }
 
@@ -428,7 +428,7 @@ public class SftpSubsystem
                 if (log.isDebugEnabled()) {
                     log.debug("executeExtendedCommand({}) received unsupported SSH_FXP_EXTENDED({})", getServerSession(), extension);
                 }
-                sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_EXTENDED(" + extension + ") is unsupported or not implemented");
+                sendStatus(buffer, id, SftpConstants.SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_EXTENDED(" + extension + ") is unsupported or not implemented");
                 break;
         }
     }
@@ -602,7 +602,7 @@ public class SftpSubsystem
          * channel.
          */
         if (requestsCount > 0L) {
-            sendStatus(BufferUtils.clear(buffer), id,
+            sendStatus(buffer, id,
                        SftpConstants.SSH_FX_FAILURE,
                        "Version selection not the 1st request for proposal = " + proposed);
             session.close(true);
@@ -619,9 +619,9 @@ public class SftpSubsystem
         }
         if (result) {
             version = Integer.parseInt(proposed);
-            sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
+            sendStatus(buffer, id, SftpConstants.SSH_FX_OK, "");
         } else {
-            sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_FAILURE, "Unsupported version " + proposed);
+            sendStatus(buffer, id, SftpConstants.SSH_FX_FAILURE, "Unsupported version " + proposed);
             session.close(true);
         }
     }
@@ -755,7 +755,7 @@ public class SftpSubsystem
         try {
             DirectoryHandle dh = validateHandle(handle, h, DirectoryHandle.class);
             if (dh.isDone()) {
-                sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_EOF, "Directory reading is done");
+                sendStatus(buffer, id, SftpConstants.SSH_FX_EOF, "Directory reading is done");
                 return;
             }
 
@@ -780,7 +780,8 @@ public class SftpSubsystem
                 // Send only a few files at a time to not create packets of a too
                 // large size or have a timeout to occur.
 
-                buffer = BufferUtils.clear(buffer);
+                buffer.clear();
+                buffer.putInt(0);
                 buffer.putByte((byte) SftpConstants.SSH_FXP_NAME);
                 buffer.putInt(id);
 
@@ -805,11 +806,10 @@ public class SftpSubsystem
             } else {
                 // empty directory
                 dh.markDone();
-                sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_EOF, "Empty directory");
+                sendStatus(buffer, id, SftpConstants.SSH_FX_EOF, "Empty directory");
             }
-
         } catch (IOException | RuntimeException e) {
-            sendStatus(BufferUtils.clear(buffer), id, e, SftpConstants.SSH_FXP_READDIR, handle);
+            sendStatus(buffer, id, e, SftpConstants.SSH_FXP_READDIR, handle);
         }
     }
 
@@ -986,6 +986,7 @@ public class SftpSubsystem
         }
 
         buffer.clear();
+        buffer.putInt(0);
 
         buffer.putByte((byte) SftpConstants.SSH_FXP_VERSION);
         buffer.putInt(version);
@@ -999,9 +1000,8 @@ public class SftpSubsystem
 
     @Override
     protected void send(Buffer buffer) throws IOException {
-        int len = buffer.available();
-        BufferUtils.writeInt(out, len, workBuf, 0, workBuf.length);
-        out.write(buffer.array(), buffer.rpos(), len);
+        BufferUtils.updateLengthPlaceholder(buffer, 0);
+        out.write(buffer.array(), 0, buffer.wpos());
         out.flush();
     }
 
