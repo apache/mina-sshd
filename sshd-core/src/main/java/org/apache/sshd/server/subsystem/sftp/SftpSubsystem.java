@@ -752,7 +752,6 @@ public class SftpSubsystem
                       getServerSession(), id, handle, h);
         }
 
-        Buffer reply = null;
         try {
             DirectoryHandle dh = validateHandle(handle, h, DirectoryHandle.class);
             if (dh.isDone()) {
@@ -781,23 +780,23 @@ public class SftpSubsystem
                 // Send only a few files at a time to not create packets of a too
                 // large size or have a timeout to occur.
 
-                reply = BufferUtils.clear(buffer);
-                reply.putByte((byte) SftpConstants.SSH_FXP_NAME);
-                reply.putInt(id);
+                buffer = BufferUtils.clear(buffer);
+                buffer.putByte((byte) SftpConstants.SSH_FXP_NAME);
+                buffer.putInt(id);
 
-                int lenPos = reply.wpos();
-                reply.putInt(0);
+                int lenPos = buffer.wpos();
+                buffer.putInt(0);
 
                 ServerSession session = getServerSession();
                 int maxDataSize = session.getIntProperty(MAX_READDIR_DATA_SIZE_PROP, DEFAULT_MAX_READDIR_DATA_SIZE);
-                int count = doReadDir(id, handle, dh, reply, maxDataSize, IoUtils.getLinkOptions(false));
-                BufferUtils.updateLengthPlaceholder(reply, lenPos, count);
+                int count = doReadDir(id, handle, dh, buffer, maxDataSize, IoUtils.getLinkOptions(false));
+                BufferUtils.updateLengthPlaceholder(buffer, lenPos, count);
                 if ((!dh.isSendDot()) && (!dh.isSendDotDot()) && (!dh.hasNext())) {
                     dh.markDone();
                 }
 
                 Boolean indicator =
-                    SftpHelper.indicateEndOfNamesList(reply, getVersion(), session, dh.isDone());
+                    SftpHelper.indicateEndOfNamesList(buffer, getVersion(), session, dh.isDone());
                 if (debugEnabled) {
                     log.debug("doReadDir({})({})[{}] - seding {} entries - eol={}", session, handle, h, count, indicator);
                 }
@@ -808,13 +807,13 @@ public class SftpSubsystem
                 return;
             }
 
-            Objects.requireNonNull(reply, "No reply buffer created");
+            Objects.requireNonNull(buffer, "No reply buffer created");
         } catch (IOException | RuntimeException e) {
             sendStatus(BufferUtils.clear(buffer), id, e, SftpConstants.SSH_FXP_READDIR, handle);
             return;
         }
 
-        send(reply);
+        send(buffer);
     }
 
     @Override
