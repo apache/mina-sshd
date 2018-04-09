@@ -39,8 +39,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.Factory;
@@ -48,6 +50,8 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.DigestFactory;
 import org.apache.sshd.common.file.FileSystemAware;
+import org.apache.sshd.common.io.IoInputStream;
+import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpHelper;
@@ -61,10 +65,14 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
+import org.apache.sshd.server.AsyncCommand;
+import org.apache.sshd.server.ChannelSessionAware;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SessionAware;
+import org.apache.sshd.server.channel.ChannelDataReceiver;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -74,7 +82,8 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public class SftpSubsystem
         extends AbstractSftpSubsystemHelper
-        implements Command, Runnable, SessionAware, FileSystemAware, ExecutorServiceCarrier {
+        implements Command, Runnable, SessionAware, FileSystemAware, ExecutorServiceCarrier,
+                    AsyncCommand, ChannelDataReceiver, ChannelSessionAware {
 
     /**
      * Properties key for the maximum of available open handles per session.
@@ -114,9 +123,9 @@ public class SftpSubsystem
     public static final int DEFAULT_MAX_READDIR_DATA_SIZE = 16 * 1024;
 
     protected ExitCallback callback;
-    protected InputStream in;
-    protected OutputStream out;
-    protected OutputStream err;
+    protected IoInputStream in;
+    protected IoOutputStream out;
+    protected IoOutputStream err;
     protected Environment env;
     protected Random randomizer;
     protected int fileHandleSize = DEFAULT_FILE_HANDLE_SIZE;
@@ -129,11 +138,16 @@ public class SftpSubsystem
     protected int version;
     protected final Map<String, byte[]> extensions = new TreeMap<>(Comparator.naturalOrder());
     protected final Map<String, Handle> handles = new HashMap<>();
+    protected final Buffer buffer = new ByteArrayBuffer(1024);
 
     private ServerSession serverSession;
+    private ChannelSession channelSession;
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private ExecutorService executorService;
     private boolean shutdownOnExit;
+    private final BlockingQueue<Buffer> requests = new LinkedBlockingQueue<>();
+
+    private static final Buffer CLOSE = new ByteArrayBuffer(null, 0, 0);
 
     /**
      * @param executorService The {@link ExecutorService} to be used by
@@ -227,16 +241,28 @@ public class SftpSubsystem
 
     @Override
     public void setInputStream(InputStream in) {
-        this.in = in;
     }
 
     @Override
     public void setOutputStream(OutputStream out) {
-        this.out = out;
     }
 
     @Override
     public void setErrorStream(OutputStream err) {
+    }
+
+    @Override
+    public void setIoInputStream(IoInputStream in) {
+        this.in = in;
+    }
+
+    @Override
+    public void setIoOutputStream(IoOutputStream out) {
+        this.out = out;
+    }
+
+    @Override
+    public void setIoErrorStream(IoOutputStream err) {
         this.err = err;
     }
 
@@ -253,27 +279,43 @@ public class SftpSubsystem
     }
 
     @Override
+    public void setChannelSession(ChannelSession session) {
+        this.channelSession = session;
+    }
+
+    @Override
+    public int data(ChannelSession channel, byte[] buf, int start, int len) throws IOException {
+        buffer.putRawBytes(buf, start, len);
+        while (buffer.available() >= Integer.BYTES) {
+            int rpos = buffer.rpos();
+            int msglen = buffer.getInt();
+            if (buffer.available() >= msglen) {
+                Buffer b = new ByteArrayBuffer(msglen + Integer.BYTES + Long.SIZE /* a bit extra */, false);
+                b.putInt(msglen);
+                b.putRawBytes(buffer.array(), buffer.rpos(), msglen);
+                requests.add(b);
+                buffer.rpos(rpos + msglen + Integer.BYTES);
+            } else {
+                buffer.rpos(rpos);
+                break;
+            }
+        }
+        return 0;
+    }
+
     public void run() {
         try {
-            for (long count = 1L;; count++) {
-                int length = BufferUtils.readInt(in, workBuf, 0, workBuf.length);
-                ValidateUtils.checkTrue(length >= (Integer.BYTES + 1 /* command */), "Bad length to read: %d", length);
-
-                Buffer buffer = new ByteArrayBuffer(length + Integer.BYTES + Long.SIZE /* a bit extra */, false);
-                buffer.putInt(length);
-                for (int remainLen = length; remainLen > 0;) {
-                    int l = in.read(buffer.array(), buffer.wpos(), remainLen);
-                    if (l < 0) {
-                        throw new IllegalArgumentException("Premature EOF at buffer #" + count + " while read length=" + length + " and remain=" + remainLen);
-                    }
-                    buffer.wpos(buffer.wpos() + l);
-                    remainLen -= l;
+            while (true) {
+                Buffer buffer = requests.take();
+                if (buffer == CLOSE) {
+                    break;
                 }
-
+                int len = buffer.available();
                 process(buffer);
+                channelSession.getLocalWindow().consumeAndCheck(len);
             }
         } catch (Throwable t) {
-            if ((!closed.get()) && (!(t instanceof EOFException))) { // Ignore
+            if (!closed.get()) {
                 log.error("run({}) {} caught in SFTP subsystem: {}",
                           getServerSession(), t.getClass().getSimpleName(), t.getMessage());
                 if (log.isDebugEnabled()) {
@@ -296,6 +338,12 @@ public class SftpSubsystem
 
             callback.onExit(0);
         }
+    }
+
+    @Override
+    public void close() throws IOException {
+        requests.clear();
+        requests.add(CLOSE);
     }
 
     @Override
@@ -1001,8 +1049,7 @@ public class SftpSubsystem
     @Override
     protected void send(Buffer buffer) throws IOException {
         BufferUtils.updateLengthPlaceholder(buffer, 0);
-        out.write(buffer.array(), 0, buffer.wpos());
-        out.flush();
+        out.writePacket(buffer);
     }
 
     @Override

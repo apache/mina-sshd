@@ -667,7 +667,9 @@ public class ChannelSession extends AbstractServerChannel {
         if (this.receiver == null) {
             // if the command hasn't installed any ChannelDataReceiver, install the default
             // and give the command an InputStream
-            if (command instanceof AsyncCommand) {
+            if (command instanceof ChannelDataReceiver) {
+                setDataReceiver((ChannelDataReceiver) command);
+            } else if (command instanceof AsyncCommand) {
                 AsyncDataReceiver recv = new AsyncDataReceiver(this);
                 setDataReceiver(recv);
                 ((AsyncCommand) command).setIoInputStream(recv.getIn());
