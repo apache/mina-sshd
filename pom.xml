@@ -104,14 +104,14 @@
         <gmaven.plugin.version>2.0</gmaven.plugin.version>
         <groovy.major.version>2</groovy.major.version>
         <groovy.minor.version>4</groovy.minor.version>
-        <groovy.release.version>13</groovy.release.version>
+        <groovy.release.version>15</groovy.release.version>
         <groovy.compliance.level>2.0</groovy.compliance.level>
         <groovy.version>${groovy.major.version}.${groovy.minor.version}.${groovy.release.version}</groovy.version>        
 
         <bouncycastle.version>1.59</bouncycastle.version>
         <slf4j.version>1.7.25</slf4j.version>
-        <spring.version>5.0.3.RELEASE</spring.version>
-        <jgit.version>4.10.0.201712302008-r</jgit.version>
+        <spring.version>5.0.5.RELEASE</spring.version>
+        <jgit.version>4.11.0.201803080745-r</jgit.version>
         <junit.version>4.12</junit.version>
         <surefire.plugin.version>2.20.1</surefire.plugin.version>
         <!-- See https://pmd.github.io/ for available latest version -->
@@ -578,7 +578,7 @@
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>8.8</version>
+                            <version>8.9</version>
                             <exclusions>
                                 <!-- MCHECKSTYLE-156 -->
                                 <exclusion>
