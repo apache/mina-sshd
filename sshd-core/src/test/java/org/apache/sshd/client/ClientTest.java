@@ -65,7 +65,6 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.SubsystemClient;
-import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedResource;
@@ -77,7 +76,6 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.ChannelListenerManager;
-import org.apache.sshd.common.channel.TestChannelListener;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -91,7 +89,6 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.helpers.AbstractSession;
-import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -111,12 +108,12 @@ import org.apache.sshd.server.session.ServerConnectionServiceFactory;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerUserAuthService;
 import org.apache.sshd.server.session.ServerUserAuthServiceFactory;
-import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.AsyncEchoShellFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.EchoShell;
 import org.apache.sshd.util.test.EchoShellFactory;
 import org.apache.sshd.util.test.TeeOutputStream;
+import org.apache.sshd.util.test.TestChannelListener;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -453,7 +450,6 @@ public class ClientTest extends BaseTestSupport {
                 assertSame("Mismatched closed channel instances", channel, channelHolder.getAndSet(null));
             }
         });
-        sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
 
         client.start();
 
@@ -468,13 +464,6 @@ public class ClientTest extends BaseTestSupport {
             testClientListener(channelHolder, ChannelExec.class, () -> {
                 try {
                     return session.createExecChannel(getCurrentTestName());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-            testClientListener(channelHolder, SftpClient.class, () -> {
-                try {
-                    return session.createSftpClient();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -1369,7 +1358,6 @@ public class ClientTest extends BaseTestSupport {
         try (ClientSession session = createTestClientSession()) {
             // required since we do not use an SFTP subsystem
             PropertyResolverUtils.updateProperty(session, ChannelSubsystem.REQUEST_SUBSYSTEM_REPLY, false);
-            channels.add(session.createChannel(Channel.CHANNEL_SUBSYSTEM, SftpConstants.SFTP_SUBSYSTEM_NAME));
             channels.add(session.createChannel(Channel.CHANNEL_EXEC, getCurrentTestName()));
             channels.add(session.createChannel(Channel.CHANNEL_SHELL, getClass().getSimpleName()));
 
@@ -1390,42 +1378,6 @@ public class ClientTest extends BaseTestSupport {
         }
 
         assertNull("Session closure not signalled", clientSessionHolder.get());
-    }
-
-    /**
-     * Makes sure that the {@link ChannelListener}s added to the client, session
-     * and channel are <U>cumulative</U> - i.e., all of them invoked
-     * @throws Exception If failed
-     */
-    @Test
-    public void testChannelListenersPropagation() throws Exception {
-        Map<String, TestChannelListener> clientListeners = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        addChannelListener(clientListeners, client, new TestChannelListener(client.getClass().getSimpleName()));
-
-        // required since we do not use an SFTP subsystem
-        PropertyResolverUtils.updateProperty(client, ChannelSubsystem.REQUEST_SUBSYSTEM_REPLY, false);
-        client.start();
-        try (ClientSession session = createTestClientSession()) {
-            addChannelListener(clientListeners, session, new TestChannelListener(session.getClass().getSimpleName()));
-            assertListenerSizes("ClientSessionOpen", clientListeners, 0, 0);
-
-            try (ClientChannel channel = session.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME)) {
-                channel.open().verify(5L, TimeUnit.SECONDS);
-
-                TestChannelListener channelListener = new TestChannelListener(channel.getClass().getSimpleName());
-                // need to emulate them since we are adding the listener AFTER the channel is open
-                channelListener.channelInitialized(channel);
-                channelListener.channelOpenSuccess(channel);
-                channel.addChannelListener(channelListener);
-                assertListenerSizes("ClientChannelOpen", clientListeners, 1, 1);
-            }
-
-            assertListenerSizes("ClientChannelClose", clientListeners, 0, 1);
-        } finally {
-            client.stop();
-        }
-
-        assertListenerSizes("ClientStop", clientListeners, 0, 1);
     }
 
     @Test

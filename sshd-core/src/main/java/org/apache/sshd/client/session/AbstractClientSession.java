@@ -21,7 +21,6 @@ package org.apache.sshd.client.session;
 
 import java.io.IOException;
 import java.net.SocketAddress;
-import java.nio.file.FileSystem;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.EnumMap;
@@ -43,9 +42,6 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.scp.DefaultScpClient;
 import org.apache.sshd.client.scp.ScpClient;
-import org.apache.sshd.client.subsystem.sftp.SftpClient;
-import org.apache.sshd.client.subsystem.sftp.SftpClientFactory;
-import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
@@ -90,7 +86,6 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     private ScpFileOpener scpOpener;
     private SocketAddress connectAddress;
     private ClientProxyConnector proxyConnector;
-    private SftpClientFactory sftpClientFactory;
 
     protected AbstractClientSession(ClientFactoryManager factoryManager, IoSession ioSession) {
         super(false, factoryManager, ioSession);
@@ -164,16 +159,6 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     @Override
     public void setClientProxyConnector(ClientProxyConnector proxyConnector) {
         this.proxyConnector = proxyConnector;
-    }
-
-    @Override
-    public SftpClientFactory getSftpClientFactory() {
-        return resolveEffectiveProvider(SftpClientFactory.class, sftpClientFactory, getFactoryManager().getSftpClientFactory());
-    }
-
-    @Override
-    public void setSftpClientFactory(SftpClientFactory sftpClientFactory) {
-        this.sftpClientFactory = sftpClientFactory;
     }
 
     @Override
@@ -338,18 +323,6 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     @Override
     public ScpClient createScpClient(ScpFileOpener opener, ScpTransferEventListener listener) {
         return new DefaultScpClient(this, opener, listener);
-    }
-
-    @Override
-    public SftpClient createSftpClient(SftpVersionSelector selector) throws IOException {
-        SftpClientFactory factory = getSftpClientFactory();
-        return factory.createSftpClient(this, selector);
-    }
-
-    @Override
-    public FileSystem createSftpFileSystem(SftpVersionSelector selector, int readBufferSize, int writeBufferSize) throws IOException {
-        SftpClientFactory factory = getSftpClientFactory();
-        return factory.createSftpFileSystem(this, selector, readBufferSize, writeBufferSize);
     }
 
     @Override

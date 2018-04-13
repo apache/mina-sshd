@@ -30,6 +30,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.OpenMode;
+import org.apache.sshd.client.subsystem.sftp.SftpClientFactory;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
@@ -101,7 +102,7 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
-                try (SftpClient sftp = session.createSftpClient()) {
+                try (SftpClient sftp = SftpClientFactory.instance().createSftpClient(session)) {
                     String file = Utils.resolveRelativeRemotePath(parentPath, testFile);
                     try (CloseableHandle handle = sftp.open(file, OpenMode.Read)) {
                         byte[] actual = new byte[data.length];
@@ -151,7 +152,7 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
-                try (SftpClient sftp = session.createSftpClient()) {
+                try (SftpClient sftp = SftpClientFactory.instance().createSftpClient(session)) {
                     String folder = Utils.resolveRelativeRemotePath(parentPath, targetPath);
                     for (SftpClient.DirEntry entry : sftp.readDir(folder)) {
                         assertNotNull("No entry", entry);

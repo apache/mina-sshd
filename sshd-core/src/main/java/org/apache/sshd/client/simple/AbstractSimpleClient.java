@@ -30,7 +30,6 @@ import java.util.Objects;
 import org.apache.sshd.client.scp.CloseableScpClient;
 import org.apache.sshd.client.scp.ScpClient;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -41,105 +40,6 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 public abstract class AbstractSimpleClient extends AbstractLoggingBean implements SimpleClient {
     protected AbstractSimpleClient() {
         super();
-    }
-
-    @Override
-    public SftpClient sftpLogin(SocketAddress target, String username, String password) throws IOException {
-        return createSftpClient(sessionLogin(target, username, password));
-    }
-
-    @Override
-    public SftpClient sftpLogin(SocketAddress target, String username, KeyPair identity) throws IOException {
-        return createSftpClient(sessionLogin(target, username, identity));
-    }
-
-    protected SftpClient createSftpClient(final ClientSession session) throws IOException {
-        Exception err = null;
-        try {
-            SftpClient client = session.createSftpClient();
-            try {
-                return createSftpClient(session, client);
-            } catch (Exception e) {
-                err = GenericUtils.accumulateException(err, e);
-                try {
-                    client.close();
-                } catch (Exception t) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("createSftpClient({}) failed ({}) to close client: {}",
-                                  session, t.getClass().getSimpleName(), t.getMessage());
-                    }
-
-                    if (log.isTraceEnabled()) {
-                        log.trace("createSftpClient(" + session + ") client close failure details", t);
-                    }
-                    err = GenericUtils.accumulateException(err, t);
-                }
-            }
-        } catch (Exception e) {
-            err = GenericUtils.accumulateException(err, e);
-        }
-
-        // This point is reached if error occurred
-        log.warn("createSftpClient({}) failed ({}) to create session: {}",
-                 session, err.getClass().getSimpleName(), err.getMessage());
-
-        try {
-            session.close();
-        } catch (Exception e) {
-            if (log.isDebugEnabled()) {
-                log.debug("createSftpClient({}) failed ({}) to close session: {}",
-                          session, e.getClass().getSimpleName(), e.getMessage());
-            }
-
-            if (log.isTraceEnabled()) {
-                log.trace("createSftpClient(" + session + ") session close failure details", e);
-            }
-            err = GenericUtils.accumulateException(err, e);
-        }
-
-        if (err instanceof IOException) {
-            throw (IOException) err;
-        } else {
-            throw new IOException(err);
-        }
-    }
-
-    protected SftpClient createSftpClient(final ClientSession session, final SftpClient client) throws IOException {
-        ClassLoader loader = getClass().getClassLoader();
-        Class<?>[] interfaces = {SftpClient.class};
-        return (SftpClient) Proxy.newProxyInstance(loader, interfaces, (proxy, method, args) -> {
-            Throwable err = null;
-            Object result = null;
-            String name = method.getName();
-            try {
-                result = method.invoke(client, args);
-            } catch (Throwable t) {
-                if (log.isTraceEnabled()) {
-                    log.trace("invoke(SftpClient#{}) failed ({}) to execute: {}",
-                              name, t.getClass().getSimpleName(), t.getMessage());
-                }
-                err = GenericUtils.accumulateException(err, t);
-            }
-
-            // propagate the "close" call to the session as well
-            if ("close".equals(name) && GenericUtils.isEmpty(args)) {
-                try {
-                    session.close();
-                } catch (Throwable t) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("invoke(ClientSession#{}) failed ({}) to execute: {}",
-                                  name, t.getClass().getSimpleName(), t.getMessage());
-                    }
-                    err = GenericUtils.accumulateException(err, t);
-                }
-            }
-
-            if (err != null) {
-                throw err;
-            }
-
-            return result;
-        });
     }
 
     @Override
