@@ -87,8 +87,6 @@ import org.apache.sshd.client.session.ClientUserAuthServiceFactory;
 import org.apache.sshd.client.session.SessionFactory;
 import org.apache.sshd.client.simple.AbstractSimpleClientSessionCreator;
 import org.apache.sshd.client.simple.SimpleClient;
-import org.apache.sshd.client.subsystem.sftp.SftpClientFactory;
-import org.apache.sshd.client.subsystem.sftp.impl.DefaultSftpClientFactory;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
@@ -214,7 +212,6 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     private FilePasswordProvider filePasswordProvider;
     private PasswordIdentityProvider passwordIdentityProvider;
     private ScpFileOpener scpOpener;
-    private SftpClientFactory sftpClientFactory;
 
     private final List<Object> identities = new CopyOnWriteArrayList<>();
     private final AuthenticationIdentitiesProvider identitiesProvider;
@@ -250,16 +247,6 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     @Override
     public void setScpFileOpener(ScpFileOpener opener) {
         scpOpener = opener;
-    }
-
-    @Override
-    public SftpClientFactory getSftpClientFactory() {
-        return (sftpClientFactory == null) ? DefaultSftpClientFactory.INSTANCE : sftpClientFactory;
-    }
-
-    @Override
-    public void setSftpClientFactory(SftpClientFactory sftpClientFactory) {
-        this.sftpClientFactory = sftpClientFactory;
     }
 
     @Override

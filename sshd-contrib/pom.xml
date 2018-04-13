@@ -51,6 +51,11 @@
             <artifactId>sshd-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-sftp</artifactId>
+            <version>${project.version}</version>
+        </dependency>
             <!-- For ed25519 support -->
         <dependency>
             <groupId>net.i2p.crypto</groupId>

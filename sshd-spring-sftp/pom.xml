@@ -55,6 +55,11 @@
             <artifactId>sshd-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-sftp</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <!-- Replacement of commons-logging for Spring parts that still use it -->
         <dependency>
             <groupId>org.slf4j</groupId>

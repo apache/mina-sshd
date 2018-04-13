@@ -50,6 +50,19 @@
 
         <!-- test dependencies -->
         <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-core</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-sftp</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>net.i2p.crypto</groupId>
             <artifactId>eddsa</artifactId>
             <scope>test</scope>
@@ -107,18 +120,52 @@
     </dependencies>
 
     <build>
-        <testSourceDirectory>${projectRoot}/sshd-core/src/test/java</testSourceDirectory>
-        <resources>
-            <resource>
-                <directory>src/main/filtered-resources</directory>
-                <filtering>true</filtering>
-            </resource>
-            <resource>
-                <directory>${projectRoot}/sshd-core/src/test/resources</directory>
-                <targetPath>${project.build.testOutputDirectory}</targetPath>
-            </resource>
-        </resources>
+        <testSourceDirectory>${build.directory}/test-sources</testSourceDirectory>
+        <testResources>
+            <testResource>
+                <directory>${build.directory}/test-resources</directory>
+            </testResource>
+        </testResources>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-test-resources</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${build.directory}/test-resources</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${projectRoot}/sshd-core/src/test/resources</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-test-sources</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${build.directory}/test-sources</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${projectRoot}/sshd-core/src/test/java</directory>
+                                </resource>
+                                <resource>
+                                    <directory>${projectRoot}/sshd-sftp/src/test/java</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>

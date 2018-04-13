@@ -81,7 +81,6 @@ import org.apache.sshd.server.session.ServerUserAuthServiceFactory;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.server.shell.InteractiveProcessShellFactory;
 import org.apache.sshd.server.shell.ProcessShellFactory;
-import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 
 /**
  * <p>
@@ -622,7 +621,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(
             command -> new ProcessShellFactory(GenericUtils.split(command, ' ')).create()
         ).build());
-        sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
 
         System.err.println("Starting SSHD on port " + port);
         sshd.start();

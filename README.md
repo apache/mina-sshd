@@ -60,7 +60,7 @@ Optional dependency to enable choosing between NIO asynchronous sockets (the def
         <groupId>org.apache.mina</groupId>
         <artifactId>mina-core</artifactId>
             <!-- see SSHD POM for latest tested known version of MINA core -->
-        <version>2.0.6</version>
+        <version>2.0.17</version>
     </dependency>
 
 ```
@@ -382,7 +382,6 @@ The usage of a `FileSystemFactory` is not limited though to the server only - th
 it in order to retrieve the *local* path for upload/download-ing files/folders. This means that the client side can also
 be tailored to present different views for different clients
 
-
 ## `ExecutorService`-s
 
 The framework requires from time to time spawning some threads in order to function correctly - e.g., commands, SFTP subsystem,
@@ -520,6 +519,41 @@ due to SCP protocol limitations one cannot change the **size** of the input/outp
 
 ## SFTP
 
+Both client-side and server-side SFTP are supported.  Starting from SSHD 1.8.0, the SFTP related code is located in the `sshd-sftp`, so you need to add this additional dependency to your maven project:
+
+```xml
+
+    <dependency>
+        <groupId>org.apache.sshd</groupId>
+        <artifactId>sshd-sftp</artifactId>
+        <version>...same as sshd-core...</version>
+    </dependency>
+
+```
+
+### Server-side SFTP
+
+On the server side, the following code needs to be added:
+
+```java
+
+    SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
+        .build();
+    server.setSubsystemFactories(Collections.singletonList(factory));
+
+```
+
+### Client-side SFTP
+
+```java
+
+    SftpClient client = SftpClientFactory.instance().createSftpClient(session);
+
+```
+
+### `SftpEventListener`
+
+See above...
 In addition to the `SftpEventListener` there are a few more SFTP-related special interfaces and modules.
 
 
@@ -545,7 +579,7 @@ range.
         session.addPasswordIdentity(password);
         session.auth.verify(timeout);
 
-        try (SftpClient sftp = session.createSftpClient(myVersionSelector)) {
+        try (SftpClient sftp = SftpClientFactory.instance().createSftpClient(session, myVersionSelector)) {
             ... do SFTP related stuff...
         }
     }
@@ -558,73 +592,30 @@ configuration key. For more advanced restrictions one needs to sub-class `SftpSu
 `SftpSubsystemFactory` that uses the sub-classed code.
 
 
-### Registering a custom `SftpClientFactory`
+### Using a custom `SftpClientFactory`
 
 The code creates `SftpClient`-s and `SftpFileSystem`-s using a default built-in `SftpClientFactory` instance (see
-`DefaultSftpClientFactory`). Users may choose to register a custom factory in order to provide their own
+`DefaultSftpClientFactory`). Users may choose to use a custom factory in order to provide their own
 implementations - e.g., in order to override some default behavior. The custom factory may be registered either at
 the client or session level - e.g.:
 
 ```java
 
     SshClient client = ... setup client...
-    client.setSftpClientFactory(new MySuperDuperSftpClientFactory());
 
     try (ClientSession session = client.connect(user, host, port).verify(timeout).getSession()) {
         // override the default factory with a special one - but only for this session
-        session.setSftpClientFactory(new SpecialSessionSftpClientFactory());
+        session.setSftpClientFactory();
         session.addPasswordIdentity(password);
         session.auth.verify(timeout);
 
-        try (SftpClient sftp = session.createSftpClient()) {
+        try (SftpClient sftp = new SpecialSessionSftpClientFactory().createSftpClient()) {
             ... instance created through SpecialSessionSftpClientFactory ...
         }
     }
 
 ```
 
-If no factory provided or factory set to _null_ then code reverts to using the default built-in one. **Note:** setting
-the factory to _null_ on the session level, simply delegates the creation to whatever factory is registered at the
-client level - default or custom.
-
-```java
-
-    SshClient client = ... setup client...
-    client.setSftpClientFactory(new MySuperDuperSftpClientFactory());
-
-    try (ClientSession session = client.connect(user, host, port).verify(timeout).getSession()) {
-        // override the default factory with a special one - but only for this session
-        session.setSftpClientFactory(new SpecialSessionSftpClientFactory());
-        session.addPasswordIdentity(password);
-        session.auth.verify(timeout);
-
-        try (SftpClient sftp = session.createSftpClient()) {
-            ... instance created through SpecialSessionSftpClientFactory ...
-        }
-
-        // revert to one from client
-        session.setSftpClientFactory(null);
-
-        try (SftpClient sftp = session.createSftpClient()) {
-            ... instance created through MySuperDuperSftpClientFactory ...
-        }
-
-        // remove client-level factory
-        client.setSftpClientFactory(null);
-
-        try (SftpClient sftp = session.createSftpClient()) {
-            ... instance created through built-in DefaultSftpClientFactory ...
-        }
-
-        // re-instate session-level factory
-        session.setSftpClientFactory(new SpecialSessionSftpClientFactory());
-
-        try (SftpClient sftp = session.createSftpClient()) {
-            ... instance created through SpecialSessionSftpClientFactory ...
-        }
-    }
-
-```
 
 ### Using `SftpFileSystemProvider` to create an `SftpFileSystem`
 
@@ -783,7 +774,7 @@ UTF-8 is used. **Note:** the value can be a charset name or a `java.nio.charset.
          PropertyResolverUtils.updateProperty(session, SftpClient.NAME_DECODING_CHARSET, "ISO-8859-4");
          session.authenticate(...);
 
-         try (SftpClient sftp = session.createSftpClient()) {
+         try (SftpClient sftp = SftpClientFactory.instance().createSftpClient(session)) {
              for (DirEntry entry : sftp.readDir(...some path...)) {
                  ...handle entry assuming ISO-8859-4 (inherited from the session) encoded names...
              }
@@ -798,58 +789,6 @@ UTF-8 is used. **Note:** the value can be a charset name or a `java.nio.charset.
     }
 
 ```
-
-Another option is to register a custom `SftpClientFactory` and create a `DefaultSftpClient` that overrides `getReferencedName` method:
-
-```java
-
-public class MyCustomSftpClient extends DefaultSftpClient {
-    public MyCustomSftpClient(ClientSession session) {
-        super(session);
-    }
-
-    @Override
-    protected String getReferencedName(int cmd, Buffer buf) {
-        byte[] bytes = buf.getBytes();
-        Charset cs = detectCharset(bytes);
-        return new String(bytes, cs);
-    }
-
-    @Override
-    protected <B extends Buffer> B putReferencedName(int cmd, B buf, String name) {
-        Charset cs = detectCharset(name);
-        buf.putString(name, cs);
-        return buf;
-    }
-}
-
-public class MyCustomSftpClientFactory extends DefaultSftpClientFactory {
-    public MyCustomSftpClientFactory() {
-        super();
-    }
-
-    protected DefaultSftpClient createDefaultSftpClient(ClientSession session, SftpVersionSelector selector) throws IOException {
-        return MyCustomSftpClient(session);
-    }
-}
-
-    // Usage - register at client level and affect ALL SFTP interactions
-    SshClient client = ... setup/obtain an instance...
-    client.setSftpClientFactory(new MyCustomSftpClientFactory());
-
-    // Usage - selective session registration
-    SshClient client = ... setup/obtain an instance...
-    try (ClientSession session = client.connect(...)) {
-        if (...something special about the host/port/etc....) {
-            // affect only SFTP interactions for this session
-            session.setSftpClientFactory(new MyCustomSftpClientFactory());
-        }
-    }
-
-
-```
-
-### Supported SFTP extensions
 
 Both client and server support several of the SFTP extensions specified in various drafts:
 
@@ -887,7 +826,7 @@ On the client side, all the supported extensions are classes that implement `Sft
         session.addPasswordIdentity(password);
         session.auth().verify(timeout);
 
-        try (SftpClient sftp = session.createSftpClient()) {
+        try (SftpClient sftp = SftpClientFactory.instance().createSftpClient(session)) {
             Map<String, byte[]> extensions = sftp.getServerExtensions();
             // Key=extension name, value=registered parser instance
             Map<String, ?> data = ParserUtils.parse(extensions);
@@ -919,7 +858,7 @@ One can skip all the conditional code if a specific known extension is required:
         session.addPasswordIdentity(password);
         session.auth().verify(timeout);
 
-        try (SftpClient sftp = session.createSftpClient()) {
+        try (SftpClient sftp = SftpClientFactory.instance().createSftpClient(session)) {
             // Returns null if extension is not supported by remote server
             SpaceAvailableExtension space = sftp.getExtension(SpaceAvailableExtension.class);
             if (space != null) {
