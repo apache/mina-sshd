@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.sshd.client.channel.ClientChannelEvent;
+import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
@@ -979,15 +980,22 @@ public class DefaultForwardingFilter
                           session, channel, totalMessages, message.available());
             }
 
-            Collection<ClientChannelEvent> result = channel.waitFor(STATIC_IO_MSG_RECEIVED_EVENTS, Long.MAX_VALUE);
-            if (traceEnabled) {
-                log.trace("messageReceived({}) channel={}, count={}, len={} wait result: {}",
-                          session, channel, totalMessages, message.available(), result);
+            OpenFuture future = channel.getOpenFuture();
+            if (future.isOpened()) {
+                OutputStream outputStream = channel.getInvertedIn();
+                outputStream.write(buffer.array(), buffer.rpos(), buffer.available());
+                outputStream.flush();
+            } else {
+                future.addListener(f -> {
+                    try {
+                        OutputStream outputStream = channel.getInvertedIn();
+                        outputStream.write(buffer.array(), buffer.rpos(), buffer.available());
+                        outputStream.flush();
+                    } catch (IOException e) {
+                        channel.getSession().exceptionCaught(e);
+                    }
+                });
             }
-
-            OutputStream outputStream = channel.getInvertedIn();
-            outputStream.write(buffer.array(), buffer.rpos(), buffer.available());
-            outputStream.flush();
         }
 
         @Override
