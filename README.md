@@ -596,20 +596,18 @@ configuration key. For more advanced restrictions one needs to sub-class `SftpSu
 
 The code creates `SftpClient`-s and `SftpFileSystem`-s using a default built-in `SftpClientFactory` instance (see
 `DefaultSftpClientFactory`). Users may choose to use a custom factory in order to provide their own
-implementations - e.g., in order to override some default behavior. The custom factory may be registered either at
-the client or session level - e.g.:
+implementations - e.g., in order to override some default behavior - e.g.:
 
 ```java
 
     SshClient client = ... setup client...
 
     try (ClientSession session = client.connect(user, host, port).verify(timeout).getSession()) {
-        // override the default factory with a special one - but only for this session
-        session.setSftpClientFactory();
         session.addPasswordIdentity(password);
         session.auth.verify(timeout);
 
-        try (SftpClient sftp = new SpecialSessionSftpClientFactory().createSftpClient()) {
+        // User-specific factory
+        try (SftpClient sftp = MySpecialSessionSftpClientFactory.INSTANCE.createSftpClient(session)) {
             ... instance created through SpecialSessionSftpClientFactory ...
         }
     }

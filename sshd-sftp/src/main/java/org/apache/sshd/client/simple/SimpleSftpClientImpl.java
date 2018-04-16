@@ -41,7 +41,7 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
 
     public SimpleSftpClientImpl(SimpleClient client, SftpClientFactory sftpClientFactory) {
         this.client = client;
-        this.sftpClientFactory = sftpClientFactory != null ? sftpClientFactory : SftpClientFactory.instance();
+        setSftpClientFactory(sftpClientFactory);
     }
 
     public SimpleClient getClient() {
@@ -57,7 +57,7 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
     }
 
     public void setSftpClientFactory(SftpClientFactory sftpClientFactory) {
-        this.sftpClientFactory = sftpClientFactory;
+        this.sftpClientFactory = (sftpClientFactory != null) ? sftpClientFactory : SftpClientFactory.instance();
     }
 
     @Override
