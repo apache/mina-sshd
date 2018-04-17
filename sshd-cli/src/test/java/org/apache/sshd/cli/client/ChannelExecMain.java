@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.client.channel;
+package org.apache.sshd.cli.client;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -72,7 +72,7 @@ public class ChannelExecMain extends BaseTestSupport {
         PrintStream stderr = System.err;
         try (BufferedReader stdin = new BufferedReader(
                 new InputStreamReader(new NoCloseInputStream(System.in), Charset.defaultCharset()))) {
-            ClientSession session = SshClient.setupClientSession("-P", stdin, stdout, stderr, args);
+            ClientSession session = SshClientCliSupport.setupClientSession("-P", stdin, stdout, stderr, args);
             if (session == null) {
                 System.err.println("usage: channelExec [-i identity] [-l login] [-P port] [-o option=value]"
                         + " [-w password] [-c cipherlist]  [-m maclist] [-C] hostname/user@host");

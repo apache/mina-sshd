@@ -17,20 +17,20 @@
  * under the License.
  */
 
-package org.apache.sshd.client;
+package org.apache.sshd.cli.client;
 
 /**
- * Just a test class used to invoke {@link SshKeyScan#main(String[])} in
+ * Just a test class used to invoke {@link SshKeyScanMain#main(String[])} in
  * order to have logging - which is in {@code test} scope
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public final class SshKeyScanMain {
-    private SshKeyScanMain() {
+public final class SshKeyScanMainDevelopment {
+    private SshKeyScanMainDevelopment() {
         throw new UnsupportedOperationException("No instance");
     }
 
     public static void main(String[] args) throws Exception {
-        SshKeyScan.main(args);
+        SshKeyScanMain.main(args);
     }
 }

@@ -255,7 +255,7 @@ run() {
         CLASSPATH=`cygpath --path --windows "$CLASSPATH"`
     fi
     cd $SSHD_BASE
-    exec $JAVA $JAVA_OPTS -Dsshd.home="$SSHD_HOME" $OPTS -classpath "$CLASSPATH" org.apache.sshd.client.subsystem.sftp.SftpCommand "$@"
+    exec $JAVA $JAVA_OPTS -Dsshd.home="$SSHD_HOME" $OPTS -classpath "$CLASSPATH" org.apache.sshd.cli.client.SftpCommandMain "$@"
 }
 
 main() {
