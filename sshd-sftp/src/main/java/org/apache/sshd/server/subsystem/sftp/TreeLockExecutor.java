@@ -30,7 +30,7 @@ import java.util.function.Function;
 
 public class TreeLockExecutor implements Closeable {
 
-    private static final Runnable CLOSE = () -> { };
+    private static final Runnable CLOSE = () -> { /* do nothing - just a marker */ };
 
     private final ExecutorService executor;
     private final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();

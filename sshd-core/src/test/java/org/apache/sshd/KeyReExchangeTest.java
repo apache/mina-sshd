@@ -675,14 +675,17 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
                 @Override
                 public void setInputStream(InputStream in) {
+                    // Do nothing
                 }
 
                 @Override
                 public void setOutputStream(OutputStream out) {
+                    // Do nothing
                 }
 
                 @Override
                 public void setErrorStream(OutputStream err) {
+                    // Do nothing
                 }
 
                 @Override
@@ -692,6 +695,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
                 @Override
                 public void start(Environment env) throws IOException {
+                    // Do nothing
                 }
 
                 @Override
