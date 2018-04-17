@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.server.subsystem.sftp;
+package org.apache.sshd.cli.server;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,6 +55,7 @@ import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.shell.InteractiveProcessShellFactory;
+import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.Utils;
 
 /**
@@ -62,7 +63,7 @@ import org.apache.sshd.util.test.Utils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public final class SshFsMounter {
+public final class SshFsMounter extends SshServerCliSupport {
     public static class MounterCommand extends AbstractLoggingBean implements Command, SessionAware, Runnable {
         private final String command;
         private final String cmdName;
@@ -311,7 +312,7 @@ public final class SshFsMounter {
             sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(new File(targetFolder, "key.ser")));
         }
         // Should come AFTER key pair provider setup so auto-welcome can be generated if needed
-        SshServer.setupServerBanner(sshd, resolver);
+        setupServerBanner(sshd, resolver);
 
         sshd.setShellFactory(InteractiveProcessShellFactory.INSTANCE);
         sshd.setPasswordAuthenticator(AcceptAllPasswordAuthenticator.INSTANCE);

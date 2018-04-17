@@ -1293,6 +1293,22 @@ In order to use this CLI code as part of another project, one needs to include t
     </dependency>
 ```
 
+### Command line SSH daemon
+
+* **Port** - by default the SSH server sets up to list on port 8000 in order to avoid conflicts with any running SSH O/S daemon. This can be modified by providing a `-p NNNN`
+or `-o Port=NNNN` command line option.
+
+* **Subsystem(s)** - the server automatically detects subsystems using the [Java ServiceLoader mechanism](https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html).
+This can be overwritten as follows (in this order):
+
+1. Provide a `org.apache.sshd.server.subsystem.SubsystemFactory` system property containing comma-separated fully-qualified names of classes implementing
+this interface. The implementations must have a public no-args constructor for instantiating them. The order of the provided subsystems will be according
+to their order in the specified list
+
+2. Provide a `-o Subsystem=xxx,yyy` command line argument where value is a comma-separated list of the **name**(s) of the auto-detected factories via
+the `ServiceLoader` mechanism. The special value `none` may be used to indicate that no subsystem is to be configured. **Note:** no specific order is
+provided when subsystems are auto-detected and/or filtered.
+
 ## GIT support
 
 The _sshd-git_ artifact contains both client and server-side command factories for issuing and handling some _git_ commands. The code is based on [JGit](https://github.com/eclipse/jgit)

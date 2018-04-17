@@ -34,5 +34,4 @@ public abstract class CliSupport {
         stderr.println(message);
         return true;
     }
-
 }

@@ -17,20 +17,20 @@
  * under the License.
  */
 
-package org.apache.sshd.server;
+package org.apache.sshd.cli.server;
 
 /**
- * Just a test class used to invoke {@link SshServer#main(String[])} in
+ * Just a test class used to invoke {@link SshServerMain#main(String[])} in
  * order to have logging - which is in {@code test} scope
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public final class SshServerMain {
-    private SshServerMain() {
+public final class SshServerMainDevelopment {
+    private SshServerMainDevelopment() {
         throw new UnsupportedOperationException("No instance");
     }
 
     public static void main(String[] args) throws Exception {
-        SshServer.main(args);
+        SshServerMain.main(args);
     }
 }
