@@ -144,7 +144,7 @@ public abstract class SshServerCliSupport extends CliSupport {
             for (String fqcn : classes) {
                 try {
                     Class<?> clazz = cl.loadClass(fqcn);
-                    SubsystemFactory factory = (SubsystemFactory) clazz.newInstance();
+                    SubsystemFactory factory = SubsystemFactory.class.cast(clazz.newInstance());
                     subsystems.add(factory);
                 } catch (Throwable t) {
                     System.err.append("Failed (").append(t.getClass().getSimpleName()).append(')')
