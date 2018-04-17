@@ -57,12 +57,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.sshd</groupId>
-            <artifactId>sshd-sftp</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>net.i2p.crypto</groupId>
             <artifactId>eddsa</artifactId>
             <scope>test</scope>
@@ -157,9 +151,6 @@
                             <resources>
                                 <resource>
                                     <directory>${projectRoot}/sshd-core/src/test/java</directory>
-                                </resource>
-                                <resource>
-                                    <directory>${projectRoot}/sshd-sftp/src/test/java</directory>
                                 </resource>
                             </resources>
                         </configuration>
