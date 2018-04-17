@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import java.util.ServiceLoader;
 import java.util.TreeMap;
 import java.util.logging.Level;
 
@@ -61,6 +62,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
+import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
  * TODO Add javadoc
@@ -240,6 +242,51 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         return sb;
     }
 
+    public static SftpClientFactory resolveSftpClientFactory(String... args) {
+        int numArgs = GenericUtils.length(args);
+        ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(SftpClientFactory.class);
+        for (int index = 0; index < numArgs; index++) {
+            String argVal = args[index];
+            if ("-o".equals(argVal)) {
+                index++;
+
+                String opt = args[index];
+                int idx = opt.indexOf('=');
+                ValidateUtils.checkTrue(idx > 0, "bad syntax for option: %s %s", argVal, opt);
+
+                String optName = opt.substring(0, idx);
+                String optValue = opt.substring(idx + 1);
+                if (!Objects.equals(SftpClientFactory.class.getSimpleName(), optName)) {
+                    continue;
+                }
+
+                try {
+                    Class<?> clazz = cl.loadClass(optValue);
+                    return SftpClientFactory.class.cast(clazz.newInstance());
+                } catch (Throwable t) {
+                    System.err.append("Failed (").append(t.getClass().getSimpleName()).append(')')
+                        .append(" to instantiate ").append(optValue)
+                        .append(": ").println(t.getMessage());
+                    System.err.flush();
+                    throw GenericUtils.toRuntimeException(t, true);
+                }
+            }
+        }
+
+        ServiceLoader<SftpClientFactory> loader = ServiceLoader.load(SftpClientFactory.class, cl);
+        SftpClientFactory factory = null;
+        for (SftpClientFactory f : loader) {
+            ValidateUtils.checkState(factory == null, "Multiple factories detected - select one");
+            factory = f;
+        }
+
+        if (factory != null) {
+            return factory;
+        }
+
+        return SftpClientFactory.instance();
+    }
+
     public static void main(String[] args) throws Exception {
         PrintStream stdout = System.out;
         PrintStream stderr = System.err;
@@ -262,7 +309,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
 
             try {
                 // TODO allow command-line specification of SftpClientFactory
-                SftpClientFactory clientFactory = SftpClientFactory.instance();
+                SftpClientFactory clientFactory = resolveSftpClientFactory(args);
                 try (SftpClient sftpClient = clientFactory.createSftpClient(session);
                      SftpCommandMain sftp = new SftpCommandMain(sftpClient)) {
                     // TODO allow injection of extra CommandExecutor(s) via command line and/or service loading
