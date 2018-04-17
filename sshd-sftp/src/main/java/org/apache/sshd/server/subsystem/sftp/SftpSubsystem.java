@@ -51,8 +51,6 @@ import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpHelper;
-import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionParser;
-import org.apache.sshd.common.subsystem.sftp.extensions.openssh.HardLinkExtensionParser;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -302,47 +300,6 @@ public class SftpSubsystem
         super.doProcess(buffer, length, type, id);
         if (type != SftpConstants.SSH_FXP_INIT) {
             requestsCount++;
-        }
-    }
-
-    @Override
-    protected void executeExtendedCommand(Buffer buffer, int id, String extension) throws IOException {
-        switch (extension) {
-            case SftpConstants.EXT_TEXT_SEEK:
-                doTextSeek(buffer, id);
-                break;
-            case SftpConstants.EXT_VERSION_SELECT:
-                doVersionSelect(buffer, id);
-                break;
-            case SftpConstants.EXT_COPY_FILE:
-                doCopyFile(buffer, id);
-                break;
-            case SftpConstants.EXT_COPY_DATA:
-                doCopyData(buffer, id);
-                break;
-            case SftpConstants.EXT_MD5_HASH:
-            case SftpConstants.EXT_MD5_HASH_HANDLE:
-                doMD5Hash(buffer, id, extension);
-                break;
-            case SftpConstants.EXT_CHECK_FILE_HANDLE:
-            case SftpConstants.EXT_CHECK_FILE_NAME:
-                doCheckFileHash(buffer, id, extension);
-                break;
-            case FsyncExtensionParser.NAME:
-                doOpenSSHFsync(buffer, id);
-                break;
-            case SftpConstants.EXT_SPACE_AVAILABLE:
-                doSpaceAvailable(buffer, id);
-                break;
-            case HardLinkExtensionParser.NAME:
-                doOpenSSHHardLink(buffer, id);
-                break;
-            default:
-                if (log.isDebugEnabled()) {
-                    log.debug("executeExtendedCommand({}) received unsupported SSH_FXP_EXTENDED({})", getServerSession(), extension);
-                }
-                sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_EXTENDED(" + extension + ") is unsupported or not implemented");
-                break;
         }
     }
 

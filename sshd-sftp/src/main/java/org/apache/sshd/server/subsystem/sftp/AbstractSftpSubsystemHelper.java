@@ -1563,7 +1563,49 @@ public abstract class AbstractSftpSubsystemHelper
      * @param extension The extension name
      * @throws IOException If failed to execute the extension
      */
-    protected abstract void executeExtendedCommand(Buffer buffer, int id, String extension) throws IOException;
+    protected void executeExtendedCommand(Buffer buffer, int id, String extension) throws IOException {
+        switch (extension) {
+            case SftpConstants.EXT_TEXT_SEEK:
+                doTextSeek(buffer, id);
+                break;
+            case SftpConstants.EXT_VERSION_SELECT:
+                doVersionSelect(buffer, id);
+                break;
+            case SftpConstants.EXT_COPY_FILE:
+                doCopyFile(buffer, id);
+                break;
+            case SftpConstants.EXT_COPY_DATA:
+                doCopyData(buffer, id);
+                break;
+            case SftpConstants.EXT_MD5_HASH:
+            case SftpConstants.EXT_MD5_HASH_HANDLE:
+                doMD5Hash(buffer, id, extension);
+                break;
+            case SftpConstants.EXT_CHECK_FILE_HANDLE:
+            case SftpConstants.EXT_CHECK_FILE_NAME:
+                doCheckFileHash(buffer, id, extension);
+                break;
+            case FsyncExtensionParser.NAME:
+                doOpenSSHFsync(buffer, id);
+                break;
+            case SftpConstants.EXT_SPACE_AVAILABLE:
+                doSpaceAvailable(buffer, id);
+                break;
+            case HardLinkExtensionParser.NAME:
+                doOpenSSHHardLink(buffer, id);
+                break;
+            default:
+                doUnsupportedExtension(buffer, id, extension);
+                break;
+        }
+    }
+
+    protected void doUnsupportedExtension(Buffer buffer, int id, String extension) throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("executeExtendedCommand({}) received unsupported SSH_FXP_EXTENDED({})", getServerSession(), extension);
+        }
+        sendStatus(buffer, id, SftpConstants.SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_EXTENDED(" + extension + ") is unsupported or not implemented");
+    }
 
     protected void appendExtensions(Buffer buffer, String supportedVersions) {
         appendVersionsExtension(buffer, supportedVersions);
