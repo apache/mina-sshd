@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.client.subsystem.sftp;
+package org.apache.sshd.cli.client;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -40,13 +40,14 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.logging.Level;
 
-import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
+import org.apache.sshd.client.subsystem.sftp.SftpClientFactory;
+import org.apache.sshd.client.subsystem.sftp.SftpFileSystemProvider;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatExtensionInfo;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatPathExtension;
-import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.session.Session;
@@ -62,27 +63,26 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 
 /**
- * Implements a simple command line SFTP client similar to the Linux one
+ * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SftpCommand implements Channel {
+public class SftpCommandMain extends SshClientCliSupport implements Channel {
     /**
      * Command line option used to indicate a non-default port number
      */
     public static final String SFTP_PORT_OPTION = "-P";
 
     private final SftpClient client;
-    private final Map<String, CommandExecutor> commandsMap;
+    private final Map<String, SftpCommandExecutor> commandsMap;
     private String cwdRemote;
     private String cwdLocal;
 
-    @SuppressWarnings("synthetic-access")
-    public SftpCommand(SftpClient client) {
+    public SftpCommandMain(SftpClient client) {
         this.client = Objects.requireNonNull(client, "No client");
 
-        Map<String, CommandExecutor> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (CommandExecutor e : Arrays.asList(
+        Map<String, SftpCommandExecutor> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (SftpCommandExecutor e : Arrays.asList(
                 new ExitCommandExecutor(),
                 new PwdCommandExecutor(),
                 new InfoCommandExecutor(),
@@ -139,7 +139,7 @@ public class SftpCommand implements Channel {
                 args = "";
             }
 
-            CommandExecutor exec = commandsMap.get(cmd);
+            SftpCommandExecutor exec = commandsMap.get(cmd);
             try {
                 if (exec == null) {
                     stderr.append("Unknown command: ").println(line);
@@ -233,11 +233,6 @@ public class SftpCommand implements Channel {
         }
     }
 
-    public interface CommandExecutor extends NamedResource {
-        // return value is whether to stop running
-        boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception;
-    }
-
     //////////////////////////////////////////////////////////////////////////
 
     public static <A extends Appendable> A appendInfoValue(A sb, CharSequence name, Object value) throws IOException {
@@ -250,13 +245,13 @@ public class SftpCommand implements Channel {
         PrintStream stderr = System.err;
         OutputStream logStream = stderr;
         try (BufferedReader stdin = new BufferedReader(new InputStreamReader(new NoCloseInputStream(System.in)))) {
-            Level level = SshClient.resolveLoggingVerbosity(args);
-            logStream = SshClient.resolveLoggingTargetStream(stdout, stderr, args);
+            Level level = resolveLoggingVerbosity(args);
+            logStream = resolveLoggingTargetStream(stdout, stderr, args);
             if (logStream != null) {
-                SshClient.setupLogging(level, stdout, stderr, logStream);
+                setupLogging(level, stdout, stderr, logStream);
             }
 
-            ClientSession session = (logStream == null) ? null : SshClient.setupClientSession(SFTP_PORT_OPTION, stdin, stdout, stderr, args);
+            ClientSession session = (logStream == null) ? null : setupClientSession(SFTP_PORT_OPTION, stdin, stdout, stderr, args);
             if (session == null) {
                 System.err.println("usage: sftp [-v[v][v]] [-E logoutput] [-i identity]"
                         + " [-l login] [" + SFTP_PORT_OPTION + " port] [-o option=value]"
@@ -266,7 +261,11 @@ public class SftpCommand implements Channel {
             }
 
             try {
-                try (SftpCommand sftp = new SftpCommand(SftpClientFactory.instance().createSftpClient(session))) {
+                // TODO allow command-line specification of SftpClientFactory
+                SftpClientFactory clientFactory = SftpClientFactory.instance();
+                try (SftpClient sftpClient = clientFactory.createSftpClient(session);
+                     SftpCommandMain sftp = new SftpCommandMain(sftpClient)) {
+                    // TODO allow injection of extra CommandExecutor(s) via command line and/or service loading
                     sftp.doInteractive(stdin, stdout, stderr);
                 }
             } finally {
@@ -279,7 +278,7 @@ public class SftpCommand implements Channel {
         }
     }
 
-    private static class ExitCommandExecutor implements CommandExecutor {
+    private static class ExitCommandExecutor implements SftpCommandExecutor {
         ExitCommandExecutor() {
             super();
         }
@@ -297,7 +296,7 @@ public class SftpCommand implements Channel {
         }
     }
 
-    private class PwdCommandExecutor implements CommandExecutor {
+    private class PwdCommandExecutor implements SftpCommandExecutor {
         protected PwdCommandExecutor() {
             super();
         }
@@ -316,7 +315,7 @@ public class SftpCommand implements Channel {
         }
     }
 
-    private class SessionCommandExecutor implements CommandExecutor {
+    private class SessionCommandExecutor implements SftpCommandExecutor {
         SessionCommandExecutor() {
             super();
         }
@@ -346,7 +345,7 @@ public class SftpCommand implements Channel {
         }
     }
 
-    private class InfoCommandExecutor implements CommandExecutor {
+    private class InfoCommandExecutor implements SftpCommandExecutor {
         InfoCommandExecutor() {
             super();
         }
@@ -384,7 +383,7 @@ public class SftpCommand implements Channel {
         }
     }
 
-    private class VersionCommandExecutor implements CommandExecutor {
+    private class VersionCommandExecutor implements SftpCommandExecutor {
         VersionCommandExecutor() {
             super();
         }
@@ -449,7 +448,7 @@ public class SftpCommand implements Channel {
         }
     }
 
-    private class MkdirCommandExecutor implements CommandExecutor {
+    private class MkdirCommandExecutor implements SftpCommandExecutor {
         MkdirCommandExecutor() {
             super();
         }
@@ -470,7 +469,7 @@ public class SftpCommand implements Channel {
         }
     }
 
-    private class LsCommandExecutor implements CommandExecutor {
+    private class LsCommandExecutor implements SftpCommandExecutor {
         LsCommandExecutor() {
             super();
         }
@@ -509,7 +508,7 @@ public class SftpCommand implements Channel {
         }
     }
 
-    private class RmCommandExecutor implements CommandExecutor {
+    private class RmCommandExecutor implements SftpCommandExecutor {
         RmCommandExecutor() {
             super();
         }
@@ -592,7 +591,7 @@ public class SftpCommand implements Channel {
         }
     }
 
-    private class RmdirCommandExecutor implements CommandExecutor {
+    private class RmdirCommandExecutor implements SftpCommandExecutor {
         RmdirCommandExecutor() {
             super();
         }
@@ -613,7 +612,7 @@ public class SftpCommand implements Channel {
         }
     }
 
-    private class RenameCommandExecutor implements CommandExecutor {
+    private class RenameCommandExecutor implements SftpCommandExecutor {
         RenameCommandExecutor() {
             super();
         }
@@ -636,7 +635,7 @@ public class SftpCommand implements Channel {
         }
     }
 
-    private class StatVfsCommandExecutor implements CommandExecutor {
+    private class StatVfsCommandExecutor implements SftpCommandExecutor {
         StatVfsCommandExecutor() {
             super();
         }
@@ -674,7 +673,7 @@ public class SftpCommand implements Channel {
         }
     }
 
-    private class LStatCommandExecutor implements CommandExecutor {
+    private class LStatCommandExecutor implements SftpCommandExecutor {
         LStatCommandExecutor() {
             super();
         }
@@ -697,7 +696,7 @@ public class SftpCommand implements Channel {
         }
     }
 
-    private class ReadLinkCommandExecutor implements CommandExecutor {
+    private class ReadLinkCommandExecutor implements SftpCommandExecutor {
         ReadLinkCommandExecutor() {
             super();
         }
@@ -720,7 +719,7 @@ public class SftpCommand implements Channel {
         }
     }
 
-    private class HelpCommandExecutor implements CommandExecutor {
+    private class HelpCommandExecutor implements SftpCommandExecutor {
         HelpCommandExecutor() {
             super();
         }
@@ -741,7 +740,7 @@ public class SftpCommand implements Channel {
         }
     }
 
-    private abstract class TransferCommandExecutor implements CommandExecutor {
+    private abstract class TransferCommandExecutor implements SftpCommandExecutor {
         protected TransferCommandExecutor() {
             super();
         }

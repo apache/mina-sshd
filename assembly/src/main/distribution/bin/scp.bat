@@ -91,7 +91,7 @@ goto :EOF
 SET ARGS=%1 %2 %3 %4 %5 %6 %7 %8
 rem Execute the Java Virtual Machine
 cd %SSHD_HOME%
-"%JAVA%" %JAVA_OPTS% %OPTS% -classpath "%CLASSPATH%" -Dsshd.home="%SSHD_HOME%" org.apache.sshd.client.scp.DefaultScpClient %ARGS%
+"%JAVA%" %JAVA_OPTS% %OPTS% -classpath "%CLASSPATH%" -Dsshd.home="%SSHD_HOME%" org.apache.sshd.cli.client.ScpCommandMain %ARGS%
 
 rem # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 

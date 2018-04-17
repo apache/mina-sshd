@@ -16,21 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.sshd.cli;
 
-package org.apache.sshd.client;
+import java.io.PrintStream;
 
 /**
- * Just a test class used to invoke {@link SshClient#main(String[])} in
- * order to have logging - which is in {@code test} scope
+ * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public final class SshClientMain {
-    private SshClientMain() {
-        throw new UnsupportedOperationException("No instance");
+public abstract class CliSupport {
+    protected CliSupport() {
+        super();
     }
 
-    public static void main(String[] args) throws Exception {
-        SshClient.main(args);
+    public static boolean showError(PrintStream stderr, String message) {
+        stderr.println(message);
+        return true;
     }
+
 }

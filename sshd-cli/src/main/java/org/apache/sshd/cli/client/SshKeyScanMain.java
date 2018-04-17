@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.client;
+package org.apache.sshd.cli.client;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -56,6 +56,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
+import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
@@ -87,7 +88,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, SessionListener, SimplifiedLog {
+public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifier, SessionListener, SimplifiedLog {
     /**
      * Default key types if not overridden from the command line
      */
@@ -105,7 +106,7 @@ public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, S
     private Level level;
     private final Map<String, String> currentHostFingerprints = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
-    public SshKeyScan() {
+    public SshKeyScanMain() {
         super();
     }
 
@@ -618,7 +619,7 @@ public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, S
     //////////////////////////////////////////////////////////////////////////
 
     // returns a List of the hosts to be contacted
-    public static List<String> parseCommandLineArguments(SshKeyScan scanner, String... args) throws IOException {
+    public static List<String> parseCommandLineArguments(SshKeyScanMain scanner, String... args) throws IOException {
         int numArgs = GenericUtils.length(args);
         for (int index = 0; index < numArgs; index++) {
             String optName = args[index];
@@ -685,7 +686,7 @@ public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, S
 
     /* -------------------------------------------------------------------- */
 
-    public static <S extends SshKeyScan> S setInputStream(S scanner, Collection<String> hosts) throws IOException {
+    public static <S extends SshKeyScanMain> S setInputStream(S scanner, Collection<String> hosts) throws IOException {
         if (GenericUtils.isEmpty(hosts)) {
             Objects.requireNonNull(scanner.getInputStream(), "No hosts or file specified");
         } else {
@@ -707,7 +708,7 @@ public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, S
         return scanner;
     }
 
-    public static <S extends SshKeyScan> S initializeScanner(S scanner, Collection<String> hosts) throws IOException {
+    public static <S extends SshKeyScanMain> S initializeScanner(S scanner, Collection<String> hosts) throws IOException {
         setInputStream(scanner, hosts);
         if (scanner.getPort() <= 0) {
             scanner.setPort(SshConfigFileReader.DEFAULT_PORT);
@@ -731,7 +732,7 @@ public class SshKeyScan implements Channel, Callable<Void>, ServerKeyVerifier, S
     /* -------------------------------------------------------------------- */
 
     public static void main(String[] args) throws Exception {
-        try (SshKeyScan scanner = new SshKeyScan()) {
+        try (SshKeyScanMain scanner = new SshKeyScanMain()) {
             Collection<String> hosts = parseCommandLineArguments(scanner, args);
             initializeScanner(scanner, hosts);
             scanner.call();
