@@ -52,6 +52,8 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
+import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
+import org.apache.sshd.common.io.IoServiceFactoryFactory;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -95,7 +97,13 @@ public abstract class BaseTestSupport extends Assert {
 
         @Override
         protected void starting(Description description) {
-            System.out.println("\nStarting " + description.getClassName() + ":" + description.getMethodName() + "...\n");
+            System.out.println("\nStarting " + description.getClassName() + ":" + description.getMethodName() + "...");
+            try {
+                System.out.println("Using provider: " + DefaultIoServiceFactoryFactory.newInstance(IoServiceFactoryFactory.class).getClass().getName());
+            } catch (Throwable t) {
+                // Ignore
+            }
+            System.out.println();
             startTime = System.currentTimeMillis();
         }
 

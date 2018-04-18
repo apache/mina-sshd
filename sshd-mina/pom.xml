@@ -164,7 +164,7 @@
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <reportsDirectory>${project.build.directory}/surefire-reports-mina</reportsDirectory>
                     <systemProperties>
-                        <org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.mina.MinaServiceFactory</org.apache.sshd.common.io.IoServiceFactory>
+                        <org.apache.sshd.common.io.IoServiceFactoryFactory>org.apache.sshd.common.io.mina.MinaServiceFactoryFactory</org.apache.sshd.common.io.IoServiceFactoryFactory>
                     </systemProperties>
                     <excludes>
                             <!-- These tests use NIO explicitly -->
@@ -179,6 +179,7 @@
                         <exclude>**/PortForwardingTest.java</exclude>
                         <exclude>**/MacTest.java</exclude>
                         <exclude>**/SpringConfigTest.java</exclude>
+                        <exclude>**/ConcurrentConnectionTest.java</exclude>
                     </excludes>
                         <!-- No need to re-run core tests that do not involve session creation -->
                     <excludedGroups>org.apache.sshd.util.test.NoIoTestCase</excludedGroups>
