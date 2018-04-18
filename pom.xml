@@ -80,7 +80,7 @@
     </scm>
 
     <properties>
-        <projectRoot>${basedir}</projectRoot>
+        <projectRoot>${project.basedir}</projectRoot>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- NOTE: actual value updated by groovy-maven-plugin on initialization phase -->

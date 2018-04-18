@@ -114,10 +114,10 @@
     </dependencies>
 
     <build>
-        <testSourceDirectory>${build.directory}/test-sources</testSourceDirectory>
+        <testSourceDirectory>${project.build.directory}/test-sources</testSourceDirectory>
         <testResources>
             <testResource>
-                <directory>${build.directory}/test-resources</directory>
+                <directory>${project.build.directory}/test-resources</directory>
             </testResource>
         </testResources>
         <plugins>
@@ -132,7 +132,7 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${build.directory}/test-resources</outputDirectory>
+                            <outputDirectory>${project.build.directory}/test-resources</outputDirectory>
                             <resources>
                                 <resource>
                                     <directory>${projectRoot}/sshd-core/src/test/resources</directory>
@@ -147,7 +147,7 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${build.directory}/test-sources</outputDirectory>
+                            <outputDirectory>${project.build.directory}/test-sources</outputDirectory>
                             <resources>
                                 <resource>
                                     <directory>${projectRoot}/sshd-core/src/test/java</directory>
