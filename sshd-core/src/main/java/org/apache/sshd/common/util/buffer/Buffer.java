@@ -238,6 +238,7 @@ public abstract class Buffer implements Readable {
         return l;
     }
 
+    @SuppressWarnings("PMD.BooleanGetMethodName")
     public boolean getBoolean() {
         return getByte() != 0;
     }

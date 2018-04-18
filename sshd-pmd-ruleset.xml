@@ -9,25 +9,27 @@
    </description> 
 
        <!-- See https://pmd.github.io/pmd-6.2.0/pmd_rules_java.html --> 
-   <rule ref="rulesets/java/basic.xml/AvoidMultipleUnaryOperators" /> 
-   <rule ref="rulesets/java/basic.xml/AvoidUsingOctalValues" /> 
-   <rule ref="rulesets/java/basic.xml/BooleanInstantiation" /> 
-   <rule ref="rulesets/java/basic.xml/BrokenNullCheck" /> 
-   <rule ref="rulesets/java/basic.xml/ExtendsObject" /> 
-   <rule ref="rulesets/java/basic.xml/MisplacedNullCheck" /> 
-   <rule ref="rulesets/java/basic.xml/OverrideBothEqualsAndHashcode" /> 
-   <rule ref="rulesets/java/basic.xml/ReturnFromFinallyBlock" /> 
-   <rule ref="rulesets/java/basic.xml/UnconditionalIfStatement" /> 
+   <rule ref="category/java/errorprone.xml/AvoidMultipleUnaryOperators" /> 
+   <rule ref="category/java/errorprone.xml/AvoidUsingOctalValues" /> 
+   <rule ref="category/java/errorprone.xml/MissingSerialVersionUID" /> 
+   <rule ref="category/java/errorprone.xml/BrokenNullCheck" /> 
+   <rule ref="category/java/errorprone.xml/MisplacedNullCheck" /> 
+   <rule ref="category/java/errorprone.xml/OverrideBothEqualsAndHashcode" /> 
+   <rule ref="category/java/errorprone.xml/ReturnFromFinallyBlock" /> 
+   <rule ref="category/java/errorprone.xml/UnconditionalIfStatement" /> 
+   <rule ref="category/java/errorprone.xml/ProperCloneImplementation" /> 
+   <rule ref="category/java/errorprone.xml/CloneMethodMustImplementCloneable" /> 
+   <rule ref="category/java/errorprone.xml/AssignmentInOperand" /> 
 
-   <rule ref="rulesets/java/clone.xml/ProperCloneImplementation" /> 
-   <rule ref="rulesets/java/clone.xml/CloneMethodMustImplementCloneable" /> 
+   <rule ref="category/java/codestyle.xml/AtLeastOneConstructor" /> 
+   <rule ref="category/java/codestyle.xml/ExtendsObject" />
+   <rule ref="category/java/codestyle.xml/BooleanGetMethodName" />
 
-   <rule ref="rulesets/java/controversial.xml/AssignmentInOperand" /> 
-   <rule ref="rulesets/java/controversial.xml/AtLeastOneConstructor" /> 
+   <rule ref="category/java/multithreading.xml/UseNotifyAllInsteadOfNotify" /> 
+   <rule ref="category/java/documentation.xml/UncommentedEmptyMethodBody" />
+   <rule ref="category/java/performance.xml/BooleanInstantiation" /> 
 
-   <rule ref="rulesets/java/design.xml/UseNotifyAllInsteadOfNotify" /> 
-
-   <rule ref="rulesets/java/javabeans.xml/MissingSerialVersionUID" /> 
-
-   <rule ref="rulesets/java/logging-java.xml/AvoidPrintStackTrace" />
+   <!-- rule ref="category/java/bestpractices.xml/MethodReturnsInternalArray" / -->
+   <rule ref="category/java/bestpractices.xml/AvoidPrintStackTrace" />
+   <rule ref="category/java/bestpractices.xml/MissingOverride" />
 </ruleset>
