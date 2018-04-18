@@ -180,6 +180,8 @@
                         <exclude>**/MacTest.java</exclude>
                         <exclude>**/SpringConfigTest.java</exclude>
                         <exclude>**/ConcurrentConnectionTest.java</exclude>
+                        <exclude>**/AsyncAuthTest.java</exclude>
+                        <exclude>**/AsyncAuthInteractiveTest.java</exclude>
                     </excludes>
                         <!-- No need to re-run core tests that do not involve session creation -->
                     <excludedGroups>org.apache.sshd.util.test.NoIoTestCase</excludedGroups>
