@@ -85,7 +85,7 @@
 
         <!-- NOTE: actual value updated by groovy-maven-plugin on initialization phase -->
         <!-- workspace.root.dir>${project.basedir}</workspace.root.dir -->
-        
+
         <java.major.version>1</java.major.version>
         <java.minor.version>8</java.minor.version>
         <sniffer.signatures.version>1.0</sniffer.signatures.version>
@@ -106,7 +106,7 @@
         <groovy.minor.version>4</groovy.minor.version>
         <groovy.release.version>15</groovy.release.version>
         <groovy.compliance.level>2.0</groovy.compliance.level>
-        <groovy.version>${groovy.major.version}.${groovy.minor.version}.${groovy.release.version}</groovy.version>        
+        <groovy.version>${groovy.major.version}.${groovy.minor.version}.${groovy.release.version}</groovy.version>
 
         <bouncycastle.version>1.59</bouncycastle.version>
         <slf4j.version>1.7.25</slf4j.version>
@@ -115,7 +115,7 @@
         <junit.version>4.12</junit.version>
         <surefire.plugin.version>2.20.1</surefire.plugin.version>
         <!-- See https://pmd.github.io/ for available latest version -->
-        <pmd.version>5.6.1</pmd.version>
+        <pmd.version>6.2.0</pmd.version>
     </properties>
 
     <profiles>
@@ -149,7 +149,7 @@
                                 </goals>
                             </execution>
                         </executions>
-                    </plugin>           
+                    </plugin>
                 </plugins>
             </build>
         </profile>
@@ -183,7 +183,7 @@
             </build>
         </profile>
     </profiles>
-    
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -201,7 +201,7 @@
                 <artifactId>tomcat-apr</artifactId>
                 <version>5.5.23</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>net.i2p.crypto</groupId>
                 <artifactId>eddsa</artifactId>
@@ -223,7 +223,7 @@
                 <artifactId>bcprov-jdk15on</artifactId>
                 <version>${bouncycastle.version}</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
@@ -367,7 +367,7 @@
     <build>
         <pluginManagement>
             <plugins>
-                <!--This plugin's configuration is used to store Eclipse 
+                <!--This plugin's configuration is used to store Eclipse
                     m2e settings only and overcome integration problems.
                     It has no influence on the Maven build itself. -->
                 <plugin>
@@ -563,7 +563,7 @@
                             <version>${junit.version}</version>
                         </dependency>
                     </dependencies>
-                </plugin>                
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-checkstyle-plugin</artifactId>
@@ -588,7 +588,7 @@
                                 <exclusion>
                                     <groupId>commons-logging</groupId>
                                     <artifactId>commons-logging</artifactId>
-                                </exclusion>                                
+                                </exclusion>
                             </exclusions>
                         </dependency>
                             <!-- Use same version as us -->
@@ -606,7 +606,7 @@
                             <groupId>org.slf4j</groupId>
                             <artifactId>slf4j-log4j12</artifactId>
                             <version>${slf4j.version}</version>
-                        </dependency>                        
+                        </dependency>
                     </dependencies>
                 </plugin>
 
@@ -674,32 +674,33 @@
                             <artifactId>groovy-ant</artifactId>
                             <version>${groovy.version}</version>
                         </dependency>
-                    </dependencies>                    
+                    </dependencies>
                 </plugin>
-                <plugin> 
-                   <groupId>org.apache.maven.plugins</groupId> 
-                   <artifactId>maven-pmd-plugin</artifactId> 
-                   <version>3.8</version> 
-                   <configuration> 
-                       <targetJdk>${javac.target}</targetJdk> 
-                       <printFailingErrors>true</printFailingErrors> 
-                       <skipPmdError>false</skipPmdError> 
-                       <excludeRoots> 
-                           <excludeRoot>target/generated-sources/java</excludeRoot> 
-                       </excludeRoots> 
-                   </configuration> 
-                   <dependencies> 
-                       <dependency> 
-                          <groupId>net.sourceforge.pmd</groupId> 
-                          <artifactId>pmd-core</artifactId> 
-                          <version>${pmd.version}</version> 
-                       </dependency> 
-                       <dependency> 
-                          <groupId>net.sourceforge.pmd</groupId> 
-                          <artifactId>pmd-java</artifactId> 
-                          <version>${pmd.version}</version> 
-                       </dependency> 
-                   </dependencies> 
+                <plugin>
+                   <groupId>org.apache.maven.plugins</groupId>
+                   <artifactId>maven-pmd-plugin</artifactId>
+                   <version>3.9.0</version>
+                   <configuration>
+                       <targetJdk>${javac.target}</targetJdk>
+                       <printFailingErrors>true</printFailingErrors>
+                       <skipPmdError>false</skipPmdError>
+                       <analysisCache>true</analysisCache> <!-- enable incremental analysis -->
+                       <excludeRoots>
+                           <excludeRoot>target/generated-sources/java</excludeRoot>
+                       </excludeRoots>
+                   </configuration>
+                   <dependencies>
+                       <dependency>
+                          <groupId>net.sourceforge.pmd</groupId>
+                          <artifactId>pmd-core</artifactId>
+                          <version>${pmd.version}</version>
+                       </dependency>
+                       <dependency>
+                          <groupId>net.sourceforge.pmd</groupId>
+                          <artifactId>pmd-java</artifactId>
+                          <version>${pmd.version}</version>
+                       </dependency>
+                   </dependencies>
                </plugin>
             </plugins>
         </pluginManagement>
@@ -732,7 +733,7 @@
                                             return
                                         }
                                     }
-                                    
+
                                     System.err.println("Failed to detect workspace root dir")
                                 ]]>
                             </source>
@@ -758,26 +759,26 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin> 
-               <!-- to disable - mvn [commands...] -Dpmd.skip --> 
-               <groupId>org.apache.maven.plugins</groupId> 
-               <artifactId>maven-pmd-plugin</artifactId> 
-               <configuration> 
-                   <rulesets> 
+            <plugin>
+               <!-- to disable - mvn [commands...] -Dpmd.skip -->
+               <groupId>org.apache.maven.plugins</groupId>
+               <artifactId>maven-pmd-plugin</artifactId>
+               <configuration>
+                   <rulesets>
                        <ruleset>${workspace.root.dir}${file.separator}sshd-pmd-ruleset.xml</ruleset>
-                   </rulesets> 
+                   </rulesets>
                    <includeTests>true</includeTests>
-               </configuration> 
-               <executions> 
-                   <execution> 
-                       <id>pmd-checker</id> 
-                       <!-- Note: phase must be AFTER detection of workspace root dir --> 
+               </configuration>
+               <executions>
+                   <execution>
+                       <id>pmd-checker</id>
+                       <!-- Note: phase must be AFTER detection of workspace root dir -->
                        <phase>process-test-classes</phase>
-                       <goals> 
-                           <goal>check</goal> 
-                       </goals> 
-                   </execution> 
-               </executions> 
+                       <goals>
+                           <goal>check</goal>
+                       </goals>
+                   </execution>
+               </executions>
            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -992,14 +993,14 @@
         </repository>
     </distributionManagement>
 
-    <reporting> 
-       <plugins> 
-           <plugin>    <!-- used by PMD to create a source XREF --> 
-               <groupId>org.apache.maven.plugins</groupId> 
-               <artifactId>maven-jxr-plugin</artifactId> 
-               <version>2.5</version> 
-           </plugin> 
-       </plugins> 
+    <reporting>
+       <plugins>
+           <plugin>    <!-- used by PMD to create a source XREF -->
+               <groupId>org.apache.maven.plugins</groupId>
+               <artifactId>maven-jxr-plugin</artifactId>
+               <version>2.5</version>
+           </plugin>
+       </plugins>
     </reporting>
 
     <modules>
