@@ -55,6 +55,7 @@ import org.apache.sshd.common.util.closeable.AbstractCloseable;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.ServerAuthenticationManager;
 import org.apache.sshd.server.ServerFactoryManager;
+import org.apache.sshd.server.auth.AsyncAuthException;
 import org.apache.sshd.server.auth.UserAuth;
 import org.apache.sshd.server.auth.UserAuthNoneFactory;
 import org.apache.sshd.server.auth.WelcomeBannerPhase;
@@ -143,7 +144,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     }
 
     @Override
-    public void process(int cmd, Buffer buffer) throws Exception {
+    public synchronized void process(int cmd, Buffer buffer) throws Exception {
         Boolean authed = Boolean.FALSE;
         ServerSession session = getServerSession();
         boolean debugEnabled = log.isDebugEnabled();
@@ -196,6 +197,9 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 currentAuth = ValidateUtils.checkNotNull(factory.create(), "No authenticator created for method=%s", method);
                 try {
                     authed = currentAuth.auth(session, username, service, buffer);
+                } catch (AsyncAuthException async) {
+                    async.addListener(authenticated -> asyncAuth(cmd, buffer, authenticated));
+                    return;
                 } catch (Exception e) {
                     if (debugEnabled) {
                         log.debug("process({}) Failed ({}) to authenticate using factory method={}: {}",
@@ -228,6 +232,9 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             buffer.rpos(buffer.rpos() - 1);
             try {
                 authed = currentAuth.next(buffer);
+            } catch (AsyncAuthException async) {
+                async.addListener(authenticated -> asyncAuth(cmd, buffer, authenticated));
+                return;
             } catch (Exception e) {
                 // Continue
                 if (debugEnabled) {
@@ -246,6 +253,18 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             handleAuthenticationSuccess(cmd, buffer);
         } else {
             handleAuthenticationFailure(cmd, buffer);
+        }
+    }
+
+    protected synchronized void asyncAuth(int cmd, Buffer buffer, boolean authed) {
+        try {
+            if (authed) {
+                handleAuthenticationSuccess(cmd, buffer);
+            } else {
+                handleAuthenticationFailure(cmd, buffer);
+            }
+        } catch (Exception e) {
+            log.warn("Error performing async authentication: {}", e.getMessage(), e);
         }
     }
 
