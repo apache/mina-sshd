@@ -64,12 +64,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.sshd</groupId>
-            <artifactId>sshd-sftp</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>net.i2p.crypto</groupId>
             <artifactId>eddsa</artifactId>
             <scope>test</scope>
@@ -127,10 +121,10 @@
     </dependencies>
 
     <build>
-        <testSourceDirectory>${build.directory}/test-sources</testSourceDirectory>
+        <testSourceDirectory>${project.build.directory}/test-sources</testSourceDirectory>
         <testResources>
             <testResource>
-                <directory>${build.directory}/test-resources</directory>
+                <directory>${project.build.directory}/test-resources</directory>
             </testResource>
         </testResources>
         <plugins>
@@ -145,7 +139,7 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${build.directory}/test-resources</outputDirectory>
+                            <outputDirectory>${project.build.directory}/test-resources</outputDirectory>
                             <resources>
                                 <resource>
                                     <directory>${projectRoot}/sshd-core/src/test/resources</directory>
@@ -160,7 +154,7 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${build.directory}/test-sources</outputDirectory>
+                            <outputDirectory>${project.build.directory}/test-sources</outputDirectory>
                             <resources>
                                 <resource>
                                     <directory>${projectRoot}/sshd-core/src/test/java</directory>
@@ -169,9 +163,6 @@
                                         <exclude>**/PortForwardingTest.java</exclude>
                                         <exclude>**/PortForwardingLoadTest.java</exclude>
                                     </excludes>
-                                </resource>
-                                <resource>
-                                    <directory>${projectRoot}/sshd-sftp/src/test/java</directory>
                                 </resource>
                             </resources>
                         </configuration>
