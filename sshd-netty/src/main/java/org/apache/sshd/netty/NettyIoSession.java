@@ -36,11 +36,13 @@ import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.Attribute;
 
 /**
  * The Netty based IoSession implementation.
@@ -73,22 +75,30 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
 
     @Override
     public Object getAttribute(Object key) {
-        return attributes.get(key);
+        synchronized (attributes) {
+            return attributes.get(key);
+        }
     }
 
     @Override
     public Object setAttribute(Object key, Object value) {
-        return attributes.put(key, value);
+        synchronized (attributes) {
+            return attributes.put(key, value);
+        }
     }
 
     @Override
     public Object setAttributeIfAbsent(Object key, Object value) {
-        return attributes.putIfAbsent(key, value);
+        synchronized (attributes) {
+            return attributes.putIfAbsent(key, value);
+        }
     }
 
     @Override
     public Object removeAttribute(Object key) {
-        return attributes.remove(key);
+        synchronized (attributes) {
+            return attributes.remove(key);
+        }
     }
 
     @Override
@@ -98,13 +108,15 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
 
     @Override
     public SocketAddress getLocalAddress() {
-        return context.channel().localAddress();
+        Channel channel = context.channel();
+        return channel.localAddress();
     }
 
     @Override
     public IoWriteFuture writePacket(Buffer buffer) {
-        ByteBuf buf = Unpooled.buffer(buffer.available());
-        buf.writeBytes(buffer.array(), buffer.rpos(), buffer.available());
+        int bufLen = buffer.available();
+        ByteBuf buf = Unpooled.buffer(bufLen);
+        buf.writeBytes(buffer.array(), buffer.rpos(), bufLen);
         DefaultIoWriteFuture msg = new DefaultIoWriteFuture(getRemoteAddress(), null);
         ChannelPromise next = context.newPromise();
         prev.addListener(whatever -> {
@@ -130,11 +142,9 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
 
     @Override
     protected CloseFuture doCloseGracefully() {
-        context.writeAndFlush(Unpooled.EMPTY_BUFFER).
-                addListener(ChannelFutureListener.CLOSE).
-                addListener(fut -> {
-                    closeFuture.setClosed();
-                });
+        context.writeAndFlush(Unpooled.EMPTY_BUFFER)
+            .addListener(ChannelFutureListener.CLOSE)
+            .addListener(fut -> closeFuture.setClosed());
         return closeFuture;
     }
 
@@ -146,12 +156,15 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
 
     protected void channelActive(ChannelHandlerContext ctx) throws Exception {
         context = ctx;
-        service.channelGroup.add(ctx.channel());
+        Channel channel = ctx.channel();
+        service.channelGroup.add(channel);
         service.sessions.put(id, NettyIoSession.this);
         prev = context.newPromise().setSuccess();
-        remoteAddr = context.channel().remoteAddress();
+        remoteAddr = channel.remoteAddress();
         handler.sessionCreated(NettyIoSession.this);
-        IoConnectFuture future = ctx.channel().attr(NettyIoService.CONNECT_FUTURE_KEY).get();
+
+        Attribute<IoConnectFuture> connectFuture = channel.attr(NettyIoService.CONNECT_FUTURE_KEY);
+        IoConnectFuture future = connectFuture.get();
         if (future != null) {
             future.setSession(NettyIoSession.this);
         }

@@ -22,13 +22,17 @@ import org.apache.sshd.common.util.Readable;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
 public final class NettySupport {
 
     private NettySupport() {
         throw new UnsupportedOperationException("No instance allowed");
     }
 
-    public static Readable asReadable(final ByteBuf buffer) {
+    public static Readable asReadable(ByteBuf buffer) {
         return new Readable() {
             @Override
             public int available() {
@@ -41,5 +45,4 @@ public final class NettySupport {
             }
         };
     }
-
 }

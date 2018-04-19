@@ -55,17 +55,18 @@ public class NettyIoConnector extends NettyIoService implements IoConnector {
         this.handler = handler;
         channelGroup = new DefaultChannelGroup("sshd-connector-channels", GlobalEventExecutor.INSTANCE);
         bootstrap.group(factory.eventLoopGroup)
-                .channel(NioSocketChannel.class)
-                .option(ChannelOption.SO_BACKLOG, 100)
-                .handler(new ChannelInitializer<SocketChannel>() {
-                    @Override
-                    protected void initChannel(SocketChannel ch) throws Exception {
-                        NettyIoSession session = new NettyIoSession(NettyIoConnector.this, handler);
-                        ChannelPipeline p = ch.pipeline();
-                        p.addLast(new LoggingHandler(LogLevel.INFO));
-                        p.addLast(session.adapter);
-                    }
-                });
+            .channel(NioSocketChannel.class)
+            .option(ChannelOption.SO_BACKLOG, 100)  // TODO make this configurable
+            .handler(new ChannelInitializer<SocketChannel>() {
+                @Override
+                protected void initChannel(SocketChannel ch) throws Exception {
+                    @SuppressWarnings("resource")
+                    NettyIoSession session = new NettyIoSession(NettyIoConnector.this, handler);
+                    ChannelPipeline p = ch.pipeline();
+                    p.addLast(new LoggingHandler(LogLevel.INFO));   // TODO make this configurable
+                    p.addLast(session.adapter);
+                }
+            });
     }
 
     @Override
@@ -98,18 +99,19 @@ public class NettyIoConnector extends NettyIoService implements IoConnector {
         @Override
         public IoSession getSession() {
             Object v = getValue();
-            return v instanceof IoSession ? (IoSession) v : null;
+            return (v instanceof IoSession) ? (IoSession) v : null;
         }
 
         @Override
         public Throwable getException() {
             Object v = getValue();
-            return v instanceof Throwable ? (Throwable) v : null;
+            return (v instanceof Throwable) ? (Throwable) v : null;
         }
 
         @Override
         public boolean isConnected() {
-            return getValue() instanceof IoSession;
+            Object v = getValue();
+            return v instanceof IoSession;
         }
 
         @Override

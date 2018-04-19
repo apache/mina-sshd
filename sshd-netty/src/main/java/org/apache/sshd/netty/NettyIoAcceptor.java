@@ -24,10 +24,10 @@ import java.io.InterruptedIOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.sshd.common.future.CloseFuture;
@@ -55,10 +55,9 @@ import io.netty.util.concurrent.GlobalEventExecutor;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class NettyIoAcceptor extends NettyIoService implements IoAcceptor {
-
     protected final ServerBootstrap bootstrap = new ServerBootstrap();
     protected final DefaultCloseFuture closeFuture = new DefaultCloseFuture(toString(), lock);
-    protected final Map<SocketAddress, Channel> boundAddresses = new HashMap<>();
+    protected final Map<SocketAddress, Channel> boundAddresses = new ConcurrentHashMap<>();
     protected final IoHandler handler;
 
     public NettyIoAcceptor(NettyIoServiceFactory factory, IoHandler handler) {
@@ -66,16 +65,18 @@ public class NettyIoAcceptor extends NettyIoService implements IoAcceptor {
         this.handler = handler;
         channelGroup = new DefaultChannelGroup("sshd-acceptor-channels", GlobalEventExecutor.INSTANCE);
         bootstrap.group(factory.eventLoopGroup)
-                .channel(NioServerSocketChannel.class)
-                .option(ChannelOption.SO_BACKLOG, 100)
-                .handler(new LoggingHandler(LogLevel.INFO))
-                .childHandler(new ChannelInitializer<SocketChannel>() {
-                    @Override
-                    public void initChannel(SocketChannel ch) throws Exception {
-                        ChannelPipeline p = ch.pipeline();
-                        p.addLast(new NettyIoSession(NettyIoAcceptor.this, handler).adapter);
-                    }
-                });
+            .channel(NioServerSocketChannel.class)
+            .option(ChannelOption.SO_BACKLOG, 100)  // TODO make this configurable
+            .handler(new LoggingHandler(LogLevel.INFO)) // TODO make this configurable
+            .childHandler(new ChannelInitializer<SocketChannel>() {
+                @Override
+                public void initChannel(SocketChannel ch) throws Exception {
+                    ChannelPipeline p = ch.pipeline();
+                    @SuppressWarnings("resource")
+                    NettyIoSession nettyIoSession = new NettyIoSession(NettyIoAcceptor.this, handler);
+                    p.addLast(nettyIoSession.adapter);
+                }
+            });
     }
 
     @Override
@@ -107,7 +108,7 @@ public class NettyIoAcceptor extends NettyIoService implements IoAcceptor {
     public void unbind(Collection<? extends SocketAddress> addresses) {
         CountDownLatch latch = new CountDownLatch(addresses.size());
         for (SocketAddress address : addresses) {
-            Channel channel = boundAddresses.get(address);
+            Channel channel = boundAddresses.remove(address);
             if (channel != null) {
                 ChannelFuture fut;
                 if (channel.isOpen()) {
@@ -129,7 +130,7 @@ public class NettyIoAcceptor extends NettyIoService implements IoAcceptor {
 
     @Override
     public void unbind(SocketAddress address) {
-        Channel channel = boundAddresses.get(address);
+        Channel channel = boundAddresses.remove(address);
         if (channel != null) {
             ChannelFuture fut;
             if (channel.isOpen()) {

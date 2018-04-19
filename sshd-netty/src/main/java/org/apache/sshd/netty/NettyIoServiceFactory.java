@@ -28,6 +28,7 @@ import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.Future;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -43,7 +44,7 @@ public class NettyIoServiceFactory extends AbstractCloseable implements IoServic
     }
 
     public NettyIoServiceFactory(EventLoopGroup group) {
-        this.eventLoopGroup = group != null ? group : new NioEventLoopGroup();
+        this.eventLoopGroup = (group != null) ? group : new NioEventLoopGroup();
         this.closeEventLoopGroup = group == null;
     }
 
@@ -60,7 +61,8 @@ public class NettyIoServiceFactory extends AbstractCloseable implements IoServic
     @Override
     protected CloseFuture doCloseGracefully() {
         if (closeEventLoopGroup) {
-            eventLoopGroup.shutdownGracefully().addListener(fut -> closeFuture.setClosed());
+            Future<?> shutdownFuture = eventLoopGroup.shutdownGracefully();
+            shutdownFuture.addListener(fut -> closeFuture.setClosed());
         } else {
             closeFuture.setClosed();
         }
