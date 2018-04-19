@@ -239,8 +239,6 @@ public abstract class AbstractSftpSubsystemHelper
         return errorStatusDataHandler;
     }
 
-    protected abstract void process(Buffer buffer) throws IOException;
-
     /**
      * @param buffer   The {@link Buffer} holding the request
      * @param id       The request id
@@ -318,6 +316,117 @@ public abstract class AbstractSftpSubsystemHelper
 
         return available;
     }
+
+    /**
+     * Process an SFTP command.
+     * If the command throws an exception, the channel will be closed.
+     *
+     * @param buffer the buffer to process
+     * @throws IOException if anything wrong happens
+     */
+    protected void process(Buffer buffer) throws IOException {
+        int length = buffer.getInt();
+        int type = buffer.getUByte();
+        int id = buffer.getInt();
+        if (log.isDebugEnabled()) {
+            log.debug("process({})[length={}, type={}, id={}] processing",
+                    getServerSession(), length, SftpConstants.getCommandMessageName(type), id);
+        }
+        doProcess(buffer, length, type, id);
+    }
+
+    protected void doProcess(Buffer buffer, int length, int type, int id) throws IOException {
+        switch (type) {
+            case SftpConstants.SSH_FXP_INIT:
+                doInit(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_OPEN:
+                doOpen(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_CLOSE:
+                doClose(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_READ:
+                doRead(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_WRITE:
+                doWrite(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_LSTAT:
+                doLStat(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_FSTAT:
+                doFStat(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_SETSTAT:
+                doSetStat(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_FSETSTAT:
+                doFSetStat(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_OPENDIR:
+                doOpenDir(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_READDIR:
+                doReadDir(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_REMOVE:
+                doRemove(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_MKDIR:
+                doMakeDirectory(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_RMDIR:
+                doRemoveDirectory(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_REALPATH:
+                doRealPath(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_STAT:
+                doStat(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_RENAME:
+                doRename(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_READLINK:
+                doReadLink(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_SYMLINK:
+                doSymLink(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_LINK:
+                doLink(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_BLOCK:
+                doBlock(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_UNBLOCK:
+                doUnblock(buffer, id);
+                break;
+            case SftpConstants.SSH_FXP_EXTENDED:
+                doExtended(buffer, id);
+                break;
+            default:
+                doUnsupported(buffer, length, type, id);
+                break;
+        }
+    }
+
+    protected void doUnsupported(Buffer buffer, int length, int type, int id) throws IOException {
+        String name = SftpConstants.getCommandMessageName(type);
+        log.warn("process({})[length={}, type={}, id={}] unknown command",
+                getServerSession(), length, name, id);
+        sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OP_UNSUPPORTED, "Command " + name + " is unsupported or not implemented");
+    }
+
+    protected abstract void doInit(Buffer buffer, int id) throws IOException;
+
+    protected void doVersionSelect(Buffer buffer, int id) throws IOException {
+        String proposed = buffer.getString();
+        doVersionSelect(buffer, id, proposed);
+    }
+
+    protected abstract void doVersionSelect(Buffer buffer, int id, String proposed) throws IOException;
 
     protected void doOpen(Buffer buffer, int id) throws IOException {
         String path = buffer.getString();
