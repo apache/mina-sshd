@@ -298,6 +298,13 @@ public class SftpSubsystem
         }
     }
 
+    /**
+     * Process an SFTP command.
+     * If the command throws an exception, the channel will be closed.
+     *
+     * @param buffer the buffer to process
+     * @throws IOException if anything wrong happens
+     */
     @Override
     protected void process(Buffer buffer) throws IOException {
         int length = buffer.getInt();
@@ -307,7 +314,10 @@ public class SftpSubsystem
             log.debug("process({})[length={}, type={}, id={}] processing",
                       getServerSession(), length, SftpConstants.getCommandMessageName(type), id);
         }
+        doProcess(buffer, length, type, id);
+    }
 
+    protected void doProcess(Buffer buffer, int length, int type, int id) throws IOException {
         switch (type) {
             case SftpConstants.SSH_FXP_INIT:
                 doInit(buffer, id);
@@ -379,17 +389,20 @@ public class SftpSubsystem
                 doExtended(buffer, id);
                 break;
             default:
-            {
-                String name = SftpConstants.getCommandMessageName(type);
-                log.warn("process({})[length={}, type={}, id={}] unknown command",
-                         getServerSession(), length, name, id);
-                sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OP_UNSUPPORTED, "Command " + name + " is unsupported or not implemented");
-            }
+                doUnsupported(buffer, length, type, id);
+                break;
         }
 
         if (type != SftpConstants.SSH_FXP_INIT) {
             requestsCount++;
         }
+    }
+
+    protected void doUnsupported(Buffer buffer, int length, int type, int id) throws IOException {
+        String name = SftpConstants.getCommandMessageName(type);
+        log.warn("process({})[length={}, type={}, id={}] unknown command",
+                 getServerSession(), length, name, id);
+        sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OP_UNSUPPORTED, "Command " + name + " is unsupported or not implemented");
     }
 
     @Override
