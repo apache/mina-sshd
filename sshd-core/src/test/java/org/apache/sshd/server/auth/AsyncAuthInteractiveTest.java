@@ -32,13 +32,12 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AsyncAuthInteractiveTest extends AsyncAuthTestBase {
-
     public AsyncAuthInteractiveTest() {
         super();
     }
 
+    @Override
     protected boolean authenticate() throws Exception {
-
         JSch jsch = new JSch();
         Session session;
         ChannelShell channel;

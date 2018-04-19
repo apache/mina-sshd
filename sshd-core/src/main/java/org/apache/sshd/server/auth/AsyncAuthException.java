@@ -25,8 +25,6 @@ import java.util.function.Consumer;
 import org.apache.sshd.common.RuntimeSshException;
 
 /**
- *
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class AsyncAuthException extends RuntimeSshException {
@@ -49,13 +47,16 @@ public class AsyncAuthException extends RuntimeSshException {
             this.authed = authed;
             listener = this.listener;
         }
+
         if (listener != null) {
-            if (listener instanceof Consumer) {
-                asListener(listener).accept(authed);
+            if (listener instanceof Consumer<?>) {
+                Consumer<? super Boolean> lst = asListener(listener);
+                lst.accept(authed);
             } else {
                 int l = Array.getLength(listener);
                 for (int i = 0; i < l; i++) {
-                    Consumer<Boolean> lst = asListener(Array.get(listener, i));
+                    Object lstInstance = Array.get(listener, i);
+                    Consumer<? super Boolean> lst = asListener(lstInstance);
                     if (lst != null) {
                         lst.accept(authed);
                     }
@@ -65,16 +66,16 @@ public class AsyncAuthException extends RuntimeSshException {
     }
 
     @SuppressWarnings("unchecked")
-    protected static Consumer<Boolean> asListener(Object listener) {
-        return (Consumer<Boolean>) listener;
+    protected Consumer<? super Boolean> asListener(Object listener) {
+        return (Consumer<? super Boolean>) listener;
     }
 
-    public void addListener(Consumer<Boolean> listener) {
+    public void addListener(Consumer<? super Boolean> listener) {
         Boolean result;
         synchronized (this) {
             if (this.listener == null) {
                 this.listener = listener;
-            } else if (this.listener instanceof Consumer) {
+            } else if (this.listener instanceof Consumer<?>) {
                 this.listener = new Object[] {this.listener, listener };
             } else {
                 Object[] ol = (Object[]) this.listener;
@@ -90,5 +91,4 @@ public class AsyncAuthException extends RuntimeSshException {
             listener.accept(result);
         }
     }
-
 }

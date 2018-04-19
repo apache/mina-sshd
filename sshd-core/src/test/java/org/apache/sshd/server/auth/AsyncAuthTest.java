@@ -37,8 +37,8 @@ public class AsyncAuthTest extends AsyncAuthTestBase {
         super();
     }
 
+    @Override
     protected boolean authenticate() throws Exception {
-
         JSch jsch = new JSch();
         Session session;
         ChannelShell channel;
@@ -91,11 +91,13 @@ public class AsyncAuthTest extends AsyncAuthTestBase {
         try {
             channel.disconnect();
         } catch (Exception ignore) {
+            // ignored
         }
 
         try {
             session.disconnect();
         } catch (Exception ignore) {
+            // ignored
         }
 
         return true;
