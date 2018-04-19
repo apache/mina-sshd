@@ -471,7 +471,7 @@ public class SftpSubsystem
          * channel.
          */
         if (requestsCount > 0L) {
-            sendStatus(BufferUtils.clear(buffer), id,
+            sendStatus(prepareReply(buffer), id,
                        SftpConstants.SSH_FX_FAILURE,
                        "Version selection not the 1st request for proposal = " + proposed);
             session.close(true);
@@ -488,9 +488,9 @@ public class SftpSubsystem
         }
         if (result) {
             version = Integer.parseInt(proposed);
-            sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
+            sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_OK, "");
         } else {
-            sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_FAILURE, "Unsupported version " + proposed);
+            sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_FAILURE, "Unsupported version " + proposed);
             session.close(true);
         }
     }
@@ -625,7 +625,7 @@ public class SftpSubsystem
         try {
             DirectoryHandle dh = validateHandle(handle, h, DirectoryHandle.class);
             if (dh.isDone()) {
-                sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_EOF, "Directory reading is done");
+                sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_EOF, "Directory reading is done");
                 return;
             }
 
@@ -650,7 +650,7 @@ public class SftpSubsystem
                 // Send only a few files at a time to not create packets of a too
                 // large size or have a timeout to occur.
 
-                reply = BufferUtils.clear(buffer);
+                reply = prepareReply(buffer);
                 reply.putByte((byte) SftpConstants.SSH_FXP_NAME);
                 reply.putInt(id);
 
@@ -673,13 +673,13 @@ public class SftpSubsystem
             } else {
                 // empty directory
                 dh.markDone();
-                sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_EOF, "Empty directory");
+                sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_EOF, "Empty directory");
                 return;
             }
 
             Objects.requireNonNull(reply, "No reply buffer created");
         } catch (IOException | RuntimeException e) {
-            sendStatus(BufferUtils.clear(buffer), id, e, SftpConstants.SSH_FXP_READDIR, handle);
+            sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_READDIR, handle);
             return;
         }
 
@@ -858,7 +858,7 @@ public class SftpSubsystem
             extensions.put(name, data);
         }
 
-        buffer.clear();
+        buffer = prepareReply(buffer);
 
         buffer.putByte((byte) SftpConstants.SSH_FXP_VERSION);
         buffer.putInt(version);
@@ -868,6 +868,12 @@ public class SftpSubsystem
         listener.initialized(getServerSession(), version);
 
         send(buffer);
+    }
+
+    @Override
+    protected Buffer prepareReply(Buffer buffer) {
+        buffer.clear();
+        return buffer;
     }
 
     @Override

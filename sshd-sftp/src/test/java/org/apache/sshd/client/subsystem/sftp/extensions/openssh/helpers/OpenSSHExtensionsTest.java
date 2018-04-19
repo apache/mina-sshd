@@ -151,7 +151,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
                                 throw new StreamCorruptedException("executeExtendedCommand(" + extension + ") previous not null: " + prev);
                             }
 
-                            buffer.clear();
+                            buffer = prepareReply(buffer);
                             buffer.putByte((byte) SftpConstants.SSH_FXP_EXTENDED_REPLY);
                             buffer.putInt(id);
                             OpenSSHStatExtensionInfo.encode(buffer, expected);
