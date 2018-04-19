@@ -13,8 +13,10 @@ Apache SSHD is a 100% pure java library to support the SSH protocols on both the
 
 The code only requires the core abstract [slf4j-api](https://mvnrepository.com/artifact/org.slf4j/slf4j-api) module. The actual implementation of the logging API can be selected from the many existing adaptors.
 
+# Optional dependencies
 
-* [Bouncy Castle](https://www.bouncycastle.org/)
+
+## [Bouncy Castle](https://www.bouncycastle.org/)
 
 
 Required mainly for writing keys to PEM files or for special keys/ciphers/etc. that are not part of the standard [Java Cryptography Extension](https://en.wikipedia.org/wiki/Java_Cryptography_Extension). See [Java Cryptography Architecture (JCA) Reference Guide](https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html) for key classes and explanations as to how _Bouncy Castle_ is plugged in (other security providers).
@@ -48,11 +50,14 @@ Required mainly for writing keys to PEM files or for special keys/ciphers/etc. t
 
 ```
 
-* [MINA core](https://mina.apache.org/mina-project/)
+## NIO2 default socket factory replacements
 
+Optional dependency to enable choosing between NIO asynchronous sockets (the default - for improved performance), and "legacy" sockets.
+See `IoServiceFactoryFactory` implementations and specifically the `DefaultIoServiceFactoryFactory` for the available options and how it
+can be configured to select among them. **Note:** the required Maven module(s) are defined as `optional` so must be added as an **explicit**
+dependency in order to be included in the classpath.
 
-Optional dependency to enable choosing between NIO asynchronous sockets (the default - for improved performance), and "legacy" sockets. See `IoServiceFactoryFactory` implementations and specifically the `DefaultIoServiceFactoryFactory` for the available options and how it can be configured to select among them. **Note:** the required Maven module(s) are defined as `optional` so must be added as an **explicit** dependency in order to be included in the classpath:
-
+### [MINA core](https://mina.apache.org/mina-project/)
 
 ```xml
 
@@ -63,12 +68,6 @@ Optional dependency to enable choosing between NIO asynchronous sockets (the def
         <version>2.0.17</version>
     </dependency>
 
-```
-
-**NOTE:** in order to use this library one must also add the `sshd-mina` artifact
-
-```xml
-
     <dependency>
         <groupId>org.apache.sshd</groupId>
         <artifactId>sshd-mina</artifactId>
@@ -77,8 +76,33 @@ Optional dependency to enable choosing between NIO asynchronous sockets (the def
 
 ```
 
+### [Netty](https://netty.io/)
 
-* [ed25519-java](https://github.com/str4d/ed25519-java)
+Another a NIO client server framework option that can be used as a replacement for the default NIO asynchronous sockets core
+implementation. This is also an **optional** dependency and must be add explicitly via the `sshd-netty` artifact.
+
+```xml
+
+    <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-transport</artifactId>
+        <version>...Netty version...</version>
+    </dependency>
+    <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-handler</artifactId>
+        <version>...Netty version...</version>
+    </dependency>
+    
+    <dependency>
+        <groupId>org.apache.sshd</groupId>
+        <artifactId>sshd-netty</artifactId>
+        <version>...same as sshd-core...</version>
+    </dependency>
+
+```
+
+## [ed25519-java](https://github.com/str4d/ed25519-java)
 
 
 Required for supporting [ssh-ed25519](https://tools.ietf.org/html/draft-bjh21-ssh-ed25519-02) keys and [ed25519-sha-512](https://tools.ietf.org/html/draft-josefsson-eddsa-ed25519-02) signatures. **Note:** the required Maven module(s) are defined as `optional` so must be added as an **explicit** dependency in order to be included in the classpath:
