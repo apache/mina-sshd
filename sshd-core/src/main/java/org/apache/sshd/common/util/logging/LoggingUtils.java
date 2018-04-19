@@ -314,6 +314,7 @@ public final class LoggingUtils {
     }
 
     /**
+     * @param <T> Generic message type consumer
      * @param logger The {@link Logger} instance to use
      * @param level The log {@link Level} mapped as follows:</BR>
      *
@@ -351,6 +352,7 @@ public final class LoggingUtils {
     }
 
     /**
+     * @param <T> Generic message type consumer
      * @param logger The {@link Logger} instance to use
      * @return A consumer whose {@link Consumer#accept(Object)} method logs nothing when invoked
      */
@@ -360,6 +362,7 @@ public final class LoggingUtils {
     }
 
     /**
+     * @param <T> Generic message type consumer
      * @param logger The {@link Logger} instance to use
      * @return A consumer whose {@link Consumer#accept(Object)} method logs the
      * {@link String#valueOf(Object)} value of its argument if {@link Logger#isErrorEnabled()}
@@ -369,6 +372,7 @@ public final class LoggingUtils {
     }
 
     /**
+     * @param <T> Generic message type consumer
      * @param logger The {@link Logger} instance to use
      * @param thrown A {@link Throwable} to attach to the message - ignored if {@code null}
      * @return A consumer whose {@link Consumer#accept(Object)} method logs the
@@ -397,6 +401,7 @@ public final class LoggingUtils {
     }
 
     /**
+     * @param <T> Generic message type consumer
      * @param logger The {@link Logger} instance to use
      * @return A consumer whose {@link Consumer#accept(Object)} method logs the
      * {@link String#valueOf(Object)} value of its argument if {@link Logger#isWarnEnabled()}
@@ -406,6 +411,7 @@ public final class LoggingUtils {
     }
 
     /**
+     * @param <T> Generic message type consumer
      * @param logger The {@link Logger} instance to use
      * @param thrown A {@link Throwable} to attach to the message - ignored if {@code null}
      * @return A consumer whose {@link Consumer#accept(Object)} method logs the {@link String#valueOf(Object)}
@@ -434,6 +440,7 @@ public final class LoggingUtils {
     }
 
     /**
+     * @param <T> Generic message type consumer
      * @param logger The {@link Logger} instance to use
      * @return A consumer whose {@link Consumer#accept(Object)} method logs the {@link String#valueOf(Object)}
      * value of its argument if {@link Logger#isInfoEnabled()}
@@ -443,6 +450,7 @@ public final class LoggingUtils {
     }
 
     /**
+     * @param <T> Generic message type consumer
      * @param logger The {@link Logger} instance to use
      * @param thrown A {@link Throwable} to attach to the message - ignored if {@code null}
      * @return A consumer whose {@link Consumer#accept(Object)} method logs the
@@ -471,6 +479,7 @@ public final class LoggingUtils {
     }
 
     /**
+     * @param <T> Generic message type consumer
      * @param logger The {@link Logger} instance to use
      * @return A consumer whose {@link Consumer#accept(Object)} method logs the
      * {@link String#valueOf(Object)} value of its argument if {@link Logger#isDebugEnabled()}
@@ -480,6 +489,7 @@ public final class LoggingUtils {
     }
 
     /**
+     * @param <T> Generic message type consumer
      * @param logger The {@link Logger} instance to use
      * @param thrown A {@link Throwable} to attach to the message - ignored if {@code null}
      * @return A consumer whose {@link Consumer#accept(Object)} method logs the
@@ -508,6 +518,7 @@ public final class LoggingUtils {
     }
 
     /**
+     * @param <T> Generic message type consumer
      * @param logger The {@link Logger} instance to use
      * @return A consumer whose {@link Consumer#accept(Object)} method logs the
      * {@link String#valueOf(Object)} value of its argument if {@link Logger#isTraceEnabled()}
@@ -517,6 +528,7 @@ public final class LoggingUtils {
     }
 
     /**
+     * @param <T> Generic message type consumer
      * @param logger The {@link Logger} instance to use
      * @param thrown A {@link Throwable} to attach to the message - ignored if {@code null}
      * @return A consumer whose {@link Consumer#accept(Object)} method logs the

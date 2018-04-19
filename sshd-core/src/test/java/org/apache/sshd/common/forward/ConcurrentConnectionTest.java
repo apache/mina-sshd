@@ -175,7 +175,7 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
     @Test
     /*
      * Run PORT_FORWARD_CLIENT_COUNT simultaneous server threads.
-     * 
+     *
      * Emulates a web browser making a number of simultaneous requests on
      * different connections to the same server HTTP specifies no more than two,
      * but most modern browsers do 6 or more.
@@ -227,7 +227,7 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
         assertEquals("Not all clients succeeded", PORT_FORWARD_CLIENT_COUNT, success.get());
     }
 
-    /**
+    /*
      * Send PAYLOAD_TO_SERVER to the server, then read PAYLOAD_TO_CLIENT from
      * server. Emulates a web browser making a request
      */

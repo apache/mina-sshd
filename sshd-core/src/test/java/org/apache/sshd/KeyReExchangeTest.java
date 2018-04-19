@@ -664,9 +664,13 @@ public class KeyReExchangeTest extends BaseTestSupport {
         }
     }
 
-    private static class TestSubsystemFactory implements SubsystemFactory {
+    static class TestSubsystemFactory implements SubsystemFactory {
 
         public static final String NAME = "test-subsystem";
+
+        TestSubsystemFactory() {
+            super();
+        }
 
         @Override
         public Command create() {

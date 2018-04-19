@@ -63,7 +63,7 @@ public class GitSshdSessionFactory extends SshSessionFactory implements ClientSe
      * <B>Note:</B> in this case, the connection and authentication phase are <U>skipped</U> - i.e.,
      * any specific host/port/user/password(s) specified in the GIT URI are <U>not used</U>.
      *
-     * @param client The (never {@code null}) client instance
+     * @param session The (never {@code null}) client session instance
      */
     public GitSshdSessionFactory(ClientSession session) {
         this(null, session);

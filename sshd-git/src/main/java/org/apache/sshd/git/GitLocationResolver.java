@@ -48,7 +48,7 @@ public interface GitLocationResolver {
 
     /**
      * Creates a resolver that returns the same root directory for any invocation of
-     * {@link #resolveRootDirectory(String, ServerSession, FileSystem) resolveRootDirectory}
+     * {@link #resolveRootDirectory(String, String[], ServerSession, FileSystem) resolveRootDirectory}
      *
      * @param rootDir The (never {@code null}) root directory to return
      * @return The wrapper resolver

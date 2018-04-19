@@ -70,7 +70,7 @@ import org.apache.sshd.server.subsystem.sftp.UnixDateFormat;
 public final class SftpHelper {
     /**
      * Used to control whether to append the end-of-list indicator for
-     * SSH_FXP_NAME responses via {@link #indicateEndOfNamesList(Buffer, int, PropertyResolver, Boolean)}
+     * SSH_FXP_NAME responses via {@link #indicateEndOfNamesList(Buffer, int, PropertyResolver, boolean)}
      * call, as indicated by <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.4">SFTP v6 - section 9.4</A>
      */
     public static final String APPEND_END_OF_LIST_INDICATOR = "sftp-append-eol-indicator";
@@ -146,7 +146,7 @@ public final class SftpHelper {
      * @param version The SFTP version being used
      * @return The indicator value - {@code null} if none retrieved
      * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.4">SFTP v6 - section 9.4</A>
-     * @see #indicateEndOfNamesList(Buffer, int, PropertyResolver, Boolean)
+     * @see #indicateEndOfNamesList(Buffer, int, PropertyResolver, boolean)
      */
     public static Boolean getEndOfListIndicatorValue(Buffer buffer, int version) {
         return (version <  SftpConstants.SFTP_V6) || (buffer.available() < 1) ? null : buffer.getBoolean();

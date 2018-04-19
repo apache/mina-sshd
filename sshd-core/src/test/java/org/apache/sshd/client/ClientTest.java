@@ -75,7 +75,6 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
-import org.apache.sshd.common.channel.ChannelListenerManager;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -113,7 +112,6 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.EchoShell;
 import org.apache.sshd.util.test.EchoShellFactory;
 import org.apache.sshd.util.test.TeeOutputStream;
-import org.apache.sshd.util.test.TestChannelListener;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -1416,34 +1414,6 @@ public class ClientTest extends BaseTestSupport {
         try (ClientSession session = createTestClientSession(address)) {
             outputDebugMessage("Successfully connected to %s", address);
         }
-    }
-
-    private static void assertListenerSizes(String phase, Map<String, ? extends TestChannelListener> listeners, int activeSize, int openSize) {
-        assertListenerSizes(phase, listeners.values(), activeSize, openSize);
-    }
-
-    private static void assertListenerSizes(String phase, Collection<? extends TestChannelListener> listeners, int activeSize, int openSize) {
-        if (GenericUtils.isEmpty(listeners)) {
-            return;
-        }
-
-        for (TestChannelListener l : listeners) {
-            if (activeSize >= 0) {
-                assertEquals(phase + ": mismatched active channels size for " + l.getName() + " listener", activeSize, GenericUtils.size(l.getActiveChannels()));
-            }
-
-            if (openSize >= 0) {
-                assertEquals(phase + ": mismatched open channels size for " + l.getName() + " listener", openSize, GenericUtils.size(l.getOpenChannels()));
-            }
-
-            assertEquals(phase + ": unexpected failed channels size for " + l.getName() + " listener", 0, GenericUtils.size(l.getFailedChannels()));
-        }
-    }
-
-    private static <L extends ChannelListener & NamedResource> void addChannelListener(Map<String, L> listeners, ChannelListenerManager manager, L listener) {
-        String name = listener.getName();
-        assertNull("Duplicate listener named " + name, listeners.put(name, listener));
-        manager.addChannelListener(listener);
     }
 
     private ClientSession createTestClientSession() throws IOException {

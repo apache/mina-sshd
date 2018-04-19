@@ -348,13 +348,13 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
      * Parses a single line from an <code>authorized_keys</code> file that is <U>known</U>
      * to contain login options and separates it to the options and the rest of the line.
      *
-     * @param line The line to be parsed
+     * @param entryLine The line to be parsed
      * @return A {@link SimpleImmutableEntry} representing the parsed data where key=login options part
      * and value=rest of the data - {@code null} if no data in line or line starts with comment character
      * @see <A HREF="http://man.openbsd.org/sshd.8#AUTHORIZED_KEYS_FILE_FORMAT">sshd(8) - AUTHORIZED_KEYS_FILE_FORMAT</A>
      */
-    public static SimpleImmutableEntry<String, String> resolveEntryComponents(String value) {
-        String line = GenericUtils.replaceWhitespaceAndTrim(value);
+    public static SimpleImmutableEntry<String, String> resolveEntryComponents(String entryLine) {
+        String line = GenericUtils.replaceWhitespaceAndTrim(entryLine);
         if (GenericUtils.isEmpty(line) || (line.charAt(0) == COMMENT_CHAR) /* comment ? */) {
             return null;
         }
@@ -403,7 +403,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
      * </UL>
      *
      * @param options The options line to parse - ignored if {@code null}/empty/blank
-     * @param A {@link NavigableMap} where key=case <U>insensitive</U> option name and value=the parsed value.
+     * @return A {@link NavigableMap} where key=case <U>insensitive</U> option name and value=the parsed value.
      * @see #addLoginOption(Map, String) addLoginOption
      */
     public static NavigableMap<String, String> parseLoginOptions(String options) {

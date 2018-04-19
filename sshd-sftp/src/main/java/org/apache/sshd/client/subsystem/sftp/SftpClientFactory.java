@@ -38,6 +38,7 @@ public interface SftpClientFactory {
     /**
      * Create an SFTP client from this session.
      *
+     * @param session The {@link ClientSession} to be used for creating the SFTP client
      * @return The created {@link SftpClient}
      * @throws IOException if failed to create the client
      */
@@ -48,9 +49,9 @@ public interface SftpClientFactory {
     /**
      * Creates an SFTP client using the specified version
      *
+     * @param session The {@link ClientSession} to be used for creating the SFTP client
      * @param version The version to use - <B>Note:</B> if the specified
-     *                version is not supported by the server then an exception
-     *                will occur
+     * version is not supported by the server then an exception will occur
      * @return The created {@link SftpClient}
      * @throws IOException If failed to create the client or use the specified version
      */
