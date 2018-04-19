@@ -306,7 +306,7 @@ public abstract class AbstractSftpSubsystemHelper
 
         if (log.isTraceEnabled()) {
             log.trace("checkVersionCompatibility({})[id={}] - proposed={}, available={}",
-                      getServerSession(), id, proposed, available);
+                      session, id, proposed, available);
         }
 
         if ((proposed < low) || (proposed > hig)) {
@@ -524,12 +524,12 @@ public abstract class AbstractSftpSubsystemHelper
         String handle = buffer.getString();
         long offset = buffer.getLong();
         int requestedLength = buffer.getInt();
-        ServerSession serverSession = getServerSession();
-        int maxAllowed = serverSession.getIntProperty(MAX_READDATA_PACKET_LENGTH_PROP, DEFAULT_MAX_READDATA_PACKET_LENGTH);
+        ServerSession session = getServerSession();
+        int maxAllowed = session.getIntProperty(MAX_READDATA_PACKET_LENGTH_PROP, DEFAULT_MAX_READDATA_PACKET_LENGTH);
         int readLen = Math.min(requestedLength, maxAllowed);
         if (log.isTraceEnabled()) {
             log.trace("doRead({})[id={}]({})[offset={}] - req={}, max={}, effective={}",
-                    serverSession, id, handle, offset, requestedLength, maxAllowed, readLen);
+                    session, id, handle, offset, requestedLength, maxAllowed, readLen);
         }
 
         try {
@@ -783,14 +783,15 @@ public abstract class AbstractSftpSubsystemHelper
 
     protected SpaceAvailableExtensionInfo doSpaceAvailable(int id, String path) throws IOException {
         Path nrm = resolveNormalizedLocation(path);
+        ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
-            log.debug("doSpaceAvailable({})[id={}] path={}[{}]", getServerSession(), id, path, nrm);
+            log.debug("doSpaceAvailable({})[id={}] path={}[{}]", session, id, path, nrm);
         }
 
         FileStore store = Files.getFileStore(nrm);
         if (log.isTraceEnabled()) {
             log.trace("doSpaceAvailable({})[id={}] path={}[{}] - {}[{}]",
-                      getServerSession(), id, path, nrm, store.name(), store.type());
+                      session, id, path, nrm, store.name(), store.type());
         }
 
         return new SpaceAvailableExtensionInfo(store);
@@ -875,7 +876,8 @@ public abstract class AbstractSftpSubsystemHelper
                 : new byte[Math.min((int) effectiveLength, blockSize)];
         ByteBuffer wb = ByteBuffer.wrap(digestBuf);
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
-        try (SeekableByteChannel channel = accessor.openFile(getServerSession(), this, file, "", Collections.emptySet())) {
+        ServerSession session = getServerSession();
+        try (SeekableByteChannel channel = accessor.openFile(session, this, file, "", Collections.emptySet())) {
             channel.position(startOffset);
 
             Digest digest = factory.create();
@@ -903,7 +905,7 @@ public abstract class AbstractSftpSubsystemHelper
                 byte[] hashValue = digest.digest();
                 if (traceEnabled) {
                     log.trace("doCheckFileHash({})[{}] offset={}, length={} - algo={}, hash={}",
-                              getServerSession(), file, startOffset, length,
+                              session, file, startOffset, length,
                               digest.getAlgorithm(), BufferUtils.toHex(':', hashValue));
                 }
                 buffer.putBytes(hashValue);
@@ -927,7 +929,7 @@ public abstract class AbstractSftpSubsystemHelper
                     byte[] hashValue = digest.digest(); // NOTE: this also resets the hash for the next read
                     if (traceEnabled) {
                         log.trace("doCheckFileHash({})({})[{}] offset={}, length={} - algo={}, hash={}",
-                                  getServerSession(), file, count, startOffset, length,
+                                  session, file, count, startOffset, length,
                                   digest.getAlgorithm(), BufferUtils.toHex(':', hashValue));
                     }
                     buffer.putBytes(hashValue);
@@ -987,7 +989,8 @@ public abstract class AbstractSftpSubsystemHelper
         byte[] hashValue = null;
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
         boolean traceEnabled = log.isTraceEnabled();
-        try (SeekableByteChannel channel = accessor.openFile(getServerSession(), this, path, null, EnumSet.of(StandardOpenOption.READ))) {
+        ServerSession session = getServerSession();
+        try (SeekableByteChannel channel = accessor.openFile(session, this, path, null, EnumSet.of(StandardOpenOption.READ))) {
             channel.position(startOffset);
 
             /*
@@ -1028,7 +1031,7 @@ public abstract class AbstractSftpSubsystemHelper
                 } else {
                     if (traceEnabled) {
                         log.trace("doMD5Hash({})({}) offset={}, length={} - quick-hash mismatched expected={}, actual={}",
-                                  getServerSession(), path, startOffset, length,
+                                  session, path, startOffset, length,
                                   BufferUtils.toHex(':', quickCheckHash),
                                   BufferUtils.toHex(':', hashValue));
                     }
@@ -1062,7 +1065,7 @@ public abstract class AbstractSftpSubsystemHelper
 
         if (traceEnabled) {
             log.trace("doMD5Hash({})({}) offset={}, length={} - matches={}, quick={} hash={}",
-                      getServerSession(), path, startOffset, length, hashMatches,
+                      session, path, startOffset, length, hashMatches,
                       BufferUtils.toHex(':', quickCheckHash),
                       BufferUtils.toHex(':', hashValue));
         }
@@ -1283,8 +1286,9 @@ public abstract class AbstractSftpSubsystemHelper
     protected void doRealPath(Buffer buffer, int id) throws IOException {
         String path = buffer.getString();
         boolean debugEnabled = log.isDebugEnabled();
+        ServerSession session = getServerSession();
         if (debugEnabled) {
-            log.debug("doRealPath({})[id={}] SSH_FXP_REALPATH (path={})", getServerSession(), id, path);
+            log.debug("doRealPath({})[id={}] SSH_FXP_REALPATH (path={})", session, id, path);
         }
         path = GenericUtils.trimToEmpty(path);
         if (GenericUtils.isEmpty(path)) {
@@ -1320,7 +1324,7 @@ public abstract class AbstractSftpSubsystemHelper
                     control = buffer.getUByte();
                     if (debugEnabled) {
                         log.debug("doRealPath({}) - control=0x{} for path={}",
-                              getServerSession(), Integer.toHexString(control), path);
+                              session, Integer.toHexString(control), path);
                     }
                 }
 
@@ -1347,15 +1351,15 @@ public abstract class AbstractSftpSubsystemHelper
                             } catch (IOException e) {
                                 if (debugEnabled) {
                                     log.debug("doRealPath({}) - failed ({}) to retrieve attributes of {}: {}",
-                                              getServerSession(), e.getClass().getSimpleName(), p, e.getMessage());
+                                              session, e.getClass().getSimpleName(), p, e.getMessage());
                                 }
                                 if (log.isTraceEnabled()) {
-                                    log.trace("doRealPath(" + getServerSession() + ")[" + p + "] attributes retrieval failure details", e);
+                                    log.trace("doRealPath(" + session + ")[" + p + "] attributes retrieval failure details", e);
                                 }
                             }
                         } else {
                             if (debugEnabled) {
-                                log.debug("doRealPath({}) - dummy attributes for non-existing file: {}", getServerSession(), p);
+                                log.debug("doRealPath({}) - dummy attributes for non-existing file: {}", session, p);
                             }
                         }
                         break;
@@ -1372,7 +1376,7 @@ public abstract class AbstractSftpSubsystemHelper
                         break;
                     default:
                         log.warn("doRealPath({}) unknown control value 0x{} for path={}",
-                             getServerSession(), Integer.toHexString(control), p);
+                             session, Integer.toHexString(control), p);
                 }
             }
         } catch (IOException | RuntimeException e) {
@@ -1486,9 +1490,10 @@ public abstract class AbstractSftpSubsystemHelper
 
     protected void doMakeDirectory(int id, String path, Map<String, ?> attrs, LinkOption... options) throws IOException {
         Path p = resolveFile(path);
+        ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
             log.debug("doMakeDirectory({})[id={}] SSH_FXP_MKDIR (path={}[{}], attrs={})",
-                      getServerSession(), id, path, p, attrs);
+                    session, id, path, p, attrs);
         }
 
         Boolean status = IoUtils.checkFileExists(p, options);
@@ -1504,7 +1509,6 @@ public abstract class AbstractSftpSubsystemHelper
             }
         } else {
             SftpEventListener listener = getSftpEventListenerProxy();
-            ServerSession session = getServerSession();
             listener.creating(session, p, attrs);
             try {
                 Files.createDirectory(p);
