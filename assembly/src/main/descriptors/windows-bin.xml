@@ -23,12 +23,12 @@
     <fileSets>
         <fileSet>
             <directory>src/main/distribution</directory>
-            <outputDirectory>/</outputDirectory>
+            <outputDirectory></outputDirectory>
             <lineEnding>dos</lineEnding>
         </fileSet>
         <fileSet>
             <directory>..</directory>
-            <outputDirectory>/</outputDirectory>
+            <outputDirectory></outputDirectory>
             <lineEnding>dos</lineEnding>
             <includes>
                 <include>LICENSE*</include>
@@ -39,7 +39,7 @@
     <files>
         <file>
             <source>../NOTICE-bin.txt</source>
-            <outputDirectory>/</outputDirectory>
+            <outputDirectory></outputDirectory>
             <destName>NOTICE.txt</destName>
             <lineEnding>dos</lineEnding>
         </file>
@@ -47,7 +47,8 @@
 
     <dependencySets>
         <dependencySet>
-            <outputDirectory>/lib</outputDirectory>
+            <outputDirectory>lib</outputDirectory>
+            <useProjectArtifact>false</useProjectArtifact>
         </dependencySet>
     </dependencySets>
 </assembly>
