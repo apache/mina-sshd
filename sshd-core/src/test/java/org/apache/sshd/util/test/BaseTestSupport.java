@@ -99,7 +99,8 @@ public abstract class BaseTestSupport extends Assert {
         protected void starting(Description description) {
             System.out.println("\nStarting " + description.getClassName() + ":" + description.getMethodName() + "...");
             try {
-                System.out.println("Using provider: " + DefaultIoServiceFactoryFactory.newInstance(IoServiceFactoryFactory.class).getClass().getName());
+                IoServiceFactoryFactory ioProvider = getIoServiceProvider();
+                System.out.println("Using default provider: " + ioProvider.getClass().getName());
             } catch (Throwable t) {
                 // Ignore
             }
@@ -115,7 +116,7 @@ public abstract class BaseTestSupport extends Assert {
     };
 
     @Rule
-    public final TestName testNameHilder = new TestName();
+    public final TestName testNameHolder = new TestName();
     private Path targetFolder;
     private Path tempFolder;
 
@@ -124,7 +125,7 @@ public abstract class BaseTestSupport extends Assert {
     }
 
     public final String getCurrentTestName() {
-        return testNameHilder.getMethodName();
+        return testNameHolder.getMethodName();
     }
 
     protected SshServer setupTestServer() {
@@ -593,5 +594,11 @@ public abstract class BaseTestSupport extends Assert {
         if (OUTPUT_DEBUG_MESSAGES) {
             System.out.append("===[DEBUG]=== ").println(message);
         }
+    }
+
+    public static IoServiceFactoryFactory getIoServiceProvider() {
+        DefaultIoServiceFactoryFactory factory =
+                DefaultIoServiceFactoryFactory.getDefaultIoServiceFactoryFactoryInstance();
+        return factory.getIoServiceProvider();
     }
 }
