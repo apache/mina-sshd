@@ -36,7 +36,7 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
 
     private IoServiceFactoryFactory factory;
 
-    public DefaultIoServiceFactoryFactory() {
+    protected DefaultIoServiceFactoryFactory() {
         this(null, true);
     }
 
@@ -46,11 +46,14 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
 
     @Override
     public IoServiceFactory create(FactoryManager manager) {
-        IoServiceFactoryFactory factoryInstance = getFactory();
+        IoServiceFactoryFactory factoryInstance = getIoServiceProvider();
         return factoryInstance.create(manager);
     }
 
-    private IoServiceFactoryFactory getFactory() {
+    /**
+     * @return The actual {@link IoServiceFactoryFactory} being delegated
+     */
+    public IoServiceFactoryFactory getIoServiceProvider() {
         synchronized (this) {
             if (factory == null) {
                 factory = newInstance(IoServiceFactoryFactory.class);
@@ -135,5 +138,14 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
             }
         }
         throw new IllegalStateException("Unable to create instance of class " + factory);
+    }
+
+    private static class LazyDefaultIoServiceFactoryFactoryHolder {
+        private static final DefaultIoServiceFactoryFactory INSTANCE = new DefaultIoServiceFactoryFactory();
+    }
+
+    @SuppressWarnings("synthetic-access")
+    public static DefaultIoServiceFactoryFactory getDefaultIoServiceFactoryFactoryInstance() {
+        return LazyDefaultIoServiceFactoryFactoryHolder.INSTANCE;
     }
 }
