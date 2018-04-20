@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.channel.exception.SshChannelClosedException;
 import org.apache.sshd.common.io.PacketWriter;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -104,11 +105,12 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
 
     @Override
     public synchronized void write(byte[] buf, int s, int l) throws IOException {
+        Channel channel = getChannel();
         if (!isOpen()) {
-            throw new SshException("write(" + this + ") len=" + l + " - channel already closed");
+            throw new SshChannelClosedException(channel.getId(),
+                "write(" + this + ") len=" + l + " - channel already closed");
         }
 
-        Channel channel = getChannel();
         Session session = channel.getSession();
         boolean debugEnabled = log.isDebugEnabled();
         boolean traceEnabled = log.isTraceEnabled();
@@ -167,12 +169,13 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
 
     @Override
     public synchronized void flush() throws IOException {
+        AbstractChannel channel = getChannel();
         if (!isOpen()) {
-            throw new SshException("flush(" + this + ") length=" + bufferLength + " - stream is already closed");
+            throw new SshChannelClosedException(channel.getId(),
+                "flush(" + this + ") length=" + bufferLength + " - stream is already closed");
         }
 
         try {
-            AbstractChannel channel = getChannel();
             Session session = channel.getSession();
             boolean traceEnabled = log.isTraceEnabled();
             while (bufferLength > 0) {

@@ -73,6 +73,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.WindowClosedException;
+import org.apache.sshd.common.channel.exception.SshChannelClosedException;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
@@ -1205,10 +1206,10 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
-            PropertyResolverUtils.updateProperty(session, SftpClient.SFTP_CHANNEL_OPEN_TIMEOUT, TimeUnit.SECONDS.toMillis(4L));
+            PropertyResolverUtils.updateProperty(session, SftpClient.SFTP_CHANNEL_OPEN_TIMEOUT, TimeUnit.SECONDS.toMillis(7L));
             try (SftpClient sftp = createSftpClient(session)) {
                 fail("Unexpected SFTP client creation success");
-            } catch (SocketTimeoutException | EOFException | WindowClosedException e) {
+            } catch (SocketTimeoutException | EOFException | WindowClosedException | SshChannelClosedException e) {
                 // expected - ignored
             } finally {
                 PropertyResolverUtils.updateProperty(session, SftpClient.SFTP_CHANNEL_OPEN_TIMEOUT, SftpClient.DEFAULT_CHANNEL_OPEN_TIMEOUT);

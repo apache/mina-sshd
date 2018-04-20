@@ -75,6 +75,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
+import org.apache.sshd.common.channel.exception.SshChannelClosedException;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -606,8 +607,9 @@ public class ClientTest extends BaseTestSupport {
                     invertedStream.write(data);
                     invertedStream.flush();
                 }
-            } catch (SshException e) {
+            } catch (SshException | SshChannelClosedException e) {
                 // That's ok, the channel is being closed by the other side
+                outputDebugMessage("%s - ignore %s: %s", getCurrentTestName(), e.getClass().getSimpleName(), e.getMessage());
             }
 
             Collection<ClientChannelEvent> mask = EnumSet.of(ClientChannelEvent.CLOSED);
