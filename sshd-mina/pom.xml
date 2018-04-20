@@ -114,47 +114,38 @@
     </dependencies>
 
     <build>
-        <testSourceDirectory>${project.build.directory}/test-sources</testSourceDirectory>
-        <testResources>
-            <testResource>
-                <directory>${project.build.directory}/test-resources</directory>
-            </testResource>
-        </testResources>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
+           <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>copy-test-resources</id>
-                        <phase>generate-test-resources</phase>
+                        <id>add-test-source</id>
+                        <phase>generate-test-sources</phase>
                         <goals>
-                            <goal>copy-resources</goal>
+                            <goal>add-test-source</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.build.directory}/test-resources</outputDirectory>
+                            <sources>
+                                <source>${projectRoot}/sshd-core/src/test/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>add-test-resource</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>add-test-resource</goal>
+                        </goals>
+                        <configuration>
                             <resources>
                                 <resource>
                                     <directory>${projectRoot}/sshd-core/src/test/resources</directory>
+                                    <targetPath>${project.build.testOutputDirectory}</targetPath>
                                 </resource>
                             </resources>
                         </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-test-sources</id>
-                        <phase>generate-test-sources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/test-sources</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${projectRoot}/sshd-core/src/test/java</directory>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
+                    </execution>                    
                 </executions>
             </plugin>
             <plugin>
