@@ -506,6 +506,18 @@ public abstract class AbstractSftpSubsystemHelper
      */
     protected abstract String doOpen(int id, String path, int pflags, int access, Map<String, Object> attrs) throws IOException;
 
+    protected <E extends IOException> E signalOpenFailure(int id, String pathValue, Path path, boolean isDir, E thrown) throws IOException {
+        SftpEventListener listener = getSftpEventListenerProxy();
+        ServerSession session = getServerSession();
+        if (log.isDebugEnabled()) {
+            log.debug("signalOpenFailure(id={})[{}] signal {} for {}: {}",
+                    id, pathValue, thrown.getClass().getSimpleName(), path, thrown.getMessage());
+        }
+
+        listener.openFailed(session, pathValue, path, isDir, thrown);
+        return thrown;
+    }
+
     protected void doClose(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
         try {

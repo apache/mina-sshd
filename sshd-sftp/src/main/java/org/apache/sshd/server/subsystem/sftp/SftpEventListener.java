@@ -82,6 +82,22 @@ public interface SftpEventListener extends SshdEventListener {
     }
 
     /**
+     * Specified file / directory could not be opened - <B>Note:</B> this call may occur
+     * without {@link #opening(ServerSession, String, Handle)} ever having been called
+     *
+     * @param session      The {@link ServerSession} through which the request was handled
+     * @param remotePath   The path that was specified in the command
+     * @param localPath    The matching resolved local path
+     * @param isDirectory  Whether this was a folder or a file
+     * @param thrown       Non-{@code null} reason for the failure
+     * @throws IOException If failed to handle the call
+     */
+    default void openFailed(ServerSession session, String remotePath, Path localPath, boolean isDirectory, Throwable thrown)
+            throws IOException {
+        // ignored
+    }
+
+    /**
      * Result of reading entries from a directory - <B>Note:</B> it may be a
      * <U>partial</U> result if the directory contains more entries than can
      * be accommodated in the response

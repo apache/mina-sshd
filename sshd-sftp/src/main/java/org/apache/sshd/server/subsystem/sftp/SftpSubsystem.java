@@ -22,6 +22,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StreamCorruptedException;
 import java.net.UnknownServiceException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileSystem;
@@ -58,6 +59,7 @@ import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.subsystem.sftp.SftpHelper;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -740,22 +742,30 @@ public class SftpSubsystem
     protected String doOpenDir(int id, String path, Path p, LinkOption... options) throws IOException {
         Boolean status = IoUtils.checkFileExists(p, options);
         if (status == null) {
-            throw new AccessDeniedException(p.toString(), p.toString(), "Cannot determine open-dir existence");
+            throw signalOpenFailure(id, path, p, true,
+                new AccessDeniedException(p.toString(), p.toString(), "Cannot determine open-dir existence"));
         }
 
         if (!status) {
-            throw new NoSuchFileException(path, path, "Referenced target directory N/A");
+            throw signalOpenFailure(id, path, p, true,
+                new NoSuchFileException(path, path, "Referenced target directory N/A"));
         } else if (!Files.isDirectory(p, options)) {
-            throw new NotDirectoryException(path);
+            throw signalOpenFailure(id, path, p, true, new NotDirectoryException(path));
         } else if (!Files.isReadable(p)) {
-            throw new AccessDeniedException(p.toString(), p.toString(), "Not readable");
+            throw signalOpenFailure(id, path, p, true,
+                new AccessDeniedException(p.toString(), p.toString(), "Not readable"));
         } else {
             String handle;
-            synchronized (handles) {
-                handle = generateFileHandle(p);
-                DirectoryHandle dirHandle = new DirectoryHandle(this, p, handle);
-                handles.put(handle, dirHandle);
+            try {
+                synchronized (handles) {
+                    handle = generateFileHandle(p);
+                    DirectoryHandle dirHandle = new DirectoryHandle(this, p, handle);
+                    handles.put(handle, dirHandle);
+                }
+            } catch (IOException e) {
+                throw signalOpenFailure(id, path, p, true, e);
             }
+
             return handle;
         }
     }
@@ -862,18 +872,25 @@ public class SftpSubsystem
             log.debug("doOpen({})[id={}] SSH_FXP_OPEN (path={}, access=0x{}, pflags=0x{}, attrs={})",
                       session, id, path, Integer.toHexString(access), Integer.toHexString(pflags), attrs);
         }
+
+        Path file = resolveFile(path);
         int curHandleCount = handles.size();
         int maxHandleCount = session.getIntProperty(MAX_OPEN_HANDLES_PER_SESSION, DEFAULT_MAX_OPEN_HANDLES);
         if (curHandleCount > maxHandleCount) {
-            throw new IllegalStateException("Too many open handles: current=" + curHandleCount + ", max.=" + maxHandleCount);
+            throw signalOpenFailure(id, path, file, false,
+                new SftpException(SftpConstants.SSH_FX_NO_SPACE_ON_FILESYSTEM,
+                        "Too many open handles: current=" + curHandleCount + ", max.=" + maxHandleCount));
         }
 
-        Path file = resolveFile(path);
         String handle;
-        synchronized (handles) {
-            handle = generateFileHandle(file);
-            FileHandle fileHandle = new FileHandle(this, file, handle, pflags, access, attrs);
-            handles.put(handle, fileHandle);
+        try {
+            synchronized (handles) {
+                handle = generateFileHandle(file);
+                FileHandle fileHandle = new FileHandle(this, file, handle, pflags, access, attrs);
+                handles.put(handle, fileHandle);
+            }
+        } catch (IOException e) {
+            throw signalOpenFailure(id, path, file, false, e);
         }
 
         return handle;
@@ -881,7 +898,7 @@ public class SftpSubsystem
 
     // we stringify our handles and treat them as such on decoding as well as it is easier to use as a map key
     // NOTE: assume handles map is locked
-    protected String generateFileHandle(Path file) {
+    protected String generateFileHandle(Path file) throws IOException {
         // use several rounds in case the file handle size is relatively small so we might get conflicts
         ServerSession session = getServerSession();
         boolean traceEnabled = log.isTraceEnabled();
@@ -903,7 +920,7 @@ public class SftpSubsystem
             return handle;
         }
 
-        throw new IllegalStateException("Failed to generate a unique file handle for " + file);
+        throw new StreamCorruptedException("Failed to generate a unique file handle for " + file);
     }
 
     @Override
