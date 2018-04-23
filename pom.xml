@@ -472,6 +472,7 @@
                             <exclude>.classpath</exclude>
                             <exclude>.springBeans</exclude>
                             <exclude>.settings/**</exclude>
+                            <exclude>.repository/**</exclude>
                             <exclude>LICENSE*</exclude>
                             <exclude>NOTICE*</exclude>
                         </excludes>
