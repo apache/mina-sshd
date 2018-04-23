@@ -31,8 +31,6 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.SshConfigFileReader;
-import org.apache.sshd.common.io.BuiltinIoServiceFactoryFactories;
-import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.Command;
@@ -114,22 +112,6 @@ public class SshServerMain extends SshServerCliSupport {
                     keyFiles = new LinkedList<>();
                 }
                 keyFiles.add(keyFilePath);
-            } else if ("-io".equals(argName)) {
-                if ((i + 1) >= numArgs) {
-                    System.err.println("option requires an argument: " + argName);
-                    error = true;
-                    break;
-                }
-                provider = args[++i];
-                if ("mina".equals(provider)) {
-                    System.setProperty(IoServiceFactory.class.getName(), BuiltinIoServiceFactoryFactories.MINA.getFactoryClassName());
-                } else if ("nio2".endsWith(provider)) {
-                    System.setProperty(IoServiceFactory.class.getName(), BuiltinIoServiceFactoryFactories.NIO2.getFactoryClassName());
-                } else {
-                    System.err.println("provider should be mina or nio2: " + argName);
-                    error = true;
-                    break;
-                }
             } else if ("-o".equals(argName)) {
                 if ((i + 1) >= numArgs) {
                     System.err.println("option requires and argument: " + argName);
@@ -167,12 +149,17 @@ public class SshServerMain extends SshServerCliSupport {
                 break;
             }
         }
+
+        SshServer sshd = setupIoServiceFactory(SshServer.setUpDefaultServer(), System.err, args);
+        if (sshd == null) {
+            error = true;
+        }
+
         if (error) {
-            System.err.println("usage: sshd [-p port] [-io mina|nio2] [-key-type RSA|DSA|EC] [-key-size NNNN] [-key-file <path>] [-o option=value]");
+            System.err.println("usage: sshd [-p port] [-io mina|nio2|netty] [-key-type RSA|DSA|EC] [-key-size NNNN] [-key-file <path>] [-o option=value]");
             System.exit(-1);
         }
 
-        SshServer sshd = SshServer.setUpDefaultServer();
         Map<String, Object> props = sshd.getProperties();
         props.putAll(options);
 

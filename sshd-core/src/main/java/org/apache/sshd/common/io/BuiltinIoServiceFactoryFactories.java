@@ -33,7 +33,8 @@ import org.apache.sshd.common.io.nio2.Nio2ServiceFactoryFactory;
  */
 public enum BuiltinIoServiceFactoryFactories implements NamedFactory<IoServiceFactoryFactory>, OptionalFeature {
     NIO2(Nio2ServiceFactoryFactory.class),
-    MINA("org.apache.sshd.common.io.mina.MinaServiceFactoryFactory");
+    MINA("org.apache.sshd.common.io.mina.MinaServiceFactoryFactory"),
+    NETTY("org.apache.sshd.netty.NettyIoServiceFactoryFactory");
 
     public static final Set<BuiltinIoServiceFactoryFactories> VALUES =
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinIoServiceFactoryFactories.class));

@@ -41,6 +41,7 @@ import java.util.ServiceLoader;
 import java.util.TreeMap;
 import java.util.logging.Level;
 
+import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
@@ -49,9 +50,18 @@ import org.apache.sshd.client.subsystem.sftp.SftpClientFactory;
 import org.apache.sshd.client.subsystem.sftp.SftpFileSystemProvider;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatExtensionInfo;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatPathExtension;
+import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.ServiceFactory;
+import org.apache.sshd.common.channel.ChannelFactory;
+import org.apache.sshd.common.cipher.CipherFactory;
+import org.apache.sshd.common.compression.CompressionFactory;
+import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.mac.MacFactory;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.signature.SignatureFactory;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
@@ -89,6 +99,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
                 new PwdCommandExecutor(),
                 new InfoCommandExecutor(),
                 new SessionCommandExecutor(),
+                new ClientCommandExecutor(),
                 new VersionCommandExecutor(),
                 new CdCommandExecutor(),
                 new LcdCommandExecutor(),
@@ -300,7 +311,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
 
             ClientSession session = (logStream == null) ? null : setupClientSession(SFTP_PORT_OPTION, stdin, stdout, stderr, args);
             if (session == null) {
-                System.err.println("usage: sftp [-v[v][v]] [-E logoutput] [-i identity]"
+                System.err.println("usage: sftp [-v[v][v]] [-E logoutput] [-i identity] [-io nio2|mina|netty]"
                         + " [-l login] [" + SFTP_PORT_OPTION + " port] [-o option=value]"
                         + " [-w password] [-c cipherlist]  [-m maclist] [-C] hostname/user@host");
                 System.exit(-1);
@@ -388,6 +399,34 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
                 appendInfoValue(stdout, option.getDescription(), session.getNegotiatedKexParameter(option)).println();
             }
 
+            return false;
+        }
+    }
+
+    private class ClientCommandExecutor implements SftpCommandExecutor {
+        ClientCommandExecutor() {
+            super();
+        }
+
+        @Override
+        public String getName() {
+            return "client";
+        }
+
+        @Override
+        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+            ValidateUtils.checkTrue(GenericUtils.isEmpty(args), "Unexpected arguments: %s", args);
+            SftpClient sftp = getClient();
+            ClientSession session = sftp.getSession();
+            ClientFactoryManager manager = session.getFactoryManager();
+            appendInfoValue(stdout, IoServiceFactory.class.getSimpleName(), manager.getIoServiceFactory().getClass().getSimpleName()).println();
+            appendInfoValue(stdout, CipherFactory.class.getSimpleName(), NamedResource.getNames(manager.getCipherFactories())).println();
+            appendInfoValue(stdout, KeyExchange.class.getSimpleName(), NamedResource.getNames(manager.getKeyExchangeFactories())).println();
+            appendInfoValue(stdout, SignatureFactory.class.getSimpleName(), NamedResource.getNames(manager.getSignatureFactories())).println();
+            appendInfoValue(stdout, MacFactory.class.getSimpleName(), NamedResource.getNames(manager.getMacFactories())).println();
+            appendInfoValue(stdout, CompressionFactory.class.getSimpleName(), NamedResource.getNames(manager.getCompressionFactories())).println();
+            appendInfoValue(stdout, ChannelFactory.class.getSimpleName(), NamedResource.getNames(manager.getChannelFactories())).println();
+            appendInfoValue(stdout, ServiceFactory.class.getSimpleName(), NamedResource.getNames(manager.getServiceFactories())).println();
             return false;
         }
     }

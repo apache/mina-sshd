@@ -159,7 +159,8 @@ public abstract class SshClientCliSupport extends CliSupport {
                     break;
                 }
             } else if ("-i".equals(argName)) {
-                identities.add(resolveIdentityFile(argVal));
+                Path idFile = resolveIdentityFile(argVal);
+                identities.add(idFile);
             } else if ("-C".equals(argName)) {
                 compressions = setupCompressions(argName,
                     GenericUtils.join(
@@ -220,7 +221,7 @@ public abstract class SshClientCliSupport extends CliSupport {
             return null;
         }
 
-        SshClient client = setupClient(options, ciphers, macs, compressions, identities, stdin, stdout, stderr);
+        SshClient client = setupClient(options, ciphers, macs, compressions, identities, stdin, stdout, stderr, args);
         if (client == null) {
             return null;
         }
@@ -265,6 +266,10 @@ public abstract class SshClientCliSupport extends CliSupport {
         }
     }
 
+    public static SshClient setupDefaultClient(PrintStream stderr, String... args) {
+        return setupIoServiceFactory(SshClient.setUpDefaultClient(), System.err, args);
+    }
+
     // returns null if error encountered
     public static SshClient setupClient(
             Map<String, Object> options,
@@ -272,7 +277,9 @@ public abstract class SshClientCliSupport extends CliSupport {
             List<NamedFactory<Mac>> macs,
             List<NamedFactory<Compression>> compressions,
             Collection<? extends Path> identities,
-            BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+            BufferedReader stdin, PrintStream stdout, PrintStream stderr,
+            String[] args)
+                throws Exception {
         PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
         if (GenericUtils.isEmpty(ciphers)) {
             ciphers = setupCiphers(resolver, stderr);
@@ -295,7 +302,11 @@ public abstract class SshClientCliSupport extends CliSupport {
             }
         }
 
-        SshClient client = SshClient.setUpDefaultClient();
+        SshClient client = setupDefaultClient(stderr, args);
+        if (client == null) {
+            return null;
+        }
+
         try {
             if (GenericUtils.size(ciphers) > 0) {
                 client.setCipherFactories(ciphers);

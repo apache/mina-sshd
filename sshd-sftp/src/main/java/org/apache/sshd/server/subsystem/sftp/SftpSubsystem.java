@@ -859,7 +859,9 @@ public class SftpSubsystem
             log.debug("doClose({})[id={}] SSH_FXP_CLOSE (handle={}[{}])",
                       session, id, handle, h);
         }
-        validateHandle(handle, h, Handle.class).close();
+
+        Handle nodeHandle = validateHandle(handle, h, Handle.class);
+        nodeHandle.close();
 
         SftpEventListener listener = getSftpEventListenerProxy();
         listener.close(session, handle, h);

@@ -118,8 +118,8 @@ public class ScpCommandMain extends SshClientCliSupport {
     }
 
     public static void main(String[] args) throws Exception {
-        final PrintStream stdout = System.out;
-        final PrintStream stderr = System.err;
+        PrintStream stdout = System.out;
+        PrintStream stderr = System.err;
         OutputStream logStream = stdout;
         try (BufferedReader stdin = new BufferedReader(
                 new InputStreamReader(new NoCloseInputStream(System.in), Charset.defaultCharset()))) {
@@ -137,7 +137,7 @@ public class ScpCommandMain extends SshClientCliSupport {
             ClientSession session = (logStream == null) || GenericUtils.isEmpty(args)
                 ? null : setupClientSession(SCP_PORT_OPTION, stdin, stdout, stderr, args);
             if (session == null) {
-                stderr.println("usage: scp [" + SCP_PORT_OPTION + " port] [-i identity]"
+                stderr.println("usage: scp [" + SCP_PORT_OPTION + " port] [-i identity] [-io nio2|mina|netty]"
                          + " [-v[v][v]] [-E logoutput] [-r] [-p] [-q] [-o option=value]"
                          + " [-c cipherlist] [-m maclist] [-w password] [-C] <source> <target>");
                 stderr.println();
