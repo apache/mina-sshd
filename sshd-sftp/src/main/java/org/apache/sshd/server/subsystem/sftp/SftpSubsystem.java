@@ -861,10 +861,14 @@ public class SftpSubsystem
         }
 
         Handle nodeHandle = validateHandle(handle, h, Handle.class);
-        nodeHandle.close();
-
         SftpEventListener listener = getSftpEventListenerProxy();
-        listener.close(session, handle, h);
+        try {
+            listener.closing(session, handle, nodeHandle);
+            nodeHandle.close();
+            listener.closed(session, handle, nodeHandle, null);
+        } catch (IOException | RuntimeException e) {
+            listener.closed(session, handle, nodeHandle, e);
+        }
     }
 
     @Override

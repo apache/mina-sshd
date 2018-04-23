@@ -776,7 +776,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             }
 
             @Override
-            public void close(ServerSession session, String remoteHandle, Handle localHandle) {
+            public void closing(ServerSession session, String remoteHandle, Handle localHandle) {
                 Path path = localHandle.getFile();
                 log.info("close(" + session + ")[" + remoteHandle + "] " + (Files.isDirectory(path) ? "directory" : "file") + " " + path);
                 closeCount.incrementAndGet();

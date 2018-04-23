@@ -164,7 +164,7 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     }
 
     @Override
-    public void close(ServerSession session, String remoteHandle, Handle localHandle) {
+    public void closing(ServerSession session, String remoteHandle, Handle localHandle) {
         if (log.isTraceEnabled()) {
             Path path = localHandle.getFile();
             log.trace("close(" + session + ")[" + remoteHandle + "] " + (Files.isDirectory(path) ? "directory" : "file") + " " + path);

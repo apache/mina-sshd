@@ -254,13 +254,25 @@ public interface SftpEventListener extends SshdEventListener {
     }
 
     /**
-     * Specified file / directory has been closed
+     * Specified file / directory about to be closed
      *
      * @param session      The {@link ServerSession} through which the request was handled
      * @param remoteHandle The (opaque) assigned handle for the file / directory
      * @param localHandle  The associated file / directory {@link Handle}
      */
-    default void close(ServerSession session, String remoteHandle, Handle localHandle) {
+    default void closing(ServerSession session, String remoteHandle, Handle localHandle) {
+        // ignored
+    }
+
+    /**
+     * Specified file / directory has been closed
+     *
+     * @param session      The {@link ServerSession} through which the request was handled
+     * @param remoteHandle The (opaque) assigned handle for the file / directory
+     * @param localHandle  The associated file / directory {@link Handle}
+     * @param thrown       If not-{@code null} then the reason for the failure to execute
+     */
+    default void closed(ServerSession session, String remoteHandle, Handle localHandle, Throwable thrown) {
         // ignored
     }
 
