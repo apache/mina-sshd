@@ -522,8 +522,8 @@ public class SftpSubsystem
          */
         if (requestsCount.get() > 0L) {
             sendStatus(prepareReply(buffer), id,
-               SftpConstants.SSH_FX_FAILURE,
-               "Version selection not the 1st request for proposal = " + proposed);
+                    SftpConstants.SSH_FX_FAILURE,
+                    "Version selection not the 1st request for proposal = " + proposed);
             session.close(true);
             return;
         }

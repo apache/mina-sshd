@@ -1451,7 +1451,7 @@ public abstract class AbstractSftpSubsystemHelper
         if (Files.isDirectory(p, options)) {
             doRemove(id, p);
         } else {
-            throw new NotDirectoryException(p.toString());
+            throw signalRemovalPreConditionFailure(id, path, p, new NotDirectoryException(p.toString()));
         }
     }
 
@@ -1546,15 +1546,29 @@ public abstract class AbstractSftpSubsystemHelper
 
         Boolean status = IoUtils.checkFileExists(p, options);
         if (status == null) {
-            throw new AccessDeniedException(p.toString(), p.toString(), "Cannot determine existence of remove candidate");
-        }
-        if (!status) {
-            throw new NoSuchFileException(p.toString(), p.toString(), "Removal candidate not found");
+            throw signalRemovalPreConditionFailure(id, path, p,
+                new AccessDeniedException(p.toString(), p.toString(), "Cannot determine existence of remove candidate"));
+        } else if (!status) {
+            throw signalRemovalPreConditionFailure(id, path, p,
+                new NoSuchFileException(p.toString(), p.toString(), "Removal candidate not found"));
         } else if (Files.isDirectory(p, options)) {
-            throw new SftpException(SftpConstants.SSH_FX_FILE_IS_A_DIRECTORY, p.toString() + " is a folder");
+            throw signalRemovalPreConditionFailure(id, path, p,
+                new SftpException(SftpConstants.SSH_FX_FILE_IS_A_DIRECTORY, p.toString() + " is a folder"));
         } else {
             doRemove(id, p);
         }
+    }
+
+    protected <E extends IOException> E signalRemovalPreConditionFailure(int id, String pathValue, Path path, E thrown) throws IOException {
+        SftpEventListener listener = getSftpEventListenerProxy();
+        ServerSession session = getServerSession();
+        if (log.isDebugEnabled()) {
+            log.debug("signalRemovalPreConditionFailure(id={})[{}] signal {} for {}: {}",
+                    id, pathValue, thrown.getClass().getSimpleName(), path, thrown.getMessage());
+        }
+        listener.removing(session, path);
+        listener.removed(session, path, thrown);
+        return thrown;
     }
 
     protected void doExtended(Buffer buffer, int id) throws IOException {
