@@ -34,16 +34,17 @@ import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
@@ -125,6 +126,13 @@ public class SftpSubsystem
 
     protected static final Buffer CLOSE = new ByteArrayBuffer(null, 0, 0);
 
+    protected final AtomicBoolean closed = new AtomicBoolean(false);
+    protected final AtomicLong requestsCount = new AtomicLong(0L);
+    protected final Map<String, byte[]> extensions = new TreeMap<>(Comparator.naturalOrder());
+    protected final Map<String, Handle> handles = new ConcurrentHashMap<>();
+    protected final Buffer buffer = new ByteArrayBuffer(1024);
+    protected final BlockingQueue<Buffer> requests = new LinkedBlockingQueue<>();
+
     protected ExitCallback callback;
     protected IoOutputStream out;
     protected IoOutputStream err;
@@ -136,16 +144,10 @@ public class SftpSubsystem
     protected byte[] workBuf = new byte[Math.max(DEFAULT_FILE_HANDLE_SIZE, Integer.BYTES)];
     protected FileSystem fileSystem = FileSystems.getDefault();
     protected Path defaultDir = fileSystem.getPath(System.getProperty("user.dir"));
-    protected long requestsCount;
     protected int version;
-    protected final Map<String, byte[]> extensions = new TreeMap<>(Comparator.naturalOrder());
-    protected final Map<String, Handle> handles = new HashMap<>();
-    protected final Buffer buffer = new ByteArrayBuffer(1024);
-    protected final BlockingQueue<Buffer> requests = new LinkedBlockingQueue<>();
 
     protected ServerSession serverSession;
     protected ChannelSession channelSession;
-    protected final AtomicBoolean closed = new AtomicBoolean(false);
     protected ExecutorService executorService;
     protected boolean shutdownOnExit;
 
@@ -346,7 +348,7 @@ public class SftpSubsystem
     protected void doProcess(Buffer buffer, int length, int type, int id) throws IOException {
         super.doProcess(buffer, length, type, id);
         if (type != SftpConstants.SSH_FXP_INIT) {
-            requestsCount++;
+            requestsCount.incrementAndGet();
         }
     }
 
@@ -518,10 +520,10 @@ public class SftpSubsystem
          * server; if it is not, the server MUST fail the request and close the
          * channel.
          */
-        if (requestsCount > 0L) {
+        if (requestsCount.get() > 0L) {
             sendStatus(prepareReply(buffer), id,
-                       SftpConstants.SSH_FX_FAILURE,
-                       "Version selection not the 1st request for proposal = " + proposed);
+               SftpConstants.SSH_FX_FAILURE,
+               "Version selection not the 1st request for proposal = " + proposed);
             session.close(true);
             return;
         }
@@ -748,9 +750,12 @@ public class SftpSubsystem
         } else if (!Files.isReadable(p)) {
             throw new AccessDeniedException(p.toString(), p.toString(), "Not readable");
         } else {
-            String handle = generateFileHandle(p);
-            DirectoryHandle dirHandle = new DirectoryHandle(this, p, handle);
-            handles.put(handle, dirHandle);
+            String handle;
+            synchronized (handles) {
+                handle = generateFileHandle(p);
+                DirectoryHandle dirHandle = new DirectoryHandle(this, p, handle);
+                handles.put(handle, dirHandle);
+            }
             return handle;
         }
     }
@@ -864,13 +869,18 @@ public class SftpSubsystem
         }
 
         Path file = resolveFile(path);
-        String handle = generateFileHandle(file);
-        FileHandle fileHandle = new FileHandle(this, file, handle, pflags, access, attrs);
-        handles.put(handle, fileHandle);
+        String handle;
+        synchronized (handles) {
+            handle = generateFileHandle(file);
+            FileHandle fileHandle = new FileHandle(this, file, handle, pflags, access, attrs);
+            handles.put(handle, fileHandle);
+        }
+
         return handle;
     }
 
     // we stringify our handles and treat them as such on decoding as well as it is easier to use as a map key
+    // NOTE: assume handles map is locked
     protected String generateFileHandle(Path file) {
         // use several rounds in case the file handle size is relatively small so we might get conflicts
         ServerSession session = getServerSession();
@@ -878,6 +888,7 @@ public class SftpSubsystem
         for (int index = 0; index < maxFileHandleRounds; index++) {
             randomizer.fill(workBuf, 0, fileHandleSize);
             String handle = BufferUtils.toHex(workBuf, 0, fileHandleSize, BufferUtils.EMPTY_HEX_SEPARATOR);
+
             if (handles.containsKey(handle)) {
                 if (traceEnabled) {
                     log.trace("generateFileHandle({})[{}] handle={} in use at round {}",
