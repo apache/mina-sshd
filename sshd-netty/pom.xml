@@ -182,11 +182,14 @@
                         <exclude>**/ProxyTest.java</exclude>
                         <exclude>**/Nio2ServiceTest.java</exclude>
 
-                            <!-- TODO need some more research as to why this fails on Netty but not on NIO2 -->
+                            <!-- TODO need some more research as to why this fails on Netty but not on NIO2 or MINA -->
                         <exclude>**/ClientDeadlockTest.java</exclude>
                         <exclude>**/ApacheServer*Test.java</exclude>
                         <exclude>**/ClientTest.java</exclude>
                         <exclude>**/SpaceAvailableExtensionImplTest.java</exclude>
+                        <exclude>**/BuiltinIoServiceFactoryFactoriesTest.java</exclude>
+                        <exclude>**/ConcurrentConnectionTest.java</exclude>
+                        <exclude>**/SignatureFactoriesTest.java</exclude>
                     </excludes>
                         <!-- No need to re-run core tests that do not involve session creation -->
                     <excludedGroups>org.apache.sshd.util.test.NoIoTestCase</excludedGroups>

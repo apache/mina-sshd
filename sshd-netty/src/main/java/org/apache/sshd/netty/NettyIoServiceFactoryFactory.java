@@ -45,5 +45,4 @@ public class NettyIoServiceFactoryFactory implements IoServiceFactoryFactory {
     public IoServiceFactory create(FactoryManager manager) {
         return new NettyIoServiceFactory(eventLoopGroup);
     }
-
 }

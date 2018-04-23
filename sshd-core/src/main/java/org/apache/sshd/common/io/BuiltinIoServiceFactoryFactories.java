@@ -73,7 +73,6 @@ public enum BuiltinIoServiceFactoryFactories implements NamedFactory<IoServiceFa
                 return (Class) Class.forName(factoryClassName, true, Thread.currentThread().getContextClassLoader());
             } catch (ClassNotFoundException e1) {
                 throw new RuntimeException(e);
-
             }
         }
     }
@@ -116,6 +115,10 @@ public enum BuiltinIoServiceFactoryFactories implements NamedFactory<IoServiceFa
         }
 
         for (BuiltinIoServiceFactoryFactories f : VALUES) {
+            if (!f.isSupported()) {
+                continue;
+            }
+
             if (clazz.isAssignableFrom(f.getFactoryClass())) {
                 return f;
             }
