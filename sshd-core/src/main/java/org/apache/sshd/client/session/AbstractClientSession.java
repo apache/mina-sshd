@@ -40,8 +40,6 @@ import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
-import org.apache.sshd.client.scp.DefaultScpClient;
-import org.apache.sshd.client.scp.ScpClient;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
@@ -59,8 +57,6 @@ import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
-import org.apache.sshd.common.scp.ScpFileOpener;
-import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.helpers.AbstractConnectionService;
@@ -82,8 +78,6 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     private UserInteraction userInteraction;
     private PasswordIdentityProvider passwordIdentityProvider;
     private List<NamedFactory<UserAuth>> userAuthFactories;
-    private ScpTransferEventListener scpListener;
-    private ScpFileOpener scpOpener;
     private SocketAddress connectAddress;
     private ClientProxyConnector proxyConnector;
 
@@ -298,31 +292,6 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     protected ConnectionService getConnectionService() {
         return getService(ConnectionService.class);
-    }
-
-    @Override
-    public ScpFileOpener getScpFileOpener() {
-        return resolveEffectiveProvider(ScpFileOpener.class, scpOpener, getFactoryManager().getScpFileOpener());
-    }
-
-    @Override
-    public void setScpFileOpener(ScpFileOpener opener) {
-        scpOpener = opener;
-    }
-
-    @Override
-    public ScpTransferEventListener getScpTransferEventListener() {
-        return scpListener;
-    }
-
-    @Override
-    public void setScpTransferEventListener(ScpTransferEventListener listener) {
-        scpListener = listener;
-    }
-
-    @Override
-    public ScpClient createScpClient(ScpFileOpener opener, ScpTransferEventListener listener) {
-        return new DefaultScpClient(this, opener, listener);
     }
 
     @Override

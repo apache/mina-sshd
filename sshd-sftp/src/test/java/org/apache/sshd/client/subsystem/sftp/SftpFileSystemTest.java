@@ -67,7 +67,6 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemEnvironment;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -96,7 +95,6 @@ public class SftpFileSystemTest extends BaseTestSupport {
     public static void setupServerInstance() throws Exception {
         sshd = Utils.setupTestServer(SftpFileSystemTest.class);
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
-        sshd.setCommandFactory(new ScpCommandFactory());
         sshd.start();
         port = sshd.getPort();
     }

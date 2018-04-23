@@ -17,20 +17,26 @@
  * under the License.
  */
 
-package org.apache.sshd.client.simple;
+package org.apache.sshd.client.scp;
 
-import java.nio.channels.Channel;
+import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.scp.ScpFileOpener;
+import org.apache.sshd.common.scp.ScpTransferEventListener;
 
 /**
- * Provides a simplified and <U>synchronous</U> view of the available SSH client
- * functionality. If more fine-grained control and configuration of the SSH client
- * behavior and features is required then the {@link org.apache.sshd.client.SshClient} object should be used
+ * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SimpleClient
-        extends SimpleClientConfigurator,
-                SimpleSessionClient,
-                Channel {
-    // marker interface
+public class DefaultScpClientCreator extends AbstractScpClientCreator {
+    public static final DefaultScpClientCreator INSTANCE = new DefaultScpClientCreator();
+
+    public DefaultScpClientCreator() {
+        super();
+    }
+
+    @Override
+    public ScpClient createScpClient(ClientSession session, ScpFileOpener opener, ScpTransferEventListener listener) {
+        return new DefaultScpClient(session, opener, listener);
+    }
 }

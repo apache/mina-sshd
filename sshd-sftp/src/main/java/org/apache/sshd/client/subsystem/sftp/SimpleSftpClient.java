@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.client.simple;
+package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -27,7 +27,7 @@ import java.nio.channels.Channel;
 import java.security.KeyPair;
 import java.util.Objects;
 
-import org.apache.sshd.client.subsystem.sftp.SftpClient;
+import org.apache.sshd.client.simple.SimpleClientConfigurator;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**

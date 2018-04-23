@@ -56,7 +56,6 @@ public class SshServerMain extends SshServerCliSupport {
 
     public static void main(String[] args) throws Exception {
         int port = 8000;
-        String provider;
         boolean error = false;
         String hostKeyType = AbstractGeneratorHostKeyProvider.DEFAULT_ALGORITHM;
         int hostKeySize = 0;

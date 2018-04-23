@@ -17,11 +17,12 @@
  * under the License.
  */
 
-package org.apache.sshd.client.simple;
+package org.apache.sshd.util.test.client.simple;
 
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.simple.SimpleClient;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.After;

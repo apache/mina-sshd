@@ -19,6 +19,7 @@
 
 package org.apache.sshd.client.scp;
 
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpFileOpenerHolder;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
@@ -27,47 +28,55 @@ import org.apache.sshd.common.scp.ScpTransferEventListener;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ScpClientCreator extends ScpFileOpenerHolder {
-    /**
-     * Create an SCP client from this session.
-     *
-     * @return An {@link ScpClient} instance. <B>Note:</B> uses the currently
-     * registered {@link ScpTransferEventListener} and {@link ScpFileOpener} if any
-     * @see #setScpFileOpener(ScpFileOpener)
-     * @see #setScpTransferEventListener(ScpTransferEventListener)
-     */
-    default ScpClient createScpClient() {
-        return createScpClient(getScpFileOpener(), getScpTransferEventListener());
+    static ScpClientCreator instance() {
+        return DefaultScpClientCreator.INSTANCE;
     }
 
     /**
      * Create an SCP client from this session.
      *
+     * @param session The {@link ClientSession}
+     * @return An {@link ScpClient} instance. <B>Note:</B> uses the currently
+     * registered {@link ScpTransferEventListener} and {@link ScpFileOpener} if any
+     * @see #setScpFileOpener(ScpFileOpener)
+     * @see #setScpTransferEventListener(ScpTransferEventListener)
+     */
+    default ScpClient createScpClient(ClientSession session) {
+        return createScpClient(session, getScpFileOpener(), getScpTransferEventListener());
+    }
+
+    /**
+     * Create an SCP client from this session.
+     *
+     * @param session The {@link ClientSession}
      * @param listener A {@link ScpTransferEventListener} that can be used
      * to receive information about the SCP operations - may be {@code null}
      * to indicate no more events are required. <B>Note:</B> this listener
      * is used <U>instead</U> of any listener set via {@link #setScpTransferEventListener(ScpTransferEventListener)}
      * @return An {@link ScpClient} instance
      */
-    default ScpClient createScpClient(ScpTransferEventListener listener) {
-        return createScpClient(getScpFileOpener(), listener);
+    default ScpClient createScpClient(ClientSession session, ScpTransferEventListener listener) {
+        return createScpClient(session, getScpFileOpener(), listener);
     }
 
     /**
      * Create an SCP client from this session.
      *
+     * @param session The {@link ClientSession}
      * @param opener The {@link ScpFileOpener} to use to control how local files
      * are read/written. If {@code null} then a default opener is used.
      * <B>Note:</B> this opener is used <U>instead</U> of any instance
      * set via {@link #setScpFileOpener(ScpFileOpener)}
      * @return An {@link ScpClient} instance
      */
-    default ScpClient createScpClient(ScpFileOpener opener) {
-        return createScpClient(opener, getScpTransferEventListener());
+    default ScpClient createScpClient(ClientSession session, ScpFileOpener opener) {
+        return createScpClient(session, opener, getScpTransferEventListener());
     }
 
     /**
      * Create an SCP client from this session.
      *
+     * @param session  The {@link ClientSession}
      * @param opener   The {@link ScpFileOpener} to use to control how local files
      *                 are read/written. If {@code null} then a default opener is used.
      *                 <B>Note:</B> this opener is used <U>instead</U> of any instance
@@ -79,7 +88,7 @@ public interface ScpClientCreator extends ScpFileOpenerHolder {
      *                 {@link #setScpTransferEventListener(ScpTransferEventListener)}
      * @return An {@link ScpClient} instance
      */
-    ScpClient createScpClient(ScpFileOpener opener, ScpTransferEventListener listener);
+    ScpClient createScpClient(ClientSession session, ScpFileOpener opener, ScpTransferEventListener listener);
 
     /**
      * @return The last {@link ScpTransferEventListener} set via

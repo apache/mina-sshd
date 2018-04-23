@@ -1,0 +1,201 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+
+    <!--
+
+        Licensed to the Apache Software Foundation (ASF) under one or more
+        contributor license agreements.  See the NOTICE file distributed with
+        this work for additional information regarding copyright ownership.
+        The ASF licenses this file to You under the Apache License, Version 2.0
+        (the "License"); you may not use this file except in compliance with
+        the License.  You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+        Unless required by applicable law or agreed to in writing, software
+        distributed under the License is distributed on an "AS IS" BASIS,
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        See the License for the specific language governing permissions and
+        limitations under the License.
+    -->
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.apache.sshd</groupId>
+        <artifactId>sshd</artifactId>
+        <version>2.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>sshd-scp</artifactId>
+    <name>Apache Mina SSHD :: SCP</name>
+    <packaging>jar</packaging>
+    <inceptionYear>2018</inceptionYear>
+
+    <properties>
+        <projectRoot>${project.basedir}/..</projectRoot>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-core</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.jcraft</groupId>
+            <artifactId>jsch</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.ethz.ganymed</groupId>
+            <artifactId>ganymed-ssh2</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.jcraft</groupId>
+            <artifactId>jzlib</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/filtered-resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    <reportsDirectory>${project.build.directory}/surefire-reports-nio2</reportsDirectory>
+                    <systemProperties>
+                        <org.apache.sshd.common.io.IoServiceFactoryFactory>org.apache.sshd.common.io.nio2.Nio2ServiceFactoryFactory</org.apache.sshd.common.io.IoServiceFactoryFactory>
+                    </systemProperties>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <additionalparam>-Xdoclint:none</additionalparam>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>test-mina</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+
+            <dependencies>
+		        <dependency>
+		            <groupId>org.apache.sshd</groupId>
+		            <artifactId>sshd-mina</artifactId>
+		            <version>${project.version}</version>
+		            <scope>test</scope>
+		        </dependency>
+            </dependencies>
+
+            <build>
+                <plugins>
+		            <plugin>
+		                <groupId>org.apache.maven.plugins</groupId>
+		                <artifactId>maven-surefire-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>mina</id>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <configuration>
+                                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+				                    <reportsDirectory>${project.build.directory}/surefire-reports-mina</reportsDirectory>
+				                    <systemProperties>
+				                        <org.apache.sshd.common.io.IoServiceFactoryFactory>org.apache.sshd.common.io.mina.MinaServiceFactoryFactory</org.apache.sshd.common.io.IoServiceFactoryFactory>
+				                    </systemProperties>
+                                </configuration>
+                            </execution>
+                        </executions>
+		            </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>test-netty</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+
+            <dependencies>
+		        <dependency>
+		            <groupId>org.apache.sshd</groupId>
+		            <artifactId>sshd-netty</artifactId>
+		            <version>${project.version}</version>
+		            <scope>test</scope>
+		        </dependency>
+            </dependencies>
+
+            <build>
+                <plugins>
+		            <plugin>
+		                <groupId>org.apache.maven.plugins</groupId>
+		                <artifactId>maven-surefire-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>netty</id>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <configuration>
+                                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+				                    <reportsDirectory>${project.build.directory}/surefire-reports-netty</reportsDirectory>
+				                    <systemProperties>
+				                        <org.apache.sshd.common.io.IoServiceFactoryFactory>org.apache.sshd.netty.NettyIoServiceFactoryFactory</org.apache.sshd.common.io.IoServiceFactoryFactory>
+				                    </systemProperties>
+                                </configuration>
+                            </execution>
+                        </executions>
+		            </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.client.simple;
+package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -26,15 +26,15 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.EnumSet;
 
-import org.apache.sshd.client.subsystem.sftp.SftpClient;
+import org.apache.sshd.client.subsystem.sftp.impl.SimpleSftpClientImpl;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.client.simple.BaseSimpleClientTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -59,7 +59,6 @@ public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
     public void setUp() throws Exception {
         super.setUp();
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
-        sshd.setCommandFactory(new ScpCommandFactory());
         sshd.setFileSystemFactory(fileSystemFactory);
         client.start();
         sftpClient = new SimpleSftpClientImpl(simple);

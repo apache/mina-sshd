@@ -17,13 +17,12 @@
  * under the License.
  */
 
-package org.apache.sshd.client.simple;
+package org.apache.sshd.client.scp;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.apache.sshd.client.scp.CloseableScpClient;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.scp.ScpHelper;
@@ -31,6 +30,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.client.simple.BaseSimpleClientTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -43,6 +43,7 @@ public class SimpleScpClientTest extends BaseSimpleClientTestSupport {
     private final Path targetPath;
     private final Path parentPath;
     private final FileSystemFactory fileSystemFactory;
+    private SimpleScpClient scpClient;
 
     public SimpleScpClientTest() throws Exception {
         targetPath = detectTargetFolder();
@@ -56,6 +57,7 @@ public class SimpleScpClientTest extends BaseSimpleClientTestSupport {
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.setFileSystemFactory(fileSystemFactory);
         client.start();
+        scpClient = new SimpleScpClientImpl(simple);
     }
 
     @Test
@@ -113,7 +115,7 @@ public class SimpleScpClientTest extends BaseSimpleClientTestSupport {
         }
     }
 
-    protected CloseableScpClient login() throws IOException {
-        return simple.scpLogin(TEST_LOCALHOST, port, getCurrentTestName(), getCurrentTestName());
+    private CloseableScpClient login() throws IOException {
+        return scpClient.scpLogin(TEST_LOCALHOST, port, getCurrentTestName(), getCurrentTestName());
     }
 }

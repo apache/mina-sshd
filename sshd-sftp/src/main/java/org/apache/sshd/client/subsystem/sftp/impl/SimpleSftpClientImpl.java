@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.client.simple;
+package org.apache.sshd.client.subsystem.sftp.impl;
 
 import java.io.IOException;
 import java.lang.reflect.Proxy;
@@ -25,31 +25,38 @@ import java.net.SocketAddress;
 import java.security.KeyPair;
 
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.simple.SimpleClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClientFactory;
+import org.apache.sshd.client.subsystem.sftp.SimpleSftpClient;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.io.functors.IOFunction;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleSftpClient {
 
-    private SimpleClient client;
+    private SimpleClient clientInstance;
     private SftpClientFactory sftpClientFactory;
+
+    public SimpleSftpClientImpl() {
+        this(null);
+    }
 
     public SimpleSftpClientImpl(SimpleClient client) {
         this(client, null);
     }
 
     public SimpleSftpClientImpl(SimpleClient client, SftpClientFactory sftpClientFactory) {
-        this.client = client;
+        this.clientInstance = client;
         setSftpClientFactory(sftpClientFactory);
     }
 
     public SimpleClient getClient() {
-        return client;
+        return clientInstance;
     }
 
     public void setClient(SimpleClient client) {
-        this.client = client;
+        this.clientInstance = client;
     }
 
     public SftpClientFactory getSftpClientFactory() {
@@ -62,15 +69,29 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
 
     @Override
     public SftpClient sftpLogin(SocketAddress target, String username, String password) throws IOException {
-        return createSftpClient(client.sessionLogin(target, username, password));
+        return createSftpClient(client -> client.sessionLogin(target, username, password));
     }
 
     @Override
     public SftpClient sftpLogin(SocketAddress target, String username, KeyPair identity) throws IOException {
-        return createSftpClient(client.sessionLogin(target, username, identity));
+        return createSftpClient(client -> client.sessionLogin(target, username, identity));
     }
 
-    protected SftpClient createSftpClient(final ClientSession session) throws IOException {
+    protected SftpClient createSftpClient(IOFunction<? super SimpleClient, ? extends ClientSession> sessionProvider) throws IOException {
+        SimpleClient client = getClient();
+        ClientSession session = sessionProvider.apply(client);
+        try {
+            SftpClient sftp = createSftpClient(session);
+            session = null; // disable auto-close at finally block
+            return sftp;
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
+    }
+
+    protected SftpClient createSftpClient(ClientSession session) throws IOException {
         Exception err = null;
         try {
             SftpClient client = sftpClientFactory.createSftpClient(session);
@@ -121,7 +142,7 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
         }
     }
 
-    protected SftpClient createSftpClient(final ClientSession session, final SftpClient client) throws IOException {
+    protected SftpClient createSftpClient(ClientSession session, SftpClient client) throws IOException {
         ClassLoader loader = getClass().getClassLoader();
         Class<?>[] interfaces = {SftpClient.class};
         return (SftpClient) Proxy.newProxyInstance(loader, interfaces, (proxy, method, args) -> {

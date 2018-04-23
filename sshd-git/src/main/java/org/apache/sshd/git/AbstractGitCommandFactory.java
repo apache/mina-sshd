@@ -25,7 +25,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.server.scp.UnknownCommand;
+import org.apache.sshd.server.shell.UnknownCommand;
 
 /**
  * TODO Add javadoc

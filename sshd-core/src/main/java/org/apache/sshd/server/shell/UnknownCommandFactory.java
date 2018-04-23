@@ -17,11 +17,10 @@
  * under the License.
  */
 
-package org.apache.sshd.util.test;
+package org.apache.sshd.server.shell;
 
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.server.scp.UnknownCommand;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

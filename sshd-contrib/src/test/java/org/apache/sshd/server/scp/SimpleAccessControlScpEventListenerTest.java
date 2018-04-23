@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.scp.ScpClient;
+import org.apache.sshd.client.scp.ScpClientCreator;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
@@ -89,7 +90,8 @@ public class SimpleAccessControlScpEventListenerTest extends BaseTestSupport {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
-                ScpClient scp = session.createScpClient();
+                ScpClientCreator creator = ScpClientCreator.instance();
+                ScpClient scp = creator.createScpClient(session);
                 Path targetPath = detectTargetFolder();
                 Path parentPath = targetPath.getParent();
                 Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());

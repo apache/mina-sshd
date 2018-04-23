@@ -35,11 +35,13 @@ import java.util.logging.Level;
 
 import org.apache.sshd.client.scp.ScpClient;
 import org.apache.sshd.client.scp.ScpClient.Option;
+import org.apache.sshd.client.scp.ScpClientCreator;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.scp.ScpLocation;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
+import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
  * TODO Add javadoc
@@ -70,13 +72,14 @@ public class ScpCommandMain extends SshClientCliSupport {
             String argName = args[index];
             // handled by 'setupClientSession'
             if (isArgumentedOption(SCP_PORT_OPTION, argName)) {
-                if ((index + 1) >= numArgs) {
+                index++;
+                if (index >= numArgs) {
                     error = showError(stderr, "option requires an argument: " + argName);
                     break;
                 }
 
                 effective.add(argName);
-                effective.add(args[++index]);
+                effective.add(args[index]);
             } else if ("-r".equals(argName) || "-p".equals(argName)
                     || "-q".equals(argName) || "-C".equals(argName)
                     || "-v".equals(argName) || "-vv".equals(argName) || "-vvv".equals(argName)) {
@@ -85,13 +88,14 @@ public class ScpCommandMain extends SshClientCliSupport {
                 error = showError(stderr, "Unknown option: " + argName);
                 break;
             } else {
-                if ((index + 1) >= numArgs) {
+                index++;
+                if (index >= numArgs) {
                     error = showError(stderr, "Not enough arguments");
                     break;
                 }
 
                 ScpLocation source = new ScpLocation(argName);
-                ScpLocation target = new ScpLocation(args[++index]);
+                ScpLocation target = new ScpLocation(args[index]);
                 if (index < (numArgs - 1)) {
                     error = showError(stderr, "Unexpected extra arguments");
                     break;
@@ -117,6 +121,42 @@ public class ScpCommandMain extends SshClientCliSupport {
         return effective.toArray(new String[effective.size()]);
     }
 
+    public static ScpClientCreator resolveScpClientCreator(PrintStream stderr, String... args) {
+        String className = null;
+        for (int index = 0, numArgs = GenericUtils.length(args); index < numArgs; index++) {
+            String argName = args[index];
+            if ("-creator".equals(argName)) {
+                index++;
+                if (index >= numArgs) {
+                    showError(stderr, "option requires an argument: " + argName);
+                    return null;
+                }
+
+                className = args[index];
+            }
+        }
+
+        if (GenericUtils.isEmpty(className)) {
+            className = System.getProperty(ScpClientCreator.class.getName());
+        }
+
+        if (GenericUtils.isEmpty(className)) {
+            return ScpClientCreator.instance();
+        }
+
+        try {
+            ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(ScpClientCreator.class);
+            Class<?> clazz = cl.loadClass(className);
+            return ScpClientCreator.class.cast(clazz.newInstance());
+        } catch (Exception e) {
+            stderr.append("Failed (").append(e.getClass().getSimpleName()).append(')')
+                .append(" to instantiate ").append(className)
+                .append(": ").println(e.getMessage());
+            stderr.flush();
+            return null;
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         PrintStream stdout = System.out;
         PrintStream stderr = System.err;
@@ -134,11 +174,12 @@ public class ScpCommandMain extends SshClientCliSupport {
                 }
             }
 
-            ClientSession session = (logStream == null) || GenericUtils.isEmpty(args)
+            ScpClientCreator creator = resolveScpClientCreator(stderr, args);
+            ClientSession session = ((logStream == null) || (creator == null) || GenericUtils.isEmpty(args))
                 ? null : setupClientSession(SCP_PORT_OPTION, stdin, stdout, stderr, args);
             if (session == null) {
                 stderr.println("usage: scp [" + SCP_PORT_OPTION + " port] [-i identity] [-io nio2|mina|netty]"
-                         + " [-v[v][v]] [-E logoutput] [-r] [-p] [-q] [-o option=value]"
+                         + " [-v[v][v]] [-E logoutput] [-r] [-p] [-q] [-o option=value] [-o creator=class name]"
                          + " [-c cipherlist] [-m maclist] [-w password] [-C] <source> <target>");
                 stderr.println();
                 stderr.println("Where <source> or <target> are either 'user@host:file' or a local file path");
@@ -163,7 +204,7 @@ public class ScpCommandMain extends SshClientCliSupport {
                 }
 
                 if (!quiet) {
-                    session.setScpTransferEventListener(new ScpTransferEventListener() {
+                    creator.setScpTransferEventListener(new ScpTransferEventListener() {
                         @Override
                         public void startFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms) {
                             logEvent("startFolderEvent", op, file, -1L, perms, null);
@@ -200,7 +241,7 @@ public class ScpCommandMain extends SshClientCliSupport {
                     });
                 }
 
-                ScpClient client = session.createScpClient();
+                ScpClient client = creator.createScpClient(session);
                 ScpLocation source = new ScpLocation(args[numArgs - 2]);
                 ScpLocation target = new ScpLocation(args[numArgs - 1]);
                 if (source.isLocal()) {

@@ -17,13 +17,12 @@
  * under the License.
  */
 
-package org.apache.sshd.server.command;
+package org.apache.sshd.server.scp;
 
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;

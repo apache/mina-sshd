@@ -533,17 +533,80 @@ it will be **closed** automatically when the stream using it is closed.
 
 ## SCP
 
-Besides the `ScpTransferEventListener`, the SCP module also uses a `ScpFileOpener` instance in order to access
-the local files - client or server-side. The default implementation simply opens an [InputStream](https://docs.oracle.com/javase/8/docs/api/java/io/InputStream.html)
+Both client-side and server-side SCP are supported. Starting from version 2.0, the SCP related code is located in the `sshd-scp` module, so you need
+to add this additional dependency to your maven project:
+
+```xml
+
+    <dependency>
+        <groupId>org.apache.sshd</groupId>
+        <artifactId>sshd-sscp</artifactId>
+        <version>...same as sshd-core...</version>
+    </dependency>
+
+```
+
+### Client-side SCP
+
+In order to obtain an `ScpClient` one needs to use an `ScpClientCreator`:
+
+```java
+
+ClientSession session = ... obtain an instance ...
+ScpClientCreator creator = ... obtain an instance ...
+ScpClient client = creator.createScpClient(session);
+
+```
+
+A default `ScpClientCreator` instance is provided as part of the module - see `ScpClientCreator.instance()`
+
+#### ScpFileOpener(s)
+
+As part of the `ScpClientCreator`, the SCP module also uses a `ScpFileOpener` instance in order to access
+the local files. The default implementation simply opens an [InputStream](https://docs.oracle.com/javase/8/docs/api/java/io/InputStream.html)
 or [OutputStream](https://docs.oracle.com/javase/8/docs/api/java/io/OutputStream.html) on the requested local path. However,
-the user may replace it and intercept the calls - e.g., for logging, for wrapping/filtering the streams, etc... **Note:**
-due to SCP protocol limitations one cannot change the **size** of the input/output since it is passed as part of the command
+the user may replace it and intercept the calls - e.g., for logging, for wrapping/filtering the streams, etc... The user may
+attach a default opener that will be automatically attached to **all** clients created unless specifically overridden:
+
+```java
+
+ClientSession session = ... obtain an instance ...
+ScpClientCreator creator = ... obtain an instance ...
+creator.setScpFileOpener(new MySuperDuperOpener());
+
+ScpClient client1 = creator.createScpClient(session);   // <<== automatically uses MySuperDuperOpener
+ScpClient client2 = creator.createScpClient(session, new SomeOtherOpener());   // <<== uses SomeOtherOpener instead of MySuperDuperOpener
+
+```
+
+**Note:** due to SCP protocol limitations one cannot change the **size** of the input/output since it is passed as part of the command
 **before** the file opener is invoked - so there are a few limitations on what one can do within this interface implementation.
 
+#### ScpTransferEventListener(s)
+
+The `ScpClientCreator` can also be used to attach a default `ScpTransferEventListener` that will be attached to
+**all** created SCP client instances through that creator - unless specifically overridden:
+
+```java
+
+ClientSession session = ... obtain an instance ...
+ScpClientCreator creator = ... obtain an instance ...
+creator.setScpTransferEventListener(new MySuperDuperListener());
+
+ScpClient client1 = creator.createScpClient(session);   // <<== automatically uses MySuperDuperListener
+ScpClient client2 = creator.createScpClient(session, new SomeOtherListener());   // <<== uses SomeOtherListener instead of MySuperDuperListener
+
+```
+
+### Server-side SCP
+
+The `ScpCommandFactory` allows users to attach an `ScpFileOpener` and/or `ScpTransferEventListener` having the same behavior as the client - i.e.,
+monitoring and intervention on the accessed local files.
 
 ## SFTP
 
-Both client-side and server-side SFTP are supported.  Starting from SSHD 1.8.0, the SFTP related code is located in the `sshd-sftp`, so you need to add this additional dependency to your maven project:
+Both client-side and server-side SFTP are supported. Starting from version 2.0, the SFTP related code is located in the `sshd-sftp`, so you need to add
+this additional dependency to your maven project:
 
 ```xml
 
@@ -567,53 +630,25 @@ On the server side, the following code needs to be added:
 
 ```
 
-### Client-side SFTP
-
-```java
-
-    SftpClient client = SftpClientFactory.instance().createSftpClient(session);
-
-```
-
 ### `SftpEventListener`
 
-See above...
-In addition to the `SftpEventListener` there are a few more SFTP-related special interfaces and modules.
+(See above more details...) - users may register an `SftpEventListener` (or more...) in the `SftpSubsystemFactory` in
+order to monitor and even intervene in the susbsytem's functionality.
 
+### Client-side SFTP
 
-### Version selection via `SftpVersionSelector`
-
-
-The SFTP subsystem code supports versions 3-6 (inclusive), and by default attempts to negotiate the **highest**
-possible one - on both client and server code. The user can intervene and force a specific version or a narrower
-range.
+In order to obtain an `SftpClient` instance one needs to use an `SftpClientFactory`:
 
 
 ```java
 
-    SftpVersionSelector myVersionSelector = new SftpVersionSelector() {
-        @Override
-        public int selectVersion(ClientSession session, int current, List<Integer> available) {
-            int selectedVersion = ...run some logic to decide...;
-            return selectedVersion;
-        }
-    };
-
-    try (ClientSession session = client.connect(user, host, port).verify(timeout).getSession()) {
-        session.addPasswordIdentity(password);
-        session.auth.verify(timeout);
-
-        try (SftpClient sftp = SftpClientFactory.instance().createSftpClient(session, myVersionSelector)) {
-            ... do SFTP related stuff...
-        }
-    }
+    ClientSession session = ...obtain session...
+    SftpClientFactory factory = ...obtain factory...
+    SftpClient client = factory.createSftpClient(session);
 
 ```
 
-On the server side, version selection restriction is more complex - please remember that the **client** chooses
-the version, and all we can do at the server is require a **specific** version via the `SftpSubsystem#SFTP_VERSION`
-configuration key. For more advanced restrictions one needs to sub-class `SftpSubSystem` and provide a non-default
-`SftpSubsystemFactory` that uses the sub-classed code.
+A default client factory implementations is provided in the module - see `SftpClientFactory.instance()`
 
 
 ### Using a custom `SftpClientFactory`
@@ -638,6 +673,40 @@ implementations - e.g., in order to override some default behavior - e.g.:
 
 ```
 
+### Version selection via `SftpVersionSelector`
+
+
+The SFTP subsystem code supports versions 3-6 (inclusive), and by default attempts to negotiate the **highest**
+possible one - on both client and server code. The user can intervene and force a specific version or a narrower
+range.
+
+
+```java
+
+    SftpVersionSelector myVersionSelector = new SftpVersionSelector() {
+        @Override
+        public int selectVersion(ClientSession session, int current, List<Integer> available) {
+            int selectedVersion = ...run some logic to decide...;
+            return selectedVersion;
+        }
+    };
+
+    try (ClientSession session = client.connect(user, host, port).verify(timeout).getSession()) {
+        session.addPasswordIdentity(password);
+        session.auth.verify(timeout);
+
+        SftpClientFactory factory = SftpClientFactory.instance();
+        try (SftpClient sftp = factory.createSftpClient(session, myVersionSelector)) {
+            ... do SFTP related stuff...
+        }
+    }
+
+```
+
+On the server side, version selection restriction is more complex - please remember that the **client** chooses
+the version, and all we can do at the server is require a **specific** version via the `SftpSubsystem#SFTP_VERSION`
+configuration key. For more advanced restrictions one needs to sub-class `SftpSubSystem` and provide a non-default
+`SftpSubsystemFactory` that uses the sub-classed code.
 
 ### Using `SftpFileSystemProvider` to create an `SftpFileSystem`
 
@@ -796,7 +865,8 @@ UTF-8 is used. **Note:** the value can be a charset name or a `java.nio.charset.
          PropertyResolverUtils.updateProperty(session, SftpClient.NAME_DECODING_CHARSET, "ISO-8859-4");
          session.authenticate(...);
 
-         try (SftpClient sftp = SftpClientFactory.instance().createSftpClient(session)) {
+         SftpClientFactory factory = SftpClientFactory.instance();
+         try (SftpClient sftp = factory.createSftpClient(session)) {
              for (DirEntry entry : sftp.readDir(...some path...)) {
                  ...handle entry assuming ISO-8859-4 (inherited from the session) encoded names...
              }
@@ -848,7 +918,8 @@ On the client side, all the supported extensions are classes that implement `Sft
         session.addPasswordIdentity(password);
         session.auth().verify(timeout);
 
-        try (SftpClient sftp = SftpClientFactory.instance().createSftpClient(session)) {
+        SftpClientFactory factory = SftpClientFactory.instance();
+        try (SftpClient sftp = factory.createSftpClient(session)) {
             Map<String, byte[]> extensions = sftp.getServerExtensions();
             // Key=extension name, value=registered parser instance
             Map<String, ?> data = ParserUtils.parse(extensions);
@@ -880,7 +951,8 @@ One can skip all the conditional code if a specific known extension is required:
         session.addPasswordIdentity(password);
         session.auth().verify(timeout);
 
-        try (SftpClient sftp = SftpClientFactory.instance().createSftpClient(session)) {
+        SftpClientFactory factory = SftpClientFactory.instance();
+        try (SftpClient sftp = factory.createSftpClient(session)) {
             // Returns null if extension is not supported by remote server
             SpaceAvailableExtension space = sftp.getExtension(SpaceAvailableExtension.class);
             if (space != null) {
