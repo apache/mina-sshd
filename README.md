@@ -1417,6 +1417,10 @@ be according to their order in the specified list.
 the `ServiceLoader` mechanism. The special value `none` may be used to indicate that no subsystem is to be configured. **Note:** no specific order is
 provided when subsystems are auto-detected and/or filtered.
 
+* **Shell** - unless otherwise instructed, the default SSH server uses an internal shell (see `InteractiveProcessShellFactory`). The shell can be overridden
+or disabled by specifying a `-o ShellFactory=XXX` option where the value can either be `none` to specify that no shell is to be used, or the fully-qualified
+name of a class that implements the `ShellFactory` interface. The implementation must be public and have a public no-args constructor for instantiating it.
+
 ## GIT support
 
 The _sshd-git_ artifact contains both client and server-side command factories for issuing and handling some _git_ commands. The code is based on [JGit](https://github.com/eclipse/jgit)

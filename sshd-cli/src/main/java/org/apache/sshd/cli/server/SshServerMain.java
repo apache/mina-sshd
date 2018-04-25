@@ -39,8 +39,8 @@ import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.config.keys.ServerIdentity;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.apache.sshd.server.scp.ScpCommandFactory;
-import org.apache.sshd.server.shell.InteractiveProcessShellFactory;
 import org.apache.sshd.server.shell.ProcessShellFactory;
+import org.apache.sshd.server.shell.ShellFactory;
 
 /**
  * TODO Add javadoc
@@ -66,14 +66,16 @@ public class SshServerMain extends SshServerCliSupport {
         for (int i = 0; i < numArgs; i++) {
             String argName = args[i];
             if ("-p".equals(argName)) {
-                if ((i + 1) >= numArgs) {
+                i++;
+                if (i >= numArgs) {
                     System.err.println("option requires an argument: " + argName);
                     error = true;
                     break;
                 }
-                port = Integer.parseInt(args[++i]);
+                port = Integer.parseInt(args[i]);
             } else if ("-key-type".equals(argName)) {
-                if ((i + 1) >= numArgs) {
+                i++;
+                if (i >= numArgs) {
                     System.err.println("option requires an argument: " + argName);
                     error = true;
                     break;
@@ -84,9 +86,10 @@ public class SshServerMain extends SshServerCliSupport {
                     error = true;
                     break;
                 }
-                hostKeyType = args[++i].toUpperCase();
+                hostKeyType = args[i].toUpperCase();
             } else if ("-key-size".equals(argName)) {
-                if ((i + 1) >= numArgs) {
+                i++;
+                if (i >= numArgs) {
                     System.err.println("option requires an argument: " + argName);
                     error = true;
                     break;
@@ -98,27 +101,29 @@ public class SshServerMain extends SshServerCliSupport {
                     break;
                 }
 
-                hostKeySize = Integer.parseInt(args[++i]);
+                hostKeySize = Integer.parseInt(args[i]);
             } else if ("-key-file".equals(argName)) {
-                if ((i + 1) >= numArgs) {
+                i++;
+                if (i >= numArgs) {
                     System.err.println("option requires an argument: " + argName);
                     error = true;
                     break;
                 }
 
-                String keyFilePath = args[++i];
+                String keyFilePath = args[i];
                 if (keyFiles == null) {
                     keyFiles = new LinkedList<>();
                 }
                 keyFiles.add(keyFilePath);
             } else if ("-o".equals(argName)) {
-                if ((i + 1) >= numArgs) {
+                i++;
+                if (i >= numArgs) {
                     System.err.println("option requires and argument: " + argName);
                     error = true;
                     break;
                 }
 
-                String opt = args[++i];
+                String opt = args[i];
                 int idx = opt.indexOf('=');
                 if (idx <= 0) {
                     System.err.println("bad syntax for option: " + opt);
@@ -138,18 +143,10 @@ public class SshServerMain extends SshServerCliSupport {
                 } else {
                     options.put(optName, optValue);
                 }
-            } else if (argName.startsWith("-")) {
-                System.err.println("illegal option: " + argName);
-                error = true;
-                break;
-            } else {
-                System.err.println("extra argument: " + argName);
-                error = true;
-                break;
             }
         }
 
-        SshServer sshd = setupIoServiceFactory(SshServer.setUpDefaultServer(), System.err, args);
+        SshServer sshd = error ? null : setupIoServiceFactory(SshServer.setUpDefaultServer(), System.err, args);
         if (sshd == null) {
             error = true;
         }
@@ -163,7 +160,7 @@ public class SshServerMain extends SshServerCliSupport {
         props.putAll(options);
 
         PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
-        KeyPairProvider hostKeyProvider = setupServerKeys(sshd, hostKeyType, hostKeySize, keyFiles);
+        KeyPairProvider hostKeyProvider = resolveServerKeys(System.err, hostKeyType, hostKeySize, keyFiles);
         sshd.setKeyPairProvider(hostKeyProvider);
         // Should come AFTER key pair provider setup so auto-welcome can be generated if needed
         setupServerBanner(sshd, resolver);
@@ -174,15 +171,20 @@ public class SshServerMain extends SshServerCliSupport {
             SshConfigFileReader.configureMacs(sshd, macsOverride, true, true);
         }
 
-        sshd.setShellFactory(InteractiveProcessShellFactory.INSTANCE);
+        ShellFactory shellFactory = resolveShellFactory(System.err, resolver);
+        if (shellFactory != null) {
+            System.out.append("Using shell=").println(shellFactory.getClass().getName());
+            sshd.setShellFactory(shellFactory);
+        }
+
         sshd.setPasswordAuthenticator((username, password, session) -> Objects.equals(username, password));
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         setupServerForwarding(sshd, resolver);
-        sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(
-            command -> new ProcessShellFactory(GenericUtils.split(command, ' ')).create()
-        ).build());
+        sshd.setCommandFactory(new ScpCommandFactory.Builder()
+            .withDelegate(command -> new ProcessShellFactory(GenericUtils.split(command, ' ')).create())
+            .build());
 
-        List<NamedFactory<Command>> subsystems = setupServerSubsystems(sshd, resolver);
+        List<NamedFactory<Command>> subsystems = resolveServerSubsystems(System.err, resolver);
         if (GenericUtils.isNotEmpty(subsystems)) {
             System.out.append("Setup subsystems=").println(NamedResource.getNames(subsystems));
             sshd.setSubsystemFactories(subsystems);

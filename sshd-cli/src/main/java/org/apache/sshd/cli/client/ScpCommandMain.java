@@ -71,7 +71,7 @@ public class ScpCommandMain extends SshClientCliSupport {
         for (int index = 0; (index < numArgs) && (!error); index++) {
             String argName = args[index];
             // handled by 'setupClientSession'
-            if (isArgumentedOption(SCP_PORT_OPTION, argName)) {
+            if (isArgumentedOption(SCP_PORT_OPTION, argName) || "-creator".equals(argName)) {
                 index++;
                 if (index >= numArgs) {
                     error = showError(stderr, "option requires an argument: " + argName);

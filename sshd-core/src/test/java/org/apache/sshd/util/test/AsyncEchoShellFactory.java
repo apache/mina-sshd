@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.channel.BufferedIoOutputStream;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.io.IoInputStream;
@@ -37,13 +36,14 @@ import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.channel.ChannelDataReceiver;
 import org.apache.sshd.server.channel.ChannelSession;
+import org.apache.sshd.server.shell.ShellFactory;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class AsyncEchoShellFactory implements Factory<Command> {
+public class AsyncEchoShellFactory implements ShellFactory {
     public AsyncEchoShellFactory() {
         super();
     }

@@ -54,7 +54,7 @@ import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.session.ServerSession;
-import org.apache.sshd.server.shell.InteractiveProcessShellFactory;
+import org.apache.sshd.server.shell.ShellFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.Utils;
 
@@ -286,22 +286,19 @@ public final class SshFsMounter extends SshServerCliSupport {
                     break;
                 }
                 options.put(opt.substring(0, idx), opt.substring(idx + 1));
-            } else if (argName.startsWith("-")) {
-                System.err.println("illegal option: " + argName);
-                error = true;
-                break;
-            } else {
-                System.err.println("extra argument: " + argName);
-                error = true;
-                break;
             }
         }
+
+        SshServer sshd = error ? null : setupIoServiceFactory(Utils.setupTestServer(SshFsMounter.class), System.err, args);
+        if (sshd == null) {
+            error = true;
+        }
+
         if (error) {
-            System.err.println("usage: sshfs [-p port] [-io mina|nio2] [-o option=value]");
+            System.err.println("usage: sshfs [-p port] [-io mina|nio2|netty] [-o option=value]");
             System.exit(-1);
         }
 
-        SshServer sshd = Utils.setupTestServer(SshFsMounter.class);
         Map<String, Object> props = sshd.getProperties();
         props.putAll(options);
         PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
@@ -314,7 +311,11 @@ public final class SshFsMounter extends SshServerCliSupport {
         // Should come AFTER key pair provider setup so auto-welcome can be generated if needed
         setupServerBanner(sshd, resolver);
 
-        sshd.setShellFactory(InteractiveProcessShellFactory.INSTANCE);
+        ShellFactory shellFactory = resolveShellFactory(System.err, resolver);
+        if (shellFactory != null) {
+            System.out.append("Using shell=").println(shellFactory.getClass().getName());
+            sshd.setShellFactory(shellFactory);
+        }
         sshd.setPasswordAuthenticator(AcceptAllPasswordAuthenticator.INSTANCE);
         sshd.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(MounterCommandFactory.INSTANCE).build());

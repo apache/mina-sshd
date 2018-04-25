@@ -35,7 +35,7 @@ import org.apache.sshd.server.Command;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ProcessShellFactory extends AbstractLoggingBean implements Factory<Command> {
+public class ProcessShellFactory extends AbstractLoggingBean implements ShellFactory {
     private List<String> command;
 
     public ProcessShellFactory() {

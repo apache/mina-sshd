@@ -93,6 +93,7 @@ public abstract class SshClientCliSupport extends CliSupport {
 
     public static boolean isArgumentedOption(String portOption, String argName) {
         return portOption.equals(argName)
+             || "-io".equals(argName)
              || "-i".equals(argName)
              || "-o".equals(argName)
              || "-l".equals(argName)
@@ -121,12 +122,13 @@ public abstract class SshClientCliSupport extends CliSupport {
             String argName = args[i];
             String argVal = null;
             if (isArgumentedOption(portOption, argName)) {
-                if ((i + 1) >= numArgs) {
+                i++;
+                if (i >= numArgs) {
                     error = showError(stderr, "option requires an argument: " + argName);
                     break;
                 }
 
-                argVal = args[++i];
+                argVal = args[i];
             }
 
             if (portOption.equals(argName)) {

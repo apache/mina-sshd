@@ -19,8 +19,8 @@
 
 package org.apache.sshd.cli.server;
 
-import java.io.File;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -57,6 +57,8 @@ import org.apache.sshd.server.config.SshServerConfigFileReader;
 import org.apache.sshd.server.forward.ForwardingFilter;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
+import org.apache.sshd.server.shell.InteractiveProcessShellFactory;
+import org.apache.sshd.server.shell.ShellFactory;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
 
 /**
@@ -65,19 +67,24 @@ import org.apache.sshd.server.subsystem.SubsystemFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class SshServerCliSupport extends CliSupport {
+    public static final String SHELL_FACTORY_OPTION = "ShellFactory";
+    public static final ShellFactory DEFAULT_SHELL_FACTORY = InteractiveProcessShellFactory.INSTANCE;
+
     protected SshServerCliSupport() {
         super();
     }
 
-    public static KeyPairProvider setupServerKeys(SshServer sshd, String hostKeyType, int hostKeySize, Collection<String> keyFiles) throws Exception {
+    public static KeyPairProvider resolveServerKeys(
+            PrintStream stderr, String hostKeyType, int hostKeySize, Collection<String> keyFiles)
+                throws Exception {
         if (GenericUtils.isEmpty(keyFiles)) {
             AbstractGeneratorHostKeyProvider hostKeyProvider;
             Path hostKeyFile;
             if (SecurityUtils.isBouncyCastleRegistered()) {
-                hostKeyFile = new File("key.pem").toPath();
+                hostKeyFile = Paths.get("key.pem");
                 hostKeyProvider = SecurityUtils.createGeneratorHostKeyProvider(hostKeyFile);
             } else {
-                hostKeyFile = new File("key.ser").toPath();
+                hostKeyFile = Paths.get("key.ser");
                 hostKeyProvider = new SimpleGeneratorHostKeyProvider(hostKeyFile);
             }
             hostKeyProvider.setAlgorithm(hostKeyType);
@@ -112,9 +119,10 @@ public abstract class SshServerCliSupport extends CliSupport {
                     KeyPair kp = SecurityUtils.loadKeyPairIdentity(keyFilePath, inputStream, null);
                     pairs.add(kp);
                 } catch (Exception e) {
-                    System.err.append("Failed (" + e.getClass().getSimpleName() + ")"
-                                + " to load host key file=" + keyFilePath
-                                + ": " + e.getMessage());
+                    stderr.append("Failed (").append(e.getClass().getSimpleName()).append(')')
+                        .append(" to load host key file=").append(keyFilePath)
+                        .append(": ").println(e.getMessage());
+                    stderr.flush();
                     throw e;
                 }
             }
@@ -135,7 +143,7 @@ public abstract class SshServerCliSupport extends CliSupport {
         return banner;
     }
 
-    public static List<NamedFactory<Command>> setupServerSubsystems(SshServer server, PropertyResolver options) {
+    public static List<NamedFactory<Command>> resolveServerSubsystems(PrintStream stderr, PropertyResolver options) throws Exception {
         ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(SubsystemFactory.class);
         String classList = System.getProperty(SubsystemFactory.class.getName());
         if (GenericUtils.isNotEmpty(classList)) {
@@ -146,12 +154,12 @@ public abstract class SshServerCliSupport extends CliSupport {
                     Class<?> clazz = cl.loadClass(fqcn);
                     SubsystemFactory factory = SubsystemFactory.class.cast(clazz.newInstance());
                     subsystems.add(factory);
-                } catch (Throwable t) {
-                    System.err.append("Failed (").append(t.getClass().getSimpleName()).append(')')
+                } catch (Exception e) {
+                    stderr.append("Failed (").append(e.getClass().getSimpleName()).append(')')
                         .append(" to instantiate subsystem=").append(fqcn)
-                        .append(": ").println(t.getMessage());
-                    System.err.flush();
-                    throw GenericUtils.toRuntimeException(t, true);
+                        .append(": ").println(e.getMessage());
+                    stderr.flush();
+                    throw e;
                 }
             }
 
@@ -180,5 +188,29 @@ public abstract class SshServerCliSupport extends CliSupport {
         }
 
         return subsystems;
+    }
+
+    public static ShellFactory resolveShellFactory(PrintStream stderr, PropertyResolver options) throws Exception {
+        String factory = (options == null) ? null : options.getString(SHELL_FACTORY_OPTION);
+        if (GenericUtils.isEmpty(factory)) {
+            return DEFAULT_SHELL_FACTORY;
+        }
+
+        if ("none".equalsIgnoreCase(factory)) {
+            return null;
+        }
+
+        ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(ShellFactory.class);
+        try {
+            Class<?> clazz = cl.loadClass(factory);
+            Object instance = clazz.newInstance();
+            return ShellFactory.class.cast(instance);
+        } catch (Exception e) {
+            stderr.append("Failed (").append(e.getClass().getSimpleName()).append(')')
+                .append(" to instantiate shell factory=").append(factory)
+                .append(": ").println(e.getMessage());
+            stderr.flush();
+            throw e;
+        }
     }
 }
