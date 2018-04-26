@@ -131,7 +131,7 @@ public class PropertyResolverUtilsTest extends BaseTestSupport {
         {
             String actual = PropertyResolverUtils.getString(resolver, name);
             assertNotNull("No actual String value found for storage as " + storage, actual);
-            assertEquals("Mismatched values on String retrieval for storage as " + storage, Long.toString(expected), actual.toString());
+            assertEquals("Mismatched values on String retrieval for storage as " + storage, Long.toString(expected), actual);
         }
     }
 
@@ -170,7 +170,7 @@ public class PropertyResolverUtilsTest extends BaseTestSupport {
         {
             String actual = PropertyResolverUtils.getString(resolver, name);
             assertNotNull("No actual String value found for storage as " + storage, actual);
-            assertEquals("Mismatched values on String retrieval for storage as " + storage, Integer.toString(expected), actual.toString());
+            assertEquals("Mismatched values on String retrieval for storage as " + storage, Integer.toString(expected), actual);
         }
     }
 
@@ -206,7 +206,7 @@ public class PropertyResolverUtilsTest extends BaseTestSupport {
         {
             String actual = PropertyResolverUtils.getString(resolver, name);
             assertNotNull("No actual String value found for storage as " + storage, actual);
-            assertEquals("Mismatched values on String retrieval for storage as " + storage, Boolean.toString(expected), actual.toString());
+            assertEquals("Mismatched values on String retrieval for storage as " + storage, Boolean.toString(expected), actual);
         }
     }
 

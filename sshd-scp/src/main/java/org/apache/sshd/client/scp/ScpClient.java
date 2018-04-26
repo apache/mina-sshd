@@ -154,7 +154,7 @@ public interface ScpClient extends SessionHolder<ClientSession>, ClientSessionHo
             sb.append(" -p");
         }
 
-        sb.append(" -t").append(" --").append(" ").append(remote);
+        sb.append(" -t").append(" --").append(' ').append(remote);
         return sb.toString();
     }
 

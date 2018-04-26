@@ -348,7 +348,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         String username = (currentAuth == null) ? null : currentAuth.getUsername();
         if (debugEnabled) {
             log.debug("handleAuthenticationFailure({}@{}) {}",
-                      username, session, SshConstants.getCommandMessageName(cmd));
+                  username, session, SshConstants.getCommandMessageName(cmd));
         }
 
         StringBuilder sb = new StringBuilder((authMethods.size() + 1) * Byte.SIZE);
@@ -357,7 +357,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 String m = l.get(0);
                 if (!UserAuthNoneFactory.NAME.equals(m)) {
                     if (sb.length() > 0) {
-                        sb.append(",");
+                        sb.append(',');
                     }
                     sb.append(m);
                 }

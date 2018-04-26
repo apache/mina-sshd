@@ -651,7 +651,7 @@ public class ClientTest extends BaseTestSupport {
                 for (int i = 0; i < 1000; i++) {
                     sb.append("0123456789");
                 }
-                sb.append("\n");
+                sb.append('\n');
                 teeOut.write(sb.toString().getBytes(StandardCharsets.UTF_8));
 
                 teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
@@ -695,7 +695,7 @@ public class ClientTest extends BaseTestSupport {
                 for (int i = 0; i < 1000; i++) {
                     sb.append("0123456789");
                 }
-                sb.append("\n");
+                sb.append('\n');
                 pipedIn.write(sb.toString().getBytes(StandardCharsets.UTF_8));
 
                 pipedIn.write("exit\n".getBytes(StandardCharsets.UTF_8));
@@ -764,7 +764,7 @@ public class ClientTest extends BaseTestSupport {
                 for (int i = 0; i < 1000; i++) {
                     sb.append("0123456789");
                 }
-                sb.append("\n");
+                sb.append('\n');
                 teeOut.write(sb.toString().getBytes(StandardCharsets.UTF_8));
             }
 

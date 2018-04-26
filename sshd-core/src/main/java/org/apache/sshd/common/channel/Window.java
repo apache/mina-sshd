@@ -338,6 +338,6 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[" + suffix + "](" + String.valueOf(getChannel()) + ")";
+        return getClass().getSimpleName() + "[" + suffix + "](" + getChannel() + ")";
     }
 }

@@ -74,7 +74,7 @@ public class ConfigFileHostEntryResolverTest extends BaseTestSupport {
                                 1234,
                                 getClass().getSimpleName()),
                         new HostConfigEntry(
-                                expected.getHost() + String.valueOf(HostPatternsHolder.WILDCARD_PATTERN),
+                                expected.getHost() + Character.toString(HostPatternsHolder.WILDCARD_PATTERN),
                                 expected.getHost(),
                                 expected.getPort(),
                                 expected.getUsername())),
@@ -87,7 +87,7 @@ public class ConfigFileHostEntryResolverTest extends BaseTestSupport {
                                 1234,
                                 getClass().getSimpleName()),
                         new HostConfigEntry(
-                                getClass().getSimpleName() + String.valueOf(HostPatternsHolder.WILDCARD_PATTERN),
+                                getClass().getSimpleName() + Character.toString(HostPatternsHolder.WILDCARD_PATTERN),
                                 getClass().getSimpleName(),
                                 1234,
                                 getClass().getSimpleName()),

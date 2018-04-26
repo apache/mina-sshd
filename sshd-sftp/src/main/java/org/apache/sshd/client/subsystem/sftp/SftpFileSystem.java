@@ -208,7 +208,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[" + String.valueOf(getClientSession()) + "]";
+        return getClass().getSimpleName() + "[" + getClientSession() + "]";
     }
 
     private final class Wrapper extends AbstractSftpClient {

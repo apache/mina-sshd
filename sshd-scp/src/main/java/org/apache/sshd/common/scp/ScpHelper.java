@@ -180,20 +180,23 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                 case -1:
                     return;
                 case 'D':
+                    line = readLine();
+                    line = Character.toString((char) c) + line;
                     isDir = true;
-                    line = String.valueOf((char) c) + readLine();
                     if (log.isDebugEnabled()) {
                         log.debug("receive({}) - Received 'D' header: {}", this, line);
                     }
                     break;
                 case 'C':
-                    line = String.valueOf((char) c) + readLine();
+                    line = readLine();
+                    line = Character.toString((char) c) + line;
                     if (log.isDebugEnabled()) {
                         log.debug("receive({}) - Received 'C' header: {}", this, line);
                     }
                     break;
                 case 'T':
-                    line = String.valueOf((char) c) + readLine();
+                    line = readLine();
+                    line = Character.toString((char) c) + line;
                     if (log.isDebugEnabled()) {
                         log.debug("receive({}) - Received 'T' header: {}", this, line);
                     }
@@ -201,7 +204,8 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                     ack();
                     continue;
                 case 'E':
-                    line = String.valueOf((char) c) + readLine();
+                    line = readLine();
+                    line = Character.toString((char) c) + line;
                     if (log.isDebugEnabled()) {
                         log.debug("receive({}) - Received 'E' header: {}", this, line);
                     }

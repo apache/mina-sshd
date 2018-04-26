@@ -156,8 +156,11 @@ public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
             return p;
         }
 
-        return resolveUsername() + String.valueOf(USERNAME_PART_SEPARATOR)
-             + getHost() + String.valueOf(HOST_PART_SEPARATOR) + p;
+        return resolveUsername()
+            + Character.toString(USERNAME_PART_SEPARATOR)
+            + getHost()
+            + Character.toString(HOST_PART_SEPARATOR)
+            + p;
     }
 
     /**

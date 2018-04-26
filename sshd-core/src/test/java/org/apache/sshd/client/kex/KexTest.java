@@ -146,7 +146,7 @@ public class KexTest extends BaseTestSupport {
                     for (int i = 0; i < 10; i++) {
                         sb.append("0123456789");
                     }
-                    sb.append("\n");
+                    sb.append('\n');
                     teeOut.write(sb.toString().getBytes(StandardCharsets.UTF_8));
 
                     teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));

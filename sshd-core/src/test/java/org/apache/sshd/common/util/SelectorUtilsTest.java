@@ -52,9 +52,9 @@ public class SelectorUtilsTest extends BaseTestSupport {
     private void testApplySlashifyRules(char slash) {
         for (String expected : new String[]{
             null, "", getCurrentTestName(),
-            getClass().getSimpleName() + String.valueOf(slash) + getCurrentTestName(),
-            String.valueOf(slash)  + getClass().getSimpleName(),
-            String.valueOf(slash)  + getClass().getSimpleName() + String.valueOf(slash)  + getCurrentTestName()
+            getClass().getSimpleName() + Character.toString(slash) + getCurrentTestName(),
+            Character.toString(slash)  + getClass().getSimpleName(),
+            Character.toString(slash)  + getClass().getSimpleName() + Character.toString(slash)  + getCurrentTestName()
         }) {
             String actual = SelectorUtils.applySlashifyRules(expected, slash);
             assertSame("Mismatched results for '" + expected + "'", expected, actual);

@@ -628,7 +628,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
                             verbose = true;
                             break;
                         default:
-                            throw new IllegalArgumentException("Unknown flag (" + String.valueOf(ch) + ")");
+                            throw new IllegalArgumentException("Unknown flag (" + Character.toString(ch) + ")");
                     }
                 }
                 remotePath = comps[1];
@@ -927,7 +927,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
                             verbose = true;
                             break;
                         default:
-                            throw new IllegalArgumentException("Unknown flag (" + String.valueOf(ch) + ")");
+                            throw new IllegalArgumentException("Unknown flag (" + Character.toString(ch) + ")");
                     }
                 }
                 src = comps[1];
