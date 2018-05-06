@@ -920,6 +920,7 @@ public class DefaultForwardingFilter
     @SuppressWarnings("synthetic-access")
     class StaticIoHandler implements IoHandler {
         private final AtomicLong messagesCounter = new AtomicLong(0L);
+        private final boolean debugEnabled = log.isDebugEnabled();
         private final boolean traceEnabled = log.isTraceEnabled();
 
         StaticIoHandler() {
@@ -931,7 +932,7 @@ public class DefaultForwardingFilter
             InetSocketAddress local = (InetSocketAddress) session.getLocalAddress();
             int localPort = local.getPort();
             SshdSocketAddress remote = localToRemote.get(localPort);
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("sessionCreated({}) remote={}", session, remote);
             }
 
@@ -945,7 +946,7 @@ public class DefaultForwardingFilter
                 if (t != null) {
                     log.warn("Failed ({}) to open channel for session={}: {}",
                              t.getClass().getSimpleName(), session, t.getMessage());
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("sessionCreated(" + session + ") channel=" + channel + " open failure details", t);
                     }
                     DefaultForwardingFilter.this.service.unregisterChannel(channel);
@@ -959,7 +960,7 @@ public class DefaultForwardingFilter
             TcpipClientChannel channel = (TcpipClientChannel) session.removeAttribute(TcpipClientChannel.class);
             Throwable cause = (Throwable) session.removeAttribute(TcpipForwardingExceptionMarker.class);
             if (channel != null) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("sessionClosed({}) closing channel={} after {} messages - cause={}",
                             session, channel, messagesCounter, (cause == null) ? null : cause.getClass().getSimpleName());
                 }
@@ -992,7 +993,13 @@ public class DefaultForwardingFilter
                         outputStream.write(buffer.array(), buffer.rpos(), buffer.available());
                         outputStream.flush();
                     } catch (IOException e) {
-                        channel.getSession().exceptionCaught(e);
+                        try {
+                            exceptionCaught(session, e);
+                        } catch (Exception err) {
+                            log.warn("messageReceived({}) failed ({}) to signal {}[{}] on channel={}: {}",
+                                session, err.getClass().getSimpleName(), e.getClass().getSimpleName(),
+                                e.getMessage(), channel, err.getMessage());
+                        }
                     }
                 });
             }
@@ -1001,7 +1008,7 @@ public class DefaultForwardingFilter
         @Override
         public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
             session.setAttribute(TcpipForwardingExceptionMarker.class, cause);
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("exceptionCaught({}) {}: {}", session, cause.getClass().getSimpleName(), cause.getMessage());
             }
             if (traceEnabled) {
