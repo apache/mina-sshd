@@ -36,7 +36,7 @@ public abstract class AbstractIoWriteFuture extends DefaultVerifiableSshFuture<I
     public IoWriteFuture verify(long timeout) throws IOException {
         Boolean result = verifyResult(Boolean.class, timeout);
         if (!result) {
-            throw new SshException("Write failed signalled");
+            throw formatExceptionMessage(SshException::new, "Write failed signalled while wait %d msec.", timeout);
         }
 
         return this;

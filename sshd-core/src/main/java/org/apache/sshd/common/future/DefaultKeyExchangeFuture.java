@@ -35,7 +35,7 @@ public class DefaultKeyExchangeFuture extends DefaultVerifiableSshFuture<KeyExch
     public KeyExchangeFuture verify(long timeoutMillis) throws IOException {
         Boolean result = verifyResult(Boolean.class, timeoutMillis);
         if (!result) {
-            throw new SshException("Key exchange failed");
+            throw formatExceptionMessage(SshException::new, "Key exchange failed while waiting %d msec.", timeoutMillis);
         }
 
         return this;
