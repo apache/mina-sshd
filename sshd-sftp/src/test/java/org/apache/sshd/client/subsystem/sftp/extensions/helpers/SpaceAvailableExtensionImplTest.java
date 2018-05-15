@@ -35,7 +35,7 @@ import org.apache.sshd.client.subsystem.sftp.extensions.SpaceAvailableExtension;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.SpaceAvailableExtensionInfo;
-import org.apache.sshd.server.Command;
+import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.Utils;

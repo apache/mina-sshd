@@ -90,7 +90,7 @@ import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.server.Command;
+import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.subsystem.sftp.AbstractSftpEventListenerAdapter;
 import org.apache.sshd.server.subsystem.sftp.AbstractSftpSubsystemHelper;

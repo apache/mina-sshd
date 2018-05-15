@@ -26,7 +26,7 @@ import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.sshd.server.AbstractCommandSupport;
+import org.apache.sshd.server.command.AbstractCommandSupport;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

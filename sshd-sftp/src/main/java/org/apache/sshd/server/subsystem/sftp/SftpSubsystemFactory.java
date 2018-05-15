@@ -26,7 +26,7 @@ import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
-import org.apache.sshd.server.Command;
+import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
 
 /**

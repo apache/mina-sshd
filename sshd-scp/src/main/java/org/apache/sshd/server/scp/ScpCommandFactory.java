@@ -27,10 +27,12 @@ import org.apache.sshd.common.scp.ScpFileOpenerHolder;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.util.EventListenerUtils;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
-import org.apache.sshd.server.Command;
-import org.apache.sshd.server.CommandFactory;
+import org.apache.sshd.server.command.AbstractDelegatingCommandFactory;
+import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.command.CommandFactory;
 
 /**
  * This <code>CommandFactory</code> can be used as a standalone command factory
@@ -41,10 +43,12 @@ import org.apache.sshd.server.CommandFactory;
  * @see ScpCommand
  */
 public class ScpCommandFactory
+        extends AbstractDelegatingCommandFactory
         implements ScpFileOpenerHolder,
-        CommandFactory,
         Cloneable,
         ExecutorServiceConfigurer {
+    public static final String SCP_FACTORY_NAME = "scp";
+
     /**
      * A useful {@link ObjectBuilder} for {@link ScpCommandFactory}
      */
@@ -101,11 +105,6 @@ public class ScpCommandFactory
         }
     }
 
-    /*
-     * NOTE: we expose setters since there is no problem to change these settings between
-     * successive invocations of the 'createCommand' method
-     */
-    private CommandFactory delegate;
     private ExecutorService executors;
     private boolean shutdownExecutor;
     private ScpFileOpener fileOpener;
@@ -115,6 +114,7 @@ public class ScpCommandFactory
     private ScpTransferEventListener listenerProxy;
 
     public ScpCommandFactory() {
+        super(SCP_FACTORY_NAME);
         listenerProxy = EventListenerUtils.proxyWrapper(ScpTransferEventListener.class, getClass().getClassLoader(), listeners);
     }
 
@@ -126,20 +126,6 @@ public class ScpCommandFactory
     @Override
     public void setScpFileOpener(ScpFileOpener fileOpener) {
         this.fileOpener = fileOpener;
-    }
-
-    public CommandFactory getDelegateCommandFactory() {
-        return delegate;
-    }
-
-    /**
-     * @param factory A {@link CommandFactory} to be used if the
-     * command is not an SCP one. If {@code null} then an {@link IllegalArgumentException}
-     * will be thrown when attempting to invoke {@link #createCommand(String)}
-     * with a non-SCP command
-     */
-    public void setDelegateCommandFactory(CommandFactory factory) {
-        delegate = factory;
     }
 
     @Override
@@ -229,32 +215,21 @@ public class ScpCommandFactory
         return listeners.remove(listener);
     }
 
-    /**
-     * Parses a command string and verifies that the basic syntax is
-     * correct. If parsing fails the responsibility is delegated to
-     * the configured {@link CommandFactory} instance; if one exist.
-     *
-     * @param command command to parse
-     * @return configured {@link Command} instance
-     * @throws IllegalArgumentException if not an SCP command and no
-     *                                  delegate command factory is available
-     * @see ScpHelper#SCP_COMMAND_PREFIX
-     */
     @Override
-    public Command createCommand(String command) {
-        if (command.startsWith(ScpHelper.SCP_COMMAND_PREFIX)) {
-            return new ScpCommand(command,
-                    getExecutorService(), isShutdownOnExit(),
-                    getSendBufferSize(), getReceiveBufferSize(),
-                    getScpFileOpener(), listenerProxy);
+    public boolean isSupportedCommand(String command) {
+        if (GenericUtils.isEmpty(command)) {
+            return false;
         }
 
-        CommandFactory factory = getDelegateCommandFactory();
-        if (factory != null) {
-            return factory.createCommand(command);
-        }
+        return command.startsWith(ScpHelper.SCP_COMMAND_PREFIX);
+    }
 
-        throw new IllegalArgumentException("Unknown command, does not begin with '" + ScpHelper.SCP_COMMAND_PREFIX + "': " + command);
+    @Override
+    protected Command executeSupportedCommand(String command) {
+        return new ScpCommand(command,
+                getExecutorService(), isShutdownOnExit(),
+                getSendBufferSize(), getReceiveBufferSize(),
+                getScpFileOpener(), listenerProxy);
     }
 
     @Override

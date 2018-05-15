@@ -43,13 +43,13 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.threads.ThreadUtils;
-import org.apache.sshd.server.Command;
-import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.AcceptAllPasswordAuthenticator;
+import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.scp.ScpCommandFactory;
@@ -229,6 +229,11 @@ public final class SshFsMounter extends SshServerCliSupport {
 
         public MounterCommandFactory() {
             super();
+        }
+
+        @Override
+        public String getName() {
+            return "mounter";
         }
 
         @Override

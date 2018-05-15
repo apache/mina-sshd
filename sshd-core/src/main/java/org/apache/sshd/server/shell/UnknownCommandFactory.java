@@ -19,17 +19,24 @@
 
 package org.apache.sshd.server.shell;
 
-import org.apache.sshd.server.Command;
-import org.apache.sshd.server.CommandFactory;
+import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.command.CommandFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UnknownCommandFactory implements CommandFactory {
+    public static final String FACTORY_NAME = "unknown";
+
     public static final UnknownCommandFactory INSTANCE = new UnknownCommandFactory();
 
     public UnknownCommandFactory() {
         super();
+    }
+
+    @Override
+    public String getName() {
+        return FACTORY_NAME;
     }
 
     @Override

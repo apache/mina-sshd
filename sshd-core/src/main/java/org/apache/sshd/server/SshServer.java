@@ -49,6 +49,8 @@ import org.apache.sshd.server.auth.hostbased.HostBasedAuthenticator;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
+import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.session.ServerConnectionServiceFactory;
 import org.apache.sshd.server.session.ServerProxyAcceptor;
 import org.apache.sshd.server.session.ServerUserAuthServiceFactory;

@@ -62,15 +62,15 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.IoBaseCloseable;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.LoggingFilterOutputStream;
-import org.apache.sshd.server.AsyncCommand;
 import org.apache.sshd.server.ChannelSessionAware;
-import org.apache.sshd.server.Command;
-import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.Signal;
 import org.apache.sshd.server.StandardEnvironment;
+import org.apache.sshd.server.command.AsyncCommand;
+import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.forward.AgentForwardingFilter;
 import org.apache.sshd.server.forward.X11ForwardingFilter;
 import org.apache.sshd.server.session.ServerSession;
@@ -602,7 +602,7 @@ public class ChannelSession extends AbstractServerChannel {
     /**
      * For {@link Command} to install {@link ChannelDataReceiver}.
      * When you do this, {@link Command#setInputStream(java.io.InputStream)} or
-     * {@link org.apache.sshd.server.AsyncCommand#setIoInputStream(org.apache.sshd.common.io.IoInputStream)}
+     * {@link org.apache.sshd.server.command.AsyncCommand#setIoInputStream(org.apache.sshd.common.io.IoInputStream)}
      * will no longer be invoked. If you call this method from {@link Command#start(Environment)},
      * the input stream you received in {@link Command#setInputStream(java.io.InputStream)} will
      * not read any data.

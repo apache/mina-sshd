@@ -27,7 +27,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
-import org.apache.sshd.server.Command;
+import org.apache.sshd.server.command.Command;
 
 /**
  * A {@link Factory} of {@link Command} that will create a new process and bridge

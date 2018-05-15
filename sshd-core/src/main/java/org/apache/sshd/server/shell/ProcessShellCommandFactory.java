@@ -17,32 +17,34 @@
  * under the License.
  */
 
-package org.apache.sshd.server;
+package org.apache.sshd.server.shell;
 
-import java.io.IOException;
+import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.command.CommandFactory;
 
 /**
+ * Executes commands by invoking the underlying shell
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface CommandLifecycle {
-    /**
-     * Starts the command execution. All streams must have been set <U>before</U>
-     * calling this method. The command should implement {@link java.lang.Runnable},
-     * and this method should spawn a new thread like:
-     * <pre>
-     * {@code Thread(this).start(); }
-     * </pre>
-     *
-     * @param env The {@link Environment}
-     * @throws IOException If failed to start
-     */
-    void start(Environment env) throws IOException;
+public class ProcessShellCommandFactory implements CommandFactory {
+    public static final String FACTORY_NAME = "shell-command";
+    public static final ProcessShellCommandFactory INSTANCE = new ProcessShellCommandFactory();
 
-    /**
-     * This method is called by the SSH server to destroy the command because
-     * the client has disconnected somehow.
-     *
-     * @throws Exception if failed to destroy
-     */
-    void destroy() throws Exception;
+    public ProcessShellCommandFactory() {
+        super();
+    }
+
+    @Override
+    public String getName() {
+        return FACTORY_NAME;
+    }
+
+    @Override
+    public Command createCommand(String command) {
+        Factory<Command> factory = new ProcessShellFactory(GenericUtils.split(command, ' '));
+        return factory.create();
+    }
 }

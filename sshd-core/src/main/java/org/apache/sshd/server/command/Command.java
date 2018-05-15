@@ -16,10 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server;
+package org.apache.sshd.server.command;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+
+import org.apache.sshd.server.ExitCallback;
 
 /**
  * <p>

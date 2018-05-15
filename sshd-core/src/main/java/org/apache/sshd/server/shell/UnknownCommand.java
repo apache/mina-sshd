@@ -25,9 +25,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
+import org.apache.sshd.server.command.Command;
 
 /**
  * Implementation of an unknown command that can be returned by <code>CommandFactory</code>

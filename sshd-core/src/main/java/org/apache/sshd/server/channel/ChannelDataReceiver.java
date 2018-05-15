@@ -30,10 +30,10 @@ import java.io.IOException;
  * Sequence of bytes that SSH client sends to the server is eventually sent to this interface
  * to be passed on to the final consumer.
  * By default {@link ChannelSession} spools this in a buffer so that you can read it from
- * the input stream you get from {@link org.apache.sshd.server.Command#setInputStream(java.io.InputStream)}, but if command
+ * the input stream you get from {@link org.apache.sshd.server.command.Command#setInputStream(java.io.InputStream)}, but if command
  * wants to do a callback-driven I/O for the data it receives from the client, it can
  * call {@link ChannelSession#setDataReceiver(ChannelDataReceiver)} to do so.
- * (And to grab a reference to {@link ChannelSession}, a {@link org.apache.sshd.server.Command} should implement
+ * (And to grab a reference to {@link ChannelSession}, a {@link org.apache.sshd.server.command.Command} should implement
  * {@link org.apache.sshd.server.ChannelSessionAware}.)
  * </p>
  *

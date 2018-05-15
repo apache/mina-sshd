@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.server;
+package org.apache.sshd.server.command;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,6 +30,8 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
+import org.apache.sshd.server.Environment;
+import org.apache.sshd.server.ExitCallback;
 
 /**
  * Provides a basic useful skeleton for {@link Command} executions

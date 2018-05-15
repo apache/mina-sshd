@@ -33,13 +33,13 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
+import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.config.keys.ServerIdentity;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.apache.sshd.server.scp.ScpCommandFactory;
-import org.apache.sshd.server.shell.ProcessShellFactory;
+import org.apache.sshd.server.shell.ProcessShellCommandFactory;
 import org.apache.sshd.server.shell.ShellFactory;
 
 /**
@@ -181,7 +181,7 @@ public class SshServerMain extends SshServerCliSupport {
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         setupServerForwarding(sshd, resolver);
         sshd.setCommandFactory(new ScpCommandFactory.Builder()
-            .withDelegate(command -> new ProcessShellFactory(GenericUtils.split(command, ' ')).create())
+            .withDelegate(ProcessShellCommandFactory.INSTANCE)
             .build());
 
         List<NamedFactory<Command>> subsystems = resolveServerSubsystems(System.err, resolver);

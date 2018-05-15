@@ -16,25 +16,35 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server;
+
+package org.apache.sshd.server.command;
+
+import java.io.IOException;
+
+import org.apache.sshd.server.Environment;
 
 /**
- * A factory of commands.
- * Commands are executed on the server side when an "exec" channel is
- * requested by the SSH client.
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FunctionalInterface
-public interface CommandFactory {
+public interface CommandLifecycle {
+    /**
+     * Starts the command execution. All streams must have been set <U>before</U>
+     * calling this method. The command should implement {@link java.lang.Runnable},
+     * and this method should spawn a new thread like:
+     * <pre>
+     * {@code Thread(this).start(); }
+     * </pre>
+     *
+     * @param env The {@link Environment}
+     * @throws IOException If failed to start
+     */
+    void start(Environment env) throws IOException;
 
     /**
-     * Create a command with the given name.
-     * If the command is not known, a dummy command should be returned to allow
-     * the display output to be sent back to the client.
+     * This method is called by the SSH server to destroy the command because
+     * the client has disconnected somehow.
      *
-     * @param command The command that will be run
-     * @return a non {@code null} {@link Command} instance
+     * @throws Exception if failed to destroy
      */
-    Command createCommand(String command);
+    void destroy() throws Exception;
 }

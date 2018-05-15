@@ -16,17 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.sshd.server.command;
 
-package org.apache.sshd.server.subsystem;
-
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.server.command.Command;
+import org.apache.sshd.common.NamedResource;
 
 /**
+ * A factory of commands.
+ * Commands are executed on the server side when an "exec" channel is
+ * requested by the SSH client.
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-// CHECKSTYLE:OFF
-public interface SubsystemFactory extends NamedFactory<Command> {
-    // nothing extra
+public interface CommandFactory extends NamedResource {
+
+    /**
+     * Create a command with the given name.
+     * If the command is not known, a dummy command should be returned to allow
+     * the display output to be sent back to the client.
+     *
+     * @param command The command that will be run
+     * @return a non {@code null} {@link Command} instance
+     */
+    Command createCommand(String command);
 }
-//CHECKSTYLE:ON

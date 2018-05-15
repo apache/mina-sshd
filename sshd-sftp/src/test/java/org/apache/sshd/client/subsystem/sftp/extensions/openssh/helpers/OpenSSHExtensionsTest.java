@@ -48,7 +48,7 @@ import org.apache.sshd.common.subsystem.sftp.extensions.openssh.StatVfsExtension
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.server.Command;
+import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;

@@ -29,8 +29,8 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.file.FileSystemAware;
-import org.apache.sshd.server.AbstractCommandSupport;
 import org.apache.sshd.server.SessionAware;
+import org.apache.sshd.server.command.AbstractCommandSupport;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerSessionHolder;
 

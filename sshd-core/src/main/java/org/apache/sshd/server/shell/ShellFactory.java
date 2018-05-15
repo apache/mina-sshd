@@ -20,7 +20,7 @@
 package org.apache.sshd.server.shell;
 
 import org.apache.sshd.common.Factory;
-import org.apache.sshd.server.Command;
+import org.apache.sshd.server.command.Command;
 
 /**
  * Useful marker interface

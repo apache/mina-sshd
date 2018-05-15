@@ -72,6 +72,8 @@ import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.keyboard.PromptEntry;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
+import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerSessionImpl;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -522,43 +524,51 @@ public class ServerTest extends BaseTestSupport {
     @Test   // see SSHD-645
     public void testChannelStateChangeNotifications() throws Exception {
         final Semaphore exitSignal = new Semaphore(0);
-        sshd.setCommandFactory(command -> {
-            ValidateUtils.checkTrue(String.CASE_INSENSITIVE_ORDER.compare(command, getCurrentTestName()) == 0, "Unexpected command: %s", command);
+        sshd.setCommandFactory(new CommandFactory() {
+            @Override
+            public String getName() {
+                return getCurrentTestName();
+            }
 
-            return new Command() {
-                private ExitCallback cb;
+            @Override
+            public Command createCommand(String command) {
+                ValidateUtils.checkTrue(String.CASE_INSENSITIVE_ORDER.compare(command, getCurrentTestName()) == 0, "Unexpected command: %s", command);
 
-                @Override
-                public void setOutputStream(OutputStream out) {
-                    // ignored
-                }
+                return new Command() {
+                    private ExitCallback cb;
 
-                @Override
-                public void setInputStream(InputStream in) {
-                    // ignored
-                }
+                    @Override
+                    public void setOutputStream(OutputStream out) {
+                        // ignored
+                    }
 
-                @Override
-                public void setExitCallback(ExitCallback callback) {
-                    cb = callback;
-                }
+                    @Override
+                    public void setInputStream(InputStream in) {
+                        // ignored
+                    }
 
-                @Override
-                public void setErrorStream(OutputStream err) {
-                    // ignored
-                }
+                    @Override
+                    public void setExitCallback(ExitCallback callback) {
+                        cb = callback;
+                    }
 
-                @Override
-                public void destroy() {
-                    // ignored
-                }
+                    @Override
+                    public void setErrorStream(OutputStream err) {
+                        // ignored
+                    }
 
-                @Override
-                public void start(Environment env) throws IOException {
-                    exitSignal.release();
-                    cb.onExit(0, command);
-                }
-            };
+                    @Override
+                    public void destroy() {
+                        // ignored
+                    }
+
+                    @Override
+                    public void start(Environment env) throws IOException {
+                        exitSignal.release();
+                        cb.onExit(0, command);
+                    }
+                };
+            }
         });
         sshd.start();
         client.start();
@@ -595,46 +605,54 @@ public class ServerTest extends BaseTestSupport {
     @Test
     public void testEnvironmentVariablesPropagationToServer() throws Exception {
         final AtomicReference<Environment> envHolder = new AtomicReference<>(null);
-        sshd.setCommandFactory(command -> {
-            ValidateUtils.checkTrue(String.CASE_INSENSITIVE_ORDER.compare(command, getCurrentTestName()) == 0, "Unexpected command: %s", command);
+        sshd.setCommandFactory(new CommandFactory() {
+            @Override
+            public String getName() {
+                return getCurrentTestName();
+            }
 
-            return new Command() {
-                private ExitCallback cb;
+            @Override
+            public Command createCommand(String command) {
+                ValidateUtils.checkTrue(String.CASE_INSENSITIVE_ORDER.compare(command, getCurrentTestName()) == 0, "Unexpected command: %s", command);
 
-                @Override
-                public void setOutputStream(OutputStream out) {
-                    // ignored
-                }
+                return new Command() {
+                    private ExitCallback cb;
 
-                @Override
-                public void setInputStream(InputStream in) {
-                    // ignored
-                }
-
-                @Override
-                public void setExitCallback(ExitCallback callback) {
-                    cb = callback;
-                }
-
-                @Override
-                public void setErrorStream(OutputStream err) {
-                    // ignored
-                }
-
-                @Override
-                public void destroy() {
-                    // ignored
-                }
-
-                @Override
-                public void start(Environment env) throws IOException {
-                    if (envHolder.getAndSet(env) != null) {
-                        throw new StreamCorruptedException("Multiple starts for command=" + command);
+                    @Override
+                    public void setOutputStream(OutputStream out) {
+                        // ignored
                     }
 
-                    cb.onExit(0, command);
-                }
-            };
+                    @Override
+                    public void setInputStream(InputStream in) {
+                        // ignored
+                    }
+
+                    @Override
+                    public void setExitCallback(ExitCallback callback) {
+                        cb = callback;
+                    }
+
+                    @Override
+                    public void setErrorStream(OutputStream err) {
+                        // ignored
+                    }
+
+                    @Override
+                    public void destroy() {
+                        // ignored
+                    }
+
+                    @Override
+                    public void start(Environment env) throws IOException {
+                        if (envHolder.getAndSet(env) != null) {
+                            throw new StreamCorruptedException("Multiple starts for command=" + command);
+                        }
+
+                        cb.onExit(0, command);
+                    }
+                };
+            }
         });
 
         TestChannelListener channelListener = new TestChannelListener(getCurrentTestName());
@@ -934,6 +952,15 @@ public class ServerTest extends BaseTestSupport {
         // CHECKSTYLE:ON
 
         public static class Factory implements CommandFactory {
+            public Factory() {
+                super();
+            }
+
+            @Override
+            public String getName() {
+                return getClass().getSimpleName();
+            }
+
             @Override
             public Command createCommand(String name) {
                 return new StreamCommand(name);

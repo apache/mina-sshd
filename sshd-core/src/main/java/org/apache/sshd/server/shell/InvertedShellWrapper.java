@@ -31,10 +31,10 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.common.util.threads.ThreadUtils;
-import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SessionAware;
+import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.session.ServerSession;
 
 /**

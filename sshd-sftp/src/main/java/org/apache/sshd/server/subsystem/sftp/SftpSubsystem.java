@@ -69,14 +69,14 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
-import org.apache.sshd.server.AsyncCommand;
 import org.apache.sshd.server.ChannelSessionAware;
-import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.channel.ChannelDataReceiver;
 import org.apache.sshd.server.channel.ChannelSession;
+import org.apache.sshd.server.command.AsyncCommand;
+import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.session.ServerSession;
 
 /**

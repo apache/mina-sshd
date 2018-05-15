@@ -22,7 +22,7 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.git.AbstractGitCommandFactory;
 import org.apache.sshd.git.GitLocationResolver;
-import org.apache.sshd.server.CommandFactory;
+import org.apache.sshd.server.command.CommandFactory;
 
 /**
  * TODO Add javadoc
@@ -30,14 +30,15 @@ import org.apache.sshd.server.CommandFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class GitPackCommandFactory extends AbstractGitCommandFactory {
+    public static final String GIT_FACTORY_NAME = "git-pack";
     public static final String GIT_COMMAND_PREFIX = "git-";
 
     public GitPackCommandFactory() {
-        super(GIT_COMMAND_PREFIX);
+        this(null);
     }
 
     public GitPackCommandFactory(GitLocationResolver resolver) {
-        super(GIT_COMMAND_PREFIX);
+        super(GIT_FACTORY_NAME, GIT_COMMAND_PREFIX);
         withGitLocationResolver(resolver);
     }
 

@@ -21,10 +21,12 @@ package org.apache.sshd.git;
 
 import java.util.concurrent.ExecutorService;
 
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
-import org.apache.sshd.server.Command;
-import org.apache.sshd.server.CommandFactory;
+import org.apache.sshd.server.command.AbstractDelegatingCommandFactory;
+import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.shell.UnknownCommand;
 
 /**
@@ -32,18 +34,22 @@ import org.apache.sshd.server.shell.UnknownCommand;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractGitCommandFactory implements CommandFactory, ExecutorServiceCarrier, GitLocationResolverCarrier {
+public abstract class AbstractGitCommandFactory
+        extends AbstractDelegatingCommandFactory
+        implements ExecutorServiceCarrier, GitLocationResolverCarrier {
     private final String cmdPrefix;
     private GitLocationResolver rootDirResolver;
-    private CommandFactory delegate;
     private ExecutorService executorService;
     private boolean shutdownOnExit;
 
     /**
+     * @param name Command factory logical name
      * @param cmdPrefix The command prefix used to detect and intercept GIT commands handled by this
      * factory (never {@code null}/empty)
      */
-    protected AbstractGitCommandFactory(String cmdPrefix) {
+    protected AbstractGitCommandFactory(String name, String cmdPrefix) {
+        super(name);
+
         this.cmdPrefix = ValidateUtils.checkNotNullAndNotEmpty(cmdPrefix, "No command prefix provided");
     }
 
@@ -81,28 +87,29 @@ public abstract class AbstractGitCommandFactory implements CommandFactory, Execu
         return this;
     }
 
-    public CommandFactory getDelegate() {
-        return delegate;
-    }
-
     public AbstractGitCommandFactory withDelegate(CommandFactory delegate) {
-        this.delegate = delegate;
+        setDelegateCommandFactory(delegate);
         return this;
     }
 
     @Override
-    public Command createCommand(String command) {
-        String prefix = getCommandPrefix();
-        if (command.startsWith(prefix)) {
-            return createGitCommand(command);
+    public boolean isSupportedCommand(String command) {
+        if (GenericUtils.isEmpty(command)) {
+            return false;
         }
 
-        CommandFactory delegate = getDelegate();
-        if (delegate != null) {
-            return delegate.createCommand(command);
-        } else {
-            return new UnknownCommand(command);
-        }
+        String prefix = getCommandPrefix();
+        return command.startsWith(prefix);
+    }
+
+    @Override
+    protected Command executeSupportedCommand(String command) {
+        return createGitCommand(command);
+    }
+
+    @Override
+    protected Command createUnsupportedCommand(String command) {
+        return new UnknownCommand(command);
     }
 
     protected abstract AbstractGitCommand createGitCommand(String command);

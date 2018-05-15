@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.util.test;
 
-import org.apache.sshd.server.Command;
+import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.shell.ShellFactory;
 
 /**
