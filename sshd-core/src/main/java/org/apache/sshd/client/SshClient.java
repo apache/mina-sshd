@@ -167,7 +167,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     private final AtomicBoolean started = new AtomicBoolean(false);
 
     public SshClient() {
-        identitiesProvider = AuthenticationIdentitiesProvider.wrap(identities);
+        identitiesProvider = AuthenticationIdentitiesProvider.wrapIdentities(identities);
     }
 
     public SessionFactory getSessionFactory() {

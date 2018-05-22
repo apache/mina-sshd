@@ -21,7 +21,7 @@ package org.apache.sshd.common.channel;
 
 import java.util.function.Function;
 
-import org.apache.sshd.common.util.Transformer;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -30,7 +30,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 public interface ChannelRequestHandler extends RequestHandler<Channel> {
 
     // required because of generics issues
-    Function<ChannelRequestHandler, RequestHandler<Channel>> CHANN2HNDLR = Transformer.identity();
+    Function<ChannelRequestHandler, RequestHandler<Channel>> CHANN2HNDLR = GenericUtils.downcast();
 
     @Override
     Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception;

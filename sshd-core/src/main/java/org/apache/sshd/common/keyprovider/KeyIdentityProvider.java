@@ -164,7 +164,7 @@ public interface KeyIdentityProvider {
      * @return The wrapping provider
      */
     static KeyIdentityProvider multiProvider(Collection<? extends KeyIdentityProvider> providers) {
-        return GenericUtils.isEmpty(providers) ? EMPTY_KEYS_PROVIDER : wrap(iterableOf(providers));
+        return GenericUtils.isEmpty(providers) ? EMPTY_KEYS_PROVIDER : wrapKeyPairs(iterableOf(providers));
     }
 
     /**
@@ -187,8 +187,8 @@ public interface KeyIdentityProvider {
      * {@link #EMPTY_KEYS_PROVIDER}).
      * @return The provider wrapper
      */
-    static KeyIdentityProvider wrap(KeyPair... pairs) {
-        return wrap(GenericUtils.asList(pairs));
+    static KeyIdentityProvider wrapKeyPairs(KeyPair... pairs) {
+        return wrapKeyPairs(GenericUtils.asList(pairs));
     }
 
     /**
@@ -198,7 +198,7 @@ public interface KeyIdentityProvider {
      * {@link #EMPTY_KEYS_PROVIDER}).
      * @return The provider wrapper
      */
-    static KeyIdentityProvider wrap(final Iterable<KeyPair> pairs) {
+    static KeyIdentityProvider wrapKeyPairs(Iterable<KeyPair> pairs) {
         return (pairs == null) ? EMPTY_KEYS_PROVIDER : () -> pairs;
     }
 }

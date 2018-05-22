@@ -83,7 +83,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     protected AbstractClientSession(ClientFactoryManager factoryManager, IoSession ioSession) {
         super(false, factoryManager, ioSession);
-        identitiesProvider = AuthenticationIdentitiesProvider.wrap(identities);
+        identitiesProvider = AuthenticationIdentitiesProvider.wrapIdentities(identities);
     }
 
     @Override

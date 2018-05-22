@@ -814,6 +814,15 @@ public final class GenericUtils {
     }
 
     /**
+     * @param <B> Generic base class
+     * @param <D> Generic child class
+     * @return An identity {@link Function} that returns its input child class as a base class
+     */
+    public static <B, D extends B> Function<D, B> downcast() {
+        return t -> t;
+    }
+
+    /**
      * Resolves to an always non-{@code null} iterator
      *
      * @param <T> Type of value being iterated
@@ -825,17 +834,16 @@ public final class GenericUtils {
         return (iter == null) ? Collections.emptyIterator() : iter;
     }
 
-    public static <U, V> Iterable<V> wrapIterable(Iterable<? extends U> iter, Function<U, V> mapper) {
+    public static <U, V> Iterable<V> wrapIterable(Iterable<? extends U> iter, Function<? super U, ? extends V> mapper) {
         return () -> wrapIterator(iter, mapper);
     }
 
-    public static <U, V> Iterator<V> wrapIterator(Iterable<? extends U> iter, Function<U, V> mapper) {
-        return stream(iter)
-                .map(mapper::apply)
-                .iterator();
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public static <U, V> Iterator<V> wrapIterator(Iterable<? extends U> iter, Function<? super U, ? extends V> mapper) {
+        return (Iterator) stream(iter).map(mapper).iterator();
     }
 
-    public static <U, V> Iterator<V> wrapIterator(Iterator<? extends U> iter, Function<U, V> mapper) {
+    public static <U, V> Iterator<V> wrapIterator(Iterator<? extends U> iter, Function<? super U, ? extends V> mapper) {
         Iterator<? extends U> iterator = iteratorOf(iter);
         return new Iterator<V>() {
             @Override
@@ -845,7 +853,8 @@ public final class GenericUtils {
 
             @Override
             public V next() {
-                return mapper.apply(iterator.next());
+                U value = iterator.next();
+                return mapper.apply(value);
             }
         };
     }

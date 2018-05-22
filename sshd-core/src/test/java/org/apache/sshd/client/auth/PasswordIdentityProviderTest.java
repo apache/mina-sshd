@@ -57,7 +57,7 @@ public class PasswordIdentityProviderTest extends BaseTestSupport {
             Collection<String> passwords = Arrays.asList(va);
             expected.addAll(passwords);
 
-            PasswordIdentityProvider p = PasswordIdentityProvider.wrap(passwords);
+            PasswordIdentityProvider p = PasswordIdentityProvider.wrapPasswords(passwords);
             assertProviderContents("Wrapped", p, passwords);
             providers.add(p);
         }

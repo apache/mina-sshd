@@ -48,7 +48,6 @@ import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
@@ -229,7 +228,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
 
     @Test
     public void testConfigureCompressionFromStringAcceptsCombinedValues() {
-        testConfigureCompressionFromStringAcceptsCombinedValues(CompressionConfigValue.class, Transformer.ENUM_NAME_EXTRACTOR);
+        testConfigureCompressionFromStringAcceptsCombinedValues(CompressionConfigValue.class, e -> (e == null) ? null : e.name());
         testConfigureCompressionFromStringAcceptsCombinedValues(BuiltinCompressions.class, NamedResource.NAME_EXTRACTOR);
     }
 
