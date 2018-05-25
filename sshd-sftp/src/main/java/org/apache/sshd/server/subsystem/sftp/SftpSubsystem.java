@@ -35,7 +35,6 @@ import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -145,7 +144,7 @@ public class SftpSubsystem
     protected Future<?> pendingFuture;
     protected byte[] workBuf = new byte[Math.max(DEFAULT_FILE_HANDLE_SIZE, Integer.BYTES)];
     protected FileSystem fileSystem = FileSystems.getDefault();
-    protected Path defaultDir = fileSystem.getPath(System.getProperty("user.dir"));
+    protected Path defaultDir = fileSystem.getPath("").toAbsolutePath().normalize();
     protected int version;
 
     protected ServerSession serverSession;
@@ -236,11 +235,7 @@ public class SftpSubsystem
     public void setFileSystem(FileSystem fileSystem) {
         if (fileSystem != this.fileSystem) {
             this.fileSystem = fileSystem;
-
-            Iterable<Path> roots = Objects.requireNonNull(fileSystem.getRootDirectories(), "No root directories");
-            Iterator<Path> available = Objects.requireNonNull(roots.iterator(), "No roots iterator");
-            ValidateUtils.checkTrue(available.hasNext(), "No available root");
-            this.defaultDir = available.next();
+            this.defaultDir = fileSystem.getPath("").toAbsolutePath().normalize();
         }
     }
 
