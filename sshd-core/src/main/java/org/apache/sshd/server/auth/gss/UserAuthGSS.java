@@ -130,7 +130,7 @@ public class UserAuthGSS extends AbstractUserAuth {
                 Buffer msgbuf = new ByteArrayBuffer();
                 msgbuf.putBytes(ValidateUtils.checkNotNullAndNotEmpty(session.getSessionId(), "No current session ID"));
                 msgbuf.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
-                msgbuf.putString(super.getUsername());
+                msgbuf.putString(getUsername());
                 msgbuf.putString(getService());
                 msgbuf.putString(getName());
 
@@ -178,11 +178,6 @@ public class UserAuthGSS extends AbstractUserAuth {
                 }
             }
         }
-    }
-
-    @Override
-    public String getUsername() {
-        return identity != null ? identity : super.getUsername();
     }
 
     /**
