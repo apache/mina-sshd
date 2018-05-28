@@ -232,7 +232,7 @@ public final class SshFsMounter extends SshServerCliSupport {
         }
 
         @Override
-        public String getName() {
+        public String toString() {
             return "mounter";
         }
 

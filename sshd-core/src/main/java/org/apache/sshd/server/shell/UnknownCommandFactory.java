@@ -35,7 +35,7 @@ public class UnknownCommandFactory implements CommandFactory {
     }
 
     @Override
-    public String getName() {
+    public String toString() {
         return FACTORY_NAME;
     }
 

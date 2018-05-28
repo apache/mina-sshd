@@ -27,8 +27,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.command.Command;
-import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommandExecutionHelper;
 import org.apache.sshd.util.test.Utils;
@@ -84,28 +82,18 @@ public class ClientSessionTest extends BaseTestSupport {
     public void testDefaultExecuteCommandMethod() throws Exception {
         final String expectedCommand = getCurrentTestName() + "-CMD";
         final String expectedResponse = getCurrentTestName() + "-RSP";
-        sshd.setCommandFactory(new CommandFactory() {
-            @Override
-            public String getName() {
-                return getCurrentTestName();
-            }
+        sshd.setCommandFactory(command -> new CommandExecutionHelper(command) {
+            private boolean cmdProcessed;
 
             @Override
-            public Command createCommand(String command) {
-                return new CommandExecutionHelper(command) {
-                    private boolean cmdProcessed;
-
-                    @Override
-                    protected boolean handleCommandLine(String command) throws Exception {
-                        assertEquals("Mismatched incoming command", expectedCommand, command);
-                        assertFalse("Duplicated command call", cmdProcessed);
-                        OutputStream stdout = getOutputStream();
-                        stdout.write(expectedResponse.getBytes(StandardCharsets.US_ASCII));
-                        stdout.flush();
-                        cmdProcessed = true;
-                        return false;
-                    }
-                };
+            protected boolean handleCommandLine(String command) throws Exception {
+                assertEquals("Mismatched incoming command", expectedCommand, command);
+                assertFalse("Duplicated command call", cmdProcessed);
+                OutputStream stdout = getOutputStream();
+                stdout.write(expectedResponse.getBytes(StandardCharsets.US_ASCII));
+                stdout.flush();
+                cmdProcessed = true;
+                return false;
             }
         });
 
@@ -123,28 +111,18 @@ public class ClientSessionTest extends BaseTestSupport {
     public void testExceptionThrownIfRemoteStderrWrittenTo() throws Exception {
         final String expectedCommand = getCurrentTestName() + "-CMD";
         final String expectedErrorMessage = getCurrentTestName() + "-ERR";
-        sshd.setCommandFactory(new CommandFactory() {
-            @Override
-            public String getName() {
-                return getCurrentTestName();
-            }
+        sshd.setCommandFactory(command -> new CommandExecutionHelper(command) {
+            private boolean cmdProcessed;
 
             @Override
-            public Command createCommand(String command) {
-                return new CommandExecutionHelper(command) {
-                    private boolean cmdProcessed;
-
-                    @Override
-                    protected boolean handleCommandLine(String command) throws Exception {
-                        assertEquals("Mismatched incoming command", expectedCommand, command);
-                        assertFalse("Duplicated command call", cmdProcessed);
-                        OutputStream stderr = getErrorStream();
-                        stderr.write(expectedErrorMessage.getBytes(StandardCharsets.US_ASCII));
-                        stderr.flush();
-                        cmdProcessed = true;
-                        return false;
-                    }
-                };
+            protected boolean handleCommandLine(String command) throws Exception {
+                assertEquals("Mismatched incoming command", expectedCommand, command);
+                assertFalse("Duplicated command call", cmdProcessed);
+                OutputStream stderr = getErrorStream();
+                stderr.write(expectedErrorMessage.getBytes(StandardCharsets.US_ASCII));
+                stderr.flush();
+                cmdProcessed = true;
+                return false;
             }
         });
 
@@ -176,33 +154,23 @@ public class ClientSessionTest extends BaseTestSupport {
     public void testExceptionThrownIfNonZeroExitStatus() throws Exception {
         final String expectedCommand = getCurrentTestName() + "-CMD";
         final int exepectedErrorCode = 7365;
-        sshd.setCommandFactory(new CommandFactory() {
+        sshd.setCommandFactory(command -> new CommandExecutionHelper() {
+            private boolean cmdProcessed;
+
             @Override
-            public String getName() {
-                return getCurrentTestName();
+            public void onExit(int exitValue, String exitMessage) {
+                super.onExit((exitValue == 0) ? exepectedErrorCode : exitValue, exitMessage);
             }
 
             @Override
-            public Command createCommand(String command) {
-                return new CommandExecutionHelper(command) {
-                    private boolean cmdProcessed;
-
-                    @Override
-                    public void onExit(int exitValue, String exitMessage) {
-                        super.onExit((exitValue == 0) ? exepectedErrorCode : exitValue, exitMessage);
-                    }
-
-                    @Override
-                    protected boolean handleCommandLine(String command) throws Exception {
-                        assertEquals("Mismatched incoming command", expectedCommand, command);
-                        assertFalse("Duplicated command call", cmdProcessed);
-                        OutputStream stdout = getOutputStream();
-                        stdout.write(command.getBytes(StandardCharsets.US_ASCII));
-                        stdout.flush();
-                        cmdProcessed = true;
-                        return false;
-                    }
-                };
+            protected boolean handleCommandLine(String command) throws Exception {
+                assertEquals("Mismatched incoming command", expectedCommand, command);
+                assertFalse("Duplicated command call", cmdProcessed);
+                OutputStream stdout = getOutputStream();
+                stdout.write(command.getBytes(StandardCharsets.US_ASCII));
+                stdout.flush();
+                cmdProcessed = true;
+                return false;
             }
         });
 

@@ -18,8 +18,6 @@
  */
 package org.apache.sshd.server.command;
 
-import org.apache.sshd.common.NamedResource;
-
 /**
  * A factory of commands.
  * Commands are executed on the server side when an "exec" channel is
@@ -27,7 +25,8 @@ import org.apache.sshd.common.NamedResource;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface CommandFactory extends NamedResource {
+@FunctionalInterface
+public interface CommandFactory {
 
     /**
      * Create a command with the given name.

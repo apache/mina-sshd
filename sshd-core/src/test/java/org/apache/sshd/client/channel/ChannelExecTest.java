@@ -26,8 +26,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.command.Command;
-import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommandExecutionHelper;
 import org.apache.sshd.util.test.Utils;
@@ -53,23 +51,13 @@ public class ChannelExecTest extends BaseTestSupport {
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
         sshd = Utils.setupTestServer(ChannelExecTest.class);
-        sshd.setCommandFactory(new CommandFactory() {
+        sshd.setCommandFactory(command -> new CommandExecutionHelper(command) {
             @Override
-            public String getName() {
-                return ChannelExecTest.class.getSimpleName();
-            }
-
-            @Override
-            public Command createCommand(String command) {
-                return new CommandExecutionHelper(command) {
-                    @Override
-                    protected boolean handleCommandLine(String command) throws Exception {
-                        OutputStream stdout = getOutputStream();
-                        stdout.write(command.getBytes(StandardCharsets.US_ASCII));
-                        stdout.flush();
-                        return false;
-                    }
-                };
+            protected boolean handleCommandLine(String command) throws Exception {
+                OutputStream stdout = getOutputStream();
+                stdout.write(command.getBytes(StandardCharsets.US_ASCII));
+                stdout.flush();
+                return false;
             }
         });
         sshd.start();

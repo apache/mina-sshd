@@ -40,7 +40,7 @@ public abstract class AbstractDelegatingCommandFactory extends AbstractLoggingBe
     }
 
     @Override
-    public String getName() {
+    public String toString() {
         return name;
     }
 
