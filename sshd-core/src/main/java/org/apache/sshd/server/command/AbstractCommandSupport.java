@@ -26,12 +26,17 @@ import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
+import org.apache.sshd.server.SessionAware;
+import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.session.ServerSessionHolder;
 
 /**
  * Provides a basic useful skeleton for {@link Command} executions
@@ -40,17 +45,20 @@ import org.apache.sshd.server.ExitCallback;
  */
 public abstract class AbstractCommandSupport
         extends AbstractLoggingBean
-        implements Command, Runnable, ExitCallback, ExecutorServiceCarrier {
-    private final String command;
-    private InputStream in;
-    private OutputStream out;
-    private OutputStream err;
-    private ExitCallback callback;
-    private Environment environment;
-    private Future<?> cmdFuture;
-    private ExecutorService executorService;
-    private boolean shutdownOnExit;
-    private boolean cbCalled;
+        implements Command, Runnable, ExecutorServiceCarrier, SessionAware,
+                    SessionHolder<Session>, ServerSessionHolder {
+    protected final String command;
+    protected InputStream in;
+    protected OutputStream out;
+    protected OutputStream err;
+    protected ExitCallback callback;
+    protected Environment environment;
+    protected Future<?> cmdFuture;
+    protected Thread cmdRunner;
+    protected ExecutorService executorService;
+    protected boolean shutdownOnExit;
+    protected boolean cbCalled;
+    protected ServerSession serverSession;
 
     protected AbstractCommandSupport(String command, ExecutorService executorService, boolean shutdownOnExit) {
         this.command = command;
@@ -67,6 +75,21 @@ public abstract class AbstractCommandSupport
 
     public String getCommand() {
         return command;
+    }
+
+    @Override
+    public Session getSession() {
+        return getServerSession();
+    }
+
+    @Override
+    public ServerSession getServerSession() {
+        return serverSession;
+    }
+
+    @Override
+    public void setSession(ServerSession session) {
+        serverSession = session;
     }
 
     @Override
@@ -126,24 +149,47 @@ public abstract class AbstractCommandSupport
     @Override
     public void start(Environment env) throws IOException {
         environment = env;
-        ExecutorService executors = getExecutorService();
-        cmdFuture = executors.submit(this);
+        try {
+            ExecutorService executors = getExecutorService();
+            cmdFuture = executors.submit(() -> {
+                cmdRunner = Thread.currentThread();
+                this.run();
+            });
+        } catch (RuntimeException e) {    // e.g., RejectedExecutionException
+            log.error("Failed (" + e.getClass().getSimpleName() + ") to start command=" + command + ": " + e.getMessage(), e);
+            throw new IOException(e);
+        }
     }
 
     @Override
     public void destroy() {
+        // if thread has not completed, cancel it
+        boolean debugEnabled = log.isDebugEnabled();
+        if ((cmdFuture != null) && (!cmdFuture.isDone()) && (cmdRunner != Thread.currentThread())) {
+            boolean result = cmdFuture.cancel(true);
+            // TODO consider waiting some reasonable (?) amount of time for cancellation
+            if (debugEnabled) {
+                log.debug("destroy() - cancel pending future=" + result);
+            }
+        }
+
+        cmdFuture = null;
+
         ExecutorService executors = getExecutorService();
         if ((executors != null) && (!executors.isShutdown()) && isShutdownOnExit()) {
             Collection<Runnable> runners = executors.shutdownNow();
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("destroy() - shutdown executor service - runners count=" + runners.size());
             }
         }
         this.executorService = null;
     }
 
-    @Override
-    public void onExit(int exitValue, String exitMessage) {
+    protected void onExit(int exitValue) {
+        onExit(exitValue, "");
+    }
+
+    protected void onExit(int exitValue, String exitMessage) {
         if (cbCalled) {
             if (log.isTraceEnabled()) {
                 log.trace("onExit({}) ignore exitValue={}, message={} - already called",

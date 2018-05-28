@@ -27,7 +27,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractDelegatingCommandFactory extends AbstractLoggingBean implements DelegatingCommandFactory {
+public abstract class AbstractDelegatingCommandFactory extends AbstractLoggingBean implements CommandFactory {
     private final String name;
     /*
      * NOTE: we expose setters since there is no problem to change these settings between
@@ -44,12 +44,10 @@ public abstract class AbstractDelegatingCommandFactory extends AbstractLoggingBe
         return name;
     }
 
-    @Override
     public CommandFactory getDelegateCommandFactory() {
         return delegate;
     }
 
-    @Override
     public void setDelegateCommandFactory(CommandFactory factory) {
         delegate = factory;
     }
@@ -67,6 +65,14 @@ public abstract class AbstractDelegatingCommandFactory extends AbstractLoggingBe
 
         return createUnsupportedCommand(command);
     }
+
+    /**
+     * @param command The command about to be executed
+     * @return {@code true} if this command is supported by the command
+     * factory, {@code false} if it will be passed on to the
+     * {@link #getDelegateCommandFactory() delegate} factory
+     */
+    public abstract boolean isSupportedCommand(String command);
 
     protected abstract Command executeSupportedCommand(String command);
 

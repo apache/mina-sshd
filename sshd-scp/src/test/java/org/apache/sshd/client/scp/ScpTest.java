@@ -60,7 +60,6 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.scp.ScpCommand;
@@ -767,8 +766,7 @@ public class ScpTest extends BaseTestSupport {
     @Test   // see SSHD-628
     public void testScpExitStatusPropagation() throws Exception {
         final int testExitValue = 7365;
-        class InternalScpCommand extends ScpCommand implements ExitCallback {
-            private ExitCallback delegate;
+        class InternalScpCommand extends ScpCommand {
 
             InternalScpCommand(String command, ExecutorService executorService, boolean shutdownOnExit,
                     int sendSize, int receiveSize, ScpFileOpener opener, ScpTransferEventListener eventListener) {
@@ -782,24 +780,9 @@ public class ScpTest extends BaseTestSupport {
             }
 
             @Override
-            public void setExitCallback(ExitCallback callback) {
-                delegate = callback;
-                super.setExitCallback(this);
-            }
-
-            @Override
-            public void onExit(int exitValue) {
-                onExit(exitValue, Integer.toString(exitValue));
-            }
-
-            @Override
-            public void onExit(int exitValue, String exitMessage) {
+            protected void onExit(int exitValue, String exitMessage) {
                 outputDebugMessage("onExit(%s) status=%d", this, exitValue);
-                if (exitValue == ScpHelper.OK) {
-                    delegate.onExit(testExitValue, exitMessage);
-                } else {
-                    delegate.onExit(exitValue, exitMessage);
-                }
+                super.onExit((exitValue == ScpHelper.OK) ? testExitValue : exitValue, exitMessage);
             }
         }
 

@@ -153,13 +153,13 @@ public class ClientSessionTest extends BaseTestSupport {
     @Test
     public void testExceptionThrownIfNonZeroExitStatus() throws Exception {
         final String expectedCommand = getCurrentTestName() + "-CMD";
-        final int exepectedErrorCode = 7365;
-        sshd.setCommandFactory(command -> new CommandExecutionHelper() {
+        final int expectedErrorCode = 7365;
+        sshd.setCommandFactory(command -> new CommandExecutionHelper(command) {
             private boolean cmdProcessed;
 
             @Override
-            public void onExit(int exitValue, String exitMessage) {
-                super.onExit((exitValue == 0) ? exepectedErrorCode : exitValue, exitMessage);
+            protected void onExit(int exitValue, String exitMessage) {
+                super.onExit((exitValue == 0) ? expectedErrorCode : exitValue, exitMessage);
             }
 
             @Override
@@ -195,6 +195,6 @@ public class ClientSessionTest extends BaseTestSupport {
             actualErrorMessage = cause.getMessage();
         }
 
-        assertEquals("Mismatched captured error code", Integer.toString(exepectedErrorCode), actualErrorMessage);
+        assertEquals("Mismatched captured error code", Integer.toString(expectedErrorCode), actualErrorMessage);
     }
 }

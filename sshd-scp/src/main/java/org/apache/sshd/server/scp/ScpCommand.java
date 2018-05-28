@@ -19,32 +19,19 @@
 package org.apache.sshd.server.scp;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.FileSystem;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
-import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.scp.ScpException;
 import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.scp.helpers.DefaultScpFileOpener;
-import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.logging.AbstractLoggingBean;
-import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Environment;
-import org.apache.sshd.server.ExitCallback;
-import org.apache.sshd.server.SessionAware;
-import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.command.AbstractFileSystemCommand;
 import org.apache.sshd.server.session.ServerSession;
-import org.apache.sshd.server.session.ServerSessionHolder;
 
 /**
  * This commands provide SCP support on both server and client side.
@@ -54,11 +41,8 @@ import org.apache.sshd.server.session.ServerSessionHolder;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ScpCommand
-        extends AbstractLoggingBean
-        implements Command, Runnable, FileSystemAware, SessionAware,
-                   SessionHolder<Session>, ServerSessionHolder, ExecutorServiceCarrier {
+        extends AbstractFileSystemCommand {
 
-    protected final String name;
     protected final int sendBufferSize;
     protected final int receiveBufferSize;
     protected final ScpFileOpener opener;
@@ -67,19 +51,9 @@ public class ScpCommand
     protected boolean optF;
     protected boolean optD;
     protected boolean optP; // TODO: handle modification times
-    protected FileSystem fileSystem;
     protected String path;
-    protected InputStream in;
-    protected OutputStream out;
-    protected OutputStream err;
-    protected ExitCallback callback;
     protected IOException error;
-    protected Future<?> pendingFuture;
     protected ScpTransferEventListener listener;
-    protected ServerSession serverSession;
-
-    private ExecutorService executorService;
-    private boolean shutdownOnExit;
 
     /**
      * @param command         The command to be executed
@@ -101,16 +75,7 @@ public class ScpCommand
             ExecutorService executorService, boolean shutdownOnExit,
             int sendSize, int receiveSize,
             ScpFileOpener fileOpener, ScpTransferEventListener eventListener) {
-        name = command;
-
-        if (executorService == null) {
-            String poolName = command.replace(' ', '_').replace('/', ':');
-            this.executorService = ThreadUtils.newSingleThreadExecutor(poolName);
-            this.shutdownOnExit = true;    // we always close the ad-hoc executor service
-        } else {
-            this.executorService = executorService;
-            this.shutdownOnExit = shutdownOnExit;
-        }
+        super(command, executorService, shutdownOnExit);
 
         if (sendSize < ScpHelper.MIN_SEND_BUFFER_SIZE) {
             throw new IllegalArgumentException("<ScpCommmand>(" + command + ") send buffer size "
@@ -184,100 +149,11 @@ public class ScpCommand
     }
 
     @Override
-    public ExecutorService getExecutorService() {
-        return executorService;
-    }
-
-    @Override
-    public boolean isShutdownOnExit() {
-        return shutdownOnExit;
-    }
-
-    @Override
-    public Session getSession() {
-        return getServerSession();
-    }
-
-    @Override
-    public ServerSession getServerSession() {
-        return serverSession;
-    }
-
-    @Override
-    public void setSession(ServerSession session) {
-        serverSession = session;
-    }
-
-    @Override
-    public void setInputStream(InputStream in) {
-        this.in = in;
-    }
-
-    @Override
-    public void setOutputStream(OutputStream out) {
-        this.out = out;
-    }
-
-    @Override
-    public void setErrorStream(OutputStream err) {
-        this.err = err;
-    }
-
-    @Override
-    public void setExitCallback(ExitCallback callback) {
-        this.callback = callback;
-    }
-
-    @Override
-    public void setFileSystem(FileSystem fs) {
-        this.fileSystem = fs;
-    }
-
-    @Override
     public void start(Environment env) throws IOException {
         if (error != null) {
             throw error;
         }
-
-        try {
-            ExecutorService executors = getExecutorService();
-            pendingFuture = executors.submit(this);
-        } catch (RuntimeException e) {    // e.g., RejectedExecutionException
-            log.error("Failed (" + e.getClass().getSimpleName() + ") to start command=" + name + ": " + e.getMessage(), e);
-            throw new IOException(e);
-        }
-    }
-
-    @Override
-    public void destroy() {
-        // if thread has not completed, cancel it
-        boolean debugEnabled = log.isDebugEnabled();
-        if ((pendingFuture != null) && (!pendingFuture.isDone())) {
-            boolean result = pendingFuture.cancel(true);
-            // TODO consider waiting some reasonable (?) amount of time for cancellation
-            if (debugEnabled) {
-                log.debug("destroy() - cancel pending future=" + result);
-            }
-        }
-
-        pendingFuture = null;
-
-        ExecutorService executors = getExecutorService();
-        if ((executors != null) && (!executors.isShutdown()) && isShutdownOnExit()) {
-            Collection<Runnable> runners = executors.shutdownNow();
-            if (debugEnabled) {
-                log.debug("destroy() - shutdown executor service - runners count=" + runners.size());
-            }
-        }
-        this.executorService = null;
-
-        try {
-            fileSystem.close();
-        } catch (UnsupportedOperationException e) {
-            // Ignore
-        } catch (IOException e) {
-            log.debug("Error closing FileSystem", e);
-        }
+        super.start(env);
     }
 
     @Override
@@ -305,28 +181,28 @@ public class ScpCommand
                 // this is an exception so status cannot be OK/WARNING
                 if ((exitValue == ScpHelper.OK) || (exitValue == ScpHelper.WARNING)) {
                     if (debugEnabled) {
-                        log.debug("run({})[{}] normalize status code={}", session, name, exitValue);
+                        log.debug("run({})[{}] normalize status code={}", session, command, exitValue);
                     }
                     exitValue = ScpHelper.ERROR;
                 }
                 exitMessage = GenericUtils.trimToEmpty(e.getMessage());
-                writeCommandResponseMessage(name, exitValue, exitMessage);
+                writeCommandResponseMessage(command, exitValue, exitMessage);
             } catch (IOException e2) {
                 if (debugEnabled) {
                     log.debug("run({})[{}] Failed ({}) to send error response: {}",
-                              session, name, e.getClass().getSimpleName(), e.getMessage());
+                              session, command, e.getClass().getSimpleName(), e.getMessage());
                 }
                 if (log.isTraceEnabled()) {
-                    log.trace("run(" + session + ")[" + name + "] error response failure details", e2);
+                    log.trace("run(" + session + ")[" + command + "] error response failure details", e2);
                 }
             }
 
             if (debugEnabled) {
                 log.debug("run({})[{}] Failed ({}) to run command: {}",
-                          session, name, e.getClass().getSimpleName(), e.getMessage());
+                          session, command, e.getClass().getSimpleName(), e.getMessage());
             }
             if (log.isTraceEnabled()) {
-                log.trace("run(" + session + ")[" + name + "] command execution failure details", e);
+                log.trace("run(" + session + ")[" + command + "] command execution failure details", e);
             }
         } finally {
             if (callback != null) {
@@ -345,6 +221,6 @@ public class ScpCommand
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "(" + getSession() + ") " + name;
+        return getClass().getSimpleName() + "(" + getSession() + ") " + command;
     }
 }
