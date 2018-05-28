@@ -20,7 +20,6 @@ package org.apache.sshd.common.channel;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.client.future.OpenFuture;
@@ -85,30 +84,21 @@ public class WindowInitTest extends BaseTestSupport {
 
     @Parameters(name = "initial-size={0}, packet-size={1}")
     public static List<Object[]> parameters() {
-        return Collections.unmodifiableList(new ArrayList<Object[]>() {
-            // Not serializing it
-            private static final long serialVersionUID = 1L;
-
-            {
-                addTestCase(Byte.MIN_VALUE, FactoryManager.DEFAULT_MAX_PACKET_SIZE);
-                addTestCase(BufferUtils.MAX_UINT32_VALUE + 1L, FactoryManager.DEFAULT_MAX_PACKET_SIZE);
-                addTestCase(FactoryManager.DEFAULT_WINDOW_SIZE, 0L);
-                addTestCase(FactoryManager.DEFAULT_WINDOW_SIZE, Byte.MIN_VALUE);
-                addTestCase(FactoryManager.DEFAULT_WINDOW_SIZE, BufferUtils.MAX_UINT32_VALUE + 1L);
-                addTestCase(FactoryManager.DEFAULT_WINDOW_SIZE, FactoryManager.DEFAULT_LIMIT_PACKET_SIZE + 1L);
-            }
-
-            private void addTestCase(long initialSize, long packetSize) {
-                add(new Object[]{initialSize, packetSize});
-            }
-        });
+        List<Object[]> params = new ArrayList<>();
+        params.add(new Object[] {Byte.MIN_VALUE, FactoryManager.DEFAULT_MAX_PACKET_SIZE });
+        params.add(new Object[] {BufferUtils.MAX_UINT32_VALUE + 1L, FactoryManager.DEFAULT_MAX_PACKET_SIZE });
+        params.add(new Object[] {FactoryManager.DEFAULT_WINDOW_SIZE, 0L });
+        params.add(new Object[] {FactoryManager.DEFAULT_WINDOW_SIZE, Byte.MIN_VALUE });
+        params.add(new Object[] {FactoryManager.DEFAULT_WINDOW_SIZE, BufferUtils.MAX_UINT32_VALUE + 1L });
+        params.add(new Object[] {FactoryManager.DEFAULT_WINDOW_SIZE, FactoryManager.DEFAULT_LIMIT_PACKET_SIZE + 1L });
+        return params;
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testInitializationFailure() throws IOException {
         try (Window w = new Window(MOCK_CHANNEL, null, true, true)) {
             w.init(initialSize, packetSize, PropertyResolver.EMPTY);
-            fail("Unexpected success for initialiSize=" + initialSize + ", packetSize=" + packetSize);
+            fail("Unexpected success for initialSize=" + initialSize + ", packetSize=" + packetSize);
         }
     }
 }

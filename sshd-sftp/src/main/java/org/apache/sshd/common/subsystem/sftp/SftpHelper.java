@@ -80,46 +80,44 @@ public final class SftpHelper {
      */
     public static final boolean DEFAULT_APPEND_END_OF_LIST_INDICATOR = true;
 
-    public static final NavigableMap<Integer, String> DEFAULT_SUBSTATUS_MESSAGE =
-        Collections.unmodifiableNavigableMap(new TreeMap<Integer, String>(Comparator.naturalOrder()) {
-            // Not serializing it
-            private static final long serialVersionUID = 1L;
-
-            {
-                put(SftpConstants.SSH_FX_OK, "Success");
-                put(SftpConstants.SSH_FX_EOF, "End of file");
-                put(SftpConstants.SSH_FX_NO_SUCH_FILE, "No such file or directory");
-                put(SftpConstants.SSH_FX_PERMISSION_DENIED, "Permission denied");
-                put(SftpConstants.SSH_FX_FAILURE, "General failure");
-                put(SftpConstants.SSH_FX_BAD_MESSAGE, "Bad message data");
-                put(SftpConstants.SSH_FX_NO_CONNECTION, "No connection to server");
-                put(SftpConstants.SSH_FX_CONNECTION_LOST, "Connection lost");
-                put(SftpConstants.SSH_FX_OP_UNSUPPORTED, "Unsupported operation requested");
-                put(SftpConstants.SSH_FX_INVALID_HANDLE, "Invalid handle value");
-                put(SftpConstants.SSH_FX_NO_SUCH_PATH, "No such path");
-                put(SftpConstants.SSH_FX_FILE_ALREADY_EXISTS, "File/Directory already exists");
-                put(SftpConstants.SSH_FX_WRITE_PROTECT, "File/Directory is write-protected");
-                put(SftpConstants.SSH_FX_NO_MEDIA, "No such meadia");
-                put(SftpConstants.SSH_FX_NO_SPACE_ON_FILESYSTEM, "No space left on device");
-                put(SftpConstants.SSH_FX_QUOTA_EXCEEDED, "Quota exceeded");
-                put(SftpConstants.SSH_FX_UNKNOWN_PRINCIPAL, "Unknown user/group");
-                put(SftpConstants.SSH_FX_LOCK_CONFLICT, "Lock conflict");
-                put(SftpConstants.SSH_FX_DIR_NOT_EMPTY, "Directory not empty");
-                put(SftpConstants.SSH_FX_NOT_A_DIRECTORY, "Accessed location is not a directory");
-                put(SftpConstants.SSH_FX_INVALID_FILENAME, "Invalid filename");
-                put(SftpConstants.SSH_FX_LINK_LOOP, "Link loop");
-                put(SftpConstants.SSH_FX_CANNOT_DELETE, "Cannot remove");
-                put(SftpConstants.SSH_FX_INVALID_PARAMETER, "Invalid parameter");
-                put(SftpConstants.SSH_FX_FILE_IS_A_DIRECTORY, "Accessed location is a directory");
-                put(SftpConstants.SSH_FX_BYTE_RANGE_LOCK_CONFLICT, "Range lock conflict");
-                put(SftpConstants.SSH_FX_BYTE_RANGE_LOCK_REFUSED, "Range lock refused");
-                put(SftpConstants.SSH_FX_DELETE_PENDING, "Delete pending");
-                put(SftpConstants.SSH_FX_FILE_CORRUPT, "Corrupted file/directory");
-                put(SftpConstants.SSH_FX_OWNER_INVALID, "Invalid file/directory owner");
-                put(SftpConstants.SSH_FX_GROUP_INVALID, "Invalid file/directory group");
-                put(SftpConstants.SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK, "No matching byte range lock");
-            }
-        });
+    public static final Map<Integer, String> DEFAULT_SUBSTATUS_MESSAGE;
+    
+    static {
+        Map<Integer, String> map = new TreeMap<>(Comparator.naturalOrder());
+        map.put(SftpConstants.SSH_FX_OK, "Success");
+        map.put(SftpConstants.SSH_FX_EOF, "End of file");
+        map.put(SftpConstants.SSH_FX_NO_SUCH_FILE, "No such file or directory");
+        map.put(SftpConstants.SSH_FX_PERMISSION_DENIED, "Permission denied");
+        map.put(SftpConstants.SSH_FX_FAILURE, "General failure");
+        map.put(SftpConstants.SSH_FX_BAD_MESSAGE, "Bad message data");
+        map.put(SftpConstants.SSH_FX_NO_CONNECTION, "No connection to server");
+        map.put(SftpConstants.SSH_FX_CONNECTION_LOST, "Connection lost");
+        map.put(SftpConstants.SSH_FX_OP_UNSUPPORTED, "Unsupported operation requested");
+        map.put(SftpConstants.SSH_FX_INVALID_HANDLE, "Invalid handle value");
+        map.put(SftpConstants.SSH_FX_NO_SUCH_PATH, "No such path");
+        map.put(SftpConstants.SSH_FX_FILE_ALREADY_EXISTS, "File/Directory already exists");
+        map.put(SftpConstants.SSH_FX_WRITE_PROTECT, "File/Directory is write-protected");
+        map.put(SftpConstants.SSH_FX_NO_MEDIA, "No such meadia");
+        map.put(SftpConstants.SSH_FX_NO_SPACE_ON_FILESYSTEM, "No space left on device");
+        map.put(SftpConstants.SSH_FX_QUOTA_EXCEEDED, "Quota exceeded");
+        map.put(SftpConstants.SSH_FX_UNKNOWN_PRINCIPAL, "Unknown user/group");
+        map.put(SftpConstants.SSH_FX_LOCK_CONFLICT, "Lock conflict");
+        map.put(SftpConstants.SSH_FX_DIR_NOT_EMPTY, "Directory not empty");
+        map.put(SftpConstants.SSH_FX_NOT_A_DIRECTORY, "Accessed location is not a directory");
+        map.put(SftpConstants.SSH_FX_INVALID_FILENAME, "Invalid filename");
+        map.put(SftpConstants.SSH_FX_LINK_LOOP, "Link loop");
+        map.put(SftpConstants.SSH_FX_CANNOT_DELETE, "Cannot remove");
+        map.put(SftpConstants.SSH_FX_INVALID_PARAMETER, "Invalid parameter");
+        map.put(SftpConstants.SSH_FX_FILE_IS_A_DIRECTORY, "Accessed location is a directory");
+        map.put(SftpConstants.SSH_FX_BYTE_RANGE_LOCK_CONFLICT, "Range lock conflict");
+        map.put(SftpConstants.SSH_FX_BYTE_RANGE_LOCK_REFUSED, "Range lock refused");
+        map.put(SftpConstants.SSH_FX_DELETE_PENDING, "Delete pending");
+        map.put(SftpConstants.SSH_FX_FILE_CORRUPT, "Corrupted file/directory");
+        map.put(SftpConstants.SSH_FX_OWNER_INVALID, "Invalid file/directory owner");
+        map.put(SftpConstants.SSH_FX_GROUP_INVALID, "Invalid file/directory group");
+        map.put(SftpConstants.SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK, "No matching byte range lock");
+        DEFAULT_SUBSTATUS_MESSAGE = Collections.unmodifiableMap(map);
+    }
 
     private SftpHelper() {
         throw new UnsupportedOperationException("No instance allowed");

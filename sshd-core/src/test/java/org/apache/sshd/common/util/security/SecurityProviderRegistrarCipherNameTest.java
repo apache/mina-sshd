@@ -19,7 +19,6 @@
 package org.apache.sshd.common.util.security;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import javax.crypto.Cipher;
@@ -54,23 +53,17 @@ public class SecurityProviderRegistrarCipherNameTest extends BaseTestSupport {
 
     @Parameters(name = "{0}")
     public static List<Object[]> parameters() {
-        return Collections.unmodifiableList(
-                new ArrayList<Object[]>(BuiltinCiphers.VALUES.size()) {
-                    // Not serializing it
-                    private static final long serialVersionUID = 1L;
+        List<Object[]> params = new ArrayList<>();
+        for (CipherInformation cipherInfo : BuiltinCiphers.VALUES) {
+            String algorithm = cipherInfo.getAlgorithm();
+            String xform = cipherInfo.getTransformation();
+            if (!xform.startsWith(algorithm)) {
+                continue;
+            }
 
-                    {
-                        for (CipherInformation cipherInfo : BuiltinCiphers.VALUES) {
-                            String algorithm = cipherInfo.getAlgorithm();
-                            String xform = cipherInfo.getTransformation();
-                            if (!xform.startsWith(algorithm)) {
-                                continue;
-                            }
-
-                            add(new Object[]{cipherInfo});
-                        }
-                    }
-        });
+            params.add(new Object[]{cipherInfo});
+        }
+        return params;
     }
 
     @Test

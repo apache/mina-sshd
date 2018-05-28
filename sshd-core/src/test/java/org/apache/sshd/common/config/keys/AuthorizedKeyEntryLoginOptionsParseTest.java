@@ -19,7 +19,6 @@
 package org.apache.sshd.common.config.keys;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,55 +55,48 @@ public class AuthorizedKeyEntryLoginOptionsParseTest extends BaseTestSupport {
 
     @Parameters(name = "{0}")
     public static List<Object[]> parameters() {
-        return Collections.unmodifiableList(new ArrayList<Object[]>() {
-            // not serializing it
-            private static final long serialVersionUID = 1L;
+        List<Object[]> params = new ArrayList<>();
+        addData(params, "ssh-rsa AAAAB2...19Q==", "john@example.net", "from=\"*.sales.example.net,!pc.sales.example.net\"");
+        addData(params, "ssh-dss AAAAC3...51R==", "example.net", "command=\"dump /home\"", "no-pty", "no-port-forwarding");
+        addData(params, "ssh-dss AAAAB5...21S==", "", "permitopen=\"192.0.2.1:80\"", "permitopen=\"192.0.2.2:25\"");
+        addData(params, "ssh-rsa AAAA...==", "jane@example.net", "tunnel=\"0\"", "command=\"sh /etc/netstart tun0\"");
+        addData(params, "ssh-rsa AAAA1C8...32Tv==", "user@example.net", "!restrict", "command=\"uptime\"");
+        addData(params, "ssh-rsa AAAA1f8...IrrC5==", "user@example.net", "restrict", "!pty", "command=\"nethack\"");
+        return params;
+    }
 
-            private final StringBuilder sb = new StringBuilder(Byte.MAX_VALUE);
+    private static void addData(List<Object[]> params, String keyData, String comment, String... comps) {
+        StringBuilder sb = new StringBuilder();
 
-            {
-                addData("ssh-rsa AAAAB2...19Q==", "john@example.net", "from=\"*.sales.example.net,!pc.sales.example.net\"");
-                addData("ssh-dss AAAAC3...51R==", "example.net", "command=\"dump /home\"", "no-pty", "no-port-forwarding");
-                addData("ssh-dss AAAAB5...21S==", "", "permitopen=\"192.0.2.1:80\"", "permitopen=\"192.0.2.2:25\"");
-                addData("ssh-rsa AAAA...==", "jane@example.net", "tunnel=\"0\"", "command=\"sh /etc/netstart tun0\"");
-                addData("ssh-rsa AAAA1C8...32Tv==", "user@example.net", "!restrict", "command=\"uptime\"");
-                addData("ssh-rsa AAAA1f8...IrrC5==", "user@example.net", "restrict", "!pty", "command=\"nethack\"");
+        Map<String, String> optionsMap = new HashMap<>();
+        for (String c : comps) {
+            if (sb.length() > 0) {
+                sb.append(',');
             }
+            sb.append(c);
 
-            private void addData(String keyData, String comment, String... comps) {
-                sb.setLength(0);
-
-                Map<String, String> optionsMap = new HashMap<>();
-                for (String c : comps) {
-                    if (sb.length() > 0) {
-                        sb.append(',');
-                    }
-                    sb.append(c);
-
-                    int pos = c.indexOf('=');
-                    if (pos > 0) {
-                        String name = c.substring(0, pos);
-                        String value = GenericUtils.stripQuotes(c.substring(pos + 1)).toString();
-                        String prev = optionsMap.put(name, value);
-                        if (prev != null) {
-                            optionsMap.put(name, prev + "," + value);
-                        }
-                    } else {
-                        optionsMap.put(c, Boolean.toString(c.charAt(0) != AuthorizedKeyEntry.BOOLEAN_OPTION_NEGATION_INDICATOR));
-                    }
+            int pos = c.indexOf('=');
+            if (pos > 0) {
+                String name = c.substring(0, pos);
+                String value = GenericUtils.stripQuotes(c.substring(pos + 1)).toString();
+                String prev = optionsMap.put(name, value);
+                if (prev != null) {
+                    optionsMap.put(name, prev + "," + value);
                 }
-
-                int pos = sb.length();
-
-                sb.append(' ').append(keyData);
-                if (GenericUtils.isNotEmpty(comment)) {
-                    sb.append(' ').append(comment);
-                }
-
-                String value = sb.toString();
-                add(new Object[] {value, value.substring(0, pos), value.substring(pos + 1), optionsMap});
+            } else {
+                optionsMap.put(c, Boolean.toString(c.charAt(0) != AuthorizedKeyEntry.BOOLEAN_OPTION_NEGATION_INDICATOR));
             }
-        });
+        }
+
+        int pos = sb.length();
+
+        sb.append(' ').append(keyData);
+        if (GenericUtils.isNotEmpty(comment)) {
+            sb.append(' ').append(comment);
+        }
+
+        String value = sb.toString();
+        params.add(new Object[] {value, value.substring(0, pos), value.substring(pos + 1), optionsMap});
     }
 
     @Test

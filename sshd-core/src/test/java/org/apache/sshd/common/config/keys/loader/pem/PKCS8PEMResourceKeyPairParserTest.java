@@ -27,7 +27,6 @@ import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.ssl.PEMItem;
@@ -66,22 +65,14 @@ public class PKCS8PEMResourceKeyPairParserTest extends BaseTestSupport {
 
     @Parameters(name = "{0} / {1}")
     public static List<Object[]> parameters() {
-        return Collections.unmodifiableList(new ArrayList<Object[]>() {
-            // Not serializing it
-            private static final long serialVersionUID = 1L;
-
-            {
-                addTestCases(KeyUtils.RSA_ALGORITHM, RSA_SIZES);
-                addTestCases(KeyUtils.DSS_ALGORITHM, DSS_SIZES);
-                // TODO add test cases for ECDSA
-            }
-
-            private void addTestCases(String algorithm, Collection<Integer> keySizes) {
-                for (Integer ks : keySizes) {
-                    add(new Object[]{algorithm, ks});
-                }
-            }
-        });
+        List<Object[]> params = new ArrayList<>();
+        for (Integer ks : RSA_SIZES) {
+            params.add(new Object[]{KeyUtils.RSA_ALGORITHM, ks});
+        }
+        for (Integer ks : DSS_SIZES) {
+            params.add(new Object[]{KeyUtils.DSS_ALGORITHM, ks});
+        }
+        return params;
     }
 
     @Test   // see SSHD-760
