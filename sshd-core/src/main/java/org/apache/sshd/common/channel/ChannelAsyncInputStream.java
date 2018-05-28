@@ -64,7 +64,18 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
     public IoReadFuture read(Buffer buf) {
         IoReadFutureImpl future = new IoReadFutureImpl(readFutureId, buf);
         if (isClosing()) {
-            future.setValue(new IOException("Closed"));
+            synchronized (buffer) {
+                if (pending != null) {
+                    throw new ReadPendingException("Previous pending read not handled");
+                }
+                if (buffer.available() > 0) {
+                    int nbRead = future.buffer.putBuffer(buffer, false);
+                    buffer.compact();
+                    future.setValue(nbRead);
+                } else {
+                    future.setValue(new IOException("Closed"));
+                }
+            }
         } else {
             synchronized (buffer) {
                 if (pending != null) {

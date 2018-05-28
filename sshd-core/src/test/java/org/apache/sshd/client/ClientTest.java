@@ -588,6 +588,69 @@ public class ClientTest extends BaseTestSupport {
     }
 
     @Test
+    public void testExecAsyncClient() throws Exception {
+        Logger log = LoggerFactory.getLogger(getClass());
+        client.start();
+        try (ClientSession session = createTestClientSession()) {
+            final ByteArrayOutputStream baosOut = new ByteArrayOutputStream();
+            final ByteArrayOutputStream baosErr = new ByteArrayOutputStream();
+
+            final ChannelExec channel = session.createExecChannel("test");
+            channel.setStreaming(ClientChannel.Streaming.Async);
+            OpenFuture open = channel.open();
+
+            Thread.sleep(100); // Removing this line will make the test succeed
+            open.addListener(new SshFutureListener<OpenFuture>() {
+                @Override
+                public void operationComplete(OpenFuture future) {
+                    channel.getAsyncOut().read(new ByteArrayBuffer())
+                            .addListener(new SshFutureListener<IoReadFuture>() {
+                                @Override
+                                public void operationComplete(IoReadFuture future) {
+                                    try {
+                                        future.verify();
+                                        Buffer buffer = future.getBuffer();
+                                        baosOut.write(buffer.array(), buffer.rpos(), buffer.available());
+                                        buffer.rpos(buffer.rpos() + buffer.available());
+                                        buffer.compact();
+                                        channel.getAsyncOut().read(buffer).addListener(this);
+                                    } catch (IOException e) {
+                                        if (!channel.isClosing()) {
+                                            log.error("Error reading", e);
+                                            channel.close(true);
+                                        }
+                                    }
+                                }
+                            });
+                    channel.getAsyncErr().read(new ByteArrayBuffer())
+                            .addListener(new SshFutureListener<IoReadFuture>() {
+                                @Override
+                                public void operationComplete(IoReadFuture future) {
+                                    try {
+                                        future.verify();
+                                        Buffer buffer = future.getBuffer();
+                                        baosErr.write(buffer.array(), buffer.rpos(), buffer.available());
+                                        buffer.rpos(buffer.rpos() + buffer.available());
+                                        buffer.compact();
+                                        channel.getAsyncErr().read(buffer).addListener(this);
+                                    } catch (IOException e) {
+                                        if (!channel.isClosing()) {
+                                            log.error("Error reading", e);
+                                            channel.close(true);
+                                        }
+                                    }
+                                }
+                            });
+                }
+            });
+
+            channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 0);
+
+            assertNotEquals(0, baosErr.size());
+        }
+    }
+
+    @Test
     public void testCommandDeadlock() throws Exception {
         client.start();
 
