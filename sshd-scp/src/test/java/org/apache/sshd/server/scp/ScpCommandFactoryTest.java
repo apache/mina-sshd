@@ -19,9 +19,8 @@
 
 package org.apache.sshd.server.scp;
 
-import java.util.concurrent.ExecutorService;
-
 import org.apache.sshd.common.scp.ScpHelper;
+import org.apache.sshd.common.util.threads.ExecutorService;
 import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
@@ -52,7 +51,6 @@ public class ScpCommandFactoryTest extends BaseTestSupport {
         assertNull("Mismatched executor", factory.getExecutorService());
         assertEquals("Mismatched send size", ScpHelper.MIN_SEND_BUFFER_SIZE, factory.getSendBufferSize());
         assertEquals("Mismatched receive size", ScpHelper.MIN_RECEIVE_BUFFER_SIZE, factory.getReceiveBufferSize());
-        assertFalse("Mismatched shutdown state", factory.isShutdownOnExit());
     }
 
     /**
@@ -69,13 +67,11 @@ public class ScpCommandFactoryTest extends BaseTestSupport {
                 .withExecutorService(service)
                 .withSendBufferSize(sendSize)
                 .withReceiveBufferSize(receiveSize)
-                .withShutdownOnExit(true)
                 .build();
         assertSame("Mismatched delegate", delegate, factory.getDelegateCommandFactory());
         assertSame("Mismatched executor", service, factory.getExecutorService());
         assertEquals("Mismatched send size", sendSize, factory.getSendBufferSize());
         assertEquals("Mismatched receive size", receiveSize, factory.getReceiveBufferSize());
-        assertTrue("Mismatched shutdown state", factory.isShutdownOnExit());
     }
 
     /**

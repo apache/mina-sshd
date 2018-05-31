@@ -227,7 +227,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         SftpSubsystemFactory factory = new SftpSubsystemFactory() {
             @Override
             public Command create() {
-                SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(), isShutdownOnExit(),
+                SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(),
                         getUnsupportedAttributePolicy(), getFileSystemAccessor(), getErrorStatusDataHandler()) {
                     @Override
                     protected NavigableMap<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options) throws IOException {
@@ -346,7 +346,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         SftpSubsystemFactory factory = new SftpSubsystemFactory() {
             @Override
             public Command create() {
-                SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(), isShutdownOnExit(),
+                SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(),
                         getUnsupportedAttributePolicy(), getFileSystemAccessor(), getErrorStatusDataHandler()) {
                     @Override
                     protected NavigableMap<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options) throws IOException {

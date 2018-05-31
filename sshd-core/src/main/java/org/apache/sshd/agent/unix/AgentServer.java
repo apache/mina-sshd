@@ -21,7 +21,6 @@ package org.apache.sshd.agent.unix;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.apache.sshd.agent.SshAgent;
@@ -31,6 +30,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.common.util.threads.ExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.tomcat.jni.Local;
@@ -46,24 +46,23 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
 
     private final SshAgent agent;
     private final ExecutorService service;
-    private final boolean shutdownExecutor;
     private Future<?> agentThread;
     private String authSocket;
     private long pool;
     private long handle;
 
     public AgentServer() {
-        this(null, false);
+        this(null);
     }
 
-    public AgentServer(ExecutorService executor, boolean shutdownOnExit) {
-        this(new AgentImpl(), executor, shutdownOnExit);
+    public AgentServer(ExecutorService executor) {
+        this(new AgentImpl(), executor);
     }
 
-    public AgentServer(SshAgent agent, ExecutorService executor, boolean shutdownOnExit) {
+    public AgentServer(SshAgent agent, ExecutorService executor) {
         this.agent = agent;
-        this.service = (executor == null) ? ThreadUtils.newSingleThreadExecutor("AgentServer[" + agent + "]") : executor;
-        this.shutdownExecutor = service != executor || shutdownOnExit;
+        this.service = (executor == null)
+                ? ThreadUtils.newSingleThreadExecutor("AgentServer[" + agent + "]") : executor;
     }
 
     public SshAgent getAgent() {
@@ -73,11 +72,6 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
     @Override
     public ExecutorService getExecutorService() {
         return service;
-    }
-
-    @Override
-    public boolean isShutdownOnExit() {
-        return shutdownExecutor;
     }
 
     public String start() throws Exception {
@@ -129,7 +123,7 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
         }
 
         ExecutorService executor = getExecutorService();
-        if ((executor != null) && isShutdownOnExit() && (!executor.isShutdown())) {
+        if ((executor != null) && (!executor.isShutdown())) {
             Collection<?> runners = executor.shutdownNow();
             if (log.isDebugEnabled()) {
                 log.debug("Shut down runners count=" + GenericUtils.size(runners));

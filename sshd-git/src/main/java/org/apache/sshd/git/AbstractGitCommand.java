@@ -24,9 +24,9 @@ import java.nio.file.FileSystem;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.util.threads.ExecutorService;
 import org.apache.sshd.server.command.AbstractFileSystemCommand;
 
 /**
@@ -45,8 +45,8 @@ public abstract class AbstractGitCommand
     protected final GitLocationResolver rootDirResolver;
     protected FileSystem fileSystem;
 
-    protected AbstractGitCommand(GitLocationResolver rootDirResolver, String command, ExecutorService executorService, boolean shutdownOnExit) {
-        super(command, executorService, shutdownOnExit);
+    protected AbstractGitCommand(GitLocationResolver rootDirResolver, String command, ExecutorService executorService) {
+        super(command, executorService);
         this.rootDirResolver = Objects.requireNonNull(rootDirResolver, "No GIT root directory resolver provided");
     }
 

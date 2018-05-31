@@ -20,11 +20,11 @@ package org.apache.sshd.common.io;
 
 import java.util.Iterator;
 import java.util.ServiceLoader;
-import java.util.concurrent.ExecutorService;
 
+import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
+import org.apache.sshd.common.util.threads.ExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,11 +37,11 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
     private IoServiceFactoryFactory factory;
 
     protected DefaultIoServiceFactoryFactory() {
-        this(null, true);
+        this(null);
     }
 
-    protected DefaultIoServiceFactoryFactory(ExecutorService executors, boolean shutdownOnExit) {
-        super(executors, shutdownOnExit);
+    protected DefaultIoServiceFactoryFactory(Factory<ExecutorService> factory) {
+        super(factory);
     }
 
     @Override
@@ -57,10 +57,9 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
         synchronized (this) {
             if (factory == null) {
                 factory = newInstance(IoServiceFactoryFactory.class);
-                if (factory instanceof ExecutorServiceConfigurer) {
-                    ExecutorServiceConfigurer configurer = (ExecutorServiceConfigurer) factory;
-                    configurer.setExecutorService(getExecutorService());
-                    configurer.setShutdownOnExit(isShutdownOnExit());
+                Factory<ExecutorService> executorServiceFactory = getExecutorServiceFactory();
+                if (executorServiceFactory != null) {
+                    factory.setExecutorServiceFactory(executorServiceFactory);
                 }
             }
         }

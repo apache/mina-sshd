@@ -77,7 +77,7 @@ import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 
 /**
- * TODO Add javadoc
+ * TODO Add javadocWindowInitTest
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -102,9 +102,14 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     public ChannelSession(Collection<? extends RequestHandler<Channel>> handlers) {
-        super(handlers);
+        super("", handlers, null);
 
         commandExitFuture = new DefaultCloseFuture(getClass().getSimpleName(), lock);
+    }
+
+    @Override
+    public ServerSession getSession() {
+        return (ServerSession) super.getSession();
     }
 
     @Override

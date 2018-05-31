@@ -326,7 +326,7 @@ public class ServerTest extends BaseTestSupport {
             assertTrue("No changes in open channels", channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS));
 
             try (AbstractSession serverSession = sshd.getActiveSessions().iterator().next()) {
-                AbstractConnectionService<?> service = serverSession.getService(AbstractConnectionService.class);
+                AbstractConnectionService service = serverSession.getService(AbstractConnectionService.class);
                 Collection<? extends Channel> channels = service.getChannels();
 
                 try (Channel channel = channels.iterator().next()) {

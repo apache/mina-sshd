@@ -35,7 +35,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -60,6 +59,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.threads.ExecutorService;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.scp.ScpCommand;
@@ -768,9 +768,9 @@ public class ScpTest extends BaseTestSupport {
         final int testExitValue = 7365;
         class InternalScpCommand extends ScpCommand {
 
-            InternalScpCommand(String command, ExecutorService executorService, boolean shutdownOnExit,
+            InternalScpCommand(String command, ExecutorService executorService,
                     int sendSize, int receiveSize, ScpFileOpener opener, ScpTransferEventListener eventListener) {
-                super(command, executorService, shutdownOnExit, sendSize, receiveSize, opener, eventListener);
+                super(command, executorService, sendSize, receiveSize, opener, eventListener);
             }
 
             @Override
@@ -792,7 +792,7 @@ public class ScpTest extends BaseTestSupport {
             public Command createCommand(String command) {
                 ValidateUtils.checkTrue(command.startsWith(ScpHelper.SCP_COMMAND_PREFIX), "Bad SCP command: %s", command);
                 return new InternalScpCommand(command,
-                        getExecutorService(), isShutdownOnExit(),
+                        getExecutorService(),
                         getSendBufferSize(), getReceiveBufferSize(),
                         DefaultScpFileOpener.INSTANCE,
                         ScpTransferEventListener.EMPTY);

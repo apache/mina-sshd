@@ -20,8 +20,8 @@
 package org.apache.sshd.netty;
 
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.io.AbstractIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
-import org.apache.sshd.common.io.IoServiceFactoryFactory;
 
 import io.netty.channel.EventLoopGroup;
 
@@ -29,7 +29,7 @@ import io.netty.channel.EventLoopGroup;
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class NettyIoServiceFactoryFactory implements IoServiceFactoryFactory {
+public class NettyIoServiceFactoryFactory extends AbstractIoServiceFactoryFactory {
 
     protected final EventLoopGroup eventLoopGroup;
 
@@ -38,6 +38,7 @@ public class NettyIoServiceFactoryFactory implements IoServiceFactoryFactory {
     }
 
     public NettyIoServiceFactoryFactory(EventLoopGroup eventLoopGroup) {
+        super(null);
         this.eventLoopGroup = eventLoopGroup;
     }
 

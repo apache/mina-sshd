@@ -18,8 +18,7 @@
  */
 package org.apache.sshd.git.pack;
 
-import java.util.concurrent.ExecutorService;
-
+import org.apache.sshd.common.util.threads.ExecutorService;
 import org.apache.sshd.git.AbstractGitCommandFactory;
 import org.apache.sshd.git.GitLocationResolver;
 import org.apache.sshd.server.command.CommandFactory;
@@ -58,12 +57,7 @@ public class GitPackCommandFactory extends AbstractGitCommandFactory {
     }
 
     @Override
-    public GitPackCommandFactory withShutdownOnExit(boolean shutdownOnExit) {
-        return (GitPackCommandFactory) super.withShutdownOnExit(shutdownOnExit);
-    }
-
-    @Override
     public GitPackCommand createGitCommand(String command) {
-        return new GitPackCommand(getGitLocationResolver(), command, getExecutorService(), isShutdownOnExit());
+        return new GitPackCommand(getGitLocationResolver(), command, getExecutorService());
     }
 }

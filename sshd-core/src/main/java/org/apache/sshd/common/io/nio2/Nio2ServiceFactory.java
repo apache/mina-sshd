@@ -20,7 +20,6 @@ package org.apache.sshd.common.io.nio2;
 
 import java.io.IOException;
 import java.nio.channels.AsynchronousChannelGroup;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.FactoryManager;
@@ -29,6 +28,7 @@ import org.apache.sshd.common.io.AbstractIoServiceFactory;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
+import org.apache.sshd.common.util.threads.ExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
@@ -38,12 +38,11 @@ public class Nio2ServiceFactory extends AbstractIoServiceFactory {
 
     private final AsynchronousChannelGroup group;
 
-    public Nio2ServiceFactory(FactoryManager factoryManager, ExecutorService service, boolean shutdownOnExit) {
+    public Nio2ServiceFactory(FactoryManager factoryManager, ExecutorService service) {
         super(factoryManager,
-                service == null ? ThreadUtils.newFixedThreadPool(factoryManager.toString() + "-nio2", getNioWorkers(factoryManager)) : service,
-                service == null || shutdownOnExit);
+              ThreadUtils.newFixedThreadPoolIf(service, factoryManager.toString() + "-nio2", getNioWorkers(factoryManager)));
         try {
-            group = AsynchronousChannelGroup.withThreadPool(ThreadUtils.protectExecutorServiceShutdown(getExecutorService(), isShutdownOnExit()));
+            group = AsynchronousChannelGroup.withThreadPool(ThreadUtils.noClose(getExecutorService()));
         } catch (IOException e) {
             log.warn("Failed (" + e.getClass().getSimpleName() + " to start async. channel group: " + e.getMessage());
             if (log.isDebugEnabled()) {
@@ -71,12 +70,10 @@ public class Nio2ServiceFactory extends AbstractIoServiceFactory {
                 group.shutdownNow();
 
                 // if we protect the executor then the await will fail since we didn't really shut it down...
-                if (isShutdownOnExit()) {
-                    if (group.awaitTermination(5, TimeUnit.SECONDS)) {
-                        log.debug("Group successfully shut down");
-                    } else {
-                        log.debug("Not all group tasks terminated");
-                    }
+                if (group.awaitTermination(5, TimeUnit.SECONDS)) {
+                    log.debug("Group successfully shut down");
+                } else {
+                    log.debug("Not all group tasks terminated");
                 }
             }
         } catch (Exception e) {

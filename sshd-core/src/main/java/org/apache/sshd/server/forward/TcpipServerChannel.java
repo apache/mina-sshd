@@ -22,9 +22,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.SocketAddress;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
@@ -50,6 +49,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.common.util.threads.ExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.channel.AbstractServerChannel;
@@ -61,7 +61,9 @@ import org.apache.sshd.server.forward.TcpForwardingFilter.Type;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class TcpipServerChannel extends AbstractServerChannel implements ForwardingTunnelEndpointsProvider {
+
     public abstract static class TcpipFactory implements ChannelFactory, ExecutorServiceCarrier {
+
         private final ForwardingFilter.Type type;
 
         protected TcpipFactory(ForwardingFilter.Type type) {
@@ -77,21 +79,14 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
             return type.getName();
         }
 
-        @Override   // user can override to provide an alternative
+        @Override
         public ExecutorService getExecutorService() {
             return null;
         }
 
         @Override
-        public boolean isShutdownOnExit() {
-            return false;
-        }
-
-        @Override
         public Channel create() {
-            TcpipServerChannel channel = new TcpipServerChannel(getType());
-            channel.setExecutorService(getExecutorService());
-            channel.setShutdownOnExit(isShutdownOnExit());
+            TcpipServerChannel channel = new TcpipServerChannel(getType(), ThreadUtils.noClose(getExecutorService()));
             return channel;
         }
     }
@@ -105,7 +100,8 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
     private SshdSocketAddress originatorAddress;
     private SocketAddress localAddress;
 
-    public TcpipServerChannel(ForwardingFilter.Type type) {
+    public TcpipServerChannel(ForwardingFilter.Type type, ExecutorService executor) {
+        super("", Collections.emptyList(), executor);
         this.type = Objects.requireNonNull(type, "No channel type specified");
     }
 
@@ -329,27 +325,16 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
 
         // allocate a temporary executor service if none provided
         ExecutorService executors = (service == null)
-            ? ThreadUtils.newSingleThreadExecutor("TcpIpServerChannel-ConnectorCleanup[" + getSession() + "]")
-            : service;
-        // shutdown the temporary executor service if had to create it
-        boolean shutdown = (executors != service) || isShutdownOnExit();
+                ? ThreadUtils.newSingleThreadExecutor("TcpIpServerChannel-ConnectorCleanup[" + getSession() + "]")
+                : ThreadUtils.noClose(service);
 
         return builder().when(closingFeature).run(toString(), () -> {
             executors.submit(() -> {
-                try {
-                    if (debugEnabled) {
-                        log.debug("disposing connector: {} for: {}", connector, TcpipServerChannel.this);
-                    }
-                    connector.close(immediately);
-                } finally {
-                    if (shutdown && (!executors.isShutdown())) {
-                        Collection<Runnable> runners = executors.shutdownNow();
-                        if (debugEnabled) {
-                            log.debug("destroy({}) - shutdown executor service - runners count={}",
-                                      TcpipServerChannel.this, runners.size());
-                        }
-                    }
+                if (debugEnabled) {
+                    log.debug("disposing connector: {} for: {}", connector, TcpipServerChannel.this);
                 }
+                connector.close(immediately)
+                        .addListener(f -> executors.close(true));
             });
         }).build().close(false);
     }

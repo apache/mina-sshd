@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentConstants;
@@ -38,19 +37,20 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
-import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
+import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractAgentProxy extends AbstractLoggingBean implements SshAgent, ExecutorServiceConfigurer {
+public abstract class AbstractAgentProxy extends AbstractLoggingBean implements SshAgent, ExecutorServiceCarrier {
 
     private ExecutorService executor;
-    private boolean shutdownExecutor;
     private String channelType = FactoryManager.AGENT_FORWARDING_TYPE_OPENSSH;
 
-    protected AbstractAgentProxy() {
+    protected AbstractAgentProxy(ExecutorService executorService) {
         super();
+        executor = executorService;
     }
 
     public String getChannelType() {
@@ -64,21 +64,6 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
     @Override
     public ExecutorService getExecutorService() {
         return executor;
-    }
-
-    @Override
-    public void setExecutorService(ExecutorService service) {
-        executor = service;
-    }
-
-    @Override
-    public boolean isShutdownOnExit() {
-        return shutdownExecutor;
-    }
-
-    @Override
-    public void setShutdownOnExit(boolean shutdown) {
-        shutdownExecutor = shutdown;
     }
 
     @Override
@@ -213,7 +198,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
     @Override
     public void close() throws IOException {
         ExecutorService service = getExecutorService();
-        if ((service != null) && isShutdownOnExit() && (!service.isShutdown())) {
+        if ((service != null) && (!service.isShutdown())) {
             Collection<?> runners = service.shutdownNow();
             if (log.isDebugEnabled()) {
                 log.debug("close() - shutdown runners count=" + GenericUtils.size(runners));

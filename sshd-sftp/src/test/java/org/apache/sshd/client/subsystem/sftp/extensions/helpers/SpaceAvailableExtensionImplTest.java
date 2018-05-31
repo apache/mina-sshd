@@ -71,7 +71,7 @@ public class SpaceAvailableExtensionImplTest extends AbstractSftpClientTestSuppo
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory() {
             @Override
             public Command create() {
-                return new SftpSubsystem(getExecutorService(), isShutdownOnExit(),
+                return new SftpSubsystem(getExecutorService(),
                         getUnsupportedAttributePolicy(), getFileSystemAccessor(), getErrorStatusDataHandler()) {
                     @Override
                     protected SpaceAvailableExtensionInfo doSpaceAvailable(int id, String path) throws IOException {

@@ -29,11 +29,9 @@ import java.nio.channels.CompletionHandler;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
-import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -141,8 +139,11 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
 
     private void readInOneBuffer(int serverPort) throws Exception {
         outputDebugMessage("readInOneBuffer(port=%d)", serverPort);
-        try (Socket s = new Socket(TEST_LOCALHOST, serverPort)) {
+        try (Socket s = new Socket()) {
             s.setSoTimeout(300);
+            s.setReceiveBufferSize(65536);
+            s.connect(new InetSocketAddress(TEST_LOCALHOST, serverPort));
+            Thread.sleep(50L);
 
             byte buf[] = new byte[PAYLOAD.length()];
             try (InputStream inputStream = s.getInputStream()) {
@@ -157,8 +158,12 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
 
     private void readInTwoBuffersWithPause(int serverPort) throws Exception {
         outputDebugMessage("readInTwoBuffersWithPause(port=%d)", serverPort);
-        try (Socket s = new Socket(TEST_LOCALHOST, serverPort)) {
+        try (Socket s = new Socket()) {
             s.setSoTimeout(300);
+            s.setReceiveBufferSize(65536);
+            s.connect(new InetSocketAddress(TEST_LOCALHOST, serverPort));
+            Thread.sleep(50L);
+
             byte b1[] = new byte[PAYLOAD.length() / 2];
             byte b2[] = new byte[PAYLOAD.length()];
 
@@ -202,7 +207,6 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
      */
     @Test
     public void testRemotePortForwardOneBuffer() throws Exception {
-        Assume.assumeTrue("Intermittent failures in Windows", OsUtils.isUNIX());
         readInOneBuffer(startRemotePF());
     }
 
@@ -224,7 +228,6 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
 
     @Test
     public void testLocalPortForwardOneBuffer() throws Exception {
-        Assume.assumeTrue("Intermittent failures in Windows", OsUtils.isUNIX());
         readInOneBuffer(startLocalPF());
     }
 

@@ -443,8 +443,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     public KeyExchangeFuture switchToNoneCipher() throws IOException {
-        if (!(currentService instanceof AbstractConnectionService<?>)
-                || !GenericUtils.isEmpty(((AbstractConnectionService<?>) currentService).getChannels())) {
+        if (!(currentService instanceof AbstractConnectionService)
+                || !GenericUtils.isEmpty(((AbstractConnectionService) currentService).getChannels())) {
             throw new IllegalStateException("The switch to the none cipher must be done immediately after authentication");
         }
 

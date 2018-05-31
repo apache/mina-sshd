@@ -19,8 +19,6 @@
 
 package org.apache.sshd.common.util.threads;
 
-import java.util.concurrent.ExecutorService;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -30,10 +28,4 @@ public interface ExecutorServiceCarrier {
      */
     ExecutorService getExecutorService();
 
-    /**
-     * @return If {@code true} then the {@link ExecutorService#shutdownNow()}
-     * will be called (unless it is an internally allocated service which is always
-     * closed)
-     */
-    boolean isShutdownOnExit();
 }

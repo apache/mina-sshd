@@ -20,7 +20,6 @@ package org.apache.sshd.server.scp;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.scp.ScpException;
 import org.apache.sshd.common.scp.ScpFileOpener;
@@ -28,6 +27,7 @@ import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.scp.helpers.DefaultScpFileOpener;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.threads.ExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.command.AbstractFileSystemCommand;
@@ -60,9 +60,6 @@ public class ScpCommand
      * @param executorService An {@link ExecutorService} to be used when
      *                        {@link #start(Environment)}-ing execution. If {@code null} an ad-hoc
      *                        single-threaded service is created and used.
-     * @param shutdownOnExit  If {@code true} the {@link ExecutorService#shutdownNow()}
-     *                        will be called when command terminates - unless it is the ad-hoc
-     *                        service, which will be shutdown regardless
      * @param sendSize        Size (in bytes) of buffer to use when sending files
      * @param receiveSize     Size (in bytes) of buffer to use when receiving files
      * @param fileOpener      The {@link ScpFileOpener} - if {@code null} then {@link DefaultScpFileOpener} is used
@@ -72,10 +69,10 @@ public class ScpCommand
      * @see ScpHelper#MIN_RECEIVE_BUFFER_SIZE
      */
     public ScpCommand(String command,
-            ExecutorService executorService, boolean shutdownOnExit,
+            ExecutorService executorService,
             int sendSize, int receiveSize,
             ScpFileOpener fileOpener, ScpTransferEventListener eventListener) {
-        super(command, executorService, shutdownOnExit);
+        super(command, executorService);
 
         if (sendSize < ScpHelper.MIN_SEND_BUFFER_SIZE) {
             throw new IllegalArgumentException("<ScpCommmand>(" + command + ") send buffer size "

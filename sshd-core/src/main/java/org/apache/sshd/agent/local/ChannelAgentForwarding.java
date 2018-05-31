@@ -20,6 +20,7 @@ package org.apache.sshd.agent.local;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collections;
 import java.util.Objects;
 
 import org.apache.sshd.agent.SshAgent;
@@ -36,6 +37,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.threads.ExecutorService;
 import org.apache.sshd.server.channel.AbstractServerChannel;
 
 /**
@@ -46,8 +48,8 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     private SshAgent agent;
     private AgentClient client;
 
-    public ChannelAgentForwarding() {
-        super();
+    public ChannelAgentForwarding(ExecutorService executor) {
+        super("", Collections.emptyList(), executor);
     }
 
     @Override

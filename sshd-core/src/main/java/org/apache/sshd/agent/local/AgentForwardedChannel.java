@@ -46,7 +46,7 @@ public class AgentForwardedChannel extends AbstractClientChannel {
     }
 
     public SshAgent getAgent() {
-        AbstractAgentProxy rtn = new AbstractAgentProxy() {
+        AbstractAgentProxy rtn = new AbstractAgentProxy(null) {
             private final AtomicBoolean open = new AtomicBoolean(true);
 
             @Override

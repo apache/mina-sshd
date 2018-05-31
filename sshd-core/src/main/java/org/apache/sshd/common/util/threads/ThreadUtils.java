@@ -18,26 +18,33 @@
  */
 package org.apache.sshd.common.util.threads;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
+import java.io.IOException;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.DefaultCloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.util.closeable.AbstractCloseable;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -66,32 +73,15 @@ public final class ThreadUtils {
      * value of the <tt>shutdownOnExit</tt> parameter
      */
     public static ExecutorService protectExecutorServiceShutdown(final ExecutorService executorService, boolean shutdownOnExit) {
-        if (executorService == null || shutdownOnExit) {
+        if (executorService == null || shutdownOnExit || executorService instanceof NoCloseExecutor) {
             return executorService;
         } else {
-            return (ExecutorService) Proxy.newProxyInstance(
-                    resolveDefaultClassLoader(executorService),
-                    new Class<?>[]{ExecutorService.class},
-                    new InvocationHandler() {
-                        private final AtomicBoolean stopped = new AtomicBoolean(false);
-
-                        @Override
-                        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                            String name = method.getName();
-                            if ("isShutdown".equals(name)) {
-                                return stopped.get();
-                            } else if ("shutdown".equals(name)) {
-                                stopped.set(true);
-                                return null;    // void...
-                            } else if ("shutdownNow".equals(name)) {
-                                stopped.set(true);
-                                return Collections.emptyList();
-                            } else {
-                                return method.invoke(executorService, args);
-                            }
-                        }
-                    });
+            return new NoCloseExecutor(executorService);
         }
+    }
+
+    public static ExecutorService noClose(ExecutorService executorService) {
+        return protectExecutorServiceShutdown(executorService, false);
     }
 
     public static ClassLoader resolveDefaultClassLoader(Object anchor) {
@@ -180,16 +170,26 @@ public final class ThreadUtils {
         return cls;
     }
 
+    public static ExecutorService newFixedThreadPoolIf(ExecutorService executorService, String poolName, int nThreads) {
+        return executorService == null ? newFixedThreadPool(poolName, nThreads) : executorService;
+    }
+
     public static ExecutorService newFixedThreadPool(String poolName, int nThreads) {
-        return new ThreadPoolExecutor(nThreads, nThreads,
+        return new ThreadPoolExecutor(
+                nThreads, nThreads,
                 0L, TimeUnit.MILLISECONDS, // TODO make this configurable
                 new LinkedBlockingQueue<>(),
                 new SshdThreadFactory(poolName),
                 new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
+    public static ExecutorService newCachedThreadPoolIf(ExecutorService executorService, String poolName) {
+        return executorService == null ? newCachedThreadPool(poolName) : executorService;
+    }
+
     public static ExecutorService newCachedThreadPool(String poolName) {
-        return new ThreadPoolExecutor(0, Integer.MAX_VALUE, // TODO make this configurable
+        return new ThreadPoolExecutor(
+                0, Integer.MAX_VALUE, // TODO make this configurable
                 60L, TimeUnit.SECONDS, // TODO make this configurable
                 new SynchronousQueue<>(),
                 new SshdThreadFactory(poolName),
@@ -246,6 +246,220 @@ public final class ThreadUtils {
                 log.trace("newThread({})[{}] runnable={}", group, t.getName(), r);
             }
             return t;
+        }
+    }
+
+    public static class NoCloseExecutor implements ExecutorService {
+
+        protected final ExecutorService executor;
+        protected final CloseFuture closeFuture;
+
+        public NoCloseExecutor(ExecutorService executor) {
+            this.executor = executor;
+            closeFuture = new DefaultCloseFuture(null, null);
+        }
+
+        @Override
+        public <T> Future<T> submit(Callable<T> task) {
+            return executor.submit(task);
+        }
+
+        @Override
+        public <T> Future<T> submit(Runnable task, T result) {
+            return executor.submit(task, result);
+        }
+
+        @Override
+        public Future<?> submit(Runnable task) {
+            return executor.submit(task);
+        }
+
+        @Override
+        public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
+            return executor.invokeAll(tasks);
+        }
+
+        @Override
+        public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException {
+            return executor.invokeAll(tasks, timeout, unit);
+        }
+
+        @Override
+        public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
+            return executor.invokeAny(tasks);
+        }
+
+        @Override
+        public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+            return executor.invokeAny(tasks, timeout, unit);
+        }
+
+        @Override
+        public void execute(Runnable command) {
+            executor.execute(command);
+        }
+
+        @Override
+        public void shutdown() {
+            close(true);
+        }
+
+        @Override
+        public List<Runnable> shutdownNow() {
+            close(true);
+            return Collections.emptyList();
+        }
+
+        @Override
+        public boolean isShutdown() {
+            return isClosed();
+        }
+
+        @Override
+        public boolean isTerminated() {
+            return isClosed();
+        }
+
+        @Override
+        public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+            try {
+                return closeFuture.await(timeout, unit);
+            } catch (IOException e) {
+                throw (InterruptedException) new InterruptedException().initCause(e);
+            }
+        }
+
+        @Override
+        public CloseFuture close(boolean immediately) {
+            closeFuture.setClosed();
+            return closeFuture;
+        }
+
+        @Override
+        public void addCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+            closeFuture.addListener(listener);
+        }
+
+        @Override
+        public void removeCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+            closeFuture.removeListener(listener);
+        }
+
+        @Override
+        public boolean isClosed() {
+            return closeFuture.isClosed();
+        }
+
+        @Override
+        public boolean isClosing() {
+            return isClosed();
+        }
+
+    }
+
+    public static class ThreadPoolExecutor extends java.util.concurrent.ThreadPoolExecutor implements ExecutorService {
+
+        final DelegateCloseable closeable = new DelegateCloseable();
+
+        class DelegateCloseable extends AbstractCloseable {
+            DelegateCloseable() {
+            }
+
+            @Override
+            protected CloseFuture doCloseGracefully() {
+                shutdown();
+                return closeFuture;
+            }
+
+            @Override
+            protected void doCloseImmediately() {
+                shutdownNow();
+                super.doCloseImmediately();
+            }
+
+            void setClosed() {
+                closeFuture.setClosed();
+            }
+        }
+
+        public ThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue) {
+            super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);
+        }
+
+        public ThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory) {
+            super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory);
+        }
+
+        public ThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue, RejectedExecutionHandler handler) {
+            super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, handler);
+        }
+
+        public ThreadPoolExecutor(int corePoolSize, int maximumPoolSize,
+                                  long keepAliveTime, TimeUnit unit,
+                                  BlockingQueue<Runnable> workQueue,
+                                  ThreadFactory threadFactory,
+                                  RejectedExecutionHandler handler) {
+            super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
+        }
+
+        @Override
+        protected void terminated() {
+            closeable.doCloseImmediately();
+        }
+
+        @Override
+        public void shutdown() {
+            super.shutdown();
+        }
+
+        @Override
+        public List<Runnable> shutdownNow() {
+            return super.shutdownNow();
+        }
+
+        @Override
+        public boolean isShutdown() {
+            return super.isShutdown();
+        }
+
+        @Override
+        public boolean isTerminating() {
+            return super.isTerminating();
+        }
+
+        @Override
+        public boolean isTerminated() {
+            return super.isTerminated();
+        }
+
+        @Override
+        public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+            return super.awaitTermination(timeout, unit);
+        }
+
+        @Override
+        public CloseFuture close(boolean immediately) {
+            return closeable.close(immediately);
+        }
+
+        @Override
+        public void addCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+            closeable.addCloseFutureListener(listener);
+        }
+
+        @Override
+        public void removeCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+            closeable.removeCloseFutureListener(listener);
+        }
+
+        @Override
+        public boolean isClosed() {
+            return closeable.isClosed();
+        }
+
+        @Override
+        public boolean isClosing() {
+            return closeable.isClosing();
         }
     }
 }

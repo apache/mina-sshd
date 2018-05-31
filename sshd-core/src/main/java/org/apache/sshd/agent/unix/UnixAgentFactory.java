@@ -23,12 +23,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.agent.SshAgentServer;
+import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshException;
@@ -37,65 +37,40 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
+import org.apache.sshd.common.util.threads.ExecutorService;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UnixAgentFactory implements SshAgentFactory, ExecutorServiceConfigurer {
+public class UnixAgentFactory implements SshAgentFactory {
     public static final List<NamedFactory<Channel>> DEFAULT_FORWARDING_CHANNELS =
             Collections.unmodifiableList(
                     Arrays.<NamedFactory<Channel>>asList(ChannelAgentForwardingFactory.OPENSSH, ChannelAgentForwardingFactory.IETF));
 
-    private ExecutorService executor;
-    private boolean shutdownExecutor;
+    private Factory<ExecutorService> executorServiceFactory;
 
     public UnixAgentFactory() {
         super();
     }
 
-    public UnixAgentFactory(ExecutorService service, boolean shutdown) {
-        executor = service;
-        shutdownExecutor = shutdown;
+    public UnixAgentFactory(Factory<ExecutorService> factory) {
+        executorServiceFactory = factory;
     }
 
-    @Override
-    public ExecutorService getExecutorService() {
-        return executor;
-    }
-
-    @Override
-    public void setExecutorService(ExecutorService service) {
-        executor = service;
-    }
-
-    @Override
-    public boolean isShutdownOnExit() {
-        return shutdownExecutor;
-    }
-
-    @Override
-    public void setShutdownOnExit(boolean shutdown) {
-        shutdownExecutor = shutdown;
+    protected ExecutorService newExecutor() {
+        return executorServiceFactory != null ? executorServiceFactory.create() : null;
     }
 
     @Override
     public List<NamedFactory<Channel>> getChannelForwardingFactories(FactoryManager manager) {
-        final ExecutorServiceConfigurer configurer = this;
-        return Collections.unmodifiableList(DEFAULT_FORWARDING_CHANNELS.stream()
-                .map(cf -> new ChannelAgentForwardingFactory(cf.getName()) {
-                    @Override
-                    public ExecutorService getExecutorService() {
-                        return configurer.getExecutorService();
-                    }
-
-                    @Override
-                    public boolean isShutdownOnExit() {
-                        return configurer.isShutdownOnExit();
-                    }
-                })
-                .collect(Collectors.toList()));
+        if (executorServiceFactory != null) {
+            return DEFAULT_FORWARDING_CHANNELS.stream()
+                    .map(cf -> new ChannelAgentForwardingFactory(cf.getName(), executorServiceFactory))
+                    .collect(Collectors.toList());
+        } else {
+            return DEFAULT_FORWARDING_CHANNELS;
+        }
     }
 
     @Override
@@ -105,7 +80,7 @@ public class UnixAgentFactory implements SshAgentFactory, ExecutorServiceConfigu
             throw new SshException("No " + SshAgent.SSH_AUTHSOCKET_ENV_NAME + " value");
         }
 
-        return new AgentClient(authSocket, getExecutorService(), isShutdownOnExit());
+        return new AgentClient(authSocket, newExecutor());
     }
 
     @Override
@@ -113,6 +88,6 @@ public class UnixAgentFactory implements SshAgentFactory, ExecutorServiceConfigu
         Session session = Objects.requireNonNull(service.getSession(), "No session");
         ValidateUtils.checkInstanceOf(session, ServerSession.class,
                 "The session used to create an agent server proxy must be a server session: %s", session);
-        return new AgentServerProxy(service, getExecutorService(), isShutdownOnExit());
+        return new AgentServerProxy(service, newExecutor());
     }
 }

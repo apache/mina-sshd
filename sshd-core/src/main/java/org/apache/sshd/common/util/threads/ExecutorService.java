@@ -19,13 +19,8 @@
 
 package org.apache.sshd.common.util.threads;
 
-import java.util.concurrent.ExecutorService;
+import org.apache.sshd.common.Closeable;
 
-/**
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- */
-public interface ExecutorServiceConfigurer extends ExecutorServiceCarrier {
-    void setExecutorService(ExecutorService service);
+public interface ExecutorService extends java.util.concurrent.ExecutorService, Closeable {
 
-    void setShutdownOnExit(boolean shutdown);
 }

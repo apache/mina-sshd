@@ -19,12 +19,13 @@
 
 package org.apache.sshd.common.io;
 
-import java.util.concurrent.ExecutorService;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerHolder;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
+import org.apache.sshd.common.util.threads.ExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 
 /**
@@ -36,12 +37,10 @@ public abstract class AbstractIoServiceFactory
 
     private final FactoryManager manager;
     private final ExecutorService executor;
-    private final boolean shutdownExecutor;
 
-    protected AbstractIoServiceFactory(FactoryManager factoryManager, ExecutorService executorService, boolean shutdownOnExit) {
-        manager = factoryManager;
-        executor = executorService;
-        shutdownExecutor = shutdownOnExit;
+    protected AbstractIoServiceFactory(FactoryManager factoryManager, ExecutorService executorService) {
+        manager = Objects.requireNonNull(factoryManager);
+        executor = Objects.requireNonNull(executorService);
     }
 
     @Override
@@ -55,15 +54,10 @@ public abstract class AbstractIoServiceFactory
     }
 
     @Override
-    public final boolean isShutdownOnExit() {
-        return shutdownExecutor;
-    }
-
-    @Override
     protected void doCloseImmediately() {
         try {
             ExecutorService service = getExecutorService();
-            if ((service != null) && isShutdownOnExit() && (!service.isShutdown())) {
+            if ((service != null) && (!service.isShutdown())) {
                 log.debug("Shutdown executor");
                 service.shutdownNow();
                 if (service.awaitTermination(5, TimeUnit.SECONDS)) {
