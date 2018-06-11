@@ -20,6 +20,7 @@ package org.apache.sshd.common.forward;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -199,6 +200,8 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
      * @see <A HREF="https://en.wikipedia.org/wiki/SOCKS#SOCKS5">SOCKS5</A>
      */
     public class Socks5 extends Proxy {
+    	private ArrayList<Buffer> delayedBuffers = null;
+    	
         private byte[] authMethods;
         private Buffer response;
 
@@ -266,29 +269,33 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 if (log.isDebugEnabled()) {
                     log.debug("Received socks5 connection request to {}:{}", host, port);
                 }
+                
+                delayedBuffers = new ArrayList<>();
+                sendChannelSuccess();
+                
                 SshdSocketAddress remote = new SshdSocketAddress(host, port);
                 channel = new TcpipClientChannel(TcpipClientChannel.Type.Direct, session, remote);
                 service.registerChannel(channel);
                 channel.open().addListener(this::onChannelOpened);
             } else {
                 log.debug("Received socks5 connection message");
-                super.onMessage(buffer);
+                
+                synchronized (this) {
+                	if (delayedBuffers != null) {
+                		log.debug("Delaying socks5 connection message");
+                		delayedBuffers.add(buffer);
+                	} else {
+                		super.onMessage(buffer);
+                	}
+				}
             }
         }
-
-        @SuppressWarnings("synthetic-access")
-        protected void onChannelOpened(OpenFuture future) {
-            int wpos = response.wpos();
+        
+        private void sendChannelSuccess() {
+        	int wpos = response.wpos();
             response.rpos(0);
             response.wpos(1);
-            Throwable t = future.getException();
-            if (t != null) {
-                service.unregisterChannel(channel);
-                channel.close(false);
-                response.putByte((byte) 0x01);
-            } else {
-                response.putByte((byte) 0x00);
-            }
+            response.putByte((byte) 0x00);
             response.wpos(wpos);
             try {
                 session.writePacket(response);
@@ -297,6 +304,30 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 log.error("Failed ({}) to send channel open response for {}: {}", e.getClass().getSimpleName(), channel, e.getMessage());
                 throw new IllegalStateException("Failed to send packet", e);
             }
+        }
+
+        @SuppressWarnings("synthetic-access")
+        protected void onChannelOpened(OpenFuture future) {
+        	log.debug("socks5 channel open");
+        	
+            Throwable t = future.getException();
+            if (t != null) {
+                service.unregisterChannel(channel);
+                channel.close(false);
+            }
+            
+            synchronized (this) {
+            	if (delayedBuffers != null) {
+            		for (Buffer buffer : delayedBuffers) {
+            			try {
+							super.onMessage(buffer);
+						} catch (IOException e) {
+							log.error("Failed ({}) to send delayed response for {}: {}", e.getClass().getSimpleName(), channel, e.getMessage());
+						}
+            		}
+            		delayedBuffers = null;
+            	}
+			}
         }
 
         private String getBLString(Buffer buffer) {
