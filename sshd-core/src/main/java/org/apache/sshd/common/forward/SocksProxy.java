@@ -166,7 +166,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
             Throwable t = future.getException();
             if (t != null) {
                 service.unregisterChannel(channel);
-                channel.close(false);
+                channel.close(true);
                 buffer.putByte((byte) 0x5b);
             } else {
                 buffer.putByte((byte) 0x5a);
@@ -284,7 +284,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
             Throwable t = future.getException();
             if (t != null) {
                 service.unregisterChannel(channel);
-                channel.close(false);
+                channel.close(true);
                 response.putByte((byte) 0x01);
             } else {
                 response.putByte((byte) 0x00);
