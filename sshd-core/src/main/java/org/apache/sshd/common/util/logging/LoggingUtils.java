@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.util.logging;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -29,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 
@@ -41,6 +44,14 @@ import org.slf4j.Logger;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class LoggingUtils {
+    /**
+     * Default value used for {@link #logExceptionStackTrace(Logger, Level, Throwable) logExceptionStackTrace}
+     * unless {@link #setDefaultStackTraceLoggingDepth(int) overridden}
+     */
+    public static final int DEFAULT_STACK_TRACE_LOGGING_DEPTH_VALUE = Byte.SIZE;
+
+    private static final AtomicInteger DEFAULT_STACK_TRACE_LOGGING_DEPTH_VALUE_HOLDER =
+        new AtomicInteger(DEFAULT_STACK_TRACE_LOGGING_DEPTH_VALUE);
 
     private LoggingUtils() {
         throw new UnsupportedOperationException("No instance");
@@ -300,5 +311,352 @@ public final class LoggingUtils {
         } else {
             return logger.isTraceEnabled();
         }
+    }
+
+    /**
+     * @param <T> Generic message type consumer
+     * @param logger The {@link Logger} instance to use
+     * @param level The log {@link Level} mapped as follows:</BR>
+     *
+     * <UL>
+     *     <LI>{@link Level#OFF} - {@link #nologClosure(Logger)}</LI>
+     *     <LI>{@link Level#SEVERE} - {@link #errorClosure(Logger)}</LI>
+     *     <LI>{@link Level#WARNING} - {@link #warnClosure(Logger)}</LI>
+     *     <LI>{@link Level#INFO}/{@link Level#ALL} - {@link #infoClosure(Logger)}</LI>
+     *     <LI>{@link Level#CONFIG}/{@link Level#FINE} - {@link #debugClosure(Logger)}</LI>
+     *     <LI>All others - {@link #traceClosure(Logger)}</LI>
+     * </UL>
+     * @return A consumer whose {@link Consumer#accept(Object)} method logs the
+     * {@link String#valueOf(Object)} value of its argument if the specific level is enabled
+     */
+    public static <T> Consumer<T> loggingClosure(Logger logger, Level level) {
+        return loggingClosure(logger, level, null);
+    }
+
+    public static <T> Consumer<T> loggingClosure(Logger logger, Level level, Throwable t) {
+        Objects.requireNonNull(level, "No level provided");
+
+        if (Level.OFF.equals(level)) {
+            return nologClosure(logger);
+        } else if (Level.SEVERE.equals(level)) {
+            return errorClosure(logger, t);
+        } else if (Level.WARNING.equals(level)) {
+            return warnClosure(logger, t);
+        } else if (Level.INFO.equals(level) || Level.ALL.equals(level)) {
+            return infoClosure(logger, t);
+        } else if (Level.CONFIG.equals(level) || Level.FINE.equals(level)) {
+            return debugClosure(logger, t);
+        } else {
+            return traceClosure(logger, t);
+        }
+    }
+
+    /**
+     * @param <T> Generic message type consumer
+     * @param logger The {@link Logger} instance to use
+     * @return A consumer whose {@link Consumer#accept(Object)} method logs nothing when invoked
+     */
+    public static <T> Consumer<T> nologClosure(Logger logger) {
+        Objects.requireNonNull(logger, "No logger provided");
+        return t -> { /* do nothing */ };
+    }
+
+    /**
+     * @param <T> Generic message type consumer
+     * @param logger The {@link Logger} instance to use
+     * @return A consumer whose {@link Consumer#accept(Object)} method logs the
+     * {@link String#valueOf(Object)} value of its argument if {@link Logger#isErrorEnabled()}
+     */
+    public static <T> Consumer<T> errorClosure(Logger logger) {
+        return errorClosure(logger, null);
+    }
+
+    /**
+     * @param <T> Generic message type consumer
+     * @param logger The {@link Logger} instance to use
+     * @param thrown A {@link Throwable} to attach to the message - ignored if {@code null}
+     * @return A consumer whose {@link Consumer#accept(Object)} method logs the
+     * {@link String#valueOf(Object)} value of its argument if {@link Logger#isErrorEnabled()}
+     */
+    public static <T> Consumer<T> errorClosure(Logger logger, Throwable thrown) {
+        Objects.requireNonNull(logger, "No logger provided");
+        return new Consumer<T>() {
+            @Override
+            public void accept(T input) {
+                if (logger.isErrorEnabled()) {
+                    String msg = String.valueOf(input);
+                    if (thrown == null) {
+                        logger.error(msg);
+                    } else {
+                        logger.error(msg, thrown);
+                    }
+                }
+            }
+
+            @Override
+            public String toString() {
+                return "ERROR";
+            }
+        };
+    }
+
+    /**
+     * @param <T> Generic message type consumer
+     * @param logger The {@link Logger} instance to use
+     * @return A consumer whose {@link Consumer#accept(Object)} method logs the
+     * {@link String#valueOf(Object)} value of its argument if {@link Logger#isWarnEnabled()}
+     */
+    public static <T> Consumer<T> warnClosure(Logger logger) {
+        return warnClosure(logger, null);
+    }
+
+    /**
+     * @param <T> Generic message type consumer
+     * @param logger The {@link Logger} instance to use
+     * @param thrown A {@link Throwable} to attach to the message - ignored if {@code null}
+     * @return A consumer whose {@link Consumer#accept(Object)} method logs the {@link String#valueOf(Object)}
+     * value of its argument if {@link Logger#isWarnEnabled()}
+     */
+    public static <T> Consumer<T> warnClosure(Logger logger, Throwable thrown) {
+        Objects.requireNonNull(logger, "No logger provided");
+        return new Consumer<T>() {
+            @Override
+            public void accept(T input) {
+                if (logger.isWarnEnabled()) {
+                    String msg = String.valueOf(input);
+                    if (thrown == null) {
+                        logger.warn(msg);
+                    } else {
+                        logger.warn(msg, thrown);
+                    }
+                }
+            }
+
+            @Override
+            public String toString() {
+                return "WARN";
+            }
+        };
+    }
+
+    /**
+     * @param <T> Generic message type consumer
+     * @param logger The {@link Logger} instance to use
+     * @return A consumer whose {@link Consumer#accept(Object)} method logs the {@link String#valueOf(Object)}
+     * value of its argument if {@link Logger#isInfoEnabled()}
+     */
+    public static <T> Consumer<T> infoClosure(Logger logger) {
+        return infoClosure(logger, null);
+    }
+
+    /**
+     * @param <T> Generic message type consumer
+     * @param logger The {@link Logger} instance to use
+     * @param thrown A {@link Throwable} to attach to the message - ignored if {@code null}
+     * @return A consumer whose {@link Consumer#accept(Object)} method logs the
+     * {@link String#valueOf(Object)} value of its argument if {@link Logger#isInfoEnabled()}
+     */
+    public static <T> Consumer<T> infoClosure(Logger logger, Throwable thrown) {
+        Objects.requireNonNull(logger, "No logger provided");
+        return new Consumer<T>() {
+            @Override
+            public void accept(T input) {
+                if (logger.isInfoEnabled()) {
+                    String msg = String.valueOf(input);
+                    if (thrown == null) {
+                        logger.info(msg);
+                    } else {
+                        logger.info(msg, thrown);
+                    }
+                }
+            }
+
+            @Override
+            public String toString() {
+                return "INFO";
+            }
+        };
+    }
+
+    /**
+     * @param <T> Generic message type consumer
+     * @param logger The {@link Logger} instance to use
+     * @return A consumer whose {@link Consumer#accept(Object)} method logs the
+     * {@link String#valueOf(Object)} value of its argument if {@link Logger#isDebugEnabled()}
+     */
+    public static <T> Consumer<T> debugClosure(Logger logger) {
+        return debugClosure(logger, null);
+    }
+
+    /**
+     * @param <T> Generic message type consumer
+     * @param logger The {@link Logger} instance to use
+     * @param thrown A {@link Throwable} to attach to the message - ignored if {@code null}
+     * @return A consumer whose {@link Consumer#accept(Object)} method logs the
+     * {@link String#valueOf(Object)} value of its argument if {@link Logger#isDebugEnabled()}
+     */
+    public static <T> Consumer<T> debugClosure(Logger logger, Throwable thrown) {
+        Objects.requireNonNull(logger, "No logger provided");
+        return new Consumer<T>() {
+            @Override
+            public void accept(T input) {
+                if (logger.isDebugEnabled()) {
+                    String msg = String.valueOf(input);
+                    if (thrown == null) {
+                        logger.debug(msg);
+                    } else {
+                        logger.debug(msg, thrown);
+                    }
+                }
+            }
+
+            @Override
+            public String toString() {
+                return "DEBUG";
+            }
+        };
+    }
+
+    /**
+     * @param <T> Generic message type consumer
+     * @param logger The {@link Logger} instance to use
+     * @return A consumer whose {@link Consumer#accept(Object)} method logs the
+     * {@link String#valueOf(Object)} value of its argument if {@link Logger#isTraceEnabled()}
+     */
+    public static <T> Consumer<T> traceClosure(Logger logger) {
+        return traceClosure(logger, null);
+    }
+
+    /**
+     * @param <T> Generic message type consumer
+     * @param logger The {@link Logger} instance to use
+     * @param thrown A {@link Throwable} to attach to the message - ignored if {@code null}
+     * @return A consumer whose {@link Consumer#accept(Object)} method logs the
+     * {@link String#valueOf(Object)} value of its argument if {@link Logger#isTraceEnabled()}
+     */
+    public static <T> Consumer<T> traceClosure(Logger logger, Throwable thrown) {
+        Objects.requireNonNull(logger, "No logger provided");
+        return new Consumer<T>() {
+            @Override
+            public void accept(T input) {
+                if (logger.isTraceEnabled()) {
+                    String msg = String.valueOf(input);
+                    if (thrown == null) {
+                        logger.trace(msg);
+                    } else {
+                        logger.trace(msg, thrown);
+                    }
+                }
+            }
+
+            @Override
+            public String toString() {
+                return "TRACE";
+            }
+        };
+    }
+
+    /**
+     * Logs the stack trace of the exception up to {@link #getDefaultStackTraceLoggingDepth() default depth}
+     * or available stack trace elements.
+     *
+     * @param logger The {@link Logger} instance to log the information
+     * @param level The logging {@link Level} to use
+     * @param t The {@link Throwable} data to write - ignored if {@code null}
+     */
+    public static void logExceptionStackTrace(Logger logger, Level level, Throwable t) {
+        logExceptionStackTrace(logger, level, t, getDefaultStackTraceLoggingDepth());
+    }
+
+    /**
+     * Logs the stack trace of the exception up to specified depth or available stack trace elements.
+     *
+     * @param logger The {@link Logger} instance to log the information
+     * @param level The logging {@link Level} to use
+     * @param t The {@link Throwable} data to write - ignored if {@code null}
+     * @param maxDepth Maximum stack trace elements to log - if non-positive then nothing is logged
+     */
+    public static void logExceptionStackTrace(Logger logger, Level level, Throwable t, int maxDepth) {
+        if ((t == null) || (maxDepth <= 0) || (!isLoggable(logger, level))) {
+            return;
+        }
+
+        Consumer<String> executor = loggingClosure(logger, level);
+        logExceptionStackTrace(t, maxDepth, executor);
+    }
+
+    /**
+     * Logs the stack trace of the exception up to specified depth or available stack trace elements.
+     *
+     * @param t The {@link Throwable} data to write - ignored if {@code null}
+     * @param maxDepth Maximum stack trace elements to log - if non-positive then nothing is logged
+     * @param executor The {@link Consumer} invoked for each formatted stack trace element
+     */
+    public static void logExceptionStackTrace(Throwable t, int maxDepth, Consumer<? super String> executor) {
+        if ((t == null) || (maxDepth <= 0) || (executor == null)) {
+            return;
+        }
+        StackTraceElement[] elements = t.getStackTrace();
+        int numElements = GenericUtils.length(elements);
+        StringBuilder workBuf = new StringBuilder(Byte.MAX_VALUE);
+        for (int index = 0, maxElements = Math.min(maxDepth, numElements); index < maxElements; index++) {
+            StackTraceElement ste = elements[index];
+            workBuf.setLength(0); // re-use
+            try {
+                appendStackTraceElement(workBuf.append("    at "), ste);
+            } catch (IOException e) {
+                throw new RuntimeException("Unexpected failure (" + e.getClass().getSimpleName() + ")" + " to append stack-trace-element=" + ste + ": " + e.getMessage(), e);
+            }
+            executor.accept(workBuf.toString());
+        }
+    }
+
+    /**
+     * @return The default value used by {@link #logExceptionStackTrace(Logger, Level, Throwable)}
+     */
+    public static int getDefaultStackTraceLoggingDepth() {
+        return Math.max(DEFAULT_STACK_TRACE_LOGGING_DEPTH_VALUE_HOLDER.get(), DEFAULT_STACK_TRACE_LOGGING_DEPTH_VALUE);
+    }
+
+    /**
+     * @param value The value to set - <B>Note:</B> the effective value is the <U>maximum</U>
+     * between it and {@value #DEFAULT_STACK_TRACE_LOGGING_DEPTH_VALUE}
+     */
+    public static void setDefaultStackTraceLoggingDepth(int value) {
+        DEFAULT_STACK_TRACE_LOGGING_DEPTH_VALUE_HOLDER.set(Math.max(value, DEFAULT_STACK_TRACE_LOGGING_DEPTH_VALUE));
+    }
+
+    /**
+     * Generates a result very similar to {@link StackTraceElement#toString()}
+     *
+     * @param <A> The {@link Appendable} target type
+     * @param sb The target appender
+     * @param ste The {@link StackTraceElement} to append - ignored if {@code null}
+     * @return The updated appender instance
+     * @throws IOException If failed to append the data
+     */
+    public static <A extends Appendable> A appendStackTraceElement(A sb, StackTraceElement ste) throws IOException {
+        if (ste == null) {
+            return sb;
+        }
+
+        sb.append(ste.getClassName()).append('.').append(ste.getMethodName());
+        if (ste.isNativeMethod()) {
+            sb.append("(Native Method)");
+            return sb;
+        }
+
+        sb.append('(');
+
+        String fileName = ste.getFileName();
+        sb.append(GenericUtils.isEmpty(fileName) ? "Unknown Source" : fileName);
+
+        int lineNumber = ste.getLineNumber();
+        if (lineNumber >= 0) {
+            sb.append(':').append(Integer.toString(lineNumber));
+        }
+        sb.append(')');
+
+        return sb;
     }
 }

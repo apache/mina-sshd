@@ -31,12 +31,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.logging.LoggingUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -99,23 +101,25 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
 
     @Override
     public void unbind(Collection<? extends SocketAddress> addresses) {
+        boolean debugEnabled = log.isDebugEnabled();
+        boolean traceEnabled = log.isTraceEnabled();
         for (SocketAddress address : addresses) {
             AsynchronousServerSocketChannel channel = channels.remove(address);
             if (channel != null) {
                 try {
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("unbind({})", address);
                     }
                     channel.close();
                 } catch (IOException e) {
                     log.warn("unbind({}) {} while unbinding channel: {}",
                          address, e.getClass().getSimpleName(), e.getMessage());
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("unbind(" + address + ") failure details", e);
                     }
                 }
             } else {
-                if (log.isTraceEnabled()) {
+                if (traceEnabled) {
                     log.trace("No active channel to unbind for {}", address);
                 }
             }
@@ -141,6 +145,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
     @Override
     public void doCloseImmediately() {
         Collection<SocketAddress> boundAddresses = getBoundAddresses();
+        boolean debugEnabled = log.isDebugEnabled();
         for (SocketAddress address : boundAddresses) {
             AsynchronousServerSocketChannel asyncChannel = channels.remove(address);
             if (asyncChannel == null) {
@@ -149,11 +154,13 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
 
             try {
                 asyncChannel.close();
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("doCloseImmediately({}) closed channel", address);
                 }
             } catch (IOException e) {
-                log.debug("Exception caught while closing channel of " + address, e);
+                if (debugEnabled) {
+                    log.debug("Exception caught while closing channel of " + address, e);
+                }
             }
         }
         super.doCloseImmediately();
@@ -164,6 +171,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
         return getClass().getSimpleName() + "[" + getBoundAddresses() + "]";
     }
 
+    @SuppressWarnings("synthetic-access")
     protected class AcceptCompletionHandler extends Nio2CompletionHandler<AsynchronousSocketChannel, SocketAddress> {
         protected final AsynchronousServerSocketChannel socket;
 
@@ -172,7 +180,6 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
         }
 
         @Override
-        @SuppressWarnings("synthetic-access")
         protected void onCompleted(AsynchronousSocketChannel result, SocketAddress address) {
             // Verify that the address has not been unbound
             if (!channels.containsKey(address)) {
@@ -184,6 +191,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
 
             Nio2Session session = null;
             Long sessionId = null;
+            boolean keepAccepting;
             try {
                 // Create a session
                 IoHandler handler = getIoHandler();
@@ -201,8 +209,10 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                 } else {
                     session.startReading();
                 }
+
+                keepAccepting = true;
             } catch (Throwable exc) {
-                failed(exc, address);
+                keepAccepting = okToReaccept(exc, address);
 
                 // fail fast the accepted connection
                 if (session != null) {
@@ -219,15 +229,18 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                 unmapSession(sessionId);
             }
 
-            try {
-                // Accept new connections
-                socket.accept(address, this);
-            } catch (Throwable exc) {
-                failed(exc, address);
+            if (keepAccepting) {
+                try {
+                    // Accept new connections
+                    socket.accept(address, this);
+                } catch (Throwable exc) {
+                    failed(exc, address);
+                }
+            } else {
+                log.error("=====> onCompleted({}) no longer accepting incoming connections <====", address);
             }
         }
 
-        @SuppressWarnings("synthetic-access")
         protected Nio2Session createSession(Nio2Acceptor acceptor, SocketAddress address, AsynchronousSocketChannel channel, IoHandler handler) throws Throwable {
             if (log.isTraceEnabled()) {
                 log.trace("createNio2Session({}) address={}", acceptor, address);
@@ -236,15 +249,28 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
         }
 
         @Override
-        @SuppressWarnings("synthetic-access")
         protected void onFailed(Throwable exc, SocketAddress address) {
+            if (okToReaccept(exc, address)) {
+                try {
+                    // Accept new connections
+                    socket.accept(address, this);
+                } catch (Throwable t) {
+                    // Do not call failed(t, address) to avoid infinite recursion
+                    log.error("Failed (" + t.getClass().getSimpleName()
+                        + " to re-accept new connections on " + address
+                        + ": " + t.getMessage(), t);
+                }
+            }
+        }
+
+        protected boolean okToReaccept(Throwable exc, SocketAddress address) {
             AsynchronousServerSocketChannel channel = channels.get(address);
             if (channel == null) {
                 if (log.isDebugEnabled()) {
                     log.debug("Caught {} for untracked channel of {}: {}",
                         exc.getClass().getSimpleName(), address, exc.getMessage());
                 }
-                return;
+                return false;
             }
 
             if (disposing.get()) {
@@ -252,22 +278,13 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                     log.debug("Caught {} for tracked channel of {} while disposing: {}",
                         exc.getClass().getSimpleName(), address, exc.getMessage());
                 }
-                return;
+                return false;
             }
 
-            log.warn("Caught " + exc.getClass().getSimpleName()
-                   + " while accepting incoming connection from " + address
-                   + ": " + exc.getMessage(), exc);
-
-            try {
-                // Accept new connections
-                socket.accept(address, this);
-            } catch (Throwable t) {
-                // Do not call failed(t, address) to avoid infinite recursion
-                log.error("Failed (" + t.getClass().getSimpleName()
-                    + " to re-accept new connections on " + address
-                    + ": " + t.getMessage(), t);
-            }
+            log.warn("Caught {} while accepting incoming connection from {}: {}",
+                exc.getClass().getSimpleName(), address, exc.getMessage());
+            LoggingUtils.logExceptionStackTrace(log, Level.WARNING, exc);
+            return true;
         }
     }
 }

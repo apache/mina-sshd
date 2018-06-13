@@ -55,6 +55,7 @@ import org.apache.sshd.common.util.closeable.AbstractCloseable;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.ServerAuthenticationManager;
 import org.apache.sshd.server.ServerFactoryManager;
+import org.apache.sshd.server.auth.AsyncAuthException;
 import org.apache.sshd.server.auth.UserAuth;
 import org.apache.sshd.server.auth.UserAuthNoneFactory;
 import org.apache.sshd.server.auth.WelcomeBannerPhase;
@@ -77,6 +78,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     private int nbAuthRequests;
 
     public ServerUserAuthService(Session s) throws IOException {
+        boolean debugEnabled = log.isDebugEnabled();
         serverSession = ValidateUtils.checkInstanceOf(s, ServerSession.class, "Server side service used on client side: %s", s);
         if (s.isAuthenticated()) {
             throw new SshException("Session already authenticated");
@@ -99,7 +101,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 authMethods.add(new ArrayList<>(Collections.singletonList(uaf.getName())));
             }
         } else {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("ServerUserAuthService({}) using configured methods={}", s, mths);
             }
             for (String mthl : mths.split("\\s")) {
@@ -116,7 +118,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             }
         }
 
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("ServerUserAuthService({}) authorized authentication methods: {}",
                       s, NamedResource.getNames(userAuthFactories));
         }
@@ -142,10 +144,10 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     }
 
     @Override
-    public void process(int cmd, Buffer buffer) throws Exception {
+    public synchronized void process(int cmd, Buffer buffer) throws Exception {
         Boolean authed = Boolean.FALSE;
         ServerSession session = getServerSession();
-
+        boolean debugEnabled = log.isDebugEnabled();
         if (cmd == SshConstants.SSH_MSG_USERAUTH_REQUEST) {
             if (WelcomeBannerPhase.FIRST_REQUEST.equals(getWelcomePhase())) {
                 sendWelcomeBanner(session);
@@ -162,7 +164,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             String username = buffer.getString();
             String service = buffer.getString();
             String method = buffer.getString();
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("process({}) Received SSH_MSG_USERAUTH_REQUEST user={}, service={}, method={}",
                           session, username, service, method);
             }
@@ -185,7 +187,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
             // TODO: verify that the service is supported
             this.authMethod = method;
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("process({}) Authenticating user '{}' with service '{}' and method '{}' (attempt {} / {})",
                           session, username, service, method, nbAuthRequests, maxAuthRequests);
             }
@@ -195,8 +197,11 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 currentAuth = ValidateUtils.checkNotNull(factory.create(), "No authenticator created for method=%s", method);
                 try {
                     authed = currentAuth.auth(session, username, service, buffer);
+                } catch (AsyncAuthException async) {
+                    async.addListener(authenticated -> asyncAuth(cmd, buffer, authenticated));
+                    return;
                 } catch (Exception e) {
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("process({}) Failed ({}) to authenticate using factory method={}: {}",
                                   session, e.getClass().getSimpleName(), method, e.getMessage());
                     }
@@ -205,7 +210,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                     }
                 }
             } else {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("process({}) no authentication factory for method={}", session, method);
                 }
             }
@@ -219,7 +224,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 throw new IllegalStateException("No current authentication mechanism for cmd=" + SshConstants.getCommandMessageName(cmd));
             }
 
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("process({}) Received authentication message={} for mechanism={}",
                           session, SshConstants.getCommandMessageName(cmd), currentAuth.getName());
             }
@@ -227,9 +232,12 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             buffer.rpos(buffer.rpos() - 1);
             try {
                 authed = currentAuth.next(buffer);
+            } catch (AsyncAuthException async) {
+                async.addListener(authenticated -> asyncAuth(cmd, buffer, authenticated));
+                return;
             } catch (Exception e) {
                 // Continue
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("process({}) Failed ({}) to authenticate using current method={}: {}",
                               session, e.getClass().getSimpleName(), currentAuth.getName(), e.getMessage());
                 }
@@ -248,6 +256,18 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         }
     }
 
+    protected synchronized void asyncAuth(int cmd, Buffer buffer, boolean authed) {
+        try {
+            if (authed) {
+                handleAuthenticationSuccess(cmd, buffer);
+            } else {
+                handleAuthenticationFailure(cmd, buffer);
+            }
+        } catch (Exception e) {
+            log.warn("Error performing async authentication: {}", e.getMessage(), e);
+        }
+    }
+
     protected void handleAuthenticationInProgress(int cmd, Buffer buffer) throws Exception {
         String username = (currentAuth == null) ? null : currentAuth.getUsername();
         if (log.isDebugEnabled()) {
@@ -259,7 +279,8 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     protected void handleAuthenticationSuccess(int cmd, Buffer buffer) throws Exception {
         String username = Objects.requireNonNull(currentAuth, "No current auth").getUsername();
         ServerSession session = getServerSession();
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("handleAuthenticationSuccess({}@{}) {}",
                       username, session, SshConstants.getCommandMessageName(cmd));
         }
@@ -300,7 +321,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                     .map(l -> l.get(0))
                     .collect(Collectors.joining(","));
 
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("handleAuthenticationSuccess({}@{}) remaining methods={}", username, session, remaining);
             }
 
@@ -319,14 +340,15 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
     protected void handleAuthenticationFailure(int cmd, Buffer buffer) throws Exception {
         ServerSession session = getServerSession();
+        boolean debugEnabled = log.isDebugEnabled();
         if (WelcomeBannerPhase.FIRST_FAILURE.equals(getWelcomePhase())) {
             sendWelcomeBanner(session);
         }
 
         String username = (currentAuth == null) ? null : currentAuth.getUsername();
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("handleAuthenticationFailure({}@{}) {}",
-                      username, session, SshConstants.getCommandMessageName(cmd));
+                  username, session, SshConstants.getCommandMessageName(cmd));
         }
 
         StringBuilder sb = new StringBuilder((authMethods.size() + 1) * Byte.SIZE);
@@ -335,7 +357,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 String m = l.get(0);
                 if (!UserAuthNoneFactory.NAME.equals(m)) {
                     if (sb.length() > 0) {
-                        sb.append(",");
+                        sb.append(',');
                     }
                     sb.append(m);
                 }
@@ -343,7 +365,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         }
 
         String remaining = sb.toString();
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("handleAuthenticationFailure({}@{}) remaining methods: {}", username, session, remaining);
         }
 

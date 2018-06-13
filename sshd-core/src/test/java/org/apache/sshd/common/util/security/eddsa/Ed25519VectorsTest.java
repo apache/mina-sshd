@@ -24,6 +24,7 @@ import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
@@ -34,10 +35,12 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
@@ -52,6 +55,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@Category({ NoIoTestCase.class })
 public class Ed25519VectorsTest extends BaseTestSupport {
     private final byte[] prvBytes;
     private final PrivateKey privateKey;
@@ -73,12 +77,8 @@ public class Ed25519VectorsTest extends BaseTestSupport {
     @Parameters(name = "{0}")
     @SuppressWarnings("checkstyle:anoninnerlength")
     public static List<Object[]> parameters() {
-        return new ArrayList<Object[]>() {
-            // Not serializing it
-            private static final long serialVersionUID = 1L;
-
-            {
-                add(new Object[]{
+        return new ArrayList<>(Arrays.asList(
+                new Object[]{
                     "TEST1 - empty message",
                     "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
                     "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
@@ -87,8 +87,8 @@ public class Ed25519VectorsTest extends BaseTestSupport {
                       + "84877f1eb8e5d974d873e06522490155"
                       + "5fb8821590a33bacc61e39701cf9b46b"
                       + "d25bf5f0595bbe24655141438e7a100b"
-                });
-                add(new Object[]{
+                },
+                new Object[]{
                     "TEST2 - one byte",
                     "4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb",
                     "3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c",
@@ -97,8 +97,8 @@ public class Ed25519VectorsTest extends BaseTestSupport {
                       + "a2b27b5416503f8fb3762223ebdb69da"
                       + "085ac1e43e15996e458f3613d0f11d8c"
                       + "387b2eaeb4302aeeb00d291612bb0c00"
-                });
-                add(new Object[]{
+                },
+                new Object[]{
                     "TEST3 - 2 bytes",
                     "c5aa8df43f9f837bedb7442f31dcb7b166d38535076f094b85ce3a2e0b4458f7",
                     "fc51cd8e6218a1a38da47ed00230f0580816ed13ba3303ac5deb911548908025",
@@ -107,8 +107,8 @@ public class Ed25519VectorsTest extends BaseTestSupport {
                       + "0ce548a284743a445e3680d7db5ac3ac"
                       + "18ff9b538d16f290ae67f760984dc659"
                       + "4a7c15e9716ed28dc027beceea1ec40a"
-                });
-                add(new Object[]{
+                },
+                new Object[]{
                     "TEST1024 - large message",
                     "f5e5767cf153319517630f226876b86c8160cc583bc013744c6bf255f5cc0ee5",
                     "278117fc144c72340f67d0f2316e8386ceffbf2b2428c9c51fef7c597f1d426e",
@@ -180,9 +180,7 @@ public class Ed25519VectorsTest extends BaseTestSupport {
                       + "87df5e4843b2cbdb67cbf6e460fec350"
                       + "aa5371b1508f9f4528ecea23c436d94b"
                       + "5e8fcd4f681e30a6ac00a9704a188a03"
-                });
-            }
-        };
+                }));
     }
 
     @BeforeClass

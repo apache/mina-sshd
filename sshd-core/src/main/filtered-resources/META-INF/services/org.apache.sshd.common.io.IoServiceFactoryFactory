@@ -18,4 +18,3 @@
 ##
 
 org.apache.sshd.common.io.nio2.Nio2ServiceFactoryFactory
-org.apache.sshd.common.io.mina.MinaServiceFactoryFactory

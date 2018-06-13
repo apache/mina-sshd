@@ -22,8 +22,10 @@ import java.util.List;
 
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
@@ -36,6 +38,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@Category({ NoIoTestCase.class })
 public class ASN1TypeTest extends BaseTestSupport {
     private final ASN1Type expected;
 

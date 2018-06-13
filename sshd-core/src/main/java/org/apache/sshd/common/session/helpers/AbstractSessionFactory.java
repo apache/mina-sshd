@@ -43,7 +43,8 @@ public abstract class AbstractSessionFactory<M extends FactoryManager, S extends
 
     @Override
     protected S createSession(IoSession ioSession) throws Exception {
-        return setupSession(doCreateSession(ioSession));
+        S session = doCreateSession(ioSession);
+        return setupSession(session);
     }
 
     protected abstract S doCreateSession(IoSession ioSession) throws Exception;

@@ -34,6 +34,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.simple.SimpleClientConfigurator;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
+import org.apache.sshd.client.subsystem.sftp.SftpClientFactory;
 import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.SshConfigFileReader;
@@ -338,7 +339,7 @@ public class ApacheSshdSftpSessionFactory
                 session = resolveClientSession(sharedInstance);
 
                 SftpVersionSelector selector = getSftpVersionSelector();
-                SftpClient sftpClient = session.createSftpClient(selector);
+                SftpClient sftpClient = SftpClientFactory.instance().createSftpClient(session, selector);
                 try {
                     ClientSession sessionInstance = session;
                     Session<DirEntry> result = sharedInstance

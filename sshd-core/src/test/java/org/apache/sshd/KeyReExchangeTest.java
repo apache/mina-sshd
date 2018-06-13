@@ -19,6 +19,7 @@
 package org.apache.sshd;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
@@ -27,6 +28,7 @@ import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.Semaphore;
@@ -51,10 +53,13 @@ import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
-import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.io.NullOutputStream;
 import org.apache.sshd.common.util.security.SecurityUtils;
+import org.apache.sshd.server.Environment;
+import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.subsystem.SubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.OutputCountTrackingOutputStream;
@@ -96,6 +101,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
     protected void setUp(long bytesLimit, long timeLimit, long packetsLimit) throws Exception {
         sshd = setupTestServer();
+        sshd.setSubsystemFactories(Collections.singletonList(new TestSubsystemFactory()));
         if (bytesLimit > 0L) {
             PropertyResolverUtils.updateProperty(sshd, FactoryManager.REKEY_BYTES_LIMIT, bytesLimit);
         }
@@ -126,7 +132,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                 outputDebugMessage("Request switch to none cipher for %s", session);
                 KeyExchangeFuture switchFuture = session.switchToNoneCipher();
                 switchFuture.verify(5L, TimeUnit.SECONDS);
-                try (ClientChannel channel = session.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME)) {
+                try (ClientChannel channel = session.createSubsystemChannel(TestSubsystemFactory.NAME)) {
                     channel.open().verify(5L, TimeUnit.SECONDS);
                 }
             } finally {
@@ -655,6 +661,57 @@ public class KeyReExchangeTest extends BaseTestSupport {
             } finally {
                 client.stop();
             }
+        }
+    }
+
+    static class TestSubsystemFactory implements SubsystemFactory {
+
+        public static final String NAME = "test-subsystem";
+
+        TestSubsystemFactory() {
+            super();
+        }
+
+        @Override
+        public Command create() {
+            return new Command() {
+                private ExitCallback callback;
+
+                @Override
+                public void setInputStream(InputStream in) {
+                    // Do nothing
+                }
+
+                @Override
+                public void setOutputStream(OutputStream out) {
+                    // Do nothing
+                }
+
+                @Override
+                public void setErrorStream(OutputStream err) {
+                    // Do nothing
+                }
+
+                @Override
+                public void setExitCallback(ExitCallback callback) {
+                    this.callback = callback;
+                }
+
+                @Override
+                public void start(Environment env) throws IOException {
+                    // Do nothing
+                }
+
+                @Override
+                public void destroy() throws Exception {
+                    callback.onExit(0);
+                }
+            };
+        }
+
+        @Override
+        public String getName() {
+            return NAME;
         }
     }
 }

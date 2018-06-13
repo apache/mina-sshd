@@ -36,7 +36,7 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
 
     private IoServiceFactoryFactory factory;
 
-    public DefaultIoServiceFactoryFactory() {
+    protected DefaultIoServiceFactoryFactory() {
         this(null, true);
     }
 
@@ -46,10 +46,14 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
 
     @Override
     public IoServiceFactory create(FactoryManager manager) {
-        return getFactory().create(manager);
+        IoServiceFactoryFactory factoryInstance = getIoServiceProvider();
+        return factoryInstance.create(manager);
     }
 
-    private IoServiceFactoryFactory getFactory() {
+    /**
+     * @return The actual {@link IoServiceFactoryFactory} being delegated
+     */
+    public IoServiceFactoryFactory getIoServiceProvider() {
         synchronized (this) {
             if (factory == null) {
                 factory = newInstance(IoServiceFactoryFactory.class);
@@ -69,15 +73,18 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
             return newInstance(clazz, factory);
         }
 
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        Thread currentThread = Thread.currentThread();
+        ClassLoader cl = currentThread.getContextClassLoader();
         if (cl != null) {
             T t = tryLoad(ServiceLoader.load(clazz, cl));
             if (t != null) {
                 return t;
             }
         }
-        if (cl != DefaultIoServiceFactoryFactory.class.getClassLoader()) {
-            T t = tryLoad(ServiceLoader.load(clazz, DefaultIoServiceFactoryFactory.class.getClassLoader()));
+
+        ClassLoader clDefault = DefaultIoServiceFactoryFactory.class.getClassLoader();
+        if (cl != clDefault) {
+            T t = tryLoad(ServiceLoader.load(clazz, clDefault));
             if (t != null) {
                 return t;
             }
@@ -104,24 +111,41 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
     public static <T extends IoServiceFactoryFactory> T newInstance(Class<T> clazz, String factory) {
         BuiltinIoServiceFactoryFactories builtin = BuiltinIoServiceFactoryFactories.fromFactoryName(factory);
         if (builtin != null) {
-            return clazz.cast(builtin.create());
+            IoServiceFactoryFactory builtinInstance = builtin.create();
+            return clazz.cast(builtinInstance);
         }
 
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        Thread currentThread = Thread.currentThread();
+        ClassLoader cl = currentThread.getContextClassLoader();
         if (cl != null) {
             try {
-                return clazz.cast(cl.loadClass(factory).newInstance());
+                Class<?> loaded = cl.loadClass(factory);
+                Object factoryInstance = loaded.newInstance();
+                return clazz.cast(factoryInstance);
             } catch (Throwable t) {
                 LOGGER.trace("Exception while loading factory " + factory, t);
             }
         }
-        if (cl != DefaultIoServiceFactoryFactory.class.getClassLoader()) {
+
+        ClassLoader clDefault = DefaultIoServiceFactoryFactory.class.getClassLoader();
+        if (cl != clDefault) {
             try {
-                return clazz.cast(DefaultIoServiceFactoryFactory.class.getClassLoader().loadClass(factory).newInstance());
+                Class<?> loaded = clDefault.loadClass(factory);
+                Object factoryInstance = loaded.newInstance();
+                return clazz.cast(factoryInstance);
             } catch (Throwable t) {
                 LOGGER.trace("Exception while loading factory " + factory, t);
             }
         }
         throw new IllegalStateException("Unable to create instance of class " + factory);
+    }
+
+    private static class LazyDefaultIoServiceFactoryFactoryHolder {
+        private static final DefaultIoServiceFactoryFactory INSTANCE = new DefaultIoServiceFactoryFactory();
+    }
+
+    @SuppressWarnings("synthetic-access")
+    public static DefaultIoServiceFactoryFactory getDefaultIoServiceFactoryFactoryInstance() {
+        return LazyDefaultIoServiceFactoryFactoryHolder.INSTANCE;
     }
 }

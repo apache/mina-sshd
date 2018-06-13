@@ -26,9 +26,11 @@ import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Repository;
@@ -66,10 +68,10 @@ public class EmbeddedCommandRunner {
     @Argument(index = 1, metaVar = "metaVar_arg")
     private List<String> arguments = new ArrayList<>();
 
-    private String rootDir;
+    private Path rootDir;
 
-    public EmbeddedCommandRunner(String rootDir) {
-        this.rootDir = rootDir;
+    public EmbeddedCommandRunner(Path rootDir) {
+        this.rootDir = Objects.requireNonNull(rootDir, "No root directory specified");
     }
 
     /**
@@ -81,8 +83,8 @@ public class EmbeddedCommandRunner {
      * @param err the error stream, may be null in which case the system error stream will be used
      * @throws Exception if an error occurs
      */
-    public void execute(final String[] argv, InputStream in, OutputStream out, OutputStream err) throws Exception {
-        final CmdLineParser clp = new CmdLineParser(this);
+    public void execute(String[] argv, InputStream in, OutputStream out, OutputStream err) throws Exception {
+        CmdLineParser clp = new CmdLineParser(this);
         PrintWriter writer = new PrintWriter(err != null ? err : System.err);
         try {
             clp.parseArgument(argv);
@@ -95,7 +97,7 @@ public class EmbeddedCommandRunner {
         }
 
         if (argv.length == 0 || help) {
-            final String ex = clp.printExample(OptionHandlerFilter.ALL, CLIText.get().resourceBundle());
+            String ex = clp.printExample(OptionHandlerFilter.ALL, CLIText.get().resourceBundle());
             writer.println("jgit" + ex + " command [ARG ...]"); //$NON-NLS-1$
             if (help) {
                 writer.println();
@@ -126,24 +128,9 @@ public class EmbeddedCommandRunner {
             throw new Die(true);
         }
 
-        gitdir = new File(rootDir, gitdir).getPath();
+        gitdir = Objects.toString(rootDir.resolve(gitdir));
 
-        final TextBuiltin cmd = subcommand;
-//        cmd.ins = in;
-//        cmd.outs = out;
-//        cmd.errs = err;
-//        if (cmd.requiresRepository())
-//            cmd.init(openGitDir(gitdir), null);
-//        else
-//            cmd.init(null, gitdir);
-//        try {
-//            cmd.execute(arguments.toArray(new String[arguments.size()]));
-//        } finally {
-//            if (cmd.outw != null)
-//                cmd.outw.flush();
-//            if (cmd.errw != null)
-//                cmd.errw.flush();
-//        }
+        TextBuiltin cmd = subcommand;
         set(cmd, "ins", in);
         set(cmd, "outs", out);
         set(cmd, "errs", err);

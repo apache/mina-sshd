@@ -46,17 +46,20 @@ import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.util.security.SecurityProviderRegistrar;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class SecurityUtilsTest extends BaseTestSupport {
     public static final String BC_NAMED_USAGE_PROP =
             SecurityProviderRegistrar.CONFIG_PROP_BASE
@@ -145,7 +148,7 @@ public class SecurityUtilsTest extends BaseTestSupport {
 
     private KeyPair testLoadPrivateKey(String name, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType)
             throws IOException, GeneralSecurityException {
-        Path folder = getClassResourcesFolder(TEST_SUBFOLDER);
+        Path folder = getTestResourcesFolder();
         Path file = folder.resolve(name);
         KeyPair kpFile = testLoadPrivateKeyFile(file, pubType, prvType);
         if (SecurityUtils.isBouncyCastleRegistered()) {

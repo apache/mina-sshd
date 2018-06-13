@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.server.auth.password;
 
+import org.apache.sshd.server.auth.AsyncAuthException;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -36,6 +37,8 @@ public interface PasswordAuthenticator {
      * @return {@code true} indicating if authentication succeeded
      * @throws PasswordChangeRequiredException If the password is expired or
      * not strong enough to suit the server's policy
+     * @throws AsyncAuthException If the authentication is performed asynchronously
      */
-    boolean authenticate(String username, String password, ServerSession session) throws PasswordChangeRequiredException;
+    boolean authenticate(String username, String password, ServerSession session)
+            throws PasswordChangeRequiredException, AsyncAuthException;
 }

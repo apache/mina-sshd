@@ -48,7 +48,6 @@ import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JSchLogger;
@@ -113,7 +112,6 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
         JSchLogger.init();
         sshd = Utils.setupTestServer(ApacheSshdSftpSessionFactoryTest.class);
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
-        sshd.setCommandFactory(new ScpCommandFactory());
         sshd.start();
         port = sshd.getPort();
 

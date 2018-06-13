@@ -221,8 +221,9 @@ public class PtyCapableChannelSession extends ChannelSession {
 
     protected void doOpenPty() throws IOException {
         Session session = getSession();
+        boolean debugEnabled = log.isDebugEnabled();
         if (agentForwarding) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("doOpenPty({}) Send agent forwarding request", this);
             }
 
@@ -235,7 +236,7 @@ public class PtyCapableChannelSession extends ChannelSession {
         }
 
         if (usePty) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("doOpenPty({}) Send SSH_MSG_CHANNEL_REQUEST pty-req: type={}, cols={}, lines={}, height={}, width={}, modes={}",
                           this, ptyType, ptyColumns, ptyLines, ptyHeight, ptyWidth, ptyModes);
             }
@@ -261,7 +262,7 @@ public class PtyCapableChannelSession extends ChannelSession {
         }
 
         if (GenericUtils.size(env) > 0) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("doOpenPty({}) Send SSH_MSG_CHANNEL_REQUEST env: {}", this, env);
             }
 

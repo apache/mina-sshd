@@ -42,11 +42,8 @@ import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.AuthFuture;
-import org.apache.sshd.client.scp.ScpClientCreator;
 import org.apache.sshd.client.session.forward.DynamicPortForwardingTracker;
 import org.apache.sshd.client.session.forward.ExplicitPortForwardingTracker;
-import org.apache.sshd.client.subsystem.sftp.SftpClientCreator;
-import org.apache.sshd.client.subsystem.sftp.SftpClientFactoryManager;
 import org.apache.sshd.common.forward.PortForwardingManager;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.session.Session;
@@ -83,9 +80,8 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ClientSession
-            extends Session, ScpClientCreator, SftpClientCreator, SftpClientFactoryManager,
-            ClientProxyConnectorHolder, ClientAuthenticationManager,
-            PortForwardingManager {
+            extends Session, ClientProxyConnectorHolder,
+            ClientAuthenticationManager, PortForwardingManager {
     enum ClientSessionEvent {
         TIMEOUT,
         CLOSED,

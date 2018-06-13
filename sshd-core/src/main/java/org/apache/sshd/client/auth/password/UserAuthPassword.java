@@ -153,6 +153,7 @@ public class UserAuthPassword extends AbstractUserAuth {
         if (modified) {
             buffer.putString(newPassword);
         }
+
         return session.writePacket(buffer);
     }
 }

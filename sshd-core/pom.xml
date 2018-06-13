@@ -24,7 +24,7 @@
     <parent>
         <groupId>org.apache.sshd</groupId>
         <artifactId>sshd</artifactId>
-        <version>1.7.0</version>
+        <version>2.0.1-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
 
@@ -34,18 +34,13 @@
     <inceptionYear>2008</inceptionYear>
 
     <properties>
-        <projectRoot>${basedir}/..</projectRoot>
+        <projectRoot>${project.basedir}/..</projectRoot>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.mina</groupId>
-            <artifactId>mina-core</artifactId>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>tomcat</groupId>
@@ -72,6 +67,11 @@
         </dependency>
 
             <!-- test dependencies -->
+        <dependency>
+            <groupId>org.apache.mina</groupId>
+            <artifactId>mina-core</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jcl-over-slf4j</artifactId>
@@ -157,82 +157,47 @@
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <reportsDirectory>${project.build.directory}/surefire-reports-nio2</reportsDirectory>
                     <systemProperties>
-                        <org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.nio2.Nio2ServiceFactory</org.apache.sshd.common.io.IoServiceFactory>
+                        <org.apache.sshd.common.io.IoServiceFactoryFactory>org.apache.sshd.common.io.nio2.Nio2ServiceFactoryFactory</org.apache.sshd.common.io.IoServiceFactoryFactory>
                     </systemProperties>
                     <excludes>
                         <exclude>**/*LoadTest.java</exclude>
                     </excludes>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <configuration>
-                    <additionalparam>-Xdoclint:none</additionalparam>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 
     <profiles>
-		<profile>
-			<id>test-jce</id>
-			<activation>
-				<activeByDefault>true</activeByDefault>
-			</activation>
+        <profile>
+            <id>test-jce</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
             <build>
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-						<executions>
-							<execution>
-								<id>jce</id>
-								<goals>
-									<goal>test</goal>
-								</goals>
-								<configuration>
-									<reportsDirectory>${project.build.directory}/surefire-reports-jce</reportsDirectory>
-									<systemProperties>
+                        <executions>
+                            <execution>
+                                <id>jce</id>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <configuration>
+                                    <reportsDirectory>${project.build.directory}/surefire-reports-jce</reportsDirectory>
+                                    <systemProperties>
                                         <org.apache.sshd.security.provider.BC.enabled>false</org.apache.sshd.security.provider.BC.enabled>
                                             <!-- deprecated -->
-										<org.apache.sshd.registerBouncyCastle>false</org.apache.sshd.registerBouncyCastle>
-									</systemProperties>
-								</configuration>
-							</execution>
-						</executions>
+                                        <org.apache.sshd.registerBouncyCastle>false</org.apache.sshd.registerBouncyCastle>
+                                    </systemProperties>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
-		</profile>
-		<profile>
-			<id>test-mina</id>
-			<activation>
-				<activeByDefault>true</activeByDefault>
-			</activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-						<executions>
-							<execution>
-								<id>mina</id>
-								<goals>
-									<goal>test</goal>
-								</goals>
-								<configuration>
-									<reportsDirectory>${project.build.directory}/surefire-reports-mina</reportsDirectory>
-									<systemProperties>
-										<org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.mina.MinaServiceFactory</org.apache.sshd.common.io.IoServiceFactory>
-									</systemProperties>
-								</configuration>
-							</execution>
-						</executions>
-                    </plugin>
-                </plugins>
-            </build>
-		</profile>
+        </profile>
         <profile>
             <id>load-test</id>
             <build>

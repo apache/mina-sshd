@@ -33,14 +33,17 @@ import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class ServerAuthenticationManagerTest extends BaseTestSupport {
     public ServerAuthenticationManagerTest() {
         super();
@@ -123,5 +126,4 @@ public class ServerAuthenticationManagerTest extends BaseTestSupport {
             assertTrue("Missing factory=" + f.name(), factories.contains(f.create()));
         }
     }
-
 }

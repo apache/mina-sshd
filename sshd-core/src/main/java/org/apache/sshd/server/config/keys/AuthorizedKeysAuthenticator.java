@@ -80,8 +80,9 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
 
     @Override
     public boolean authenticate(String username, PublicKey key, ServerSession session) {
+        boolean debugEnabled = log.isDebugEnabled();
         if (!isValidUsername(username, session)) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("authenticate(" + username + ")[" + session + "][" + key.getAlgorithm() + "] invalid user name - file = " + getPath());
             }
             return false;
@@ -91,13 +92,13 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
             PublickeyAuthenticator delegate =
                     Objects.requireNonNull(resolvePublickeyAuthenticator(username, session), "No delegate");
             boolean accepted = delegate.authenticate(username, key, session);
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("authenticate(" + username + ")[" + session + "][" + key.getAlgorithm() + "] accepted " + accepted + " from " + getPath());
             }
 
             return accepted;
         } catch (Throwable e) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("authenticate(" + username + ")[" + session + "][" + getPath() + "]"
                         + " failed (" + e.getClass().getSimpleName() + ")"
                         + " to resolve delegate: " + e.getMessage());

@@ -103,6 +103,7 @@ public final class AprLibrary {
     }
 
     @Override
+    @SuppressWarnings("checkstyle:NoFinalizer")
     protected void finalize() throws Throwable {
         library = null;
         Pool.destroy(pool);

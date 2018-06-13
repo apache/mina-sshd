@@ -30,14 +30,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class ConfigFileHostEntryResolverTest extends BaseTestSupport {
     public ConfigFileHostEntryResolverTest() {
         super();
@@ -46,7 +49,7 @@ public class ConfigFileHostEntryResolverTest extends BaseTestSupport {
     @Test
     public void testConfigFileReload() throws IOException {
         Path dir = getTempTargetRelativeFile(getClass().getSimpleName());
-        final AtomicInteger reloadCount = new AtomicInteger();
+        AtomicInteger reloadCount = new AtomicInteger();
         ConfigFileHostEntryResolver resolver = new ConfigFileHostEntryResolver(assertHierarchyTargetFolderExists(dir).resolve(getCurrentTestName() + ".config.txt")) {
             @Override
             protected List<HostConfigEntry> reloadHostConfigEntries(Path path, String host, int port, String username)
@@ -71,7 +74,7 @@ public class ConfigFileHostEntryResolverTest extends BaseTestSupport {
                                 1234,
                                 getClass().getSimpleName()),
                         new HostConfigEntry(
-                                expected.getHost() + String.valueOf(HostPatternsHolder.WILDCARD_PATTERN),
+                                expected.getHost() + Character.toString(HostPatternsHolder.WILDCARD_PATTERN),
                                 expected.getHost(),
                                 expected.getPort(),
                                 expected.getUsername())),
@@ -84,7 +87,7 @@ public class ConfigFileHostEntryResolverTest extends BaseTestSupport {
                                 1234,
                                 getClass().getSimpleName()),
                         new HostConfigEntry(
-                                getClass().getSimpleName() + String.valueOf(HostPatternsHolder.WILDCARD_PATTERN),
+                                getClass().getSimpleName() + Character.toString(HostPatternsHolder.WILDCARD_PATTERN),
                                 getClass().getSimpleName(),
                                 1234,
                                 getClass().getSimpleName()),

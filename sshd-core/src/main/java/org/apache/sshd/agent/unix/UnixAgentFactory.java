@@ -19,19 +19,18 @@
 package org.apache.sshd.agent.unix;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.session.ConnectionService;
@@ -84,27 +83,19 @@ public class UnixAgentFactory implements SshAgentFactory, ExecutorServiceConfigu
     @Override
     public List<NamedFactory<Channel>> getChannelForwardingFactories(FactoryManager manager) {
         final ExecutorServiceConfigurer configurer = this;
-        return Collections.unmodifiableList(new ArrayList<NamedFactory<Channel>>(DEFAULT_FORWARDING_CHANNELS.size()) {
-            // Not serializing it
-            private static final long serialVersionUID = 1L;
+        return Collections.unmodifiableList(DEFAULT_FORWARDING_CHANNELS.stream()
+                .map(cf -> new ChannelAgentForwardingFactory(cf.getName()) {
+                    @Override
+                    public ExecutorService getExecutorService() {
+                        return configurer.getExecutorService();
+                    }
 
-            {
-                for (NamedResource r : DEFAULT_FORWARDING_CHANNELS) {
-                    String channelType = r.getName();
-                    add(new ChannelAgentForwardingFactory(channelType) {
-                            @Override
-                            public ExecutorService getExecutorService() {
-                                return configurer.getExecutorService();
-                            }
-
-                            @Override
-                            public boolean isShutdownOnExit() {
-                                return configurer.isShutdownOnExit();
-                            }
-                    });
-                }
-            }
-        });
+                    @Override
+                    public boolean isShutdownOnExit() {
+                        return configurer.isShutdownOnExit();
+                    }
+                })
+                .collect(Collectors.toList()));
     }
 
     @Override

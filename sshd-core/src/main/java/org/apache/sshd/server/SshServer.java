@@ -18,70 +18,43 @@
  */
 package org.apache.sshd.server;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.KeyPair;
-import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.ServiceFactory;
-import org.apache.sshd.common.config.SshConfigFileReader;
-import org.apache.sshd.common.config.keys.BuiltinIdentities;
-import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.io.mina.MinaServiceFactory;
-import org.apache.sshd.common.io.nio2.Nio2ServiceFactory;
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.keyprovider.MappedKeyPairProvider;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.auth.UserAuth;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 import org.apache.sshd.server.auth.hostbased.HostBasedAuthenticator;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
-import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
-import org.apache.sshd.server.config.SshServerConfigFileReader;
-import org.apache.sshd.server.config.keys.ServerIdentity;
-import org.apache.sshd.server.forward.ForwardingFilter;
-import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
-import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
-import org.apache.sshd.server.scp.ScpCommandFactory;
+import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.session.ServerConnectionServiceFactory;
 import org.apache.sshd.server.session.ServerProxyAcceptor;
 import org.apache.sshd.server.session.ServerUserAuthServiceFactory;
 import org.apache.sshd.server.session.SessionFactory;
-import org.apache.sshd.server.shell.InteractiveProcessShellFactory;
-import org.apache.sshd.server.shell.ProcessShellFactory;
-import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 
 /**
  * <p>
@@ -136,6 +109,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     private KeyboardInteractiveAuthenticator interactiveAuthenticator;
     private HostBasedAuthenticator hostBasedAuthenticator;
     private GSSAuthenticator gssAuthenticator;
+    private final AtomicBoolean started = new AtomicBoolean(false);
 
     public SshServer() {
         super();
@@ -293,12 +267,21 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         }
     }
 
+    public boolean isStarted() {
+        return started.get();
+    }
+
     /**
      * Start the SSH server and accept incoming exceptions on the configured port.
+     * Ignored if already {@link #isStarted() started}
      *
      * @throws IOException If failed to start
      */
     public void start() throws IOException {
+        if (isStarted()) {
+            return;
+        }
+
         checkConfig();
         if (sessionFactory == null) {
             sessionFactory = createSessionFactory();
@@ -335,6 +318,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 log.info("start() listen on auto-allocated port=" + port);
             }
         }
+
+        started.set(true);
     }
 
     /**
@@ -346,6 +331,10 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     public void stop(boolean immediately) throws IOException {
+        if (!started.getAndSet(false)) {
+            return;
+        }
+
         long maxWait = immediately ? this.getLongProperty(STOP_WAIT_TIME, DEFAULT_STOP_WAIT_TIME) : Long.MAX_VALUE;
         boolean successful = close(immediately).await(maxWait);
         if (!successful) {
@@ -410,219 +399,5 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     public static SshServer setUpDefaultServer() {
         return ServerBuilder.builder().build();
-    }
-
-    /*=================================
-          Main class implementation
-     *=================================*/
-
-    public static KeyPairProvider setupServerKeys(SshServer sshd, String hostKeyType, int hostKeySize, Collection<String> keyFiles) throws Exception {
-        if (GenericUtils.isEmpty(keyFiles)) {
-            AbstractGeneratorHostKeyProvider hostKeyProvider;
-            Path hostKeyFile;
-            if (SecurityUtils.isBouncyCastleRegistered()) {
-                hostKeyFile = new File("key.pem").toPath();
-                hostKeyProvider = SecurityUtils.createGeneratorHostKeyProvider(hostKeyFile);
-            } else {
-                hostKeyFile = new File("key.ser").toPath();
-                hostKeyProvider = new SimpleGeneratorHostKeyProvider(hostKeyFile);
-            }
-            hostKeyProvider.setAlgorithm(hostKeyType);
-            if (hostKeySize != 0) {
-                hostKeyProvider.setKeySize(hostKeySize);
-            }
-
-            List<KeyPair> keys = ValidateUtils.checkNotNullAndNotEmpty(hostKeyProvider.loadKeys(),
-                    "Failed to load keys from %s", hostKeyFile);
-            KeyPair kp = keys.get(0);
-            PublicKey pubKey = kp.getPublic();
-            String keyAlgorithm = pubKey.getAlgorithm();
-            if (BuiltinIdentities.Constants.ECDSA.equalsIgnoreCase(keyAlgorithm)) {
-                keyAlgorithm = KeyUtils.EC_ALGORITHM;
-            } else if (BuiltinIdentities.Constants.ED25519.equals(keyAlgorithm)) {
-                keyAlgorithm = SecurityUtils.EDDSA;
-                // TODO change the hostKeyProvider to one that supports read/write of EDDSA keys - see SSHD-703
-            }
-
-            // force re-generation of host key if not same algorithm
-            if (!Objects.equals(keyAlgorithm, hostKeyType)) {
-                Files.deleteIfExists(hostKeyFile);
-                hostKeyProvider.clearLoadedKeys();
-            }
-
-            return hostKeyProvider;
-        } else {
-            List<KeyPair> pairs = new ArrayList<>(keyFiles.size());
-            for (String keyFilePath : keyFiles) {
-                Path path = Paths.get(keyFilePath);
-                try (InputStream inputStream = Files.newInputStream(path)) {
-                    KeyPair kp = SecurityUtils.loadKeyPairIdentity(keyFilePath, inputStream, null);
-                    pairs.add(kp);
-                } catch (Exception e) {
-                    System.err.append("Failed (" + e.getClass().getSimpleName() + ")"
-                                + " to load host key file=" + keyFilePath
-                                + ": " + e.getMessage());
-                    throw e;
-                }
-            }
-
-            return new MappedKeyPairProvider(pairs);
-        }
-    }
-
-    public static void main(String[] args) throws Exception {
-        int port = 8000;
-        String provider;
-        boolean error = false;
-        String hostKeyType = AbstractGeneratorHostKeyProvider.DEFAULT_ALGORITHM;
-        int hostKeySize = 0;
-        Collection<String> keyFiles = null;
-        Map<String, Object> options = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-
-        int numArgs = GenericUtils.length(args);
-        for (int i = 0; i < numArgs; i++) {
-            String argName = args[i];
-            if ("-p".equals(argName)) {
-                if ((i + 1) >= numArgs) {
-                    System.err.println("option requires an argument: " + argName);
-                    error = true;
-                    break;
-                }
-                port = Integer.parseInt(args[++i]);
-            } else if ("-key-type".equals(argName)) {
-                if ((i + 1) >= numArgs) {
-                    System.err.println("option requires an argument: " + argName);
-                    error = true;
-                    break;
-                }
-
-                if (keyFiles != null) {
-                    System.err.println("option conflicts with -key-file: " + argName);
-                    error = true;
-                    break;
-                }
-                hostKeyType = args[++i].toUpperCase();
-            } else if ("-key-size".equals(argName)) {
-                if ((i + 1) >= numArgs) {
-                    System.err.println("option requires an argument: " + argName);
-                    error = true;
-                    break;
-                }
-
-                if (keyFiles != null) {
-                    System.err.println("option conflicts with -key-file: " + argName);
-                    error = true;
-                    break;
-                }
-
-                hostKeySize = Integer.parseInt(args[++i]);
-            } else if ("-key-file".equals(argName)) {
-                if ((i + 1) >= numArgs) {
-                    System.err.println("option requires an argument: " + argName);
-                    error = true;
-                    break;
-                }
-
-                String keyFilePath = args[++i];
-                if (keyFiles == null) {
-                    keyFiles = new LinkedList<>();
-                }
-                keyFiles.add(keyFilePath);
-            } else if ("-io".equals(argName)) {
-                if ((i + 1) >= numArgs) {
-                    System.err.println("option requires an argument: " + argName);
-                    error = true;
-                    break;
-                }
-                provider = args[++i];
-                if ("mina".equals(provider)) {
-                    System.setProperty(IoServiceFactory.class.getName(), MinaServiceFactory.class.getName());
-                } else if ("nio2".endsWith(provider)) {
-                    System.setProperty(IoServiceFactory.class.getName(), Nio2ServiceFactory.class.getName());
-                } else {
-                    System.err.println("provider should be mina or nio2: " + argName);
-                    error = true;
-                    break;
-                }
-            } else if ("-o".equals(argName)) {
-                if ((i + 1) >= numArgs) {
-                    System.err.println("option requires and argument: " + argName);
-                    error = true;
-                    break;
-                }
-                String opt = args[++i];
-                int idx = opt.indexOf('=');
-                if (idx <= 0) {
-                    System.err.println("bad syntax for option: " + opt);
-                    error = true;
-                    break;
-                }
-
-                String optName = opt.substring(0, idx);
-                String optValue = opt.substring(idx + 1);
-                if (ServerIdentity.HOST_KEY_CONFIG_PROP.equals(optName)) {
-                    if (keyFiles == null) {
-                        keyFiles = new LinkedList<>();
-                    }
-                    keyFiles.add(optValue);
-                } else {
-                    options.put(optName, optValue);
-                }
-            } else if (argName.startsWith("-")) {
-                System.err.println("illegal option: " + argName);
-                error = true;
-                break;
-            } else {
-                System.err.println("extra argument: " + argName);
-                error = true;
-                break;
-            }
-        }
-        if (error) {
-            System.err.println("usage: sshd [-p port] [-io mina|nio2] [-key-type RSA|DSA|EC] [-key-size NNNN] [-key-file <path>] [-o option=value]");
-            System.exit(-1);
-        }
-
-        System.err.println("Starting SSHD on port " + port);
-
-        SshServer sshd = SshServer.setUpDefaultServer();
-        Map<String, Object> props = sshd.getProperties();
-        props.putAll(options);
-
-        PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
-        KeyPairProvider hostKeyProvider = setupServerKeys(sshd, hostKeyType, hostKeySize, keyFiles);
-        sshd.setKeyPairProvider(hostKeyProvider);
-        // Should come AFTER key pair provider setup so auto-welcome can be generated if needed
-        setupServerBanner(sshd, resolver);
-        sshd.setPort(port);
-
-        String macsOverride = resolver.getString(SshConfigFileReader.MACS_CONFIG_PROP);
-        if (GenericUtils.isNotEmpty(macsOverride)) {
-            SshConfigFileReader.configureMacs(sshd, macsOverride, true, true);
-        }
-
-        sshd.setShellFactory(InteractiveProcessShellFactory.INSTANCE);
-        sshd.setPasswordAuthenticator((username, password, session) -> Objects.equals(username, password));
-        sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
-        setupServerForwarding(sshd, resolver);
-        sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(
-            command -> new ProcessShellFactory(GenericUtils.split(command, ' ')).create()
-        ).build());
-        sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
-        sshd.start();
-
-        Thread.sleep(Long.MAX_VALUE);
-    }
-
-    public static ForwardingFilter setupServerForwarding(SshServer server, PropertyResolver options) {
-        ForwardingFilter forwardFilter = SshServerConfigFileReader.resolveServerForwarding(options);
-        server.setForwardingFilter(forwardFilter);
-        return forwardFilter;
-    }
-
-    public static Object setupServerBanner(ServerFactoryManager server, PropertyResolver options) {
-        Object banner = SshServerConfigFileReader.resolveBanner(options);
-        PropertyResolverUtils.updateProperty(server, ServerAuthenticationManager.WELCOME_BANNER, banner);
-        return banner;
     }
 }

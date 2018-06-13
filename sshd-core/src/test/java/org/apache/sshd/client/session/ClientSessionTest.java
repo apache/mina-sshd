@@ -26,8 +26,6 @@ import java.rmi.ServerException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
-import org.apache.sshd.server.Command;
-import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommandExecutionHelper;
@@ -91,7 +89,7 @@ public class ClientSessionTest extends BaseTestSupport {
             protected boolean handleCommandLine(String command) throws Exception {
                 assertEquals("Mismatched incoming command", expectedCommand, command);
                 assertFalse("Duplicated command call", cmdProcessed);
-                OutputStream stdout = getOut();
+                OutputStream stdout = getOutputStream();
                 stdout.write(expectedResponse.getBytes(StandardCharsets.US_ASCII));
                 stdout.flush();
                 cmdProcessed = true;
@@ -120,7 +118,7 @@ public class ClientSessionTest extends BaseTestSupport {
             protected boolean handleCommandLine(String command) throws Exception {
                 assertEquals("Mismatched incoming command", expectedCommand, command);
                 assertFalse("Duplicated command call", cmdProcessed);
-                OutputStream stderr = getErr();
+                OutputStream stderr = getErrorStream();
                 stderr.write(expectedErrorMessage.getBytes(StandardCharsets.US_ASCII));
                 stderr.flush();
                 cmdProcessed = true;
@@ -155,29 +153,24 @@ public class ClientSessionTest extends BaseTestSupport {
     @Test
     public void testExceptionThrownIfNonZeroExitStatus() throws Exception {
         final String expectedCommand = getCurrentTestName() + "-CMD";
-        final int exepectedErrorCode = 7365;
-        sshd.setCommandFactory(new CommandFactory() {
+        final int expectedErrorCode = 7365;
+        sshd.setCommandFactory(command -> new CommandExecutionHelper(command) {
+            private boolean cmdProcessed;
+
             @Override
-            public Command createCommand(String command) {
-                return new CommandExecutionHelper(command) {
-                    private boolean cmdProcessed;
+            protected void onExit(int exitValue, String exitMessage) {
+                super.onExit((exitValue == 0) ? expectedErrorCode : exitValue, exitMessage);
+            }
 
-                    @Override
-                    public void onExit(int exitValue, String exitMessage) {
-                        super.onExit((exitValue == 0) ? exepectedErrorCode : exitValue, exitMessage);
-                    }
-
-                    @Override
-                    protected boolean handleCommandLine(String command) throws Exception {
-                        assertEquals("Mismatched incoming command", expectedCommand, command);
-                        assertFalse("Duplicated command call", cmdProcessed);
-                        OutputStream stdout = getOut();
-                        stdout.write(command.getBytes(StandardCharsets.US_ASCII));
-                        stdout.flush();
-                        cmdProcessed = true;
-                        return false;
-                    }
-                };
+            @Override
+            protected boolean handleCommandLine(String command) throws Exception {
+                assertEquals("Mismatched incoming command", expectedCommand, command);
+                assertFalse("Duplicated command call", cmdProcessed);
+                OutputStream stdout = getOutputStream();
+                stdout.write(command.getBytes(StandardCharsets.US_ASCII));
+                stdout.flush();
+                cmdProcessed = true;
+                return false;
             }
         });
 
@@ -202,6 +195,6 @@ public class ClientSessionTest extends BaseTestSupport {
             actualErrorMessage = cause.getMessage();
         }
 
-        assertEquals("Mismatched captured error code", Integer.toString(exepectedErrorCode), actualErrorMessage);
+        assertEquals("Mismatched captured error code", Integer.toString(expectedErrorCode), actualErrorMessage);
     }
 }

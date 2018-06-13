@@ -28,10 +28,12 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 
 /**
@@ -39,6 +41,7 @@ import org.junit.runners.MethodSorters;
  * @see <A HREF="https://issues.apache.org/jira/browse/SSHD-565">SSHD-565</A>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class WindowTimeoutTest extends BaseTestSupport {
     public static final long MAX_WAIT_TIME = TimeUnit.SECONDS.toMillis(2L);
 

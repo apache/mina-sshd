@@ -29,14 +29,17 @@ import java.util.regex.Pattern;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class HostConfigEntryTest extends BaseTestSupport {
     public HostConfigEntryTest() {
         super();
@@ -49,7 +52,7 @@ public class HostConfigEntryTest extends BaseTestSupport {
         StringBuilder sb = new StringBuilder(testHost.length() + Byte.SIZE);
         List<HostPatternValue> patterns = new ArrayList<>(elements.length + 1);
         // all wildcard patterns are not negated - only the actual host
-        patterns.add(HostPatternsHolder.toPattern(String.valueOf(HostPatternsHolder.NEGATION_CHAR_PATTERN) + testHost));
+        patterns.add(HostPatternsHolder.toPattern(Character.toString(HostPatternsHolder.NEGATION_CHAR_PATTERN) + testHost));
 
         for (int i = 0; i < elements.length; i++) {
             sb.setLength(0);
@@ -158,19 +161,19 @@ public class HostConfigEntryTest extends BaseTestSupport {
         }
 
         for (char ch = 'a'; ch <= 'z'; ch++) {
-            assertTrue("Valid character not recognized: " + String.valueOf(ch), HostPatternsHolder.isValidPatternChar(ch));
+            assertTrue("Valid character not recognized: " + Character.toString(ch), HostPatternsHolder.isValidPatternChar(ch));
         }
 
         for (char ch = 'A'; ch <= 'Z'; ch++) {
-            assertTrue("Valid character not recognized: " + String.valueOf(ch), HostPatternsHolder.isValidPatternChar(ch));
+            assertTrue("Valid character not recognized: " + Character.toString(ch), HostPatternsHolder.isValidPatternChar(ch));
         }
 
         for (char ch = '0'; ch <= '9'; ch++) {
-            assertTrue("Valid character not recognized: " + String.valueOf(ch), HostPatternsHolder.isValidPatternChar(ch));
+            assertTrue("Valid character not recognized: " + Character.toString(ch), HostPatternsHolder.isValidPatternChar(ch));
         }
 
         for (char ch : new char[] {'-', '_', '.', HostPatternsHolder.SINGLE_CHAR_PATTERN, HostPatternsHolder.WILDCARD_PATTERN}) {
-            assertTrue("Valid character not recognized: " + String.valueOf(ch), HostPatternsHolder.isValidPatternChar(ch));
+            assertTrue("Valid character not recognized: " + Character.toString(ch), HostPatternsHolder.isValidPatternChar(ch));
         }
 
         for (char ch : new char[] {
@@ -178,7 +181,7 @@ public class HostConfigEntryTest extends BaseTestSupport {
             '#', '$', '^', '&', '%', '~', '<', '>',
             ',', '/', '\\', '\'', '"', ':', ';'
         }) {
-            assertFalse("Unexpected valid character: " + String.valueOf(ch), HostPatternsHolder.isValidPatternChar(ch));
+            assertFalse("Unexpected valid character: " + Character.toString(ch), HostPatternsHolder.isValidPatternChar(ch));
         }
 
         for (char ch = 0x7E; ch <= 0xFF; ch++) {
@@ -191,11 +194,11 @@ public class HostConfigEntryTest extends BaseTestSupport {
         final int originalPort = Short.MAX_VALUE;
         final int preferredPort = 7365;
         assertEquals("Mismatched entry port preference",
-                preferredPort, HostConfigEntry.resolvePort(originalPort, preferredPort));
+            preferredPort, HostConfigEntry.resolvePort(originalPort, preferredPort));
 
         for (int entryPort : new int[] {-1, 0}) {
             assertEquals("Non-preferred original port for entry port=" + entryPort,
-                    originalPort, HostConfigEntry.resolvePort(originalPort, entryPort));
+                originalPort, HostConfigEntry.resolvePort(originalPort, entryPort));
         }
     }
 
@@ -208,7 +211,7 @@ public class HostConfigEntryTest extends BaseTestSupport {
 
         for (String entryUser : new String[] {null, ""}) {
             assertSame("Non-preferred original user for entry user='" + entryUser + "'",
-                    originalUser, HostConfigEntry.resolveUsername(originalUser, entryUser));
+                originalUser, HostConfigEntry.resolveUsername(originalUser, entryUser));
         }
     }
 
@@ -278,8 +281,10 @@ public class HostConfigEntryTest extends BaseTestSupport {
         final String hostValue = getCurrentTestName();
         HostConfigEntry expected = new HostConfigEntry(hostValue, hostValue, 7365, hostValue);
         List<HostConfigEntry> matches = new ArrayList<>();
-        matches.add(new HostConfigEntry(HostPatternsHolder.ALL_HOSTS_PATTERN, getClass().getSimpleName(), Short.MAX_VALUE, getClass().getSimpleName()));
-        matches.add(new HostConfigEntry(hostValue + String.valueOf(HostPatternsHolder.WILDCARD_PATTERN), getClass().getSimpleName(), Byte.MAX_VALUE, getClass().getSimpleName()));
+        matches.add(new HostConfigEntry(HostPatternsHolder.ALL_HOSTS_PATTERN,
+            getClass().getSimpleName(), Short.MAX_VALUE, getClass().getSimpleName()));
+        matches.add(new HostConfigEntry(hostValue + Character.toString(HostPatternsHolder.WILDCARD_PATTERN),
+            getClass().getSimpleName(), Byte.MAX_VALUE, getClass().getSimpleName()));
         matches.add(expected);
 
         for (int index = 0; index < matches.size(); index++) {

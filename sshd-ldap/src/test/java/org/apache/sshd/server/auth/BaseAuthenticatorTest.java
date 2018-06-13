@@ -55,13 +55,16 @@ import org.apache.directory.shared.ldap.schema.registries.SchemaLoader;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.apache.sshd.util.test.Utils;
+import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@Category({ NoIoTestCase.class })
 public abstract class BaseAuthenticatorTest extends BaseTestSupport {
     public static final int PORT = Integer.parseInt(System.getProperty("org.apache.sshd.test.ldap.port", "11389"));
     public static final String BASE_DN_TEST = "ou=People,dc=sshd,dc=apache,dc=org";

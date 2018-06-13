@@ -62,15 +62,15 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.IoBaseCloseable;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.LoggingFilterOutputStream;
-import org.apache.sshd.server.AsyncCommand;
 import org.apache.sshd.server.ChannelSessionAware;
-import org.apache.sshd.server.Command;
-import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.Signal;
 import org.apache.sshd.server.StandardEnvironment;
+import org.apache.sshd.server.command.AsyncCommand;
+import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.forward.AgentForwardingFilter;
 import org.apache.sshd.server.forward.X11ForwardingFilter;
 import org.apache.sshd.server.session.ServerSession;
@@ -187,13 +187,14 @@ public class ChannelSession extends AbstractServerChannel {
 
     @Override
     protected void doCloseImmediately() {
+        boolean debugEnabled = log.isDebugEnabled();
         if (commandInstance != null) {
             try {
                 commandInstance.destroy();
             } catch (Throwable e) {
                 log.warn("doCloseImmediately({}) failed ({}) to destroy command: {}",
                          this, e.getClass().getSimpleName(), e.getMessage());
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("doCloseImmediately(" + this + ") command destruction failure details", e);
                 }
             } finally {
@@ -203,7 +204,7 @@ public class ChannelSession extends AbstractServerChannel {
 
         IOException e = IoUtils.closeQuietly(getRemoteWindow(), out, err, receiver);
         if (e != null) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("doCloseImmediately({}) failed ({}) to close resources: {}",
                           this, e.getClass().getSimpleName(), e.getMessage());
             }
@@ -519,7 +520,8 @@ public class ChannelSession extends AbstractServerChannel {
             return RequestHandler.Result.ReplyFailure;
         }
 
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("handleExec({}) Executing command: {}", this, commandLine);
         }
 
@@ -528,7 +530,7 @@ public class ChannelSession extends AbstractServerChannel {
         } catch (RuntimeException | Error e) {
             log.warn("handleExec({}) Failed ({}) to create command for {}: {}",
                      this, e.getClass().getSimpleName(), commandLine, e.getMessage());
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("handleExec(" + this + ") command=" + commandLine + " creation failure details", e);
             }
 
@@ -583,14 +585,15 @@ public class ChannelSession extends AbstractServerChannel {
             return RequestHandler.Result.ReplyFailure;
         }
 
+        boolean debugEnabled = log.isDebugEnabled();
         if (command != cmd) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("prepareChannelCommand({})[{}] replaced original command", this, request);
             }
             commandInstance = command;
         }
 
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("prepareChannelCommand({})[{}] prepared command", this, request);
         }
         return RequestHandler.Result.ReplySuccess;
@@ -599,7 +602,7 @@ public class ChannelSession extends AbstractServerChannel {
     /**
      * For {@link Command} to install {@link ChannelDataReceiver}.
      * When you do this, {@link Command#setInputStream(java.io.InputStream)} or
-     * {@link org.apache.sshd.server.AsyncCommand#setIoInputStream(org.apache.sshd.common.io.IoInputStream)}
+     * {@link org.apache.sshd.server.command.AsyncCommand#setIoInputStream(org.apache.sshd.common.io.IoInputStream)}
      * will no longer be invoked. If you call this method from {@link Command#start(Environment)},
      * the input stream you received in {@link Command#setInputStream(java.io.InputStream)} will
      * not read any data.
@@ -705,9 +708,10 @@ public class ChannelSession extends AbstractServerChannel {
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No session factory manager");
         AgentForwardingFilter filter = manager.getAgentForwardingFilter();
         SshAgentFactory factory = manager.getAgentFactory();
+        boolean debugEnabled = log.isDebugEnabled();
         try {
             if ((factory == null) || (filter == null) || (!filter.canForwardAgent(session, requestType))) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("handleAgentForwarding(" + this + ")[haveFactory=" + (factory != null) + ",haveFilter=" + (filter != null) + "] filtered out request=" + requestType);
                 }
                 return RequestHandler.Result.ReplyFailure;
@@ -715,7 +719,7 @@ public class ChannelSession extends AbstractServerChannel {
         } catch (Error e) {
             log.warn("handleAgentForwarding({}) failed ({}) to consult forwarding filter for '{}': {}",
                      this, e.getClass().getSimpleName(), requestType, e.getMessage());
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("handleAgentForwarding(" + this + ")[" + requestType + "] filter consultation failure details", e);
             }
             throw new RuntimeSshException(e);
@@ -723,7 +727,7 @@ public class ChannelSession extends AbstractServerChannel {
 
         AgentForwardSupport agentForward = service.getAgentForwardSupport();
         if (agentForward == null) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("handleAgentForwarding() no agent forward support", this);
             }
             return RequestHandler.Result.ReplyFailure;
@@ -743,9 +747,10 @@ public class ChannelSession extends AbstractServerChannel {
 
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         X11ForwardingFilter filter = manager.getX11ForwardingFilter();
+        boolean debugEnabled = log.isDebugEnabled();
         try {
             if ((filter == null) || (!filter.canForwardX11(session, requestType))) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={}, filter={}: filtered request={}",
                               this, singleConnection, authProtocol, authCookie, screenId, filter, requestType);
                 }
@@ -754,7 +759,7 @@ public class ChannelSession extends AbstractServerChannel {
         } catch (Error e) {
             log.warn("handleX11Forwarding({}) failed ({}) to consult forwarding filter for '{}': {}",
                      this, e.getClass().getSimpleName(), requestType, e.getMessage());
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("handleX11Forwarding(" + this + ")[" + requestType + "] filter consultation failure details", e);
             }
             throw new RuntimeSshException(e);
@@ -762,7 +767,7 @@ public class ChannelSession extends AbstractServerChannel {
 
         X11ForwardSupport x11Forward = service.getX11ForwardSupport();
         if (x11Forward == null) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={} - no forwarder'",
                           this, singleConnection, authProtocol, authCookie, screenId);
             }
@@ -770,7 +775,7 @@ public class ChannelSession extends AbstractServerChannel {
         }
 
         String display = x11Forward.createDisplay(singleConnection, authProtocol, authCookie, screenId);
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={} - display='{}'",
                       this, singleConnection, authProtocol, authCookie, screenId, display);
         }
@@ -796,6 +801,9 @@ public class ChannelSession extends AbstractServerChannel {
         }
 
         if (!isClosing()) {
+            if (out != null) {
+                out.flush();
+            }
             sendEof();
             sendExitStatus(exitValue);
             commandExitFuture.setClosed();

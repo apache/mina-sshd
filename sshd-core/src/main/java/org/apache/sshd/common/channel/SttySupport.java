@@ -186,8 +186,7 @@ public final class SttySupport {
         }
     }
 
-    private static int getTerminalProperty(String prop)
-            throws IOException, InterruptedException {
+    public static int getTerminalProperty(String prop) throws IOException, InterruptedException {
         // need to be able handle both output formats:
         // speed 9600 baud; 24 rows; 140 columns;
         // and:
@@ -196,11 +195,11 @@ public final class SttySupport {
             String str = tok.nextToken().trim();
 
             if (str.startsWith(prop)) {
-                int index = str.lastIndexOf(" ");
+                int index = str.lastIndexOf(' ');
 
                 return Integer.parseInt(str.substring(index).trim());
             } else if (str.endsWith(prop)) {
-                int index = str.indexOf(" ");
+                int index = str.indexOf(' ');
 
                 return Integer.parseInt(str.substring(0, index).trim());
             }
@@ -231,8 +230,7 @@ public final class SttySupport {
      * @throws InterruptedException If interrupted while awaiting command execution
      * @see #exec(String)
      */
-    public static String stty(final String args)
-            throws IOException, InterruptedException {
+    public static String stty(String args) throws IOException, InterruptedException {
         return exec("stty " + args + " < /dev/tty").trim();
     }
 

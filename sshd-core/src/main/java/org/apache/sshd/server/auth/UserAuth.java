@@ -42,9 +42,10 @@ public interface UserAuth extends ServerSessionHolder, UserAuthInstance<ServerSe
      * @param buffer   the request buffer containing parameters specific to this request
      * @return <code>true</code> if the authentication succeeded, <code>false</code> if the authentication
      * failed and {@code null} if not finished yet
+     * @throws AsyncAuthException if the service is willing to perform an asynchronous authentication
      * @throws Exception if the authentication fails
      */
-    Boolean auth(ServerSession session, String username, String service, Buffer buffer) throws Exception;
+    Boolean auth(ServerSession session, String username, String service, Buffer buffer) throws AsyncAuthException, Exception;
 
     /**
      * Handle another step in the authentication process.
@@ -52,9 +53,10 @@ public interface UserAuth extends ServerSessionHolder, UserAuthInstance<ServerSe
      * @param buffer the request buffer containing parameters specific to this request
      * @return <code>true</code> if the authentication succeeded, <code>false</code> if the authentication
      * failed and {@code null} if not finished yet
+     * @throws AsyncAuthException if the service is willing to perform an asynchronous authentication
      * @throws Exception if the authentication fails
      */
-    Boolean next(Buffer buffer) throws Exception;
+    Boolean next(Buffer buffer) throws AsyncAuthException, Exception;
 
     /**
      * Free any system resources used by the module.

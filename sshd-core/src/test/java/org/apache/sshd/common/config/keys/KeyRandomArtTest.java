@@ -30,10 +30,12 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.apache.sshd.util.test.Utils;
 import org.junit.AfterClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
@@ -46,6 +48,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@Category({ NoIoTestCase.class })
 public class KeyRandomArtTest extends BaseTestSupport {
     private static final Collection<KeyPair> KEYS = new LinkedList<>();
 
@@ -93,7 +96,7 @@ public class KeyRandomArtTest extends BaseTestSupport {
     @Test
     public void testRandomArtString() throws Exception {
         KeyRandomArt art = new KeyRandomArt(keyPair.getPublic());
-        assertEquals("Mismatched algorithem", algorithm, art.getAlgorithm());
+        assertEquals("Mismatched algorithm", algorithm, art.getAlgorithm());
         assertEquals("Mismatched key size", keySize, art.getKeySize());
 
         String s = art.toString();

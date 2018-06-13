@@ -26,9 +26,9 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeMap;
 
 import org.apache.sshd.common.NamedFactory;
@@ -111,8 +111,8 @@ public enum BuiltinMacs implements MacFactory {
      *
      * @param extension The factory to register
      * @throws IllegalArgumentException if factory instance is {@code null},
-     *                                  or overrides a built-in one or overrides another registered factory
-     *                                  with the same name (case <U>insensitive</U>).
+     * or overrides a built-in one or overrides another registered factory
+     * with the same name (case <U>insensitive</U>).
      */
     public static void registerExtension(MacFactory extension) {
         String name = Objects.requireNonNull(extension, "No extension provided").getName();
@@ -125,10 +125,10 @@ public enum BuiltinMacs implements MacFactory {
     }
 
     /**
-     * @return A {@link SortedSet} of the currently registered extensions, sorted
+     * @return A {@link NavigableSet} of the currently registered extensions, sorted
      * according to the factory name (case <U>insensitive</U>)
      */
-    public static SortedSet<MacFactory> getRegisteredExtensions() {
+    public static NavigableSet<MacFactory> getRegisteredExtensions() {
         synchronized (EXTENSIONS) {
             return GenericUtils.asSortedSet(NamedResource.BY_NAME_COMPARATOR, EXTENSIONS.values());
         }

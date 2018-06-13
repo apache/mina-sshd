@@ -19,6 +19,7 @@
 package org.apache.sshd.server;
 
 import org.apache.sshd.server.channel.ChannelSession;
+import org.apache.sshd.server.command.Command;
 
 /**
  * {@link Command} can implement this optional interface

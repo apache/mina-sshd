@@ -25,6 +25,8 @@
 	<!--<module name="StrictDuplicateCode" />-->
 
 	<module name="TreeWalker">
+        <property name="fileExtensions" value="java" />
+
             <!-- Checks for Javadoc comments.                     -->
             <!-- See http://checkstyle.sf.net/config_javadoc.html -->
             <!--
@@ -122,6 +124,7 @@
         <module name="GenericWhitespace"/>
         <module name="OperatorWrap" />
         <module name="ParenPad" />
+        <module name="NoLineWrap" />
         <module name="TypecastParenPad" />
         <module name="WhitespaceAfter">
             <property name="tokens" value="COMMA, SEMI" />
@@ -171,6 +174,7 @@
         <!--<module name="MagicNumber" />-->
         <module name="MissingSwitchDefault" />
         <!--module name="ModifiedControlVariable"/-->
+        <module name="NoFinalizer" />
         <module name="SimplifyBooleanExpression" />
         <module name="SimplifyBooleanReturn" />
         <module name="StringLiteralEquality" />
@@ -205,6 +209,9 @@
         <!--<module name="MissingCtor" />-->
         <module name="FallThrough" />
         <!--<module name="MultipleStringLiterals" />-->
+        <!--<module name="VariableDeclarationUsageDistance">
+            <property name="allowedDistance" value="8" />
+        </module>-->
         <module name="MultipleVariableDeclarations" />
         <!--<module name="RequireThis" />-->
         <module name="UnnecessaryParentheses" />

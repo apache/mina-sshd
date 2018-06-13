@@ -115,7 +115,7 @@ public enum TimeValueConfig {
 
             TimeValueConfig c = fromValueChar(ch);
             if (c == null) {
-                throw new IllegalArgumentException("parse(" + s + ") unknown time value character: " + String.valueOf(ch));
+                throw new IllegalArgumentException("parse(" + s + ") unknown time value character: '" + ch + "'");
             }
 
             String v = s.substring(lastPos, curPos);

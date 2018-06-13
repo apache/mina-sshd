@@ -27,7 +27,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
-import org.apache.sshd.server.Command;
+import org.apache.sshd.server.command.Command;
 
 /**
  * A {@link Factory} of {@link Command} that will create a new process and bridge
@@ -35,7 +35,7 @@ import org.apache.sshd.server.Command;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ProcessShellFactory extends AbstractLoggingBean implements Factory<Command> {
+public class ProcessShellFactory extends AbstractLoggingBean implements ShellFactory {
     private List<String> command;
 
     public ProcessShellFactory() {

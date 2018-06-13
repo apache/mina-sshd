@@ -207,6 +207,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
 
         @SuppressWarnings("synthetic-access")
         private boolean setNextObject() {
+            boolean debugEnabled = log.isDebugEnabled();
             while (iterator.hasNext()) {
                 R r = iterator.next();
                 try {
@@ -214,7 +215,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
                 } catch (Throwable e) {
                     log.warn("Failed (" + e.getClass().getSimpleName() + ")"
                            + " to load key resource=" + r + ": " + e.getMessage());
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("Key resource=" + r + " load failure details", e);
                     }
                     nextKeyPair = null;

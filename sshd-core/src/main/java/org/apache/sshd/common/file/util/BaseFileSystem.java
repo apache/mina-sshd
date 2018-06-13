@@ -145,7 +145,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
             log.trace("getPathMatcher({}): {}", syntaxAndPattern, expr);
         }
 
-        final Pattern regex = Pattern.compile(expr);
+        Pattern regex = Pattern.compile(expr);
         return path -> {
             Matcher m = regex.matcher(path.toString());
             return m.matches();

@@ -22,8 +22,10 @@ package org.apache.sshd.git.transport;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.channel.ChannelExec;
@@ -35,6 +37,9 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class GitSshdSessionProcess extends Process {
+    public static final Set<ClientChannelEvent> CLOSE_WAIT_EVENTS =
+        Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.CLOSED));
+
     protected final ChannelExec channel;
     protected final String commandName;
     protected final long waitTimeout;
@@ -64,12 +69,17 @@ public class GitSshdSessionProcess extends Process {
 
     @Override   // TODO in Java-8 implement also waitFor(long, TimeUnit)
     public int waitFor() throws InterruptedException {
-        Collection<ClientChannelEvent> res =
-                channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), waitTimeout);
-        if (log.isTraceEnabled()) {
-            log.trace("waitFor({}) channel={}, timeout={} millis.: {}",
-                      commandName, channel, waitTimeout, res);
+        boolean traceEnabled = log.isTraceEnabled();
+        if (traceEnabled) {
+            log.trace("waitFor({}) channel={} waiting {} millis", commandName, channel, waitTimeout);
         }
+
+        Collection<ClientChannelEvent> res = channel.waitFor(CLOSE_WAIT_EVENTS, waitTimeout);
+
+        if (traceEnabled) {
+            log.trace("waitFor({}) channel={} events={}", commandName, channel, res);
+        }
+
         if (res.contains(ClientChannelEvent.CLOSED)) {
             return 0;
         } else {
@@ -92,7 +102,9 @@ public class GitSshdSessionProcess extends Process {
 
     @Override
     public void destroy() {
-        channel.close(true);
+        if (channel.isOpen()) {
+            channel.close(true);
+        }
     }
 
     @Override

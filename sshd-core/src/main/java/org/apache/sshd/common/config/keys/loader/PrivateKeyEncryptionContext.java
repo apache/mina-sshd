@@ -23,10 +23,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.NavigableMap;
+import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Objects;
-import java.util.SortedSet;
-import java.util.TreeMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -37,18 +39,9 @@ import org.apache.sshd.common.util.ValidateUtils;
 public class PrivateKeyEncryptionContext implements Cloneable {
     public static final String  DEFAULT_CIPHER_MODE = "CBC";
 
-    private static final NavigableMap<String, PrivateKeyObfuscator> OBFUSCATORS =
-        new TreeMap<String, PrivateKeyObfuscator>(String.CASE_INSENSITIVE_ORDER) {
-            private static final long serialVersionUID = 1L;    // no serialization expected
-
-            {
-                for (PrivateKeyObfuscator o : new PrivateKeyObfuscator[]{
-                    AESPrivateKeyObfuscator.INSTANCE, DESPrivateKeyObfuscator.INSTANCE
-                }) {
-                    put(o.getCipherName(), o);
-                }
-            }
-    };
+    private static final Map<String, PrivateKeyObfuscator> OBFUSCATORS =
+            Stream.of(AESPrivateKeyObfuscator.INSTANCE, DESPrivateKeyObfuscator.INSTANCE)
+                .collect(Collectors.toMap(AbstractPrivateKeyObfuscator::getCipherName, Function.identity()));
 
     private String  cipherName;
     private String cipherType;
@@ -170,7 +163,7 @@ public class PrivateKeyEncryptionContext implements Cloneable {
         }
     }
 
-    public static final SortedSet<String> getRegisteredPrivateKeyObfuscatorCiphers() {
+    public static final NavigableSet<String> getRegisteredPrivateKeyObfuscatorCiphers() {
         synchronized (OBFUSCATORS) {
             Collection<String> names = OBFUSCATORS.keySet();
             return GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, names);
@@ -256,7 +249,7 @@ public class PrivateKeyEncryptionContext implements Cloneable {
         ValidateUtils.checkNotNullAndNotEmpty(algInfo, "No encryption algorithm data");
 
         String[] cipherData = GenericUtils.split(algInfo, '-');
-        ValidateUtils.checkTrue(cipherData.length == 3, "Bad encryption alogrithm data: %s", algInfo);
+        ValidateUtils.checkTrue(cipherData.length == 3, "Bad encryption algorithm data: %s", algInfo);
 
         context.setCipherName(cipherData[0]);
         context.setCipherType(cipherData[1]);

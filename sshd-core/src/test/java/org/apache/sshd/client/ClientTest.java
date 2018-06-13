@@ -65,7 +65,6 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.SubsystemClient;
-import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedResource;
@@ -76,8 +75,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
-import org.apache.sshd.common.channel.ChannelListenerManager;
-import org.apache.sshd.common.channel.TestChannelListener;
+import org.apache.sshd.common.channel.exception.SshChannelClosedException;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -86,34 +84,30 @@ import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoReadFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.io.mina.MinaSession;
-import org.apache.sshd.common.io.nio2.Nio2Session;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.helpers.AbstractSession;
-import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
-import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.keyboard.DefaultKeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.channel.ChannelSessionFactory;
+import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.forward.DirectTcpipFactory;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerConnectionServiceFactory;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerUserAuthService;
 import org.apache.sshd.server.session.ServerUserAuthServiceFactory;
-import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.AsyncEchoShellFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.EchoShell;
@@ -236,6 +230,18 @@ public class ClientTest extends BaseTestSupport {
             client.stop();
         }
         clientSessionHolder.set(null);  // just making sure
+    }
+
+    @Test
+    public void testClientStartedIndicator() throws Exception {
+        client.start();
+        try {
+            assertTrue("Client not marked as started", client.isStarted());
+        } finally {
+            client.stop();
+        }
+
+        assertFalse("Client not marked as stopped", client.isStarted());
     }
 
     @Test
@@ -443,7 +449,6 @@ public class ClientTest extends BaseTestSupport {
                 assertSame("Mismatched closed channel instances", channel, channelHolder.getAndSet(null));
             }
         });
-        sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
 
         client.start();
 
@@ -458,13 +463,6 @@ public class ClientTest extends BaseTestSupport {
             testClientListener(channelHolder, ChannelExec.class, () -> {
                 try {
                     return session.createExecChannel(getCurrentTestName());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-            testClientListener(channelHolder, SftpClient.class, () -> {
-                try {
-                    return session.createSftpClient();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -590,6 +588,69 @@ public class ClientTest extends BaseTestSupport {
     }
 
     @Test
+    public void testExecAsyncClient() throws Exception {
+        Logger log = LoggerFactory.getLogger(getClass());
+        client.start();
+        try (ClientSession session = createTestClientSession()) {
+            final ByteArrayOutputStream baosOut = new ByteArrayOutputStream();
+            final ByteArrayOutputStream baosErr = new ByteArrayOutputStream();
+
+            final ChannelExec channel = session.createExecChannel("test");
+            channel.setStreaming(ClientChannel.Streaming.Async);
+            OpenFuture open = channel.open();
+
+            Thread.sleep(100); // Removing this line will make the test succeed
+            open.addListener(new SshFutureListener<OpenFuture>() {
+                @Override
+                public void operationComplete(OpenFuture future) {
+                    channel.getAsyncOut().read(new ByteArrayBuffer())
+                            .addListener(new SshFutureListener<IoReadFuture>() {
+                                @Override
+                                public void operationComplete(IoReadFuture future) {
+                                    try {
+                                        future.verify();
+                                        Buffer buffer = future.getBuffer();
+                                        baosOut.write(buffer.array(), buffer.rpos(), buffer.available());
+                                        buffer.rpos(buffer.rpos() + buffer.available());
+                                        buffer.compact();
+                                        channel.getAsyncOut().read(buffer).addListener(this);
+                                    } catch (IOException e) {
+                                        if (!channel.isClosing()) {
+                                            log.error("Error reading", e);
+                                            channel.close(true);
+                                        }
+                                    }
+                                }
+                            });
+                    channel.getAsyncErr().read(new ByteArrayBuffer())
+                            .addListener(new SshFutureListener<IoReadFuture>() {
+                                @Override
+                                public void operationComplete(IoReadFuture future) {
+                                    try {
+                                        future.verify();
+                                        Buffer buffer = future.getBuffer();
+                                        baosErr.write(buffer.array(), buffer.rpos(), buffer.available());
+                                        buffer.rpos(buffer.rpos() + buffer.available());
+                                        buffer.compact();
+                                        channel.getAsyncErr().read(buffer).addListener(this);
+                                    } catch (IOException e) {
+                                        if (!channel.isClosing()) {
+                                            log.error("Error reading", e);
+                                            channel.close(true);
+                                        }
+                                    }
+                                }
+                            });
+                }
+            });
+
+            channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 0);
+
+            assertNotEquals(0, baosErr.size());
+        }
+    }
+
+    @Test
     public void testCommandDeadlock() throws Exception {
         client.start();
 
@@ -609,8 +670,9 @@ public class ClientTest extends BaseTestSupport {
                     invertedStream.write(data);
                     invertedStream.flush();
                 }
-            } catch (SshException e) {
+            } catch (SshException | SshChannelClosedException e) {
                 // That's ok, the channel is being closed by the other side
+                outputDebugMessage("%s - ignore %s: %s", getCurrentTestName(), e.getClass().getSimpleName(), e.getMessage());
             }
 
             Collection<ClientChannelEvent> mask = EnumSet.of(ClientChannelEvent.CLOSED);
@@ -652,7 +714,7 @@ public class ClientTest extends BaseTestSupport {
                 for (int i = 0; i < 1000; i++) {
                     sb.append("0123456789");
                 }
-                sb.append("\n");
+                sb.append('\n');
                 teeOut.write(sb.toString().getBytes(StandardCharsets.UTF_8));
 
                 teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
@@ -696,7 +758,7 @@ public class ClientTest extends BaseTestSupport {
                 for (int i = 0; i < 1000; i++) {
                     sb.append("0123456789");
                 }
-                sb.append("\n");
+                sb.append('\n');
                 pipedIn.write(sb.toString().getBytes(StandardCharsets.UTF_8));
 
                 pipedIn.write("exit\n".getBytes(StandardCharsets.UTF_8));
@@ -765,7 +827,7 @@ public class ClientTest extends BaseTestSupport {
                 for (int i = 0; i < 1000; i++) {
                     sb.append("0123456789");
                 }
-                sb.append("\n");
+                sb.append('\n');
                 teeOut.write(sb.toString().getBytes(StandardCharsets.UTF_8));
             }
 
@@ -1359,7 +1421,6 @@ public class ClientTest extends BaseTestSupport {
         try (ClientSession session = createTestClientSession()) {
             // required since we do not use an SFTP subsystem
             PropertyResolverUtils.updateProperty(session, ChannelSubsystem.REQUEST_SUBSYSTEM_REPLY, false);
-            channels.add(session.createChannel(Channel.CHANNEL_SUBSYSTEM, SftpConstants.SFTP_SUBSYSTEM_NAME));
             channels.add(session.createChannel(Channel.CHANNEL_EXEC, getCurrentTestName()));
             channels.add(session.createChannel(Channel.CHANNEL_SHELL, getClass().getSimpleName()));
 
@@ -1380,42 +1441,6 @@ public class ClientTest extends BaseTestSupport {
         }
 
         assertNull("Session closure not signalled", clientSessionHolder.get());
-    }
-
-    /**
-     * Makes sure that the {@link ChannelListener}s added to the client, session
-     * and channel are <U>cumulative</U> - i.e., all of them invoked
-     * @throws Exception If failed
-     */
-    @Test
-    public void testChannelListenersPropagation() throws Exception {
-        Map<String, TestChannelListener> clientListeners = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        addChannelListener(clientListeners, client, new TestChannelListener(client.getClass().getSimpleName()));
-
-        // required since we do not use an SFTP subsystem
-        PropertyResolverUtils.updateProperty(client, ChannelSubsystem.REQUEST_SUBSYSTEM_REPLY, false);
-        client.start();
-        try (ClientSession session = createTestClientSession()) {
-            addChannelListener(clientListeners, session, new TestChannelListener(session.getClass().getSimpleName()));
-            assertListenerSizes("ClientSessionOpen", clientListeners, 0, 0);
-
-            try (ClientChannel channel = session.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME)) {
-                channel.open().verify(5L, TimeUnit.SECONDS);
-
-                TestChannelListener channelListener = new TestChannelListener(channel.getClass().getSimpleName());
-                // need to emulate them since we are adding the listener AFTER the channel is open
-                channelListener.channelInitialized(channel);
-                channelListener.channelOpenSuccess(channel);
-                channel.addChannelListener(channelListener);
-                assertListenerSizes("ClientChannelOpen", clientListeners, 1, 1);
-            }
-
-            assertListenerSizes("ClientChannelClose", clientListeners, 0, 1);
-        } finally {
-            client.stop();
-        }
-
-        assertListenerSizes("ClientStop", clientListeners, 0, 1);
     }
 
     @Test
@@ -1456,34 +1481,6 @@ public class ClientTest extends BaseTestSupport {
         }
     }
 
-    private static void assertListenerSizes(String phase, Map<String, ? extends TestChannelListener> listeners, int activeSize, int openSize) {
-        assertListenerSizes(phase, listeners.values(), activeSize, openSize);
-    }
-
-    private static void assertListenerSizes(String phase, Collection<? extends TestChannelListener> listeners, int activeSize, int openSize) {
-        if (GenericUtils.isEmpty(listeners)) {
-            return;
-        }
-
-        for (TestChannelListener l : listeners) {
-            if (activeSize >= 0) {
-                assertEquals(phase + ": mismatched active channels size for " + l.getName() + " listener", activeSize, GenericUtils.size(l.getActiveChannels()));
-            }
-
-            if (openSize >= 0) {
-                assertEquals(phase + ": mismatched open channels size for " + l.getName() + " listener", openSize, GenericUtils.size(l.getOpenChannels()));
-            }
-
-            assertEquals(phase + ": unexpected failed channels size for " + l.getName() + " listener", 0, GenericUtils.size(l.getFailedChannels()));
-        }
-    }
-
-    private static <L extends ChannelListener & NamedResource> void addChannelListener(Map<String, L> listeners, ChannelListenerManager manager, L listener) {
-        String name = listener.getName();
-        assertNull("Duplicate listener named " + name, listeners.put(name, listener));
-        manager.addChannelListener(listener);
-    }
-
     private ClientSession createTestClientSession() throws IOException {
         ClientSession session = createTestClientSession(TEST_LOCALHOST);
         try {
@@ -1522,10 +1519,10 @@ public class ClientTest extends BaseTestSupport {
     }
 
     private void suspend(IoSession ioSession) {
-        if (ioSession instanceof MinaSession) {
-            ((MinaSession) ioSession).suspend();
-        } else {
-            ((Nio2Session) ioSession).suspend();
+        try {
+            ioSession.getClass().getMethod("suspend").invoke(ioSession);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

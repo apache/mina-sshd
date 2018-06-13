@@ -47,9 +47,11 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 
 /**
@@ -58,6 +60,7 @@ import org.junit.runners.MethodSorters;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class AbstractSessionTest extends BaseTestSupport {
 
     private MySession session;
@@ -347,6 +350,16 @@ public class AbstractSessionTest extends BaseTestSupport {
 
         @Override
         public Object setAttribute(Object key, Object value) {
+            return null;
+        }
+
+        @Override
+        public Object setAttributeIfAbsent(Object key, Object value) {
+            return null;
+        }
+
+        @Override
+        public Object removeAttribute(Object key) {
             return null;
         }
 

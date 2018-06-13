@@ -21,8 +21,8 @@ package org.apache.sshd.server.shell;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import org.apache.sshd.server.CommandLifecycle;
 import org.apache.sshd.server.SessionAware;
+import org.apache.sshd.server.command.CommandLifecycle;
 
 /**
  * This shell have inverted streams, such as the one obtained when launching a

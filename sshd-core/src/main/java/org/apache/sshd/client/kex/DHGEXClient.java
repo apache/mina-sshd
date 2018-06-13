@@ -103,7 +103,8 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
     @Override
     public boolean next(int cmd, Buffer buffer) throws Exception {
         Session session = getSession();
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("next({})[{}] process command={}", this, session, KeyExchange.getGroupKexOpcodeName(cmd));
         }
 
@@ -122,7 +123,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             hash.init();
             e = dh.getE();
 
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("next({})[{}] Send SSH_MSG_KEX_DH_GEX_INIT", this, session);
             }
             buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_INIT, e.length + Byte.SIZE);
@@ -141,7 +142,8 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
 
             buffer = new ByteArrayBuffer(k_s);
             serverKey = buffer.getRawPublicKey();
-            final String keyAlg = KeyUtils.getKeyType(serverKey);
+
+            String keyAlg = KeyUtils.getKeyType(serverKey);
             if (GenericUtils.isEmpty(keyAlg)) {
                 throw new SshException("Unsupported server key type");
             }

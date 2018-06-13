@@ -18,21 +18,20 @@
  */
 package org.apache.sshd.git.pack;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
-import org.apache.sshd.common.channel.ChannelOutputStream;
-import org.apache.sshd.common.util.logging.AbstractLoggingBean;
-import org.apache.sshd.server.Command;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.git.AbstractGitCommand;
+import org.apache.sshd.git.GitLocationResolver;
 import org.apache.sshd.server.Environment;
-import org.apache.sshd.server.ExitCallback;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.transport.ReceivePack;
+import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.UploadPack;
 import org.eclipse.jgit.util.FS;
 
@@ -41,166 +40,73 @@ import org.eclipse.jgit.util.FS;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class GitPackCommand extends AbstractLoggingBean implements Command, Runnable {
-
-    private static final int CHAR = 1;
-    private static final int DELIMITER = 2;
-    private static final int STARTQUOTE = 4;
-    private static final int ENDQUOTE = 8;
-
-    private String rootDir;
-    private String command;
-    private InputStream in;
-    private OutputStream out;
-    private OutputStream err;
-    private ExitCallback callback;
-
-    public GitPackCommand(String rootDir, String command) {
-        this.rootDir = rootDir;
-        this.command = command;
-    }
-
-    @Override
-    public void setInputStream(InputStream in) {
-        this.in = in;
-    }
-
-    @Override
-    public void setOutputStream(OutputStream out) {
-        this.out = out;
-        if (out instanceof ChannelOutputStream) {
-            ((ChannelOutputStream) out).setNoDelay(true);
-        }
-    }
-
-    @Override
-    public void setErrorStream(OutputStream err) {
-        this.err = err;
-        if (err instanceof ChannelOutputStream) {
-            ((ChannelOutputStream) err).setNoDelay(true);
-        }
-    }
-
-    @Override
-    public void setExitCallback(ExitCallback callback) {
-        this.callback = callback;
-    }
-
-    @Override
-    public void start(Environment env) throws IOException {
-        Thread thread = new Thread(this);
-        thread.setDaemon(true);
-        thread.start();
+public class GitPackCommand extends AbstractGitCommand {
+    /**
+     * @param rootDirResolver Resolver for GIT root directory
+     * @param command Command to execute
+     * @param executorService An {@link ExecutorService} to be used when {@link #start(Environment)}-ing
+     * execution. If {@code null} an ad-hoc single-threaded service is created and used.
+     * @param shutdownOnExit  If {@code true} the {@link ExecutorService#shutdownNow()} will be called when
+     * command terminates - unless it is the ad-hoc service, which will be shutdown regardless
+     */
+    public GitPackCommand(GitLocationResolver rootDirResolver, String command, ExecutorService executorService, boolean shutdownOnExit) {
+        super(rootDirResolver, command, executorService, shutdownOnExit);
     }
 
     @Override
     public void run() {
+        String command = getCommand();
         try {
             List<String> strs = parseDelimitedString(command, " ", true);
             String[] args = strs.toArray(new String[strs.size()]);
             for (int i = 0; i < args.length; i++) {
-                if (args[i].startsWith("'") && args[i].endsWith("'")) {
-                    args[i] = args[i].substring(1, args[i].length() - 1);
+                String argVal = args[i];
+                if (argVal.startsWith("'") && argVal.endsWith("'")) {
+                    args[i] = argVal.substring(1, argVal.length() - 1);
+                    argVal = args[i];
                 }
-                if (args[i].startsWith("\"") && args[i].endsWith("\"")) {
-                    args[i] = args[i].substring(1, args[i].length() - 1);
+                if (argVal.startsWith("\"") && argVal.endsWith("\"")) {
+                    args[i] = argVal.substring(1, argVal.length() - 1);
+                    argVal = args[i];
                 }
             }
 
             if (args.length != 2) {
-                throw new IllegalArgumentException("Invalid git command line: " + command);
+                throw new IllegalArgumentException("Invalid git command line (no arguments): " + command);
             }
-            File srcGitdir = new File(rootDir, args[1]);
-            RepositoryCache.FileKey key = RepositoryCache.FileKey.lenient(srcGitdir, FS.DETECTED);
+
+            Path rootDir = resolveRootDirectory(command, args);
+            RepositoryCache.FileKey key = RepositoryCache.FileKey.lenient(rootDir.toFile(), FS.DETECTED);
             Repository db = key.open(true /* must exist */);
-            if ("git-upload-pack".equals(args[0])) {
-                new UploadPack(db).upload(in, out, err);
-            } else if ("git-receive-pack".equals(args[0])) {
-                new ReceivePack(db).receive(in, out, err);
+            String subCommand = args[0];
+            if (RemoteConfig.DEFAULT_UPLOAD_PACK.equals(subCommand)) {
+                new UploadPack(db).upload(getInputStream(), getOutputStream(), getErrorStream());
+            } else if (RemoteConfig.DEFAULT_RECEIVE_PACK.equals(subCommand)) {
+                new ReceivePack(db).receive(getInputStream(), getOutputStream(), getErrorStream());
             } else {
                 throw new IllegalArgumentException("Unknown git command: " + command);
             }
 
-            if (callback != null) {
-                callback.onExit(0);
-            }
+            onExit(0);
         } catch (Throwable t) {
-            log.warn("Failed {} to execute command={}: {}",
-                     t.getClass().getSimpleName(), command, t.getMessage());
-            if (callback != null) {
-                callback.onExit(-1, t.getClass().getSimpleName());
-            }
+            onExit(-1, t.getClass().getSimpleName());
         }
     }
 
-    @Override
-    public void destroy() {
-        //To change body of implemented methods use File | Settings | File Templates.
-    }
+    protected Path resolveRootDirectory(String command, String[] args) throws IOException {
+        GitLocationResolver resolver = getGitLocationResolver();
+        Path rootDir = resolver.resolveRootDirectory(command, args, getServerSession(), getFileSystem());
+        ValidateUtils.checkState(rootDir != null, "No root directory provided for %s command", command);
 
-    /**
-     * Parses delimited string and returns an array containing the tokens. This
-     * parser obeys quotes, so the delimiter character will be ignored if it is
-     * inside of a quote. This method assumes that the quote character is not
-     * included in the set of delimiter characters.
-     *
-     * @param value the delimited string to parse.
-     * @param delim the characters delimiting the tokens.
-     * @param trim {@code true} if the strings are trimmed before being added to the list
-     * @return a list of string or an empty list if there are none.
-     */
-    private static List<String> parseDelimitedString(String value, String delim, boolean trim) {
-        if (value == null) {
-            value = "";
+        String pathArg = args[1];
+        int len = GenericUtils.length(pathArg);
+        // Strip any leading path separator since we use relative to root
+        if ((len > 0) && (pathArg.charAt(0) == '/')) {
+            pathArg = (len > 1) ? pathArg.substring(1) : "";
+            len--;
         }
 
-        List<String> list = new ArrayList<>();
-        StringBuilder sb = new StringBuilder();
-        int expecting = CHAR | DELIMITER | STARTQUOTE;
-        boolean isEscaped = false;
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            boolean isDelimiter = delim.indexOf(c) >= 0;
-            if (!isEscaped && (c == '\\')) {
-                isEscaped = true;
-                continue;
-            }
-
-            if (isEscaped) {
-                sb.append(c);
-            } else if (isDelimiter && ((expecting & DELIMITER) != 0)) {
-                if (trim) {
-                    String str = sb.toString();
-                    list.add(str.trim());
-                } else {
-                    list.add(sb.toString());
-                }
-                sb.delete(0, sb.length());
-                expecting = CHAR | DELIMITER | STARTQUOTE;
-            } else if ((c == '"') && ((expecting & STARTQUOTE) != 0)) {
-                sb.append(c);
-                expecting = CHAR | ENDQUOTE;
-            } else if ((c == '"') && ((expecting & ENDQUOTE) != 0)) {
-                sb.append(c);
-                expecting = CHAR | STARTQUOTE | DELIMITER;
-            } else if ((expecting & CHAR) != 0) {
-                sb.append(c);
-            } else {
-                throw new IllegalArgumentException("Invalid delimited string: " + value);
-            }
-
-            isEscaped = false;
-        }
-
-        if (sb.length() > 0) {
-            if (trim) {
-                String str = sb.toString();
-                list.add(str.trim());
-            } else {
-                list.add(sb.toString());
-            }
-        }
-
-        return list;
+        ValidateUtils.checkNotNullAndNotEmpty(pathArg, "No %s command sub-path specified", args[0]);
+        return rootDir.resolve(pathArg);
     }
 }

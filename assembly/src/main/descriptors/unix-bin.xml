@@ -23,7 +23,7 @@
     <fileSets>
         <fileSet>
             <directory>src/main/distribution</directory>
-            <outputDirectory>/</outputDirectory>
+            <outputDirectory></outputDirectory>
             <lineEnding>unix</lineEnding>
             <excludes>
                 <exclude>bin/sshd.sh</exclude>
@@ -35,7 +35,7 @@
         </fileSet>
         <fileSet>
             <directory>..</directory>
-            <outputDirectory>/</outputDirectory>
+            <outputDirectory></outputDirectory>
             <lineEnding>unix</lineEnding>
             <includes>
                 <include>LICENSE*</include>
@@ -46,37 +46,37 @@
     <files>
         <file>
             <source>../NOTICE-bin.txt</source>
-            <outputDirectory>/</outputDirectory>
+            <outputDirectory></outputDirectory>
             <destName>NOTICE.txt</destName>
             <lineEnding>unix</lineEnding>
         </file>
         <file>
             <source>src/main/distribution/bin/sshd.sh</source>
-            <outputDirectory>/bin/</outputDirectory>
+            <outputDirectory>bin/</outputDirectory>
             <fileMode>0755</fileMode>
             <lineEnding>unix</lineEnding>
         </file>
         <file>
             <source>src/main/distribution/bin/ssh.sh</source>
-            <outputDirectory>/bin/</outputDirectory>
+            <outputDirectory>bin/</outputDirectory>
             <fileMode>0755</fileMode>
             <lineEnding>unix</lineEnding>
         </file>
         <file>
             <source>src/main/distribution/bin/scp.sh</source>
-            <outputDirectory>/bin/</outputDirectory>
+            <outputDirectory>bin/</outputDirectory>
             <fileMode>0755</fileMode>
             <lineEnding>unix</lineEnding>
         </file>
         <file>
             <source>src/main/distribution/bin/sftp.sh</source>
-            <outputDirectory>/bin/</outputDirectory>
+            <outputDirectory>bin/</outputDirectory>
             <fileMode>0755</fileMode>
             <lineEnding>unix</lineEnding>
         </file>
         <file>
             <source>src/main/distribution/bin/ssh-keyscan.sh</source>
-            <outputDirectory>/bin/</outputDirectory>
+            <outputDirectory>bin/</outputDirectory>
             <fileMode>0755</fileMode>
             <lineEnding>unix</lineEnding>
         </file>
@@ -84,7 +84,8 @@
 
     <dependencySets>
         <dependencySet>
-            <outputDirectory>/lib</outputDirectory>
+            <outputDirectory>lib</outputDirectory>
+            <useProjectArtifact>false</useProjectArtifact>
         </dependencySet>
     </dependencySets>
 </assembly>

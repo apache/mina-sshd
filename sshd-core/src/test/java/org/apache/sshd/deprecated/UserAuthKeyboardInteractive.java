@@ -46,8 +46,12 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     public Result next(Buffer buffer) throws IOException {
         ClientSession session = getClientSession();
         String service = getService();
+        boolean debugEnabled = log.isDebugEnabled();
         if (buffer == null) {
-            log.debug("Send SSH_MSG_USERAUTH_REQUEST for password");
+            if (debugEnabled) {
+                log.debug("Send SSH_MSG_USERAUTH_REQUEST for password");
+            }
+
             buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             buffer.putString(session.getUsername());
             buffer.putString(service);
@@ -63,7 +67,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                     String name = buffer.getString();
                     String instruction = buffer.getString();
                     String language_tag = buffer.getString();
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("next({}) Received SSH_MSG_USERAUTH_INFO_REQUEST - name={}, instruction={}, lang={}",
                                  session, name, instruction, language_tag);
                     }
@@ -74,7 +78,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                         prompt[i] = buffer.getString();
                         echo[i] = buffer.getBoolean();
                     }
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("Promt: {}", Arrays.toString(prompt));
                         log.debug("Echo: {}", echo);
                     }
@@ -103,19 +107,21 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                     return Result.Continued;
                 }
                 case SshConstants.SSH_MSG_USERAUTH_SUCCESS:
-                    log.debug("Received SSH_MSG_USERAUTH_SUCCESS");
+                    if (debugEnabled) {
+                        log.debug("Received SSH_MSG_USERAUTH_SUCCESS");
+                    }
                     return Result.Success;
                 case SshConstants.SSH_MSG_USERAUTH_FAILURE:
                     {
                         String methods = buffer.getString();
                         boolean partial = buffer.getBoolean();
-                        if (log.isDebugEnabled()) {
+                        if (debugEnabled) {
                             log.debug("Received SSH_MSG_USERAUTH_FAILURE - partial={}, methods={}", partial, methods);
                         }
                         return Result.Failure;
                     }
                 default:
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("Received unknown packet {}", cmd);
                     }
                     return Result.Continued;

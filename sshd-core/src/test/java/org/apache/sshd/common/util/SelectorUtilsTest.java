@@ -22,15 +22,18 @@ import java.io.File;
 import java.util.Random;
 
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.Assume;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class SelectorUtilsTest extends BaseTestSupport {
     public SelectorUtilsTest() {
         super();
@@ -49,9 +52,9 @@ public class SelectorUtilsTest extends BaseTestSupport {
     private void testApplySlashifyRules(char slash) {
         for (String expected : new String[]{
             null, "", getCurrentTestName(),
-            getClass().getSimpleName() + String.valueOf(slash) + getCurrentTestName(),
-            String.valueOf(slash)  + getClass().getSimpleName(),
-            String.valueOf(slash)  + getClass().getSimpleName() + String.valueOf(slash)  + getCurrentTestName()
+            getClass().getSimpleName() + Character.toString(slash) + getCurrentTestName(),
+            Character.toString(slash)  + getClass().getSimpleName(),
+            Character.toString(slash)  + getClass().getSimpleName() + Character.toString(slash)  + getCurrentTestName()
         }) {
             String actual = SelectorUtils.applySlashifyRules(expected, slash);
             assertSame("Mismatched results for '" + expected + "'", expected, actual);
@@ -141,11 +144,4 @@ public class SelectorUtilsTest extends BaseTestSupport {
         }
     }
 
-    @Test
-    public void testNormalizeWindowsPath() {
-        Assume.assumeTrue("Not tested on Windows", OsUtils.isWin32());
-        String path = detectTargetFolder().toString().replace(File.separatorChar, '/');
-        String actual = SelectorUtils.normalizePath(path, "/");
-        assertEquals("Mismatched result", "/" + path, actual);
-    }
 }

@@ -20,7 +20,7 @@
 package org.apache.sshd.server.subsystem;
 
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.server.Command;
+import org.apache.sshd.server.command.Command;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

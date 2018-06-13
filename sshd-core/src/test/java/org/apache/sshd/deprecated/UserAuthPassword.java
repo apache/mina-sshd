@@ -43,8 +43,11 @@ public class UserAuthPassword extends AbstractUserAuth {
     public Result next(Buffer buffer) throws IOException {
         ClientSession session = getClientSession();
         String service = getService();
+        boolean debugEnabled = log.isDebugEnabled();
         if (buffer == null) {
-            log.debug("Send SSH_MSG_USERAUTH_REQUEST for password");
+            if (debugEnabled) {
+                log.debug("Send SSH_MSG_USERAUTH_REQUEST for password");
+            }
             buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             buffer.putString(session.getUsername());
             buffer.putString(service);
@@ -56,25 +59,26 @@ public class UserAuthPassword extends AbstractUserAuth {
         } else {
             int cmd = buffer.getUByte();
             if (cmd == SshConstants.SSH_MSG_USERAUTH_SUCCESS) {
-                log.debug("Received SSH_MSG_USERAUTH_SUCCESS");
+                if (debugEnabled) {
+                    log.debug("Received SSH_MSG_USERAUTH_SUCCESS");
+                }
                 return Result.Success;
             }
             if (cmd == SshConstants.SSH_MSG_USERAUTH_FAILURE) {
                 String methods = buffer.getString();
                 boolean partial = buffer.getBoolean();
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("Received SSH_MSG_USERAUTH_FAILURE - partial={}, methods={}", partial, methods);
                 }
                 return Result.Failure;
             } else {
-                if (log.isDebugEnabled()) {
-                    log.debug("Received unkown packet {}", cmd & 0xFF);
+                if (debugEnabled) {
+                    log.debug("Received unknown packet {}", cmd & 0xFF);
                 }
                 // TODO: check packets
                 return Result.Continued;
             }
         }
     }
-
 }
 // CHECKSTYLE:ON

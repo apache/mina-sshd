@@ -33,43 +33,33 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class PuttyKeyUtils {
-    public static final List<PuttyKeyPairResourceParser<?, ?>> DEFAULT_PARSERS =
-            Collections.unmodifiableList(new ArrayList<PuttyKeyPairResourceParser<?, ?>>() {
-                // Not serializing it
-                private static final long serialVersionUID = 1L;
+    public static final List<PuttyKeyPairResourceParser<?, ?>> DEFAULT_PARSERS;
 
-                {
-                    add(RSAPuttyKeyDecoder.INSTANCE);
-                    add(DSSPuttyKeyDecoder.INSTANCE);
+    public static final NavigableMap<String, PuttyKeyPairResourceParser<?, ?>> BY_KEY_TYPE;
 
-                    if (SecurityUtils.isECCSupported()) {
-                        add(ECDSAPuttyKeyDecoder.INSTANCE);
-                    }
+    public static final KeyPairResourceParser DEFAULT_INSTANCE;
 
-                    if (SecurityUtils.isEDDSACurveSupported()) {
-                        add(EdDSAPuttyKeyDecoder.INSTANCE);
-                    }
-                }
-            });
-
-    public static final NavigableMap<String, PuttyKeyPairResourceParser<?, ?>> BY_KEY_TYPE =
-            Collections.unmodifiableNavigableMap(
-                    new TreeMap<String, PuttyKeyPairResourceParser<?, ?>>(String.CASE_INSENSITIVE_ORDER) {
-                        // Not serializing it
-                        private static final long serialVersionUID = 1L;
-
-                        {
-                            for (PuttyKeyPairResourceParser<?, ?> p : DEFAULT_PARSERS) {
-                                Collection<String> supported = p.getSupportedTypeNames();
-                                for (String k : supported) {
-                                    put(k, p);
-                                }
-                            }
-                        }
-            });
-
-    public static final KeyPairResourceParser DEFAULT_INSTANCE =
-            KeyPairResourceParser.aggregate(DEFAULT_PARSERS);
+    static {
+        List<PuttyKeyPairResourceParser<?, ?>> parsers = new ArrayList<>();
+        parsers.add(RSAPuttyKeyDecoder.INSTANCE);
+        parsers.add(DSSPuttyKeyDecoder.INSTANCE);
+        if (SecurityUtils.isECCSupported()) {
+            parsers.add(ECDSAPuttyKeyDecoder.INSTANCE);
+        }
+        if (SecurityUtils.isEDDSACurveSupported()) {
+            parsers.add(EdDSAPuttyKeyDecoder.INSTANCE);
+        }
+        NavigableMap<String, PuttyKeyPairResourceParser<?, ?>> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (PuttyKeyPairResourceParser<?, ?> p : parsers) {
+            Collection<String> supported = p.getSupportedTypeNames();
+            for (String k : supported) {
+                map.put(k, p);
+            }
+        }
+        DEFAULT_PARSERS = Collections.unmodifiableList(parsers);
+        BY_KEY_TYPE = Collections.unmodifiableNavigableMap(map);
+        DEFAULT_INSTANCE = KeyPairResourceParser.aggregate(parsers);
+    }
 
     private PuttyKeyUtils() {
         throw new UnsupportedOperationException("No instance");

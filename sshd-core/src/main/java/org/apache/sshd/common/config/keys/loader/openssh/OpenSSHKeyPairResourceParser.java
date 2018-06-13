@@ -103,7 +103,9 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         if (!OpenSSHParserContext.IS_NONE_CIPHER.test(cipher)) {
             throw new NoSuchAlgorithmException("Unsupported cipher: " + cipher);
         }
-        if (log.isDebugEnabled()) {
+
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("extractKeyPairs({}) cipher={}", resourceKey, cipher);
         }
 
@@ -113,14 +115,14 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         }
 
         byte[] kdfOptions = KeyEntryResolver.readRLEBytes(stream);
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("extractKeyPairs({}) KDF={}, options={}",
                       resourceKey, kdfName, BufferUtils.toHex(':', kdfOptions));
         }
 
         int numKeys = KeyEntryResolver.decodeInt(stream);
         if (numKeys <= 0) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("extractKeyPairs({}) no encoded keys", resourceKey);
             }
             return Collections.emptyList();

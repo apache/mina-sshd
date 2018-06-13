@@ -23,8 +23,8 @@
     <fileSets>
         <!-- Binary Files -->
         <fileSet>
-            <directory>${basedir}/..</directory>
-            <outputDirectory>/</outputDirectory>
+            <directory>..</directory>
+            <outputDirectory></outputDirectory>
             <includes>
                 <include>**/*.jpeg</include>
                 <include>**/*.jpg</include>
@@ -49,8 +49,8 @@
 
         <!-- Text Files -->
         <fileSet>
-            <directory>${basedir}/..</directory>
-            <outputDirectory>/</outputDirectory>
+            <directory>..</directory>
+            <outputDirectory></outputDirectory>
             <includes>
                 <include>**/*</include>
             </includes>

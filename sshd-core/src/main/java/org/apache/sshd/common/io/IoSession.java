@@ -48,6 +48,32 @@ public interface IoSession extends PacketWriter, Closeable {
     Object setAttribute(Object key, Object value);
 
     /**
+     * Sets a user defined attribute if the attribute with the specified key
+     * is not set yet.  This method is same with the following code except
+     * that the operation is performed atomically.
+     * <code><pre>
+     * if (containsAttribute(key)) {
+     *     return getAttribute(key);
+     * } else {
+     *     return setAttribute(key, value);
+     * }
+     * </pre></code>
+     *
+     * @param key The key of the attribute we want to set
+     * @param value The value we want to set
+     * @return The old value of the attribute.  <tt>null</tt> if not found.
+     */
+    Object setAttributeIfAbsent(Object key, Object value);
+
+    /**
+     * Removes a user-defined attribute with the specified key.
+     *
+     * @param key The key of the attribute we want to remove
+     * @return The old value of the attribute - <tt>null</tt> if not found.
+     */
+    Object removeAttribute(Object key);
+
+    /**
      * @return the socket address of remote peer.
      */
     SocketAddress getRemoteAddress();

@@ -91,7 +91,8 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
     }
 
     protected void process(int cmd, Buffer req, Buffer rep) throws Exception {
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("process(cmd={})", SshAgentConstants.getCommandMessageName(cmd));
         }
         switch (cmd) {
@@ -109,7 +110,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
                 PublicKey signingKey = req.getPublicKey();
                 byte[] data = req.getBytes();
                 int flags = req.getInt();
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("SSH2_AGENTC_SIGN_REQUEST key={}, flags=0x{}, data={}",
                               signingKey.getAlgorithm(), Integer.toHexString(flags), BufferUtils.toHex(':', data));
                 }
@@ -128,7 +129,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
             case SshAgentConstants.SSH2_AGENTC_ADD_IDENTITY: {
                 KeyPair keyToAdd = req.getKeyPair();
                 String comment = req.getString();
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("SSH2_AGENTC_ADD_IDENTITY comment={}", comment);
                 }
                 agent.addIdentity(keyToAdd, comment);
@@ -137,7 +138,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
             }
             case SshAgentConstants.SSH2_AGENTC_REMOVE_IDENTITY: {
                 PublicKey keyToRemove = req.getPublicKey();
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("SSH2_AGENTC_REMOVE_IDENTITY {}", keyToRemove.getClass().getSimpleName());
                 }
                 agent.removeIdentity(keyToRemove);
@@ -149,7 +150,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
                 rep.putByte(SshAgentConstants.SSH_AGENT_SUCCESS);
                 break;
             default:
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("Unknown command: {}", SshAgentConstants.getCommandMessageName(cmd));
                 }
                 rep.putByte(SshAgentConstants.SSH2_AGENT_FAILURE);

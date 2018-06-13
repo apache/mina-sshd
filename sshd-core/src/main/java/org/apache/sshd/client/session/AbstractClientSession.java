@@ -21,7 +21,6 @@ package org.apache.sshd.client.session;
 
 import java.io.IOException;
 import java.net.SocketAddress;
-import java.nio.file.FileSystem;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.EnumMap;
@@ -41,11 +40,6 @@ import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
-import org.apache.sshd.client.scp.DefaultScpClient;
-import org.apache.sshd.client.scp.ScpClient;
-import org.apache.sshd.client.subsystem.sftp.SftpClient;
-import org.apache.sshd.client.subsystem.sftp.SftpClientFactory;
-import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
@@ -63,8 +57,6 @@ import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
-import org.apache.sshd.common.scp.ScpFileOpener;
-import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.helpers.AbstractConnectionService;
@@ -86,15 +78,12 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     private UserInteraction userInteraction;
     private PasswordIdentityProvider passwordIdentityProvider;
     private List<NamedFactory<UserAuth>> userAuthFactories;
-    private ScpTransferEventListener scpListener;
-    private ScpFileOpener scpOpener;
     private SocketAddress connectAddress;
     private ClientProxyConnector proxyConnector;
-    private SftpClientFactory sftpClientFactory;
 
     protected AbstractClientSession(ClientFactoryManager factoryManager, IoSession ioSession) {
         super(false, factoryManager, ioSession);
-        identitiesProvider = AuthenticationIdentitiesProvider.wrap(identities);
+        identitiesProvider = AuthenticationIdentitiesProvider.wrapIdentities(identities);
     }
 
     @Override
@@ -164,16 +153,6 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     @Override
     public void setClientProxyConnector(ClientProxyConnector proxyConnector) {
         this.proxyConnector = proxyConnector;
-    }
-
-    @Override
-    public SftpClientFactory getSftpClientFactory() {
-        return resolveEffectiveProvider(SftpClientFactory.class, sftpClientFactory, getFactoryManager().getSftpClientFactory());
-    }
-
-    @Override
-    public void setSftpClientFactory(SftpClientFactory sftpClientFactory) {
-        this.sftpClientFactory = sftpClientFactory;
     }
 
     @Override
@@ -316,43 +295,6 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     @Override
-    public ScpFileOpener getScpFileOpener() {
-        return resolveEffectiveProvider(ScpFileOpener.class, scpOpener, getFactoryManager().getScpFileOpener());
-    }
-
-    @Override
-    public void setScpFileOpener(ScpFileOpener opener) {
-        scpOpener = opener;
-    }
-
-    @Override
-    public ScpTransferEventListener getScpTransferEventListener() {
-        return scpListener;
-    }
-
-    @Override
-    public void setScpTransferEventListener(ScpTransferEventListener listener) {
-        scpListener = listener;
-    }
-
-    @Override
-    public ScpClient createScpClient(ScpFileOpener opener, ScpTransferEventListener listener) {
-        return new DefaultScpClient(this, opener, listener);
-    }
-
-    @Override
-    public SftpClient createSftpClient(SftpVersionSelector selector) throws IOException {
-        SftpClientFactory factory = getSftpClientFactory();
-        return factory.createSftpClient(this, selector);
-    }
-
-    @Override
-    public FileSystem createSftpFileSystem(SftpVersionSelector selector, int readBufferSize, int writeBufferSize) throws IOException {
-        SftpClientFactory factory = getSftpClientFactory();
-        return factory.createSftpFileSystem(this, selector, readBufferSize, writeBufferSize);
-    }
-
-    @Override
     public SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
         ForwardingFilter filter = getForwardingFilter();
         return filter.startLocalPortForwarding(local, remote);
@@ -471,19 +413,20 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     protected void setKexSeed(byte... seed) {
-        i_c = ValidateUtils.checkNotNullAndNotEmpty(seed, "No KEX seed");
+        setClientKexData(seed);
     }
 
     @Override
     protected void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed) throws IOException {
         mergeProposals(serverProposal, proposal);
-        i_s = seed;
+        setServerKexData(seed);
     }
 
     @Override
     protected void checkKeys() throws SshException {
         ServerKeyVerifier serverKeyVerifier = Objects.requireNonNull(getServerKeyVerifier(), "No server key verifier");
-        SocketAddress remoteAddress = ioSession.getRemoteAddress();
+        IoSession networkSession = getIoSession();
+        SocketAddress remoteAddress = networkSession.getRemoteAddress();
         PublicKey serverKey = kex.getServerKey();
         boolean verified = serverKeyVerifier.verifyServerKey(this, remoteAddress, serverKey);
         if (log.isDebugEnabled()) {
@@ -549,8 +492,11 @@ public abstract class AbstractClientSession extends AbstractSession implements C
                 proposal.put(KexProposalOption.C2SENC, BuiltinCiphers.Constants.NONE);
                 proposal.put(KexProposalOption.S2CENC, BuiltinCiphers.Constants.NONE);
 
-                byte[] seed = sendKexInit(proposal);
-                setKexSeed(seed);
+                byte[] seed;
+                synchronized (kexState) {
+                    seed = sendKexInit(proposal);
+                    setKexSeed(seed);
+                }
             }
 
             return Objects.requireNonNull(kexFutureHolder.get(), "No current KEX future");

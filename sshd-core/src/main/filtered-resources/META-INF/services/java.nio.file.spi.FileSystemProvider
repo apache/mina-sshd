@@ -17,5 +17,4 @@
 ## under the License.
 ##
 
-org.apache.sshd.client.subsystem.sftp.SftpFileSystemProvider
 org.apache.sshd.common.file.root.RootedFileSystemProvider

@@ -18,38 +18,52 @@
  */
 package org.apache.sshd.git.pgm;
 
-import org.apache.sshd.server.Command;
-import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.server.scp.UnknownCommand;
+import java.util.concurrent.ExecutorService;
+
+import org.apache.sshd.git.AbstractGitCommandFactory;
+import org.apache.sshd.git.GitLocationResolver;
+import org.apache.sshd.server.command.CommandFactory;
 
 /**
- * TODO Add javadoc
+ * Runs a GIT command locally using an embedded executor
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class GitPgmCommandFactory implements CommandFactory {
+public class GitPgmCommandFactory extends AbstractGitCommandFactory {
+    public static final String GIT_FACTORY_NAME = "git-pgm";
     public static final String GIT_COMMAND_PREFIX = "git ";
 
-    private final String rootDir;
-    private final CommandFactory delegate;
-
-    public GitPgmCommandFactory(String rootDir) {
-        this(rootDir,  null);
+    public GitPgmCommandFactory() {
+        this(null);
     }
 
-    public GitPgmCommandFactory(String rootDir, CommandFactory delegate) {
-        this.rootDir = rootDir;
-        this.delegate = delegate;
+    public GitPgmCommandFactory(GitLocationResolver resolver) {
+        super(GIT_FACTORY_NAME, GIT_COMMAND_PREFIX);
+        withGitLocationResolver(resolver);
     }
 
     @Override
-    public Command createCommand(String command) {
-        if (command.startsWith(GIT_COMMAND_PREFIX)) {
-            return new GitPgmCommand(rootDir, command.substring(GIT_COMMAND_PREFIX.length()));
-        } else if (delegate != null) {
-            return delegate.createCommand(command);
-        } else {
-            return new UnknownCommand(command);
-        }
+    public GitPgmCommandFactory withDelegate(CommandFactory delegate) {
+        return (GitPgmCommandFactory) super.withDelegate(delegate);
+    }
+
+    @Override
+    public GitPgmCommandFactory withGitLocationResolver(GitLocationResolver rootDirResolver) {
+        return (GitPgmCommandFactory) super.withGitLocationResolver(rootDirResolver);
+    }
+
+    @Override
+    public GitPgmCommandFactory withExecutorService(ExecutorService executorService) {
+        return (GitPgmCommandFactory) super.withExecutorService(executorService);
+    }
+
+    @Override
+    public GitPgmCommandFactory withShutdownOnExit(boolean shutdownOnExit) {
+        return (GitPgmCommandFactory) super.withShutdownOnExit(shutdownOnExit);
+    }
+
+    @Override
+    public GitPgmCommand createGitCommand(String command) {
+        return new GitPgmCommand(getGitLocationResolver(), command.substring(GIT_COMMAND_PREFIX.length()), getExecutorService(), isShutdownOnExit());
     }
 }

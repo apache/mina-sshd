@@ -32,8 +32,10 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.kex.BuiltinDHFactories.ParseResult;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 import org.mockito.Mockito;
 
@@ -41,6 +43,7 @@ import org.mockito.Mockito;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class BuiltinDHFactoriesTest extends BaseTestSupport {
     public BuiltinDHFactoriesTest() {
         super();
@@ -119,7 +122,7 @@ public class BuiltinDHFactoriesTest extends BaseTestSupport {
         for (DHFactory expected : BuiltinDHFactories.VALUES) {
             try {
                 BuiltinDHFactories.registerExtension(expected);
-                fail("Unexpected sucess for " + expected.getName());
+                fail("Unexpected success for " + expected.getName());
             } catch (IllegalArgumentException e) {
                 // expected - ignored
             }
@@ -159,5 +162,22 @@ public class BuiltinDHFactoriesTest extends BaseTestSupport {
             assertSame("Mismatched unregistered instance", expected, actual);
             assertNull("Extension not un-registered", BuiltinDHFactories.resolveFactory(name));
         }
+    }
+
+    @Test
+    public void testDHG() throws Exception {
+        for (DHFactory expected : BuiltinDHFactories.VALUES) {
+            if (!expected.isGroupExchange()) {
+                if (expected.isSupported()) {
+                    assertNotNull(expected + ": Null DH created", expected.create());
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDHGRead() throws Exception {
+        assertArrayEquals("P1", DHGroupData.getP1(), DHGroupData.getOakleyGroupPrimeValue("group2.prime"));
+        assertArrayEquals("P14", DHGroupData.getP14(), DHGroupData.getOakleyGroupPrimeValue("group14.prime"));
     }
 }

@@ -533,72 +533,7 @@ public final class SelectorUtils {
         return ret;
     }
 
-    /**
-     * Normalizes the path by removing '.', '..' and double separators (e.g. '//')
-     *
-     * @param path      Original path - ignored if {@code null}/empty
-     * @param separator The separator used for the path components
-     * @return normalized path
-     */
-    public static String normalizePath(String path, String separator) {
-        if (GenericUtils.isEmpty(path)) {
-            return path;
-        }
-
-        boolean startsWithSeparator = path.startsWith(separator);
-        List<String> tokens = tokenizePath(path, separator);
-        int removedDots = 0;
-        // clean up
-        for (int i = tokens.size() - 1; i >= 0; i--) {
-            String t = tokens.get(i);
-            if (GenericUtils.isEmpty(t)) {
-                tokens.remove(i);
-            } else if (t.equals(".")) {
-                tokens.remove(i);
-                removedDots++;
-            } else if (t.equals("..")) {
-                tokens.remove(i);
-                removedDots++;
-                if (i >= 1) {
-                    tokens.remove(--i);
-                    removedDots++;
-                }
-            }
-        }
-
-        if (GenericUtils.isEmpty(tokens)) {
-            if (removedDots > 0) {
-                return "";  // had some "." and ".." after which we remained with no path
-            } else {
-                return separator;   // it was all separators
-            }
-        }
-
-        // serialize
-        StringBuilder buffer = new StringBuilder(path.length());
-        for (int index = 0; index < tokens.size(); index++) {
-            String token = tokens.get(index);
-            if (index == 0) {
-                if (startsWithSeparator) {
-                    buffer.append(separator);
-                } else if (OsUtils.isWin32() && isWindowsDriveSpecified(token)) {
-                    buffer.append(separator);
-                }
-            } else {
-                buffer.append(separator);
-            }
-            buffer.append(token);
-
-            // for root Windows drive we need to return "C:/" or we get errors from the local file system
-            if ((tokens.size() == 1) && OsUtils.isWin32() && isWindowsDriveSpecified(token)) {
-                buffer.append(separator);
-            }
-        }
-
-        return buffer.toString();
-    }
-
-    /**
+    /**   /**
      * Converts a path to one matching the target file system by applying the
      * &quot;slashification&quot; rules, converting it to a local path and
      * then translating its separator to the target file system one (if different

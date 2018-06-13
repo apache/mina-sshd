@@ -20,6 +20,7 @@ package org.apache.sshd.server.auth.pubkey;
 
 import java.security.PublicKey;
 
+import org.apache.sshd.server.auth.AsyncAuthException;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -38,6 +39,7 @@ public interface PublickeyAuthenticator {
      * @param key      the key
      * @param session  the server session
      * @return a boolean indicating if authentication succeeded or not
+     * @throws AsyncAuthException If the authentication is performed asynchronously
      */
-    boolean authenticate(String username, PublicKey key, ServerSession session);
+    boolean authenticate(String username, PublicKey key, ServerSession session) throws AsyncAuthException;
 }

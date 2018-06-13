@@ -48,20 +48,18 @@ import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
  */
 public abstract class Nio2Service extends AbstractInnerCloseable implements IoService, FactoryManagerHolder {
     // Note: order may be important so that's why we use a LinkedHashMap
-    public static final Map<String, SimpleImmutableEntry<SocketOption<?>, Object>> CONFIGURABLE_OPTIONS =
-            Collections.unmodifiableMap(new LinkedHashMap<String, SimpleImmutableEntry<SocketOption<?>, Object>>() {
-                // Not serializing it
-                private static final long serialVersionUID = 1L;
+    public static final Map<String, SimpleImmutableEntry<SocketOption<?>, Object>> CONFIGURABLE_OPTIONS;
 
-                {
-                    put(FactoryManager.SOCKET_KEEPALIVE, new SimpleImmutableEntry<>(StandardSocketOptions.SO_KEEPALIVE, null));
-                    put(FactoryManager.SOCKET_LINGER, new SimpleImmutableEntry<>(StandardSocketOptions.SO_LINGER, null));
-                    put(FactoryManager.SOCKET_RCVBUF, new SimpleImmutableEntry<>(StandardSocketOptions.SO_RCVBUF, null));
-                    put(FactoryManager.SOCKET_REUSEADDR, new SimpleImmutableEntry<>(StandardSocketOptions.SO_REUSEADDR, DEFAULT_REUSE_ADDRESS));
-                    put(FactoryManager.SOCKET_SNDBUF, new SimpleImmutableEntry<>(StandardSocketOptions.SO_SNDBUF, null));
-                    put(FactoryManager.TCP_NODELAY, new SimpleImmutableEntry<>(StandardSocketOptions.TCP_NODELAY, null));
-                }
-            });
+    static {
+        Map<String, SimpleImmutableEntry<SocketOption<?>, Object>> map = new LinkedHashMap<>();
+        map.put(FactoryManager.SOCKET_KEEPALIVE, new SimpleImmutableEntry<>(StandardSocketOptions.SO_KEEPALIVE, null));
+        map.put(FactoryManager.SOCKET_LINGER, new SimpleImmutableEntry<>(StandardSocketOptions.SO_LINGER, null));
+        map.put(FactoryManager.SOCKET_RCVBUF, new SimpleImmutableEntry<>(StandardSocketOptions.SO_RCVBUF, null));
+        map.put(FactoryManager.SOCKET_REUSEADDR, new SimpleImmutableEntry<>(StandardSocketOptions.SO_REUSEADDR, DEFAULT_REUSE_ADDRESS));
+        map.put(FactoryManager.SOCKET_SNDBUF, new SimpleImmutableEntry<>(StandardSocketOptions.SO_SNDBUF, null));
+        map.put(FactoryManager.TCP_NODELAY, new SimpleImmutableEntry<>(StandardSocketOptions.TCP_NODELAY, null));
+        CONFIGURABLE_OPTIONS = Collections.unmodifiableMap(map);
+    }
 
     protected final Map<Long, IoSession> sessions;
     protected final AtomicBoolean disposing = new AtomicBoolean();
@@ -130,7 +128,10 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
 
     protected void unmapSession(Long sessionId) {
         if (sessionId != null) {
-            sessions.remove(sessionId);
+            IoSession ioSession = sessions.remove(sessionId);
+            if (log.isDebugEnabled()) {
+                log.debug("unmapSession(id={}): {}", sessionId, ioSession);
+            }
         }
     }
 

@@ -79,8 +79,9 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
         String remoteName = remote.getHostName();
         String localName = local.getHostName();
         Window wLocal = getLocalWindow();
+        String type = getChannelType();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN,
-                            type.length() + remoteName.length() + localName.length() + Long.SIZE);
+            type.length() + remoteName.length() + localName.length() + Long.SIZE);
         buffer.putString(type);
         buffer.putInt(getId());
         buffer.putInt(wLocal.getSize());

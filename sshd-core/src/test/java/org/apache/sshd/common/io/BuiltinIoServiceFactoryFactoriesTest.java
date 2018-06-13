@@ -19,6 +19,8 @@
 
 package org.apache.sshd.common.io;
 
+import java.util.Objects;
+
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -47,7 +49,21 @@ public class BuiltinIoServiceFactoryFactoriesTest extends BaseTestSupport {
 
     @Test
     public void testFromFactoryClass() {
+        IoServiceFactoryFactory ioServiceProvider = getIoServiceProvider();
+        Class<?> providerClass = ioServiceProvider.getClass();
+        String providerClassName = providerClass.getName();
         for (BuiltinIoServiceFactoryFactories expected : BuiltinIoServiceFactoryFactories.VALUES) {
+            if (!expected.isSupported()) {
+                outputDebugMessage("Skip unsupported: %s", expected);
+                continue;
+            }
+
+            if (!Objects.equals(providerClassName, expected.getFactoryClassName())) {
+                outputDebugMessage("Skip mismatched factory class name: %s", expected);
+                continue;
+            }
+
+            outputDebugMessage("Testing: %s", expected);
             Class<?> clazz = expected.getFactoryClass();
             assertSame(clazz.getSimpleName(), expected, BuiltinIoServiceFactoryFactories.fromFactoryClass(clazz));
         }

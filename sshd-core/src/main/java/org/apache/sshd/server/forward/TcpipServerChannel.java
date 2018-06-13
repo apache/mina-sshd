@@ -39,6 +39,7 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
+import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
@@ -50,6 +51,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.channel.AbstractServerChannel;
+import org.apache.sshd.server.forward.TcpForwardingFilter.Type;
 
 /**
  * TODO Add javadoc
@@ -98,10 +100,10 @@ public class TcpipServerChannel extends AbstractServerChannel {
     private OutputStream out;
 
     public TcpipServerChannel(ForwardingFilter.Type type) {
-        this.type = type;
+        this.type = Objects.requireNonNull(type, "No channel type specified");
     }
 
-    public final ForwardingFilter.Type getChannelType() {
+    public ForwardingFilter.Type getTcpipChannelType() {
         return type;
     }
 
@@ -111,21 +113,25 @@ public class TcpipServerChannel extends AbstractServerChannel {
         int portToConnect = buffer.getInt();
         String originatorIpAddress = buffer.getString();
         int originatorPort = buffer.getInt();
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("doInit({}) Receiving request for direct tcpip: hostToConnect={}, portToConnect={}, originatorIpAddress={}, originatorPort={}",
                       this, hostToConnect, portToConnect, originatorIpAddress, originatorPort);
         }
 
-        final SshdSocketAddress address;
+        SshdSocketAddress address;
+        Type channelType = getTcpipChannelType();
         switch (type) {
             case Direct:
                 address = new SshdSocketAddress(hostToConnect, portToConnect);
                 break;
-            case Forwarded:
-                address = service.getForwardingFilter().getForwardedPort(portToConnect);
+            case Forwarded: {
+                org.apache.sshd.common.forward.ForwardingFilter ff = service.getForwardingFilter();
+                address = ff.getForwardedPort(portToConnect);
                 break;
+            }
             default:
-                throw new IllegalStateException("Unknown server channel type: " + type);
+                throw new IllegalStateException("Unknown server channel type: " + channelType);
         }
 
         Session session = getSession();
@@ -133,18 +139,21 @@ public class TcpipServerChannel extends AbstractServerChannel {
         TcpForwardingFilter filter = manager.getTcpForwardingFilter();
         OpenFuture f = new DefaultOpenFuture(this, this);
         try {
-            if ((address == null) || (filter == null) || (!filter.canConnect(type, address, session))) {
-                if (log.isDebugEnabled()) {
+            if ((address == null) || (filter == null) || (!filter.canConnect(channelType, address, session))) {
+                if (debugEnabled) {
                     log.debug("doInit(" + this + ")[" + type + "][haveFilter=" + (filter != null) + "] filtered out " + address);
                 }
-                super.close(true);
-                f.setException(new SshChannelOpenException(getId(), SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "Connection denied"));
+                try {
+                    f.setException(new SshChannelOpenException(getId(), SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "Connection denied"));
+                } finally {
+                    super.close(true);
+                }
                 return f;
             }
         } catch (Error e) {
             log.warn("doInit({})[{}] failed ({}) to consult forwarding filter: {}",
-                     session, type, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
+                     session, channelType, e.getClass().getSimpleName(), e.getMessage());
+            if (debugEnabled) {
                 log.debug("doInit(" + this + ")[" + type + "] filter consultation failure details", e);
             }
             throw new RuntimeSshException(e);
@@ -153,11 +162,11 @@ public class TcpipServerChannel extends AbstractServerChannel {
         // TODO: revisit for better threading. Use async io ?
         out = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
         IoHandler handler = new IoHandler() {
-            @SuppressWarnings("synthetic-access")
             @Override
+            @SuppressWarnings("synthetic-access")
             public void messageReceived(IoSession session, Readable message) throws Exception {
                 if (isClosing()) {
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("doInit({}) Ignoring write to channel in CLOSING state", TcpipServerChannel.this);
                     }
                 } else {
@@ -179,12 +188,19 @@ public class TcpipServerChannel extends AbstractServerChannel {
             }
 
             @Override
+            @SuppressWarnings("synthetic-access")
             public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
-                close(true);
+                boolean immediately = !session.isOpen();
+                if (debugEnabled) {
+                    log.debug("exceptionCaught({}) signal close immediately={} due to {}[{}]",
+                            TcpipServerChannel.this, immediately, cause.getClass().getSimpleName(), cause.getMessage());
+                }
+                close(immediately);
             }
         };
 
-        connector = manager.getIoServiceFactory().createConnector(handler);
+        IoServiceFactory ioServiceFactory = manager.getIoServiceFactory();
+        connector = ioServiceFactory.createConnector(handler);
         IoConnectFuture future = connector.connect(address.toInetSocketAddress());
         future.addListener(future1 -> handleChannelConnectResult(f, future1));
         return f;
@@ -232,18 +248,40 @@ public class TcpipServerChannel extends AbstractServerChannel {
     protected void handleChannelOpenFailure(OpenFuture f, Throwable problem) {
         signalChannelOpenFailure(problem);
         notifyStateChanged(problem.getClass().getSimpleName());
-        close(true);
-
-        if (problem instanceof ConnectException) {
-            f.setException(new SshChannelOpenException(getId(), SshConstants.SSH_OPEN_CONNECT_FAILED, problem.getMessage(), problem));
-        } else {
-            f.setException(problem);
+        try {
+            if (problem instanceof ConnectException) {
+                f.setException(new SshChannelOpenException(getId(), SshConstants.SSH_OPEN_CONNECT_FAILED, problem.getMessage(), problem));
+            } else {
+                f.setException(problem);
+            }
+        } finally {
+            close(true);
         }
-
     }
 
     @Override
     public CloseFuture close(boolean immediately) {
+        boolean debugEnabled = log.isDebugEnabled();
+        /*
+         * In case of graceful shutdown (e.g. when the remote channel is gently closed)
+         * we also need to close the ChannelOutputStream which flushes remaining buffer
+         * and sends SSH_MSG_CHANNEL_EOF back to the client.
+         */
+        if ((!immediately) && (out != null)) {
+            try {
+                if (debugEnabled) {
+                    log.debug("Closing channel output stream of {}", this);
+                }
+
+                out.close();
+            } catch (IOException | RuntimeException ignored) {
+                if (debugEnabled) {
+                    log.debug("{} while closing channel output stream of {}: {}",
+                        ignored.getClass().getSimpleName(), this, ignored.getMessage());
+                }
+            }
+        }
+
         CloseFuture closingFeature = super.close(immediately);
 
         // We also need to dispose of the connector, but unfortunately we
@@ -263,14 +301,14 @@ public class TcpipServerChannel extends AbstractServerChannel {
         return builder().when(closingFeature).run(toString(), () -> {
             executors.submit(() -> {
                 try {
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("disposing connector: {} for: {}", connector, TcpipServerChannel.this);
                     }
                     connector.close(immediately);
                 } finally {
                     if (shutdown && (!executors.isShutdown())) {
                         Collection<Runnable> runners = executors.shutdownNow();
-                        if (log.isDebugEnabled()) {
+                        if (debugEnabled) {
                             log.debug("destroy({}) - shutdown executor service - runners count={}",
                                       TcpipServerChannel.this, runners.size());
                         }
@@ -296,7 +334,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
 
     @Override
     protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
-        throw new UnsupportedOperationException(type + "Tcpip channel does not support extended data");
+        throw new UnsupportedOperationException(getTcpipChannelType() + "Tcpip channel does not support extended data");
     }
 
     protected void handleWriteDataSuccess(byte cmd, byte[] data, int off, int len) {
@@ -315,24 +353,28 @@ public class TcpipServerChannel extends AbstractServerChannel {
     }
 
     protected void handleWriteDataFailure(byte cmd, byte[] data, int off, int len, Throwable t) {
-        Session session = getSession();
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("handleWriteDataFailure({})[{}] failed ({}) to write len={}: {}",
                       this, SshConstants.getCommandMessageName(cmd & 0xFF),
                       t.getClass().getSimpleName(), len, t.getMessage());
         }
 
         if (log.isTraceEnabled()) {
-            log.trace("doWriteData(" + this + ")[" + SshConstants.getCommandMessageName(cmd & 0xFF) + "]"
+            log.trace("handleWriteDataFailure(" + this + ")[" + SshConstants.getCommandMessageName(cmd & 0xFF) + "]"
                     + " len=" + len + " write failure details", t);
         }
 
         if (ioSession.isOpen()) {
-            session.exceptionCaught(t);
+            // SSHD-795 IOException (Broken pipe) on a socket local forwarding channel causes SSH client-server connection down
+            if (debugEnabled) {
+                log.debug("handleWriteDataFailure({})[{}] closing session={}",
+                        this, SshConstants.getCommandMessageName(cmd & 0xFF), ioSession);
+            }
+            close(false);
         } else {
-            // In case remote entity has closed the socket (the ioSession), data coming from
-            // the SSH channel should be simply discarded
-            if (log.isDebugEnabled()) {
+            // In case remote entity has closed the socket (the ioSession), data coming from the SSH channel should be simply discarded
+            if (debugEnabled) {
                 log.debug("Ignoring writeDataFailure {} because ioSession {} is already closing ", t, ioSession);
             }
         }

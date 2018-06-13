@@ -63,7 +63,6 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.Readable;
-import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.common.util.buffer.keys.BufferPublicKeyParser;
 import org.apache.sshd.common.util.logging.SimplifiedLog;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -79,10 +78,6 @@ public abstract class Buffer implements Readable {
     protected Buffer() {
         super();
     }
-
-    /*======================
-      Global methods
-    ======================*/
 
     public abstract int rpos();
 
@@ -238,6 +233,7 @@ public abstract class Buffer implements Readable {
         return l;
     }
 
+    @SuppressWarnings("PMD.BooleanGetMethodName")
     public boolean getBoolean() {
         return getByte() != 0;
     }
@@ -574,7 +570,7 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * Encodes the {@link Transformer#TOSTRING} value of each member.
+     * Encodes the {@link Objects#toString(Object, String) toString} value of each member.
      *
      * @param objects       The objects to be encoded in the buffer - OK if
      *                      {@code null}/empty
@@ -587,7 +583,7 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * Encodes the {@link Transformer#TOSTRING} value of each member
+     * Encodes the {@link Objects#toString(Object, String) toString} value of each member
      *
      * @param objects       The objects to be encoded in the buffer - OK if
      *                      {@code null}/empty
@@ -606,7 +602,7 @@ public abstract class Buffer implements Readable {
             return;
         }
 
-        objects.forEach(o -> putString(Transformer.TOSTRING.apply(o), charset));
+        objects.forEach(o -> putString(Objects.toString(o, null), charset));
     }
 
     public void putString(String string) {

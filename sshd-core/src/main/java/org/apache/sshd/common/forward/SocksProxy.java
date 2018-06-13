@@ -20,7 +20,9 @@ package org.apache.sshd.common.forward;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -92,17 +94,17 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
     }
 
     public abstract static class Proxy implements Closeable {
-
-        IoSession session;
-        TcpipClientChannel channel;
+        protected IoSession session;
+        protected TcpipClientChannel channel;
 
         protected Proxy(IoSession session) {
             this.session = session;
         }
 
         protected void onMessage(Buffer buffer) throws IOException {
-            channel.getInvertedIn().write(buffer.array(), buffer.rpos(), buffer.available());
-            channel.getInvertedIn().flush();
+            OutputStream invertedIn = channel.getInvertedIn();
+            invertedIn.write(buffer.array(), buffer.rpos(), buffer.available());
+            invertedIn.flush();
         }
 
         @Override
@@ -167,7 +169,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
             Throwable t = future.getException();
             if (t != null) {
                 service.unregisterChannel(channel);
-                channel.close(false);
+                channel.close(true);
                 buffer.putByte((byte) 0x5b);
             } else {
                 buffer.putByte((byte) 0x5a);
@@ -187,7 +189,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
             }
         }
 
-        private String getNTString(Buffer buffer) {
+        protected String getNTString(Buffer buffer) {
             StringBuilder sb = new StringBuilder();
             for (char c = (char) getUByte(buffer); c != '\0'; c = (char) getUByte(buffer)) {
                 sb.append(c);
@@ -200,8 +202,8 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
      * @see <A HREF="https://en.wikipedia.org/wiki/SOCKS#SOCKS5">SOCKS5</A>
      */
     public class Socks5 extends Proxy {
-    	private ArrayList<Buffer> delayedBuffers = null;
-    	
+        private List<Buffer> delayedBuffers;
+
         private byte[] authMethods;
         private Buffer response;
 
@@ -212,6 +214,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
         @SuppressWarnings("synthetic-access")
         @Override
         protected void onMessage(Buffer buffer) throws IOException {
+            boolean debugEnabled = log.isDebugEnabled();
             if (authMethods == null) {
                 int nbAuthMethods = getUByte(buffer);
                 authMethods = new byte[nbAuthMethods];
@@ -226,7 +229,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 session.writePacket(buffer);
                 if (!foundNoAuth) {
                     throw new IllegalStateException("Received socks5 greeting without NoAuth method");
-                } else {
+                } else if (debugEnabled) {
                     log.debug("Received socks5 greeting");
                 }
             } else if (channel == null) {
@@ -239,9 +242,11 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 if (cmd != 1) { // establish a TCP/IP stream connection
                     throw new IllegalStateException("Unsupported socks command: " + cmd);
                 }
-                final int res = buffer.getUByte();
+                int res = buffer.getUByte();
                 if (res != 0) {
-                    log.debug("No zero reserved value: " + res);
+                    if (debugEnabled) {
+                        log.debug("No zero reserved value: {}", res);
+                    }
                 }
 
                 int type = buffer.getUByte();
@@ -266,7 +271,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                     throw new IllegalStateException("Unsupported address type: " + type);
                 }
                 int port = getUShort(buffer);
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("Received socks5 connection request to {}:{}", host, port);
                 }
                 
@@ -278,21 +283,25 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 service.registerChannel(channel);
                 channel.open().addListener(this::onChannelOpened);
             } else {
-                log.debug("Received socks5 connection message");
+                if (debugEnabled) {
+                    log.debug("Received socks5 connection message");
+                }
                 
                 synchronized (this) {
-                	if (delayedBuffers != null) {
-                		log.debug("Delaying socks5 connection message");
-                		delayedBuffers.add(buffer);
-                	} else {
-                		super.onMessage(buffer);
-                	}
-				}
+                    if (delayedBuffers != null) {
+                        if (debugEnabled) {
+                            log.debug("Delaying socks5 connection message");
+                        }
+                        delayedBuffers.add(buffer);
+                    } else {
+                        super.onMessage(buffer);
+                    }
+                }
             }
         }
         
         private void sendChannelSuccess() {
-        	int wpos = response.wpos();
+            int wpos = response.wpos();
             response.rpos(0);
             response.wpos(1);
             response.putByte((byte) 0x00);
@@ -300,7 +309,6 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
             try {
                 session.writePacket(response);
             } catch (IOException e) {
-                // TODO Auto-generated catch block
                 log.error("Failed ({}) to send channel open response for {}: {}", e.getClass().getSimpleName(), channel, e.getMessage());
                 throw new IllegalStateException("Failed to send packet", e);
             }
@@ -308,8 +316,8 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
 
         @SuppressWarnings("synthetic-access")
         protected void onChannelOpened(OpenFuture future) {
-        	log.debug("socks5 channel open");
-        	
+            log.debug("socks5 channel open");
+            
             Throwable t = future.getException();
             if (t != null) {
                 service.unregisterChannel(channel);
@@ -317,28 +325,26 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
             }
             
             synchronized (this) {
-            	if (delayedBuffers != null) {
-            		for (Buffer buffer : delayedBuffers) {
-            			try {
-							super.onMessage(buffer);
-						} catch (IOException e) {
-							log.error("Failed ({}) to send delayed response for {}: {}", e.getClass().getSimpleName(), channel, e.getMessage());
-						}
-            		}
-            		delayedBuffers = null;
-            	}
-			}
+                if (delayedBuffers != null) {
+                    for (Buffer buffer : delayedBuffers) {
+                        try {
+                            super.onMessage(buffer);
+                        } catch (IOException e) {
+                            log.error("Failed ({}) to send delayed response for {}: {}", e.getClass().getSimpleName(), channel, e.getMessage());
+                        }
+                    }
+                    delayedBuffers = null;
+                }
+            }
         }
 
-        private String getBLString(Buffer buffer) {
+        protected String getBLString(Buffer buffer) {
             int length = getUByte(buffer);
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder(length);
             for (int i = 0; i < length; i++) {
                 sb.append((char) getUByte(buffer));
             }
             return sb.toString();
         }
-
     }
-
 }

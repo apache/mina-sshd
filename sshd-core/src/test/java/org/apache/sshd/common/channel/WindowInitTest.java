@@ -20,7 +20,6 @@ package org.apache.sshd.common.channel;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.client.future.OpenFuture;
@@ -30,8 +29,10 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
@@ -44,6 +45,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@Category({ NoIoTestCase.class })
 public class WindowInitTest extends BaseTestSupport {
     private static final AbstractChannel MOCK_CHANNEL = new AbstractChannel(true) {
         @Override
@@ -82,30 +84,21 @@ public class WindowInitTest extends BaseTestSupport {
 
     @Parameters(name = "initial-size={0}, packet-size={1}")
     public static List<Object[]> parameters() {
-        return Collections.unmodifiableList(new ArrayList<Object[]>() {
-            // Not serializing it
-            private static final long serialVersionUID = 1L;
-
-            {
-                addTestCase(Byte.MIN_VALUE, FactoryManager.DEFAULT_MAX_PACKET_SIZE);
-                addTestCase(BufferUtils.MAX_UINT32_VALUE + 1L, FactoryManager.DEFAULT_MAX_PACKET_SIZE);
-                addTestCase(FactoryManager.DEFAULT_WINDOW_SIZE, 0L);
-                addTestCase(FactoryManager.DEFAULT_WINDOW_SIZE, Byte.MIN_VALUE);
-                addTestCase(FactoryManager.DEFAULT_WINDOW_SIZE, BufferUtils.MAX_UINT32_VALUE + 1L);
-                addTestCase(FactoryManager.DEFAULT_WINDOW_SIZE, FactoryManager.DEFAULT_LIMIT_PACKET_SIZE + 1L);
-            }
-
-            private void addTestCase(long initialSize, long packetSize) {
-                add(new Object[]{initialSize, packetSize});
-            }
-        });
+        List<Object[]> params = new ArrayList<>();
+        params.add(new Object[] {Byte.MIN_VALUE, FactoryManager.DEFAULT_MAX_PACKET_SIZE });
+        params.add(new Object[] {BufferUtils.MAX_UINT32_VALUE + 1L, FactoryManager.DEFAULT_MAX_PACKET_SIZE });
+        params.add(new Object[] {FactoryManager.DEFAULT_WINDOW_SIZE, 0L });
+        params.add(new Object[] {FactoryManager.DEFAULT_WINDOW_SIZE, Byte.MIN_VALUE });
+        params.add(new Object[] {FactoryManager.DEFAULT_WINDOW_SIZE, BufferUtils.MAX_UINT32_VALUE + 1L });
+        params.add(new Object[] {FactoryManager.DEFAULT_WINDOW_SIZE, FactoryManager.DEFAULT_LIMIT_PACKET_SIZE + 1L });
+        return params;
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testInitializationFailure() throws IOException {
         try (Window w = new Window(MOCK_CHANNEL, null, true, true)) {
             w.init(initialSize, packetSize, PropertyResolver.EMPTY);
-            fail("Unexpected success for initialiSize=" + initialSize + ", packetSize=" + packetSize);
+            fail("Unexpected success for initialSize=" + initialSize + ", packetSize=" + packetSize);
         }
     }
 }

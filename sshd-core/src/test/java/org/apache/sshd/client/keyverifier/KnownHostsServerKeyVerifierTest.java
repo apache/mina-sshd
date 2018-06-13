@@ -51,10 +51,12 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.apache.sshd.util.test.Utils;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 import org.mockito.Mockito;
 
@@ -62,6 +64,7 @@ import org.mockito.Mockito;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
     private static final String HASHED_HOST = "192.168.1.61";
     private static final Map<SshdSocketAddress, PublicKey> HOST_KEYS = new TreeMap<>(SshdSocketAddress.BY_HOST_AND_PORT);
@@ -92,14 +95,14 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
     @Test
     public void testNoUpdatesNoNewHostsAuthentication() throws Exception {
-        final AtomicInteger delegateCount = new AtomicInteger(0);
+        AtomicInteger delegateCount = new AtomicInteger(0);
         ServerKeyVerifier delegate = (clientSession, remoteAddress, serverKey) -> {
             delegateCount.incrementAndGet();
             fail("verifyServerKey(" + clientSession + ")[" + remoteAddress + "] unexpected invocation");
             return false;
         };
 
-        final AtomicInteger updateCount = new AtomicInteger(0);
+        AtomicInteger updateCount = new AtomicInteger(0);
         ServerKeyVerifier verifier = new KnownHostsServerKeyVerifier(delegate, createKnownHostsCopy()) {
             @Override
             protected KnownHostEntry updateKnownHostsFile(
@@ -124,7 +127,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
     @Test
     public void testFileUpdatedOnEveryNewHost() throws Exception {
-        final AtomicInteger delegateCount = new AtomicInteger(0);
+        AtomicInteger delegateCount = new AtomicInteger(0);
         ServerKeyVerifier delegate = (clientSession, remoteAddress, serverKey) -> {
             delegateCount.incrementAndGet();
             return true;
@@ -133,7 +136,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         Path path = getKnownHostCopyPath();
         Files.deleteIfExists(path);
 
-        final AtomicInteger updateCount = new AtomicInteger(0);
+        AtomicInteger updateCount = new AtomicInteger(0);
         ServerKeyVerifier verifier = new KnownHostsServerKeyVerifier(delegate, path) {
             @Override
             protected KnownHostEntry updateKnownHostsFile(

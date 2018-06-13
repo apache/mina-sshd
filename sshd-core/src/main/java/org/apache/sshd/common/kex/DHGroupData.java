@@ -18,12 +18,32 @@
  */
 package org.apache.sshd.common.kex;
 
+import java.io.BufferedReader;
+import java.io.EOFException;
+import java.io.FileNotFoundException;
+import java.io.IOError;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StreamCorruptedException;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
+import org.apache.sshd.common.util.buffer.BufferUtils;
+
 /**
  * Simple class holding the data for DH group key exchanges.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class DHGroupData {
+
+    private static final ConcurrentHashMap<String, byte[]> OAKLEY_GROUPS = new ConcurrentHashMap<>();
 
     private DHGroupData() {
         throw new UnsupportedOperationException("No instance allowed");
@@ -95,4 +115,138 @@ public final class DHGroupData {
         };
     }
 
+    public static byte[] getP15() {
+        return getOakleyGroupPrimeValue("group15.prime");
+    }
+
+    public static byte[] getP16() {
+        return getOakleyGroupPrimeValue("group16.prime");
+    }
+
+    public static byte[] getP17() {
+        return getOakleyGroupPrimeValue("group17.prime");
+    }
+
+    public static byte[] getP18() {
+        return getOakleyGroupPrimeValue("group18.prime");
+    }
+
+    /**
+     * @param name The name of the resource file containing the prime value data
+     * @return The prime value bytes suitable for building a {@code BigInteger}
+     */
+    public static byte[] getOakleyGroupPrimeValue(String name) {
+        byte[] value = OAKLEY_GROUPS.computeIfAbsent(name, DHGroupData::readOakleyGroupPrimeValue);
+        return (value == null) ? null : value.clone();
+    }
+
+    /**
+     * Reads a HEX-encoded Oakley prime value from an internal resource file
+     *
+     * @param name The name of the resource file containing the prime value data.
+     * See {@code org.apache.sshd.common.kex} package for available primes
+     * @return The prime value bytes suitable for building a {@code BigInteger}
+     * @throws IOError If failed to access/read the required resource
+     * @see #readOakleyGroupPrimeValue(InputStream)
+     */
+    public static byte[] readOakleyGroupPrimeValue(String name) throws IOError {
+        try (InputStream stream = DHGroupData.class.getResourceAsStream(name)) {
+            if (stream == null) {
+                throw new FileNotFoundException("Resource not found: " + name);
+            }
+
+            return readOakleyGroupPrimeValue(stream);
+        } catch (IOException e) {
+            throw new IOError(e);
+        }
+    }
+
+    public static byte[] readOakleyGroupPrimeValue(InputStream stream) throws IOException {
+        try (Reader rdr = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+            return readOakleyGroupPrimeValue(rdr);
+        }
+    }
+
+    public static byte[] readOakleyGroupPrimeValue(Reader r) throws IOException {
+        try (BufferedReader br = new BufferedReader(r)) {
+            return readOakleyGroupPrimeValue(br);
+        }
+    }
+
+    /**
+     * <P>
+     * Reads a HEX encoded prime value from a possibly multi-line input as follows:
+     * </P>
+     * <UL>
+     *      <P><LI>
+     *      Lines are trimmed and all whitespaces removed.
+     *      </LI></P>
+     *
+     *      <P><LI>
+     *      Empty lines (after trimming) are ignored.
+     *      </LI></P>
+     *
+     *      <P><LI>
+     *      Lines beginning with &quot;#&quot; are ignored (assumed to be comments).
+     *      </LI></P>
+     *
+     *      <P><LI>
+     *      Remaining lines are appended to one big string assumed to contain the HEX-encoded value
+     *      </LI></P>
+     * </UL>
+     * @param br The {@link BufferedReader} to read the data from
+     * @return The prime value bytes suitable for building a {@code BigInteger}
+     * @throws IOException If invalid data or no encoded value found
+     * @see #parseOakleyGroupPrimeValue(String) parseOakleyGroupPrimeValue
+     */
+    public static byte[] readOakleyGroupPrimeValue(BufferedReader br) throws IOException {
+        try {
+            byte[] value = readOakleyGroupPrimeValue(br.lines());
+            if (NumberUtils.isEmpty(value)) {
+                throw new EOFException("No prime value data found");
+            }
+
+            return value;
+        } catch (NumberFormatException e) {
+            throw new StreamCorruptedException("Invalid value: " + e.getMessage());
+        }
+    }
+
+    public static byte[] readOakleyGroupPrimeValue(Stream<String> lines) throws NumberFormatException {
+        String str = lines
+            .map(GenericUtils::trimToEmpty)
+            .map(s -> s.replaceAll("\\s", ""))
+            .filter(GenericUtils::isNotEmpty)
+            .filter(s -> !s.startsWith("#"))
+            .collect(Collectors.joining());
+        return parseOakleyGroupPrimeValue(str);
+    }
+
+    /**
+     * Parses the string assumed to contain a HEX-encoded Oakely prime value in big endian format
+     *
+     * @param str The HEX-encoded string to decode - ignored if {@code null}/empty
+     * @return The prime value bytes suitable for building a {@code BigInteger} or empty array if no input
+     * @throws NumberFormatException if malformed encoded value
+     */
+    public static byte[] parseOakleyGroupPrimeValue(String str) throws NumberFormatException {
+        int len = GenericUtils.length(str);
+        if (len <= 0) {
+            return GenericUtils.EMPTY_BYTE_ARRAY;
+        }
+
+        if ((len & 0x01) != 0) {
+            throw new NumberFormatException("Incomplete HEX value representation");
+        }
+
+        byte[] group = new byte[(len / 2) + 1 /* the sign byte */];
+        group[0] = 0;
+        for (int l = 1, pos = 0; l < group.length; l++, pos += 2) {
+            char hi = str.charAt(pos);
+            char lo = str.charAt(pos + 1);
+            group[l] = BufferUtils.fromHex(hi, lo);
+        }
+
+        return group;
+    }
 }

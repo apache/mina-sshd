@@ -33,8 +33,10 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.compression.BuiltinCompressions.ParseResult;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 import org.mockito.Mockito;
 
@@ -42,6 +44,7 @@ import org.mockito.Mockito;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class BuiltinCompressionsTest extends BaseTestSupport {
     public BuiltinCompressionsTest() {
         super();
@@ -124,7 +127,7 @@ public class BuiltinCompressionsTest extends BaseTestSupport {
         for (CompressionFactory expected : BuiltinCompressions.VALUES) {
             try {
                 BuiltinCompressions.registerExtension(expected);
-                fail("Unexpected sucess for " + expected.getName());
+                fail("Unexpected success for " + expected.getName());
             } catch (IllegalArgumentException e) {
                 // expected - ignored
             }

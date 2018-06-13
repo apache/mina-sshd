@@ -28,11 +28,14 @@ import java.security.KeyPair;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class AbstractGeneratorHostKeyProviderTest extends BaseTestSupport {
     public AbstractGeneratorHostKeyProviderTest() {
         super();

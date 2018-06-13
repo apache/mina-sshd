@@ -37,10 +37,12 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.TreeSet;
 
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.apache.sshd.util.test.Utils;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 
 /**
@@ -53,6 +55,7 @@ import org.junit.runners.MethodSorters;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class RootedFileSystemProviderTest extends AssertableFile {
     private static RootedFileSystem fileSystem;
     private static Path rootSandbox;
@@ -224,6 +227,19 @@ public class RootedFileSystemProviderTest extends AssertableFile {
              Channel channel = provider.newByteChannel(fs.getPath(file.getFileName().toString()), Collections.emptySet())) {
             assertTrue("Channel not open", channel.isOpen());
         }
+    }
+
+    @Test
+    public void testResolveRoot() throws IOException {
+        Path root = fileSystem.getRootDirectories().iterator().next();
+        Path dir = root.resolve("tsd");
+        FileHelper.createDirectory(dir);
+        Path f1 = FileHelper.createFile(dir.resolve("test.txt"));
+        Path f2 = Files.newDirectoryStream(dir).iterator().next();
+        assertTrue("Unrooted path found", f2 instanceof RootedPath);
+        assertEquals(f1, f2);
+        FileHelper.deleteFile(f1);
+        FileHelper.deleteDirectory(dir);
     }
 
     /* Private helper */

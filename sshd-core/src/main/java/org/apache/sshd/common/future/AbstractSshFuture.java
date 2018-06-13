@@ -22,6 +22,7 @@ package org.apache.sshd.common.future;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.StreamCorruptedException;
+import java.util.function.Function;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.GenericUtils;
@@ -37,6 +38,8 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
      */
     protected static final Object CANCELED = new Object();
 
+    protected final boolean debugEnabled;
+    protected final boolean traceEnabled;
     private final Object id;
 
     /**
@@ -44,6 +47,8 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
      */
     protected AbstractSshFuture(Object id) {
         this.id = id;
+        this.debugEnabled = log.isDebugEnabled();
+        this.traceEnabled = log.isTraceEnabled();
     }
 
     @Override
@@ -61,8 +66,9 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
         try {
             return await0(timeoutMillis, false) != null;
         } catch (InterruptedIOException e) {
-            throw new InternalError("Unexpected interrupted exception wile awaitUninterruptibly "
-                    + timeoutMillis + " msec.: " + e.getMessage(), e);
+            throw formatExceptionMessage(msg -> new InternalError(msg, e),
+                    "Unexpected interrupted exception wile awaitUninterruptibly %d msec: %s",
+                    timeoutMillis, e.getMessage());
         }
     }
 
@@ -70,28 +76,28 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
      * <P>Waits (interruptible) for the specified timeout (msec.) and then checks
      * the result:</P>
      * <UL>
-     * <LI><P>
-     * If result is {@code null} then timeout is assumed to have expired - throw
-     * an appropriate {@link IOException}
-     * </P></LI>
+     *      <LI><P>
+     *      If result is {@code null} then timeout is assumed to have expired - throw
+     *      an appropriate {@link IOException}
+     *      </P></LI>
      *
-     * <LI><P>
-     * If the result is of the expected type, then cast and return it
-     * </P></LI>
+     *      <LI><P>
+     *      If the result is of the expected type, then cast and return it
+     *      </P></LI>
      *
-     * <LI><P>
-     * If the result is an {@link IOException} then re-throw it
-     * </P></LI>
+     *      <LI><P>
+     *      If the result is an {@link IOException} then re-throw it
+     *      </P></LI>
      *
-     * <LI><P>
-     * If the result is a {@link Throwable} then throw an {@link IOException}
-     * whose cause is the original exception
-     * </P></LI>
+     *      <LI><P>
+     *      If the result is a {@link Throwable} then throw an {@link IOException}
+     *      whose cause is the original exception
+     *      </P></LI>
      *
-     * <LI><P>
-     * Otherwise (should never happen), throw a {@link StreamCorruptedException}
-     * with the name of the result type
-     * </P></LI>
+     *      <LI><P>
+     *      Otherwise (should never happen), throw a {@link StreamCorruptedException}
+     *      with the name of the result type
+     *      </P></LI>
      * </UL>
      *
      * @param <R>          The generic result type
@@ -103,7 +109,7 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
     protected <R> R verifyResult(Class<? extends R> expectedType, long timeout) throws IOException {
         Object value = await0(timeout, true);
         if (value == null) {
-            throw new SshException("Failed to get operation result within specified timeout: " + timeout);
+            throw formatExceptionMessage(SshException::new, "Failed to get operation result within specified timeout: %s", timeout);
         }
 
         Class<?> actualType = value.getClass();
@@ -122,9 +128,10 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
                 throw (IOException) value;
             }
 
-            throw new SshException("Failed (" + t.getClass().getSimpleName() + ") to execute: " + t.getMessage(), GenericUtils.resolveExceptionCause(t));
+            Throwable cause = GenericUtils.resolveExceptionCause(t);
+            throw formatExceptionMessage(msg -> new SshException(msg, cause), "Failed (%s) to execute: %s", t.getClass().getSimpleName(), t.getMessage());
         } else {    // what else can it be ????
-            throw new StreamCorruptedException("Unknown result type: " + actualType.getName());
+            throw formatExceptionMessage(StreamCorruptedException::new, "Unknown result type: %s", actualType.getName());
         }
     }
 
@@ -134,12 +141,11 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
      *
      * @param timeoutMillis The delay we will wait for the Future to be ready
      * @param interruptable Tells if the wait can be interrupted or not.
-     *                      If {@code true} and the thread is interrupted then an {@link InterruptedIOException}
-     *                      is thrown.
+     * If {@code true} and the thread is interrupted then an {@link InterruptedIOException}
+     * is thrown.
      * @return The non-{@code null} result object if the Future is ready,
      * {@code null} if the timeout expired and no result was received
-     * @throws InterruptedIOException If the thread has been interrupted
-     *                                when it's not allowed.
+     * @throws InterruptedIOException If the thread has been interrupted when it's not allowed.
      */
     protected abstract Object await0(long timeoutMillis, boolean interruptable) throws InterruptedIOException;
 
@@ -154,7 +160,7 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
         } catch (Throwable t) {
             log.warn("notifyListener({}) failed ({}) to invoke {}: {}",
                      this, t.getClass().getSimpleName(), l, t.getMessage());
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("notifyListener(" + this + ")[" + l + "] invocation failure details", t);
             }
         }
@@ -163,6 +169,22 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
     @SuppressWarnings("unchecked")
     protected T asT() {
         return (T) this;
+    }
+
+    /**
+     * Generates an exception whose message is prefixed by the future simple class name + {@link #getId() identifier}
+     * as a hint to the context of the failure.
+     *
+     * @param <E> Type of {@link Throwable} being generated
+     * @param exceptionCreator The exception creator from the formatted message
+     * @param format The extra payload format as per {@link String#format(String, Object...)}
+     * @param args The formatting arguments
+     * @return The generated exception
+     */
+    protected <E extends Throwable> E formatExceptionMessage(Function<? super String, ? extends E> exceptionCreator, String format, Object... args) {
+        String messagePayload = String.format(format, args);
+        String excMessage = getClass().getSimpleName() + "[" + getId() + "]: " + messagePayload;
+        return exceptionCreator.apply(excMessage);
     }
 
     @Override

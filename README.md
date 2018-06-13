@@ -13,8 +13,10 @@ Apache SSHD is a 100% pure java library to support the SSH protocols on both the
 
 The code only requires the core abstract [slf4j-api](https://mvnrepository.com/artifact/org.slf4j/slf4j-api) module. The actual implementation of the logging API can be selected from the many existing adaptors.
 
+# Optional dependencies
 
-* [Bouncy Castle](https://www.bouncycastle.org/)
+
+## [Bouncy Castle](https://www.bouncycastle.org/)
 
 
 Required mainly for writing keys to PEM files or for special keys/ciphers/etc. that are not part of the standard [Java Cryptography Extension](https://en.wikipedia.org/wiki/Java_Cryptography_Extension). See [Java Cryptography Architecture (JCA) Reference Guide](https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html) for key classes and explanations as to how _Bouncy Castle_ is plugged in (other security providers).
@@ -22,16 +24,16 @@ Required mainly for writing keys to PEM files or for special keys/ciphers/etc. t
 **Caveat**: If _Bouncy Castle_ modules are registered, then the code will use its implementation of the ciphers, keys, signatures, etc. rather than the default JCE provided in the JVM.
 
  **Note:**
- 
+
  - The security provider can also be registered for keys/ciphers/etc. that are already supported by the standard JCE as a **replacement** for them.
- 
- 
+
+
  - The _BouncyCastle_ code can also be used to load keys from PEM files instead or in parallel with the built-in code that already parses the standard PEM formats for the default JCE supported key types.
- 
- 
+
+
 - One can use the `BouncyCastleKeyPairResourceParser` to load standard PEM files instead of the core one - either directly or via `SecurityUtils#setKeyPairResourceParser` for **global** usage - even without registering or enabling the provider.
- 
- 
+
+
  - The required _Maven_ module(s) are defined as `optional` so must be added as an **explicit** dependency in order to be included in the classpath:
 
 
@@ -48,22 +50,59 @@ Required mainly for writing keys to PEM files or for special keys/ciphers/etc. t
 
 ```
 
-* [MINA core](https://mina.apache.org/mina-project/)
+## NIO2 default socket factory replacements
 
+Optional dependency to enable choosing between NIO asynchronous sockets (the default - for improved performance), and "legacy" sockets.
+See `IoServiceFactoryFactory` implementations and specifically the `DefaultIoServiceFactoryFactory` for the available options and how it
+can be configured to select among them. **Note:** the required Maven module(s) are defined as `optional` so must be added as an **explicit**
+dependency in order to be included in the classpath.
 
-Optional dependency to enable choosing between NIO asynchronous sockets (the default - for improved performance), and "legacy" sockets. See `IoServiceFactoryFactory` implementations and specifically the `DefaultIoServiceFactoryFactory` for the available options and how it can be configured to select among them. **Note:** the required Maven module(s) are defined as `optional` so must be added as an **explicit** dependency in order to be included in the classpath:
-
+### [MINA core](https://mina.apache.org/mina-project/)
 
 ```xml
 
-    <dependency>    <!-- For async. sockets I/O -->
+    <dependency>
         <groupId>org.apache.mina</groupId>
         <artifactId>mina-core</artifactId>
+            <!-- see SSHD POM for latest tested known version of MINA core -->
+        <version>2.0.17</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.apache.sshd</groupId>
+        <artifactId>sshd-mina</artifactId>
+        <version>...same as sshd-core...</version>
     </dependency>
 
 ```
 
-* [ed25519-java](https://github.com/str4d/ed25519-java)
+### [Netty](https://netty.io/)
+
+Another a NIO client server framework option that can be used as a replacement for the default NIO asynchronous sockets core
+implementation. This is also an **optional** dependency and must be add explicitly via the `sshd-netty` artifact.
+
+```xml
+
+    <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-transport</artifactId>
+        <version>...Netty version...</version>
+    </dependency>
+    <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-handler</artifactId>
+        <version>...Netty version...</version>
+    </dependency>
+    
+    <dependency>
+        <groupId>org.apache.sshd</groupId>
+        <artifactId>sshd-netty</artifactId>
+        <version>...same as sshd-core...</version>
+    </dependency>
+
+```
+
+## [ed25519-java](https://github.com/str4d/ed25519-java)
 
 
 Required for supporting [ssh-ed25519](https://tools.ietf.org/html/draft-bjh21-ssh-ed25519-02) keys and [ed25519-sha-512](https://tools.ietf.org/html/draft-josefsson-eddsa-ed25519-02) signatures. **Note:** the required Maven module(s) are defined as `optional` so must be added as an **explicit** dependency in order to be included in the classpath:
@@ -83,7 +122,7 @@ The code contains support for reading _ed25519_ [OpenSSH formatted private keys]
 
 # Set up an SSH client in 5 minutes
 
-SSHD is designed to easily allow setting up and using an SSH client in a few simple steps. The client needs to be configured and then started before it can be used to connect to an SSH server. There are a few simple steps for creating a client instance - for more more details refer to the `SshClient` class.
+SSHD is designed to easily allow setting up and using an SSH client in a few simple steps. The client needs to be configured and then started before it can be used to connect to an SSH server. There are a few simple steps for creating a client instance - for more details refer to the `SshClient` class.
 
 ## Creating an instance of the `SshClient` class
 
@@ -196,7 +235,7 @@ In this context, the listen bind address can also be specified explicitly via `s
 * `KeyPairProvider` - `sshd.setKeyPairProvider(...);` - sets the host's private keys used for key exchange with clients as well as representing the host's "identities". There are several choices - one can load keys from standard PEM files or generate them in the code.  It's usually a good idea to save generated keys, so that if the SSHD server is restarted, the same keys will be used to authenticate the server and avoid the warning the clients might get if the host keys are modified. **Note**: saving key files in PEM format requires  that the [Bouncy Castle](https://www.bouncycastle.org/) supporting artifacts be available in the code's classpath.
 
 
-* `ShellFactory` - That's the part one usually has to write to customize the SSHD server. The shell factory will be used to create a new shell each time a user logs in and wants to run an interactive shelll. SSHD provides a simple implementation that you can use if you want. This implementation will create a process and delegate everything to it, so it's mostly useful to launch the OS native shell. E.g.,
+* `ShellFactory` - That's the part one usually has to write to customize the SSHD server. The shell factory will be used to create a new shell each time a user logs in and wants to run an interactive shell. SSHD provides a simple implementation that you can use if you want. This implementation will create a process and delegate everything to it, so it's mostly useful to launch the OS native shell. E.g.,
 
 
 ```java
@@ -270,7 +309,7 @@ Configuring supported factories can be done with the following code:
 
     sshd.setCipherFactories(Arrays.asList(BuiltinCiphers.aes256ctr, BuiltinCiphers.aes192ctr, BuiltinCiphers.aes128ctr));
     sshd.setKeyExchangeFactories(Arrays.asList(new MyKex1(), new MyKex2(), BuiltinKeyExchange.A, ...etc...));
-    
+
 ```
 
 One can configure other security components using built-in factories the same way. It is important to remember though that the **order** of the factories is important as it affects the key exchange phase where the client and server decide what options to use out of each peer's reported preferences.
@@ -283,7 +322,7 @@ Once we have configured the server, one need only call `sshd.start();`. **Note**
 
 ## Security providers setup
 
-While the code supports _BouncyCastle_ and _EdDSA_ security providers out-of-the-box, 
+While the code supports _BouncyCastle_ and _EdDSA_ security providers out-of-the-box,
 it also provides a way to [add security providers](https://issues.apache.org/jira/browse/SSHD-713) via the `SecurityProviderRegistrar` interface implementation. In order to add support for a new security provider one needs to implement the registrar interface and make the code aware of it.
 
 ### Default/built-in security provider registrars
@@ -293,8 +332,8 @@ The code contains built-in security provider registrars for _BouncyCastle_ and _
 **Note:**
 
 
-- The registration code automatically parses the configured reigstrars list and instantiates them. In this context, one can use the special `none` value to indicate that the code should not attempt to automatically register the default providers.
- 
+- The registration code automatically parses the configured registrars list and instantiates them. In this context, one can use the special `none` value to indicate that the code should not attempt to automatically register the default providers.
+
 - A registrar instance might be created but eventually discarded and not invoked if it is disabled, unsupported or already registered programmatically via `SecurityUtils#registerSecurityProvider`.
 
 
@@ -330,10 +369,10 @@ See `AbstractSecurityProviderRegistrar` helper class for a default implementatio
 
 * One can use `all` or `*` to specify that all entities of the specified type are supported - e.g., `org.apache.sshd.security.provider.BC.MessageDigest=all`. In this context, one can override the `getDefaultSecurityEntitySupportValue` method if no fine-grained configuration is required per-entity type,
 
-    
+
 * The result of an `isXxxSupported` call is/should be **cached** (see `AbstractSecurityProviderRegistrar`).
 
-    
+
 * For ease of implementation, all support query calls are routed to the `isSecurityEntitySupported` method so that one can concentrate all the configuration in a single method. This is done for **convenience** reasons - the code will invoke the correct support query as per the type of entity it needs. E.g., if it needs a cipher, it will invoke `isCipherSupported` - which by default will invoke `isSecurityEntitySupported` with the `Cipher` class as its argument.
 
 
@@ -366,7 +405,6 @@ file system where the logged-in user can access only the files under the specifi
 The usage of a `FileSystemFactory` is not limited though to the server only - the `ScpClient` implementation also uses
 it in order to retrieve the *local* path for upload/download-ing files/folders. This means that the client side can also
 be tailored to present different views for different clients
-
 
 ## `ExecutorService`-s
 
@@ -495,18 +533,145 @@ it will be **closed** automatically when the stream using it is closed.
 
 ## SCP
 
-Besides the `ScpTransferEventListener`, the SCP module also uses a `ScpFileOpener` instance in order to access
-the local files - client or server-side. The default implementation simply opens an [InputStream](https://docs.oracle.com/javase/8/docs/api/java/io/InputStream.html)
+Both client-side and server-side SCP are supported. Starting from version 2.0, the SCP related code is located in the `sshd-scp` module, so you need
+to add this additional dependency to your maven project:
+
+```xml
+
+    <dependency>
+        <groupId>org.apache.sshd</groupId>
+        <artifactId>sshd-sscp</artifactId>
+        <version>...same as sshd-core...</version>
+    </dependency>
+
+```
+
+### Client-side SCP
+
+In order to obtain an `ScpClient` one needs to use an `ScpClientCreator`:
+
+```java
+
+ClientSession session = ... obtain an instance ...
+ScpClientCreator creator = ... obtain an instance ...
+ScpClient client = creator.createScpClient(session);
+
+```
+
+A default `ScpClientCreator` instance is provided as part of the module - see `ScpClientCreator.instance()`
+
+#### ScpFileOpener(s)
+
+As part of the `ScpClientCreator`, the SCP module also uses a `ScpFileOpener` instance in order to access
+the local files. The default implementation simply opens an [InputStream](https://docs.oracle.com/javase/8/docs/api/java/io/InputStream.html)
 or [OutputStream](https://docs.oracle.com/javase/8/docs/api/java/io/OutputStream.html) on the requested local path. However,
-the user may replace it and intercept the calls - e.g., for logging, for wrapping/filtering the streams, etc... **Note:**
-due to SCP protocol limitations one cannot change the **size** of the input/output since it is passed as part of the command
+the user may replace it and intercept the calls - e.g., for logging, for wrapping/filtering the streams, etc... The user may
+attach a default opener that will be automatically attached to **all** clients created unless specifically overridden:
+
+```java
+
+ClientSession session = ... obtain an instance ...
+ScpClientCreator creator = ... obtain an instance ...
+creator.setScpFileOpener(new MySuperDuperOpener());
+
+ScpClient client1 = creator.createScpClient(session);   // <<== automatically uses MySuperDuperOpener
+ScpClient client2 = creator.createScpClient(session, new SomeOtherOpener());   // <<== uses SomeOtherOpener instead of MySuperDuperOpener
+
+```
+
+**Note:** due to SCP protocol limitations one cannot change the **size** of the input/output since it is passed as part of the command
 **before** the file opener is invoked - so there are a few limitations on what one can do within this interface implementation.
 
+#### ScpTransferEventListener(s)
+
+The `ScpClientCreator` can also be used to attach a default `ScpTransferEventListener` that will be attached to
+**all** created SCP client instances through that creator - unless specifically overridden:
+
+```java
+
+ClientSession session = ... obtain an instance ...
+ScpClientCreator creator = ... obtain an instance ...
+creator.setScpTransferEventListener(new MySuperDuperListener());
+
+ScpClient client1 = creator.createScpClient(session);   // <<== automatically uses MySuperDuperListener
+ScpClient client2 = creator.createScpClient(session, new SomeOtherListener());   // <<== uses SomeOtherListener instead of MySuperDuperListener
+
+```
+
+### Server-side SCP
+
+The `ScpCommandFactory` allows users to attach an `ScpFileOpener` and/or `ScpTransferEventListener` having the same behavior as the client - i.e.,
+monitoring and intervention on the accessed local files.
 
 ## SFTP
 
-In addition to the `SftpEventListener` there are a few more SFTP-related special interfaces and modules.
+Both client-side and server-side SFTP are supported. Starting from version 2.0, the SFTP related code is located in the `sshd-sftp`, so you need to add
+this additional dependency to your maven project:
 
+```xml
+
+    <dependency>
+        <groupId>org.apache.sshd</groupId>
+        <artifactId>sshd-sftp</artifactId>
+        <version>...same as sshd-core...</version>
+    </dependency>
+
+```
+
+### Server-side SFTP
+
+On the server side, the following code needs to be added:
+
+```java
+
+    SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
+        .build();
+    server.setSubsystemFactories(Collections.singletonList(factory));
+
+```
+
+### `SftpEventListener`
+
+(See above more details...) - users may register an `SftpEventListener` (or more...) in the `SftpSubsystemFactory` in
+order to monitor and even intervene in the susbsytem's functionality.
+
+### Client-side SFTP
+
+In order to obtain an `SftpClient` instance one needs to use an `SftpClientFactory`:
+
+
+```java
+
+    ClientSession session = ...obtain session...
+    SftpClientFactory factory = ...obtain factory...
+    SftpClient client = factory.createSftpClient(session);
+
+```
+
+A default client factory implementations is provided in the module - see `SftpClientFactory.instance()`
+
+
+### Using a custom `SftpClientFactory`
+
+The code creates `SftpClient`-s and `SftpFileSystem`-s using a default built-in `SftpClientFactory` instance (see
+`DefaultSftpClientFactory`). Users may choose to use a custom factory in order to provide their own
+implementations - e.g., in order to override some default behavior - e.g.:
+
+```java
+
+    SshClient client = ... setup client...
+
+    try (ClientSession session = client.connect(user, host, port).verify(timeout).getSession()) {
+        session.addPasswordIdentity(password);
+        session.auth.verify(timeout);
+
+        // User-specific factory
+        try (SftpClient sftp = MySpecialSessionSftpClientFactory.INSTANCE.createSftpClient(session)) {
+            ... instance created through SpecialSessionSftpClientFactory ...
+        }
+    }
+
+```
 
 ### Version selection via `SftpVersionSelector`
 
@@ -530,7 +695,8 @@ range.
         session.addPasswordIdentity(password);
         session.auth.verify(timeout);
 
-        try (SftpClient sftp = session.createSftpClient(myVersionSelector)) {
+        SftpClientFactory factory = SftpClientFactory.instance();
+        try (SftpClient sftp = factory.createSftpClient(session, myVersionSelector)) {
             ... do SFTP related stuff...
         }
     }
@@ -541,75 +707,6 @@ On the server side, version selection restriction is more complex - please remem
 the version, and all we can do at the server is require a **specific** version via the `SftpSubsystem#SFTP_VERSION`
 configuration key. For more advanced restrictions one needs to sub-class `SftpSubSystem` and provide a non-default
 `SftpSubsystemFactory` that uses the sub-classed code.
-
-
-### Registering a custom `SftpClientFactory`
-
-The code creates `SftpClient`-s and `SftpFileSystem`-s using a default built-in `SftpClientFactory` instance (see
-`DefaultSftpClientFactory`). Users may choose to register a custom factory in order to provide their own
-implementations - e.g., in order to override some default behavior. The custom factory may be registered either at
-the client or session level - e.g.:
-
-```java
-
-    SshClient client = ... setup client...
-    client.setSftpClientFactory(new MySuperDuperSftpClientFactory());
-
-    try (ClientSession session = client.connect(user, host, port).verify(timeout).getSession()) {
-        // override the default factory with a special one - but only for this session
-        session.setSftpClientFactory(new SpecialSessionSftpClientFactory());
-        session.addPasswordIdentity(password);
-        session.auth.verify(timeout);
-        
-        try (SftpClient sftp = session.createSftpClient()) {
-            ... instance created through SpecialSessionSftpClientFactory ...
-        }
-    }    
-    
-```
-
-If no factory provided or factory set to _null_ then code reverts to using the default built-in one. **Note:** setting
-the factory to _null_ on the session level, simply delegates the creation to whatever factory is registered at the
-client level - default or custom.
-
-```java
-
-    SshClient client = ... setup client...
-    client.setSftpClientFactory(new MySuperDuperSftpClientFactory());
-
-    try (ClientSession session = client.connect(user, host, port).verify(timeout).getSession()) {
-        // override the default factory with a special one - but only for this session
-        session.setSftpClientFactory(new SpecialSessionSftpClientFactory());
-        session.addPasswordIdentity(password);
-        session.auth.verify(timeout);
-        
-        try (SftpClient sftp = session.createSftpClient()) {
-            ... instance created through SpecialSessionSftpClientFactory ...
-        }
-
-        // revert to one from client
-        session.setSftpClientFactory(null);
-
-        try (SftpClient sftp = session.createSftpClient()) {
-            ... instance created through MySuperDuperSftpClientFactory ...
-        }
-        
-        // remove client-level factory
-        client.setSftpClientFactory(null);
-
-        try (SftpClient sftp = session.createSftpClient()) {
-            ... instance created through built-in DefaultSftpClientFactory ...
-        }
-
-        // re-instate session-level factory        
-        session.setSftpClientFactory(new SpecialSessionSftpClientFactory());
-
-        try (SftpClient sftp = session.createSftpClient()) {
-            ... instance created through SpecialSessionSftpClientFactory ...
-        }
-    }    
-    
-```
 
 ### Using `SftpFileSystemProvider` to create an `SftpFileSystem`
 
@@ -628,7 +725,7 @@ system.
     try (FileSystem fs = remotePath.getFileSystem()) {
         ... work with the remote path...
     }
-    
+
     // "Mounting" a file system
     URI uri = SftpFileSystemProvider.createFileSystemURI(host, port, username, password);
     try (FileSystem fs = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap())) {
@@ -691,14 +788,14 @@ configuration keys and values.
         Path remotePath = fs.getPath("/some/remote/path");
         ... work with the remote path...
     }
- 
+
     // Using URI parameters
     Path remotePath = Paths.get(new URI("sftp://user:password@host/some/remote/path?param1=value1&param2=value2..."));
     // Releasing the file-system once no longer necessary
     try (FileSystem fs = remotePath.getFileSystem()) {
         ... work with the remote path...
     }
-    
+
 ```
 
 **Note**: if **both** options are used then the URI parameters **override** the environment ones
@@ -713,7 +810,7 @@ configuration keys and values.
     // The value of 'param1' is overridden in the URI
     try (FileSystem fs = FileSystems.newFileSystem(new URI("sftp://user:password@host/some/remote/path?param1=otherValue1", params)) {
         Path remotePath = fs.getPath("/some/remote/path");
-        ... work with the remote path...        
+        ... work with the remote path...
     }
 
 ```
@@ -762,20 +859,21 @@ UTF-8 is used. **Note:** the value can be a charset name or a `java.nio.charset.
     SshClient client = ... setup/obtain an instance...
     // default for ALL SFTP clients obtained through this client
     PropertyResolverUtils.updateProperty(client, SftpClient.NAME_DECODING_CHARSET, "ISO-8859-8");
-    
+
     try (ClientSession session = client.connect(...)) {
          // default for ALL SFTP clients obtained through the session - overrides client setting
          PropertyResolverUtils.updateProperty(session, SftpClient.NAME_DECODING_CHARSET, "ISO-8859-4");
          session.authenticate(...);
-         
-         try (SftpClient sftp = session.createSftpClient()) {
+
+         SftpClientFactory factory = SftpClientFactory.instance();
+         try (SftpClient sftp = factory.createSftpClient(session)) {
              for (DirEntry entry : sftp.readDir(...some path...)) {
                  ...handle entry assuming ISO-8859-4 (inherited from the session) encoded names...
              }
-             
+
              // override the inherited default from the session
              sftp.setNameDecodingCharset(Charset.forName("ISO-8859-1"));
-             
+
              for (DirEntry entry : sftp.readDir(...some other path...)) {
                  ...handle entry assuming ISO-8859-1 encoded names...
              }
@@ -783,58 +881,6 @@ UTF-8 is used. **Note:** the value can be a charset name or a `java.nio.charset.
     }
 
 ```
-
-Another option is to register a custom `SftpClientFactory` and create a `DefaultSftpClient` that overrides `getReferencedName` method:
-
-```java
-
-public class MyCustomSftpClient extends DefaultSftpClient {
-    public MyCustomSftpClient(ClientSession session) {
-        super(session);
-    }
-    
-    @Override
-    protected String getReferencedName(int cmd, Buffer buf) {
-        byte[] bytes = buf.getBytes();
-        Charset cs = detectCharset(bytes);
-        return new String(bytes, cs);
-    }
-    
-    @Override
-    protected <B extends Buffer> B putReferencedName(int cmd, B buf, String name) {
-        Charset cs = detectCharset(name);
-        buf.putString(name, cs);
-        return buf;
-    }
-}
-
-public class MyCustomSftpClientFactory extends DefaultSftpClientFactory {
-    public MyCustomSftpClientFactory() {
-        super();
-    }
-    
-    protected DefaultSftpClient createDefaultSftpClient(ClientSession session, SftpVersionSelector selector) throws IOException {
-        return MyCustomSftpClient(session);
-    }
-}
-
-    // Usage - register at client level and affect ALL SFTP interactions
-    SshClient client = ... setup/obtain an instance...
-    client.setSftpClientFactory(new MyCustomSftpClientFactory());
-
-    // Usage - selective session registration
-    SshClient client = ... setup/obtain an instance...
-    try (ClientSession session = client.connect(...)) {
-        if (...something special about the host/port/etc....) {
-            // affect only SFTP interactions for this session
-            session.setSftpClientFactory(new MyCustomSftpClientFactory());
-        }
-    }
-
-
-```
-
-### Supported SFTP extensions
 
 Both client and server support several of the SFTP extensions specified in various drafts:
 
@@ -860,7 +906,7 @@ Furthermore several [OpenSSH SFTP extensions](https://github.com/openssh/openssh
 
 On the server side, the reported standard extensions are configured via the `SftpSubsystem.CLIENT_EXTENSIONS_PROP` configuration key, and the _OpenSSH_ ones via the `SftpSubsystem.OPENSSH_EXTENSIONS_PROP`.
 
-On the client side, all the supported extensions are classes that implement `SftpClientExtension`. These classes can be used to query the client whether the remote server supports the specific extension and then obtain a parser for its contents. Users can easily add support for more extensions in a similar manner as the existing ones by implementing an appropriate `ExtensionParser` and then registring it at the `ParserUtils` - see the existing ones for details how this can be achieved.
+On the client side, all the supported extensions are classes that implement `SftpClientExtension`. These classes can be used to query the client whether the remote server supports the specific extension and then obtain a parser for its contents. Users can easily add support for more extensions in a similar manner as the existing ones by implementing an appropriate `ExtensionParser` and then registering it at the `ParserUtils` - see the existing ones for details how this can be achieved.
 
 
 ```java
@@ -872,7 +918,8 @@ On the client side, all the supported extensions are classes that implement `Sft
         session.addPasswordIdentity(password);
         session.auth().verify(timeout);
 
-        try (SftpClient sftp = session.createSftpClient()) {
+        SftpClientFactory factory = SftpClientFactory.instance();
+        try (SftpClient sftp = factory.createSftpClient(session)) {
             Map<String, byte[]> extensions = sftp.getServerExtensions();
             // Key=extension name, value=registered parser instance
             Map<String, ?> data = ParserUtils.parse(extensions);
@@ -904,7 +951,8 @@ One can skip all the conditional code if a specific known extension is required:
         session.addPasswordIdentity(password);
         session.auth().verify(timeout);
 
-        try (SftpClient sftp = session.createSftpClient()) {
+        SftpClientFactory factory = SftpClientFactory.instance();
+        try (SftpClient sftp = factory.createSftpClient(session)) {
             // Returns null if extension is not supported by remote server
             SpaceAvailableExtension space = sftp.getExtension(SpaceAvailableExtension.class);
             if (space != null) {
@@ -912,7 +960,7 @@ One can skip all the conditional code if a specific known extension is required:
             }
         }
     }
-    
+
 ```
 
 ### Internal exceptions and error message handling
@@ -949,7 +997,7 @@ The code provides to some extent an SSH proxy agent via the available `SshAgentF
 ```
 
 **Note:** Since the portable runtime library uses **native** code, one needs to also make sure that the appropriate _.dll/.so_ library
-is available in the LD\_LIBRARY\_PATH. 
+is available in the LD\_LIBRARY\_PATH.
 
 # Advanced configuration and interaction
 
@@ -964,7 +1012,7 @@ The code's behavior is highly customizable not only via non-default implementati
 
 ### Using the inheritance model for fine-grained/targeted configuration
 
-As previously mentioned, this hierarchical lookup model is not limited to "simple" configuration values (strings, integers, etc.), but used also for **interfaces/implementations** such as cipher/MAC/compression/authentication/etc. factories - the exception being that the system properties are not consulted in such a case. This code behavior provides highly customizable fine-grained/targeted control of the code's behavior - e.g., one could impose usage of specific ciphers/authentication methods/etc. or present different public key "identities"/welcome banner behavior/etc., based on address, username or whatever other decision parameter is deemed relevant by the user's code. This can be done on __both__ sides of the connection - client or server. E.g., the client could present different keys based on the server's address/identity string/welcome banner, or the server could accept only specific types of authentication methods based on the client's address/username/etc... This can be done in conjuction with the usage of the various `EventListener`-s provided by the code (see below).
+As previously mentioned, this hierarchical lookup model is not limited to "simple" configuration values (strings, integers, etc.), but used also for **interfaces/implementations** such as cipher/MAC/compression/authentication/etc. factories - the exception being that the system properties are not consulted in such a case. This code behavior provides highly customizable fine-grained/targeted control of the code's behavior - e.g., one could impose usage of specific ciphers/authentication methods/etc. or present different public key "identities"/welcome banner behavior/etc., based on address, username or whatever other decision parameter is deemed relevant by the user's code. This can be done on __both__ sides of the connection - client or server. E.g., the client could present different keys based on the server's address/identity string/welcome banner, or the server could accept only specific types of authentication methods based on the client's address/username/etc... This can be done in conjunction with the usage of the various `EventListener`-s provided by the code (see below).
 
 One of the code locations where this behavior can be leveraged is when the server provides __file-based__ services (SCP, SFTP) in order to provide a different/limited view of the available files based on the username - see the section dealing with `FileSystemFactory`-ies.
 
@@ -982,7 +1030,7 @@ The welcome banner contents are controlled by the `ServerAuthenticationManager.W
 * A file [URI](https://docs.oracle.com/javase/8/docs/api/java/net/URI.html) - or a string starting with `"file:/"` followed by the file path - see below.
 
 
-* A [URL](https://docs.oracle.com/javase/8/docs/api/java/net/URL.html) - or a string contaning "://" - in which case the [URL#openStream()](https://docs.oracle.com/javase/8/docs/api/java/net/URL.html#openStream) method is invoked and its contents are read.
+* A [URL](https://docs.oracle.com/javase/8/docs/api/java/net/URL.html) - or a string containing "://" - in which case the [URL#openStream()](https://docs.oracle.com/javase/8/docs/api/java/net/URL.html#openStream) method is invoked and its contents are read.
 
 
 * A [File](https://docs.oracle.com/javase/8/docs/api/java/io/File.html) or a [Path](https://docs.oracle.com/javase/8/docs/api/java/nio/file/Path.html) - in this case, the file's contents are __re-loaded__ every time it is required and sent as the banner contents.
@@ -1327,26 +1375,134 @@ in case the classes it used it are modified or deleted.
 
 ## Command line clients
 
-The _apache-sshd.zip_ distribution provides `Windows/Linux` scripts that use the MINA SSHD code base to implement the common _ssh, scp, sftp_ commands. The clients accept most useful switches from the original commands they mimic, where the `-o Option=Value` arguments can be used to configure the client/server in addition to the system properties mechanism. For more details, consult the _main_ methods code in the respective `SshClient`, `SftpCommand` and `DefaultScpClient` classes. The code also includes `SshKeyScan#main` that is a simple implementation for [ssh-keyscan(1)](https://www.freebsd.org/cgi/man.cgi?query=ssh-keyscan&sektion=1).
+The _apache-sshd.zip_ distribution provides `Windows/Linux` scripts that use the MINA SSHD code base to implement the common _ssh, scp, sftp_ commands. The clients accept most useful switches from the original commands they mimic, where the `-o Option=Value` arguments can be used to configure the client/server in addition to the system properties mechanism. For more details, consult the _main_ methods code in the respective `SshClientMain`, `SftpCommandMain` and `ScpClientMain` classes. The code also includes `SshKeyScanMain` that is a simple implementation for [ssh-keyscan(1)](https://www.freebsd.org/cgi/man.cgi?query=ssh-keyscan&sektion=1).
 
-The distribution also includes also an _sshd_ script that can be used to launch a server instance - see `SshServer#main` for activation command line arguments and options.
+The distribution also includes also an _sshd_ script that can be used to launch a server instance - see `SshServerMain#main` for activation command line arguments and options.
+
+In order to use this CLI code as part of another project, one needs to include the _sshd-cli_ module:
+
+```xml
+    <dependency>
+        <groupId>org.apache.sshd</groupId>
+        <artifactId>sshd-cli</artifactId>
+        <version>...same version as the core...</version>
+    </dependency>
+```
+
+### Command line clients
+
+* **SftpCommandMain** - by default uses an internal `SftpClientFactory`. This can be overridden as follows:
+
+1. Provide a `-o SftpClientFactory=XXX` command line argument where the option specifies the fully-qualified name of
+the class that implements this interface.
+
+2. Add a `META-INF\services\org.apache.sshd.client.subsystem.sftp.SftpClientFactory` file containing the fully-qualified name of
+the class that implements this interface. **Note:** if more than one such instance is detected an exception is thrown.
+
+**Note:** The specified class(es) must be public and contain a public no-args constructor.
+
+### Command line SSH daemon
+
+* **Port** - by default the SSH server sets up to list on port 8000 in order to avoid conflicts with any running SSH O/S daemon. This can be modified by providing a `-p NNNN`
+or `-o Port=NNNN` command line option.
+
+* **Subsystem(s)** - the server automatically detects subsystems using the [Java ServiceLoader mechanism](https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html).
+This can be overwritten as follows (in this order):
+
+1. Provide a `org.apache.sshd.server.subsystem.SubsystemFactory` system property containing comma-separated fully-qualified names of classes implementing
+this interface. The implementations must be public and have a public no-args constructor for instantiating them. The order of the provided subsystems will
+be according to their order in the specified list.
+
+2. Provide a `-o Subsystem=xxx,yyy` command line argument where value is a comma-separated list of the **name**(s) of the auto-detected factories via
+the `ServiceLoader` mechanism. The special value `none` may be used to indicate that no subsystem is to be configured. **Note:** no specific order is
+provided when subsystems are auto-detected and/or filtered.
+
+* **Shell** - unless otherwise instructed, the default SSH server uses an internal shell (see `InteractiveProcessShellFactory`). The shell can be overridden
+or disabled by specifying a `-o ShellFactory=XXX` option where the value can either be `none` to specify that no shell is to be used, or the fully-qualified
+name of a class that implements the `ShellFactory` interface. The implementation must be public and have a public no-args constructor for instantiating it.
 
 ## GIT support
 
-The _sshd-git_ artifact contains server-side command factories for handling some _git_ commands - see `GitPackCommandFactory` and `GitPgmCommandFactory`. These command factories accept a delegate to which non-_git_ commands are routed:
+The _sshd-git_ artifact contains both client and server-side command factories for issuing and handling some _git_ commands. The code is based on [JGit](https://github.com/eclipse/jgit)
+and iteracts with it smoothly.
+
+### Client-side
+
+This module provides SSHD-based replacements for the SSH and SFTP transports used by the JGIT client - see `GitSshdSessionFactory` - it can be used as a drop-in replacement
+for the [JSCH](http://www.jcraft.com/jsch/) based built-in session factory provided by _jgit_. In this context, it is worth noting that the `GitSshdSessionFactory` has been tailored so as to provide
+flexible control over which `SshClient` instance to use, and even which `ClientSession`. The default instance allocates a **new** client every time a new `GitSshdSession` is created - which is
+started and stopped as necessary. However, this can be pretty wasteful, so if one intends to issue several commands that access GIT repositories via SSH, one should maintain a **single**
+client instance and re-use it:
 
 
 ```java
 
-    sshd.setCommandFactory(new GitPackCommandFactory(rootDir, new MyCommandFactory()));
+    SshClient client = ...create and setup the client...
+    try {
+        client.start();
+
+        GitSshdSessionFactory sshdFactory = new GitSshdSessionFactory(client);  // re-use the same client for all SSH sessions
+        org.eclipse.jgit.transport.SshSessionFactory.setInstance(sshdFactory);  // replace the JSCH-based factory
+
+        ... issue GIT commands that access remote repositories via SSH ....
+
+    } finally {
+        client.stop();
+    }
+
+```
+
+### Server-side
+
+See `GitPackCommandFactory` and `GitPgmCommandFactory` - in order for the various commands to function correctly, they require a `GitLocationResolver`
+that is invoked in order to allow the user to decide which is the correct GIT repository root location for a given command. The resolver is provided
+with all the relevant details - including the command and server session through which the command was received:
+
+
+```java
+
+    GitLocationResolver resolver = (cmd, session, fs) -> ...consult some code - perhaps based on the authenticated username...
+    sshd.setCommandFactory(new GitPackCommandFactory().withGitLocationResolver(resolver));
+
+```
+
+ These command factories also accept a delegate to which non-_git_ commands are routed:
+
+
+```java
+
+    sshd.setCommandFactory(new GitPackCommandFactory()
+        .withDelegate(new MyCommandFactory())
+        .withGitLocationResolver(resolver));
 
     // Here is how it looks if SCP is also requested
-    sshd.setCommandFactory(new GitPackCommandFactory(rootDir, new ScpCommandFactory(new MyCommandFactory())))
+    sshd.setCommandFactory(new GitPackCommandFactory()
+        .withDelegate(new ScpCommandFactory()
+            .withDelegate(new MyCommandFactory()))
+        .withGitLocationResolver(resolver));
+
     // or
-    sshd.setCommandFactory(new ScpCommandFactory(new GitPackCommandFactory(rootDir, new MyCommandFactory())))
-    // or
-    sshd.setCommandFactory(new GitPackCommandFactory(rootDir, new ScpCommandFactory(new MyCommandFactory())))
+    sshd.setCommandFactory(new ScpCommandFactory()
+        .withDelegate(new GitPackCommandFactory()
+            .withDelegate(new MyCommandFactory())
+            .withGitLocationResolver(resolver)));
+
     // or any other combination ...
+
+```
+
+as with all other built-in commands, the factories allow the user to provide an `ExecutorService` in order to control the spawned threads
+for servicing the commands. If none provided, an internal single-threaded "pool" is created ad-hoc and destroyed once the command execution
+is completed (regardless of whether successful or not):
+
+
+```java
+
+    sshd.setCommandFactory(new GitPackCommandFactory(resolver)
+        .withDelegate(new MyCommandFactory())
+        .withExecutorService(myService)
+        .withShutdownOnExit(false));
+
 ```
 
 
@@ -1425,4 +1581,3 @@ Below is the list of builtin components:
 * **Key exchange**: dhg1, dhg14, dhgex, dhgex256, ecdhp256, ecdhp384, ecdhp521
 * **Compressions**: none, zlib, zlib@openssh.com
 * **Signatures/Keys**: ssh-dss, ssh-rsa, nistp256, nistp384, nistp521, ed25519 (requires `eddsa` optional module)
-

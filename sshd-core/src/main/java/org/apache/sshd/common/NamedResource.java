@@ -62,7 +62,8 @@ public interface NamedResource {
      * @return A comma separated list of factory names
      */
     static String getNames(Collection<? extends NamedResource> resources) {
-        return GenericUtils.join(getNameList(resources), ',');
+        Collection<String> nameList = getNameList(resources);
+        return GenericUtils.join(nameList, ',');
     }
 
     /**

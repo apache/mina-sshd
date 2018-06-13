@@ -30,6 +30,7 @@ import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.git.GitLocationResolver;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -49,17 +50,10 @@ public class GitPgmCommandTest extends BaseTestSupport {
 
     @Test
     public void testGitPgm() throws Exception {
-        Path targetParent = detectTargetFolder().getParent();
         Path serverDir = getTempTargetRelativeFile(getClass().getSimpleName());
-
-        //
-        // TODO: the GitpgmCommandFactory is kept in the test tree
-        // TODO: because it's quite limited for now
-        //
-
         try (SshServer sshd = setupTestServer()) {
             sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
-            sshd.setCommandFactory(new GitPgmCommandFactory(Utils.resolveRelativeRemotePath(targetParent, serverDir)));
+            sshd.setCommandFactory(new GitPgmCommandFactory(GitLocationResolver.constantPath(serverDir)));
             sshd.start();
 
             int port = sshd.getPort();

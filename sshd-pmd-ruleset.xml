@@ -1,41 +1,65 @@
-<?xml version="1.0"?> 
-<ruleset name="MINA SSHD PMD ruleset" 
-   xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" 
-   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-   xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_2_0_0.xsd"> 
+<?xml version="1.0"?>
+<ruleset name="MINA SSHD PMD ruleset"
+   xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_2_0_0.xsd">
 
-   <description> 
-       This ruleset defines the PMD rules for MINA SSHD project 
-   </description> 
+   <description>
+       This ruleset defines the PMD rules for MINA SSHD project
+   </description>
 
-       <!-- See https://pmd.github.io/pmd-5.6.1/pmd-java/rules/index.html --> 
-   <rule ref="rulesets/java/basic.xml/AvoidMultipleUnaryOperators" /> 
-   <rule ref="rulesets/java/basic.xml/AvoidUsingOctalValues" /> 
-   <rule ref="rulesets/java/basic.xml/BooleanInstantiation" /> 
-   <rule ref="rulesets/java/basic.xml/BrokenNullCheck" /> 
-   <rule ref="rulesets/java/basic.xml/ExtendsObject" /> 
-   <rule ref="rulesets/java/basic.xml/MisplacedNullCheck" /> 
-   <rule ref="rulesets/java/basic.xml/OverrideBothEqualsAndHashcode" /> 
-   <rule ref="rulesets/java/basic.xml/ReturnFromFinallyBlock" /> 
-   <rule ref="rulesets/java/basic.xml/UnconditionalIfStatement" /> 
+       <!-- See https://pmd.github.io/pmd-6.2.0/pmd_rules_java.html -->
+    <rule ref="category/java/errorprone.xml/AvoidMultipleUnaryOperators" />
+    <rule ref="category/java/errorprone.xml/AvoidUsingOctalValues" />
+    <rule ref="category/java/errorprone.xml/MissingSerialVersionUID" />
+    <rule ref="category/java/errorprone.xml/BrokenNullCheck" />
+    <rule ref="category/java/errorprone.xml/MisplacedNullCheck" />
+    <rule ref="category/java/errorprone.xml/OverrideBothEqualsAndHashcode" />
+    <rule ref="category/java/errorprone.xml/ReturnFromFinallyBlock" />
+    <rule ref="category/java/errorprone.xml/UnconditionalIfStatement" />
+    <rule ref="category/java/errorprone.xml/ProperCloneImplementation" />
+    <rule ref="category/java/errorprone.xml/CloneMethodMustImplementCloneable" />
+    <rule ref="category/java/errorprone.xml/AssignmentInOperand" />
+    <rule ref="category/java/errorprone.xml/BadComparison" />
+    <rule ref="category/java/errorprone.xml/EqualsNull" />
+    <rule ref="category/java/errorprone.xml/NonCaseLabelInSwitchStatement" />
+    <rule ref="category/java/errorprone.xml/AvoidCallingFinalize" />
+    <rule ref="category/java/errorprone.xml/EmptyFinalizer" />
+    <rule ref="category/java/errorprone.xml/FinalizeDoesNotCallSuperFinalize" />
+    <rule ref="category/java/errorprone.xml/FinalizeOnlyCallsSuperFinalize" />
+    <rule ref="category/java/errorprone.xml/FinalizeOverloaded" />
+    <rule ref="category/java/errorprone.xml/FinalizeShouldBeProtected" />
+    <rule ref="category/java/errorprone.xml/UseEqualsToCompareStrings" />
+    <rule ref="category/java/errorprone.xml/UnnecessaryCaseChange" />
+    <rule ref="category/java/errorprone.xml/UnnecessaryConversionTemporary" />
+    <rule ref="category/java/errorprone.xml/UselessOperationOnImmutable" />
 
-   <rule ref="rulesets/java/braces.xml" /> 
+    <rule ref="category/java/codestyle.xml/AtLeastOneConstructor" />
+    <rule ref="category/java/codestyle.xml/ExtendsObject" />
+    <rule ref="category/java/codestyle.xml/BooleanGetMethodName" />
+    <rule ref="category/java/codestyle.xml/ForLoopsMustUseBraces" />
+    <rule ref="category/java/codestyle.xml/IfElseStmtsMustUseBraces" />
+    <rule ref="category/java/codestyle.xml/IfStmtsMustUseBraces" />
+    <rule ref="category/java/codestyle.xml/WhileLoopsMustUseBraces" />
 
-   <rule ref="rulesets/java/clone.xml/ProperCloneImplementation" /> 
-   <rule ref="rulesets/java/clone.xml/CloneMethodMustImplementCloneable" /> 
+    <rule ref="category/java/design.xml/AvoidDeeplyNestedIfStmts">
+        <properties>
+            <property name="problemDepth" value="5"/>
+        </properties>
+    </rule>
 
-   <rule ref="rulesets/java/controversial.xml/AssignmentInOperand" /> 
-   <rule ref="rulesets/java/controversial.xml/AtLeastOneConstructor" /> 
+    <rule ref="category/java/multithreading.xml/UseNotifyAllInsteadOfNotify" />
+    <rule ref="category/java/documentation.xml/UncommentedEmptyMethodBody" />
 
-   <rule ref="rulesets/java/design.xml/UseNotifyAllInsteadOfNotify" /> 
+    <rule ref="category/java/performance.xml/BooleanInstantiation" />
+    <rule ref="category/java/performance.xml/AppendCharacterWithChar" />
+    <!-- rule ref="category/java/performance.xml/ConsecutiveLiteralAppends" / -->
+    <rule ref="category/java/performance.xml/StringInstantiation" />
+    <rule ref="category/java/performance.xml/StringToString" />
+    <rule ref="category/java/performance.xml/UseIndexOfChar" />
+    <rule ref="category/java/performance.xml/UselessStringValueOf" />
 
-   <rule ref="rulesets/java/empty.xml"> 
-       <exclude name="EmptyCatchBlock" />  <!-- Enforced by checkstyle --> 
-   </rule> 
-
-   <rule ref="rulesets/java/finalizers.xml" /> 
-
-   <rule ref="rulesets/java/javabeans.xml/MissingSerialVersionUID" /> 
-
-   <rule ref="rulesets/java/logging-java.xml/AvoidPrintStackTrace" />
+    <!-- rule ref="category/java/bestpractices.xml/MethodReturnsInternalArray" / -->
+    <rule ref="category/java/bestpractices.xml/AvoidPrintStackTrace" />
+    <rule ref="category/java/bestpractices.xml/MissingOverride" />
 </ruleset>

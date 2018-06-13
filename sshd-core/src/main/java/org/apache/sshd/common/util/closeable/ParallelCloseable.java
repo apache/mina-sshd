@@ -32,7 +32,6 @@ import org.apache.sshd.common.future.SshFutureListener;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ParallelCloseable extends SimpleCloseable {
-
     private final Iterable<? extends Closeable> closeables;
 
     public ParallelCloseable(Object id, Object lock, Iterable<? extends Closeable> closeables) {
@@ -41,26 +40,34 @@ public class ParallelCloseable extends SimpleCloseable {
     }
 
     @Override
-    protected void doClose(final boolean immediately) {
-        final AtomicInteger count = new AtomicInteger(1);
+    protected void doClose(boolean immediately) {
+        AtomicInteger count = new AtomicInteger(1);
+        boolean traceEnabled = log.isTraceEnabled();
         SshFutureListener<CloseFuture> listener = f -> {
             int pendingCount = count.decrementAndGet();
-            if (log.isTraceEnabled()) {
+            if (traceEnabled) {
                 log.trace("doClose(" + immediately + ") completed pending: " + pendingCount);
             }
             if (pendingCount == 0) {
                 future.setClosed();
             }
         };
+
         for (Closeable c : closeables) {
-            if (c != null) {
-                int pendingCount = count.incrementAndGet();
-                if (log.isTraceEnabled()) {
-                    log.trace("doClose(" + immediately + ") pending closeables: " + pendingCount);
-                }
-                c.close(immediately).addListener(listener);
+            if (c == null) {
+                continue;
             }
+
+            int pendingCount = count.incrementAndGet();
+            if (traceEnabled) {
+                log.trace("doClose(" + immediately + ") pending closeables: " + pendingCount);
+            }
+            c.close(immediately).addListener(listener);
         }
+        /*
+         * Trigger the last "decrementAndGet" so that the future is marked as closed
+         * when last "operationComplete" is invoked (which could be this call...)
+         */
         listener.operationComplete(null);
     }
 }

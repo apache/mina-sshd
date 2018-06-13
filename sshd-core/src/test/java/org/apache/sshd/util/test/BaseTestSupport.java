@@ -21,9 +21,12 @@ package org.apache.sshd.util.test;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.interfaces.DSAParams;
@@ -49,6 +52,8 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
+import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
+import org.apache.sshd.common.io.IoServiceFactoryFactory;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -92,7 +97,14 @@ public abstract class BaseTestSupport extends Assert {
 
         @Override
         protected void starting(Description description) {
-            System.out.println("\nStarting " + description.getClassName() + ":" + description.getMethodName() + "...\n");
+            System.out.println("\nStarting " + description.getClassName() + ":" + description.getMethodName() + "...");
+            try {
+                IoServiceFactoryFactory ioProvider = getIoServiceProvider();
+                System.out.println("Using default provider: " + ioProvider.getClass().getName());
+            } catch (Throwable t) {
+                // Ignore
+            }
+            System.out.println();
             startTime = System.currentTimeMillis();
         }
 
@@ -104,7 +116,7 @@ public abstract class BaseTestSupport extends Assert {
     };
 
     @Rule
-    public final TestName testNameHilder = new TestName();
+    public final TestName testNameHolder = new TestName();
     private Path targetFolder;
     private Path tempFolder;
 
@@ -113,7 +125,7 @@ public abstract class BaseTestSupport extends Assert {
     }
 
     public final String getCurrentTestName() {
-        return testNameHilder.getMethodName();
+        return testNameHolder.getMethodName();
     }
 
     protected SshServer setupTestServer() {
@@ -215,6 +227,15 @@ public abstract class BaseTestSupport extends Assert {
         Path target = detectTargetFolder();
         Path parent = target.getParent();
         return parent.resolve("src");
+    }
+
+    protected Path getTestResourcesFolder() {
+        try {
+            URL url = getClass().getResource(getClass().getSimpleName() + ".class");
+            return Paths.get(url.toURI()).getParent();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected Path getClassResourcesFolder(String resType /* test or main */) {
@@ -573,5 +594,11 @@ public abstract class BaseTestSupport extends Assert {
         if (OUTPUT_DEBUG_MESSAGES) {
             System.out.append("===[DEBUG]=== ").println(message);
         }
+    }
+
+    public static IoServiceFactoryFactory getIoServiceProvider() {
+        DefaultIoServiceFactoryFactory factory =
+                DefaultIoServiceFactoryFactory.getDefaultIoServiceFactoryFactoryInstance();
+        return factory.getIoServiceProvider();
     }
 }

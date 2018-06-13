@@ -271,11 +271,13 @@ public abstract class AbstractChannel
     }
 
     protected void handleChannelRequest(String req, boolean wantReply, Buffer buffer) throws IOException {
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("handleChannelRequest({}) SSH_MSG_CHANNEL_REQUEST {} wantReply={}", this, req, wantReply);
         }
 
         Collection<? extends RequestHandler<Channel>> handlers = getRequestHandlers();
+        boolean traceEnabled = log.isTraceEnabled();
         for (RequestHandler<Channel> handler : handlers) {
             RequestHandler.Result result;
             try {
@@ -284,7 +286,7 @@ public abstract class AbstractChannel
                 log.warn("handleRequest({}) {} while {}#process({})[want-reply={}]: {}",
                          this, e.getClass().getSimpleName(), handler.getClass().getSimpleName(),
                          req, wantReply, e.getMessage());
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("handleRequest(" + this + ") request=" + req
                             + "[want-reply=" + wantReply + "] processing failure details",
                               e);
@@ -294,7 +296,7 @@ public abstract class AbstractChannel
 
             // if Unsupported then check the next handler in line
             if (RequestHandler.Result.Unsupported.equals(result)) {
-                if (log.isTraceEnabled()) {
+                if (traceEnabled) {
                     log.trace("handleRequest({})[{}#process({})[want-reply={}]]: {}",
                               this, handler.getClass().getSimpleName(), req, wantReply, result);
                 }
@@ -545,12 +547,13 @@ public abstract class AbstractChannel
 
     @Override
     public void handleClose() throws IOException {
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("handleClose({}) SSH_MSG_CHANNEL_CLOSE", this);
         }
 
         if (!eofSent.getAndSet(true)) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("handleClose({}) prevent sending EOF", this);
             }
         }
@@ -610,9 +613,10 @@ public abstract class AbstractChannel
         }
 
         @Override
-        public CloseFuture close(final boolean immediately) {
-            final Channel channel = AbstractChannel.this;
-            if (log.isDebugEnabled()) {
+        public CloseFuture close(boolean immediately) {
+            Channel channel = AbstractChannel.this;
+            boolean debugEnabled = log.isDebugEnabled();
+            if (debugEnabled) {
                 log.debug("close({})[immediately={}] processing", channel, immediately);
             }
 
@@ -620,7 +624,7 @@ public abstract class AbstractChannel
             if (immediately) {
                 gracefulFuture.setClosed();
             } else if (!gracefulFuture.isClosed()) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("close({})[immediately={}] send SSH_MSG_CHANNEL_CLOSE", channel, immediately);
                 }
 
@@ -638,7 +642,7 @@ public abstract class AbstractChannel
                         }
                     });
                 } catch (IOException e) {
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("close({})[immediately={}] {} while writing SSH_MSG_CHANNEL_CLOSE packet on channel: {}",
                                   channel, immediately, e.getClass().getSimpleName(), e.getMessage());
                     }
@@ -653,7 +657,7 @@ public abstract class AbstractChannel
             ExecutorService service = getExecutorService();
             if ((service != null) && isShutdownOnExit() && (!service.isShutdown())) {
                 Collection<?> running = service.shutdownNow();
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("close({})[immediately={}] shutdown executor service on close - running count={}",
                               channel, immediately, GenericUtils.size(running));
                 }

@@ -48,7 +48,7 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
                 if (result == -Status.APR_EOF) {
                     break;
                 } else if (result < Status.APR_SUCCESS) {
-                    AgentServerProxy.throwException(result);
+                    throw AgentServerProxy.toIOException(result);
                 }
 
                 invIn.write(buf, 0, result);
@@ -81,7 +81,7 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
 
         int result = Socket.send(socket, data, off, (int) len);
         if (result < Status.APR_SUCCESS) {
-            AgentServerProxy.throwException(result);
+            throw AgentServerProxy.toIOException(result);
         }
     }
 }

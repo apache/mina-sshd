@@ -62,7 +62,6 @@ import org.apache.sshd.common.util.io.IoUtils;
 public abstract class AbstractClientChannel extends AbstractChannel implements ClientChannel {
 
     protected final AtomicBoolean opened = new AtomicBoolean();
-    protected final String type;
 
     protected Streaming streaming;
 
@@ -83,13 +82,15 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     protected String openFailureLang;
     protected OpenFuture openFuture;
 
+    private final String channelType;
+
     protected AbstractClientChannel(String type) {
         this(type, Collections.emptyList());
     }
 
     protected AbstractClientChannel(String type, Collection<? extends RequestHandler<Channel>> handlers) {
         super(true, handlers);
-        this.type = ValidateUtils.checkNotNullAndNotEmpty(type, "No channel type specified");
+        this.channelType = ValidateUtils.checkNotNullAndNotEmpty(type, "No channel type specified");
         this.streaming = Streaming.Sync;
 
         addChannelSignalRequestHandlers(event -> {
@@ -103,6 +104,11 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     protected void addChannelSignalRequestHandlers(EventNotifier<String> notifier) {
         addRequestHandler(new ExitStatusChannelRequestHandler(exitStatusHolder, notifier));
         addRequestHandler(new ExitSignalChannelRequestHandler(exitSignalHolder, notifier));
+    }
+
+    @Override
+    public String getChannelType() {
+        return channelType;
     }
 
     @Override
@@ -200,10 +206,12 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     public Set<ClientChannelEvent> waitFor(Collection<ClientChannelEvent> mask, long timeout) {
         Objects.requireNonNull(mask, "No mask specified");
         long t = 0;
+        boolean debugEnabled = log.isDebugEnabled();
+        boolean traceEnabled = log.isTraceEnabled();
         synchronized (lock) {
             for (Set<ClientChannelEvent> cond = EnumSet.noneOf(ClientChannelEvent.class);; cond.clear()) {
                 updateCurrentChannelState(cond);
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     if (cond.contains(ClientChannelEvent.EXIT_STATUS)) {
                         log.debug("waitFor({}) mask={} - exit status={}", this, mask, exitStatusHolder);
                     }
@@ -214,7 +222,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
                 boolean nothingInCommon = Collections.disjoint(mask, cond);
                 if (!nothingInCommon) {
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("WaitFor call returning on channel {}, mask={}, cond={}", this, mask, cond);
                     }
                     return cond;
@@ -226,7 +234,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                     } else {
                         timeout = t - System.currentTimeMillis();
                         if (timeout <= 0L) {
-                            if (log.isTraceEnabled()) {
+                            if (traceEnabled) {
                                 log.trace("WaitFor call timeout on channel {}, mask={}", this, mask);
                             }
                             cond.add(ClientChannelEvent.TIMEOUT);
@@ -235,7 +243,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                     }
                 }
 
-                if (log.isTraceEnabled()) {
+                if (traceEnabled) {
                     log.trace("Waiting {} millis for lock on channel {}, mask={}, cond={}", timeout, this, mask, cond);
                 }
 
@@ -249,13 +257,13 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
                     long nanoEnd = System.nanoTime();
                     long nanoDuration = nanoEnd - nanoStart;
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("Lock notified on channel {} after {} nanos", this, nanoDuration);
                     }
                 } catch (InterruptedException e) {
                     long nanoEnd = System.nanoTime();
                     long nanoDuration = nanoEnd - nanoStart;
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("waitFor({}) mask={} - ignoring interrupted exception after {} nanos", this, mask, nanoDuration);
                     }
                 }
@@ -299,6 +307,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         }
 
         openFuture = new DefaultOpenFuture(this.toString(), lock);
+        String type = getChannelType();
         if (log.isDebugEnabled()) {
             log.debug("open({}) Send SSH_MSG_CHANNEL_OPEN - type={}", this, type);
         }

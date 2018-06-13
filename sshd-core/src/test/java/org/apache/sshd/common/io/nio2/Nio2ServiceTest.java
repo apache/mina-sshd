@@ -25,7 +25,6 @@ import java.net.SocketOption;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -57,20 +56,13 @@ public class Nio2ServiceTest extends BaseTestSupport {
     @Test   // see SSHD-554, SSHD-722
     public void testSetSocketOptions() throws Exception {
         try (SshServer sshd = setupTestServer()) {
-            Map<String, Object> expectedOptions =
-                    Collections.unmodifiableMap(new LinkedHashMap<String, Object>() {
-                        // Not serializing it
-                        private static final long serialVersionUID = 1L;
-
-                        {
-                            put(FactoryManager.SOCKET_KEEPALIVE, true);
-                            put(FactoryManager.SOCKET_LINGER, 5);
-                            put(FactoryManager.SOCKET_RCVBUF, 1024);
-                            put(FactoryManager.SOCKET_REUSEADDR, true);
-                            put(FactoryManager.SOCKET_SNDBUF, 1024);
-                            put(FactoryManager.TCP_NODELAY, true);
-                        }
-                    });
+            Map<String, Object> expectedOptions = new LinkedHashMap<String, Object>();
+            expectedOptions.put(FactoryManager.SOCKET_KEEPALIVE, true);
+            expectedOptions.put(FactoryManager.SOCKET_LINGER, 5);
+            expectedOptions.put(FactoryManager.SOCKET_RCVBUF, 1024);
+            expectedOptions.put(FactoryManager.SOCKET_REUSEADDR, true);
+            expectedOptions.put(FactoryManager.SOCKET_SNDBUF, 1024);
+            expectedOptions.put(FactoryManager.TCP_NODELAY, true);
             for (Map.Entry<String, ?> oe : expectedOptions.entrySet()) {
                 PropertyResolverUtils.updateProperty(sshd, oe.getKey(), oe.getValue());
             }

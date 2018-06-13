@@ -391,6 +391,7 @@ public final class SecurityUtils {
             if ((GenericUtils.length(regsList) > 0) && (!"none".equalsIgnoreCase(regsList))) {
                 String[] classes = GenericUtils.split(regsList, ',');
                 Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
+                boolean debugEnabled = logger.isDebugEnabled();
                 for (String registrarClass : classes) {
                     SecurityProviderRegistrar r;
                     try {
@@ -411,7 +412,7 @@ public final class SecurityUtils {
                     String name = r.getName();
                     SecurityProviderRegistrar registeredInstance = registerSecurityProvider(r);
                     if (registeredInstance == null) {
-                        if (logger.isDebugEnabled()) {
+                        if (debugEnabled) {
                             logger.debug("register({}) not registered - enabled={}, supported={}",
                                          name, r.isEnabled(), r.isSupported());
                         }

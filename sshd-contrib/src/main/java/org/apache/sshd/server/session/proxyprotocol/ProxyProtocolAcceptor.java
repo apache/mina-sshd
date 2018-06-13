@@ -35,7 +35,7 @@ import org.apache.sshd.server.session.ServerSession;
  * A working prototype to support PROXY protocol as described in
  * <A HREF="http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt">HAProxy Documentation</A>.
  *
- * @see <A HREF="https://gist.github.com/codingtony/a8684c9ffa08ad56899f94d3b6c2a040">Tony Bussieres's</A> contribution
+ * @see <A HREF="https://gist.github.com/codingtony/a8684c9ffa08ad56899f94d3b6c2a040">Tony Bussieres contribution</A>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ProxyProtocolAcceptor extends AbstractLoggingBean implements ServerProxyAcceptor {
@@ -95,7 +95,8 @@ public class ProxyProtocolAcceptor extends AbstractLoggingBean implements Server
     }
 
     protected boolean parseProxyHeader(ServerSession session, String proxyHeader, int markPosition, Buffer buffer) throws Exception {
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("parseProxyHeader(session={}) parsing header='{}'", session, proxyHeader);
         }
 
@@ -115,7 +116,7 @@ public class ProxyProtocolAcceptor extends AbstractLoggingBean implements Server
             String layer3DstAddress = proxyFields[3];
             String layer3SrcPort = proxyFields[4];
             String layer3DstPort = proxyFields[5];
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("parseProxyHeader(session={}) using {}:{} -> {}:{} proxy",
                           session, layer3SrcAddress, layer3SrcPort, layer3DstAddress, layer3DstPort);
             }

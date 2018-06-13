@@ -18,37 +18,52 @@
  */
 package org.apache.sshd.git.pack;
 
-import org.apache.sshd.server.Command;
-import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.server.scp.UnknownCommand;
+import java.util.concurrent.ExecutorService;
+
+import org.apache.sshd.git.AbstractGitCommandFactory;
+import org.apache.sshd.git.GitLocationResolver;
+import org.apache.sshd.server.command.CommandFactory;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class GitPackCommandFactory implements CommandFactory {
+public class GitPackCommandFactory extends AbstractGitCommandFactory {
+    public static final String GIT_FACTORY_NAME = "git-pack";
+    public static final String GIT_COMMAND_PREFIX = "git-";
 
-    private final String rootDir;
-    private final CommandFactory delegate;
-
-    public GitPackCommandFactory(String rootDir) {
-        this(rootDir,  null);
+    public GitPackCommandFactory() {
+        this(null);
     }
 
-    public GitPackCommandFactory(String rootDir, CommandFactory delegate) {
-        this.rootDir = rootDir;
-        this.delegate = delegate;
+    public GitPackCommandFactory(GitLocationResolver resolver) {
+        super(GIT_FACTORY_NAME, GIT_COMMAND_PREFIX);
+        withGitLocationResolver(resolver);
     }
 
     @Override
-    public Command createCommand(String command) {
-        if (command.startsWith("git-")) {
-            return new GitPackCommand(rootDir, command);
-        } else if (delegate != null) {
-            return delegate.createCommand(command);
-        } else {
-            return new UnknownCommand(command);
-        }
+    public GitPackCommandFactory withDelegate(CommandFactory delegate) {
+        return (GitPackCommandFactory) super.withDelegate(delegate);
+    }
+
+    @Override
+    public GitPackCommandFactory withGitLocationResolver(GitLocationResolver rootDirResolver) {
+        return (GitPackCommandFactory) super.withGitLocationResolver(rootDirResolver);
+    }
+
+    @Override
+    public GitPackCommandFactory withExecutorService(ExecutorService executorService) {
+        return (GitPackCommandFactory) super.withExecutorService(executorService);
+    }
+
+    @Override
+    public GitPackCommandFactory withShutdownOnExit(boolean shutdownOnExit) {
+        return (GitPackCommandFactory) super.withShutdownOnExit(shutdownOnExit);
+    }
+
+    @Override
+    public GitPackCommand createGitCommand(String command) {
+        return new GitPackCommand(getGitLocationResolver(), command, getExecutorService(), isShutdownOnExit());
     }
 }

@@ -236,7 +236,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
     @Override
     protected void setKexSeed(byte... seed) {
-        i_s = ValidateUtils.checkNotNullAndNotEmpty(seed, "No KEX seed");
+        setServerKexData(seed);
     }
 
     @Override
@@ -248,13 +248,14 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
         KeyPairProvider kpp = getKeyPairProvider();
         Collection<String> supported = NamedResource.getNameList(getSignatureFactories());
+        boolean debugEnabled = log.isDebugEnabled();
         Iterable<String> provided;
         try {
             provided = (kpp == null) ? null : kpp.getKeyTypes();
         } catch (Error e) {
             log.warn("resolveAvailableSignaturesProposal({}) failed ({}) to get key types: {}",
                      this, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("resolveAvailableSignaturesProposal(" + this + ") fetch key types failure details", e);
             }
 
@@ -268,7 +269,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         StringBuilder resolveKeys = null;
         for (String keyType : provided) {
             if (!supported.contains(keyType)) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("resolveAvailableSignaturesProposal({})[{}] {} not in supported list: {}",
                               this, provided, keyType, supported);
                 }
@@ -314,6 +315,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     protected boolean readIdentification(Buffer buffer) throws IOException {
         ServerProxyAcceptor acceptor = getServerProxyAcceptor();
         int rpos = buffer.rpos();
+        boolean debugEnabled = log.isDebugEnabled();
         if (acceptor != null) {
             try {
                 boolean completed = acceptor.acceptServerProxyMetadata(this, buffer);
@@ -324,7 +326,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             } catch (Throwable t) {
                 log.warn("readIdentification({}) failed ({}) to accept proxy metadata: {}",
                          this, t.getClass().getSimpleName(), t.getMessage());
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("readIdentification(" + this + ") proxy metadata acceptance failure details", t);
                 }
 
@@ -344,7 +346,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             return false;   // more data required
         }
 
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("readIdentification({}) client version string: {}", this, clientVersion);
         }
 
@@ -363,7 +365,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         }
 
         if (GenericUtils.length(errorMessage) > 0) {
-            ioSession.writePacket(new ByteArrayBuffer((errorMessage + "\n").getBytes(StandardCharsets.UTF_8)))
+            IoSession networkSession = getIoSession();
+            networkSession.writePacket(new ByteArrayBuffer((errorMessage + "\n").getBytes(StandardCharsets.UTF_8)))
                      .addListener(future -> close(true));
             throw new SshException(errorMessage);
         }
@@ -376,7 +379,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     @Override
     protected void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed) throws IOException {
         mergeProposals(clientProposal, proposal);
-        i_c = seed;
+        setClientKexData(seed);
     }
 
     @Override
@@ -402,7 +405,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             return 0;
         }
 
-        IoService service = ioSession.getService();
+        IoSession networkSession = getIoSession();
+        IoService service = networkSession.getService();
         Map<?, IoSession> sessionsMap = service.getManagedSessions();
         if (GenericUtils.isEmpty(sessionsMap)) {
             return 0;
@@ -430,6 +434,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
      * @return The session id.
      */
     public long getId() {
-        return ioSession.getId();
+        IoSession networkSession = getIoSession();
+        return networkSession.getId();
     }
 }

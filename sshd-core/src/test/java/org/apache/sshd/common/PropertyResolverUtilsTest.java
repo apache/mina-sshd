@@ -31,8 +31,10 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 import org.mockito.Mockito;
 
@@ -40,6 +42,7 @@ import org.mockito.Mockito;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class PropertyResolverUtilsTest extends BaseTestSupport {
     public PropertyResolverUtilsTest() {
         super();
@@ -128,7 +131,7 @@ public class PropertyResolverUtilsTest extends BaseTestSupport {
         {
             String actual = PropertyResolverUtils.getString(resolver, name);
             assertNotNull("No actual String value found for storage as " + storage, actual);
-            assertEquals("Mismatched values on String retrieval for storage as " + storage, Long.toString(expected), actual.toString());
+            assertEquals("Mismatched values on String retrieval for storage as " + storage, Long.toString(expected), actual);
         }
     }
 
@@ -167,7 +170,7 @@ public class PropertyResolverUtilsTest extends BaseTestSupport {
         {
             String actual = PropertyResolverUtils.getString(resolver, name);
             assertNotNull("No actual String value found for storage as " + storage, actual);
-            assertEquals("Mismatched values on String retrieval for storage as " + storage, Integer.toString(expected), actual.toString());
+            assertEquals("Mismatched values on String retrieval for storage as " + storage, Integer.toString(expected), actual);
         }
     }
 
@@ -203,7 +206,7 @@ public class PropertyResolverUtilsTest extends BaseTestSupport {
         {
             String actual = PropertyResolverUtils.getString(resolver, name);
             assertNotNull("No actual String value found for storage as " + storage, actual);
-            assertEquals("Mismatched values on String retrieval for storage as " + storage, Boolean.toString(expected), actual.toString());
+            assertEquals("Mismatched values on String retrieval for storage as " + storage, Boolean.toString(expected), actual);
         }
     }
 

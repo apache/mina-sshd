@@ -487,7 +487,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
         Objects.requireNonNull(getRandomFactory(), "RandomFactory not set");
 
         if (getIoServiceFactoryFactory() == null) {
-            setIoServiceFactoryFactory(new DefaultIoServiceFactoryFactory());
+            setIoServiceFactoryFactory(DefaultIoServiceFactoryFactory.getDefaultIoServiceFactoryFactoryInstance());
         }
     }
 }
