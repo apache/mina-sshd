@@ -570,7 +570,7 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * Encodes the {@link Transformer#TOSTRING} value of each member.
+     * Encodes the {@link Objects#toString(Object, String) toString} value of each member.
      *
      * @param objects       The objects to be encoded in the buffer - OK if
      *                      {@code null}/empty
@@ -583,7 +583,7 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * Encodes the {@link Transformer#TOSTRING} value of each member
+     * Encodes the {@link Objects#toString(Object, String) toString} value of each member
      *
      * @param objects       The objects to be encoded in the buffer - OK if
      *                      {@code null}/empty

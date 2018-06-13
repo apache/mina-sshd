@@ -35,7 +35,7 @@ import org.apache.sshd.server.session.ServerSession;
  * A working prototype to support PROXY protocol as described in
  * <A HREF="http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt">HAProxy Documentation</A>.
  *
- * @see <A HREF="https://gist.github.com/codingtony/a8684c9ffa08ad56899f94d3b6c2a040">Tony Bussieres's</A> contribution
+ * @see <A HREF="https://gist.github.com/codingtony/a8684c9ffa08ad56899f94d3b6c2a040">Tony Bussieres contribution</A>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ProxyProtocolAcceptor extends AbstractLoggingBean implements ServerProxyAcceptor {
