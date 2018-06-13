@@ -31,7 +31,6 @@ import org.apache.mina.core.service.IoService;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionConfig;
-import org.apache.mina.filter.FilterEvent;
 import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.sshd.common.Closeable;
@@ -100,11 +99,6 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
 
     @Override
     public void messageSent(IoSession session, Object message) throws Exception {
-        // Empty handler
-    }
-
-    @Override
-    public void event(IoSession session, FilterEvent event) throws Exception {
         // Empty handler
     }
 
