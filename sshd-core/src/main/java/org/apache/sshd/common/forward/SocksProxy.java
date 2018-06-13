@@ -20,6 +20,7 @@ package org.apache.sshd.common.forward;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -91,17 +92,17 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
     }
 
     public abstract static class Proxy implements Closeable {
-
-        IoSession session;
-        TcpipClientChannel channel;
+        protected IoSession session;
+        protected TcpipClientChannel channel;
 
         protected Proxy(IoSession session) {
             this.session = session;
         }
 
         protected void onMessage(Buffer buffer) throws IOException {
-            channel.getInvertedIn().write(buffer.array(), buffer.rpos(), buffer.available());
-            channel.getInvertedIn().flush();
+            OutputStream invertedIn = channel.getInvertedIn();
+            invertedIn.write(buffer.array(), buffer.rpos(), buffer.available());
+            invertedIn.flush();
         }
 
         @Override
@@ -186,7 +187,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
             }
         }
 
-        private String getNTString(Buffer buffer) {
+        protected String getNTString(Buffer buffer) {
             StringBuilder sb = new StringBuilder();
             for (char c = (char) getUByte(buffer); c != '\0'; c = (char) getUByte(buffer)) {
                 sb.append(c);
@@ -209,6 +210,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
         @SuppressWarnings("synthetic-access")
         @Override
         protected void onMessage(Buffer buffer) throws IOException {
+            boolean debugEnabled = log.isDebugEnabled();
             if (authMethods == null) {
                 int nbAuthMethods = getUByte(buffer);
                 authMethods = new byte[nbAuthMethods];
@@ -223,7 +225,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 session.writePacket(buffer);
                 if (!foundNoAuth) {
                     throw new IllegalStateException("Received socks5 greeting without NoAuth method");
-                } else {
+                } else if (debugEnabled) {
                     log.debug("Received socks5 greeting");
                 }
             } else if (channel == null) {
@@ -236,9 +238,11 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 if (cmd != 1) { // establish a TCP/IP stream connection
                     throw new IllegalStateException("Unsupported socks command: " + cmd);
                 }
-                final int res = buffer.getUByte();
+                int res = buffer.getUByte();
                 if (res != 0) {
-                    log.debug("No zero reserved value: " + res);
+                    if (debugEnabled) {
+                        log.debug("No zero reserved value: {}", res);
+                    }
                 }
 
                 int type = buffer.getUByte();
@@ -263,7 +267,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                     throw new IllegalStateException("Unsupported address type: " + type);
                 }
                 int port = getUShort(buffer);
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("Received socks5 connection request to {}:{}", host, port);
                 }
                 SshdSocketAddress remote = new SshdSocketAddress(host, port);
@@ -271,7 +275,9 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 service.registerChannel(channel);
                 channel.open().addListener(this::onChannelOpened);
             } else {
-                log.debug("Received socks5 connection message");
+                if (debugEnabled) {
+                    log.debug("Received socks5 connection message");
+                }
                 super.onMessage(buffer);
             }
         }
@@ -293,21 +299,18 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
             try {
                 session.writePacket(response);
             } catch (IOException e) {
-                // TODO Auto-generated catch block
                 log.error("Failed ({}) to send channel open response for {}: {}", e.getClass().getSimpleName(), channel, e.getMessage());
                 throw new IllegalStateException("Failed to send packet", e);
             }
         }
 
-        private String getBLString(Buffer buffer) {
+        protected String getBLString(Buffer buffer) {
             int length = getUByte(buffer);
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder(length);
             for (int i = 0; i < length; i++) {
                 sb.append((char) getUByte(buffer));
             }
             return sb.toString();
         }
-
     }
-
 }
