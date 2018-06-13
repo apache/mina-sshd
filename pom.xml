@@ -426,7 +426,7 @@
                                         <artifactId>maven-checkstyle-plugin</artifactId>
                                         <versionRange>[1.0,)</versionRange>
                                         <goals>
-                                            <goal>none</goal>
+                                            <goal>check</goal>
                                         </goals>
                                     </pluginExecutionFilter>
                                     <action>
@@ -769,6 +769,29 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>1.4.1</version>
+                <executions>
+                    <execution>
+                        <id>enforce-versions</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <rules>
+                        <requireMavenVersion>
+                            <version>[${min.required.maven.version},)</version>
+                        </requireMavenVersion>
+                        <requireJavaVersion>
+                            <version>[${javac.target},)</version>
+                        </requireJavaVersion>
+                    </rules>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.7.0</version>
                 <configuration>
@@ -821,7 +844,7 @@
                         </configuration>
                     </execution>
                 </executions>
-	</plugin><!--
+            </plugin>
             <plugin>
                 <groupId>org.apache.rat</groupId>
                 <artifactId>apache-rat-plugin</artifactId>
@@ -834,7 +857,7 @@
                         </goals>
                     </execution>
                 </executions>
-	    </plugin>-->
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
