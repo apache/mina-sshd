@@ -35,7 +35,6 @@ import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
@@ -1019,32 +1018,20 @@ public class DefaultForwardingFilter
     }
 
     @Override
-    public boolean hasLocalPortForwardingStarted(SshdSocketAddress local) {
-        boolean started = false;
-        Objects.requireNonNull(local, "Local address is null");
-        ValidateUtils.checkTrue(local.getPort() >= 0, "Invalid local port: %s", local);
+    public boolean hasLocalPortForwardingStartedForPort(int port) {
+        ValidateUtils.checkTrue(port > 0, "Invalid local port: %d", port);
       
         synchronized (localToRemote) {
-            SshdSocketAddress remote = localToRemote.get(Integer.valueOf(local.getPort()));
-            if (remote != null) {
-                started = true;  
-            }
+          return localToRemote.containsKey(Integer.valueOf(port));
         }      
-        return started;
     }
 
     @Override
-    public boolean hasRemotePortForwardingStarted(SshdSocketAddress remote) {
-        boolean started = false;
-        Objects.requireNonNull(remote, "Remote address is null");
-        ValidateUtils.checkTrue(remote.getPort() >= 0, "Invalid remote port: %s", remote);
+    public boolean hasRemotePortForwardingStartedForPort(int port) {
+        ValidateUtils.checkTrue(port > 0, "Invalid remote port: %d", port);
     
         synchronized (remoteToLocal) {
-            SshdSocketAddress local = remoteToLocal.get(Integer.valueOf(remote.getPort()));
-            if (local != null) {
-                started = true;  
-            }
+            return remoteToLocal.containsKey(Integer.valueOf(port));
         }      
-        return started;
     }
 }

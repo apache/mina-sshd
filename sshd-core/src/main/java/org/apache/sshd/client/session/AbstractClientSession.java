@@ -331,15 +331,15 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     @Override
-    public boolean hasLocalPortForwardingStarted(SshdSocketAddress local) {
+    public boolean hasLocalPortForwardingStartedForPort(int port) {
         ForwardingFilter filter = getForwardingFilter();
-        return filter.hasLocalPortForwardingStarted(local);
+        return (filter != null) && filter.hasLocalPortForwardingStartedForPort(port);
     }
 
     @Override
-    public boolean hasRemotePortForwardingStarted(SshdSocketAddress remote) {
+    public boolean hasRemotePortForwardingStartedForPort(int port) {
         ForwardingFilter filter = getForwardingFilter();
-        return filter.hasRemotePortForwardingStarted(remote);
+        return (filter != null) && filter.hasRemotePortForwardingStartedForPort(port);
     }
 
     protected ForwardingFilter getForwardingFilter() {

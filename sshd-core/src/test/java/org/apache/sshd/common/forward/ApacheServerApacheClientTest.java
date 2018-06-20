@@ -114,14 +114,12 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
     
     @Override
     protected boolean hasLocalPFStarted(int port) {
-        SshdSocketAddress local = new SshdSocketAddress(TEST_LOCALHOST, port);
-        return session.hasLocalPortForwardingStarted(local);
+        return session.hasLocalPortForwardingStartedForPort(port);
     }
     
     @Override
     protected boolean hasRemotePFStarted(int port) {
-        SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, port);
-        return session.hasRemotePortForwardingStarted(remote);
+        return session.hasRemotePortForwardingStartedForPort(port);
     }
 
 }

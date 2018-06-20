@@ -20,7 +20,7 @@
 package org.apache.sshd.common.forward;
 
 import java.io.IOException;
-
+import java.util.Objects;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
@@ -94,20 +94,21 @@ public interface PortForwardingManager {
      */
     void stopDynamicPortForwarding(SshdSocketAddress local) throws IOException;
     
+    
     /**
      *  Test if local port forwarding is started
      * 
-     * @param local The local address
+     * @param port The local port
      * @return true if local port forwarding is started, false otherwise
      */
-    boolean hasLocalPortForwardingStarted(SshdSocketAddress local);
+    boolean hasLocalPortForwardingStartedForPort(int port);
 
     /**
      * Test if remote port forwarding is started
      * 
-     * @param remote The remote address
+     * @param port The remote port
      * @return true if remote port forwarding is started, false otherwise
      */
-    boolean hasRemotePortForwardingStarted(SshdSocketAddress remote);
+    boolean hasRemotePortForwardingStartedForPort(int port);
     
 }
