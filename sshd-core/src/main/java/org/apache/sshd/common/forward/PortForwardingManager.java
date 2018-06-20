@@ -20,7 +20,7 @@
 package org.apache.sshd.common.forward;
 
 import java.io.IOException;
-import java.util.Objects;
+
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**

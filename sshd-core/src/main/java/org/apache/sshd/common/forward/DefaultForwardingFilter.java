@@ -35,6 +35,7 @@ import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
@@ -1022,7 +1023,7 @@ public class DefaultForwardingFilter
         ValidateUtils.checkTrue(port > 0, "Invalid local port: %d", port);
       
         synchronized (localToRemote) {
-          return localToRemote.containsKey(Integer.valueOf(port));
+            return localToRemote.containsKey(Integer.valueOf(port));
         }      
     }
 
