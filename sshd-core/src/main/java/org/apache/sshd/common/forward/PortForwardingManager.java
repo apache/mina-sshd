@@ -93,4 +93,21 @@ public interface PortForwardingManager {
      * @throws IOException If failed to cancel the requested binding
      */
     void stopDynamicPortForwarding(SshdSocketAddress local) throws IOException;
+    
+    /**
+     *  Test if local port forwarding is started
+     * 
+     * @param local The local address
+     * @return true if local port forwarding is started, false otherwise
+     */
+    boolean hasLocalPortForwardingStarted(SshdSocketAddress local);
+
+    /**
+     * Test if remote port forwarding is started
+     * 
+     * @param remote The remote address
+     * @return true if remote port forwarding is started, false otherwise
+     */
+    boolean hasRemotePortForwardingStarted(SshdSocketAddress remote);
+    
 }

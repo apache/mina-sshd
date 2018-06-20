@@ -118,4 +118,13 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
         Window wLocal = getLocalWindow();
         wLocal.consumeAndCheck(len);
     }
+    
+    public SshdSocketAddress getLocalSocketAddress() {
+        return this.local;
+    }
+    
+    public SshdSocketAddress getRemoteSocketAddress() {
+        return this.remote;
+    }
+
 }

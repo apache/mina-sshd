@@ -106,9 +106,22 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
 
     @Override
     protected int startLocalPF() throws Exception {
-        SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, 0);
-        SshdSocketAddress local = new SshdSocketAddress(TEST_LOCALHOST, testServerPort);
-        SshdSocketAddress bound = session.startLocalPortForwarding(remote, local);
+        SshdSocketAddress local = new SshdSocketAddress(TEST_LOCALHOST, 0);
+        SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, testServerPort);
+        SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
         return bound.getPort();
     }
+    
+    @Override
+    protected boolean hasLocalPFStarted(int port) {
+        SshdSocketAddress local = new SshdSocketAddress(TEST_LOCALHOST, port);
+        return session.hasLocalPortForwardingStarted(local);
+    }
+    
+    @Override
+    protected boolean hasRemotePFStarted(int port) {
+        SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, port);
+        return session.hasRemotePortForwardingStarted(remote);
+    }
+
 }

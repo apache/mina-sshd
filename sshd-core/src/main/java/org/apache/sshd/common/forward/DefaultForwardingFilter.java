@@ -1017,4 +1017,34 @@ public class DefaultForwardingFilter
             session.close(true);
         }
     }
+
+    @Override
+    public boolean hasLocalPortForwardingStarted(SshdSocketAddress local) {
+        boolean started = false;
+        Objects.requireNonNull(local, "Local address is null");
+        ValidateUtils.checkTrue(local.getPort() >= 0, "Invalid local port: %s", local);
+      
+        synchronized (localToRemote) {
+            SshdSocketAddress remote = localToRemote.get(Integer.valueOf(local.getPort()));
+            if (remote != null) {
+                started = true;  
+            }
+        }      
+        return started;
+    }
+
+    @Override
+    public boolean hasRemotePortForwardingStarted(SshdSocketAddress remote) {
+        boolean started = false;
+        Objects.requireNonNull(remote, "Remote address is null");
+        ValidateUtils.checkTrue(remote.getPort() >= 0, "Invalid remote port: %s", remote);
+    
+        synchronized (remoteToLocal) {
+            SshdSocketAddress local = remoteToLocal.get(Integer.valueOf(remote.getPort()));
+            if (local != null) {
+                started = true;  
+            }
+        }      
+        return started;
+    }
 }

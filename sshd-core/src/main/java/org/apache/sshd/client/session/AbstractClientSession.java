@@ -330,6 +330,18 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         filter.stopDynamicPortForwarding(local);
     }
 
+    @Override
+    public boolean hasLocalPortForwardingStarted(SshdSocketAddress local) {
+        ForwardingFilter filter = getForwardingFilter();
+        return filter.hasLocalPortForwardingStarted(local);
+    }
+
+    @Override
+    public boolean hasRemotePortForwardingStarted(SshdSocketAddress remote) {
+        ForwardingFilter filter = getForwardingFilter();
+        return filter.hasRemotePortForwardingStarted(remote);
+    }
+
     protected ForwardingFilter getForwardingFilter() {
         ConnectionService service = Objects.requireNonNull(getConnectionService(), "No connection service");
         return Objects.requireNonNull(service.getForwardingFilter(), "No forwarder");
