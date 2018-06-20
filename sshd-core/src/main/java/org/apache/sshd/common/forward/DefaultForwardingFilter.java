@@ -29,6 +29,7 @@ import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
@@ -1015,6 +1016,48 @@ public class DefaultForwardingFilter
                 log.trace("exceptionCaught(" + session + ") caught exception details", cause);
             }
             session.close(true);
+        }
+    }
+
+    @Override
+    public SshdSocketAddress getBoundLocalPortForward(int port) {
+        ValidateUtils.checkTrue(port > 0, "Invalid local port: %d", port);
+
+        Integer portKey = Integer.valueOf(port);
+        synchronized (localToRemote) {
+            return localToRemote.get(portKey);
+        }
+    }
+
+    @Override
+    public NavigableSet<Integer> getStartedLocalPortForwards() {
+        synchronized (localToRemote) {
+            if (localToRemote.isEmpty()) {
+                return Collections.emptyNavigableSet();
+            }
+
+            return GenericUtils.asSortedSet(localToRemote.keySet());
+        }
+    }
+
+    @Override
+    public SshdSocketAddress getBoundRemotePortForward(int port) {
+        ValidateUtils.checkTrue(port > 0, "Invalid remote port: %d", port);
+
+        Integer portKey = Integer.valueOf(port);
+        synchronized (remoteToLocal) {
+            return remoteToLocal.get(portKey);
+        }
+    }
+
+    @Override
+    public NavigableSet<Integer> getStartedRemotePortForwards() {
+        synchronized (remoteToLocal) {
+            if (remoteToLocal.isEmpty()) {
+                return Collections.emptyNavigableSet();
+            }
+
+            return GenericUtils.asSortedSet(remoteToLocal.keySet());
         }
     }
 }
