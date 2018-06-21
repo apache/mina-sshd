@@ -333,6 +333,12 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     @Override
+    public List<Map.Entry<Integer, SshdSocketAddress>> getLocalForwardsBindings() {
+        ForwardingFilter filter = getForwardingFilter();
+        return (filter == null) ? Collections.emptyList() : filter.getLocalForwardsBindings();
+    }
+
+    @Override
     public boolean isLocalPortForwardingStartedForPort(int port) {
         ForwardingFilter filter = getForwardingFilter();
         return (filter != null) && filter.isLocalPortForwardingStartedForPort(port);
@@ -348,6 +354,12 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     public SshdSocketAddress getBoundLocalPortForward(int port) {
         ForwardingFilter filter = getForwardingFilter();
         return (filter == null) ? null : filter.getBoundLocalPortForward(port);
+    }
+
+    @Override
+    public List<Map.Entry<Integer, SshdSocketAddress>> getRemoteForwardsBindings() {
+        ForwardingFilter filter = getForwardingFilter();
+        return (filter == null) ? Collections.emptyList() : filter.getRemoteForwardsBindings();
     }
 
     @Override

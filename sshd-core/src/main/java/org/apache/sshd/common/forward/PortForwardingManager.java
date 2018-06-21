@@ -20,6 +20,8 @@
 package org.apache.sshd.common.forward;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import java.util.NavigableSet;
 
 import org.apache.sshd.common.util.net.SshdSocketAddress;
@@ -111,6 +113,12 @@ public interface PortForwardingManager {
     SshdSocketAddress getBoundLocalPortForward(int port);
 
     /**
+     * @return A <u>snapshot</u> of the currently bound forwarded local ports
+     * as &quot;pairs&quot; of port + bound {@link SshdSocketAddress}
+     */
+    List<Map.Entry<Integer, SshdSocketAddress>> getLocalForwardsBindings();
+
+    /**
      *  Test if local port forwarding is started
      *
      * @param port The local port
@@ -135,6 +143,12 @@ public interface PortForwardingManager {
      * @see #getStartedRemotePortForwards()
      */
     SshdSocketAddress getBoundRemotePortForward(int port);
+
+    /**
+     * @return A <u>snapshot</u> of the currently bound forwarded remote ports
+     * as &quot;pairs&quot; of port + bound {@link SshdSocketAddress}
+     */
+    List<Map.Entry<Integer, SshdSocketAddress>> getRemoteForwardsBindings();
 
     /**
      * Test if remote port forwarding is started

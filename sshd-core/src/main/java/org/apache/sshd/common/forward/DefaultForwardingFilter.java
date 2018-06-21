@@ -22,12 +22,14 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
@@ -36,6 +38,7 @@ import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.OpenFuture;
@@ -230,8 +233,9 @@ public class DefaultForwardingFilter
         Objects.requireNonNull(local, "Local address is null");
 
         SshdSocketAddress bound;
+        int port = local.getPort();
         synchronized (localToRemote) {
-            bound = localToRemote.remove(local.getPort());
+            bound = localToRemote.remove(port);
         }
 
         if ((bound != null) && (acceptor != null)) {
@@ -315,8 +319,9 @@ public class DefaultForwardingFilter
     @Override
     public synchronized void stopRemotePortForwarding(SshdSocketAddress remote) throws IOException {
         SshdSocketAddress bound;
+        int port = remote.getPort();
         synchronized (remoteToLocal) {
-            bound = remoteToLocal.remove(remote.getPort());
+            bound = remoteToLocal.remove(port);
         }
 
         if (bound != null) {
@@ -330,7 +335,7 @@ public class DefaultForwardingFilter
             buffer.putString("cancel-tcpip-forward");
             buffer.putBoolean(false);   // want reply
             buffer.putString(remoteHost);
-            buffer.putInt(remote.getPort());
+            buffer.putInt(port);
 
             signalTearingDownExplicitTunnel(bound, false);
             try {
@@ -1030,6 +1035,18 @@ public class DefaultForwardingFilter
     }
 
     @Override
+    public List<Map.Entry<Integer, SshdSocketAddress>> getLocalForwardsBindings() {
+        synchronized (localToRemote) {
+            return localToRemote.isEmpty()
+                 ? Collections.emptyList()
+                 : localToRemote.entrySet()
+                     .stream()  // return an immutable clone to avoid 'setValue' calls on a shared instance
+                     .map(e -> new SimpleImmutableEntry<>(e.getKey(), e.getValue()))
+                     .collect(Collectors.toCollection(() -> new ArrayList<>(localToRemote.size())));
+        }
+    }
+
+    @Override
     public NavigableSet<Integer> getStartedLocalPortForwards() {
         synchronized (localToRemote) {
             if (localToRemote.isEmpty()) {
@@ -1037,6 +1054,18 @@ public class DefaultForwardingFilter
             }
 
             return GenericUtils.asSortedSet(localToRemote.keySet());
+        }
+    }
+
+    @Override
+    public List<Map.Entry<Integer, SshdSocketAddress>> getRemoteForwardsBindings() {
+        synchronized (remoteToLocal) {
+            return remoteToLocal.isEmpty()
+                 ? Collections.emptyList()
+                 : remoteToLocal.entrySet()
+                     .stream()  // return an immutable clone to avoid 'setValue' calls on a shared instance
+                     .map(e -> new SimpleImmutableEntry<>(e.getKey(), e.getValue()))
+                     .collect(Collectors.toCollection(() -> new ArrayList<>(remoteToLocal.size())));
         }
     }
 
