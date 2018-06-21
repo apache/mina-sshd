@@ -23,11 +23,9 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.security.KeyPair;
 import java.security.PublicKey;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -292,6 +290,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         return getService(ClientUserAuthService.class);
     }
 
+    @Override
     protected ConnectionService getConnectionService() {
         return getService(ConnectionService.class);
     }
@@ -333,53 +332,6 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     @Override
-    public List<Map.Entry<Integer, SshdSocketAddress>> getLocalForwardsBindings() {
-        ForwardingFilter filter = getForwardingFilter();
-        return (filter == null) ? Collections.emptyList() : filter.getLocalForwardsBindings();
-    }
-
-    @Override
-    public boolean isLocalPortForwardingStartedForPort(int port) {
-        ForwardingFilter filter = getForwardingFilter();
-        return (filter != null) && filter.isLocalPortForwardingStartedForPort(port);
-    }
-
-    @Override
-    public NavigableSet<Integer> getStartedLocalPortForwards() {
-        ForwardingFilter filter = getForwardingFilter();
-        return (filter == null) ? Collections.emptyNavigableSet() : filter.getStartedLocalPortForwards();
-    }
-
-    @Override
-    public SshdSocketAddress getBoundLocalPortForward(int port) {
-        ForwardingFilter filter = getForwardingFilter();
-        return (filter == null) ? null : filter.getBoundLocalPortForward(port);
-    }
-
-    @Override
-    public List<Map.Entry<Integer, SshdSocketAddress>> getRemoteForwardsBindings() {
-        ForwardingFilter filter = getForwardingFilter();
-        return (filter == null) ? Collections.emptyList() : filter.getRemoteForwardsBindings();
-    }
-
-    @Override
-    public boolean isRemotePortForwardingStartedForPort(int port) {
-        ForwardingFilter filter = getForwardingFilter();
-        return (filter != null) && filter.isRemotePortForwardingStartedForPort(port);
-    }
-
-    @Override
-    public NavigableSet<Integer> getStartedRemotePortForwards() {
-        ForwardingFilter filter = getForwardingFilter();
-        return (filter == null) ? Collections.emptyNavigableSet() : filter.getStartedRemotePortForwards();
-    }
-
-    @Override
-    public SshdSocketAddress getBoundRemotePortForward(int port) {
-        ForwardingFilter filter = getForwardingFilter();
-        return (filter == null) ? null : filter.getBoundRemotePortForward(port);
-    }
-
     protected ForwardingFilter getForwardingFilter() {
         ConnectionService service = Objects.requireNonNull(getConnectionService(), "No connection service");
         return Objects.requireNonNull(service.getForwardingFilter(), "No forwarder");

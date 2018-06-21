@@ -41,6 +41,7 @@ import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
@@ -460,6 +461,11 @@ public class AbstractSessionTest extends BaseTestSupport {
         @Override
         public void resetIdleTimeout() {
             // ignored
+        }
+
+        @Override
+        protected ConnectionService getConnectionService() {
+            return null;
         }
     }
 }

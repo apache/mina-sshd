@@ -32,6 +32,7 @@ import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolver
 import org.apache.sshd.common.cipher.CipherInformation;
 import org.apache.sshd.common.compression.CompressionInformation;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
+import org.apache.sshd.common.forward.PortForwardingInformationProvider;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -58,6 +59,7 @@ public interface Session
                 PortForwardingEventListenerManager,
                 UnknownChannelReferenceHandlerManager,
                 FactoryManagerHolder,
+                PortForwardingInformationProvider,
                 PropertyResolver,
                 AttributeStore,
                 Closeable,
