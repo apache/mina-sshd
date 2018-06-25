@@ -79,6 +79,7 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@SuppressWarnings("checkstyle:MethodCount")
 public class SftpFileSystemTest extends BaseTestSupport {
     private static SshServer sshd;
     private static int port;

@@ -111,6 +111,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@SuppressWarnings("checkstyle:MethodCount")  // TODO split this big class and remove the suppression
 public abstract class AbstractSession extends AbstractKexFactoryManager implements Session {
     /**
      * Name of the property where this session is stored in the attributes of the
@@ -1827,6 +1828,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      *
      * @throws Exception if an error occurs
      */
+    @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
     protected void receiveNewKeys() throws Exception {
         byte[] k = kex.getK();
         byte[] h = kex.getH();

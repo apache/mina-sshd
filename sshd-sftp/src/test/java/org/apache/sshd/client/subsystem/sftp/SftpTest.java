@@ -115,6 +115,7 @@ import org.junit.runners.MethodSorters;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@SuppressWarnings("checkstyle:MethodCount")
 public class SftpTest extends AbstractSftpClientTestSupport {
     private static final Map<String, OptionalFeature> EXPECTED_EXTENSIONS = AbstractSftpSubsystemHelper.DEFAULT_SUPPORTED_CLIENT_EXTENSIONS;
 
@@ -683,8 +684,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             }
 
             @Override
-            public void read(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, byte[] data,
-                    int dataOffset, int dataLen, int readLen, Throwable thrown) {
+            @SuppressWarnings("checkstyle:ParameterNumber")
+            public void read(ServerSession session, String remoteHandle, FileHandle localHandle,
+                    long offset, byte[] data, int dataOffset, int dataLen, int readLen, Throwable thrown) {
                 readSize.addAndGet(readLen);
                 if (log.isDebugEnabled()) {
                     log.debug("read(" + session + ")[" + localHandle.getFile() + "] offset=" + offset + ", requested=" + dataLen + ", read=" + readLen);

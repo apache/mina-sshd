@@ -273,6 +273,7 @@ public abstract class SshClientCliSupport extends CliSupport {
     }
 
     // returns null if error encountered
+    @SuppressWarnings("checkstyle:ParameterNumber")
     public static SshClient setupClient(
             Map<String, Object> options,
             List<NamedFactory<Cipher>> ciphers,

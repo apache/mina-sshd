@@ -59,8 +59,9 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                 throws Exception {
         String lang = buffer.getString();
         String subMethods = buffer.getString();
+        boolean debugEnabled = log.isDebugEnabled();
         if (auth == null) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("doAuth({}@{})[methods={}, lang={}] - no interactive authenticator to generate challenge",
                           username, session, subMethods, lang);
             }
@@ -72,26 +73,26 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             challenge = auth.generateChallenge(session, username, lang, subMethods);
         } catch (Error e) {
             log.warn("doAuth({}@{}) failed ({}) to generate authenticator challenge: {}",
-                     username, session, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
+                 username, session, e.getClass().getSimpleName(), e.getMessage());
+            if (debugEnabled) {
                 log.debug("doAuth(" + username + "@" + session + ") authenticator challenge failure details", e);
             }
             throw new RuntimeSshException(e);
         }
 
         if (challenge == null) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("doAuth({}@{})[methods={}, lang={}] - no interactive challenge generated",
                           username, session, subMethods, lang);
             }
             return false;
         }
 
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("doAuth({}@{})[methods={}, lang={}] challenge name={}, instruction={}, lang={}, num. prompts={}",
-                      username, session, subMethods, lang,
-                      challenge.getInteractionName(), challenge.getInteractionInstruction(),
-                      challenge.getLanguageTag(), GenericUtils.size(challenge.getPrompts()));
+                  username, session, subMethods, lang,
+                  challenge.getInteractionName(), challenge.getInteractionInstruction(),
+                  challenge.getLanguageTag(), GenericUtils.size(challenge.getPrompts()));
         }
 
         // Prompt for password
@@ -120,8 +121,9 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             responses.add(value);
         }
 
+        boolean debugEnabled = log.isDebugEnabled();
         if (auth == null) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("doAuth({}@{}) no interactive authenticator to validate {} responses",
                           username, session, num);
             }
@@ -134,13 +136,13 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         } catch (Error e) {
             log.warn("doAuth({}@{}) failed ({}) to consult authenticator: {}",
                      username, session, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("doAuth(" + username + "@" + session + ") authenticator consultation failure details", e);
             }
             throw new RuntimeSshException(e);
         }
 
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("doAuth({}@{}) authenticate {} responses result: {}",
                       username, session, num, authed);
         }

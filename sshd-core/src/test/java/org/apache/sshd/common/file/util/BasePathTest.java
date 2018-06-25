@@ -44,8 +44,8 @@ import org.mockito.Mockito;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
+@SuppressWarnings("checkstyle:MethodCount")
 public class BasePathTest extends BaseTestSupport {
-
     private TestFileSystem fileSystem;
 
     public BasePathTest() {
@@ -333,7 +333,6 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     private static class TestFileSystem extends BaseFileSystem<TestPath> {
-
         TestFileSystem(FileSystemProvider fileSystemProvider) {
             super(fileSystemProvider);
         }
@@ -365,7 +364,6 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     private static class TestPath extends BasePath<TestPath, TestFileSystem> {
-
         TestPath(TestFileSystem fileSystem, String root, List<String> names) {
             super(fileSystem, root, names);
         }
@@ -387,7 +385,6 @@ public class BasePathTest extends BaseTestSupport {
     }
 
     public static class PathTester {
-
         private final FileSystem fileSystem;
         private final String string;
         private String root;
@@ -428,7 +425,7 @@ public class BasePathTest extends BaseTestSupport {
             testSubpaths(path);
         }
 
-        private void testRoot(Path path) {
+        protected void testRoot(Path path) {
             if (root != null) {
                 assertTrue(path + ".isAbsolute() should be true", path.isAbsolute());
                 assertNotNull(path + ".getRoot() should not be null", path.getRoot());
@@ -439,7 +436,7 @@ public class BasePathTest extends BaseTestSupport {
             }
         }
 
-        private void testNames(Path path) {
+        protected void testNames(Path path) {
             assertEquals(names.size(), path.getNameCount());
             assertEquals(names, names(path));
             for (int i = 0; i < names.size(); i++) {
@@ -463,9 +460,8 @@ public class BasePathTest extends BaseTestSupport {
             }
         }
 
-        private void testParents(Path path) {
+        protected void testParents(Path path) {
             Path parent = path.getParent();
-
             if (((root != null) && (names.size() >= 1)) || (names.size() > 1)) {
                 assertNotNull(parent);
             }
@@ -479,35 +475,36 @@ public class BasePathTest extends BaseTestSupport {
             }
         }
 
-        private void testSubpaths(Path path) {
+        protected void testSubpaths(Path path) {
+            int nameCount = path.getNameCount();
             if (path.getRoot() == null) {
-                assertEquals(path, path.subpath(0, path.getNameCount()));
+                assertEquals(path, path.subpath(0, nameCount));
             }
 
-            if (path.getNameCount() > 1) {
+            if (nameCount > 1) {
                 String stringWithoutRoot = root == null ? string : string.substring(root.length());
 
                 // test start + 1 to end and start to end - 1 subpaths... this recursively tests all subpaths
                 // actually tests most possible subpaths multiple times but... eh
-                Path startSubpath = path.subpath(1, path.getNameCount());
-                List<String> startNames = split(stringWithoutRoot, "/")
-                        .subList(1, path.getNameCount());
+                Path startSubpath = path.subpath(1, nameCount);
+                List<String> startNames = split(stringWithoutRoot, '/')
+                        .subList(1, nameCount);
 
-                new PathTester(fileSystem, join(startNames, "/"))
+                new PathTester(fileSystem, GenericUtils.join(startNames, '/'))
                         .names(startNames)
                         .test(startSubpath);
 
-                Path endSubpath = path.subpath(0, path.getNameCount() - 1);
-                List<String> endNames = split(stringWithoutRoot, "/")
-                        .subList(0, path.getNameCount() - 1);
+                Path endSubpath = path.subpath(0, nameCount - 1);
+                List<String> endNames = split(stringWithoutRoot, '/')
+                        .subList(0, nameCount - 1);
 
-                new PathTester(fileSystem, join(endNames, "/"))
+                new PathTester(fileSystem, GenericUtils.join(endNames, '/'))
                         .names(endNames)
                         .test(endSubpath);
             }
         }
 
-        private void testStartsWith(Path path) {
+        protected void testStartsWith(Path path) {
             // empty path doesn't start with any path
             if (root != null || !names.isEmpty()) {
                 Path other = path;
@@ -521,7 +518,7 @@ public class BasePathTest extends BaseTestSupport {
             }
         }
 
-        private void testEndsWith(Path path) {
+        protected void testEndsWith(Path path) {
             // empty path doesn't start with any path
             if (root != null || !names.isEmpty()) {
                 Path other = path;
@@ -549,20 +546,8 @@ public class BasePathTest extends BaseTestSupport {
             return list;
         }
 
-        private List<String> split(String string, String sep) {
-            return Arrays.asList(string.split(sep));
-        }
-
-        private static String join(Iterable<String> strings, String sep) {
-            StringBuilder sb = new StringBuilder();
-            for (String s : strings) {
-                if (sb.length() > 0) {
-                    sb.append(sep);
-                }
-                sb.append(s);
-            }
-            return sb.toString();
+        private static List<String> split(String string, char sep) {
+            return Arrays.asList(GenericUtils.split(string, sep));
         }
     }
-
 }

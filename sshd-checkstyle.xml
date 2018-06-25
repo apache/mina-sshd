@@ -99,12 +99,16 @@
             <property name="max" value="150" />
             <property name="countEmpty" value="false" />
         </module>
-	
-        <!-- DISABLED
-            <module name="ParameterNumber">
-                <property name="max" value="7" />
-            </module>
-        -->
+        <module name="ParameterNumber">
+            <property name="max" value="8" />
+        </module>
+        <module name="OuterTypeNumber">
+            <property name="max" value="2"/>
+        </module>
+        <module name="MethodCount">
+            <property name="maxPrivate" value="5"/>
+            <property name="maxPackage" value="5"/>
+        </module>
 
             <!-- Checks for whitespace                               -->
             <!-- See http://checkstyle.sf.net/config_whitespace.html -->
@@ -184,6 +188,9 @@
         <module name="NestedTryDepth">
             <property name="max" value="3" />
         </module>
+        <module name="NestedForDepth">
+          <property name="max" value="3"/>
+        </module>
         <module name="SuperClone" />
         <module name="SuperFinalize" />
         <!--<module name="IllegalCatch" />-->
@@ -209,9 +216,9 @@
         <!--<module name="MissingCtor" />-->
         <module name="FallThrough" />
         <!--<module name="MultipleStringLiterals" />-->
-        <!--<module name="VariableDeclarationUsageDistance">
+        <module name="VariableDeclarationUsageDistance">
             <property name="allowedDistance" value="8" />
-        </module>-->
+        </module>
         <module name="MultipleVariableDeclarations" />
         <!--<module name="RequireThis" />-->
         <module name="UnnecessaryParentheses" />

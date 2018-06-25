@@ -88,9 +88,10 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
 
     @Override
     protected boolean sendAuthDataRequest(ClientSession session, String service) throws Exception {
+        boolean debugEnabled = log.isDebugEnabled();
         try {
             if ((keys == null) || (!keys.hasNext())) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("sendAuthDataRequest({})[{}] no more keys to send", session, service);
                 }
 
@@ -101,7 +102,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         } catch (Error e) {
             log.warn("sendAuthDataRequest({})[{}] failed ({}) to get next key: {}",
                      session, service, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("sendAuthDataRequest(" + session + ")[" + service + "] next key fetch failure details", e);
             }
 
@@ -117,8 +118,8 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             key = current.getPublicKey();
         } catch (Error e) {
             log.warn("sendAuthDataRequest({})[{}] failed ({}) to retrieve public key: {}",
-                     session, service, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
+                 session, service, e.getClass().getSimpleName(), e.getMessage());
+            if (debugEnabled) {
                 log.debug("sendAuthDataRequest(" + session + ")[" + service + "] public key retrieval failure details", e);
             }
 
@@ -127,9 +128,9 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
 
         String algo = KeyUtils.getKeyType(key);
         String name = getName();
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("sendAuthDataRequest({})[{}] send SSH_MSG_USERAUTH_REQUEST request {} type={} - fingerprint={}",
-                      session, service, name, algo, KeyUtils.getFingerPrint(key));
+                  session, service, name, algo, KeyUtils.getFingerPrint(key));
         }
 
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
@@ -157,12 +158,13 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
          * sanctioned by RFC4252 section 7
          */
         PublicKey key;
+        boolean debugEnabled = log.isDebugEnabled();
         try {
             key = current.getPublicKey();
         } catch (Error e) {
             log.warn("processAuthDataRequest({})[{}][{}] failed ({}) to retrieve public key: {}",
-                     session, service, name, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
+                 session, service, name, e.getClass().getSimpleName(), e.getMessage());
+            if (debugEnabled) {
                 log.debug("processAuthDataRequest(" + session + ")[" + service + "][" + name + "] public key retrieval failure details", e);
             }
 
@@ -182,9 +184,9 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                     + " mismatched " + algo + " keys: expected=" + KeyUtils.getFingerPrint(key) + ", actual=" + KeyUtils.getFingerPrint(rspKey));
         }
 
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("processAuthDataRequest({})[{}][{}] SSH_MSG_USERAUTH_PK_OK type={}, fingerprint={}",
-                      session, service, name, rspKeyType, KeyUtils.getFingerPrint(rspKey));
+                  session, service, name, rspKeyType, KeyUtils.getFingerPrint(rspKey));
         }
 
         String username = session.getUsername();

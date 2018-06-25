@@ -71,6 +71,7 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
     }
 
     @Override
+    @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
     protected Boolean doAuth(Buffer buffer, boolean init) throws Exception {
         ValidateUtils.checkTrue(init, "Instance not initialized");
 
@@ -101,16 +102,16 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("doAuth({}@{}) authenticate key type={}, fingerprint={}, client={}@{}, num-certs={}",
-                      username, session, keyType, KeyUtils.getFingerPrint(clientKey),
-                      clientUsername, clientHostName, GenericUtils.size(certs));
+                  username, session, keyType, KeyUtils.getFingerPrint(clientKey),
+                  clientUsername, clientHostName, GenericUtils.size(certs));
         }
 
         HostBasedAuthenticator authenticator = session.getHostBasedAuthenticator();
         if (authenticator == null) {
             if (debugEnabled) {
                 log.debug("doAuth({}@{}) key type={}, fingerprint={}, client={}@{}, num-certs={} - no authenticator",
-                          username, session, keyType, KeyUtils.getFingerPrint(clientKey),
-                          clientUsername, clientHostName, GenericUtils.size(certs));
+                      username, session, keyType, KeyUtils.getFingerPrint(clientKey),
+                      clientUsername, clientHostName, GenericUtils.size(certs));
             }
             return Boolean.FALSE;
         }
@@ -131,8 +132,8 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
 
         if (debugEnabled) {
             log.debug("doAuth({}@{}) key type={}, fingerprint={}, client={}@{}, num-certs={} - authentication result: {}",
-                      username, session, keyType, KeyUtils.getFingerPrint(clientKey),
-                      clientUsername, clientHostName, GenericUtils.size(certs), authed);
+                  username, session, keyType, KeyUtils.getFingerPrint(clientKey),
+                  clientUsername, clientHostName, GenericUtils.size(certs), authed);
         }
         if (!authed) {
             return Boolean.FALSE;
@@ -140,14 +141,14 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
 
         // verify signature
         Collection<NamedFactory<Signature>> factories =
-                ValidateUtils.checkNotNullAndNotEmpty(
-                        SignatureFactoriesManager.resolveSignatureFactories(this, session),
-                        "No signature factories for session=%s",
-                        session);
+            ValidateUtils.checkNotNullAndNotEmpty(
+                SignatureFactoriesManager.resolveSignatureFactories(this, session),
+                "No signature factories for session=%s",
+                session);
         Signature verifier = ValidateUtils.checkNotNull(
-                NamedFactory.create(factories, keyType),
-                "No verifier located for algorithm=%s",
-                keyType);
+            NamedFactory.create(factories, keyType),
+            "No verifier located for algorithm=%s",
+            keyType);
         verifier.initVerifier(clientKey);
 
         byte[] id = session.getSessionId();

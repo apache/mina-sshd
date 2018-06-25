@@ -94,8 +94,9 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
     @Override
     protected boolean sendAuthDataRequest(ClientSession session, String service) throws Exception {
         String name = getName();
+        boolean debugEnabled = log.isDebugEnabled();
         if ((keys == null) || (!keys.hasNext())) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("sendAuthDataRequest({})[{}][{}] no more keys to send", session, service, name);
             }
 
@@ -112,10 +113,10 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
         }
 
         Collection<NamedFactory<Signature>> factories =
-                ValidateUtils.checkNotNullAndNotEmpty(
-                        SignatureFactoriesManager.resolveSignatureFactories(this, session),
-                        "No signature factories for session=%s",
-                        session);
+            ValidateUtils.checkNotNullAndNotEmpty(
+                SignatureFactoriesManager.resolveSignatureFactories(this, session),
+                "No signature factories for session=%s",
+                session);
         Signature verifier = ValidateUtils.checkNotNull(
                 NamedFactory.create(factories, keyType),
                 "No signer could be located for key type=%s",
@@ -125,7 +126,7 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
         String username = session.getUsername();
         String clientUsername = resolveClientUsername();
         String clientHostname = resolveClientHostname();
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("sendAuthDataRequest({})[{}][{}] client={}@{}",
                       session, service, name, clientUsername, clientHostname);
         }
@@ -155,16 +156,21 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
         buffer.putBytes(keyBytes);
         buffer.putString(clientHostname);
         buffer.putString(clientUsername);
-        appendSignature(session, service, name, username, keyType, pub, keyBytes, clientHostname, clientUsername, verifier, buffer);
+        appendSignature(session, service, keyType, pub, keyBytes, clientHostname, clientUsername, verifier, buffer);
         session.writePacket(buffer);
         return true;
     }
 
-    protected void appendSignature(ClientSession session, String service, String name, String username,
+    @SuppressWarnings("checkstyle:ParameterNumber")
+    protected void appendSignature(
+            ClientSession session, String service,
             String keyType, PublicKey key, byte[] keyBytes,
             String clientHostname, String clientUsername,
-            Signature verifier, Buffer buffer) throws Exception {
+            Signature verifier, Buffer buffer)
+                throws Exception {
         byte[] id = session.getSessionId();
+        String username = session.getUsername();
+        String name = getName();
         Buffer bs = new ByteArrayBuffer(id.length + username.length() + service.length() + name.length()
             + keyType.length() + keyBytes.length
             + clientHostname.length() + clientUsername.length()

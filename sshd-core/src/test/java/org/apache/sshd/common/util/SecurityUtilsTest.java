@@ -60,6 +60,7 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
+@SuppressWarnings("checkstyle:MethodCount")
 public class SecurityUtilsTest extends BaseTestSupport {
     public static final String BC_NAMED_USAGE_PROP =
             SecurityProviderRegistrar.CONFIG_PROP_BASE

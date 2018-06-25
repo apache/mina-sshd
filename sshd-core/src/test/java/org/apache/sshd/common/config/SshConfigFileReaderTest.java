@@ -60,6 +60,7 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
+@SuppressWarnings("checkstyle:MethodCount")
 public class SshConfigFileReaderTest extends BaseTestSupport {
     public SshConfigFileReaderTest() {
         super();
@@ -136,11 +137,11 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
         testKnownDefaultFactoriesList(SshConfigFileReader.DEFAULT_KEX_ALGORITHMS, BuiltinDHFactories::fromFactoryName);
     }
 
-    private void testKnownDefaultFactoriesList(String factories, Function<? super String, ? extends NamedResource> resolver) {
+    private static void testKnownDefaultFactoriesList(String factories, Function<? super String, ? extends NamedResource> resolver) {
         testKnownDefaultFactoriesList(factories, resolver, Collections.emptySet());
     }
 
-    private void testKnownDefaultFactoriesList(
+    private static void testKnownDefaultFactoriesList(
             String factories, Function<? super String, ? extends NamedResource> resolver, Collection<String> excludedNames) {
         String[] names = GenericUtils.split(factories, ',');
         assertTrue("No default names", GenericUtils.length(names) > 0);

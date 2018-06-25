@@ -43,7 +43,6 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DHGClient extends AbstractDHClientKeyExchange {
-
     protected final DHFactory factory;
     protected AbstractDH dh;
 
@@ -56,7 +55,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         return factory.getName();
     }
 
-    public static KeyExchangeFactory newFactory(final DHFactory delegate) {
+    public static KeyExchangeFactory newFactory(DHFactory delegate) {
         return new KeyExchangeFactory() {
             @Override
             public String getName() {
@@ -99,6 +98,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
     }
 
     @Override
+    @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
     public boolean next(int cmd, Buffer buffer) throws Exception {
         Session session = getSession();
         if (log.isDebugEnabled()) {
@@ -117,9 +117,9 @@ public class DHGClient extends AbstractDHClientKeyExchange {
 
         buffer = new ByteArrayBuffer(k_s);
         serverKey = buffer.getRawPublicKey();
-        final String keyAlg = KeyUtils.getKeyType(serverKey);
+        String keyAlg = KeyUtils.getKeyType(serverKey);
         if (GenericUtils.isEmpty(keyAlg)) {
-            throw new SshException("Unsupported server key type");
+            throw new SshException("Unsupported server key type: " + serverKey.getAlgorithm());
         }
 
         buffer = new ByteArrayBuffer();
