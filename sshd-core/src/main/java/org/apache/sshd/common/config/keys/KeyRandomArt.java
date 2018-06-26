@@ -248,7 +248,7 @@ public class KeyRandomArt {
             KeyPair kp = iter.next();
             KeyRandomArt a = new KeyRandomArt(kp.getPublic());
             arts.add(a);
-        } while(iter.hasNext());
+        } while (iter.hasNext());
 
         return arts;
     }
