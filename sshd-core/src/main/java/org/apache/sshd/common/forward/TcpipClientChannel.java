@@ -74,7 +74,9 @@ public class TcpipClientChannel extends AbstractClientChannel {
     private final Type typeEnum;
     private final IoSession serverSession;
     private final SshdSocketAddress remote;
-
+    private SshdSocketAddress tunnelEntrance;
+    private SshdSocketAddress tunnelExit;
+    
     public TcpipClientChannel(Type type, IoSession serverSession, SshdSocketAddress remote) {
         super(Objects.requireNonNull(type, "No type specified").getName());
         this.typeEnum = type;
@@ -94,20 +96,26 @@ public class TcpipClientChannel extends AbstractClientChannel {
     public synchronized OpenFuture open() throws IOException {
         InetSocketAddress src;
         InetSocketAddress dst;
+        InetSocketAddress loc;
         Type openType = getTcpipChannelType();
         switch (openType) {
             case Direct:
                 src = (InetSocketAddress) serverSession.getRemoteAddress();
                 dst = this.remote.toInetSocketAddress();
+                loc = (InetSocketAddress) serverSession.getLocalAddress();
+                tunnelEntrance = new SshdSocketAddress(loc.getHostString(), loc.getPort());
+                tunnelExit = new SshdSocketAddress(dst.getHostString(), dst.getPort());
                 break;
             case Forwarded:
                 src = (InetSocketAddress) serverSession.getRemoteAddress();
                 dst = (InetSocketAddress) serverSession.getLocalAddress();
+                tunnelEntrance = new SshdSocketAddress(src.getHostString(), src.getPort());
+                tunnelExit = new SshdSocketAddress(dst.getHostString(), dst.getPort());
                 break;
             default:
                 throw new SshException("Unknown client channel type: " + openType);
         }
-
+        
         if (closeFuture.isClosed()) {
             throw new SshException("Session has been closed");
         }
@@ -166,4 +174,13 @@ public class TcpipClientChannel extends AbstractClientChannel {
     protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
         throw new UnsupportedOperationException(getChannelType() + "Tcpip channel does not support extended data");
     }
+    
+    public SshdSocketAddress getTunnelEntrance() {
+        return tunnelEntrance;
+    }
+  
+    public SshdSocketAddress getTunnelExit() {
+        return tunnelExit;
+    }
+
 }

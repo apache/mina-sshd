@@ -98,6 +98,9 @@ public class TcpipServerChannel extends AbstractServerChannel {
     private IoConnector connector;
     private IoSession ioSession;
     private OutputStream out;
+    private SshdSocketAddress tunnelEntrance;
+    private SshdSocketAddress tunnelExit;
+    private String origIpAddress;
 
     public TcpipServerChannel(ForwardingFilter.Type type) {
         this.type = Objects.requireNonNull(type, "No channel type specified");
@@ -107,6 +110,22 @@ public class TcpipServerChannel extends AbstractServerChannel {
         return type;
     }
 
+    public SshdSocketAddress getTunnelEntrance() {
+        return tunnelEntrance;
+    }
+
+    public SshdSocketAddress getTunnelExit() {
+        return tunnelExit;
+    }
+
+    public String getOriginatorAddress() {
+        return origIpAddress;  
+    }
+    
+    public IoSession getIoSession() {
+        return ioSession;
+    }
+    
     @Override
     protected OpenFuture doInit(Buffer buffer) {
         String hostToConnect = buffer.getString();
@@ -133,6 +152,10 @@ public class TcpipServerChannel extends AbstractServerChannel {
             default:
                 throw new IllegalStateException("Unknown server channel type: " + channelType);
         }
+        
+        origIpAddress = originatorIpAddress;
+        tunnelEntrance = new SshdSocketAddress(hostToConnect, portToConnect);
+        tunnelExit = address;
 
         Session session = getSession();
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
