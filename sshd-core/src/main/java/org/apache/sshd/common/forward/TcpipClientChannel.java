@@ -96,13 +96,12 @@ public class TcpipClientChannel extends AbstractClientChannel {
     public synchronized OpenFuture open() throws IOException {
         InetSocketAddress src;
         InetSocketAddress dst;
-        InetSocketAddress loc;
         Type openType = getTcpipChannelType();
         switch (openType) {
             case Direct:
                 src = (InetSocketAddress) serverSession.getRemoteAddress();
                 dst = this.remote.toInetSocketAddress();
-                loc = (InetSocketAddress) serverSession.getLocalAddress();
+                InetSocketAddress loc = (InetSocketAddress) serverSession.getLocalAddress();
                 tunnelEntrance = new SshdSocketAddress(loc.getHostString(), loc.getPort());
                 tunnelExit = new SshdSocketAddress(dst.getHostString(), dst.getPort());
                 break;
@@ -182,5 +181,4 @@ public class TcpipClientChannel extends AbstractClientChannel {
     public SshdSocketAddress getTunnelExit() {
         return tunnelExit;
     }
-
 }

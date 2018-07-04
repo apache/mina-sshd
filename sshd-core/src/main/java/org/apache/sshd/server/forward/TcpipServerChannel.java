@@ -100,7 +100,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
     private OutputStream out;
     private SshdSocketAddress tunnelEntrance;
     private SshdSocketAddress tunnelExit;
-    private String origIpAddress;
+    private SshdSocketAddress originatorAddress;
 
     public TcpipServerChannel(ForwardingFilter.Type type) {
         this.type = Objects.requireNonNull(type, "No channel type specified");
@@ -118,8 +118,8 @@ public class TcpipServerChannel extends AbstractServerChannel {
         return tunnelExit;
     }
 
-    public String getOriginatorAddress() {
-        return origIpAddress;  
+    public SshdSocketAddress getOriginatorAddress() {
+        return originatorAddress;  
     }
     
     public IoSession getIoSession() {
@@ -153,7 +153,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
                 throw new IllegalStateException("Unknown server channel type: " + channelType);
         }
         
-        origIpAddress = originatorIpAddress;
+        originatorAddress = new SshdSocketAddress(originatorIpAddress, originatorPort);
         tunnelEntrance = new SshdSocketAddress(hostToConnect, portToConnect);
         tunnelExit = address;
 
