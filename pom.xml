@@ -112,7 +112,7 @@
         <bouncycastle.version>1.59</bouncycastle.version>
         <slf4j.version>1.7.25</slf4j.version>
         <spring.version>5.0.7.RELEASE</spring.version>
-        <jgit.version>4.11.0.201803080745-r</jgit.version>
+        <jgit.version>5.0.1.201806211838-r</jgit.version>
         <junit.version>4.12</junit.version>
         <surefire.plugin.version>2.21.0</surefire.plugin.version>
         <!-- See https://pmd.github.io/ for available latest version -->
