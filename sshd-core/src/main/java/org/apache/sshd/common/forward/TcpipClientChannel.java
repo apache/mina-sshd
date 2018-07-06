@@ -47,7 +47,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class TcpipClientChannel extends AbstractClientChannel {
+public class TcpipClientChannel extends AbstractClientChannel implements ForwardingTunnelEndpointsProvider {
     /**
      * Type of channel being created. The type's {@link #getName()}
      * method returns the SSH request type
@@ -74,6 +74,8 @@ public class TcpipClientChannel extends AbstractClientChannel {
     private final Type typeEnum;
     private final IoSession serverSession;
     private final SshdSocketAddress remote;
+    private SshdSocketAddress tunnelEntrance;
+    private SshdSocketAddress tunnelExit;
 
     public TcpipClientChannel(Type type, IoSession serverSession, SshdSocketAddress remote) {
         super(Objects.requireNonNull(type, "No type specified").getName());
@@ -96,13 +98,19 @@ public class TcpipClientChannel extends AbstractClientChannel {
         InetSocketAddress dst;
         Type openType = getTcpipChannelType();
         switch (openType) {
-            case Direct:
+            case Direct: {
                 src = (InetSocketAddress) serverSession.getRemoteAddress();
                 dst = this.remote.toInetSocketAddress();
+                InetSocketAddress loc = (InetSocketAddress) serverSession.getLocalAddress();
+                tunnelEntrance = new SshdSocketAddress(loc.getHostString(), loc.getPort());
+                tunnelExit = new SshdSocketAddress(dst.getHostString(), dst.getPort());
                 break;
+            }
             case Forwarded:
                 src = (InetSocketAddress) serverSession.getRemoteAddress();
                 dst = (InetSocketAddress) serverSession.getLocalAddress();
+                tunnelEntrance = new SshdSocketAddress(src.getHostString(), src.getPort());
+                tunnelExit = new SshdSocketAddress(dst.getHostString(), dst.getPort());
                 break;
             default:
                 throw new SshException("Unknown client channel type: " + openType);
@@ -165,5 +173,15 @@ public class TcpipClientChannel extends AbstractClientChannel {
     @Override
     protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
         throw new UnsupportedOperationException(getChannelType() + "Tcpip channel does not support extended data");
+    }
+
+    @Override
+    public SshdSocketAddress getTunnelEntrance() {
+        return tunnelEntrance;
+    }
+
+    @Override
+    public SshdSocketAddress getTunnelExit() {
+        return tunnelExit;
     }
 }
