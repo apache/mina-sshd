@@ -114,7 +114,7 @@
         <spring.version>5.0.7.RELEASE</spring.version>
         <jgit.version>5.0.1.201806211838-r</jgit.version>
         <junit.version>4.12</junit.version>
-        <surefire.plugin.version>2.21.0</surefire.plugin.version>
+        <surefire.plugin.version>2.22.0</surefire.plugin.version>
         <!-- See https://pmd.github.io/ for available latest version -->
         <pmd.version>6.4.0</pmd.version>
     </properties>
