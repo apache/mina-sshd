@@ -70,14 +70,19 @@ public class NettyIoConnector extends NettyIoService implements IoConnector {
     }
 
     @Override
-    public IoConnectFuture connect(SocketAddress address) {
+    public IoConnectFuture connect(SocketAddress address, SocketAddress localAddress) {
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("Connecting to {}", address);
         }
 
         IoConnectFuture future = new DefaultIoConnectFuture(address, null);
-        ChannelFuture chf = bootstrap.connect(address);
+        ChannelFuture chf;
+        if (localAddress != null) {
+            chf = bootstrap.connect(address, localAddress);
+        } else {
+            chf = bootstrap.connect(address);
+        }
         Channel channel = chf.channel();
         channel.attr(CONNECT_FUTURE_KEY).set(future);
         chf.addListener(cf -> {

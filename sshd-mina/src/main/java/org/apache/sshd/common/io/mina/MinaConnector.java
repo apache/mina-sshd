@@ -74,7 +74,7 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
     }
 
     @Override
-    public IoConnectFuture connect(SocketAddress address) {
+    public IoConnectFuture connect(SocketAddress address, SocketAddress localAddress) {
         class Future extends DefaultSshFuture<IoConnectFuture> implements IoConnectFuture {
             Future(Object lock) {
                 super(address, lock);
@@ -110,7 +110,7 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
 
         IoConnectFuture future = new Future(null);
         IoConnector connector = getConnector();
-        ConnectFuture connectFuture = connector.connect(address);
+        ConnectFuture connectFuture = connector.connect(address, localAddress);
         connectFuture.addListener((IoFutureListener<ConnectFuture>) cf -> {
             Throwable t = cf.getException();
             if (t != null) {

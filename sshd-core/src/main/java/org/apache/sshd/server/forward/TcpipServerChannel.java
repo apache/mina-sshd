@@ -21,6 +21,7 @@ package org.apache.sshd.server.forward;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.ConnectException;
+import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -102,6 +103,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
     private SshdSocketAddress tunnelEntrance;
     private SshdSocketAddress tunnelExit;
     private SshdSocketAddress originatorAddress;
+    private SocketAddress localAddress;
 
     public TcpipServerChannel(ForwardingFilter.Type type) {
         this.type = Objects.requireNonNull(type, "No channel type specified");
@@ -109,6 +111,14 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
 
     public ForwardingFilter.Type getTcpipChannelType() {
         return type;
+    }
+
+    public SocketAddress getLocalAddress() {
+        return localAddress;
+    }
+
+    public void setLocalAddress(SocketAddress localAddress) {
+        this.localAddress = localAddress;
     }
 
     @Override
@@ -227,7 +237,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
 
         IoServiceFactory ioServiceFactory = manager.getIoServiceFactory();
         connector = ioServiceFactory.createConnector(handler);
-        IoConnectFuture future = connector.connect(address.toInetSocketAddress());
+        IoConnectFuture future = connector.connect(address.toInetSocketAddress(), localAddress);
         future.addListener(future1 -> handleChannelConnectResult(f, future1));
         return f;
     }
