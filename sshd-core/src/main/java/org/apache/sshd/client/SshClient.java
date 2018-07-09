@@ -131,7 +131,6 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SshClient extends AbstractFactoryManager implements ClientFactoryManager, ClientSessionCreator, Closeable {
-
     public static final Factory<SshClient> DEFAULT_SSH_CLIENT_FACTORY = SshClient::new;
 
     /**
@@ -433,7 +432,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     @Override
-    public ConnectFuture connect(String username, String host, int port) throws IOException {
+    public ConnectFuture connect(
+            String username, String host, int port, SocketAddress localAddress)
+                throws IOException {
         HostConfigEntryResolver resolver = getHostConfigEntryResolver();
         HostConfigEntry entry = resolver.resolveEffectiveHost(host, port, username);
         if (entry == null) {
@@ -455,14 +456,16 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             }
         }
 
-        return connect(entry);
+        return connect(entry, localAddress);
     }
 
     @Override
-    public ConnectFuture connect(String username, SocketAddress address) throws IOException {
-        Objects.requireNonNull(address, "No target address");
-        if (address instanceof InetSocketAddress) {
-            InetSocketAddress inetAddress = (InetSocketAddress) address;
+    public ConnectFuture connect(
+            String username, SocketAddress targetAddress, SocketAddress localAddress)
+                throws IOException {
+        Objects.requireNonNull(targetAddress, "No target address");
+        if (targetAddress instanceof InetSocketAddress) {
+            InetSocketAddress inetAddress = (InetSocketAddress) targetAddress;
             String host = ValidateUtils.checkNotNullAndNotEmpty(inetAddress.getHostString(), "No host");
             int port = inetAddress.getPort();
             ValidateUtils.checkTrue(port > 0, "Invalid port: %d", port);
@@ -474,7 +477,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     log.debug("connect({}@{}:{}) no overrides", username, host, port);
                 }
 
-                return doConnect(username, address, Collections.emptyList(), true);
+                return doConnect(username, targetAddress, localAddress, Collections.emptyList(), true);
             } else {
                 if (log.isDebugEnabled()) {
                     log.debug("connect({}@{}:{}) effective: {}", username, host, port, entry);
@@ -484,21 +487,22 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             }
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("connect({}@{}) not an InetSocketAddress: {}", username, address, address.getClass().getName());
+                log.debug("connect({}@{}) not an InetSocketAddress: {}", username, targetAddress, targetAddress.getClass().getName());
             }
-            return doConnect(username, address, Collections.emptyList(), true);
+            return doConnect(username, targetAddress, localAddress, Collections.emptyList(), true);
         }
     }
 
     @Override
-    public ConnectFuture connect(HostConfigEntry hostConfig) throws IOException {
+    public ConnectFuture connect(HostConfigEntry hostConfig, SocketAddress localAddress) throws IOException {
         Objects.requireNonNull(hostConfig, "No host configuration");
         String host = ValidateUtils.checkNotNullAndNotEmpty(hostConfig.getHostName(), "No target host");
         int port = hostConfig.getPort();
         ValidateUtils.checkTrue(port > 0, "Invalid port: %d", port);
 
         Collection<KeyPair> keys = loadClientIdentities(hostConfig.getIdentities(), IoUtils.EMPTY_LINK_OPTIONS);
-        return doConnect(hostConfig.getUsername(), new InetSocketAddress(host, port), keys, !hostConfig.isIdentitiesOnly());
+        return doConnect(hostConfig.getUsername(), new InetSocketAddress(host, port),
+                localAddress, keys, !hostConfig.isIdentitiesOnly());
     }
 
     protected List<KeyPair> loadClientIdentities(Collection<String> locations, LinkOption... options) throws IOException {
@@ -544,16 +548,17 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     protected ConnectFuture doConnect(
-            String username, SocketAddress address, Collection<? extends KeyPair> identities,  boolean useDefaultIdentities)
-                    throws IOException {
+            String username, SocketAddress targetAddress, SocketAddress localAddress,
+            Collection<? extends KeyPair> identities, boolean useDefaultIdentities)
+                throws IOException {
         if (connector == null) {
             throw new IllegalStateException("SshClient not started. Please call start() method before connecting to a server");
         }
 
-        ConnectFuture connectFuture = new DefaultConnectFuture(username + "@" + address, null);
+        ConnectFuture connectFuture = new DefaultConnectFuture(username + "@" + targetAddress, null);
         SshFutureListener<IoConnectFuture> listener =
-            createConnectCompletionListener(connectFuture, username, address, identities, useDefaultIdentities);
-        connector.connect(address, null).addListener(listener);
+            createConnectCompletionListener(connectFuture, username, targetAddress, identities, useDefaultIdentities);
+        connector.connect(targetAddress, localAddress).addListener(listener);
         return connectFuture;
     }
 
@@ -573,7 +578,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 if (t != null) {
                     if (log.isDebugEnabled()) {
                         log.debug("operationComplete({}@{}) failed ({}): {}",
-                                  username, address, t.getClass().getSimpleName(), t.getMessage());
+                              username, address, t.getClass().getSimpleName(), t.getMessage());
                     }
                     connectFuture.setException(t);
                 } else {

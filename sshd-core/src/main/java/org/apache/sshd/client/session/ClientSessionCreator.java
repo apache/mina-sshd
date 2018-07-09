@@ -39,7 +39,24 @@ public interface ClientSessionCreator {
      * connect to it
      * @see #connect(HostConfigEntry)
      */
-    ConnectFuture connect(String username, String host, int port) throws IOException;
+    default ConnectFuture connect(String username, String host, int port) throws IOException {
+        return connect(username, host, port, null);
+    }
+
+    /**
+     * Resolves the <U>effective</U> {@link HostConfigEntry} and connects to it
+     *
+     * @param username The intended username
+     * @param host The target host name/address - never {@code null}/empty
+     * @param port The target port
+     * @param localAddress The local address to use - if {@code null} an
+     * automatic ephemeral port and bind address is used
+     * @return A {@link ConnectFuture}
+     * @throws IOException If failed to resolve the effective target or
+     * connect to it
+     * @see #connect(HostConfigEntry)
+     */
+    ConnectFuture connect(String username, String host, int port, SocketAddress localAddress) throws IOException;
 
     /**
      * Resolves the <U>effective</U> {@link HostConfigEntry} and connects to it
@@ -53,12 +70,41 @@ public interface ClientSessionCreator {
      * connect to it
      * @see #connect(HostConfigEntry)
      */
-    ConnectFuture connect(String username, SocketAddress address) throws IOException;
+    default ConnectFuture connect(String username, SocketAddress address) throws IOException {
+        return connect(username, address, null);
+    }
+
+    /**
+     * Resolves the <U>effective</U> {@link HostConfigEntry} and connects to it
+     *
+     * @param username The intended username
+     * @param targetAddress The intended target {@link SocketAddress} - never {@code null}.
+     * If this is an {@link java.net.InetSocketAddress} then the <U>effective</U>
+     * {@link HostConfigEntry} is resolved and used.
+     * @param localAddress The local address to use - if {@code null} an
+     * automatic ephemeral port and bind address is used
+     * @return A {@link ConnectFuture}
+     * @throws IOException If failed to resolve the effective target or
+     * connect to it
+     * @see #connect(HostConfigEntry)
+     */
+    ConnectFuture connect(String username, SocketAddress targetAddress, SocketAddress localAddress) throws IOException;
 
     /**
      * @param hostConfig The effective {@link HostConfigEntry} to connect to - never {@code null}
      * @return A {@link ConnectFuture}
      * @throws IOException If failed to create the connection future
      */
-    ConnectFuture connect(HostConfigEntry hostConfig) throws IOException;
+    default ConnectFuture connect(HostConfigEntry hostConfig) throws IOException {
+        return connect(hostConfig, null);
+    }
+
+    /**
+     * @param hostConfig The effective {@link HostConfigEntry} to connect to - never {@code null}
+     * @param localAddress The local address to use - if {@code null} an
+     * automatic ephemeral port and bind address is used
+     * @return A {@link ConnectFuture}
+     * @throws IOException If failed to create the connection future
+     */
+    ConnectFuture connect(HostConfigEntry hostConfig, SocketAddress localAddress) throws IOException;
 }

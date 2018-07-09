@@ -66,7 +66,7 @@ public interface AttributeStore {
      *
      * @param <T> The generic attribute type
      * @param key The key of the attribute; must not be {@code null}.
-     * @return <tt>null</tt> if there is no value associated with the specified key
+     * @return {@code null} if there is no value associated with the specified key
      */
     <T> T getAttribute(AttributeKey<T> key);
 
@@ -95,7 +95,7 @@ public interface AttributeStore {
      *
      * @param <T> The generic attribute type
      * @param key The key of the attribute; must not be {@code null}.
-     * @return <tt>null</tt> if there is no value associated with the specified key
+     * @return {@code null} if there is no value associated with the specified key
      */
     <T> T resolveAttribute(AttributeKey<T> key);
 

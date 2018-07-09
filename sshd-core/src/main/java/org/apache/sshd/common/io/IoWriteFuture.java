@@ -30,7 +30,7 @@ public interface IoWriteFuture extends SshFuture<IoWriteFuture>, VerifiableFutur
     /**
      * @return the cause of the write failure if and only if the write
      * operation has failed due to an {@link Exception}.  Otherwise,
-     * <tt>null</tt> is returned (use {@link #isDone()} to distinguish
+     * {@code null} is returned (use {@link #isDone()} to distinguish
      * between the two.
      */
     Throwable getException();

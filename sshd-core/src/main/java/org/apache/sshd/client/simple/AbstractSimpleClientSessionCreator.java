@@ -136,7 +136,7 @@ public abstract class AbstractSimpleClientSessionCreator extends AbstractSimpleC
      * @return The {@link SimpleClient} wrapper. <B>Note:</B> closing the wrapper
      * also closes the underlying sessions creator.
      */
-    public static SimpleClient wrap(final ClientSessionCreator creator, final Channel channel) {
+    public static SimpleClient wrap(ClientSessionCreator creator, Channel channel) {
         Objects.requireNonNull(creator, "No sessions creator");
         Objects.requireNonNull(channel, "No channel");
         return new AbstractSimpleClientSessionCreator() {
@@ -146,13 +146,30 @@ public abstract class AbstractSimpleClientSessionCreator extends AbstractSimpleC
             }
 
             @Override
+            public ConnectFuture connect(String username, String host, int port, SocketAddress localAddress)
+                    throws IOException {
+                return creator.connect(username, host, port, localAddress);
+            }
+
+            @Override
             public ConnectFuture connect(String username, SocketAddress address) throws IOException {
                 return creator.connect(username, address);
             }
 
             @Override
+            public ConnectFuture connect(String username, SocketAddress targetAddress, SocketAddress localAddress)
+                    throws IOException {
+                return creator.connect(username, targetAddress, localAddress);
+            }
+
+            @Override
             public ConnectFuture connect(HostConfigEntry hostConfig) throws IOException {
                 return creator.connect(hostConfig);
+            }
+
+            @Override
+            public ConnectFuture connect(HostConfigEntry hostConfig, SocketAddress localAddress) throws IOException {
+                return creator.connect(hostConfig, localAddress);
             }
 
             @Override
