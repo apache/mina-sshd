@@ -33,7 +33,7 @@ public interface IoReadFuture extends SshFuture<IoReadFuture>, VerifiableFuture<
     /**
      * Returns the cause of the read failure.
      *
-     * @return <code>null</code> if the read operation is not finished yet,
+     * @return {@code null} if the read operation is not finished yet,
      * or if the read attempt is successful (use {@link #isDone()} to
      * distinguish between the two).
      */

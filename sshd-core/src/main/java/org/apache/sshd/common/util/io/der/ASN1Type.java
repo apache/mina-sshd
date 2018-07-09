@@ -91,7 +91,7 @@ public enum ASN1Type {
      *-------------------------------------------------
      * </pre>
      * @param value The original DER encoded byte
-     * @return The {@link ASN1Type} value - <code>null</code> if no match found
+     * @return The {@link ASN1Type} value - {@code null} if no match found
      * @see #fromTypeValue(int)
      */
     public static ASN1Type fromDERValue(int value) {
@@ -100,7 +100,7 @@ public enum ASN1Type {
 
     /**
      * @param value The &quot;pure&quot; type value - with no extra bits set
-     * @return The {@link ASN1Type} value - <code>null</code> if no match found
+     * @return The {@link ASN1Type} value - {@code null} if no match found
      */
     public static ASN1Type fromTypeValue(int value) {
         if ((value < 0) || (value > 0x1F)) {    // only 5 bits are used

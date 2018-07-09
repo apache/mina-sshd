@@ -245,7 +245,7 @@ public class SshdSocketAddress extends SocketAddress {
      * @param addr The {@link InetAddress} to be verified
      * @return <P><code>true</code> if the address is:</P></BR>
      * <UL>
-     *         <LI>Not <code>null</code></LI>
+     *         <LI>Not {@code null}</LI>
      *         <LI>An {@link Inet4Address}</LI>
      *         <LI>Not link local</LI>
      *         <LI>Not a multicast</LI>

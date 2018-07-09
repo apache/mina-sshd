@@ -71,7 +71,7 @@ public enum ASN1Class {
      *-------------------------------------------------
      * </pre>
      * @param value The original DER encoded byte
-     * @return The {@link ASN1Class} value - <code>null</code> if no match found
+     * @return The {@link ASN1Class} value - {@code null} if no match found
      * @see #fromTypeValue(int)
      */
     public static ASN1Class fromDERValue(int value) {
@@ -80,7 +80,7 @@ public enum ASN1Class {
 
     /**
      * @param value The &quot;pure&quot; value - unshifted and with no extras
-     * @return The {@link ASN1Class} value - <code>null</code> if no match found
+     * @return The {@link ASN1Class} value - {@code null} if no match found
      */
     public static ASN1Class fromTypeValue(int value) {
         // all 4 values are defined

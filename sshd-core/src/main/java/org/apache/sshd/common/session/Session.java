@@ -116,8 +116,8 @@ public interface Session
     /**
      * Retrieve one of the negotiated values during the KEX stage
      *
-     * @param paramType The request {@link KexProposalOption} value - ignored
-     *                  if {@code null}
+     * @param paramType The request {@link KexProposalOption} value
+     * - ignored if {@code null}
      * @return The negotiated parameter value - {@code null} if invalid
      * parameter or no negotiated value
      */
@@ -128,7 +128,7 @@ public interface Session
      * key re-exchange executed
      *
      * @param incoming If {@code true} then the cipher for the incoming data,
-     *                 otherwise for the outgoing data
+     * otherwise for the outgoing data
      * @return The {@link CipherInformation} - or {@code null} if not negotiated yet.
      */
     CipherInformation getCipherInformation(boolean incoming);
@@ -138,7 +138,7 @@ public interface Session
      * key re-exchange executed
      *
      * @param incoming If {@code true} then the compression for the incoming data,
-     *                 otherwise for the outgoing data
+     * otherwise for the outgoing data
      * @return The {@link CompressionInformation} - or {@code null} if not negotiated yet.
      */
     CompressionInformation getCompressionInformation(boolean incoming);
@@ -148,7 +148,7 @@ public interface Session
      * key re-exchange executed
      *
      * @param incoming If {@code true} then the MAC for the incoming data,
-     *                 otherwise for the outgoing data
+     * otherwise for the outgoing data
      * @return The {@link MacInformation} - or {@code null} if not negotiated yet.
      */
     MacInformation getMacInformation(boolean incoming);
@@ -263,7 +263,7 @@ public interface Session
     <T extends Service> T getService(Class<T> clazz);
 
     /**
-     * @return the {@link IoSession} associated to this session
+     * @return The {@link IoSession} associated to this session
      */
     IoSession getIoSession();
 

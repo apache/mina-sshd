@@ -108,7 +108,7 @@ public final class GenericUtils {
 
     /**
      * @param s The {@link String} value to calculate the hash code on - may
-     * be <code>null</code>/empty in which case a value of zero is returned
+     * be {@code null}/empty in which case a value of zero is returned
      * @return The calculated hash code
      * @see #hashCode(String, Boolean)
      */
@@ -118,11 +118,11 @@ public final class GenericUtils {
 
     /**
      * @param s The {@link String} value to calculate the hash code on - may
-     * be <code>null</code>/empty in which case a value of zero is returned
+     * be {@code null}/empty in which case a value of zero is returned
      * @param useUppercase Whether to convert the string to uppercase, lowercase
      * or not at all:
      * <UL>
-     *      <LI><code>null</code> - no conversion</LI>
+     *      <LI>{@code null} - no conversion</LI>
      *      <LI>{@link Boolean#TRUE} - get hash code of uppercase</LI>
      *      <LI>{@link Boolean#FALSE} - get hash code of lowercase</LI>
      * </UL>

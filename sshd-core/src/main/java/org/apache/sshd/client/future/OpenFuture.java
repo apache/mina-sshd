@@ -30,7 +30,7 @@ public interface OpenFuture extends SshFuture<OpenFuture>, VerifiableFuture<Open
     /**
      * Returns the cause of the connection failure.
      *
-     * @return <code>null</code> if the connect operation is not finished yet,
+     * @return {@code null} if the connect operation is not finished yet,
      * or if the connection attempt is successful (use {@link #isDone()} to
      * distinguish between the two).
      */
