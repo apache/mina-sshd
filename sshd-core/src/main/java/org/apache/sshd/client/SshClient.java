@@ -552,7 +552,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
         ConnectFuture connectFuture = new DefaultConnectFuture(username + "@" + address, null);
         SshFutureListener<IoConnectFuture> listener = createConnectCompletionListener(connectFuture, username, address, identities, useDefaultIdentities);
-        connector.connect(address).addListener(listener);
+        connector.connect(address, null).addListener(listener);
         return connectFuture;
     }
 

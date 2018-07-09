@@ -24,6 +24,6 @@ import java.net.SocketAddress;
  */
 public interface IoConnector extends IoService {
 
-    IoConnectFuture connect(SocketAddress address);
+    IoConnectFuture connect(SocketAddress address, SocketAddress localAddress);
 
 }

@@ -43,7 +43,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
     }
 
     @Override
-    public IoConnectFuture connect(SocketAddress address) {
+    public IoConnectFuture connect(SocketAddress address, SocketAddress localAddress) {
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("Connecting to {}", address);
@@ -56,6 +56,9 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
             AsynchronousChannelGroup group = getChannelGroup();
             channel = openAsynchronousSocketChannel(address, group);
             socket = setSocketOptions(channel);
+            if (localAddress != null) {
+                socket.bind(localAddress);
+            }
             Nio2CompletionHandler<Void, Object> completionHandler =
                     ValidateUtils.checkNotNull(createConnectionCompletionHandler(future, socket, getFactoryManager(), getIoHandler()),
                                                "No connection completion handler created for %s",
