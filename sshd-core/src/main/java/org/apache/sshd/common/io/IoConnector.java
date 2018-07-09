@@ -21,9 +21,15 @@ package org.apache.sshd.common.io;
 import java.net.SocketAddress;
 
 /**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface IoConnector extends IoService {
 
-    IoConnectFuture connect(SocketAddress address);
-
+    /**
+     * @param targetAddress The target address to connect to
+     * @param localAddress The local address to use - if {@code null} an
+     * automatic ephemeral port and bind address is used
+     * @return The {@link IoConnectFuture future} representing the connection request
+     */
+    IoConnectFuture connect(SocketAddress targetAddress, SocketAddress localAddress);
 }
