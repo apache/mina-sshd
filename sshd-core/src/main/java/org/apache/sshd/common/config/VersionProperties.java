@@ -48,7 +48,7 @@ public final class VersionProperties {
             try {
                 InputStream input = loader.getResourceAsStream("org/apache/sshd/sshd-version.properties");
                 if (input == null) {
-                    throw new FileNotFoundException("Resource does not exists");
+                    throw new FileNotFoundException("Resource does not exist");
                 }
 
                 Properties props = new Properties();
