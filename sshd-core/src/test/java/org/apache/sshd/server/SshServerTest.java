@@ -20,10 +20,7 @@ package org.apache.sshd.server;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.client.SshClient;
-import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -84,30 +81,8 @@ public class SshServerTest extends BaseTestSupport {
             sshd.start();
 
             assertNotEquals(0, sshd.getPort());
+
             sshd.stop();
-        }
-    }
-
-    @Test   // see SSHD-340
-    public void testServerRestartable() throws Exception {
-        try (SshClient client = setupTestClient();
-             SshServer sshd = setupTestServer()) {
-            sshd.setHost(TEST_LOCALHOST);
-            client.start();
-
-            for (int index = 1; index <= 4; index++) {
-                sshd.start();
-                assertTrue("SSHD not started at attempt #" + index, sshd.isStarted());
-                assertTrue("SSHD not open at attempt #" + index, sshd.isOpen());
-
-                int port = sshd.getPort();
-                try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                    s.addPasswordIdentity(getCurrentTestName());
-                    s.auth().verify(11L, TimeUnit.SECONDS);
-                } catch (Exception e) {
-                    fail("Failed (" + e.getClass().getSimpleName() + ") to authenticate at attempt #" + index + ": " + e.getMessage());
-                }
-            }
         }
     }
 }

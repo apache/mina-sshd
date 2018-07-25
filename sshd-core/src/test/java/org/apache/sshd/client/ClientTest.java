@@ -245,32 +245,6 @@ public class ClientTest extends BaseTestSupport {
     }
 
     @Test
-    public void testClientStopIsIdempotent() throws Exception {
-        client.start();
-        for (int index = 1; index <= 4; index++) {
-            client.stop();
-        }
-    }
-
-    @Test   // see SSHD-340
-    public void testClientIsRestartable() throws Exception {
-        for (int index = 1; index <= 4; index++) {
-            client.start();
-            assertTrue("Client not started at attempt #" + index, client.isStarted());
-            assertTrue("Client not open at attempt #" + index, client.isOpen());
-
-            try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                s.addPasswordIdentity(getCurrentTestName());
-                s.auth().verify(11L, TimeUnit.SECONDS);
-            } catch (Exception e) {
-                fail("Failed (" + e.getClass().getSimpleName() + ") to authenticate at attempt #" + index + ": " + e.getMessage());
-            }
-
-            client.stop();
-        }
-    }
-
-    @Test
     public void testPropertyResolutionHierarchy() throws Exception {
         String sessionPropName = getCurrentTestName() + "-session";
         AtomicReference<Object> sessionConfigValueHolder = new AtomicReference<>(null);
