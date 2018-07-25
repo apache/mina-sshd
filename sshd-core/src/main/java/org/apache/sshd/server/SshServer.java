@@ -278,6 +278,9 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
      * @throws IOException If failed to start
      */
     public void start() throws IOException {
+        if (isClosed()) {
+            throw new IllegalStateException("Can not start the server again");
+        }
         if (isStarted()) {
             return;
         }

@@ -370,6 +370,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
      * Ignored if already {@link #isStarted() started}.
      */
     public void start() {
+        if (isClosed()) {
+            throw new IllegalStateException("Can not start the client again");
+        }
         if (isStarted()) {
             return;
         }
