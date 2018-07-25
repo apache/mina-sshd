@@ -278,7 +278,11 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
      * @throws IOException If failed to start
      */
     public void start() throws IOException {
+        boolean debugEnabled = log.isDebugEnabled();
         if (isStarted()) {
+            if (debugEnabled) {
+                log.debug("start({}) already started", this);
+            }
             return;
         }
 
@@ -289,33 +293,37 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         acceptor = createAcceptor();
 
         setupSessionTimeout(sessionFactory);
+        reopenIfNotOpen();
 
         String hostsList = getHost();
         if (!GenericUtils.isEmpty(hostsList)) {
             String[] hosts = GenericUtils.split(hostsList, ',');
+            boolean traceEnabled = log.isTraceEnabled();
             for (String host : hosts) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("start() - resolve bind host={}", host);
                 }
 
                 InetAddress[] inetAddresses = InetAddress.getAllByName(host);
                 for (InetAddress inetAddress : inetAddresses) {
-                    if (log.isTraceEnabled()) {
+                    if (traceEnabled) {
                         log.trace("start() - bind host={} / {}", host, inetAddress);
                     }
 
                     acceptor.bind(new InetSocketAddress(inetAddress, port));
                     if (port == 0) {
-                        port = ((InetSocketAddress) acceptor.getBoundAddresses().iterator().next()).getPort();
-                        log.info("start() listen on auto-allocated port=" + port);
+                        port = IoAcceptor.resolveBoundPort(acceptor);
+                        ValidateUtils.checkState(port > 0, "Cannot resolve bound port for host=%s", host);
+                        log.info("start() listen on auto-allocated port={} for host={}[{}]", port, host, inetAddress);
                     }
                 }
             }
         } else {
             acceptor.bind(new InetSocketAddress(port));
             if (port == 0) {
-                port = ((InetSocketAddress) acceptor.getBoundAddresses().iterator().next()).getPort();
-                log.info("start() listen on auto-allocated port=" + port);
+                port = IoAcceptor.resolveBoundPort(acceptor);
+                ValidateUtils.checkState(port > 0, "Cannot resolve generic bound port");
+                log.info("start({}) listen on auto-allocated port={}", this, port);
             }
         }
 

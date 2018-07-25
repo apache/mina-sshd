@@ -19,9 +19,14 @@
 package org.apache.sshd.common.io;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.Set;
+
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -41,4 +46,31 @@ public interface IoAcceptor extends IoService {
 
     Set<SocketAddress> getBoundAddresses();
 
+    /**
+     * @param acceptor The {@link IoAcceptor} - ignored if {@code null}
+     * @return The port associated with the <u>first</u> bound address - {@code -1} if none available
+     * @see #resolveBoundAddress(IoAcceptor)
+     */
+    static int resolveBoundPort(IoAcceptor acceptor) {
+        SocketAddress boundEndpoint = resolveBoundAddress(acceptor);
+        if (boundEndpoint instanceof InetSocketAddress) {
+            return ((InetSocketAddress) boundEndpoint).getPort();
+        }
+
+        return -1;
+    }
+
+    /**
+     * @param acceptor The {@link IoAcceptor} - ignored if {@code null}
+     * @return The <u>first</u> bound address - {@code null} if none available
+     * @see #getBoundAddresses()
+     */
+    static SocketAddress resolveBoundAddress(IoAcceptor acceptor) {
+        Collection<SocketAddress> boundAddresses = (acceptor == null) ? Collections.emptySet() : acceptor.getBoundAddresses();
+        if (GenericUtils.isEmpty(boundAddresses)) {
+            return null;
+        }
+        Iterator<SocketAddress> boundIterator = boundAddresses.iterator();
+        return boundIterator.next();
+    }
 }

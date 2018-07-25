@@ -145,6 +145,23 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
     }
 
     /**
+     * Checks if the current state is {@link State#Opened} and sets it
+     * as such if not.
+     *
+     * @return {@code true} if had to set the state to {@link State#Opened}
+     */
+    protected boolean reopenIfNotOpen() {
+        State curState = state.get();
+        if (curState == State.Opened) {
+            return false;
+        }
+
+        log.info("reopenIfNotOpen({}) update state {} -> {}", this, curState, State.Opened);
+        state.set(State.Opened);
+        return true;
+    }
+
+    /**
      * <P>doCloseImmediately is called once and only once
      * with state == Immediate</P>
      *

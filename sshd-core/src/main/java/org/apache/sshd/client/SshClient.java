@@ -72,6 +72,7 @@ import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
+import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.helpers.AbstractSession;
@@ -371,6 +372,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
      */
     public void start() {
         if (isStarted()) {
+            if (log.isDebugEnabled()) {
+                log.debug("start({}) already started", this);
+            }
             return;
         }
 
@@ -380,6 +384,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         setupSessionTimeout(sessionFactory);
+        reopenIfNotOpen();
 
         connector = createConnector();
         started.set(true);
@@ -687,7 +692,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     protected IoConnector createConnector() {
-        return getIoServiceFactory().createConnector(getSessionFactory());
+        IoServiceFactory factory = getIoServiceFactory();
+        return factory.createConnector(getSessionFactory());
     }
 
     protected SessionFactory createSessionFactory() {
