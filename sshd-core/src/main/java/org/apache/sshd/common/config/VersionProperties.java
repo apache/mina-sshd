@@ -22,7 +22,7 @@ package org.apache.sshd.common.config;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.Collections;
-import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Properties;
 import java.util.TreeMap;
 
@@ -36,19 +36,19 @@ import org.slf4j.LoggerFactory;
  */
 public final class VersionProperties {
     private static class LazyHolder {
-        private static final Map<String, String> PROPERTIES =
-                Collections.unmodifiableMap(loadVersionProperties(LazyHolder.class));
+        private static final NavigableMap<String, String> PROPERTIES =
+                Collections.unmodifiableNavigableMap(loadVersionProperties(LazyHolder.class));
 
-        private static Map<String, String> loadVersionProperties(Class<?> anchor) {
+        private static NavigableMap<String, String> loadVersionProperties(Class<?> anchor) {
             return loadVersionProperties(anchor, ThreadUtils.resolveDefaultClassLoader(anchor));
         }
 
-        private static Map<String, String> loadVersionProperties(Class<?> anchor, ClassLoader loader) {
-            Map<String, String> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        private static NavigableMap<String, String> loadVersionProperties(Class<?> anchor, ClassLoader loader) {
+            NavigableMap<String, String> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
             try {
                 InputStream input = loader.getResourceAsStream("org/apache/sshd/sshd-version.properties");
                 if (input == null) {
-                    throw new FileNotFoundException("Resource does not exists");
+                    throw new FileNotFoundException("Version resource does not exist");
                 }
 
                 Properties props = new Properties();
@@ -59,9 +59,10 @@ public final class VersionProperties {
                 }
 
                 for (String key : props.stringPropertyNames()) {
-                    String value = GenericUtils.trimToEmpty(props.getProperty(key));
+                    String propValue = props.getProperty(key);
+                    String value = GenericUtils.trimToEmpty(propValue);
                     if (GenericUtils.isEmpty(value)) {
-                        continue;   // we have no need for empty value
+                        continue;   // we have no need for empty values
                     }
 
                     String prev = result.put(key, value);
@@ -83,9 +84,11 @@ public final class VersionProperties {
         throw new UnsupportedOperationException("No instance");
     }
 
+    /**
+     * @return A case <u>insensitive</u> un-modifiable {@link NavigableMap} of the {@code sshd-version.properties} data
+     */
     @SuppressWarnings("synthetic-access")
-    public static Map<String, String> getVersionProperties() {
+    public static NavigableMap<String, String> getVersionProperties() {
         return LazyHolder.PROPERTIES;
     }
-
 }
