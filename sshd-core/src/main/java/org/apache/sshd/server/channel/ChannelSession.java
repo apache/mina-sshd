@@ -123,8 +123,9 @@ public class ChannelSession extends AbstractServerChannel {
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .sequential(new CommandCloseable(), new GracefulChannelCloseable())
+                .sequential(new CommandCloseable(), super.getInnerCloseable())
                 .parallel(asyncOut, asyncErr)
+                .run(toString(), this::closeImmediately0)
                 .build();
     }
 
@@ -190,8 +191,7 @@ public class ChannelSession extends AbstractServerChannel {
         }
     }
 
-    @Override
-    protected void doCloseImmediately() {
+    protected void closeImmediately0() {
         boolean debugEnabled = log.isDebugEnabled();
         if (commandInstance != null) {
             try {
@@ -223,8 +223,6 @@ public class ChannelSession extends AbstractServerChannel {
                 }
             }
         }
-
-        super.doCloseImmediately();
     }
 
     @Override

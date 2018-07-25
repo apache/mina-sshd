@@ -71,7 +71,7 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
     }
 
     @Override
-    public CloseFuture close(boolean immediately) {
+    public final CloseFuture close(boolean immediately) {
         boolean debugEnabled = log.isDebugEnabled();
         if (immediately) {
             if (state.compareAndSet(State.Opened, State.Immediate)
@@ -123,12 +123,12 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
     }
 
     @Override
-    public boolean isClosed() {
+    public final boolean isClosed() {
         return state.get() == State.Closed;
     }
 
     @Override
-    public boolean isClosing() {
+    public final boolean isClosing() {
         return state.get() != State.Opened;
     }
 

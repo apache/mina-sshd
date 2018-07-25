@@ -33,8 +33,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -137,13 +137,20 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
     }
 
     @Override
-    public CloseFuture close(boolean immediately) {
+    protected void preClose() {
         unbind();
-        return super.close(immediately);
+        super.preClose();
     }
 
     @Override
-    public void doCloseImmediately() {
+    protected Closeable getInnerCloseable() {
+        return builder()
+            .close(super.getInnerCloseable())
+            .run(toString(), this::closeImmediately0)
+            .build();
+    }
+
+    protected void closeImmediately0() {
         Collection<SocketAddress> boundAddresses = getBoundAddresses();
         boolean debugEnabled = log.isDebugEnabled();
         for (SocketAddress address : boundAddresses) {
@@ -163,7 +170,6 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                 }
             }
         }
-        super.doCloseImmediately();
     }
 
     @Override

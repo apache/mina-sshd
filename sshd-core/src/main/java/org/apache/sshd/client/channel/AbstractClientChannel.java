@@ -204,7 +204,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                     IoUtils.closeQuietly(invertedIn, invertedOut, invertedErr);
                 })
                 .parallel(asyncIn, asyncOut, asyncErr)
-                .close(new GracefulChannelCloseable())
+                .close(super.getInnerCloseable())
                 .build();
     }
 

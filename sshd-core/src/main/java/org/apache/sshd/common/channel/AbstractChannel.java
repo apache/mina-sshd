@@ -537,7 +537,7 @@ public abstract class AbstractChannel
             log.debug("handleClose({}) SSH_MSG_CHANNEL_CLOSE", this);
         }
 
-        if (!eofSent.getAndSet(true)) {
+        if (!isEofSent()) {
             if (debugEnabled) {
                 log.debug("handleClose({}) prevent sending EOF", this);
             }
@@ -551,19 +551,15 @@ public abstract class AbstractChannel
     }
 
     @Override
-    public CloseFuture close(boolean immediately) {
-        if (!eofSent.getAndSet(true)) {
-            if (log.isDebugEnabled()) {
-                log.debug("close({}) prevent sending EOF", this);
-            }
-        }
-
-        return super.close(immediately);
-    }
-
-    @Override
     protected Closeable getInnerCloseable() {
-        return new GracefulChannelCloseable();
+        return builder()
+                .sequential(new GracefulChannelCloseable(), getExecutorService())
+                .run(toString(), () -> {
+                    if (service != null) {
+                        service.unregisterChannel(AbstractChannel.this);
+                    }
+                })
+                .build();
     }
 
     public class GracefulChannelCloseable extends IoBaseCloseable {
@@ -684,6 +680,10 @@ public abstract class AbstractChannel
 
     @Override
     protected void preClose() {
+        if (!isEofSent()) {
+            log.debug("close({}) prevent sending EOF", this);
+        }
+
         try {
             signalChannelClosed(null);
         } finally {
@@ -765,15 +765,6 @@ public abstract class AbstractChannel
         if (err != null) {
             throw err;
         }
-    }
-
-    @Override
-    protected void doCloseImmediately() {
-        if (service != null) {
-            service.unregisterChannel(AbstractChannel.this);
-        }
-
-        super.doCloseImmediately();
     }
 
     @Override
@@ -920,16 +911,16 @@ public abstract class AbstractChannel
     protected abstract void doWriteExtendedData(byte[] data, int off, long len) throws IOException;
 
     protected void sendEof() throws IOException {
-        if (eofSent.getAndSet(true)) {
+        if (isClosing()) {
             if (log.isDebugEnabled()) {
-                log.debug("sendEof({}) already sent", this);
+                log.debug("sendEof({}) already closing or closed", this);
             }
             return;
         }
 
-        if (isClosing()) {
+        if (eofSent.getAndSet(true)) {
             if (log.isDebugEnabled()) {
-                log.debug("sendEof({}) already closing or closed", this);
+                log.debug("sendEof({}) already sent", this);
             }
             return;
         }

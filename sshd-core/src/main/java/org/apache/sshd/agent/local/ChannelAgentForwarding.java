@@ -28,10 +28,10 @@ import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.agent.common.AbstractAgentClient;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
-import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -110,8 +110,11 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     }
 
     @Override
-    public CloseFuture close(boolean immediately) {
-        return super.close(immediately).addListener(sshFuture -> closeImmediately0());
+    protected Closeable getInnerCloseable() {
+        return builder()
+                .close(super.getInnerCloseable())
+                .run(toString(), this::closeImmediately0)
+                .build();
     }
 
     @Override

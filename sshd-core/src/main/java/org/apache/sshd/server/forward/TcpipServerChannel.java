@@ -27,6 +27,7 @@ import java.util.Objects;
 
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
@@ -48,6 +49,7 @@ import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.closeable.AbstractCloseable;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.common.util.threads.ExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
@@ -292,51 +294,45 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
     }
 
     @Override
-    public CloseFuture close(boolean immediately) {
-        boolean debugEnabled = log.isDebugEnabled();
-        /*
-         * In case of graceful shutdown (e.g. when the remote channel is gently closed)
-         * we also need to close the ChannelOutputStream which flushes remaining buffer
-         * and sends SSH_MSG_CHANNEL_EOF back to the client.
-         */
-        if ((!immediately) && (out != null)) {
-            try {
-                if (debugEnabled) {
-                    log.debug("Closing channel output stream of {}", this);
-                }
+    protected Closeable getInnerCloseable() {
+        return builder()
+                .run(toString(), () -> {
+                    /*
+                     * In case of graceful shutdown (e.g. when the remote channel is gently closed)
+                     * we also need to close the ChannelOutputStream which flushes remaining buffer
+                     * and sends SSH_MSG_CHANNEL_EOF back to the client.
+                     */
+                    if (out != null) {
+                        try {
+                            log.debug("Closing channel output stream of {}", this);
+                            out.close();
+                        } catch (IOException | RuntimeException ignored) {
+                            log.debug("{} while closing channel output stream of {}: {}",
+                                    ignored.getClass().getSimpleName(), this, ignored.getMessage(), ignored);
+                        }
+                    }
+                })
+                .close(super.getInnerCloseable())
+                .close(new AbstractCloseable() {
+                    ExecutorService executor = ThreadUtils.newCachedThreadPool("TcpIpServerChannel-ConnectorCleanup[" + getSession() + "]");
+                    @Override
+                    protected CloseFuture doCloseGracefully() {
+                        executor.submit(() -> {
+                            connector.close(false);
+                        });
+                        return null;
+                    }
 
-                out.close();
-            } catch (IOException | RuntimeException ignored) {
-                if (debugEnabled) {
-                    log.debug("{} while closing channel output stream of {}: {}",
-                        ignored.getClass().getSimpleName(), this, ignored.getMessage());
-                }
-            }
-        }
-
-        CloseFuture closingFeature = super.close(immediately);
-
-        // We also need to dispose of the connector, but unfortunately we
-        // are being invoked by the connector thread or the connector's
-        // own processor thread. Disposing of the connector within either
-        // causes deadlock. Instead create a thread to dispose of the
-        // connector in the background.
-        ExecutorService service = getExecutorService();
-
-        // allocate a temporary executor service if none provided
-        ExecutorService executors = (service == null)
-                ? ThreadUtils.newSingleThreadExecutor("TcpIpServerChannel-ConnectorCleanup[" + getSession() + "]")
-                : ThreadUtils.noClose(service);
-
-        return builder().when(closingFeature).run(toString(), () -> {
-            executors.submit(() -> {
-                if (debugEnabled) {
-                    log.debug("disposing connector: {} for: {}", connector, TcpipServerChannel.this);
-                }
-                connector.close(immediately)
-                        .addListener(f -> executors.close(true));
-            });
-        }).build().close(false);
+                    @Override
+                    protected void doCloseImmediately() {
+                        executor.submit(() -> {
+                            connector.close(true)
+                                    .addListener(f -> executor.close(true));
+                        });
+                        super.doCloseImmediately();
+                    }
+                })
+                .build();
     }
 
     @Override

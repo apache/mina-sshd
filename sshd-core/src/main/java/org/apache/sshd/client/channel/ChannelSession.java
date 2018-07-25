@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.Future;
 
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
@@ -125,7 +126,14 @@ public class ChannelSession extends AbstractClientChannel {
     }
 
     @Override
-    protected void doCloseImmediately() {
+    protected Closeable getInnerCloseable() {
+        return builder()
+                .close(super.getInnerCloseable())
+                .run(toString(), this::closeImmediately0)
+                .build();
+    }
+
+    protected void closeImmediately0() {
         if ((pumper != null) && (pumperService != null) && (!pumperService.isShutdown())) {
             try {
                 if (!pumper.isDone()) {
@@ -147,8 +155,6 @@ public class ChannelSession extends AbstractClientChannel {
                 pumperService = null;
             }
         }
-
-        super.doCloseImmediately();
     }
 
     protected void pumpInputStream() {
