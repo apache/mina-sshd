@@ -800,6 +800,8 @@
                 <configuration>
                     <configLocation>${workspace.root.dir}${file.separator}sshd-checkstyle.xml</configLocation>
                     <headerLocation>${workspace.root.dir}${file.separator}java-checkstyle-license-header.txt</headerLocation>
+                    <suppressionsLocation>${workspace.root.dir}${file.separator}sshd-checkstyle-suppressions.xml</suppressionsLocation>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
                 </configuration>
                 <executions>
                     <execution>
