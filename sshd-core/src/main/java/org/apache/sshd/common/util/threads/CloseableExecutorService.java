@@ -24,5 +24,5 @@ import java.util.concurrent.ExecutorService;
 import org.apache.sshd.common.Closeable;
 
 public interface CloseableExecutorService extends ExecutorService, Closeable {
-
+    // Nothing extra
 }
