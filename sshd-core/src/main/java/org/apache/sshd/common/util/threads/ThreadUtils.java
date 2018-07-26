@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
@@ -54,7 +55,6 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class ThreadUtils {
-
     private ThreadUtils() {
         throw new UnsupportedOperationException("No instance");
     }
@@ -73,7 +73,7 @@ public final class ThreadUtils {
      * @return Either the original service or a wrapped one - depending on the
      * value of the <tt>shutdownOnExit</tt> parameter
      */
-    public static CloseableExecutorService protectExecutorServiceShutdown(final CloseableExecutorService executorService, boolean shutdownOnExit) {
+    public static CloseableExecutorService protectExecutorServiceShutdown(CloseableExecutorService executorService, boolean shutdownOnExit) {
         if (executorService == null || shutdownOnExit || executorService instanceof NoCloseExecutor) {
             return executorService;
         } else {
@@ -251,7 +251,6 @@ public final class ThreadUtils {
     }
 
     public static class NoCloseExecutor implements CloseableExecutorService {
-
         protected final ExecutorService executor;
         protected final CloseFuture closeFuture;
 
@@ -262,41 +261,49 @@ public final class ThreadUtils {
 
         @Override
         public <T> Future<T> submit(Callable<T> task) {
+            ValidateUtils.checkState(!isShutdown(), "Executor has been shut down");
             return executor.submit(task);
         }
 
         @Override
         public <T> Future<T> submit(Runnable task, T result) {
+            ValidateUtils.checkState(!isShutdown(), "Executor has been shut down");
             return executor.submit(task, result);
         }
 
         @Override
         public Future<?> submit(Runnable task) {
+            ValidateUtils.checkState(!isShutdown(), "Executor has been shut down");
             return executor.submit(task);
         }
 
         @Override
         public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
+            ValidateUtils.checkState(!isShutdown(), "Executor has been shut down");
             return executor.invokeAll(tasks);
         }
 
         @Override
         public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException {
+            ValidateUtils.checkState(!isShutdown(), "Executor has been shut down");
             return executor.invokeAll(tasks, timeout, unit);
         }
 
         @Override
         public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
+            ValidateUtils.checkState(!isShutdown(), "Executor has been shut down");
             return executor.invokeAny(tasks);
         }
 
         @Override
         public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+            ValidateUtils.checkState(!isShutdown(), "Executor has been shut down");
             return executor.invokeAny(tasks, timeout, unit);
         }
 
         @Override
         public void execute(Runnable command) {
+            ValidateUtils.checkState(!isShutdown(), "Executor has been shut down");
             executor.execute(command);
         }
 
