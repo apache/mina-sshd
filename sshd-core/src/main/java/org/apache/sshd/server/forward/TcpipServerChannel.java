@@ -51,7 +51,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.channel.AbstractServerChannel;
@@ -82,7 +82,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
         }
 
         @Override
-        public ExecutorService getExecutorService() {
+        public CloseableExecutorService getExecutorService() {
             return null;
         }
 
@@ -102,7 +102,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
     private SshdSocketAddress originatorAddress;
     private SocketAddress localAddress;
 
-    public TcpipServerChannel(ForwardingFilter.Type type, ExecutorService executor) {
+    public TcpipServerChannel(ForwardingFilter.Type type, CloseableExecutorService executor) {
         super("", Collections.emptyList(), executor);
         this.type = Objects.requireNonNull(type, "No channel type specified");
     }
@@ -314,7 +314,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
                 })
                 .close(super.getInnerCloseable())
                 .close(new AbstractCloseable() {
-                    ExecutorService executor = ThreadUtils.newCachedThreadPool("TcpIpServerChannel-ConnectorCleanup[" + getSession() + "]");
+                    CloseableExecutorService executor = ThreadUtils.newCachedThreadPool("TcpIpServerChannel-ConnectorCleanup[" + getSession() + "]");
                     @Override
                     protected CloseFuture doCloseGracefully() {
                         executor.submit(() -> {

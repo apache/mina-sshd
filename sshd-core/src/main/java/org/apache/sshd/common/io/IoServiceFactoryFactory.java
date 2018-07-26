@@ -20,7 +20,7 @@ package org.apache.sshd.common.io;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -29,5 +29,5 @@ public interface IoServiceFactoryFactory {
 
     IoServiceFactory create(FactoryManager manager);
 
-    void setExecutorServiceFactory(Factory<ExecutorService> factory);
+    void setExecutorServiceFactory(Factory<CloseableExecutorService> factory);
 }

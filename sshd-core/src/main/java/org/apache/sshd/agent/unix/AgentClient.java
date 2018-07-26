@@ -29,7 +29,7 @@ import org.apache.sshd.agent.common.AbstractAgentProxy;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.tomcat.jni.Local;
 import org.apache.tomcat.jni.Pool;
@@ -53,7 +53,7 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
         this(authSocket, null);
     }
 
-    public AgentClient(String authSocket, ExecutorService executor) throws IOException {
+    public AgentClient(String authSocket, CloseableExecutorService executor) throws IOException {
         super((executor == null) ? ThreadUtils.newSingleThreadExecutor("AgentClient[" + authSocket + "]") : executor);
         this.authSocket = authSocket;
 
@@ -67,7 +67,7 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
             receiveBuffer = new ByteArrayBuffer();
             messages = new ArrayBlockingQueue<>(10);
 
-            ExecutorService service = getExecutorService();
+            CloseableExecutorService service = getExecutorService();
             pumper = service.submit(this);
         } catch (IOException e) {
             throw e;

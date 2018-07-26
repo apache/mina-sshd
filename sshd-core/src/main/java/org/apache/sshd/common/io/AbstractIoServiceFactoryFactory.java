@@ -21,7 +21,7 @@ package org.apache.sshd.common.io;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -30,26 +30,26 @@ public abstract class AbstractIoServiceFactoryFactory
         extends AbstractLoggingBean
         implements IoServiceFactoryFactory {
 
-    private Factory<ExecutorService> executorServiceFactory;
+    private Factory<CloseableExecutorService> executorServiceFactory;
 
     /**
-     * @param factory      The {@link ExecutorService} factory to use for spawning threads.
+     * @param factory      The {@link CloseableExecutorService} factory to use for spawning threads.
      *                     If {@code null} then an internal service will be allocated.
      */
-    protected AbstractIoServiceFactoryFactory(Factory<ExecutorService> factory) {
+    protected AbstractIoServiceFactoryFactory(Factory<CloseableExecutorService> factory) {
         executorServiceFactory = factory;
     }
 
-    public Factory<ExecutorService> getExecutorServiceFactory() {
+    public Factory<CloseableExecutorService> getExecutorServiceFactory() {
         return executorServiceFactory;
     }
 
     @Override
-    public void setExecutorServiceFactory(Factory<ExecutorService> factory) {
+    public void setExecutorServiceFactory(Factory<CloseableExecutorService> factory) {
         executorServiceFactory = factory;
     }
 
-    protected ExecutorService newExecutor() {
+    protected CloseableExecutorService newExecutor() {
         return executorServiceFactory != null ? executorServiceFactory.create() : null;
     }
 }

@@ -19,8 +19,10 @@
 
 package org.apache.sshd.common.util.threads;
 
+import java.util.concurrent.ExecutorService;
+
 import org.apache.sshd.common.Closeable;
 
-public interface ExecutorService extends java.util.concurrent.ExecutorService, Closeable {
+public interface CloseableExecutorService extends ExecutorService, Closeable {
 
 }

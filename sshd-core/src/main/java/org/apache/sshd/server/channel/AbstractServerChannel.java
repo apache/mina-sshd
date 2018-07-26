@@ -35,7 +35,7 @@ import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -47,11 +47,11 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
 
     protected final AtomicBoolean exitStatusSent = new AtomicBoolean(false);
 
-    protected AbstractServerChannel(ExecutorService executor) {
+    protected AbstractServerChannel(CloseableExecutorService executor) {
         super("", false, Collections.emptyList(), executor);
     }
 
-    protected AbstractServerChannel(String discriminator, Collection<? extends RequestHandler<Channel>> handlers, ExecutorService executor) {
+    protected AbstractServerChannel(String discriminator, Collection<? extends RequestHandler<Channel>> handlers, CloseableExecutorService executor) {
         super(discriminator, false, handlers, executor);
     }
 

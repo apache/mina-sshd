@@ -37,7 +37,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.server.channel.AbstractServerChannel;
 
 /**
@@ -48,7 +48,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     private SshAgent agent;
     private AgentClient client;
 
-    public ChannelAgentForwarding(ExecutorService executor) {
+    public ChannelAgentForwarding(CloseableExecutorService executor) {
         super("", Collections.emptyList(), executor);
     }
 

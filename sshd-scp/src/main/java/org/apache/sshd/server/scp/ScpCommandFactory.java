@@ -28,7 +28,7 @@ import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.server.command.AbstractDelegatingCommandFactory;
 import org.apache.sshd.server.command.Command;
@@ -70,7 +70,7 @@ public class ScpCommandFactory
             return this;
         }
 
-        public Builder withExecutorService(ExecutorService service) {
+        public Builder withExecutorService(CloseableExecutorService service) {
             factory.setExecutorService(service);
             return this;
         }
@@ -101,7 +101,7 @@ public class ScpCommandFactory
         }
     }
 
-    private ExecutorService executors;
+    private CloseableExecutorService executors;
     private ScpFileOpener fileOpener;
     private int sendBufferSize = ScpHelper.MIN_SEND_BUFFER_SIZE;
     private int receiveBufferSize = ScpHelper.MIN_RECEIVE_BUFFER_SIZE;
@@ -124,18 +124,18 @@ public class ScpCommandFactory
     }
 
     @Override
-    public ExecutorService getExecutorService() {
+    public CloseableExecutorService getExecutorService() {
         return executors;
     }
 
     /**
-     * @param service An {@link ExecutorService} to be used when
+     * @param service An {@link CloseableExecutorService} to be used when
      * starting {@link ScpCommand} execution. If {@code null} then a single-threaded
      * ad-hoc service is used. <B>Note:</B> the service will <U>not</U> be shutdown
      * when the command is terminated - unless it is the ad-hoc service, which will be
      * shutdown regardless
      */
-    public void setExecutorService(ExecutorService service) {
+    public void setExecutorService(CloseableExecutorService service) {
         executors = service;
     }
 

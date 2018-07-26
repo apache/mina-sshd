@@ -24,8 +24,8 @@ package org.apache.sshd.common.util.threads;
  */
 public interface ExecutorServiceCarrier {
     /**
-     * @return The {@link ExecutorService} to use
+     * @return The {@link CloseableExecutorService} to use
      */
-    ExecutorService getExecutorService();
+    CloseableExecutorService getExecutorService();
 
 }

@@ -22,7 +22,7 @@ package org.apache.sshd.common.io;
 import java.util.Collections;
 
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -56,7 +56,7 @@ public class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
     @SuppressWarnings("boxing")
     @Test
     public void testExecutorServiceInitialization() throws Exception {
-        ExecutorService service = Mockito.mock(ExecutorService.class);
+        CloseableExecutorService service = Mockito.mock(CloseableExecutorService.class);
         Mockito.when(service.shutdownNow()).thenReturn(Collections.emptyList());
         Mockito.when(service.isShutdown()).thenReturn(Boolean.TRUE);
         Mockito.when(service.isTerminated()).thenReturn(Boolean.TRUE);
@@ -76,7 +76,7 @@ public class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
 
                 try (IoServiceFactory factory = defaultFactory.create(manager)) {
 
-                    ExecutorService svc = (ExecutorService) factory.getClass().getMethod("getExecutorService").invoke(factory);
+                    CloseableExecutorService svc = (CloseableExecutorService) factory.getClass().getMethod("getExecutorService").invoke(factory);
                     assertSame(name + " - mismatched executor service", service, svc);
                 } catch (NoSuchMethodException e) {
                     // ignore if there's no executor service

@@ -21,7 +21,7 @@ package org.apache.sshd.git;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.server.command.AbstractDelegatingCommandFactory;
 import org.apache.sshd.server.command.Command;
@@ -38,7 +38,7 @@ public abstract class AbstractGitCommandFactory
         implements ExecutorServiceCarrier, GitLocationResolverCarrier {
     private final String cmdPrefix;
     private GitLocationResolver rootDirResolver;
-    private ExecutorService executorService;
+    private CloseableExecutorService executorService;
 
     /**
      * @param name Command factory logical name
@@ -56,11 +56,11 @@ public abstract class AbstractGitCommandFactory
     }
 
     @Override
-    public ExecutorService getExecutorService() {
+    public CloseableExecutorService getExecutorService() {
         return executorService;
     }
 
-    public AbstractGitCommandFactory withExecutorService(ExecutorService executorService) {
+    public AbstractGitCommandFactory withExecutorService(CloseableExecutorService executorService) {
         this.executorService = executorService;
         return this;
     }

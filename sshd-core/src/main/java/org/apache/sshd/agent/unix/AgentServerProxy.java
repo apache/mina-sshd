@@ -32,7 +32,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.tomcat.jni.Local;
 import org.apache.tomcat.jni.Pool;
@@ -59,7 +59,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
     private final long pool;
     private final long handle;
     private Future<?> piper;
-    private final ExecutorService pipeService;
+    private final CloseableExecutorService pipeService;
     private final AtomicBoolean open = new AtomicBoolean(true);
     private final AtomicBoolean innerFinished = new AtomicBoolean(false);
 
@@ -67,7 +67,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
         this(service, null);
     }
 
-    public AgentServerProxy(ConnectionService service, ExecutorService executor) throws IOException {
+    public AgentServerProxy(ConnectionService service, CloseableExecutorService executor) throws IOException {
         this.service = service;
         try {
             String authSocket = AprLibrary.createLocalSocketAddress();
@@ -133,7 +133,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
         return open.get();
     }
 
-    public ExecutorService getExecutorService() {
+    public CloseableExecutorService getExecutorService() {
         return pipeService;
     }
 
@@ -186,7 +186,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
             piper = null;
         }
 
-        ExecutorService executor = getExecutorService();
+        CloseableExecutorService executor = getExecutorService();
         if ((executor != null) && (!executor.isShutdown())) {
             Collection<?> runners = executor.shutdownNow();
             if (debugEnabled) {

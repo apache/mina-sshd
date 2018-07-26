@@ -58,7 +58,7 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 import org.apache.sshd.common.util.closeable.IoBaseCloseable;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 
 /**
@@ -94,7 +94,7 @@ public abstract class AbstractChannel
     private int id = -1;
     private int recipient = -1;
     private Session sessionInstance;
-    private ExecutorService executor;
+    private CloseableExecutorService executor;
     private final List<RequestHandler<Channel>> requestHandlers = new CopyOnWriteArrayList<>();
 
     private final Window localWindow;
@@ -121,7 +121,7 @@ public abstract class AbstractChannel
         this(discriminator, client, Collections.emptyList(), null);
     }
 
-    protected AbstractChannel(String discriminator, boolean client, Collection<? extends RequestHandler<Channel>> handlers, ExecutorService executorService) {
+    protected AbstractChannel(String discriminator, boolean client, Collection<? extends RequestHandler<Channel>> handlers, CloseableExecutorService executorService) {
         super(discriminator);
         gracefulFuture = new DefaultCloseFuture(discriminator, lock);
         localWindow = new Window(this, null, client, true);
@@ -184,7 +184,7 @@ public abstract class AbstractChannel
     }
 
     @Override
-    public ExecutorService getExecutorService() {
+    public CloseableExecutorService getExecutorService() {
         return executor;
     }
 
@@ -635,7 +635,7 @@ public abstract class AbstractChannel
                 }
             }
 
-            ExecutorService service = getExecutorService();
+            CloseableExecutorService service = getExecutorService();
             if ((service != null) && (!service.isShutdown())) {
                 Collection<?> running = service.shutdownNow();
                 if (debugEnabled) {

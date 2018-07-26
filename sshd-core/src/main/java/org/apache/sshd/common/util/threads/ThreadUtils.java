@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
@@ -59,11 +60,11 @@ public final class ThreadUtils {
     }
 
     /**
-     * Wraps an {@link ExecutorService} in such a way as to &quot;protect&quot;
-     * it for calls to the {@link ExecutorService#shutdown()} or
-     * {@link ExecutorService#shutdownNow()}. All other calls are delegated as-is
+     * Wraps an {@link CloseableExecutorService} in such a way as to &quot;protect&quot;
+     * it for calls to the {@link CloseableExecutorService#shutdown()} or
+     * {@link CloseableExecutorService#shutdownNow()}. All other calls are delegated as-is
      * to the original service. <B>Note:</B> the exposed wrapped proxy will
-     * answer correctly the {@link ExecutorService#isShutdown()} query if indeed
+     * answer correctly the {@link CloseableExecutorService#isShutdown()} query if indeed
      * one of the {@code shutdown} methods was invoked.
      *
      * @param executorService The original service - ignored if {@code null}
@@ -72,7 +73,7 @@ public final class ThreadUtils {
      * @return Either the original service or a wrapped one - depending on the
      * value of the <tt>shutdownOnExit</tt> parameter
      */
-    public static ExecutorService protectExecutorServiceShutdown(final ExecutorService executorService, boolean shutdownOnExit) {
+    public static CloseableExecutorService protectExecutorServiceShutdown(final CloseableExecutorService executorService, boolean shutdownOnExit) {
         if (executorService == null || shutdownOnExit || executorService instanceof NoCloseExecutor) {
             return executorService;
         } else {
@@ -80,7 +81,7 @@ public final class ThreadUtils {
         }
     }
 
-    public static ExecutorService noClose(ExecutorService executorService) {
+    public static CloseableExecutorService noClose(CloseableExecutorService executorService) {
         return protectExecutorServiceShutdown(executorService, false);
     }
 
@@ -170,11 +171,11 @@ public final class ThreadUtils {
         return cls;
     }
 
-    public static ExecutorService newFixedThreadPoolIf(ExecutorService executorService, String poolName, int nThreads) {
+    public static CloseableExecutorService newFixedThreadPoolIf(CloseableExecutorService executorService, String poolName, int nThreads) {
         return executorService == null ? newFixedThreadPool(poolName, nThreads) : executorService;
     }
 
-    public static ExecutorService newFixedThreadPool(String poolName, int nThreads) {
+    public static CloseableExecutorService newFixedThreadPool(String poolName, int nThreads) {
         return new ThreadPoolExecutor(
                 nThreads, nThreads,
                 0L, TimeUnit.MILLISECONDS, // TODO make this configurable
@@ -183,11 +184,11 @@ public final class ThreadUtils {
                 new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
-    public static ExecutorService newCachedThreadPoolIf(ExecutorService executorService, String poolName) {
+    public static CloseableExecutorService newCachedThreadPoolIf(CloseableExecutorService executorService, String poolName) {
         return executorService == null ? newCachedThreadPool(poolName) : executorService;
     }
 
-    public static ExecutorService newCachedThreadPool(String poolName) {
+    public static CloseableExecutorService newCachedThreadPool(String poolName) {
         return new ThreadPoolExecutor(
                 0, Integer.MAX_VALUE, // TODO make this configurable
                 60L, TimeUnit.SECONDS, // TODO make this configurable
@@ -200,7 +201,7 @@ public final class ThreadUtils {
         return new ScheduledThreadPoolExecutor(1, new SshdThreadFactory(poolName));
     }
 
-    public static ExecutorService newSingleThreadExecutor(String poolName) {
+    public static CloseableExecutorService newSingleThreadExecutor(String poolName) {
         return newFixedThreadPool(poolName, 1);
     }
 
@@ -249,7 +250,7 @@ public final class ThreadUtils {
         }
     }
 
-    public static class NoCloseExecutor implements ExecutorService {
+    public static class NoCloseExecutor implements CloseableExecutorService {
 
         protected final ExecutorService executor;
         protected final CloseFuture closeFuture;
@@ -357,7 +358,7 @@ public final class ThreadUtils {
 
     }
 
-    public static class ThreadPoolExecutor extends java.util.concurrent.ThreadPoolExecutor implements ExecutorService {
+    public static class ThreadPoolExecutor extends java.util.concurrent.ThreadPoolExecutor implements CloseableExecutorService {
 
         final DelegateCloseable closeable = new DelegateCloseable();
 

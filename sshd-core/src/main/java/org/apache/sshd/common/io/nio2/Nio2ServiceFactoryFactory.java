@@ -25,7 +25,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.io.AbstractIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 
 /**
  */
@@ -36,12 +36,12 @@ public class Nio2ServiceFactoryFactory extends AbstractIoServiceFactoryFactory {
     }
 
     /**
-     * @param executors      The {@link ExecutorService} to use for spawning threads.
+     * @param executors      The {@link CloseableExecutorService} to use for spawning threads.
      *                       If {@code null} then an internal service is allocated - in which case it
      *                       is automatically shutdown regardless of the value of the <tt>shutdownOnExit</tt>
      *                       parameter value
      */
-    public Nio2ServiceFactoryFactory(Factory<ExecutorService> executors) {
+    public Nio2ServiceFactoryFactory(Factory<CloseableExecutorService> executors) {
         super(executors);
         // Make sure NIO2 is available
         Objects.requireNonNull(AsynchronousChannel.class, "Missing NIO2 class");

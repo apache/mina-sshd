@@ -24,7 +24,7 @@ import java.util.ServiceLoader;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +40,7 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
         this(null);
     }
 
-    protected DefaultIoServiceFactoryFactory(Factory<ExecutorService> factory) {
+    protected DefaultIoServiceFactoryFactory(Factory<CloseableExecutorService> factory) {
         super(factory);
     }
 
@@ -57,7 +57,7 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
         synchronized (this) {
             if (factory == null) {
                 factory = newInstance(IoServiceFactoryFactory.class);
-                Factory<ExecutorService> executorServiceFactory = getExecutorServiceFactory();
+                Factory<CloseableExecutorService> executorServiceFactory = getExecutorServiceFactory();
                 if (executorServiceFactory != null) {
                     factory.setExecutorServiceFactory(executorServiceFactory);
                 }

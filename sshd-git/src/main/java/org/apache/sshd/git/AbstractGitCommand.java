@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.apache.sshd.common.channel.ChannelOutputStream;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.server.command.AbstractFileSystemCommand;
 
 /**
@@ -45,7 +45,7 @@ public abstract class AbstractGitCommand
     protected final GitLocationResolver rootDirResolver;
     protected FileSystem fileSystem;
 
-    protected AbstractGitCommand(GitLocationResolver rootDirResolver, String command, ExecutorService executorService) {
+    protected AbstractGitCommand(GitLocationResolver rootDirResolver, String command, CloseableExecutorService executorService) {
         super(command, executorService);
         this.rootDirResolver = Objects.requireNonNull(rootDirResolver, "No GIT root directory resolver provided");
     }

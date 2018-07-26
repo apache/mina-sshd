@@ -35,7 +35,7 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
@@ -45,7 +45,7 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
  */
 public class ChannelSession extends AbstractClientChannel {
 
-    private ExecutorService pumperService;
+    private CloseableExecutorService pumperService;
     private Future<?> pumper;
 
     public ChannelSession() {
@@ -89,7 +89,7 @@ public class ChannelSession extends AbstractClientChannel {
 
             if (in != null) {
                 // allocate a temporary executor service if none provided
-                ExecutorService service = getExecutorService();
+                CloseableExecutorService service = getExecutorService();
                 if (service == null) {
                     pumperService = ThreadUtils.newSingleThreadExecutor("ClientInputStreamPump[" + this.toString() + "]");
                 } else {

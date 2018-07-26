@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.nio.file.FileSystem;
 
 import org.apache.sshd.common.file.FileSystemAware;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 
 /**
  * Provides a basic useful skeleton for {@link Command} executions that require file system access
@@ -34,7 +34,7 @@ public abstract class AbstractFileSystemCommand extends AbstractCommandSupport i
 
     protected FileSystem fileSystem;
 
-    public AbstractFileSystemCommand(String command, ExecutorService executorService) {
+    public AbstractFileSystemCommand(String command, CloseableExecutorService executorService) {
         super(command, executorService);
     }
 

@@ -24,7 +24,7 @@ import java.util.Objects;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
 
@@ -39,7 +39,7 @@ public class SftpSubsystemFactory
     public static final UnsupportedAttributePolicy DEFAULT_POLICY = UnsupportedAttributePolicy.Warn;
 
     public static class Builder extends AbstractSftpEventListenerManager implements ObjectBuilder<SftpSubsystemFactory> {
-        private ExecutorService executors;
+        private CloseableExecutorService executors;
         private UnsupportedAttributePolicy policy = DEFAULT_POLICY;
         private SftpFileSystemAccessor fileSystemAccessor = SftpFileSystemAccessor.DEFAULT;
         private SftpErrorStatusDataHandler errorStatusDataHandler = SftpErrorStatusDataHandler.DEFAULT;
@@ -48,7 +48,7 @@ public class SftpSubsystemFactory
             super();
         }
 
-        public Builder withExecutorService(ExecutorService service) {
+        public Builder withExecutorService(CloseableExecutorService service) {
             executors = service;
             return this;
         }
@@ -80,7 +80,7 @@ public class SftpSubsystemFactory
         }
     }
 
-    private ExecutorService executors;
+    private CloseableExecutorService executors;
     private UnsupportedAttributePolicy policy = DEFAULT_POLICY;
     private SftpFileSystemAccessor fileSystemAccessor = SftpFileSystemAccessor.DEFAULT;
     private SftpErrorStatusDataHandler errorStatusDataHandler = SftpErrorStatusDataHandler.DEFAULT;
@@ -94,15 +94,15 @@ public class SftpSubsystemFactory
         return NAME;
     }
 
-    public ExecutorService getExecutorService() {
+    public CloseableExecutorService getExecutorService() {
         return executors;
     }
 
     /**
-     * @param service The {@link ExecutorService} to be used by the {@link SftpSubsystem}
+     * @param service The {@link CloseableExecutorService} to be used by the {@link SftpSubsystem}
      * command when starting execution. If {@code null} then a single-threaded ad-hoc service is used.
      */
-    public void setExecutorService(ExecutorService service) {
+    public void setExecutorService(CloseableExecutorService service) {
         executors = service;
     }
 

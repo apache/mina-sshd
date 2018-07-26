@@ -37,7 +37,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 
 /**
@@ -45,10 +45,10 @@ import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
  */
 public abstract class AbstractAgentProxy extends AbstractLoggingBean implements SshAgent, ExecutorServiceCarrier {
 
-    private ExecutorService executor;
+    private CloseableExecutorService executor;
     private String channelType = FactoryManager.AGENT_FORWARDING_TYPE_OPENSSH;
 
-    protected AbstractAgentProxy(ExecutorService executorService) {
+    protected AbstractAgentProxy(CloseableExecutorService executorService) {
         super();
         executor = executorService;
     }
@@ -62,7 +62,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
     }
 
     @Override
-    public ExecutorService getExecutorService() {
+    public CloseableExecutorService getExecutorService() {
         return executor;
     }
 
@@ -197,7 +197,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
 
     @Override
     public void close() throws IOException {
-        ExecutorService service = getExecutorService();
+        CloseableExecutorService service = getExecutorService();
         if ((service != null) && (!service.isShutdown())) {
             Collection<?> runners = service.shutdownNow();
             if (log.isDebugEnabled()) {

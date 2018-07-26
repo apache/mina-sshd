@@ -33,7 +33,7 @@ import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.channel.AbstractServerChannel;
 import org.apache.tomcat.jni.Local;
@@ -62,10 +62,10 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     private long pool;
     private long handle;
     private OutputStream out;
-    private ExecutorService forwardService;
+    private CloseableExecutorService forwardService;
     private Future<?> forwarder;
 
-    public ChannelAgentForwarding(ExecutorService executor) {
+    public ChannelAgentForwarding(CloseableExecutorService executor) {
         super("", Collections.emptyList(), executor);
     }
 
@@ -82,7 +82,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
                 throwException(result);
             }
 
-            ExecutorService service = getExecutorService();
+            CloseableExecutorService service = getExecutorService();
             forwardService = (service == null)
                     ? ThreadUtils.newSingleThreadExecutor("ChannelAgentForwarding[" + authSocket + "]")
                     : ThreadUtils.noClose(service);

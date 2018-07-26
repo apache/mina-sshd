@@ -37,7 +37,7 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -48,17 +48,17 @@ public class UnixAgentFactory implements SshAgentFactory {
             Collections.unmodifiableList(
                     Arrays.<NamedFactory<Channel>>asList(ChannelAgentForwardingFactory.OPENSSH, ChannelAgentForwardingFactory.IETF));
 
-    private Factory<ExecutorService> executorServiceFactory;
+    private Factory<CloseableExecutorService> executorServiceFactory;
 
     public UnixAgentFactory() {
         super();
     }
 
-    public UnixAgentFactory(Factory<ExecutorService> factory) {
+    public UnixAgentFactory(Factory<CloseableExecutorService> factory) {
         executorServiceFactory = factory;
     }
 
-    protected ExecutorService newExecutor() {
+    protected CloseableExecutorService newExecutor() {
         return executorServiceFactory != null ? executorServiceFactory.create() : null;
     }
 

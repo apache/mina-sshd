@@ -20,7 +20,7 @@
 package org.apache.sshd.server.scp;
 
 import org.apache.sshd.common.scp.ScpHelper;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
@@ -59,7 +59,7 @@ public class ScpCommandFactoryTest extends BaseTestSupport {
     @Test
     public void testBuilderCorrectlyInitializesFactory() {
         CommandFactory delegate = dummyFactory();
-        ExecutorService service = dummyExecutor();
+        CloseableExecutorService service = dummyExecutor();
         int receiveSize = Short.MAX_VALUE;
         int sendSize = receiveSize + Long.SIZE;
         ScpCommandFactory factory = new ScpCommandFactory.Builder()
@@ -99,8 +99,8 @@ public class ScpCommandFactoryTest extends BaseTestSupport {
         assertNotSame("Delegate not changed", f1.getDelegateCommandFactory(), f3.getDelegateCommandFactory());
     }
 
-    private static ExecutorService dummyExecutor() {
-        return Mockito.mock(ExecutorService.class);
+    private static CloseableExecutorService dummyExecutor() {
+        return Mockito.mock(CloseableExecutorService.class);
     }
 
     private static CommandFactory dummyFactory() {

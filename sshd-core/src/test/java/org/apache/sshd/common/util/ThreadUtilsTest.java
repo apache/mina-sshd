@@ -21,7 +21,7 @@ package org.apache.sshd.common.util;
 
 import java.util.Collection;
 
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
@@ -46,11 +46,11 @@ public class ThreadUtilsTest extends BaseTestSupport {
             assertNull("Unexpected instance for shutdown=" + shutdownOnExit, ThreadUtils.protectExecutorServiceShutdown(null, shutdownOnExit));
         }
 
-        ExecutorService service = ThreadUtils.newSingleThreadExecutor("pool");
+        CloseableExecutorService service = ThreadUtils.newSingleThreadExecutor("pool");
         try {
             assertSame("Unexpected wrapped instance", service, ThreadUtils.protectExecutorServiceShutdown(service, true));
 
-            ExecutorService wrapped = ThreadUtils.protectExecutorServiceShutdown(service, false);
+            CloseableExecutorService wrapped = ThreadUtils.protectExecutorServiceShutdown(service, false);
             try {
                 assertNotSame("No wrapping occurred", service, wrapped);
 

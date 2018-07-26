@@ -19,7 +19,7 @@
 
 package org.apache.sshd.server.subsystem.sftp;
 
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
@@ -55,7 +55,7 @@ public class SftpSubsystemFactoryTest extends BaseTestSupport {
     @Test
     public void testBuilderCorrectlyInitializesFactory() {
         SftpSubsystemFactory.Builder builder = new SftpSubsystemFactory.Builder();
-        ExecutorService service = dummyExecutor();
+        CloseableExecutorService service = dummyExecutor();
         SftpSubsystemFactory factory = builder.withExecutorService(service)
                 .build();
         assertSame("Mismatched executor", service, factory.getExecutorService());
@@ -91,7 +91,7 @@ public class SftpSubsystemFactoryTest extends BaseTestSupport {
         assertNotSame("Executor service not changed", f1.getExecutorService(), f3.getExecutorService());
     }
 
-    private static ExecutorService dummyExecutor() {
-        return Mockito.mock(ExecutorService.class);
+    private static CloseableExecutorService dummyExecutor() {
+        return Mockito.mock(CloseableExecutorService.class);
     }
 }

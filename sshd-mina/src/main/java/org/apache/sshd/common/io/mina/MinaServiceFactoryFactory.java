@@ -22,7 +22,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.io.AbstractIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 
 /**
  */
@@ -32,10 +32,10 @@ public class MinaServiceFactoryFactory extends AbstractIoServiceFactoryFactory {
     }
 
     /**
-     * @param factory      The {@link ExecutorService} factory to use for spawning threads.
+     * @param factory      The {@link CloseableExecutorService} factory to use for spawning threads.
      *                     If {@code null} then an internal service is allocated.
      */
-    public MinaServiceFactoryFactory(Factory<ExecutorService> factory) {
+    public MinaServiceFactoryFactory(Factory<CloseableExecutorService> factory) {
         super(factory);
     }
 

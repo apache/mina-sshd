@@ -28,7 +28,7 @@ import org.apache.sshd.common.io.AbstractIoServiceFactory;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
@@ -38,7 +38,7 @@ public class Nio2ServiceFactory extends AbstractIoServiceFactory {
 
     private final AsynchronousChannelGroup group;
 
-    public Nio2ServiceFactory(FactoryManager factoryManager, ExecutorService service) {
+    public Nio2ServiceFactory(FactoryManager factoryManager, CloseableExecutorService service) {
         super(factoryManager,
               ThreadUtils.newFixedThreadPoolIf(service, factoryManager.toString() + "-nio2", getNioWorkers(factoryManager)));
         try {

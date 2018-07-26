@@ -30,7 +30,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.tomcat.jni.Local;
@@ -45,7 +45,7 @@ import org.apache.tomcat.jni.Status;
 public class AgentServer extends AbstractLoggingBean implements Closeable, ExecutorServiceCarrier {
 
     private final SshAgent agent;
-    private final ExecutorService service;
+    private final CloseableExecutorService service;
     private Future<?> agentThread;
     private String authSocket;
     private long pool;
@@ -55,11 +55,11 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
         this(null);
     }
 
-    public AgentServer(ExecutorService executor) {
+    public AgentServer(CloseableExecutorService executor) {
         this(new AgentImpl(), executor);
     }
 
-    public AgentServer(SshAgent agent, ExecutorService executor) {
+    public AgentServer(SshAgent agent, CloseableExecutorService executor) {
         this.agent = agent;
         this.service = (executor == null)
                 ? ThreadUtils.newSingleThreadExecutor("AgentServer[" + agent + "]") : executor;
@@ -70,7 +70,7 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
     }
 
     @Override
-    public ExecutorService getExecutorService() {
+    public CloseableExecutorService getExecutorService() {
         return service;
     }
 
@@ -88,7 +88,7 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
             throwException(result);
         }
 
-        ExecutorService executor = getExecutorService();
+        CloseableExecutorService executor = getExecutorService();
         agentThread = executor.submit(() -> {
             try {
                 while (true) {
@@ -122,7 +122,7 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
             agentThread = null;
         }
 
-        ExecutorService executor = getExecutorService();
+        CloseableExecutorService executor = getExecutorService();
         if ((executor != null) && (!executor.isShutdown())) {
             Collection<?> runners = executor.shutdownNow();
             if (log.isDebugEnabled()) {

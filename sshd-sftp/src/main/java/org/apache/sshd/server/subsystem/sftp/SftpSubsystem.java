@@ -65,7 +65,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.ChannelSessionAware;
@@ -149,10 +149,10 @@ public class SftpSubsystem
 
     protected ServerSession serverSession;
     protected ChannelSession channelSession;
-    protected ExecutorService executorService;
+    protected CloseableExecutorService executorService;
 
     /**
-     * @param executorService The {@link ExecutorService} to be used by
+     * @param executorService The {@link CloseableExecutorService} to be used by
      *                        the {@link SftpSubsystem} command when starting execution. If
      *                        {@code null} then a single-threaded ad-hoc service is used.
      * @param policy          The {@link UnsupportedAttributePolicy} to use if failed to access
@@ -162,8 +162,8 @@ public class SftpSubsystem
      * use when generating failed commands error messages
      * @see ThreadUtils#newSingleThreadExecutor(String)
      */
-    public SftpSubsystem(ExecutorService executorService, UnsupportedAttributePolicy policy,
-            SftpFileSystemAccessor accessor, SftpErrorStatusDataHandler errorStatusDataHandler) {
+    public SftpSubsystem(CloseableExecutorService executorService, UnsupportedAttributePolicy policy,
+                         SftpFileSystemAccessor accessor, SftpErrorStatusDataHandler errorStatusDataHandler) {
         super(policy, accessor, errorStatusDataHandler);
 
         if (executorService == null) {
@@ -184,7 +184,7 @@ public class SftpSubsystem
     }
 
     @Override
-    public ExecutorService getExecutorService() {
+    public CloseableExecutorService getExecutorService() {
         return executorService;
     }
 
@@ -267,7 +267,7 @@ public class SftpSubsystem
     public void start(Environment env) throws IOException {
         this.env = env;
         try {
-            ExecutorService executor = getExecutorService();
+            CloseableExecutorService executor = getExecutorService();
             pendingFuture = executor.submit(this);
         } catch (RuntimeException e) {    // e.g., RejectedExecutionException
             log.error("Failed (" + e.getClass().getSimpleName() + ") to start command: " + e.toString(), e);
@@ -991,7 +991,7 @@ public class SftpSubsystem
 
         pendingFuture = null;
 
-        ExecutorService executors = getExecutorService();
+        CloseableExecutorService executors = getExecutorService();
         if ((executors != null) && (!executors.isShutdown())) {
             Collection<Runnable> runners = executors.shutdownNow();
             if (debugEnabled) {

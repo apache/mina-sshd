@@ -27,7 +27,7 @@ import org.apache.sshd.common.io.AbstractIoServiceFactory;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
@@ -39,7 +39,7 @@ public class MinaServiceFactory extends AbstractIoServiceFactory {
 
     private final IoProcessor<NioSession> ioProcessor;
 
-    public MinaServiceFactory(FactoryManager factoryManager, ExecutorService service) {
+    public MinaServiceFactory(FactoryManager factoryManager, CloseableExecutorService service) {
         super(factoryManager, ThreadUtils.newCachedThreadPoolIf(service, factoryManager.toString() + "-mina"));
         ioProcessor = new SimpleIoProcessorPool<>(NioProcessor.class, getExecutorService(), getNioWorkers(factoryManager), null);
     }

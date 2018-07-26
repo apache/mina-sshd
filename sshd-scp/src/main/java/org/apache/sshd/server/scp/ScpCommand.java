@@ -27,7 +27,7 @@ import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.scp.helpers.DefaultScpFileOpener;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.command.AbstractFileSystemCommand;
@@ -57,7 +57,7 @@ public class ScpCommand
 
     /**
      * @param command         The command to be executed
-     * @param executorService An {@link ExecutorService} to be used when
+     * @param executorService An {@link CloseableExecutorService} to be used when
      *                        {@link #start(Environment)}-ing execution. If {@code null} an ad-hoc
      *                        single-threaded service is created and used.
      * @param sendSize        Size (in bytes) of buffer to use when sending files
@@ -69,7 +69,7 @@ public class ScpCommand
      * @see ScpHelper#MIN_RECEIVE_BUFFER_SIZE
      */
     public ScpCommand(String command,
-            ExecutorService executorService,
+            CloseableExecutorService executorService,
             int sendSize, int receiveSize,
             ScpFileOpener fileOpener, ScpTransferEventListener eventListener) {
         super(command, executorService);

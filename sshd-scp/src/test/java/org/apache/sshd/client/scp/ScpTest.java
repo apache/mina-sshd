@@ -59,7 +59,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.scp.ScpCommand;
@@ -768,7 +768,7 @@ public class ScpTest extends BaseTestSupport {
         final int testExitValue = 7365;
         class InternalScpCommand extends ScpCommand {
 
-            InternalScpCommand(String command, ExecutorService executorService,
+            InternalScpCommand(String command, CloseableExecutorService executorService,
                     int sendSize, int receiveSize, ScpFileOpener opener, ScpTransferEventListener eventListener) {
                 super(command, executorService, sendSize, receiveSize, opener, eventListener);
             }

@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.git.pack;
 
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.git.AbstractGitCommandFactory;
 import org.apache.sshd.git.GitLocationResolver;
 import org.apache.sshd.server.command.CommandFactory;
@@ -52,7 +52,7 @@ public class GitPackCommandFactory extends AbstractGitCommandFactory {
     }
 
     @Override
-    public GitPackCommandFactory withExecutorService(ExecutorService executorService) {
+    public GitPackCommandFactory withExecutorService(CloseableExecutorService executorService) {
         return (GitPackCommandFactory) super.withExecutorService(executorService);
     }
 

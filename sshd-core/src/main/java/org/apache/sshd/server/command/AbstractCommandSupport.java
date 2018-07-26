@@ -29,7 +29,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
-import org.apache.sshd.common.util.threads.ExecutorService;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Environment;
@@ -55,11 +55,11 @@ public abstract class AbstractCommandSupport
     protected Environment environment;
     protected Future<?> cmdFuture;
     protected Thread cmdRunner;
-    protected ExecutorService executorService;
+    protected CloseableExecutorService executorService;
     protected boolean cbCalled;
     protected ServerSession serverSession;
 
-    protected AbstractCommandSupport(String command, ExecutorService executorService) {
+    protected AbstractCommandSupport(String command, CloseableExecutorService executorService) {
         this.command = command;
 
         if (executorService == null) {
@@ -90,7 +90,7 @@ public abstract class AbstractCommandSupport
     }
 
     @Override
-    public ExecutorService getExecutorService() {
+    public CloseableExecutorService getExecutorService() {
         return executorService;
     }
 
@@ -142,7 +142,7 @@ public abstract class AbstractCommandSupport
     public void start(Environment env) throws IOException {
         environment = env;
         try {
-            ExecutorService executors = getExecutorService();
+            CloseableExecutorService executors = getExecutorService();
             cmdFuture = executors.submit(() -> {
                 cmdRunner = Thread.currentThread();
                 this.run();
@@ -167,7 +167,7 @@ public abstract class AbstractCommandSupport
 
         cmdFuture = null;
 
-        ExecutorService executors = getExecutorService();
+        CloseableExecutorService executors = getExecutorService();
         if ((executors != null) && (!executors.isShutdown())) {
             Collection<Runnable> runners = executors.shutdownNow();
             if (debugEnabled) {
