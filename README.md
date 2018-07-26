@@ -409,27 +409,48 @@ be tailored to present different views for different clients
 ## `ExecutorService`-s
 
 The framework requires from time to time spawning some threads in order to function correctly - e.g., commands, SFTP subsystem,
-port forwarding (among others) require such support. By default, the framework will allocate an [ExecutorService](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ExecutorService.html) for each specific purpose and then shut it down when the module has completed its work - e.g., session
-was closed. Note that SSHD uses the `CloseableExecutorService` interface instead of the usual `ExecutorService` in order to provide graceful shutdown.
-Users may provide their own `CloseableExecutorService`(s) instead of the internally auto-allocated ones - e.g., in
-order to control the max. spawned threads, stack size, track threads, etc... but they can leverage the `ThreadUtils.ThreadPoolExecutor` implementation which should cover most use cases.
-If a single executor is shared between several services, it needs to be wrapped with the `ThreadUtils.noClose(executor)` method.
+port forwarding (among others) require such support. By default, the framework will allocate an [ExecutorService](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ExecutorService.html)
+for each specific purpose and then shut it down when the module has completed its work - e.g., session was closed. Note that
+SSHD uses the `CloseableExecutorService` interface instead of the usual `ExecutorService` in order to provide graceful shutdown.
+Users may provide their own `CloseableExecutorService`(s) instead of the internally auto-allocated ones - e.g., in order to
+control the max. spawned threads, stack size, track threads, etc... but they can leverage the `SshThreadPoolExecutor` implementation
+which should cover most use cases.
+
+Users who want to provide their own `ExecutorService` and not use `SshThreadPoolExecutor` should wrap it as a `NoCloseExecutor`
+and take care of shutting it down when SSHD is done with (provided, of course, that the user's own code does not need it to
+remain active afterwards...).
 
 ```java
 
     /*
-     * An example for SFTP - there are other such locations. By default,
-     * the SftpSubsystem implementation creates a single-threaded executor
+     * An example user-provided executor service for SFTP - there are other such locations.
+     * By default, the SftpSubsystem implementation creates a single-threaded executor
      * for each session, uses it to spawn the SFTP command handler and shuts
      * it down when the command is destroyed
      */
     SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
-        .withExecutorService(ThreadUtils.noClose(mySuperDuperExecutorService))
+        .withExecutorService(new NoCloseExecutor(mySuperDuperExecutorService))
         .build();
     SshServer sshd = SshServer.setupDefaultServer();
     sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(factory));
 
 ```
+
+If a single `CloseableExecutorService` is shared between several services, it needs to be wrapped with the
+`ThreadUtils.noClose(executor)` method.
+
+```java
+    CloseableExecutorService sharedService = ...obtain/create an instance...;
+
+    SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
+        .withExecutorService(ThreadUtils.noClose(sharedService))
+        .build();
+
+   ChannelAgentForwarding forward = new ChannelAgentForwarding(ThreadUtils.noClose(sharedService));
+```
+
+**Note:** Do not share the instance returned by `ThreadUtils.noClose` between services as it interferes with
+the graceful closing mechanism. Use a new wrapper instance for each service.
 
 ## Remote command execution
 
