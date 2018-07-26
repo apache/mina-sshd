@@ -410,9 +410,10 @@ be tailored to present different views for different clients
 
 The framework requires from time to time spawning some threads in order to function correctly - e.g., commands, SFTP subsystem,
 port forwarding (among others) require such support. By default, the framework will allocate an [ExecutorService](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ExecutorService.html) for each specific purpose and then shut it down when the module has completed its work - e.g., session
-was closed. Users may provide their own `ExecutorService`(s) instead of the internally auto-allocated ones - e.g., in
-order to control the max. spawned threads, stack size, track threads, etc... If this is done, then one must also provide
-the `shutdownOnExit` value indicating to the overridden module whether to shut down the service once it is no longer necessary.
+was closed. Note that SSHD uses the `CloseableExecutorService` interface instead of the usual `ExecutorService` in order to provide graceful shutdown.
+Users may provide their own `CloseableExecutorService`(s) instead of the internally auto-allocated ones - e.g., in
+order to control the max. spawned threads, stack size, track threads, etc... but they can leverage the `ThreadUtils.ThreadPoolExecutor` implementation which should cover most use cases.
+If a single executor is shared between several services, it needs to be wrapped with the `ThreadUtils.noClose(executor)` method.
 
 ```java
 
@@ -423,8 +424,7 @@ the `shutdownOnExit` value indicating to the overridden module whether to shut d
      * it down when the command is destroyed
      */
     SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
-        .withExecutorService(mySuperDuperExecutorService)
-        .withShutdownOnExit(false)  // I will take care of shutting it down
+        .withExecutorService(ThreadUtils.noClose(mySuperDuperExecutorService))
         .build();
     SshServer sshd = SshServer.setupDefaultServer();
     sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(factory));
