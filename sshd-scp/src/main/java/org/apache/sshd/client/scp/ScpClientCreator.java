@@ -100,7 +100,7 @@ public interface ScpClientCreator extends ScpFileOpenerHolder {
      * @param listener A default {@link ScpTransferEventListener} that can be used
      *                 to receive information about the SCP operations - may be {@code null}
      *                 to indicate no more events are required
-     * @see #createScpClient(ScpTransferEventListener)
+     * @see #createScpClient(ClientSession, ScpTransferEventListener)
      */
     void setScpTransferEventListener(ScpTransferEventListener listener);
 }

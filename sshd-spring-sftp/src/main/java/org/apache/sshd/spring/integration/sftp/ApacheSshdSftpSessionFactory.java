@@ -55,7 +55,7 @@ import org.springframework.integration.file.remote.session.SessionFactory;
 import org.springframework.integration.file.remote.session.SharedSessionCapable;
 
 /**
- * A proper replacement for the {@link org.springframework.integration.sftp.session.DefaultSftpSessionFactory}
+ * A proper replacement for the {@code org.springframework.integration.sftp.session.DefaultSftpSessionFactory}
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
