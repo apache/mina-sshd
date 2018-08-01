@@ -69,7 +69,8 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
                     throw new ReadPendingException("Previous pending read not handled");
                 }
                 if (buffer.available() > 0) {
-                    int nbRead = future.buffer.putBuffer(buffer, false);
+                    Buffer fb = future.getBuffer();
+                    int nbRead = fb.putBuffer(buffer, false);
                     buffer.compact();
                     future.setValue(nbRead);
                 } else {

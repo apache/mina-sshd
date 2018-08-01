@@ -314,21 +314,20 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
                 })
                 .close(super.getInnerCloseable())
                 .close(new AbstractCloseable() {
-                    CloseableExecutorService executor = ThreadUtils.newCachedThreadPool("TcpIpServerChannel-ConnectorCleanup[" + getSession() + "]");
+                    private final CloseableExecutorService executor =
+                        ThreadUtils.newCachedThreadPool("TcpIpServerChannel-ConnectorCleanup[" + getSession() + "]");
+
                     @Override
+                    @SuppressWarnings("synthetic-access")
                     protected CloseFuture doCloseGracefully() {
-                        executor.submit(() -> {
-                            connector.close(false);
-                        });
+                        executor.submit(() -> connector.close(false));
                         return null;
                     }
 
                     @Override
+                    @SuppressWarnings("synthetic-access")
                     protected void doCloseImmediately() {
-                        executor.submit(() -> {
-                            connector.close(true)
-                                    .addListener(f -> executor.close(true));
-                        });
+                        executor.submit(() -> connector.close(true).addListener(f -> executor.close(true)));
                         super.doCloseImmediately();
                     }
                 })
