@@ -759,12 +759,12 @@ public abstract class AbstractConnectionService
     }
 
     protected void requestSuccess(Buffer buffer) throws Exception {
-        AbstractSession s = (AbstractSession) getSession();
+        AbstractSession s = getSession();
         s.requestSuccess(buffer);
     }
 
     protected void requestFailure(Buffer buffer) throws Exception {
-        AbstractSession s = (AbstractSession) getSession();
+        AbstractSession s = getSession();
         s.requestFailure(buffer);
     }
 
