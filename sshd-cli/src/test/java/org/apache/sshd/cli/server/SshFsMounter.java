@@ -283,6 +283,7 @@ public final class SshFsMounter extends SshServerCliSupport {
                     error = true;
                     break;
                 }
+
                 String opt = args[++i];
                 int idx = opt.indexOf('=');
                 if (idx <= 0) {
@@ -294,7 +295,8 @@ public final class SshFsMounter extends SshServerCliSupport {
             }
         }
 
-        SshServer sshd = error ? null : setupIoServiceFactory(Utils.setupTestServer(SshFsMounter.class), System.err, args);
+        SshServer sshd = error ? null : setupIoServiceFactory(
+            Utils.setupTestServer(SshFsMounter.class), options, System.out, System.err, args);
         if (sshd == null) {
             error = true;
         }

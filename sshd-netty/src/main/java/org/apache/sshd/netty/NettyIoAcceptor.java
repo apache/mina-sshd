@@ -58,11 +58,10 @@ public class NettyIoAcceptor extends NettyIoService implements IoAcceptor {
     protected final ServerBootstrap bootstrap = new ServerBootstrap();
     protected final DefaultCloseFuture closeFuture = new DefaultCloseFuture(toString(), lock);
     protected final Map<SocketAddress, Channel> boundAddresses = new ConcurrentHashMap<>();
-    protected final IoHandler handler;
 
     public NettyIoAcceptor(NettyIoServiceFactory factory, IoHandler handler) {
-        this.factory = factory;
-        this.handler = handler;
+        super(factory, handler);
+
         channelGroup = new DefaultChannelGroup("sshd-acceptor-channels", GlobalEventExecutor.INSTANCE);
         bootstrap.group(factory.eventLoopGroup)
             .channel(NioServerSocketChannel.class)

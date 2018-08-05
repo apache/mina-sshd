@@ -48,11 +48,9 @@ import io.netty.util.concurrent.GlobalEventExecutor;
 public class NettyIoConnector extends NettyIoService implements IoConnector {
 
     protected final Bootstrap bootstrap = new Bootstrap();
-    protected final IoHandler handler;
 
     public NettyIoConnector(NettyIoServiceFactory factory, IoHandler handler) {
-        this.factory = factory;
-        this.handler = handler;
+        super(factory, handler);
         channelGroup = new DefaultChannelGroup("sshd-connector-channels", GlobalEventExecutor.INSTANCE);
         bootstrap.group(factory.eventLoopGroup)
             .channel(NioSocketChannel.class)

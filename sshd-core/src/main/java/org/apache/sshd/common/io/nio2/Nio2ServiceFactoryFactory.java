@@ -28,18 +28,17 @@ import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 
 /**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class Nio2ServiceFactoryFactory extends AbstractIoServiceFactoryFactory {
-
     public Nio2ServiceFactoryFactory() {
         this(null);
     }
 
     /**
-     * @param executors      The {@link CloseableExecutorService} to use for spawning threads.
-     *                       If {@code null} then an internal service is allocated - in which case it
-     *                       is automatically shutdown regardless of the value of the <tt>shutdownOnExit</tt>
-     *                       parameter value
+     * @param executors The {@link CloseableExecutorService} to use for spawning threads.
+     * If {@code null} then an internal service is allocated - in which case it
+     * is automatically shutdown
      */
     public Nio2ServiceFactoryFactory(Factory<CloseableExecutorService> executors) {
         super(executors);

@@ -18,15 +18,11 @@
  */
 package org.apache.sshd.common.io;
 
-import org.apache.sshd.common.Closeable;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface IoServiceFactory extends Closeable, IoServiceEventListenerManager {
+public interface IoServiceEventListenerManager {
+    IoServiceEventListener getIoServiceEventListener();
 
-    IoConnector createConnector(IoHandler handler);
-
-    IoAcceptor createAcceptor(IoHandler handler);
-
+    void setIoServiceEventListener(IoServiceEventListener listener);
 }

@@ -46,11 +46,11 @@ public class MinaServiceFactory extends AbstractIoServiceFactory {
 
     @Override
     public IoConnector createConnector(IoHandler handler) {
-        return new MinaConnector(getFactoryManager(), handler, ioProcessor);
+        return autowireCreatedService(new MinaConnector(getFactoryManager(), handler, ioProcessor));
     }
 
     @Override
     public IoAcceptor createAcceptor(IoHandler handler) {
-        return new MinaAcceptor(getFactoryManager(), handler, ioProcessor);
+        return autowireCreatedService(new MinaAcceptor(getFactoryManager(), handler, ioProcessor));
     }
 }

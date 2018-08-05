@@ -36,6 +36,7 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
+import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -196,7 +197,14 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
             Nio2Session session = null;
             Long sessionId = null;
             boolean keepAccepting;
+            IoServiceEventListener listener = getIoServiceEventListener();
             try {
+                if (listener != null) {
+                    SocketAddress localAddress = result.getLocalAddress();
+                    SocketAddress remoteAddress = result.getRemoteAddress();
+                    listener.connectionAccepted(Nio2Acceptor.this, localAddress, remoteAddress);
+                }
+
                 // Create a session
                 IoHandler handler = getIoHandler();
                 setSocketOptions(result);
@@ -216,6 +224,17 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
 
                 keepAccepting = true;
             } catch (Throwable exc) {
+                if (listener != null) {
+                    try {
+                        SocketAddress localAddress = result.getLocalAddress();
+                        SocketAddress remoteAddress = result.getRemoteAddress();
+                        listener.abortAcceptedConnection(Nio2Acceptor.this, localAddress, remoteAddress, exc);
+                    } catch (Exception e) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("onCompleted(" + address + ") listener=" + listener + " ignoring abort event exception", e);
+                        }
+                    }
+                }
                 keepAccepting = okToReaccept(exc, address);
 
                 // fail fast the accepted connection
@@ -269,8 +288,9 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
 
         protected boolean okToReaccept(Throwable exc, SocketAddress address) {
             AsynchronousServerSocketChannel channel = channels.get(address);
+            boolean debugEnabled = log.isDebugEnabled();
             if (channel == null) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("Caught {} for untracked channel of {}: {}",
                         exc.getClass().getSimpleName(), address, exc.getMessage());
                 }
@@ -278,17 +298,19 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
             }
 
             if (disposing.get()) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("Caught {} for tracked channel of {} while disposing: {}",
                         exc.getClass().getSimpleName(), address, exc.getMessage());
                 }
                 return false;
             }
 
-            log.warn("Caught {} while accepting incoming connection from {}: {}",
-                exc.getClass().getSimpleName(), address, exc.getMessage());
-            if (log.isDebugEnabled()) {
-                log.debug("Incoming connection from " + address + " failure details", exc);
+            if (debugEnabled) {
+                log.debug("Caught {} while accepting incoming connection from {}: {}",
+                    exc.getClass().getSimpleName(), address, exc.getMessage());
+            }
+            if (log.isTraceEnabled()) {
+                log.trace("Incoming connection from " + address + " failure details", exc);
             }
             return true;
         }

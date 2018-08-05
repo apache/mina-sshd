@@ -268,8 +268,8 @@ public abstract class SshClientCliSupport extends CliSupport {
         }
     }
 
-    public static SshClient setupDefaultClient(PrintStream stderr, String... args) {
-        return setupIoServiceFactory(SshClient.setUpDefaultClient(), System.err, args);
+    public static SshClient setupDefaultClient(Map<String, ?> options, PrintStream stdout, PrintStream stderr, String... args) {
+        return setupIoServiceFactory(SshClient.setUpDefaultClient(), options, stdout, stderr, args);
     }
 
     // returns null if error encountered
@@ -305,7 +305,7 @@ public abstract class SshClientCliSupport extends CliSupport {
             }
         }
 
-        SshClient client = setupDefaultClient(stderr, args);
+        SshClient client = setupDefaultClient(options, stdout, stderr, args);
         if (client == null) {
             return null;
         }

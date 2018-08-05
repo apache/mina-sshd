@@ -30,6 +30,7 @@ import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolver
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.forward.ForwardingFilterFactory;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
+import org.apache.sshd.common.io.IoServiceEventListenerManager;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.random.Random;
@@ -56,6 +57,7 @@ public interface FactoryManager
                 ChannelStreamPacketWriterResolverManager,
                 UnknownChannelReferenceHandlerManager,
                 PortForwardingEventListenerManager,
+                IoServiceEventListenerManager,
                 AttributeStore,
                 PropertyResolver {
 

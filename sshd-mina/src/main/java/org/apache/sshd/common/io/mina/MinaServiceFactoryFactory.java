@@ -25,6 +25,9 @@ import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 
 /**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class MinaServiceFactoryFactory extends AbstractIoServiceFactoryFactory {
     public MinaServiceFactoryFactory() {
@@ -32,8 +35,8 @@ public class MinaServiceFactoryFactory extends AbstractIoServiceFactoryFactory {
     }
 
     /**
-     * @param factory      The {@link CloseableExecutorService} factory to use for spawning threads.
-     *                     If {@code null} then an internal service is allocated.
+     * @param factory The {@link CloseableExecutorService} factory to use for spawning threads.
+     * If {@code null} then an internal service is allocated.
      */
     public MinaServiceFactoryFactory(Factory<CloseableExecutorService> factory) {
         super(factory);

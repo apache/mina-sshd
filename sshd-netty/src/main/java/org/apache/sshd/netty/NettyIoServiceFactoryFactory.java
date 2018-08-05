@@ -19,6 +19,8 @@
 
 package org.apache.sshd.netty;
 
+import java.util.Objects;
+
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.io.AbstractIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
@@ -44,6 +46,9 @@ public class NettyIoServiceFactoryFactory extends AbstractIoServiceFactoryFactor
 
     @Override
     public IoServiceFactory create(FactoryManager manager) {
-        return new NettyIoServiceFactory(eventLoopGroup);
+        Objects.requireNonNull(manager, "No factory manager provided");
+        IoServiceFactory factory = new NettyIoServiceFactory(eventLoopGroup);
+        factory.setIoServiceEventListener(manager.getIoServiceEventListener());
+        return factory;
     }
 }

@@ -54,12 +54,12 @@ public class Nio2ServiceFactory extends AbstractIoServiceFactory {
 
     @Override
     public IoConnector createConnector(IoHandler handler) {
-        return new Nio2Connector(getFactoryManager(), handler, group);
+        return autowireCreatedService(new Nio2Connector(getFactoryManager(), handler, group));
     }
 
     @Override
     public IoAcceptor createAcceptor(IoHandler handler) {
-        return new Nio2Acceptor(getFactoryManager(), handler, group);
+        return autowireCreatedService(new Nio2Acceptor(getFactoryManager(), handler, group));
     }
 
     @Override

@@ -46,6 +46,7 @@ import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.forward.ForwardingFilterFactory;
 import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
+import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoServiceFactoryFactory;
 import org.apache.sshd.common.kex.AbstractKexFactoryManager;
@@ -92,6 +93,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     private ReservedSessionMessagesHandler reservedSessionMessagesHandler;
     private ChannelStreamPacketWriterResolver channelStreamPacketWriterResolver;
     private UnknownChannelReferenceHandler unknownChannelReferenceHandler;
+    private IoServiceEventListener eventListener;
 
     protected AbstractFactoryManager() {
         ClassLoader loader = getClass().getClassLoader();
@@ -116,6 +118,16 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
 
     public void setIoServiceFactoryFactory(IoServiceFactoryFactory ioServiceFactory) {
         this.ioServiceFactoryFactory = ioServiceFactory;
+    }
+
+    @Override
+    public IoServiceEventListener getIoServiceEventListener() {
+        return eventListener;
+    }
+
+    @Override
+    public void setIoServiceEventListener(IoServiceEventListener listener) {
+        eventListener = listener;
     }
 
     @Override

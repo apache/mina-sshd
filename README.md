@@ -1134,6 +1134,12 @@ In general, event listeners are **cumulative** - e.g., any channel event listene
 
 ```
 
+### `IoServiceEventListener`
+
+This listener provides low-level events regarding connection establishment (by the client) or acceptance (by the server). The listener is registered
+on the `IoServiceFactory` via the `FactoryManager`-s (i.e., `SshClient/Server#setIoServiceEventListener`). Unlike other listeners defined in this
+section, it is **not cumulative** - i.e., one can `setIoServiceEventListener` but not `addIoServiceEventListener` - thus **replacing** any previously
+registered listener.
 
 ### `SessionListener`
 

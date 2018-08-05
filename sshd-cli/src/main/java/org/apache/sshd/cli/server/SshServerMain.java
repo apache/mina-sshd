@@ -146,7 +146,7 @@ public class SshServerMain extends SshServerCliSupport {
             }
         }
 
-        SshServer sshd = error ? null : setupIoServiceFactory(SshServer.setUpDefaultServer(), System.err, args);
+        SshServer sshd = error ? null : setupIoServiceFactory(SshServer.setUpDefaultServer(), options, System.out, System.err, args);
         if (sshd == null) {
             error = true;
         }
