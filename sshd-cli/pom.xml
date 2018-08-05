@@ -53,6 +53,7 @@
             <version>${project.version}</version>
         </dependency>
 
+            <!-- Test dependencies -->
         <dependency>
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-core</artifactId>
@@ -60,6 +61,20 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+            <!-- For the I/O factories -->
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-mina</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-netty</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

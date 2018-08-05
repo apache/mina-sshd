@@ -56,6 +56,18 @@
             <artifactId>sshd-cli</artifactId>
             <version>${project.version}</version>
         </dependency>
+            <!-- For the I/O factories -->
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-mina</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-netty</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-jdk14</artifactId>
