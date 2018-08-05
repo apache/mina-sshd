@@ -156,6 +156,36 @@
             </build>
         </profile>
         <profile>
+                <!-- mvn -Powasp verify -->
+            <id>owasp</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.owasp</groupId>
+                        <artifactId>dependency-check-maven</artifactId>
+                        <version>3.3.0</version>
+                            <!-- see https://jeremylong.github.io/DependencyCheck/dependency-check-maven/configuration.html -->
+                        <configuration>
+                                <!-- see https://github.com/jeremylong/DependencyCheck/issues/1394 -->
+                            <retireJsAnalyzerEnabled>false</retireJsAnalyzerEnabled>
+                            <suppressionFiles>
+                                 <suppressionFile>${workspace.root.dir}${file.separator}sshd-owasp-suppressions.xml</suppressionFile>
+                            </suppressionFiles>
+                        </configuration>
+                        <executions>
+                           <execution>
+                                <id>run-owasp-dependency-check</id>
+                                <!-- Note: phase must be AFTER detection of workspace root dir -->
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>javac-errorprone</id>
             <build>
                 <plugins>
