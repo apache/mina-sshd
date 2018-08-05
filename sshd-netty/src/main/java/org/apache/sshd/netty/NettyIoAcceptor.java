@@ -34,6 +34,7 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
+import org.apache.sshd.common.io.IoServiceEventListener;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -69,11 +70,38 @@ public class NettyIoAcceptor extends NettyIoService implements IoAcceptor {
             .handler(new LoggingHandler(LogLevel.INFO)) // TODO make this configurable
             .childHandler(new ChannelInitializer<SocketChannel>() {
                 @Override
+                @SuppressWarnings("synthetic-access")
                 public void initChannel(SocketChannel ch) throws Exception {
-                    ChannelPipeline p = ch.pipeline();
-                    @SuppressWarnings("resource")
-                    NettyIoSession nettyIoSession = new NettyIoSession(NettyIoAcceptor.this, handler);
-                    p.addLast(nettyIoSession.adapter);
+                    IoServiceEventListener listener = getIoServiceEventListener();
+                    SocketAddress local = ch.localAddress();
+                    SocketAddress remote = ch.remoteAddress();
+                    try {
+                        if (listener != null) {
+                            try {
+                                listener.connectionAccepted(NettyIoAcceptor.this, local, remote);
+                            } catch (Exception e) {
+                                ch.close();
+                                throw e;
+                            }
+                        }
+
+                        ChannelPipeline p = ch.pipeline();
+                        @SuppressWarnings("resource")
+                        NettyIoSession nettyIoSession = new NettyIoSession(NettyIoAcceptor.this, handler);
+                        p.addLast(nettyIoSession.adapter);
+                    } catch (Exception e) {
+                        if (listener != null) {
+                            try {
+                                listener.abortAcceptedConnection(NettyIoAcceptor.this, local, remote, e);
+                            } catch (Exception exc) {
+                                if (log.isDebugEnabled()) {
+                                    log.debug("initChannel(" + ch + ") listener=" + listener + " ignoring abort event exception", exc);
+                                }
+                            }
+                        }
+
+                        throw e;
+                    }
                 }
             });
     }

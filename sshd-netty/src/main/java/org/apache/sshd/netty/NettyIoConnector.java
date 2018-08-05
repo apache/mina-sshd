@@ -25,6 +25,7 @@ import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
+import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.io.IoSession;
 
 import io.netty.bootstrap.Bootstrap;
@@ -51,18 +52,46 @@ public class NettyIoConnector extends NettyIoService implements IoConnector {
 
     public NettyIoConnector(NettyIoServiceFactory factory, IoHandler handler) {
         super(factory, handler);
+
         channelGroup = new DefaultChannelGroup("sshd-connector-channels", GlobalEventExecutor.INSTANCE);
         bootstrap.group(factory.eventLoopGroup)
             .channel(NioSocketChannel.class)
             .option(ChannelOption.SO_BACKLOG, 100)  // TODO make this configurable
             .handler(new ChannelInitializer<SocketChannel>() {
                 @Override
+                @SuppressWarnings("synthetic-access")
                 protected void initChannel(SocketChannel ch) throws Exception {
-                    @SuppressWarnings("resource")
-                    NettyIoSession session = new NettyIoSession(NettyIoConnector.this, handler);
-                    ChannelPipeline p = ch.pipeline();
-                    p.addLast(new LoggingHandler(LogLevel.INFO));   // TODO make this configurable
-                    p.addLast(session.adapter);
+                    IoServiceEventListener listener = getIoServiceEventListener();
+                    SocketAddress local = ch.localAddress();
+                    SocketAddress remote = ch.remoteAddress();
+                    try {
+                        if (listener != null) {
+                            try {
+                                listener.connectionEstablished(NettyIoConnector.this, local, remote);
+                            } catch (Exception e) {
+                                ch.close();
+                                throw e;
+                            }
+                        }
+
+                        @SuppressWarnings("resource")
+                        NettyIoSession session = new NettyIoSession(NettyIoConnector.this, handler);
+                        ChannelPipeline p = ch.pipeline();
+                        p.addLast(new LoggingHandler(LogLevel.INFO));   // TODO make this configurable
+                        p.addLast(session.adapter);
+                    } catch (Exception e) {
+                        if (listener != null) {
+                            try {
+                                listener.abortEstablishedConnection(NettyIoConnector.this, local, remote, e);
+                            } catch (Exception exc) {
+                                if (log.isDebugEnabled()) {
+                                    log.debug("initChannel(" + ch + ") listener=" + listener + " ignoring abort event exception", exc);
+                                }
+                            }
+                        }
+
+                        throw e;
+                    }
                 }
             });
     }
