@@ -28,9 +28,11 @@ import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.IoService;
+import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.io.IoServiceEventListener;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -73,6 +75,37 @@ public class MinaAcceptor extends MinaService implements org.apache.sshd.common.
 
         log.debug("Created IoAcceptor");
         return acceptor;
+    }
+
+    @Override
+    public void sessionCreated(IoSession session) throws Exception {
+        IoServiceEventListener listener = getIoServiceEventListener();
+        SocketAddress local = session.getLocalAddress();
+        SocketAddress remote = session.getRemoteAddress();
+        try {
+            if (listener != null) {
+                try {
+                    listener.connectionAccepted(this, local, remote);
+                } catch (Exception e) {
+                    session.closeNow();
+                    throw e;
+                }
+            }
+
+            super.sessionCreated(session);
+        } catch (Exception e) {
+            if (listener != null) {
+                try {
+                    listener.abortAcceptedConnection(this, local, remote, e);
+                } catch (Exception exc) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("sessionCreated(" + session + ") listener=" + listener + " ignoring abort event exception", exc);
+                    }
+                }
+            }
+
+            throw e;
+        }
     }
 
     @Override

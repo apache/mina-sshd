@@ -51,7 +51,7 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
 
     private IoServiceEventListener eventListener;
 
-    public MinaService(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler, IoProcessor<NioSession> ioProcessor) {
+    protected MinaService(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler, IoProcessor<NioSession> ioProcessor) {
         this.manager = Objects.requireNonNull(manager, "No factory manager provided");
         this.handler = Objects.requireNonNull(handler, "No IoHandler provided");
         this.ioProcessor = Objects.requireNonNull(ioProcessor, "No IoProcessor provided");
