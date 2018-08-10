@@ -369,7 +369,10 @@ public abstract class AbstractConnectionService
                 requestFailure(buffer);
                 break;
             default:
-                throw new IllegalStateException("Unsupported command: " + SshConstants.getCommandMessageName(cmd));
+                if (log.isDebugEnabled()) {
+                    log.debug("Unsupported command: {}", SshConstants.getCommandMessageName(cmd));
+                }
+                getSession().notImplemented();
         }
     }
 
