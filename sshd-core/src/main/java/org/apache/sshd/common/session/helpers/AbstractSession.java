@@ -627,7 +627,18 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                     currentService.process(cmd, buffer);
                     resetIdleTimeout();
                 } else {
-                    throw new IllegalStateException("Unsupported command " + SshConstants.getCommandMessageName(cmd));
+                    /*
+                     * According to https://tools.ietf.org/html/rfc4253#section-11.4
+                     *
+                     *      An implementation MUST respond to all unrecognized messages
+                     *      with an SSH_MSG_UNIMPLEMENTED message in the order in which
+                     *      the messages were received.
+                     */
+                    if (log.isDebugEnabled()) {
+                        log.debug("process({}) Unsupported command: {}",
+                            this, SshConstants.getCommandMessageName(cmd));
+                    }
+                    notImplemented();
                 }
                 break;
         }
