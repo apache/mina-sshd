@@ -368,8 +368,21 @@ public abstract class AbstractConnectionService
             case SshConstants.SSH_MSG_REQUEST_FAILURE:
                 requestFailure(buffer);
                 break;
-            default:
-                throw new IllegalStateException("Unsupported command: " + SshConstants.getCommandMessageName(cmd));
+            default: {
+                /*
+                 * According to https://tools.ietf.org/html/rfc4253#section-11.4
+                 *
+                 *      An implementation MUST respond to all unrecognized messages
+                 *      with an SSH_MSG_UNIMPLEMENTED message in the order in which
+                 *      the messages were received.
+                 */
+                AbstractSession session = getSession();
+                if (log.isDebugEnabled()) {
+                    log.debug("process({}) Unsupported command: {}",
+                        session, SshConstants.getCommandMessageName(cmd));
+                }
+                session.notImplemented();
+            }
         }
     }
 

@@ -2034,7 +2034,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @see #sendNotImplemented(long)
      */
     protected IoWriteFuture notImplemented() throws IOException {
-        return sendNotImplemented(seqi - 1);
+        return sendNotImplemented(seqi - 1L);
     }
 
     /**
