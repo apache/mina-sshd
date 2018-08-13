@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.util.io;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.Channel;
@@ -43,7 +44,7 @@ public class NullInputStream extends InputStream implements Channel {
     @Override
     public int read() throws IOException {
         if (!isOpen()) {
-            throw new IOException("Stream is closed for reading one value");
+            throw new EOFException("Stream is closed for reading one value");
         }
         return -1;
     }
@@ -51,7 +52,7 @@ public class NullInputStream extends InputStream implements Channel {
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
         if (!isOpen()) {
-            throw new IOException("Stream is closed for reading " + len + " bytes");
+            throw new EOFException("Stream is closed for reading " + len + " bytes");
         }
         return -1;
     }
@@ -59,7 +60,7 @@ public class NullInputStream extends InputStream implements Channel {
     @Override
     public long skip(long n) throws IOException {
         if (!isOpen()) {
-            throw new IOException("Stream is closed for skipping " + n + " bytes");
+            throw new EOFException("Stream is closed for skipping " + n + " bytes");
         }
         return 0L;
     }
@@ -67,7 +68,7 @@ public class NullInputStream extends InputStream implements Channel {
     @Override
     public int available() throws IOException {
         if (!isOpen()) {
-            throw new IOException("Stream is closed for availability query");
+            throw new EOFException("Stream is closed for availability query");
         }
         return 0;
     }
@@ -75,7 +76,7 @@ public class NullInputStream extends InputStream implements Channel {
     @Override
     public synchronized void reset() throws IOException {
         if (!isOpen()) {
-            throw new IOException("Stream is closed for reset");
+            throw new EOFException("Stream is closed for reset");
         }
     }
 

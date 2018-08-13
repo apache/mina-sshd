@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.util.io;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.channels.Channel;
@@ -43,21 +44,21 @@ public class NullOutputStream extends OutputStream implements Channel {
     @Override
     public void write(int b) throws IOException {
         if (!isOpen()) {
-            throw new IOException("Stream is closed for writing one byte");
+            throw new EOFException("Stream is closed for writing one byte");
         }
     }
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
         if (!isOpen()) {
-            throw new IOException("Stream is closed for writing " + len + " bytes");
+            throw new EOFException("Stream is closed for writing " + len + " bytes");
         }
     }
 
     @Override
     public void flush() throws IOException {
         if (!isOpen()) {
-            throw new IOException("Stream is closed for flushing");
+            throw new EOFException("Stream is closed for flushing");
         }
     }
 
