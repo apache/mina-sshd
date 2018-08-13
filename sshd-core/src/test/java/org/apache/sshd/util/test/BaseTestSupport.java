@@ -223,6 +223,19 @@ public abstract class BaseTestSupport extends Assert {
         return targetFolder;
     }
 
+    /**
+     * Creates a folder bearing the class's simple name under the project's target temporary folder
+     *
+     * @return The created folder {@link Path}
+     * @throws IOException If failed to detect or create the folder's location
+     * @see #detectTargetFolder() detectTargetFolder
+     * @see #assertHierarchyTargetFolderExists(Path, LinkOption...) assertHierarchyTargetFolderExists
+     */
+    protected Path createTempClassFolder() throws IOException {
+        Path tmpDir = detectTargetFolder();
+        return assertHierarchyTargetFolderExists(tmpDir.resolve(getClass().getSimpleName()));
+    }
+
     protected Path detectSourcesFolder() throws IllegalStateException {
         Path target = detectTargetFolder();
         Path parent = target.getParent();
