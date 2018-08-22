@@ -118,7 +118,7 @@
 
         <surefire.plugin.version>2.22.0</surefire.plugin.version>
         <!-- See https://pmd.github.io/ for available latest version -->
-        <pmd.version>6.5.0</pmd.version>
+        <pmd.version>6.6.0</pmd.version>
     </properties>
 
     <profiles>
