@@ -1104,8 +1104,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
                         case LOCAL_USER_MACRO:
                             sb.append(ValidateUtils.checkNotNullAndNotEmpty(OsUtils.getCurrentUser(), "No local user name value"));
                             break;
-                        case LOCAL_HOST_MACRO:
-                        {
+                        case LOCAL_HOST_MACRO: {
                             InetAddress address = Objects.requireNonNull(InetAddress.getLocalHost(), "No local address");
                             sb.append(ValidateUtils.checkNotNullAndNotEmpty(address.getHostName(), "No local name"));
                             break;
