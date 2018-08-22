@@ -136,7 +136,6 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>findbugs-maven-plugin</artifactId>
-                        <version>3.0.5</version>
                         <configuration>
                             <xmlOutput>true</xmlOutput>
                             <fork>false</fork>
@@ -718,7 +717,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>findbugs-maven-plugin</artifactId>
-                    <version>3.0.5F</version>
+                    <version>3.0.5</version>
                         <!-- see https://www.petrikainulainen.net/programming/maven/findbugs-maven-plugin-tutorial/ -->
                     <configuration>
                         <effort>Max</effort>
