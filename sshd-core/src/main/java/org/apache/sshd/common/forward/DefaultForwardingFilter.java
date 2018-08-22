@@ -252,22 +252,24 @@ public class DefaultForwardingFilter
         unbindLocalForwarding(local, remote, bound);
     }
 
-    protected void unbindLocalForwarding(SshdSocketAddress local, SshdSocketAddress remote, InetSocketAddress bound) throws IOException {
+    protected void unbindLocalForwarding(
+            SshdSocketAddress local, SshdSocketAddress remote, InetSocketAddress bound)
+                    throws IOException {
         if ((bound != null) && (acceptor != null)) {
             if (log.isDebugEnabled()) {
                 log.debug("unbindLocalForwarding(" + local + " => " + remote + ") unbind " + bound);
             }
 
             SshdSocketAddress boundAddress = new SshdSocketAddress(bound);
-            signalTearingDownExplicitTunnel(boundAddress, true);
+            signalTearingDownExplicitTunnel(boundAddress, true, remote);
             try {
                 acceptor.unbind(bound);
             } catch (RuntimeException e) {
-                signalTornDownExplicitTunnel(boundAddress, true, e);
+                signalTornDownExplicitTunnel(boundAddress, true, remote, e);
                 throw e;
             }
 
-            signalTornDownExplicitTunnel(boundAddress, true, null);
+            signalTornDownExplicitTunnel(boundAddress, true, remote, null);
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("unbindLocalForwarding(" + local + " => " + remote + ") no mapping/acceptor for " + bound);
@@ -353,15 +355,15 @@ public class DefaultForwardingFilter
             buffer.putString(remoteHost);
             buffer.putInt(port);
 
-            signalTearingDownExplicitTunnel(bound, false);
+            signalTearingDownExplicitTunnel(bound, false, remote);
             try {
                 session.writePacket(buffer);
             } catch (IOException | RuntimeException e) {
-                signalTornDownExplicitTunnel(bound, false, e);
+                signalTornDownExplicitTunnel(bound, false, remote, e);
                 throw e;
             }
 
-            signalTornDownExplicitTunnel(bound, false, null);
+            signalTornDownExplicitTunnel(bound, false, remote, null);
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("stopRemotePortForwarding(" + remote + ") no binding found");
@@ -369,10 +371,12 @@ public class DefaultForwardingFilter
         }
     }
 
-    protected void signalTearingDownExplicitTunnel(SshdSocketAddress boundAddress, boolean localForwarding) throws IOException {
+    protected void signalTearingDownExplicitTunnel(
+            SshdSocketAddress boundAddress, boolean localForwarding, SshdSocketAddress remote)
+                throws IOException {
         try {
             invokePortEventListenerSignaller(l -> {
-                signalTearingDownExplicitTunnel(l, boundAddress, localForwarding);
+                signalTearingDownExplicitTunnel(l, boundAddress, localForwarding, remote);
                 return null;
             });
         } catch (Throwable t) {
@@ -391,19 +395,21 @@ public class DefaultForwardingFilter
     }
 
     protected void signalTearingDownExplicitTunnel(
-            PortForwardingEventListener listener, SshdSocketAddress boundAddress, boolean localForwarding)
-                    throws IOException {
+            PortForwardingEventListener listener, SshdSocketAddress boundAddress, boolean localForwarding, SshdSocketAddress remoteAddress)
+                throws IOException {
         if (listener == null) {
             return;
         }
 
-        listener.tearingDownExplicitTunnel(getSession(), boundAddress, localForwarding);
+        listener.tearingDownExplicitTunnel(getSession(), boundAddress, localForwarding, remoteAddress);
     }
 
-    protected void signalTornDownExplicitTunnel(SshdSocketAddress boundAddress, boolean localForwarding, Throwable reason) throws IOException {
+    protected void signalTornDownExplicitTunnel(
+            SshdSocketAddress boundAddress, boolean localForwarding, SshdSocketAddress remoteAddress, Throwable reason)
+                throws IOException {
         try {
             invokePortEventListenerSignaller(l -> {
-                signalTornDownExplicitTunnel(l, boundAddress, localForwarding, reason);
+                signalTornDownExplicitTunnel(l, boundAddress, localForwarding, remoteAddress, reason);
                 return null;
             });
         } catch (Throwable t) {
@@ -422,13 +428,13 @@ public class DefaultForwardingFilter
     }
 
     protected void signalTornDownExplicitTunnel(
-            PortForwardingEventListener listener, SshdSocketAddress boundAddress, boolean localForwarding, Throwable reason)
+            PortForwardingEventListener listener, SshdSocketAddress boundAddress, boolean localForwarding, SshdSocketAddress remoteAddress, Throwable reason)
                     throws IOException {
         if (listener == null) {
             return;
         }
 
-        listener.tornDownExplicitTunnel(getSession(), boundAddress, localForwarding, reason);
+        listener.tornDownExplicitTunnel(getSession(), boundAddress, localForwarding, remoteAddress, reason);
     }
 
     @Override
@@ -712,15 +718,15 @@ public class DefaultForwardingFilter
                 log.debug("localPortForwardingCancelled(" + local + ") unbind " + entry);
             }
 
-            signalTearingDownExplicitTunnel(entry, true);
+            signalTearingDownExplicitTunnel(entry, true, null);
             try {
                 acceptor.unbind(entry.toInetSocketAddress());
             } catch (RuntimeException e) {
-                signalTornDownExplicitTunnel(entry, true, e);
+                signalTornDownExplicitTunnel(entry, true, null, e);
                 throw e;
             }
 
-            signalTornDownExplicitTunnel(entry, true, null);
+            signalTornDownExplicitTunnel(entry, true, null, null);
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("localPortForwardingCancelled(" + local + ") no match/acceptor: " + entry);
@@ -751,9 +757,9 @@ public class DefaultForwardingFilter
         }
     }
 
-    protected void signalEstablishingExplicitTunnel(PortForwardingEventListener listener,
-            SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding)
-                    throws IOException {
+    protected void signalEstablishingExplicitTunnel(
+            PortForwardingEventListener listener, SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding)
+                throws IOException {
         if (listener == null) {
             return;
         }

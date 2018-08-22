@@ -95,17 +95,18 @@ public class PortForwardingLoadTest extends BaseTestSupport {
 
         @Override
         public void tearingDownExplicitTunnel(
-                org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding)
+                org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress)
                     throws IOException {
-            log.info("tearingDownExplicitTunnel(session={}, address={}, localForwarding={})", session, address, localForwarding);
+            log.info("tearingDownExplicitTunnel(session={}, address={}, localForwarding={}, remote={})",
+                session, address, localForwarding, remoteAddress);
         }
 
         @Override
         public void tornDownExplicitTunnel(
-                org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, Throwable reason)
+                org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress, Throwable reason)
                     throws IOException {
-            log.info("tornDownExplicitTunnel(session={}, address={}, localForwarding={}, reason={})",
-                 session, address, localForwarding, reason);
+            log.info("tornDownExplicitTunnel(session={}, address={}, localForwarding={}, remote={}, reason={})",
+                 session, address, localForwarding, remoteAddress, reason);
         }
 
         @Override
@@ -266,7 +267,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                                     }
                                 }
                             }
-                            log.info("Finished iteration {}", i);
+                            log.info("Finished iteration {}/{}", i, numIterations);
                             iterationsSignal.release();
                         }
                         log.info("Done");
@@ -280,7 +281,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
 
             byte[] buf = new byte[8192];
             for (int i = 0; i < numIterations; i++) {
-                log.info("Iteration {} started", i);
+                log.info("Iteration {}/{} started", i, numIterations);
                 try (Socket s = new Socket(TEST_LOCALHOST, sinkPort);
                      OutputStream sockOut = s.getOutputStream()) {
 

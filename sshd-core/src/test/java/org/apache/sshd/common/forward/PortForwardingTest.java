@@ -101,17 +101,18 @@ public class PortForwardingTest extends BaseTestSupport {
 
         @Override
         public void tearingDownExplicitTunnel(
-                org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding)
+                org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress)
                     throws IOException {
-            log.info("tearingDownExplicitTunnel(session={}, address={}, localForwarding={})", session, address, localForwarding);
+            log.info("tearingDownExplicitTunnel(session={}, address={}, localForwarding={}, remote={})",
+                session, address, localForwarding, remoteAddress);
         }
 
         @Override
         public void tornDownExplicitTunnel(
-                org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, Throwable reason)
+                org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress, Throwable reason)
                     throws IOException {
-            log.info("tornDownExplicitTunnel(session={}, address={}, localForwarding={}, reason={})",
-                 session, address, localForwarding, reason);
+            log.info("tornDownExplicitTunnel(session={}, address={}, localForwarding={}, remote={}, reason={})",
+                 session, address, localForwarding, remoteAddress, reason);
         }
 
         @Override
@@ -363,8 +364,8 @@ public class PortForwardingTest extends BaseTestSupport {
         PortForwardingEventListener listener = new PortForwardingEventListener() {
             @Override
             public void tornDownExplicitTunnel(
-                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, Throwable reason)
-                            throws IOException {
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress, Throwable reason)
+                        throws IOException {
                 assertFalse("Unexpected local tunnel has been torn down: address=" + address, localForwarding);
                 assertEquals("Tear down indication not invoked", 1, tearDownSignal.get());
             }
@@ -377,8 +378,8 @@ public class PortForwardingTest extends BaseTestSupport {
 
             @Override
             public void tearingDownExplicitTunnel(
-                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding)
-                            throws IOException {
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress)
+                        throws IOException {
                 assertFalse("Unexpected local tunnel being torn down: address=" + address, localForwarding);
                 assertEquals("Duplicate tear down signalling", 1, tearDownSignal.incrementAndGet());
             }
@@ -501,7 +502,7 @@ public class PortForwardingTest extends BaseTestSupport {
         PortForwardingEventListener listener = new PortForwardingEventListener() {
             @Override
             public void tornDownExplicitTunnel(
-                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, Throwable reason)
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress, Throwable reason)
                         throws IOException {
                 assertTrue("Unexpected remote tunnel has been torn down: address=" + address, localForwarding);
                 assertEquals("Tear down indication not invoked", 1, tearDownSignal.get());
@@ -516,7 +517,7 @@ public class PortForwardingTest extends BaseTestSupport {
 
             @Override
             public void tearingDownExplicitTunnel(
-                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding)
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress)
                         throws IOException {
                 assertTrue("Unexpected remote tunnel being torn down: address=" + address, localForwarding);
                 assertEquals("Duplicate tear down signalling", 1, tearDownSignal.incrementAndGet());
