@@ -144,6 +144,15 @@ public class SshdSocketAddress extends SocketAddress {
         this(IPV4_ANYADDR, port);
     }
 
+    public SshdSocketAddress(InetSocketAddress addr) {
+        Objects.requireNonNull(addr, "No address provided");
+
+        String host = addr.getHostString();
+        hostName = GenericUtils.isEmpty(host) ? IPV4_ANYADDR : host;
+        port = addr.getPort();
+        ValidateUtils.checkTrue(port >= 0, "Port must be >= 0: %d", port);
+    }
+
     public SshdSocketAddress(String hostName, int port) {
         Objects.requireNonNull(hostName, "Host name may not be null");
         this.hostName = GenericUtils.isEmpty(hostName) ? IPV4_ANYADDR : hostName;

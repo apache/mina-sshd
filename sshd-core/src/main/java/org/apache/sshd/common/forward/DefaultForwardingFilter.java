@@ -95,7 +95,10 @@ public class DefaultForwardingFilter
     private final ConnectionService service;
     private final IoHandlerFactory socksProxyIoHandlerFactory = () -> new SocksProxy(getConnectionService());
     private final Session sessionInstance;
+    private final Object localLock = new Object();
     private final Map<Integer, SshdSocketAddress> localToRemote = new TreeMap<>(Comparator.naturalOrder());
+    private final Map<Integer, InetSocketAddress> boundLocals = new TreeMap<>(Comparator.naturalOrder());
+
     private final Map<Integer, SshdSocketAddress> remoteToLocal = new TreeMap<>(Comparator.naturalOrder());
     private final Map<Integer, SocksProxy> dynamicLocal = new TreeMap<>(Comparator.naturalOrder());
     private final Set<LocalForwardingEntry> localForwards = new HashSet<>();
@@ -191,23 +194,29 @@ public class DefaultForwardingFilter
             throw new IllegalStateException("TcpipForwarder is closing");
         }
 
-        InetSocketAddress bound;
+        InetSocketAddress bound = null;
         int port;
         signalEstablishingExplicitTunnel(local, remote, true);
         try {
             bound = doBind(local, staticIoHandlerFactory);
             port = bound.getPort();
-            SshdSocketAddress prev;
-            synchronized (localToRemote) {
-                prev = localToRemote.put(port, remote);
-            }
+            synchronized (localLock) {
+                SshdSocketAddress prevRemote = localToRemote.get(port);
+                if (prevRemote != null) {
+                    throw new IOException("Multiple local port forwarding addressing on port=" + port + ": current=" + remote + ", previous=" + prevRemote);
+                }
 
-            if (prev != null) {
-                throw new IOException("Multiple local port forwarding bindings on port=" + port + ": current=" + remote + ", previous=" + prev);
+                InetSocketAddress prevBound = boundLocals.get(port);
+                if (prevBound != null) {
+                    throw new IOException("Multiple local port forwarding bindings on port=" + port + ": current=" + bound + ", previous=" + prevBound);
+                }
+
+                localToRemote.put(port, remote);
+                boundLocals.put(port, bound);
             }
         } catch (IOException | RuntimeException e) {
             try {
-                stopLocalPortForwarding(local);
+                unbindLocalForwarding(local, remote, bound);
             } catch (IOException | RuntimeException err) {
                 e.addSuppressed(err);
             }
@@ -232,29 +241,36 @@ public class DefaultForwardingFilter
     public synchronized void stopLocalPortForwarding(SshdSocketAddress local) throws IOException {
         Objects.requireNonNull(local, "Local address is null");
 
-        SshdSocketAddress bound;
+        SshdSocketAddress remote;
+        InetSocketAddress bound;
         int port = local.getPort();
-        synchronized (localToRemote) {
-            bound = localToRemote.remove(port);
+        synchronized (localLock) {
+            remote = localToRemote.remove(port);
+            bound = boundLocals.remove(port);
         }
 
+        unbindLocalForwarding(local, remote, bound);
+    }
+
+    protected void unbindLocalForwarding(SshdSocketAddress local, SshdSocketAddress remote, InetSocketAddress bound) throws IOException {
         if ((bound != null) && (acceptor != null)) {
             if (log.isDebugEnabled()) {
-                log.debug("stopLocalPortForwarding(" + local + ") unbind " + bound);
+                log.debug("unbindLocalForwarding(" + local + " => " + remote + ") unbind " + bound);
             }
 
-            signalTearingDownExplicitTunnel(bound, true);
+            SshdSocketAddress boundAddress = new SshdSocketAddress(bound);
+            signalTearingDownExplicitTunnel(boundAddress, true);
             try {
-                acceptor.unbind(bound.toInetSocketAddress());
+                acceptor.unbind(bound);
             } catch (RuntimeException e) {
-                signalTornDownExplicitTunnel(bound, true, e);
+                signalTornDownExplicitTunnel(boundAddress, true, e);
                 throw e;
             }
 
-            signalTornDownExplicitTunnel(bound, true, null);
+            signalTornDownExplicitTunnel(boundAddress, true, null);
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("stopLocalPortForwarding(" + local + ") no mapping/acceptor for " + bound);
+                log.debug("unbindLocalForwarding(" + local + " => " + remote + ") no mapping/acceptor for " + bound);
             }
         }
     }
@@ -284,14 +300,14 @@ public class DefaultForwardingFilter
             }
             port = (remotePort == 0) ? result.getInt() : remote.getPort();
             // TODO: Is it really safe to only store the local address after the request ?
-            SshdSocketAddress prev;
             synchronized (remoteToLocal) {
-                prev = remoteToLocal.put(port, local);
+                SshdSocketAddress prev = remoteToLocal.get(port);
+                if (prev != null) {
+                    throw new IOException("Multiple remote port forwarding bindings on port=" + port + ": current=" + remote + ", previous=" + prev);
+                }
+                remoteToLocal.put(port, local);
             }
 
-            if (prev != null) {
-                throw new IOException("Multiple remote port forwarding bindings on port=" + port + ": current=" + remote + ", previous=" + prev);
-            }
         } catch (IOException | RuntimeException e) {
             try {
                 stopRemotePortForwarding(remote);
