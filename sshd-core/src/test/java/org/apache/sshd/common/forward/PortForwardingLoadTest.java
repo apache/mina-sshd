@@ -252,7 +252,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                                          OutputStream sockOut = s.getOutputStream()) {
 
                                         for (int writeSize = 0, lastReport = 0; writeSize < outBytes.length;) {
-                                            int l = sockIn.read(buf);
+                                            int l = inputCopy.read(buf);
                                             if (l < 0) {
                                                 break;
                                             }
@@ -332,6 +332,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
 
     private static void assertPayloadEquals(String message, byte[] expectedBytes, byte[] actualBytes) {
         assertEquals(message + ": mismatched payload length", expectedBytes.length, actualBytes.length);
+
         for (int index = 0; index < expectedBytes.length; index++) {
             if (expectedBytes[index] == actualBytes[index]) {
                 continue;
