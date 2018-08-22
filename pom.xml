@@ -510,7 +510,7 @@
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
-                <version>4.5.5</version>
+                <version>4.5.6</version>
                 <exclusions>
                     <exclusion>    <!-- we are using jcl-over-slf4j -->
                         <groupId>commons-logging</groupId>
@@ -521,7 +521,7 @@
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpcore</artifactId>
-                <version>4.4.9</version>
+                <version>4.4.10</version>
             </dependency>
             <dependency>
                 <groupId>ch.ethz.ganymed</groupId>
