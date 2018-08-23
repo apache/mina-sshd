@@ -95,12 +95,16 @@ public class DefaultForwardingFilter
     private final ConnectionService service;
     private final IoHandlerFactory socksProxyIoHandlerFactory = () -> new SocksProxy(getConnectionService());
     private final Session sessionInstance;
+
     private final Object localLock = new Object();
     private final Map<Integer, SshdSocketAddress> localToRemote = new TreeMap<>(Comparator.naturalOrder());
     private final Map<Integer, InetSocketAddress> boundLocals = new TreeMap<>(Comparator.naturalOrder());
 
+    private final Object dynamicLock = new Object();
     private final Map<Integer, SshdSocketAddress> remoteToLocal = new TreeMap<>(Comparator.naturalOrder());
     private final Map<Integer, SocksProxy> dynamicLocal = new TreeMap<>(Comparator.naturalOrder());
+    private final Map<Integer, InetSocketAddress> boundDynamic = new TreeMap<>(Comparator.naturalOrder());
+
     private final Set<LocalForwardingEntry> localForwards = new HashSet<>();
     private final IoHandlerFactory staticIoHandlerFactory = StaticIoHandler::new;
     private final Collection<PortForwardingEventListener> listeners = new CopyOnWriteArraySet<>();
@@ -203,12 +207,14 @@ public class DefaultForwardingFilter
             synchronized (localLock) {
                 SshdSocketAddress prevRemote = localToRemote.get(port);
                 if (prevRemote != null) {
-                    throw new IOException("Multiple local port forwarding addressing on port=" + port + ": current=" + remote + ", previous=" + prevRemote);
+                    throw new IOException("Multiple local port forwarding addressing on port=" + port
+                        + ": current=" + remote + ", previous=" + prevRemote);
                 }
 
                 InetSocketAddress prevBound = boundLocals.get(port);
                 if (prevBound != null) {
-                    throw new IOException("Multiple local port forwarding bindings on port=" + port + ": current=" + bound + ", previous=" + prevBound);
+                    throw new IOException("Multiple local port forwarding bindings on port=" + port
+                        + ": current=" + bound + ", previous=" + prevBound);
                 }
 
                 localToRemote.put(port, remote);
@@ -257,7 +263,7 @@ public class DefaultForwardingFilter
                     throws IOException {
         if ((bound != null) && (acceptor != null)) {
             if (log.isDebugEnabled()) {
-                log.debug("unbindLocalForwarding(" + local + " => " + remote + ") unbind " + bound);
+                log.debug("unbindLocalForwarding({} => {}) unbind {}", local, remote, bound);
             }
 
             SshdSocketAddress boundAddress = new SshdSocketAddress(bound);
@@ -272,7 +278,8 @@ public class DefaultForwardingFilter
             signalTornDownExplicitTunnel(boundAddress, true, remote, null);
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("unbindLocalForwarding(" + local + " => " + remote + ") no mapping/acceptor for " + bound);
+                log.debug("unbindLocalForwarding({} => {}) no mapping({}) or acceptor({})",
+                    local, remote, bound, acceptor);
             }
         }
     }
@@ -449,24 +456,33 @@ public class DefaultForwardingFilter
             throw new IllegalStateException("TcpipForwarder is closing");
         }
 
-        SocksProxy socksProxy = new SocksProxy(service);
-        SocksProxy prev;
-        InetSocketAddress bound;
+        SocksProxy proxy = null;
+        InetSocketAddress bound = null;
         int port;
         signalEstablishingDynamicTunnel(local);
         try {
             bound = doBind(local, socksProxyIoHandlerFactory);
             port = bound.getPort();
-            synchronized (dynamicLocal) {
-                prev = dynamicLocal.put(port, socksProxy);
-            }
+            synchronized (dynamicLock) {
+                SocksProxy prevProxy = dynamicLocal.get(port);
+                if (prevProxy != null) {
+                    throw new IOException("Multiple dynamic port mappings found for port=" + port
+                        + ": current=" + proxy + ", previous=" + prevProxy);
+                }
 
-            if (prev != null) {
-                throw new IOException("Multiple dynamic port mappings found for port=" + port + ": current=" + socksProxy + ", previous=" + prev);
+                InetSocketAddress prevBound = boundDynamic.get(port);
+                if (prevBound != null) {
+                    throw new IOException("Multiple dynamic port bindings found for port=" + port
+                        + ": current=" + bound + ", previous=" + prevBound);
+                }
+
+                proxy = new SocksProxy(service);
+                dynamicLocal.put(port, proxy);
+                boundDynamic.put(port, bound);
             }
         } catch (IOException | RuntimeException e) {
             try {
-                stopDynamicPortForwarding(local);
+                unbindDynamicForwarding(local, proxy, bound);
             } catch (IOException | RuntimeException err) {
                 e.addSuppressed(err);
             }
@@ -551,20 +567,45 @@ public class DefaultForwardingFilter
 
     @Override
     public synchronized void stopDynamicPortForwarding(SshdSocketAddress local) throws IOException {
-        SocksProxy obj;
-        synchronized (dynamicLocal) {
-            obj = dynamicLocal.remove(local.getPort());
+        SocksProxy proxy;
+        InetSocketAddress bound;
+        int port = local.getPort();
+        synchronized (dynamicLock) {
+            proxy = dynamicLocal.remove(port);
+            bound = boundDynamic.remove(port);
         }
 
-        if (obj != null) {
-            if (log.isDebugEnabled()) {
-                log.debug("stopDynamicPortForwarding(" + local + ") unbinding");
-            }
+        unbindDynamicForwarding(local, proxy, bound);
+    }
 
+    protected void unbindDynamicForwarding(
+            SshdSocketAddress local, SocksProxy proxy, InetSocketAddress bound) throws IOException {
+        boolean debugEnabled = log.isDebugEnabled();
+        if ((bound != null) || (proxy != null)) {
             signalTearingDownDynamicTunnel(local);
+
             try {
-                obj.close(true);
-                acceptor.unbind(local.toInetSocketAddress());
+                try {
+                    if (proxy != null) {
+                        if (debugEnabled) {
+                            log.debug("stopDynamicPortForwarding({}) close proxy={}", local, proxy);
+                        }
+
+                        proxy.close(true);
+                    }
+                } finally {
+                    if ((bound != null) && (acceptor != null)) {
+                        if (debugEnabled) {
+                            log.debug("stopDynamicPortForwarding({}) unbind address={}", local, bound);
+                        }
+                        acceptor.unbind(bound);
+                    } else {
+                        if (debugEnabled) {
+                            log.debug("stopDynamicPortForwarding({}) no acceptor({}) or no binding({})",
+                                local, acceptor, bound);
+                        }
+                    }
+                }
             } catch (RuntimeException e) {
                 signalTornDownDynamicTunnel(local, e);
                 throw e;
@@ -572,8 +613,8 @@ public class DefaultForwardingFilter
 
             signalTornDownDynamicTunnel(local, null);
         } else {
-            if (log.isDebugEnabled()) {
-                log.debug("stopDynamicPortForwarding(" + local + ") no binding found");
+            if (debugEnabled) {
+                log.debug("stopDynamicPortForwarding({}) no binding found", local);
             }
         }
     }
