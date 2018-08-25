@@ -53,9 +53,8 @@ Required mainly for writing keys to PEM files or for special keys/ciphers/etc. t
 ## NIO2 default socket factory replacements
 
 Optional dependency to enable choosing between NIO asynchronous sockets (the default - for improved performance), and "legacy" sockets.
-See `IoServiceFactoryFactory` implementations and specifically the `DefaultIoServiceFactoryFactory` for the available options and how it
-can be configured to select among them. **Note:** the required Maven module(s) are defined as `optional` so must be added as an **explicit**
-dependency in order to be included in the classpath.
+**Note:** the required Maven module(s) are defined as `optional` so must be added as an **explicit** dependency in order to be included
+in the classpath.
 
 ### [MINA core](https://mina.apache.org/mina-project/)
 
@@ -101,6 +100,28 @@ implementation. This is also an **optional** dependency and must be add explicit
     </dependency>
 
 ```
+
+### Selecting an `IoServiceFactoryFactory`
+
+As part of the their initialization, both client and server code require the specification of a `IoServiceFactoryFactory`
+that is used to initialize network connections. If not set explicitly during the client/server setup code, then a factory
+is automatically detected and selected when the client/server is started. The used `IoServiceFactoryFactory` is a **singleton**
+that is lazy created the 1st time `DefaultIoServiceFactoryFactory#create` is invoked. The selection process is as follows:
+
+* The `org.apache.sshd.common.io.IoServiceFactoryFactory` system property is examined for a factory specification. The
+specification can be either a **fully-qualified** class name or one of the `BuiltinIoServiceFactoryFactories` values.
+
+* If no specific factory is specified, then the [ServiceLoader#load](https://docs.oracle.com/javase/tutorial/ext/basics/spi.html#register-service-providers)
+mechanism is used to detect and instantiate any registered services in any `META-INF\services\org.apache.sshd.common.io.IoServiceFactoryFactory`
+location in the classpath. If **exactly one** implementation was instantiated, then it is used. If several such implementations are found then
+an exception is thrown.
+
+* Otherwise, the built-in `Nio2ServiceFactoryFactory` is used.
+
+**Note:** the default command line scripts for SSH client/server, SCP/SFTP clients are set up to use NIO2 as their default provider,
+unless overridden via the `-io` command line option. The `org.apache.sshd.common.io.IoServiceFactoryFactory` system property does
+not apply for the command line wrappers since they look for only the `-io` option and use it to initialize the client/server **explicitly**,
+before starting the client/server. Therefore, the default selection process described in this section does not take effect.
 
 ## [ed25519-java](https://github.com/str4d/ed25519-java)
 
@@ -950,7 +971,7 @@ On the client side, all the supported extensions are classes that implement `Sft
                 if (SftpConstants.EXT_ACL_SUPPORTED.equalsIgnoreCase(extName)) {
                     AclCapabilities capabilities = (AclCapabilities) extValue;
                     ...see what other information can be gleaned from it...
-                } else if ((SftpConstants.EXT_VERSIONS.equalsIgnoreCase(extName)) {
+                } else if (SftpConstants.EXT_VERSIONS.equalsIgnoreCase(extName)) {
                     Versions versions = (Versions) extValue;
                     ...see what other information can be gleaned from it...
                 } else if ("my-special-extension".equalsIgnoreCase(extName)) {

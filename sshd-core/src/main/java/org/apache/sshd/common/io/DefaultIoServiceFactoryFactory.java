@@ -18,7 +18,9 @@
  */
 package org.apache.sshd.common.io;
 
+import java.util.Deque;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.ServiceLoader;
 
 import org.apache.sshd.common.Factory;
@@ -55,19 +57,31 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
      */
     public IoServiceFactoryFactory getIoServiceProvider() {
         synchronized (this) {
+            if (factory != null) {
+                return factory;
+            }
+
+            factory = newInstance(IoServiceFactoryFactory.class);
             if (factory == null) {
-                factory = newInstance(IoServiceFactoryFactory.class);
-                Factory<CloseableExecutorService> executorServiceFactory = getExecutorServiceFactory();
-                if (executorServiceFactory != null) {
-                    factory.setExecutorServiceFactory(executorServiceFactory);
-                }
+                factory = BuiltinIoServiceFactoryFactories.NIO2.create();
+                log.info("No detected/configured " + IoServiceFactoryFactory.class.getSimpleName()
+                    + " using " + factory.getClass().getSimpleName());
+            } else {
+                log.info("Using {}", factory.getClass().getSimpleName());
+            }
+
+            Factory<CloseableExecutorService> executorServiceFactory = getExecutorServiceFactory();
+            if (executorServiceFactory != null) {
+                factory.setExecutorServiceFactory(executorServiceFactory);
             }
         }
+
         return factory;
     }
 
     public static <T extends IoServiceFactoryFactory> T newInstance(Class<T> clazz) {
-        String factory = System.getProperty(clazz.getName());
+        String propName = clazz.getName();
+        String factory = System.getProperty(propName);
         if (!GenericUtils.isEmpty(factory)) {
             return newInstance(clazz, factory);
         }
@@ -75,7 +89,7 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
         Thread currentThread = Thread.currentThread();
         ClassLoader cl = currentThread.getContextClassLoader();
         if (cl != null) {
-            T t = tryLoad(ServiceLoader.load(clazz, cl));
+            T t = tryLoad(propName, ServiceLoader.load(clazz, cl));
             if (t != null) {
                 return t;
             }
@@ -83,28 +97,48 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
 
         ClassLoader clDefault = DefaultIoServiceFactoryFactory.class.getClassLoader();
         if (cl != clDefault) {
-            T t = tryLoad(ServiceLoader.load(clazz, clDefault));
+            T t = tryLoad(propName, ServiceLoader.load(clazz, clDefault));
             if (t != null) {
                 return t;
             }
         }
-        throw new IllegalStateException("Could not find a valid sshd io provider");
+
+        return null;
     }
 
-    public static <T extends IoServiceFactoryFactory> T tryLoad(ServiceLoader<T> loader) {
+    public static <T extends IoServiceFactoryFactory> T tryLoad(String propName, ServiceLoader<T> loader) {
         Iterator<T> it = loader.iterator();
+        Deque<T> services = new LinkedList<>();
         try {
             while (it.hasNext()) {
                 try {
-                    return it.next();
+                    T instance = it.next();
+                    services.add(instance);
                 } catch (Throwable t) {
-                    LOGGER.trace("Exception while loading factory from ServiceLoader", t);
+                    LOGGER.warn("Exception while instantiating factory from ServiceLoader", t);
                 }
             }
         } catch (Throwable t) {
-            LOGGER.trace("Exception while loading factory from ServiceLoader", t);
+            LOGGER.warn("Exception while loading factory from ServiceLoader", t);
         }
-        return null;
+
+        int numDetected = services.size();
+        if (numDetected <= 0) {
+            return null;
+        }
+
+        if (numDetected != 1) {
+            LOGGER.error("Multiple ({}) registered instances detected:", numDetected);
+            for (T s : services) {
+                LOGGER.error("===> {}", s.getClass().getName());
+            }
+            throw new IllegalStateException("Multiple (" + numDetected + ")"
+                + " registered " + IoServiceFactoryFactory.class.getSimpleName() + " instances detected."
+                + " Please use -D" + propName + "=...factory class.. to select one"
+                + " or remove the extra providers from the classpath");
+        }
+
+        return services.removeFirst();
     }
 
     public static <T extends IoServiceFactoryFactory> T newInstance(Class<T> clazz, String factory) {
