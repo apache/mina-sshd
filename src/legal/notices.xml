@@ -41,8 +41,8 @@
             <artifactId>slf4j-api</artifactId>
             <name>SLF4J API Module</name>
             <organization>
-                <name>QOS.ch</name>
-                <url>http://www.qos.ch</url>
+                <name>Simple Logging Facade for Java</name>
+                <url>https://www.slf4j.org/</url>
             </organization>
             <licenses>
                 <license>
@@ -63,8 +63,42 @@
             </organization>
             <licenses>
                 <license>
-                    <name>Bouncy Castle License</name>
-                    <url>http://www.bouncycastle.org/licence.html</url>
+                    <name>The Apache Software License, Version 2.0</name>
+                    <url>http://jpam.sourceforge.net/license.html</url>
+                </license>
+            </licenses>
+        </project>
+    </supplement>
+    <supplement>
+        <project>
+            <groupId>org.apache.mina</groupId>
+            <artifactId>mina-core</artifactId>
+            <name>Apache MINA Project</name>
+            <organization>
+                <name>Apache MINA Project</name>
+                <url>https://mina.apache.org/</url>
+            </organization>
+            <licenses>
+                <license>
+                    <name>The Apache Software License, Version 2.0</name>
+                    <url>http://www.apache.org/licenses/</url>
+                </license>
+            </licenses>
+        </project>
+    </supplement>
+    <supplement>
+        <project>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-transport</artifactId>
+            <name>Asynchronous event-driven network application framework</name>
+            <organization>
+                <name>Netty project</name>
+                <url>https://netty.io/</url>
+            </organization>
+            <licenses>
+                <license>
+                    <name>The Apache Software License, Version 2.0</name>
+                    <url>https://github.com/netty/netty/blob/4.1/LICENSE.txt</url>
                 </license>
             </licenses>
         </project>
@@ -80,8 +114,8 @@
             </organization>
             <licenses>
                 <license>
-                    <name>Public Domain</name>
-                    <url>http://en.wikipedia.org/wiki/Public_domain</url>
+                    <name>Creative Commons</name>
+                    <url>https://github.com/str4d/ed25519-java/blob/master/LICENSE.txt</url>
                 </license>
             </licenses>
         </project>
