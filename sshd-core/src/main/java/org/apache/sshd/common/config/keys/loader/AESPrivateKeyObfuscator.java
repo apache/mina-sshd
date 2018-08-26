@@ -82,7 +82,7 @@ public class AESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
         return LazyValuesHolder.KEY_LENGTHS;
     }
 
-    private static class LazyValuesHolder {
+    private static final class LazyValuesHolder {
         private static final List<Integer> KEY_LENGTHS =
                 Collections.unmodifiableList(detectSupportedKeySizes());
 

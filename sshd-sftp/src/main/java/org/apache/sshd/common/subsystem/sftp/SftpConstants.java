@@ -276,7 +276,7 @@ public final class SftpConstants {
         throw new UnsupportedOperationException("No instance");
     }
 
-    private static class LazyCommandNameHolder {
+    private static final class LazyCommandNameHolder {
         private static final Map<Integer, String> NAMES_MAP =
                 Collections.unmodifiableMap(
                     LoggingUtils.generateMnemonicMap(SftpConstants.class, f -> {

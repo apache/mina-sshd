@@ -173,7 +173,7 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
         throw new IllegalStateException("Unable to create instance of class " + factory);
     }
 
-    private static class LazyDefaultIoServiceFactoryFactoryHolder {
+    private static final class LazyDefaultIoServiceFactoryFactoryHolder {
         private static final DefaultIoServiceFactoryFactory INSTANCE = new DefaultIoServiceFactoryFactory();
     }
 

@@ -81,7 +81,7 @@ public final class SshAgentConstants {
         throw new UnsupportedOperationException("N/A instance");
     }
 
-    private static class LazyMessagesMapHolder {
+    private static final class LazyMessagesMapHolder {
         private static final Map<Integer, String> MESSAGES_MAP =
                 LoggingUtils.generateMnemonicMap(SshAgentConstants.class, f -> {
                     String name = f.getName();
