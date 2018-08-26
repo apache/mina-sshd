@@ -260,19 +260,22 @@ public class DefaultForwardingFilter
 
     protected void unbindLocalForwarding(
             SshdSocketAddress local, SshdSocketAddress remote, InetSocketAddress bound)
-                    throws IOException {
+                throws IOException {
         if ((bound != null) && (acceptor != null)) {
             if (log.isDebugEnabled()) {
                 log.debug("unbindLocalForwarding({} => {}) unbind {}", local, remote, bound);
             }
 
             SshdSocketAddress boundAddress = new SshdSocketAddress(bound);
-            signalTearingDownExplicitTunnel(boundAddress, true, remote);
             try {
-                acceptor.unbind(bound);
-            } catch (RuntimeException e) {
-                signalTornDownExplicitTunnel(boundAddress, true, remote, e);
-                throw e;
+                signalTearingDownExplicitTunnel(boundAddress, true, remote);
+            } finally {
+                try {
+                    acceptor.unbind(bound);
+                } catch (RuntimeException e) {
+                    signalTornDownExplicitTunnel(boundAddress, true, remote, e);
+                    throw e;
+                }
             }
 
             signalTornDownExplicitTunnel(boundAddress, true, remote, null);
@@ -582,33 +585,36 @@ public class DefaultForwardingFilter
             SshdSocketAddress local, SocksProxy proxy, InetSocketAddress bound) throws IOException {
         boolean debugEnabled = log.isDebugEnabled();
         if ((bound != null) || (proxy != null)) {
-            signalTearingDownDynamicTunnel(local);
 
             try {
+                signalTearingDownDynamicTunnel(local);
+            } finally {
                 try {
-                    if (proxy != null) {
-                        if (debugEnabled) {
-                            log.debug("stopDynamicPortForwarding({}) close proxy={}", local, proxy);
-                        }
+                    try {
+                        if (proxy != null) {
+                            if (debugEnabled) {
+                                log.debug("stopDynamicPortForwarding({}) close proxy={}", local, proxy);
+                            }
 
-                        proxy.close(true);
-                    }
-                } finally {
-                    if ((bound != null) && (acceptor != null)) {
-                        if (debugEnabled) {
-                            log.debug("stopDynamicPortForwarding({}) unbind address={}", local, bound);
+                            proxy.close(true);
                         }
-                        acceptor.unbind(bound);
-                    } else {
-                        if (debugEnabled) {
-                            log.debug("stopDynamicPortForwarding({}) no acceptor({}) or no binding({})",
-                                local, acceptor, bound);
+                    } finally {
+                        if ((bound != null) && (acceptor != null)) {
+                            if (debugEnabled) {
+                                log.debug("stopDynamicPortForwarding({}) unbind address={}", local, bound);
+                            }
+                            acceptor.unbind(bound);
+                        } else {
+                            if (debugEnabled) {
+                                log.debug("stopDynamicPortForwarding({}) no acceptor({}) or no binding({})",
+                                    local, acceptor, bound);
+                            }
                         }
                     }
+                } catch (RuntimeException e) {
+                    signalTornDownDynamicTunnel(local, e);
+                    throw e;
                 }
-            } catch (RuntimeException e) {
-                signalTornDownDynamicTunnel(local, e);
-                throw e;
             }
 
             signalTornDownDynamicTunnel(local, null);
