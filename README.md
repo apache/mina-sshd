@@ -92,7 +92,7 @@ implementation. This is also an **optional** dependency and must be add explicit
         <artifactId>netty-handler</artifactId>
         <version>...Netty version...</version>
     </dependency>
-    
+
     <dependency>
         <groupId>org.apache.sshd</groupId>
         <artifactId>sshd-netty</artifactId>
@@ -104,9 +104,21 @@ implementation. This is also an **optional** dependency and must be add explicit
 ### Selecting an `IoServiceFactoryFactory`
 
 As part of the their initialization, both client and server code require the specification of a `IoServiceFactoryFactory`
-that is used to initialize network connections. If not set explicitly during the client/server setup code, then a factory
-is automatically detected and selected when the client/server is started. The used `IoServiceFactoryFactory` is a **singleton**
-that is lazy created the 1st time `DefaultIoServiceFactoryFactory#create` is invoked. The selection process is as follows:
+that is used to initialize network connections.
+
+```java
+
+    SshServer server = ...create server instance...
+    server.setIoServiceFactoryFactory(new MyIoServiceFactoryFactory());
+
+    SshClient client = ... create client instance ...
+    client.setIoServiceFactoryFactory(new MyIoServiceFactoryFactory());
+
+```
+
+If not set explicitly during the client/server setup code, then a factory is automatically detected and selected when the
+client/server is `#start()`-ed. The used `IoServiceFactoryFactory` is a **singleton** that is lazy created the 1st time
+`DefaultIoServiceFactoryFactory#create` is invoked. The selection process is as follows:
 
 * The `org.apache.sshd.common.io.IoServiceFactoryFactory` system property is examined for a factory specification. The
 specification can be either a **fully-qualified** class name or one of the `BuiltinIoServiceFactoryFactories` values.
@@ -118,10 +130,10 @@ an exception is thrown.
 
 * Otherwise, the built-in `Nio2ServiceFactoryFactory` is used.
 
-**Note:** the default command line scripts for SSH client/server, SCP/SFTP clients are set up to use NIO2 as their default provider,
+**Note:** the default command line scripts for SSH/SCP/SFTP client/server are set up to use NIO2 as their default provider,
 unless overridden via the `-io` command line option. The `org.apache.sshd.common.io.IoServiceFactoryFactory` system property does
-not apply for the command line wrappers since they look for only the `-io` option and use it to initialize the client/server **explicitly**,
-before starting the client/server. Therefore, the default selection process described in this section does not take effect.
+not apply for the command line wrappers since they look only for the `-io` option and use it to initialize the client/server **explicitly**
+before starting the client/server. Therefore, the default selection process described in this section does not apply for them.
 
 ## [ed25519-java](https://github.com/str4d/ed25519-java)
 
