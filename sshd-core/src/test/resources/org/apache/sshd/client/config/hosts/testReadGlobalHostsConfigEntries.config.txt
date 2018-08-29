@@ -12,12 +12,11 @@ Host *.apache.org
 # Port override
 Host *.github.com
     Port 443
-    
+
 # Host name override
 Host 10.*.*.*
     HostName 7.3.6.5
- 
+
 # Identity override
 Host 192.168.*.*
-    IdentityFile ~/.ssh/internal.key 
-    
+    IdentityFile ~/.ssh/internal.key

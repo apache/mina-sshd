@@ -191,13 +191,13 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
 
     protected abstract int startLocalPF() throws Exception;
 
-    protected boolean hasLocalPFStarted(int port) { 
+    protected boolean hasLocalPFStarted(int port) {
         return true;
-    } 
+    }
 
     protected boolean hasRemotePFStarted(int port) {
         return true;
-    } 
+    }
 
     /*
      * Connect to test server via port forward and read real quick with one big
@@ -246,7 +246,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
     public void testLocalPortForwardLoop() throws Exception {
         readInLoop(startLocalPF());
     }
-    
+
     @Test
     public void testHasLocalPortForwardingStarted() throws Exception {
         int port = startLocalPF();

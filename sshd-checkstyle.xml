@@ -263,12 +263,6 @@
             <module name="ArrayTypeStyle" />
             <module name="FinalParameters" />
         -->
-        <!--
-            <module name="GenericIllegalRegexp">
-                <property name="format" value="\s+$" />
-                <property name="message" value="Line has trailing spaces." />
-            </module>
-        -->
         <!-- DISABLED
             <module name="TodoComment">
                 <property name="format" value="TODO" />
@@ -310,6 +304,11 @@
         <property name="fileExtensions" value="java"/>
 	</module>
 	<!-- <module name="RegexpHeader" /> -->
+    <module name="RegexpSingleline">
+        <property name="format" value="\s+$"/>
+        <property name="message" value="Trailing whitespace"/>
+        <!-- <property name="fileExtensions" value="......" /> -->
+    </module>
 	<module name="FileLength">
 		<property name="max" value="4096" />
 	</module>
