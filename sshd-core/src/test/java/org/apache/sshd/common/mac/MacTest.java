@@ -28,8 +28,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import com.jcraft.jsch.JSch;
-
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.SshServer;
@@ -49,6 +47,8 @@ import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+
+import com.jcraft.jsch.JSch;
 
 import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.ConnectionInfo;

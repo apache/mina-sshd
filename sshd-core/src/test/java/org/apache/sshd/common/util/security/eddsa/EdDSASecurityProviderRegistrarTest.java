@@ -26,8 +26,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 
-import net.i2p.crypto.eddsa.EdDSASecurityProvider;
-
 import org.apache.sshd.common.util.security.SecurityProviderRegistrar;
 import org.apache.sshd.common.util.security.SecurityProviderRegistrarTestSupport;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -36,6 +34,8 @@ import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+
+import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

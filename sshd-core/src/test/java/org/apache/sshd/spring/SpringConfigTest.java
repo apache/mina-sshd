@@ -22,9 +22,6 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
-import com.jcraft.jsch.Channel;
-import com.jcraft.jsch.JSch;
-
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -37,6 +34,9 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.JSch;
 
 /**
  * Test for spring based configuration.

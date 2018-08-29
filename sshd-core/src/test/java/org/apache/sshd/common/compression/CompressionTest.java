@@ -26,8 +26,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 
-import com.jcraft.jsch.JSch;
-
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.mac.MacTest;
@@ -51,6 +49,8 @@ import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+
+import com.jcraft.jsch.JSch;
 
 /**
  * Test compression algorithms.

@@ -20,8 +20,6 @@ package org.apache.sshd.server.auth;
 
 import java.io.File;
 
-import com.jcraft.jsch.JSchException;
-
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
@@ -30,6 +28,8 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.EchoShellFactory;
 import org.junit.After;
 import org.junit.Test;
+
+import com.jcraft.jsch.JSchException;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

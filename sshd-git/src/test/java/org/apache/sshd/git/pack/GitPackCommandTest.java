@@ -22,8 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 
-import com.jcraft.jsch.JSch;
-
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.git.GitLocationResolver;
@@ -44,6 +42,8 @@ import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+
+import com.jcraft.jsch.JSch;
 
 /**
  */

@@ -18,14 +18,14 @@
  */
 package org.apache.sshd.server.auth;
 
+import org.junit.FixMethodOrder;
+import org.junit.runners.MethodSorters;
+
 import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.UserInfo;
-
-import org.junit.FixMethodOrder;
-import org.junit.runners.MethodSorters;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
