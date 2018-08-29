@@ -62,6 +62,9 @@
         <module name="ParameterName">
             <property name="format" value="^[a-z][a-zA-Z0-9_]*$" />
         </module>
+        <module name="InterfaceTypeParameterName">
+            <property name="format" value="^[A-Z]+$" />
+        </module>
         <module name="StaticVariableName" />
         <module name="TypeName" />
 
