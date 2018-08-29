@@ -267,7 +267,12 @@ public class PublicKeyEntry implements Serializable {
     }
 
     private static final class LazyDefaultKeysFolderHolder {
-        private static final Path PATH = IdentityUtils.getUserHomeFolder().resolve(STD_KEYFILE_FOLDER_NAME);
+        private static final Path PATH =
+            IdentityUtils.getUserHomeFolder().resolve(STD_KEYFILE_FOLDER_NAME);
+
+        private LazyDefaultKeysFolderHolder() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
     }
 
     /**

@@ -105,7 +105,12 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     public static final char REMOTE_PORT_MACRO = 'p';
 
     private static final class LazyDefaultConfigFileHolder {
-        private static final Path CONFIG_FILE = PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_CONFIG_FILENAME);
+        private static final Path CONFIG_FILE =
+            PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_CONFIG_FILENAME);
+
+        private LazyDefaultConfigFileHolder() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
     }
 
     private String host;

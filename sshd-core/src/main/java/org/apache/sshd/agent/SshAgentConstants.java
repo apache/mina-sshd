@@ -83,12 +83,16 @@ public final class SshAgentConstants {
 
     private static final class LazyMessagesMapHolder {
         private static final Map<Integer, String> MESSAGES_MAP =
-                LoggingUtils.generateMnemonicMap(SshAgentConstants.class, f -> {
-                    String name = f.getName();
-                    return !name.startsWith("SSH_AGENT_CONSTRAIN")
-                            && (name.startsWith("SSH_AGENT") || name.startsWith("SSH2_AGENT"));
+            LoggingUtils.generateMnemonicMap(SshAgentConstants.class, f -> {
+                String name = f.getName();
+                return !name.startsWith("SSH_AGENT_CONSTRAIN")
+                        && (name.startsWith("SSH_AGENT") || name.startsWith("SSH2_AGENT"));
 
-                });
+            });
+
+        private LazyMessagesMapHolder() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
     }
 
     /**

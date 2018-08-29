@@ -312,7 +312,7 @@ public enum BuiltinCiphers implements CipherFactory {
         }
     }
 
-    public static class Constants {
+    public static final class Constants {
         public static final String NONE = "none";
         public static final Pattern NONE_CIPHER_PATTERN =
                 Pattern.compile("(^|.*,)" + NONE + "($|,.*)");
@@ -327,6 +327,10 @@ public enum BuiltinCiphers implements CipherFactory {
         public static final String ARCFOUR256 = "arcfour256";
         public static final String BLOWFISH_CBC = "blowfish-cbc";
         public static final String TRIPLE_DES_CBC = "3des-cbc";
+
+        private Constants() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
 
         /**
          * @param s A comma-separated list of ciphers - ignored if {@code null}/empty

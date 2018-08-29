@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.function.Consumer;
@@ -54,11 +55,11 @@ public final class LoggingUtils {
      *
      * @param clazz The {@link Class} to query
      * @param commonPrefix The expected common prefix
-     * @return A {@link Map} of all the matching fields, where key=the field's {@link Integer}
+     * @return A {@link NavigableMap} of all the matching fields, where key=the field's {@link Integer}
      * value and mapping=the field's name
      * @see #generateMnemonicMap(Class, Predicate)
      */
-    public static Map<Integer, String> generateMnemonicMap(Class<?> clazz, final String commonPrefix) {
+    public static NavigableMap<Integer, String> generateMnemonicMap(Class<?> clazz, final String commonPrefix) {
         return generateMnemonicMap(clazz, f -> {
             String name = f.getName();
             return name.startsWith(commonPrefix);
@@ -73,17 +74,17 @@ public final class LoggingUtils {
      * @param clazz The {@link Class} to query
      * @param acceptor The {@link Predicate} used to decide whether to process the {@link Field}
      * (besides being a {@link Number} and {@code public static final}).
-     * @return A {@link Map} of all the matching fields, where key=the field's {@link Integer}
+     * @return A {@link NavigableMap} of all the matching fields, where key=the field's {@link Integer}
      * value and mapping=the field's name
      * @see #getMnemonicFields(Class, Predicate)
      */
-    public static Map<Integer, String> generateMnemonicMap(Class<?> clazz, Predicate<? super Field> acceptor) {
+    public static NavigableMap<Integer, String> generateMnemonicMap(Class<?> clazz, Predicate<? super Field> acceptor) {
         Collection<Field> fields = getMnemonicFields(clazz, acceptor);
         if (GenericUtils.isEmpty(fields)) {
-            return Collections.emptyMap();
+            return Collections.emptyNavigableMap();
         }
 
-        Map<Integer, String> result = new TreeMap<>(Comparator.naturalOrder());
+        NavigableMap<Integer, String> result = new TreeMap<>(Comparator.naturalOrder());
         for (Field f : fields) {
             String name = f.getName();
             try {

@@ -158,5 +158,9 @@ public enum BuiltinDigests implements DigestFactory {
         public static final String SHA256 = "sha256";
         public static final String SHA384 = "sha384";
         public static final String SHA512 = "sha512";
+
+        private Constants() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
     }
 }

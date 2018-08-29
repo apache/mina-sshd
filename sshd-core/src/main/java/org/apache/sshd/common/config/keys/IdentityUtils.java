@@ -19,12 +19,12 @@
 
 package org.apache.sshd.common.config.keys;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.Collections;
@@ -47,10 +47,13 @@ public final class IdentityUtils {
 
     private static final class LazyDefaultUserHomeFolderHolder {
         private static final Path PATH =
-                new File(ValidateUtils.checkNotNullAndNotEmpty(System.getProperty("user.home"), "No user home"))
-                        .toPath()
-                        .toAbsolutePath()
-                        .normalize();
+            Paths.get(ValidateUtils.checkNotNullAndNotEmpty(System.getProperty("user.home"), "No user home"))
+                .toAbsolutePath()
+                .normalize();
+
+        private LazyDefaultUserHomeFolderHolder() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
     }
 
     /**

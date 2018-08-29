@@ -22,8 +22,12 @@ import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.Buffer;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
 public final class MinaSupport {
-
     private MinaSupport() {
         throw new UnsupportedOperationException("No instance allowed");
     }

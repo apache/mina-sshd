@@ -63,7 +63,12 @@ public class KnownHostEntry extends HostPatternsHolder {
     public static final String STD_HOSTS_FILENAME = "known_hosts";
 
     private static final class LazyDefaultConfigFileHolder {
-        private static final Path HOSTS_FILE = PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_HOSTS_FILENAME);
+        private static final Path HOSTS_FILE =
+            PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_HOSTS_FILENAME);
+
+        private LazyDefaultConfigFileHolder() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
     }
 
     private String line;

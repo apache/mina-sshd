@@ -53,18 +53,22 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implements PublickeyAuthenticator {
-
     /**
      * Standard OpenSSH authorized keys file name
      */
     public static final String STD_AUTHORIZED_KEYS_FILENAME = "authorized_keys";
 
     private static final class LazyDefaultAuthorizedKeysFileHolder {
-        private static final Path KEYS_FILE = PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_AUTHORIZED_KEYS_FILENAME);
+        private static final Path KEYS_FILE =
+            PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_AUTHORIZED_KEYS_FILENAME);
+
+        private LazyDefaultAuthorizedKeysFileHolder() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
     }
 
     private final AtomicReference<PublickeyAuthenticator> delegateHolder =  // assumes initially reject-all
-            new AtomicReference<>(RejectAllPublickeyAuthenticator.INSTANCE);
+        new AtomicReference<>(RejectAllPublickeyAuthenticator.INSTANCE);
 
     public AuthorizedKeysAuthenticator(File file) {
         this(Objects.requireNonNull(file, "No file to watch").toPath());
@@ -90,7 +94,7 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
 
         try {
             PublickeyAuthenticator delegate =
-                    Objects.requireNonNull(resolvePublickeyAuthenticator(username, session), "No delegate");
+                Objects.requireNonNull(resolvePublickeyAuthenticator(username, session), "No delegate");
             boolean accepted = delegate.authenticate(username, key, session);
             if (debugEnabled) {
                 log.debug("authenticate(" + username + ")[" + session + "][" + key.getAlgorithm() + "] accepted " + accepted + " from " + getPath());

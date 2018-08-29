@@ -204,5 +204,9 @@ public enum BuiltinIdentities implements Identity {
         public static final String DSA = KeyUtils.DSS_ALGORITHM;
         public static final String ECDSA = "ECDSA";
         public static final String ED25519 = "ED25519";
+
+        private Constants() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
     }
 }

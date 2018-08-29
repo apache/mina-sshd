@@ -227,9 +227,13 @@ public enum BuiltinCompressions implements CompressionFactory {
         }
     }
 
-    public static class Constants {
+    public static final class Constants {
         public static final String NONE = "none";
         public static final String ZLIB = "zlib";
         public static final String DELAYED_ZLIB = "zlib@openssh.com";
+
+        private Constants() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
     }
 }

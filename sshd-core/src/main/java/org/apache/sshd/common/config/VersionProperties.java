@@ -35,9 +35,13 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class VersionProperties {
-    private static final class LazyHolder {
+    private static final class LazyVersionPropertiesHolder {
         private static final NavigableMap<String, String> PROPERTIES =
-                Collections.unmodifiableNavigableMap(loadVersionProperties(LazyHolder.class));
+            Collections.unmodifiableNavigableMap(loadVersionProperties(LazyVersionPropertiesHolder.class));
+
+        private LazyVersionPropertiesHolder() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
 
         private static NavigableMap<String, String> loadVersionProperties(Class<?> anchor) {
             return loadVersionProperties(anchor, ThreadUtils.resolveDefaultClassLoader(anchor));
@@ -89,6 +93,6 @@ public final class VersionProperties {
      */
     @SuppressWarnings("synthetic-access")
     public static NavigableMap<String, String> getVersionProperties() {
-        return LazyHolder.PROPERTIES;
+        return LazyVersionPropertiesHolder.PROPERTIES;
     }
 }

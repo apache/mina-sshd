@@ -79,12 +79,15 @@ public class AESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
      */
     @SuppressWarnings("synthetic-access")
     public static List<Integer> getAvailableKeyLengths() {
-        return LazyValuesHolder.KEY_LENGTHS;
+        return LazyKeyLengthsHolder.KEY_LENGTHS;
     }
 
-    private static final class LazyValuesHolder {
-        private static final List<Integer> KEY_LENGTHS =
-                Collections.unmodifiableList(detectSupportedKeySizes());
+    private static final class LazyKeyLengthsHolder {
+        private static final List<Integer> KEY_LENGTHS = Collections.unmodifiableList(detectSupportedKeySizes());
+
+        private LazyKeyLengthsHolder() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
 
         // AES 256 requires special JCE policy extension installation
         private static List<Integer> detectSupportedKeySizes() {

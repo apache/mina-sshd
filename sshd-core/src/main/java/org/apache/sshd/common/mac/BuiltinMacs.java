@@ -265,5 +265,9 @@ public enum BuiltinMacs implements MacFactory {
         public static final String HMAC_SHA1_96 = "hmac-sha1-96";
         public static final String HMAC_SHA2_256 = "hmac-sha2-256";
         public static final String HMAC_SHA2_512 = "hmac-sha2-512";
+
+        private Constants() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
     }
 }

@@ -430,6 +430,10 @@ public enum ECCurves implements NamedResource, OptionalFeature {
         public static final String NISTP256 = "nistp256";
         public static final String NISTP384 = "nistp384";
         public static final String NISTP521 = "nistp521";
+
+        private Constants() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
     }
 
     /**

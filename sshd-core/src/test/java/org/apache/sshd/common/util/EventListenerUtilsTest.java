@@ -124,6 +124,10 @@ public class EventListenerUtilsTest extends BaseTestSupport {
         private String strValue;
         private Number numValue;
 
+        ProxyListenerImpl() {
+            super();
+        }
+
         public String getStringValue() {
             return strValue;
         }

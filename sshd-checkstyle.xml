@@ -7,10 +7,10 @@
     Checkstyle is very configurable. Be sure to read the documentation at
     http://checkstyle.sf.net (or in your downloaded distribution).
     To completely disable a check, just comment it out or delete it from the file.
-    
+
     Authors: Guillaume Nodet, Goldstein Lyor
  -->
- 
+
 <module name="Checker">
 	<!-- Checks whether files end with a new line.                        -->
 	<!-- See http://checkstyle.sf.net/config_misc.html#NewlineAtEndOfFile -->
@@ -77,7 +77,7 @@
             <property name="ordered" value="true" />
             <property name="separated" value="true" />
         </module>
-	
+
             <!--
                 <module name="ImportControl">
                     <property name="file" value="etc/import-control.xml" />
@@ -211,7 +211,7 @@
         <!--<module name="ParameterAssignment" />-->
         <module name="ExplicitInitialization" />
         <module name="DefaultComesLast" />
-        <!--<module name="MissingCtor" />-->
+        <module name="MissingCtor" />
         <module name="FallThrough" />
         <!--<module name="MultipleStringLiterals" />-->
         <module name="VariableDeclarationUsageDistance">
@@ -314,4 +314,3 @@
 		<property name="eachLine" value="true" />
 	</module>
 </module>
-

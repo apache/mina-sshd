@@ -162,6 +162,10 @@ public class KeepAliveTest extends BaseTestSupport {
     }
 
     public static class TestEchoShellFactory extends EchoShellFactory {
+        public TestEchoShellFactory() {
+            super();
+        }
+
         @Override
         public Command create() {
             return new TestEchoShell();
@@ -172,6 +176,10 @@ public class KeepAliveTest extends BaseTestSupport {
         // CHECKSTYLE:OFF
         public static CountDownLatch latch;
         // CHECKSTYLE:ON
+
+        public TestEchoShell() {
+            super();
+        }
 
         @Override
         public void destroy() {

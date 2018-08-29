@@ -175,6 +175,10 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
 
     private static final class LazyDefaultIoServiceFactoryFactoryHolder {
         private static final DefaultIoServiceFactoryFactory INSTANCE = new DefaultIoServiceFactoryFactory();
+
+        private LazyDefaultIoServiceFactoryFactoryHolder() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
     }
 
     @SuppressWarnings("synthetic-access")

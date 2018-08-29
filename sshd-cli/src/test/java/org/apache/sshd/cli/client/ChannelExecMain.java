@@ -34,6 +34,10 @@ import org.apache.sshd.util.test.BaseTestSupport;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelExecMain extends BaseTestSupport {
+    public ChannelExecMain() {
+        super();
+    }
+
     public static void doExecuteCommands(
             BufferedReader stdin, PrintStream stdout, PrintStream stderr, ClientSession session) throws Exception {
         while (true) {

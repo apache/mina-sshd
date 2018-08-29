@@ -408,5 +408,9 @@ public enum BuiltinDHFactories implements DHFactory {
         public static final String ECDH_SHA2_NISTP256 = "ecdh-sha2-nistp256";
         public static final String ECDH_SHA2_NISTP384 = "ecdh-sha2-nistp384";
         public static final String ECDH_SHA2_NISTP521 = "ecdh-sha2-nistp521";
+
+        private Constants() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
     }
 }

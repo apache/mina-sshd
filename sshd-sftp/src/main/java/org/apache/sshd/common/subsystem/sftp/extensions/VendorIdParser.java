@@ -42,6 +42,10 @@ public class VendorIdParser extends AbstractParser<VendorId> {
         public long productBuildNumber;
         // CHECKSTYLE:ON
 
+        public VendorId() {
+            super();
+        }
+
         @Override
         public String toString() {
             return vendorName + "-" + productName + "-" + productVersion + "-" + productBuildNumber;
@@ -67,5 +71,4 @@ public class VendorIdParser extends AbstractParser<VendorId> {
         id.productBuildNumber = buffer.getLong();
         return id;
     }
-
 }

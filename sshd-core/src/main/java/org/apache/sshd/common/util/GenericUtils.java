@@ -534,12 +534,22 @@ public final class GenericUtils {
         return CASE_INSENSITIVE_MAP_FACTORY;
     }
 
-    public static <K, V> Map<V, K> flipMap(Map<? extends K, ? extends V> map, Supplier<? extends Map<V, K>> mapCreator, boolean allowDuplicates) {
-        if (isEmpty(map)) {
-            return Collections.emptyMap();
-        }
-
-        Map<V, K> result = Objects.requireNonNull(mapCreator.get(), "No map created");
+    /**
+     * Flips between keys and values of an input map
+     *
+     * @param <K> Original map key type
+     * @param <V> Original map value type
+     * @param <M> Flipped map type
+     * @param map The original map to flip
+     * @param mapCreator The creator of the target map
+     * @param allowDuplicates Whether to ignore duplicates on flip
+     * @return The flipped map result
+     * @throws IllegalArgumentException if <tt>allowDuplicates</tt> is {@code false}
+     * and a duplicate value found in the original map.
+     */
+    public static <K, V, M extends Map<V, K>> M flipMap(
+            Map<? extends K, ? extends V> map, Supplier<? extends M> mapCreator, boolean allowDuplicates) {
+        M result = Objects.requireNonNull(mapCreator.get(), "No map created");
         map.forEach((key, value) -> {
             K prev = result.put(value, key);
             if ((prev != null) && (!allowDuplicates)) {
@@ -551,8 +561,8 @@ public final class GenericUtils {
     }
 
     @SafeVarargs
-    public static <K, V> Map<K, V> mapValues(
-            Function<? super V, ? extends K> keyMapper, Supplier<? extends Map<K, V>> mapCreator, V... values) {
+    public static <K, V, M extends Map<K, V>> M mapValues(
+            Function<? super V, ? extends K> keyMapper, Supplier<? extends M> mapCreator, V... values) {
         return mapValues(keyMapper, mapCreator, isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
     }
 
@@ -561,6 +571,7 @@ public final class GenericUtils {
      *
      * @param <K> The key type
      * @param <V> The value type
+     * @param <M> The result {@link Map} type
      * @param keyMapper The {@link Function} that generates a key for a given value.
      * If the returned key is {@code null} then the value is not mapped
      * @param mapCreator The {@link Supplier} used to create/retrieve the result map - provided
@@ -569,13 +580,9 @@ public final class GenericUtils {
      * @return The resulting {@link Map} - <B>Note:</B> no validation is made to ensure
      * that 2 (or more) values are not mapped to the same key
      */
-    public static <K, V> Map<K, V> mapValues(
-            Function<? super V, ? extends K> keyMapper, Supplier<? extends Map<K, V>> mapCreator, Collection<V> values) {
-        if (isEmpty(values)) {
-            return Collections.emptyMap();
-        }
-
-        Map<K, V> map = mapCreator.get();
+    public static <K, V, M extends Map<K, V>> M mapValues(
+            Function<? super V, ? extends K> keyMapper, Supplier<? extends M> mapCreator, Collection<? extends V> values) {
+        M map = mapCreator.get();
         for (V v : values) {
             K k = keyMapper.apply(v);
             if (k == null) {
