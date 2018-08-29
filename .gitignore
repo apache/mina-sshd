@@ -15,4 +15,5 @@ RemoteSystemsTempFiles/
 .idea
 .springBeans
 .externalToolBuilders
+*.ser
 

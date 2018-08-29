@@ -556,9 +556,7 @@
                     <version>0.12</version>
                     <configuration>
                         <excludes>
-                            <exclude>**/*.iml</exclude>
                             <exclude>README.md</exclude>
-                            <exclude>*pmd*</exclude>
                             <exclude>src/docs/**</exclude>
                             <exclude>src/test/resources/**</exclude>
                             <exclude>**/stty-output-*.txt</exclude>
@@ -566,7 +564,12 @@
                             <exclude>*findbugs*</exclude>
                             <exclude>*suppressions*</exclude>
                             <exclude>**/big-msg.txt</exclude>
-                                <!-- Eclipse files -->
+                            <exclude>LICENSE*</exclude>
+                            <exclude>NOTICE*</exclude>
+                                <!-- IDE files -->
+                            <exclude>*pmd*</exclude>
+                            <exclude>*.ser</exclude>
+                            <exclude>*.iml</exclude>
                             <exclude>.metadata/**</exclude>
                             <exclude>.recommenders/**</exclude>
                             <exclude>RemoteSystemsTempFiles/**</exclude>
@@ -575,8 +578,6 @@
                             <exclude>.springBeans</exclude>
                             <exclude>.settings/**</exclude>
                             <exclude>.repository/**</exclude>
-                            <exclude>LICENSE*</exclude>
-                            <exclude>NOTICE*</exclude>
                         </excludes>
                     </configuration>
                 </plugin>
