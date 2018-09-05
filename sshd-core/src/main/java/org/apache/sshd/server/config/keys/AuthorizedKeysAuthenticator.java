@@ -131,7 +131,9 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
             if (exists()) {
                 Collection<AuthorizedKeyEntry> entries = reloadAuthorizedKeys(path, username, session);
                 if (GenericUtils.size(entries) > 0) {
-                    delegateHolder.set(AuthorizedKeyEntry.fromAuthorizedEntries(getFallbackPublicKeyEntryResolver(), entries));
+                    PublickeyAuthenticator authDelegate =
+                        PublickeyAuthenticator.fromAuthorizedEntries(getFallbackPublicKeyEntryResolver(), entries);
+                    delegateHolder.set(authDelegate);
                 }
             } else {
                 log.info("resolvePublickeyAuthenticator(" + username + ")[" + session + "] no authorized keys file at " + path);

@@ -38,6 +38,11 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-core</artifactId>
             <version>${project.version}</version>
         </dependency>

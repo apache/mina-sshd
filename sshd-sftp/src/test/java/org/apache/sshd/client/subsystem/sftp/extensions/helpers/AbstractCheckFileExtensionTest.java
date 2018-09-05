@@ -49,8 +49,8 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.apache.sshd.util.test.Utils;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -159,7 +159,7 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
     @SuppressWarnings("checkstyle:nestedtrydepth")
     private void testCheckFileExtension(NamedFactory<? extends Digest> factory, byte[] data, int hashBlockSize, byte[] expectedHash) throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve(factory.getName() + "-data-" + data.length + "-" + hashBlockSize + ".txt");
         Files.write(srcFile, data, IoUtils.EMPTY_OPEN_OPTIONS);
 
@@ -175,8 +175,8 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
         }
 
         Path parentPath = targetPath.getParent();
-        String srcPath = Utils.resolveRelativeRemotePath(parentPath, srcFile);
-        String srcFolder = Utils.resolveRelativeRemotePath(parentPath, srcFile.getParent());
+        String srcPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
+        String srcFolder = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile.getParent());
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);

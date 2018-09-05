@@ -30,6 +30,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
@@ -138,7 +139,7 @@ public class SshServerMain extends SshServerCliSupport {
                         keyFiles = new LinkedList<>();
                     }
                     keyFiles.add(optValue);
-                } else if (SshConfigFileReader.PORT_CONFIG_PROP.equals(optName)) {
+                } else if (ConfigFileReaderSupport.PORT_CONFIG_PROP.equals(optName)) {
                     port = Integer.parseInt(optValue);
                 } else {
                     options.put(optName, optValue);
@@ -166,7 +167,7 @@ public class SshServerMain extends SshServerCliSupport {
         setupServerBanner(sshd, resolver);
         sshd.setPort(port);
 
-        String macsOverride = resolver.getString(SshConfigFileReader.MACS_CONFIG_PROP);
+        String macsOverride = resolver.getString(ConfigFileReaderSupport.MACS_CONFIG_PROP);
         if (GenericUtils.isNotEmpty(macsOverride)) {
             SshConfigFileReader.configureMacs(sshd, macsOverride, true, true);
         }

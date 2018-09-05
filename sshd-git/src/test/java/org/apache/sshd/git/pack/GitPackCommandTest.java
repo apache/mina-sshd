@@ -30,8 +30,8 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.AcceptAllPasswordAuthenticator;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
-import org.apache.sshd.util.test.Utils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -79,14 +79,14 @@ public class GitPackCommandTest extends BaseTestSupport {
             int port = sshd.getPort();
             try {
                 Path serverDir = serverRootDir.resolve(getCurrentTestName() + Constants.DOT_GIT_EXT);
-                Utils.deleteRecursive(serverDir);
+                CommonTestSupportUtils.deleteRecursive(serverDir);
                 Git.init().setBare(true).setDirectory(serverDir.toFile()).call();
 
                 JSch.setConfig("StrictHostKeyChecking", "no");
                 CredentialsProvider.setDefault(new UsernamePasswordCredentialsProvider(getCurrentTestName(), getCurrentTestName()));
                 Path localRootDir = gitRootDir.resolve("local");
                 Path localDir = localRootDir.resolve(serverDir.getFileName());
-                Utils.deleteRecursive(localDir);
+                CommonTestSupportUtils.deleteRecursive(localDir);
 
                 SshClient client = SshClient.setUpDefaultClient();
                 SshSessionFactory.setInstance(new GitSshdSessionFactory(client));

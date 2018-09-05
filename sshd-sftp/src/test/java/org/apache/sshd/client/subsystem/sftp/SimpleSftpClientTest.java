@@ -33,7 +33,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
-import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.client.simple.BaseSimpleClientTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -80,11 +80,11 @@ public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
 
     @Test
     public void testSftpProxyCalls() throws Exception {
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
-        Utils.deleteRecursive(lclSftp);
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(lclSftp);
         Path clientFolder = assertHierarchyTargetFolderExists(lclSftp).resolve("client");
         Path clientFile = clientFolder.resolve("file.txt");
-        String remoteFileDir = Utils.resolveRelativeRemotePath(parentPath, clientFolder);
+        String remoteFileDir = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, clientFolder);
         String clientFileName = clientFile.getFileName().toString();
         String remoteFilePath = remoteFileDir + "/" + clientFileName;
 

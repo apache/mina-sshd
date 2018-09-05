@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -43,21 +43,21 @@ import org.mockito.Mockito;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
-public class PropertyResolverUtilsTest extends BaseTestSupport {
+public class PropertyResolverUtilsTest extends JUnitTestSupport {
     public PropertyResolverUtilsTest() {
         super();
     }
 
     @Test
     public void testResolveAndUpdateClosestPropertyValue() {
-        final String propName = getCurrentTestName();
-        final String rootValue = getClass().getPackage().getName();
+        String propName = getCurrentTestName();
+        String rootValue = getClass().getPackage().getName();
         Session resolver = createMockSession();
         FactoryManager root = Objects.requireNonNull(resolver.getFactoryManager(), "No manager");
         assertNull("Unexpected root previous value", PropertyResolverUtils.updateProperty(root, propName, rootValue));
         assertSame("Mismatched root value", rootValue, PropertyResolverUtils.getString(resolver, propName));
 
-        final String nodeValue = getClass().getSimpleName();
+        String nodeValue = getClass().getSimpleName();
         assertNull("Unexpected node previous value", PropertyResolverUtils.updateProperty(resolver, propName, nodeValue));
         assertSame("Mismatched node value", nodeValue, PropertyResolverUtils.getString(resolver, propName));
     }
@@ -90,7 +90,7 @@ public class PropertyResolverUtilsTest extends BaseTestSupport {
             System.clearProperty(propKey);
         }
 
-        for (final boolean expected : new boolean[]{false, true}) {
+        for (boolean expected : new boolean[]{false, true}) {
             try {
                 System.setProperty(propKey, Boolean.toString(expected));
                 testBooleanProperty(resolver, propName, expected);
@@ -102,8 +102,8 @@ public class PropertyResolverUtilsTest extends BaseTestSupport {
 
     @Test
     public void testLongProperty() {
-        final long expected = System.currentTimeMillis();
-        final String name = getCurrentTestName();
+        long expected = System.currentTimeMillis();
+        String name = getCurrentTestName();
 
         Session session = createMockSession();
         assertEquals("Mismatched empty props value", expected, PropertyResolverUtils.getLongProperty(session, name, expected));
@@ -137,8 +137,8 @@ public class PropertyResolverUtilsTest extends BaseTestSupport {
 
     @Test
     public void testIntegerProperty() {
-        final int expected = 3777347;
-        final String name = getCurrentTestName();
+        int expected = 3777347;
+        String name = getCurrentTestName();
 
         Session session = createMockSession();
         assertEquals("Mismatched empty props value", expected, PropertyResolverUtils.getIntProperty(session, name, expected));
@@ -176,8 +176,8 @@ public class PropertyResolverUtilsTest extends BaseTestSupport {
 
     @Test
     public void testBooleanProperty() {
-        for (final boolean expected : new boolean[]{false, true}) {
-            final String name = getCurrentTestName();
+        for (boolean expected : new boolean[]{false, true}) {
+            String name = getCurrentTestName();
 
             Session session = createMockSession();
             assertEquals("Mismatched empty props value", expected, PropertyResolverUtils.getBooleanProperty(session, name, expected));

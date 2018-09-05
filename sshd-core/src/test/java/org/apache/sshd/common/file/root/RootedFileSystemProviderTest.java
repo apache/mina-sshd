@@ -37,8 +37,8 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.TreeSet;
 
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.NoIoTestCase;
-import org.apache.sshd.util.test.Utils;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -67,7 +67,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     @BeforeClass
     public static void initializeFileSystem() throws IOException {
         Path targetFolder = Objects.requireNonNull(
-                Utils.detectTargetFolder(RootedFileSystemProviderTest.class), "Failed to detect target folder").toPath();
+            CommonTestSupportUtils.detectTargetFolder(RootedFileSystemProviderTest.class), "Failed to detect target folder").toPath();
         rootSandbox = FileHelper.createTestSandbox(targetFolder.resolve(TEMP_SUBFOLDER_NAME));
         fileSystem = (RootedFileSystem) new RootedFileSystemProvider().newFileSystem(rootSandbox, Collections.emptyMap());
     }

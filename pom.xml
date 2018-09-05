@@ -1135,6 +1135,7 @@
     </reporting>
 
     <modules>
+        <module>sshd-common</module>
         <module>sshd-core</module>
         <module>sshd-mina</module>
         <module>sshd-netty</module>

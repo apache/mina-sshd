@@ -20,7 +20,7 @@
 package org.apache.sshd.server.subsystem.sftp;
 
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
-import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -33,7 +33,7 @@ import org.mockito.Mockito;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
-public class SftpSubsystemFactoryTest extends BaseTestSupport {
+public class SftpSubsystemFactoryTest extends JUnitTestSupport {
     public SftpSubsystemFactoryTest() {
         super();
     }

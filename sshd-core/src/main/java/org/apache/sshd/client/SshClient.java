@@ -25,6 +25,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.ArrayList;
@@ -47,6 +48,7 @@ import org.apache.sshd.client.auth.password.UserAuthPasswordFactory;
 import org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory;
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
+import org.apache.sshd.client.config.keys.ClientIdentity;
 import org.apache.sshd.client.config.keys.ClientIdentityLoader;
 import org.apache.sshd.client.config.keys.DefaultClientIdentitiesWatcher;
 import org.apache.sshd.client.future.ConnectFuture;
@@ -68,6 +70,7 @@ import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.IoConnectFuture;
@@ -768,5 +771,62 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
      */
     public static SshClient setUpDefaultClient() {
         return ClientBuilder.builder().build();
+    }
+
+    /**
+     * @param <C>           The generic client class
+     * @param client        The {@link SshClient} to updated
+     * @param strict        If {@code true} then files that do not have the required
+     *                      access rights are excluded from consideration
+     * @param supportedOnly If {@code true} then ignore identities that are not
+     *                      supported internally
+     * @param provider      A {@link FilePasswordProvider} - may be {@code null}
+     *                      if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
+     *                      to {@link FilePasswordProvider#getPassword(String)} is the path of the
+     *                      file whose key is to be loaded
+     * @param options       The {@link LinkOption}s to apply when checking
+     *                      for existence
+     * @return The updated <tt>client</tt> instance - provided a non-{@code null}
+     * {@link KeyPairProvider} was generated
+     * @throws IOException              If failed to access the file system
+     * @throws GeneralSecurityException If failed to load the keys
+     * @see #setKeyPairProvider(SshClient, Path, boolean, boolean, FilePasswordProvider, LinkOption...)
+     */
+    public static <C extends SshClient> C setKeyPairProvider(
+            C client, boolean strict, boolean supportedOnly, FilePasswordProvider provider, LinkOption... options)
+            throws IOException, GeneralSecurityException {
+        return setKeyPairProvider(client, PublicKeyEntry.getDefaultKeysFolderPath(), strict, supportedOnly, provider, options);
+    }
+
+    /**
+     * @param <C>           The generic client class
+     * @param client        The {@link SshClient} to updated
+     * @param dir           The folder to scan for the built-in identities
+     * @param strict        If {@code true} then files that do not have the required
+     *                      access rights are excluded from consideration
+     * @param supportedOnly If {@code true} then ignore identities that are not
+     *                      supported internally
+     * @param provider      A {@link FilePasswordProvider} - may be {@code null}
+     *                      if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
+     *                      to {@link FilePasswordProvider#getPassword(String)} is the path of the
+     *                      file whose key is to be loaded
+     * @param options       The {@link LinkOption}s to apply when checking
+     *                      for existence
+     * @return The updated <tt>client</tt> instance - provided a non-{@code null}
+     * {@link KeyPairProvider} was generated
+     * @throws IOException              If failed to access the file system
+     * @throws GeneralSecurityException If failed to load the keys
+     * @see #loadDefaultKeyPairProvider(Path, boolean, boolean, FilePasswordProvider, LinkOption...)
+     */
+    public static <C extends SshClient> C setKeyPairProvider(
+            C client, Path dir, boolean strict, boolean supportedOnly, FilePasswordProvider provider, LinkOption... options)
+            throws IOException, GeneralSecurityException {
+        KeyPairProvider kpp =
+            ClientIdentity.loadDefaultKeyPairProvider(dir, strict, supportedOnly, provider, options);
+        if (kpp != null) {
+            client.setKeyPairProvider(kpp);
+        }
+
+        return client;
     }
 }

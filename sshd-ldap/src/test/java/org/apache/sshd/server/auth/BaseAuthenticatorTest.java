@@ -55,8 +55,8 @@ import org.apache.directory.shared.ldap.schema.registries.SchemaLoader;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.NoIoTestCase;
-import org.apache.sshd.util.test.Utils;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,8 +103,9 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
     @SuppressWarnings("checkstyle:avoidnestedblocks")
     public static SimpleImmutableEntry<LdapServer, DirectoryService> startApacheDs(Class<?> anchor) throws Exception {
         Logger log = LoggerFactory.getLogger(anchor);
-        File targetFolder = Objects.requireNonNull(Utils.detectTargetFolder(anchor), "Failed to detect target folder");
-        File workingDirectory = assertHierarchyTargetFolderExists(Utils.deleteRecursive(Utils.resolve(targetFolder, anchor.getSimpleName(), "apacheds-work")));
+        File targetFolder = Objects.requireNonNull(CommonTestSupportUtils.detectTargetFolder(anchor), "Failed to detect target folder");
+        File anchorFolder = CommonTestSupportUtils.resolve(targetFolder, anchor.getSimpleName(), "apacheds-work");
+        File workingDirectory = assertHierarchyTargetFolderExists(CommonTestSupportUtils.deleteRecursive(anchorFolder));
 
         DirectoryService directoryService = new DefaultDirectoryService();
         directoryService.setWorkingDirectory(workingDirectory);
@@ -140,7 +141,9 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
         {
             JdbmPartition systemPartition = new JdbmPartition();
             systemPartition.setId("system");
-            systemPartition.setPartitionDir(assertHierarchyTargetFolderExists(Utils.deleteRecursive(new File(workingDirectory, systemPartition.getId()))));
+
+            File partitionFolder = CommonTestSupportUtils.deleteRecursive(new File(workingDirectory, systemPartition.getId()));
+            systemPartition.setPartitionDir(assertHierarchyTargetFolderExists(partitionFolder));
             systemPartition.setSuffix(ServerDNConstants.SYSTEM_DN);
             systemPartition.setSchemaManager(schemaManager);
             directoryService.setSystemPartition(systemPartition);
@@ -151,7 +154,9 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
             JdbmPartition partition = new JdbmPartition();
             partition.setId("users");
             partition.setSuffix(BASE_DN_TEST);
-            partition.setPartitionDir(assertHierarchyTargetFolderExists(Utils.deleteRecursive(new File(workingDirectory, partition.getId()))));
+
+            File partitionFolder = CommonTestSupportUtils.deleteRecursive(new File(workingDirectory, partition.getId()));
+            partition.setPartitionDir(assertHierarchyTargetFolderExists(partitionFolder));
             directoryService.addPartition(partition);
         }
 
@@ -251,7 +256,7 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
         log.info("Directory service shut down");
 
         log.info("Deleting " + workDir.getAbsolutePath());
-        Utils.deleteRecursive(workDir);
+        CommonTestSupportUtils.deleteRecursive(workDir);
         log.info(workDir.getAbsolutePath() + " deleted");
     }
 }

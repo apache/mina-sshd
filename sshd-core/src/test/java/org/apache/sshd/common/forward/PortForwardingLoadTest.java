@@ -51,9 +51,9 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
-import org.apache.sshd.util.test.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -365,7 +365,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             ss.setReuseAddress(true);
             ss.bind(new InetSocketAddress((InetAddress) null, 0));
             int forwardedPort = ss.getLocalPort();
-            int sinkPort = Utils.getFreePort();
+            int sinkPort = CoreTestSupportUtils.getFreePort();
             session.setPortForwardingR(sinkPort, TEST_LOCALHOST, forwardedPort);
             final boolean started[] = new boolean[1];
             started[0] = false;
@@ -493,7 +493,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
         Session session = createSession();
         try {
             final int forwardedPort1 = session.setPortForwardingL(0, host, port);
-            final int forwardedPort2 = Utils.getFreePort();
+            final int forwardedPort2 = CoreTestSupportUtils.getFreePort();
             session.setPortForwardingR(forwardedPort2, TEST_LOCALHOST, forwardedPort1);
             outputDebugMessage("URL: http://localhost %s", forwardedPort2);
 

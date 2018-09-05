@@ -40,7 +40,7 @@ import org.apache.sshd.cli.CliSupport;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
-import org.apache.sshd.common.config.SshConfigFileReader;
+import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -166,7 +166,7 @@ public abstract class SshServerCliSupport extends CliSupport {
             return subsystems;
         }
 
-        String nameList = (options == null) ? null : options.getString(SshConfigFileReader.SUBSYSTEM_CONFIG_PROP);
+        String nameList = (options == null) ? null : options.getString(ConfigFileReaderSupport.SUBSYSTEM_CONFIG_PROP);
         if ("none".equalsIgnoreCase(nameList)) {
             return Collections.emptyList();
         }

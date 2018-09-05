@@ -24,8 +24,8 @@ import java.net.SocketAddress;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.LogLevelValue;
-import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.BuiltinIoServiceFactoryFactories;
 import org.apache.sshd.common.io.IoAcceptor;
@@ -105,14 +105,14 @@ public abstract class CliSupport {
 
         manager.setIoServiceFactoryFactory(factory.create());
 
-        String levelValue = (options == null) ? null : Objects.toString(options.get(SshConfigFileReader.LOG_LEVEL_CONFIG_PROP), null);
+        String levelValue = (options == null) ? null : Objects.toString(options.get(ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP), null);
         if (GenericUtils.isEmpty(levelValue)) {
             return manager;
         }
 
         LogLevelValue level = LogLevelValue.fromName(levelValue);
         if (level == null) {
-            throw new IllegalArgumentException("Unknown " + SshConfigFileReader.LOG_LEVEL_CONFIG_PROP + " option value: " + levelValue);
+            throw new IllegalArgumentException("Unknown " + ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP + " option value: " + levelValue);
         }
 
         if ((level != LogLevelValue.FATAL) && (level != LogLevelValue.ERROR) && (level != LogLevelValue.INFO)) {

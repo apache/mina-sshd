@@ -48,7 +48,7 @@ public class UserAuthPassword extends AbstractUserAuth {
     @Override
     public void init(ClientSession session, String service) throws Exception {
         super.init(session, service);
-        passwords = PasswordIdentityProvider.iteratorOf(session);
+        passwords = ClientSession.passwordIteratorOf(session);
     }
 
     @Override

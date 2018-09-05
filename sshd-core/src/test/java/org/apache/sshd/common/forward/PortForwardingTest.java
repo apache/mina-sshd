@@ -58,9 +58,9 @@ import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.global.CancelTcpipForwardHandler;
 import org.apache.sshd.server.global.TcpipForwardHandler;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
-import org.apache.sshd.util.test.Utils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -157,7 +157,7 @@ public class PortForwardingTest extends BaseTestSupport {
     @BeforeClass
     public static void setUpTestEnvironment() throws Exception {
         JSchLogger.init();
-        sshd = Utils.setupTestServer(PortForwardingTest.class);
+        sshd = CoreTestSupportUtils.setupTestServer(PortForwardingTest.class);
         PropertyResolverUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 2048);
         PropertyResolverUtils.updateProperty(sshd, FactoryManager.MAX_PACKET_SIZE, 256);
         sshd.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
@@ -221,7 +221,7 @@ public class PortForwardingTest extends BaseTestSupport {
         acceptor.bind(new InetSocketAddress(0));
         echoPort = acceptor.getLocalAddress().getPort();
 
-        client = Utils.setupTestClient(PortForwardingTest.class);
+        client = CoreTestSupportUtils.setupTestClient(PortForwardingTest.class);
         client.start();
     }
 
@@ -262,7 +262,7 @@ public class PortForwardingTest extends BaseTestSupport {
     public void testRemoteForwarding() throws Exception {
         Session session = createSession();
         try {
-            int forwardedPort = Utils.getFreePort();
+            int forwardedPort = CoreTestSupportUtils.getFreePort();
             session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
             waitForForwardingRequest(TcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
 
@@ -293,7 +293,7 @@ public class PortForwardingTest extends BaseTestSupport {
     public void testRemoteForwardingSecondTimeInSameSession() throws Exception {
         Session session = createSession();
         try {
-            int forwardedPort = Utils.getFreePort();
+            int forwardedPort = CoreTestSupportUtils.getFreePort();
             session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
             waitForForwardingRequest(TcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
 
@@ -465,7 +465,7 @@ public class PortForwardingTest extends BaseTestSupport {
     public void testLocalForwarding() throws Exception {
         Session session = createSession();
         try {
-            int forwardedPort = Utils.getFreePort();
+            int forwardedPort = CoreTestSupportUtils.getFreePort();
             session.setPortForwardingL(forwardedPort, TEST_LOCALHOST, echoPort);
 
             try (Socket s = new Socket(TEST_LOCALHOST, forwardedPort);
@@ -674,7 +674,7 @@ public class PortForwardingTest extends BaseTestSupport {
         Session session = createSession();
         try {
             // 1. Create a Port Forward
-            int forwardedPort = Utils.getFreePort();
+            int forwardedPort = CoreTestSupportUtils.getFreePort();
             session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
             waitForForwardingRequest(TcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
 

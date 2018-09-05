@@ -406,7 +406,7 @@ public class AbstractSessionTest extends BaseTestSupport {
 
     public static class MySession extends AbstractSession {
         public MySession() {
-            super(true, org.apache.sshd.util.test.Utils.setupTestServer(AbstractSessionTest.class), new MyIoSession());
+            super(true, org.apache.sshd.util.test.CoreTestSupportUtils.setupTestServer(AbstractSessionTest.class), new MyIoSession());
         }
 
         @Override

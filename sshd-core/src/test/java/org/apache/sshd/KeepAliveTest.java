@@ -35,9 +35,9 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.EchoShell;
 import org.apache.sshd.util.test.EchoShellFactory;
-import org.apache.sshd.util.test.Utils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -65,12 +65,12 @@ public class KeepAliveTest extends BaseTestSupport {
 
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
-        sshd = Utils.setupTestServer(KeepAliveTest.class);
+        sshd = CoreTestSupportUtils.setupTestServer(KeepAliveTest.class);
         sshd.setShellFactory(new TestEchoShellFactory());
         sshd.start();
         port = sshd.getPort();
 
-        client = Utils.setupTestClient(KeepAliveTest.class);
+        client = CoreTestSupportUtils.setupTestClient(KeepAliveTest.class);
         client.start();
     }
 

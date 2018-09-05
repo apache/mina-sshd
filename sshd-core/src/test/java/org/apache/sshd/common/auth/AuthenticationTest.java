@@ -74,7 +74,7 @@ import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerSessionImpl;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -587,14 +587,14 @@ public class AuthenticationTest extends BaseTestSupport {
     @Test   // see SSHD-618
     public void testPublicKeyAuthDifferentThanKex() throws Exception {
         KeyPairProvider serverKeys = KeyPairProvider.wrap(
-                    Utils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024),
-                    Utils.generateKeyPair(KeyUtils.DSS_ALGORITHM, 512),
-                    Utils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256));
+                    CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024),
+                    CommonTestSupportUtils.generateKeyPair(KeyUtils.DSS_ALGORITHM, 512),
+                    CommonTestSupportUtils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256));
         sshd.setKeyPairProvider(serverKeys);
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
 
-        final KeyPair clientIdentity = Utils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256);
+        final KeyPair clientIdentity = CommonTestSupportUtils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256);
         sshd.setPublickeyAuthenticator((username, key, session) -> {
             String keyType = KeyUtils.getKeyType(key);
             String expType = KeyUtils.getKeyType(clientIdentity);
@@ -650,7 +650,7 @@ public class AuthenticationTest extends BaseTestSupport {
                                     super.sendPublicKeyResponse(session, username, KeyPairProvider.SSH_DSS, key, keyBlob, offset, blobLen, buffer);
                                 } else if (count == 2) {
                                     // send another key
-                                    KeyPair otherPair = org.apache.sshd.util.test.Utils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
+                                    KeyPair otherPair = org.apache.sshd.util.test.CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
                                     PublicKey otherKey = otherPair.getPublic();
                                     Buffer buf = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_PK_OK, blobLen + alg.length() + Long.SIZE);
                                     buf.putString(alg);
@@ -666,7 +666,7 @@ public class AuthenticationTest extends BaseTestSupport {
         }));
 
         try (SshClient client = setupTestClient()) {
-            KeyPair clientIdentity = Utils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
+            KeyPair clientIdentity = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
             client.start();
 
             try {
@@ -693,7 +693,7 @@ public class AuthenticationTest extends BaseTestSupport {
     public void testHostBasedAuthentication() throws Exception {
         String hostClienUser = getClass().getSimpleName();
         String hostClientName = SshdSocketAddress.toAddressString(SshdSocketAddress.getFirstExternalNetwork4Address());
-        KeyPair hostClientKey = Utils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
+        KeyPair hostClientKey = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
         AtomicInteger invocationCount = new AtomicInteger(0);
         sshd.setHostBasedAuthenticator((session, username, clientHostKey, clientHostName, clientUsername, certificates) -> {
             invocationCount.incrementAndGet();
@@ -751,7 +751,7 @@ public class AuthenticationTest extends BaseTestSupport {
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
 
         try (SshClient client = setupTestClient()) {
-            KeyPair kp = Utils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
+            KeyPair kp = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
             client.start();
             try {
                 for (int index = 1; index < 3; index++) {

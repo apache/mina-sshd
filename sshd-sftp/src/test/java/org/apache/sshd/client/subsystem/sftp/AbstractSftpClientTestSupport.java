@@ -31,8 +31,8 @@ import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
-import org.apache.sshd.util.test.Utils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -55,12 +55,12 @@ public abstract class AbstractSftpClientTestSupport extends BaseTestSupport {
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
         JSchLogger.init();
-        sshd = Utils.setupTestServer(AbstractSftpClientTestSupport.class);
+        sshd = CoreTestSupportUtils.setupTestServer(AbstractSftpClientTestSupport.class);
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
         sshd.start();
         port = sshd.getPort();
 
-        client = Utils.setupTestClient(AbstractSftpClientTestSupport.class);
+        client = CoreTestSupportUtils.setupTestClient(AbstractSftpClientTestSupport.class);
         client.start();
     }
 

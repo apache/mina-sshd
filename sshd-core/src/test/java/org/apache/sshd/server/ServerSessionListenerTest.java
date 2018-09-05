@@ -44,7 +44,7 @@ import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -68,11 +68,11 @@ public class ServerSessionListenerTest extends BaseTestSupport {
 
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
-        sshd = Utils.setupTestServer(ServerSessionListenerTest.class);
+        sshd = CoreTestSupportUtils.setupTestServer(ServerSessionListenerTest.class);
         sshd.start();
         port = sshd.getPort();
 
-        client = Utils.setupTestClient(ServerSessionListenerTest.class);
+        client = CoreTestSupportUtils.setupTestClient(ServerSessionListenerTest.class);
         client.start();
     }
 

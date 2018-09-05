@@ -29,7 +29,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommandExecutionHelper;
-import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -51,11 +51,11 @@ public class ClientSessionTest extends BaseTestSupport {
 
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
-        sshd = Utils.setupTestServer(ClientSessionTest.class);
+        sshd = CoreTestSupportUtils.setupTestServer(ClientSessionTest.class);
         sshd.start();
         port = sshd.getPort();
 
-        client = Utils.setupTestClient(ClientSessionTest.class);
+        client = CoreTestSupportUtils.setupTestClient(ClientSessionTest.class);
         client.start();
     }
 

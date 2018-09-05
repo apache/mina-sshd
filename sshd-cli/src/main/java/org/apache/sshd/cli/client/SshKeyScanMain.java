@@ -63,7 +63,7 @@ import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.ECCurves;
-import org.apache.sshd.common.config.SshConfigFileReader;
+import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
@@ -711,7 +711,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
     public static <S extends SshKeyScanMain> S initializeScanner(S scanner, Collection<String> hosts) throws IOException {
         setInputStream(scanner, hosts);
         if (scanner.getPort() <= 0) {
-            scanner.setPort(SshConfigFileReader.DEFAULT_PORT);
+            scanner.setPort(ConfigFileReaderSupport.DEFAULT_PORT);
         }
 
         if (scanner.getTimeout() <= 0L) {

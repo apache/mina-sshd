@@ -33,10 +33,11 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.SimpleUserInfo;
-import org.apache.sshd.util.test.Utils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -96,8 +97,8 @@ public class CompressionTest extends BaseTestSupport {
     public static void setupClientAndServer() throws Exception {
         JSchLogger.init();
 
-        sshd = Utils.setupTestServer(MacTest.class);
-        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider(MacTest.class));
+        sshd = CoreTestSupportUtils.setupTestServer(MacTest.class);
+        sshd.setKeyPairProvider(CommonTestSupportUtils.createTestHostKeyProvider(MacTest.class));
         sshd.start();
         port = sshd.getPort();
     }

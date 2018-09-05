@@ -46,7 +46,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.config.SshConfigFileReader;
+import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
@@ -350,7 +350,7 @@ public class KnownHostsServerKeyVerifier
                         continue;
                     }
 
-                    int pos = line.indexOf(SshConfigFileReader.COMMENT_CHAR);
+                    int pos = line.indexOf(ConfigFileReaderSupport.COMMENT_CHAR);
                     if (pos == 0) {
                         lines.add(line);
                         continue;
@@ -703,7 +703,7 @@ public class KnownHostsServerKeyVerifier
                 KnownHostHashValue.append(sb, digester, salt, digestValue);
             } else {
                 int portValue = hostIdentity.getPort();
-                boolean nonDefaultPort = (portValue > 0) && (portValue != SshConfigFileReader.DEFAULT_PORT);
+                boolean nonDefaultPort = (portValue > 0) && (portValue != ConfigFileReaderSupport.DEFAULT_PORT);
                 if (nonDefaultPort) {
                     sb.append(HostPatternsHolder.NON_STANDARD_PORT_PATTERN_ENCLOSURE_START_DELIM);
                 }

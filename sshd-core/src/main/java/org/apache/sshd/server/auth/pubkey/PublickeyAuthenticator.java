@@ -18,8 +18,14 @@
  */
 package org.apache.sshd.server.auth.pubkey;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.PublicKey;
+import java.util.Collection;
 
+import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
+import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.auth.AsyncAuthException;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -42,4 +48,15 @@ public interface PublickeyAuthenticator {
      * @throws AsyncAuthException If the authentication is performed asynchronously
      */
     boolean authenticate(String username, PublicKey key, ServerSession session) throws AsyncAuthException;
+
+    static PublickeyAuthenticator fromAuthorizedEntries(
+                PublicKeyEntryResolver fallbackResolver, Collection<? extends AuthorizedKeyEntry> entries)
+            throws IOException, GeneralSecurityException {
+        Collection<PublicKey> keys = AuthorizedKeyEntry.resolveAuthorizedKeys(fallbackResolver, entries);
+        if (GenericUtils.isEmpty(keys)) {
+            return RejectAllPublickeyAuthenticator.INSTANCE;
+        } else {
+            return new KeySetPublickeyAuthenticator(keys);
+        }
+    }
 }

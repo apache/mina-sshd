@@ -38,7 +38,7 @@ import org.apache.sshd.common.subsystem.sftp.extensions.SpaceAvailableExtensionI
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
-import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -61,10 +61,10 @@ public class SpaceAvailableExtensionImplTest extends AbstractSftpClientTestSuppo
     @Test
     public void testFileStoreReport() throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Path parentPath = targetPath.getParent();
         FileStore store = Files.getFileStore(lclSftp.getRoot());
-        final String queryPath = Utils.resolveRelativeRemotePath(parentPath, lclSftp);
+        final String queryPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclSftp);
         final SpaceAvailableExtensionInfo expected = new SpaceAvailableExtensionInfo(store);
 
         List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();

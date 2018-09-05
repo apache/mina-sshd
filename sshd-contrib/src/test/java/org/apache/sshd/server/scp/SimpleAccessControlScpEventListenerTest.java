@@ -36,7 +36,7 @@ import org.apache.sshd.common.scp.ScpException;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -94,12 +94,12 @@ public class SimpleAccessControlScpEventListenerTest extends BaseTestSupport {
                 ScpClient scp = creator.createScpClient(session);
                 Path targetPath = detectTargetFolder();
                 Path parentPath = targetPath.getParent();
-                Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
-                Utils.deleteRecursive(scpRoot);
+                Path scpRoot = CommonTestSupportUtils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
+                CommonTestSupportUtils.deleteRecursive(scpRoot);
 
                 Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
                 Path remoteFile = remoteDir.resolve("file.txt");
-                String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteFile);
+                String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, remoteFile);
                 byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
                 Files.write(remoteFile, data);
                 byte[] downloaded = scp.downloadBytes(remotePath);

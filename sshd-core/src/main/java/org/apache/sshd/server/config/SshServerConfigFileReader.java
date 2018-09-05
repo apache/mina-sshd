@@ -22,6 +22,7 @@ import java.nio.file.Paths;
 
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.util.GenericUtils;
@@ -62,7 +63,8 @@ public final class SshServerConfigFileReader {
         throw new UnsupportedOperationException("No instance allowed");
     }
 
-    public static <S extends SshServer> S configure(S server, PropertyResolver props, boolean lenient, boolean ignoreUnsupported) {
+    public static <S extends SshServer> S configure(
+            S server, PropertyResolver props, boolean lenient, boolean ignoreUnsupported) {
         SshConfigFileReader.configure((AbstractFactoryManager) server, props, lenient, ignoreUnsupported);
         SshConfigFileReader.configureKeyExchanges(server, props, lenient, ServerBuilder.DH2KEX, ignoreUnsupported);
         return server;
@@ -80,27 +82,31 @@ public final class SshServerConfigFileReader {
     }
 
     public static AgentForwardingFilter resolveAgentForwardingFilter(PropertyResolver options) {
-        String value = PropertyResolverUtils.getStringProperty(options, ALLOW_AGENT_FORWARDING_CONFIG_PROP, DEFAULT_AGENT_FORWARDING);
-        return AgentForwardingFilter.of(SshConfigFileReader.parseBooleanValue(value));
+        String value = PropertyResolverUtils.getStringProperty(options,
+            ALLOW_AGENT_FORWARDING_CONFIG_PROP, DEFAULT_AGENT_FORWARDING);
+        return AgentForwardingFilter.of(ConfigFileReaderSupport.parseBooleanValue(value));
     }
 
     public static TcpForwardingFilter resolveTcpForwardingFilter(PropertyResolver options) {
-        String value = PropertyResolverUtils.getStringProperty(options, ALLOW_TCP_FORWARDING_CONFIG_PROP, DEFAULT_TCP_FORWARDING);
+        String value = PropertyResolverUtils.getStringProperty(options,
+            ALLOW_TCP_FORWARDING_CONFIG_PROP, DEFAULT_TCP_FORWARDING);
         TcpForwardingFilter filter = AllowTcpForwardingValue.fromString(value);
         ValidateUtils.checkNotNull(filter, "Unknown %s value: %s", ALLOW_TCP_FORWARDING_CONFIG_PROP, value);
         return filter;
     }
 
     public static X11ForwardingFilter resolveX11ForwardingFilter(PropertyResolver options) {
-        String value = PropertyResolverUtils.getStringProperty(options, ALLOW_X11_FORWARDING_CONFIG_PROP, DEFAULT_X11_FORWARDING);
-        return X11ForwardingFilter.of(SshConfigFileReader.parseBooleanValue(value));
+        String value = PropertyResolverUtils.getStringProperty(options,
+            ALLOW_X11_FORWARDING_CONFIG_PROP, DEFAULT_X11_FORWARDING);
+        return X11ForwardingFilter.of(ConfigFileReaderSupport.parseBooleanValue(value));
     }
 
     public static Object resolveBanner(PropertyResolver options) {
         String bannerOption = PropertyResolverUtils.getString(options, BANNER_CONFIG_PROP);
         if (GenericUtils.isEmpty(bannerOption)) {
-            bannerOption = PropertyResolverUtils.getStringProperty(options, VISUAL_HOST_KEY, DEFAULT_VISUAL_HOST_KEY);
-            if (SshConfigFileReader.parseBooleanValue(bannerOption)) {
+            bannerOption = PropertyResolverUtils.getStringProperty(options,
+                VISUAL_HOST_KEY, DEFAULT_VISUAL_HOST_KEY);
+            if (ConfigFileReaderSupport.parseBooleanValue(bannerOption)) {
                 bannerOption = ServerAuthenticationManager.AUTO_WELCOME_BANNER_VALUE;
             } else {
                 bannerOption = null;

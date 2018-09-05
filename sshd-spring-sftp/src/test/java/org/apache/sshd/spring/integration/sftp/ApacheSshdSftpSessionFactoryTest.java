@@ -47,8 +47,9 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
-import org.apache.sshd.util.test.Utils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -110,12 +111,12 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
         JSchLogger.init();
-        sshd = Utils.setupTestServer(ApacheSshdSftpSessionFactoryTest.class);
+        sshd = CoreTestSupportUtils.setupTestServer(ApacheSshdSftpSessionFactoryTest.class);
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
         sshd.start();
         port = sshd.getPort();
 
-        client = Utils.setupTestClient(ApacheSshdSftpSessionFactoryTest.class);
+        client = CoreTestSupportUtils.setupTestClient(ApacheSshdSftpSessionFactoryTest.class);
         client.start();
     }
 
@@ -174,7 +175,7 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
     @Test
     public void testWriteRemoteFileContents() throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Path srcFile = Files.createDirectories(lclSftp).resolve("source.txt");
         List<String> expectedLines = Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
         Files.deleteIfExists(srcFile);
@@ -182,7 +183,7 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
 
         Path dstFile = srcFile.getParent().resolve("destination.txt");
         Path parentPath = targetPath.getParent();
-        String remoteFile = Utils.resolveRelativeRemotePath(parentPath, dstFile);
+        String remoteFile = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, dstFile);
         SessionFactory<LsEntry> legacyFactory = getLegacySessionFactory();
         SessionFactory<SftpClient.DirEntry> sshdFactory = getSshdSessionFactory();
         try (Session<LsEntry> legacySession = legacyFactory.getSession();
@@ -208,14 +209,14 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
     @Test
     public void testRetrieveRemoteFileContents() throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Path lclFile = Files.createDirectories(lclSftp).resolve("source.txt");
         List<String> expectedLines = Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
         Files.deleteIfExists(lclFile);
         Files.write(lclFile, expectedLines, StandardCharsets.UTF_8);
 
         Path parentPath = targetPath.getParent();
-        String remoteFile = Utils.resolveRelativeRemotePath(parentPath, lclFile);
+        String remoteFile = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
         SessionFactory<LsEntry> legacyFactory = getLegacySessionFactory();
         SessionFactory<SftpClient.DirEntry> sshdFactory = getSshdSessionFactory();
         try (Session<LsEntry> legacySession = legacyFactory.getSession();
@@ -253,8 +254,8 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
     @Test
     public void testListContents() throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
-        Utils.deleteRecursive(lclSftp); // start clean
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(lclSftp); // start clean
 
         List<Path> subFolders = new ArrayList<>();
         for (int index = 1; index <= Byte.SIZE; index++) {
@@ -272,7 +273,7 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
         Collections.sort(subFiles, BY_CASE_INSENSITIVE_FILE_PART);
 
         Path parentPath = targetPath.getParent();
-        String remotePath = Utils.resolveRelativeRemotePath(parentPath, lclSftp);
+        String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclSftp);
         SessionFactory<LsEntry> legacyFactory = getLegacySessionFactory();
         SessionFactory<SftpClient.DirEntry> sshdFactory = getSshdSessionFactory();
         try (Session<LsEntry> legacySession = legacyFactory.getSession();

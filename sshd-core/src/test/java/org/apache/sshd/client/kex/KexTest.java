@@ -41,9 +41,9 @@ import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.TeeOutputStream;
-import org.apache.sshd.util.test.Utils;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -81,11 +81,11 @@ public class KexTest extends BaseTestSupport {
 
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
-        sshd = Utils.setupTestServer(KexTest.class);
+        sshd = CoreTestSupportUtils.setupTestServer(KexTest.class);
         sshd.start();
         port = sshd.getPort();
 
-        client = Utils.setupTestClient(KexTest.class);
+        client = CoreTestSupportUtils.setupTestClient(KexTest.class);
         client.start();
     }
 

@@ -29,7 +29,7 @@ import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.scp.ScpCommandFactory;
-import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.client.simple.BaseSimpleClientTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -77,17 +77,18 @@ public class SimpleScpClientTest extends BaseSimpleClientTestSupport {
     @Test
     public void testScpUploadProxy() throws Exception {
         try (CloseableScpClient scp = login()) {
-            Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
-            Utils.deleteRecursive(scpRoot);
+            Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
+                ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
+            CommonTestSupportUtils.deleteRecursive(scpRoot);
 
             Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
             Path localFile = localDir.resolve("file.txt");
             String data = getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL;
-            byte[] written = Utils.writeFile(localFile, data);
+            byte[] written = CommonTestSupportUtils.writeFile(localFile, data);
 
             Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
             Path remoteFile = remoteDir.resolve(localFile.getFileName());
-            String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteFile);
+            String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, remoteFile);
             scp.upload(localFile, remotePath);
 
             byte[] uploaded = Files.readAllBytes(remoteFile);
@@ -98,16 +99,17 @@ public class SimpleScpClientTest extends BaseSimpleClientTestSupport {
     @Test
     public void testScpDownloadProxy() throws Exception {
         try (CloseableScpClient scp = login()) {
-            Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
-            Utils.deleteRecursive(scpRoot);
+            Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
+                ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
+            CommonTestSupportUtils.deleteRecursive(scpRoot);
 
             Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
             Path remoteFile = remoteDir.resolve("file.txt");
             String data = getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL;
-            byte[] written = Utils.writeFile(remoteFile, data);
+            byte[] written = CommonTestSupportUtils.writeFile(remoteFile, data);
             Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
             Path localFile = localDir.resolve(remoteFile.getFileName());
-            String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteFile);
+            String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, remoteFile);
             scp.download(remotePath, localFile);
 
             byte[] downloaded = Files.readAllBytes(localFile);

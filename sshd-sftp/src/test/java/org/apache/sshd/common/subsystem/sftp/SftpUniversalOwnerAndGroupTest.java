@@ -20,7 +20,7 @@
 package org.apache.sshd.common.subsystem.sftp;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -32,7 +32,7 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
-public class SftpUniversalOwnerAndGroupTest extends BaseTestSupport {
+public class SftpUniversalOwnerAndGroupTest extends JUnitTestSupport {
     public SftpUniversalOwnerAndGroupTest() {
         super();
     }

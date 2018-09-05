@@ -19,10 +19,12 @@
 package org.apache.sshd.common.session;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerHolder;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.Service;
@@ -318,6 +320,11 @@ public interface Session
      */
     void startService(String name) throws Exception;
 
+    @Override
+    default <T> T resolveAttribute(AttributeKey<T> key) {
+        return resolveAttribute(this, key);
+    }
+
     /**
      * @param version The reported client/server version
      * @return {@code true} if version not empty and starts with either
@@ -326,5 +333,25 @@ public interface Session
     static boolean isValidVersionPrefix(String version) {
         return GenericUtils.isNotEmpty(version)
             && (version.startsWith(DEFAULT_SSH_VERSION_PREFIX) || version.startsWith(FALLBACK_SSH_VERSION_PREFIX));
+    }
+
+    /**
+     * Attempts to use the session's attribute, if not found then tries the factory manager
+     *
+     * @param <T> The generic attribute type
+     * @param session The {@link Session} - ignored if {@code null}
+     * @param key The attribute key - never {@code null}
+     * @return Associated value - {@code null} if not found
+     * @see Session#getFactoryManager()
+     * @see #resolveAttribute(FactoryManager, AttributeKey)
+     */
+    static <T> T resolveAttribute(Session session, AttributeKey<T> key) {
+        Objects.requireNonNull(key, "No key");
+        if (session == null) {
+            return null;
+        }
+
+        T value = session.getAttribute(key);
+        return (value != null) ? value : FactoryManager.resolveAttribute(session.getFactoryManager(), key);
     }
 }
