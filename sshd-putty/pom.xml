@@ -25,10 +25,11 @@
         <groupId>org.apache.sshd</groupId>
         <artifactId>sshd</artifactId>
         <version>2.0.1-SNAPSHOT</version>
+        <relativePath>..</relativePath>
     </parent>
 
-    <artifactId>sshd-cli</artifactId>
-    <name>Apache Mina SSHD :: CLI</name>
+    <artifactId>sshd-putty</artifactId>
+    <name>Apache Mina SSHD :: Putty key files support utilities</name>
     <packaging>jar</packaging>
     <inceptionYear>2018</inceptionYear>
 
@@ -39,62 +40,34 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.sshd</groupId>
-            <artifactId>sshd-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.sshd</groupId>
-            <artifactId>sshd-scp</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.sshd</groupId>
-            <artifactId>sshd-sftp</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.sshd</groupId>
-            <artifactId>sshd-putty</artifactId>
+            <artifactId>sshd-common</artifactId>
             <version>${project.version}</version>
         </dependency>
 
-            <!-- Test dependencies -->
         <dependency>
-            <groupId>org.apache.sshd</groupId>
-            <artifactId>sshd-core</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpg-jdk15on</artifactId>
+            <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15on</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+            <!-- For ed25519 support -->
+        <dependency>
+            <groupId>net.i2p.crypto</groupId>
+            <artifactId>eddsa</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+            <!-- test dependencies -->
         <dependency>
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-common</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-            <!-- For the I/O factories -->
-        <dependency>
-            <groupId>org.apache.sshd</groupId>
-            <artifactId>sshd-mina</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.sshd</groupId>
-            <artifactId>sshd-netty</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -108,43 +81,26 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.jcraft</groupId>
-            <artifactId>jsch</artifactId>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.jcraft</groupId>
-            <artifactId>jzlib</artifactId>
-            <scope>test</scope>
-        </dependency>
-            <!-- For ed25519 support -->
-        <dependency>
-            <groupId>net.i2p.crypto</groupId>
-            <artifactId>eddsa</artifactId>
-            <optional>true</optional>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
-        <resources>
-            <resource>
-                <directory>src/main/filtered-resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
-
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    <reportsDirectory>${project.build.directory}/surefire-reports-putty</reportsDirectory>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

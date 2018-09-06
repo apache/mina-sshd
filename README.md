@@ -1578,13 +1578,49 @@ The code contains [support for "wrapper" protocols](https://issues.apache.org/ji
 
 * `SshServer/ServerSession#setServerProxyAcceptor` - sets a proxy that intercept the 1st incoming packet before being processed by the server
 
+## Configuration/data files parsing support
+
+Most of the configuration data files parsing support resides in the _sshd-common_ artfiact:
+
+```xml
+    <dependency>
+        <groupId>org.apache.sshd</groupId>
+        <artifactId>sshd-common</artifactId>
+        <version>...same version as the rest of the artifacts...</version>
+    </dependency>
+```
+
+The code contains support for parsing the [_authorized_keys_](http://man.openbsd.org/sshd.8#AUTHORIZED_KEYS_FILE_FORMAT),
+[_known\_hosts_](http://www.manpagez.com/man/8/sshd/), [_ssh\_config_, _sshd\_config_](https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5),
+and [_~/config_](http://www.gsp.com/cgi-bin/man.cgi?topic=ssh_config) files. The code resides in the _sshd-common_ artifact - specifically
+the `KeyUtils#getPublicKeyEntryDecoder`, `AuthorizedKeyEntry#readAuthorizedKeys`, `KnownHostEntry#readKnownHostEntries`
+and `HostConfigEntry#readHostConfigEntries`.
+
+### PEM/OpenSSH
+
+The common code contains built-in support for parsing PEM and/or _OpenSSH_ formatted key files and using them for authentication purposes.
+As mentioned previously, it can leverage _Bouncycastle_ if available, but can do most of the work without it as well. For _ed25519_ support,
+one must provide the _eddsa_ artifact dependency.
+
+### [PUTTY](https://www.putty.org/)
+
+The code contains built-in support for parsing PUTTY key files (usually _.ppk_) and using them same as SSH ones as key-pair
+providers for autentication purposes. The PUTTY key file(s) readers are contained in the `org.apache.sshd.common.config.keys.loader.putty`
+package (specifically `PuttyKeyUtils#DEFAULT_INSTANCE KeyPairResourceParser`) of the _sshd-putty_ artifact. **Note:** the artifact should
+be included as an extra dependency:
+
+```xml
+    <dependency>
+        <groupId>org.apache.sshd</groupId>
+        <artifactId>sshd-putty</artifactId>
+        <version>...same version as the rest of the artifacts...</version>
+    </dependency>
+```
+
 ## Useful extra components in _sshd-contrib_
 
-* PUTTY key file(s) readers - see `org.apache.sshd.common.config.keys.loader.putty` package - specifically `PuttyKeyUtils#DEFAULT_INSTANCE KeyPairResourceParser`.
-
-
-* `InteractivePasswordIdentityProvider` - helps implement a `PasswordIdentityProvider` by delegating calls to `UserInteraction#getUpdatedPassword`.
-The way to use it would be as follows:
+* `InteractivePasswordIdentityProvider` - helps implement a `PasswordIdentityProvider` by delegating calls
+to `UserInteraction#getUpdatedPassword`. The way to use it would be as follows:
 
 
 ```java

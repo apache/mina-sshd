@@ -34,8 +34,8 @@ import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.loader.openssh.OpenSSHKeyPairResourceParser;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
+import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.Assume;
 import org.junit.FixMethodOrder;
@@ -54,7 +54,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
-public class PuttyKeyUtilsTest extends BaseTestSupport {
+public class PuttyKeyUtilsTest extends JUnitTestSupport {
     public static final String PASSWORD = "super secret passphrase";
 
     private final String keyType;
