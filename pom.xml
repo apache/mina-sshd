@@ -159,14 +159,23 @@
             </build>
         </profile>
         <profile>
-                <!-- mvn -Powasp verify -->
+                <!-- mvn -Powasp verify
+
+                    NOTE: recommend also
+
+                    * Activating 'quick' profile
+                    * Skip PMD, checkstyle
+
+                mvn -Powasp,quick -Dpmd.skip=true -Dcheckstyle.skip=true verify
+
+                -->
             <id>owasp</id>
             <build>
                 <plugins>
                     <plugin>
                         <groupId>org.owasp</groupId>
                         <artifactId>dependency-check-maven</artifactId>
-                        <version>3.3.0</version>
+                        <version>3.3.1</version>
                             <!-- see https://jeremylong.github.io/DependencyCheck/dependency-check-maven/configuration.html -->
                         <configuration>
                                 <!-- see https://github.com/jeremylong/DependencyCheck/issues/1394 -->
@@ -174,6 +183,15 @@
                             <suppressionFiles>
                                  <suppressionFile>${workspace.root.dir}${file.separator}sshd-owasp-suppressions.xml</suppressionFile>
                             </suppressionFiles>
+                                <!-- Not much we can do about system scope - e.g, JDK 'tools.jar' (nor do we use it) -->
+                            <skipSystemScope>true</skipSystemScope>
+                                <!-- We do not disseminate the test code nor do we expect it to be used in production sites -->
+                            <skipTestScope>true</skipTestScope>
+                                <!-- We currently don't have any .NET assemblies -->
+                            <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
+                            <nuspecAnalyzerEnabled>false</nuspecAnalyzerEnabled>
+                                <!-- We take care of such checks manually/periodically -->
+                            <versionCheckEnabled>false</versionCheckEnabled>
                         </configuration>
                         <executions>
                            <execution>
