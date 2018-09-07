@@ -54,7 +54,8 @@ public abstract class AbstractPEMResourceKeyPairParser
     private final String algo;
     private final String algId;
 
-    protected AbstractPEMResourceKeyPairParser(String algo, String algId, List<String> beginners, List<String> enders) {
+    protected AbstractPEMResourceKeyPairParser(
+            String algo, String algId, List<String> beginners, List<String> enders) {
         super(beginners, enders);
         this.algo = ValidateUtils.checkNotNullAndNotEmpty(algo, "No encryption algorithm provided");
         this.algId = ValidateUtils.checkNotNullAndNotEmpty(algId, "No algorithm identifier provided");
@@ -173,7 +174,9 @@ public abstract class AbstractPEMResourceKeyPairParser
         return super.extractKeyPairs(resourceKey, beginMarker, endMarker, passwordProvider, dataLines);
     }
 
-    protected byte[] applyPrivateKeyCipher(byte[] bytes, PrivateKeyEncryptionContext encContext, boolean encryptIt) throws GeneralSecurityException {
+    protected byte[] applyPrivateKeyCipher(
+            byte[] bytes, PrivateKeyEncryptionContext encContext, boolean encryptIt)
+                throws GeneralSecurityException {
         String cipherName = encContext.getCipherName();
         PrivateKeyObfuscator o = encContext.resolvePrivateKeyObfuscator();
         if (o == null) {

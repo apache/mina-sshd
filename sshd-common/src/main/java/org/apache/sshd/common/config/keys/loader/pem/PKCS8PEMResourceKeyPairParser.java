@@ -66,7 +66,7 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
     @Override
     public Collection<KeyPair> extractKeyPairs(
             String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, InputStream stream)
-                    throws IOException, GeneralSecurityException {
+                throws IOException, GeneralSecurityException {
         // Save the data before getting the algorithm OID since we will need it
         byte[] encBytes = IoUtils.toByteArray(stream);
         List<Integer> oidAlgorithm = getPKCS8AlgorithmIdentifier(encBytes);
@@ -79,14 +79,14 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
 
     public static PrivateKey decodePEMPrivateKeyPKCS8(
             List<Integer> oidAlgorithm, byte[] keyBytes, FilePasswordProvider passwordProvider)
-                    throws GeneralSecurityException {
+                throws GeneralSecurityException {
         ValidateUtils.checkNotNullAndNotEmpty(oidAlgorithm, "No PKCS8 algorithm OID");
         return decodePEMPrivateKeyPKCS8(GenericUtils.join(oidAlgorithm, '.'), keyBytes, passwordProvider);
     }
 
     public static PrivateKey decodePEMPrivateKeyPKCS8(
             String oid, byte[] keyBytes, FilePasswordProvider passwordProvider)
-                    throws GeneralSecurityException {
+                throws GeneralSecurityException {
         KeyPairPEMResourceParser parser =
             PEMResourceParserUtils.getPEMResourceParserByOid(
                 ValidateUtils.checkNotNullAndNotEmpty(oid, "No PKCS8 algorithm OID"));

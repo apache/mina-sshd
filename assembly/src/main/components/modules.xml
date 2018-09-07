@@ -24,6 +24,7 @@
                 <exclude>org.apache.sshd:sshd-ldap</exclude>
                 <exclude>org.apache.sshd:sshd-contrib</exclude>
                 <exclude>org.apache.sshd:sshd-putty</exclude>
+                <exclude>org.apache.sshd:sshd-openpgp</exclude>
                 <exclude>org.apache.sshd:sshd-spring-sftp</exclude>
                 <exclude>org.springframework:*</exclude>
                 <exclude>org.springframework.retry:*</exclude>
@@ -34,6 +35,7 @@
                 <exclude>org.eclipse.jgit:*</exclude>
                 <exclude>com.jcraft:*</exclude>
                 <exclude>com.googlecode.javaewah:JavaEWAH</exclude>
+                <exclude>org.c02e.jpgpj:jpgpj</exclude>
             </excludes>
             <outputDirectory>lib</outputDirectory>
             <useProjectArtifact>false</useProjectArtifact>
@@ -46,6 +48,7 @@
                 <include>org.apache.sshd:sshd-contrib</include>
                 <include>org.apache.sshd:sshd-putty</include>
                 <include>org.apache.sshd:sshd-spring-sftp</include>
+                <include>org.apache.sshd:sshd-openpgp</include>
             </includes>
             <outputDirectory>extras</outputDirectory>
             <useProjectArtifact>false</useProjectArtifact>
@@ -60,7 +63,8 @@
                 <include>org.reactivestreams:*</include>
                 <include>commons-io:commons-io</include>
                 <include>com.jcraft:*</include>
-                <include>com.googlecode.javaewah:JavaEWAH</include>               
+                <include>com.googlecode.javaewah:JavaEWAH</include>
+                <include>org.c02e.jpgpj:jpgpj</include>
             </includes>
             <outputDirectory>dependencies</outputDirectory>
             <useProjectArtifact>false</useProjectArtifact>

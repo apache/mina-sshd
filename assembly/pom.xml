@@ -100,6 +100,11 @@
         </dependency>
         <dependency>
             <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-openpgp</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-spring-sftp</artifactId>
             <version>${project.version}</version>
         </dependency>

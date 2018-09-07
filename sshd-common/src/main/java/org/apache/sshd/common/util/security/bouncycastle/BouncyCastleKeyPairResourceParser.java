@@ -77,7 +77,7 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
     @Override
     public Collection<KeyPair> extractKeyPairs(
             String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, List<String> lines)
-                    throws IOException, GeneralSecurityException {
+                throws IOException, GeneralSecurityException {
         StringBuilder writer = new StringBuilder(beginMarker.length() + endMarker.length() + lines.size() * 80);
         writer.append(beginMarker).append(IoUtils.EOL);
         lines.forEach(l -> writer.append(l).append(IoUtils.EOL));
@@ -93,7 +93,7 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
     @Override
     public Collection<KeyPair> extractKeyPairs(
             String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, InputStream stream)
-                    throws IOException, GeneralSecurityException {
+                throws IOException, GeneralSecurityException {
         KeyPair kp = loadKeyPair(resourceKey, stream, passwordProvider);
         return (kp == null) ? Collections.emptyList() : Collections.singletonList(kp);
     }
@@ -103,7 +103,8 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
         try (PEMParser r = new PEMParser(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             Object o = r.readObject();
 
-            SecurityProviderRegistrar registrar = SecurityUtils.getRegisteredProvider(SecurityUtils.BOUNCY_CASTLE);
+            SecurityProviderRegistrar registrar =
+                SecurityUtils.getRegisteredProvider(SecurityUtils.BOUNCY_CASTLE);
             if (registrar == null) {
                 throw new NoSuchProviderException(SecurityUtils.BOUNCY_CASTLE + " registrar not available");
             }

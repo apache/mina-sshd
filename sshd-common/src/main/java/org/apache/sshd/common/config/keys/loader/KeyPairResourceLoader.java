@@ -59,13 +59,15 @@ public interface KeyPairResourceLoader {
      */
     KeyPairResourceLoader EMPTY = (resourceKey, passwordProvider, lines) -> Collections.emptyList();
 
-    default Collection<KeyPair> loadKeyPairs(Path path, FilePasswordProvider passwordProvider, OpenOption... options)
-            throws IOException, GeneralSecurityException {
+    default Collection<KeyPair> loadKeyPairs(
+            Path path, FilePasswordProvider passwordProvider, OpenOption... options)
+                throws IOException, GeneralSecurityException {
         return loadKeyPairs(path, passwordProvider, StandardCharsets.UTF_8, options);
     }
 
-    default Collection<KeyPair> loadKeyPairs(Path path, FilePasswordProvider passwordProvider, Charset cs, OpenOption... options)
-            throws IOException, GeneralSecurityException {
+    default Collection<KeyPair> loadKeyPairs(
+            Path path, FilePasswordProvider passwordProvider, Charset cs, OpenOption... options)
+                throws IOException, GeneralSecurityException {
         try (InputStream stream = Files.newInputStream(path, options)) {
             return loadKeyPairs(path.toString(), passwordProvider, stream, cs);
         }
@@ -83,35 +85,40 @@ public interface KeyPairResourceLoader {
         }
     }
 
-    default Collection<KeyPair> loadKeyPairs(String resourceKey, FilePasswordProvider passwordProvider, String data)
-            throws IOException, GeneralSecurityException {
+    default Collection<KeyPair> loadKeyPairs(
+            String resourceKey, FilePasswordProvider passwordProvider, String data)
+                throws IOException, GeneralSecurityException {
         try (Reader reader = new StringReader((data == null) ? "" : data)) {
             return loadKeyPairs(resourceKey, passwordProvider, reader);
         }
     }
 
-    default Collection<KeyPair> loadKeyPairs(String resourceKey, FilePasswordProvider passwordProvider, InputStream stream)
-            throws IOException, GeneralSecurityException {
+    default Collection<KeyPair> loadKeyPairs(
+            String resourceKey, FilePasswordProvider passwordProvider, InputStream stream)
+                throws IOException, GeneralSecurityException {
         return loadKeyPairs(resourceKey, passwordProvider, stream, StandardCharsets.UTF_8);
     }
 
-    default Collection<KeyPair> loadKeyPairs(String resourceKey, FilePasswordProvider passwordProvider, InputStream stream, Charset cs)
-            throws IOException, GeneralSecurityException {
+    default Collection<KeyPair> loadKeyPairs(
+            String resourceKey, FilePasswordProvider passwordProvider, InputStream stream, Charset cs)
+                throws IOException, GeneralSecurityException {
         try (Reader reader = new InputStreamReader(
                 Objects.requireNonNull(stream, "No stream instance"), Objects.requireNonNull(cs, "No charset"))) {
             return loadKeyPairs(resourceKey, passwordProvider, reader);
         }
     }
 
-    default Collection<KeyPair> loadKeyPairs(String resourceKey, FilePasswordProvider passwordProvider, Reader r)
-            throws IOException, GeneralSecurityException {
+    default Collection<KeyPair> loadKeyPairs(
+            String resourceKey, FilePasswordProvider passwordProvider, Reader r)
+                throws IOException, GeneralSecurityException {
         try (BufferedReader br = new BufferedReader(Objects.requireNonNull(r, "No reader instance"), IoUtils.DEFAULT_COPY_SIZE)) {
             return loadKeyPairs(resourceKey, passwordProvider, br);
         }
     }
 
-    default Collection<KeyPair> loadKeyPairs(String resourceKey, FilePasswordProvider passwordProvider, BufferedReader r)
-            throws IOException, GeneralSecurityException {
+    default Collection<KeyPair> loadKeyPairs(
+            String resourceKey, FilePasswordProvider passwordProvider, BufferedReader r)
+                throws IOException, GeneralSecurityException {
         return loadKeyPairs(resourceKey, passwordProvider, IoUtils.readAllLines(r));
     }
 

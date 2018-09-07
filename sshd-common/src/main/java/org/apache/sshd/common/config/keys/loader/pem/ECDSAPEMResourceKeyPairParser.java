@@ -73,7 +73,7 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
     @Override
     public Collection<KeyPair> extractKeyPairs(
             String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, InputStream stream)
-                    throws IOException, GeneralSecurityException {
+                throws IOException, GeneralSecurityException {
         Map.Entry<ECPublicKeySpec, ECPrivateKeySpec> spec = decodeECPrivateKeySpec(stream, false);
         if (!SecurityUtils.isECCSupported()) {
             throw new NoSuchProviderException("ECC not supported");
@@ -163,7 +163,7 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
 
         // TODO make sure params object tag is 0xA0
 
-        final List<Integer> curveOID;
+        List<Integer> curveOID;
         try (DERParser paramsParser = paramsObject.createParser()) {
             ASN1Object namedCurve = paramsParser.readObject();
             if (namedCurve == null) {

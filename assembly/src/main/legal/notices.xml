@@ -171,4 +171,21 @@
             </licenses>
         </project>
     </supplement>
+    <supplement>
+        <project>
+            <groupId>org.c02e.jpgpj</groupId>
+            <artifactId>jpgpj</artifactId>
+            <name>jpjpj</name>
+            <organization>
+                <name>jpgpj</name>
+                <url>https://github.com/justinludwig/jpgpj</url>
+            </organization>
+            <licenses>
+                <license>
+                    <name>MIT License</name>
+                    <url>https://raw.githubusercontent.com/justinludwig/jpgpj/master/LICENSE</url>
+                </license>
+            </licenses>
+        </project>    
+    </supplement>
 </supplementalDataModels>

@@ -78,7 +78,8 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
     }
 
     @Override
-    public boolean canExtractKeyPairs(String resourceKey, List<String> lines) throws IOException, GeneralSecurityException {
+    public boolean canExtractKeyPairs(String resourceKey, List<String> lines)
+            throws IOException, GeneralSecurityException {
         return KeyPairResourceParser.containsMarkerLine(lines, getBeginners());
     }
 
@@ -136,7 +137,7 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
      */
     public Collection<KeyPair> extractKeyPairs(
             String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, List<String> lines)
-                    throws IOException, GeneralSecurityException {
+                throws IOException, GeneralSecurityException {
         return extractKeyPairs(resourceKey, beginMarker, endMarker, passwordProvider, KeyPairResourceParser.extractDataBytes(lines));
     }
 

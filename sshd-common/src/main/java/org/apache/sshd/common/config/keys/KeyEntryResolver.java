@@ -41,7 +41,8 @@ import org.apache.sshd.common.util.io.IoUtils;
  * @param <PRV> Type of {@link PrivateKey}
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey> extends IdentityResourceLoader<PUB, PRV> {
+public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
+        extends IdentityResourceLoader<PUB, PRV> {
     /**
      * @param keySize Key size in bits
      * @return A {@link KeyPair} with the specified key size
@@ -72,10 +73,12 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
         if (pubOriginal != null) {
             Class<?> orgType = pubOriginal.getClass();
             if (!pubExpected.isAssignableFrom(orgType)) {
-                throw new InvalidKeyException("Mismatched public key types: expected=" + pubExpected.getSimpleName() + ", actual=" + orgType.getSimpleName());
+                throw new InvalidKeyException(
+                    "Mismatched public key types: expected=" + pubExpected.getSimpleName() + ", actual=" + orgType.getSimpleName());
             }
 
-            pubCloned = clonePublicKey(pubExpected.cast(pubOriginal));
+            PUB castPub = pubExpected.cast(pubOriginal);
+            pubCloned = clonePublicKey(castPub);
         }
 
         PRV prvCloned = null;
@@ -84,10 +87,12 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
         if (prvOriginal != null) {
             Class<?> orgType = prvOriginal.getClass();
             if (!prvExpected.isAssignableFrom(orgType)) {
-                throw new InvalidKeyException("Mismatched private key types: expected=" + prvExpected.getSimpleName() + ", actual=" + orgType.getSimpleName());
+                throw new InvalidKeyException(
+                    "Mismatched private key types: expected=" + prvExpected.getSimpleName() + ", actual=" + orgType.getSimpleName());
             }
 
-            prvCloned = clonePrivateKey(prvExpected.cast(prvOriginal));
+            PRV castPrv = prvExpected.cast(prvOriginal);
+            prvCloned = clonePrivateKey(castPrv);
         }
 
         return new KeyPair(pubCloned, prvCloned);

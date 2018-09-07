@@ -69,7 +69,7 @@ public class DSSPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParse
     @Override
     public Collection<KeyPair> extractKeyPairs(
             String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, InputStream stream)
-                    throws IOException, GeneralSecurityException {
+                throws IOException, GeneralSecurityException {
         KeyPair kp = decodeDSSKeyPair(SecurityUtils.getKeyFactory(KeyUtils.DSS_ALGORITHM), stream, false);
         return Collections.singletonList(kp);
     }

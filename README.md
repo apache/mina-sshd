@@ -187,6 +187,8 @@ The code contains support for reading _ed25519_ [OpenSSH formatted private keys]
 
 * *sshd-putty* - contains code that can parse [PUTTY](https://www.putty.org/) key files.
 
+* *sshd-openpgp* - contains code that can parse [OpenPGP](https://www.openpgp.org/) key files (with some limitations - see relevant section)
+
 * *sshd-cli* - contains simple templates for command-line client/server - used to provide look-and-feel similar to the Linux *ssh/sshd* commands.
 
 * *sshd-contrib* - **experimental** code that is currently under review and may find its way into one of the other artifacts
@@ -1848,6 +1850,42 @@ be included as an extra dependency:
         <version>...same version as the rest of the artifacts...</version>
     </dependency>
 ```
+
+### [OpenPGP](https://www.openpgp.org/)
+
+The code contains the _sshd-openpgp_ module that enables using _OpenPGP_ private key files as identity providers.
+
+```xml
+    <dependency>
+        <groupId>org.apache.sshd</groupId>
+        <artifactId>sshd-openpgp</artifactId>
+        <version>...same version as the rest of the artifacts...</version>
+    </dependency>
+```
+
+The [support](https://issues.apache.org/jira/browse/SSHD-757) for it is currently still in its infancy, and therefore
+this feature should be considered **experimental** for the time being. However, within its limitations it supports
+
+* RSA keys
+* DSA keys
+* ECDSA keys
+
+(*) For now `ed25519` keys are not supported by this module.
+
+The code reads **all** the available key pairs in the key file without any distinction between encryption, decryption,
+authentication or signature ones.
+
+This code relies on the [jpgpgj](https://github.com/justinludwig/jpgpj) support module
+
+```xml
+    <dependency>
+        <groupId>org.c02e.jpgpj</groupId>
+        <artifactId>jpgpj</artifactId>
+        <version>0.5</version>
+    </dependency>
+```
+
+(which in turn automatically uses _Bouncycastle_ - so if one does not want _Bouncycastle_ one cannot use this module).
 
 ## Useful extra components in _sshd-contrib_
 
