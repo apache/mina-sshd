@@ -816,7 +816,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
      * {@link KeyPairProvider} was generated
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see #loadDefaultKeyPairProvider(Path, boolean, boolean, FilePasswordProvider, LinkOption...)
+     * @see ClientIdentity#loadDefaultKeyPairProvider(Path, boolean, boolean, FilePasswordProvider, LinkOption...)
      */
     public static <C extends SshClient> C setKeyPairProvider(
             C client, Path dir, boolean strict, boolean supportedOnly, FilePasswordProvider provider, LinkOption... options)

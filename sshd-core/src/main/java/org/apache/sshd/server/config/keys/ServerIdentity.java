@@ -132,7 +132,7 @@ public final class ServerIdentity {
      * @throws IOException If failed to access the file system
      * @see #getIdentityType(String)
      * @see #HOST_KEY_CONFIG_PROP
-     * @see org.apache.sshd.common.config.SshConfigFileReader#readConfigFile(File)
+     * @see org.apache.sshd.common.config.ConfigFileReaderSupport#readConfigFile(Path, java.nio.file.OpenOption...)
      */
     public static Map<String, Path> findIdentities(Properties props, LinkOption... options) throws IOException {
         if (GenericUtils.isEmpty(props)) {

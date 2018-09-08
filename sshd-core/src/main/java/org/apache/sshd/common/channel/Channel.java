@@ -225,8 +225,8 @@ public interface Channel
      * @param channel The {@link Channel} - ignored if {@code null}
      * @param key The attribute key - never {@code null}
      * @return Associated value - {@code null} if not found
-     * @see Session#getFactoryManager()
-     * @see #resolveAttribute(Session, AttributeKey)
+     * @see #getSession()
+     * @see Session#resolveAttribute(Session, AttributeKey)
      */
     static <T> T resolveAttribute(Channel channel, AttributeKey<T> key) {
         Objects.requireNonNull(key, "No key");

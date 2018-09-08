@@ -19,7 +19,6 @@
 
 package org.apache.sshd.server.config.keys;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -69,10 +68,6 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
 
     private final AtomicReference<PublickeyAuthenticator> delegateHolder =  // assumes initially reject-all
         new AtomicReference<>(RejectAllPublickeyAuthenticator.INSTANCE);
-
-    public AuthorizedKeysAuthenticator(File file) {
-        this(Objects.requireNonNull(file, "No file to watch").toPath());
-    }
 
     public AuthorizedKeysAuthenticator(Path file) {
         this(file, IoUtils.EMPTY_LINK_OPTIONS);

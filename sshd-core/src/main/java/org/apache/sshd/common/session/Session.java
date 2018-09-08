@@ -343,7 +343,7 @@ public interface Session
      * @param key The attribute key - never {@code null}
      * @return Associated value - {@code null} if not found
      * @see Session#getFactoryManager()
-     * @see #resolveAttribute(FactoryManager, AttributeKey)
+     * @see FactoryManager#resolveAttribute(FactoryManager, AttributeKey)
      */
     static <T> T resolveAttribute(Session session, AttributeKey<T> key) {
         Objects.requireNonNull(key, "No key");

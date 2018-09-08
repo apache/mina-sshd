@@ -20,7 +20,6 @@
 package org.apache.sshd.client.config.hosts;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,7 +40,6 @@ import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseReader;
 
@@ -143,10 +141,6 @@ public class KnownHostEntry extends HostPatternsHolder {
     @SuppressWarnings("synthetic-access")
     public static Path getDefaultKnownHostsFile() {
         return LazyDefaultConfigFileHolder.HOSTS_FILE;
-    }
-
-    public static List<KnownHostEntry> readKnownHostEntries(File file) throws IOException {
-        return readKnownHostEntries(file.toPath(), IoUtils.EMPTY_OPEN_OPTIONS);
     }
 
     public static List<KnownHostEntry> readKnownHostEntries(Path path, OpenOption... options) throws IOException {

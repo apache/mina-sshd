@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.server.keyprovider;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -69,10 +68,6 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
 
     public Path getPath() {
         return path;
-    }
-
-    public void setFile(File file) {
-        setPath((file == null) ? null : file.toPath());
     }
 
     public void setPath(Path path) {

@@ -55,7 +55,8 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
     private static final int KEYPAIR_SIZE = PK_SIZE + SK_SIZE;
 
     public OpenSSHEd25519PrivateKeyEntryDecoder() {
-        super(EdDSAPublicKey.class, EdDSAPrivateKey.class, Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_ED25519)));
+        super(EdDSAPublicKey.class, EdDSAPrivateKey.class,
+            Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_ED25519)));
     }
 
     @Override

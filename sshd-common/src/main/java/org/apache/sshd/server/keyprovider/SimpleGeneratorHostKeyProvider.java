@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.server.keyprovider;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -37,10 +36,6 @@ import java.security.spec.InvalidKeySpecException;
 public class SimpleGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProvider {
     public SimpleGeneratorHostKeyProvider() {
         super();
-    }
-
-    public SimpleGeneratorHostKeyProvider(File file) {
-        this((file == null) ? null : file.toPath());
     }
 
     public SimpleGeneratorHostKeyProvider(Path path) {

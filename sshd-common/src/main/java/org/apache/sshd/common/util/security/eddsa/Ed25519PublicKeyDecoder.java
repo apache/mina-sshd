@@ -44,7 +44,8 @@ public final class Ed25519PublicKeyDecoder extends AbstractPublicKeyEntryDecoder
     public static final Ed25519PublicKeyDecoder INSTANCE = new Ed25519PublicKeyDecoder();
 
     private Ed25519PublicKeyDecoder() {
-        super(EdDSAPublicKey.class, EdDSAPrivateKey.class, Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_ED25519)));
+        super(EdDSAPublicKey.class, EdDSAPrivateKey.class,
+            Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_ED25519)));
     }
 
     @Override

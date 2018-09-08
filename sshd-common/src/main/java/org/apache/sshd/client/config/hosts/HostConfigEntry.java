@@ -86,11 +86,11 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * A case <U>insensitive</U> {@link Set} of the properties that receive special handling
      */
     public static final Set<String> EXPLICIT_PROPERTIES =
-            Collections.unmodifiableSet(
-                    GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
-                            HOST_CONFIG_PROP, HOST_NAME_CONFIG_PROP, PORT_CONFIG_PROP,
-                            USER_CONFIG_PROP, IDENTITY_FILE_CONFIG_PROP, EXCLUSIVE_IDENTITIES_CONFIG_PROP
-                        ));
+        Collections.unmodifiableSet(
+            GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
+                HOST_CONFIG_PROP, HOST_NAME_CONFIG_PROP, PORT_CONFIG_PROP,
+                USER_CONFIG_PROP, IDENTITY_FILE_CONFIG_PROP, EXCLUSIVE_IDENTITIES_CONFIG_PROP
+            ));
 
     public static final String MULTI_VALUE_SEPARATORS = " ,";
 
@@ -217,13 +217,6 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      */
     public Collection<String> getIdentities() {
         return identities;
-    }
-
-    /**
-     * @param file A {@link File} that contains an identity key - never {@code null}
-     */
-    public void addIdentity(File file) {
-        addIdentity(Objects.requireNonNull(file, "No file").toPath());
     }
 
     /**
@@ -785,10 +778,6 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         }
     }
 
-    public static List<HostConfigEntry> readHostConfigEntries(File file) throws IOException {
-        return readHostConfigEntries(file.toPath(), IoUtils.EMPTY_OPEN_OPTIONS);
-    }
-
     public static List<HostConfigEntry> readHostConfigEntries(Path path, OpenOption... options) throws IOException {
         try (InputStream input = Files.newInputStream(path, options)) {
             return readHostConfigEntries(input, true);
@@ -1012,17 +1001,17 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         return entries;
     }
 
-    public static void writeHostConfigEntries(File file, Collection<? extends HostConfigEntry> entries) throws IOException {
-        writeHostConfigEntries(Objects.requireNonNull(file, "No file").toPath(), entries, IoUtils.EMPTY_OPEN_OPTIONS);
-    }
-
-    public static void writeHostConfigEntries(Path path, Collection<? extends HostConfigEntry> entries, OpenOption... options) throws IOException {
+    public static void writeHostConfigEntries(
+            Path path, Collection<? extends HostConfigEntry> entries, OpenOption... options)
+                throws IOException {
         try (OutputStream outputStream = Files.newOutputStream(path, options)) {
             writeHostConfigEntries(outputStream, true, entries);
         }
     }
 
-    public static void writeHostConfigEntries(OutputStream outputStream, boolean okToClose, Collection<? extends HostConfigEntry> entries) throws IOException {
+    public static void writeHostConfigEntries(
+            OutputStream outputStream, boolean okToClose, Collection<? extends HostConfigEntry> entries)
+                throws IOException {
         if (GenericUtils.isEmpty(entries)) {
             return;
         }

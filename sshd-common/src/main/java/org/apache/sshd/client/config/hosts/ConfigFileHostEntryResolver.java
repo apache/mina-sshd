@@ -19,7 +19,6 @@
 
 package org.apache.sshd.client.config.hosts;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -40,10 +39,6 @@ import org.apache.sshd.common.util.io.ModifiableFileWatcher;
 public class ConfigFileHostEntryResolver extends ModifiableFileWatcher implements HostConfigEntryResolver {
     private final AtomicReference<HostConfigEntryResolver> delegateHolder = // assumes initially empty
             new AtomicReference<>(HostConfigEntryResolver.EMPTY);
-
-    public ConfigFileHostEntryResolver(File file) {
-        this(Objects.requireNonNull(file, "No file to watch").toPath());
-    }
 
     public ConfigFileHostEntryResolver(Path file) {
         this(file, IoUtils.EMPTY_LINK_OPTIONS);

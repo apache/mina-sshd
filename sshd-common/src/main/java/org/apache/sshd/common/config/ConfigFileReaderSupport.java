@@ -20,7 +20,6 @@
 package org.apache.sshd.common.config;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseReader;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
@@ -112,10 +110,6 @@ public final class ConfigFileReaderSupport {
 
     private ConfigFileReaderSupport() {
         throw new UnsupportedOperationException("No instance");
-    }
-
-    public static Properties readConfigFile(File file) throws IOException {
-        return readConfigFile(file.toPath(), IoUtils.EMPTY_OPEN_OPTIONS);
     }
 
     public static Properties readConfigFile(Path path, OpenOption... options) throws IOException {

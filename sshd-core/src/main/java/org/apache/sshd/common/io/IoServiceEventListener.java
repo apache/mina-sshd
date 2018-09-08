@@ -45,7 +45,7 @@ public interface IoServiceEventListener extends SshdEventListener {
      * Called when a previously established connection has been abnormally terminated before it could be
      * turned into a session
      *
-     * @param acceptor The {@link IoConnector} through which the connection was established
+     * @param connector The {@link IoConnector} through which the connection was established
      * @param local The local connection endpoint
      * @param remote The remote connection endpoint
      * @param reason The reason for aborting - may be an exception thrown by
@@ -53,7 +53,9 @@ public interface IoServiceEventListener extends SshdEventListener {
      * @throws IOException If failed to handle the event - the exception is logged but does not
      * prevent further connections from being accepted
      */
-    default void abortEstablishedConnection(IoConnector connector, SocketAddress local, SocketAddress remote, Throwable reason) throws IOException {
+    default void abortEstablishedConnection(
+            IoConnector connector, SocketAddress local, SocketAddress remote, Throwable reason)
+                throws IOException {
         // Do nothing
     }
 
@@ -82,7 +84,9 @@ public interface IoServiceEventListener extends SshdEventListener {
      * @throws IOException If failed to handle the event - the exception is logged but does not
      * prevent further connections from being accepted
      */
-    default void abortAcceptedConnection(IoAcceptor acceptor, SocketAddress local, SocketAddress remote, Throwable reason) throws IOException {
+    default void abortAcceptedConnection(
+            IoAcceptor acceptor, SocketAddress local, SocketAddress remote, Throwable reason)
+                throws IOException {
         // Do nothing
     }
 }

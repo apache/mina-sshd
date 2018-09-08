@@ -20,7 +20,6 @@
 package org.apache.sshd.common.config.keys;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -173,20 +172,6 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
      */
     public static List<AuthorizedKeyEntry> readAuthorizedKeys(URL url) throws IOException {
         try (InputStream in = url.openStream()) {
-            return readAuthorizedKeys(in, true);
-        }
-    }
-
-    /**
-     * Reads read the contents of an <code>authorized_keys</code> file
-     *
-     * @param file The {@link File} to read from
-     * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
-     * @throws IOException If failed to read or parse the entries
-     * @see #readAuthorizedKeys(InputStream, boolean)
-     */
-    public static List<AuthorizedKeyEntry> readAuthorizedKeys(File file) throws IOException {
-        try (InputStream in = new FileInputStream(file)) {
             return readAuthorizedKeys(in, true);
         }
     }

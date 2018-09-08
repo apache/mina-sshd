@@ -19,16 +19,12 @@
 
 package org.apache.sshd.client.config.hosts;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-
-import org.apache.sshd.common.util.io.IoUtils;
 
 /**
  * Monitors the {@code ~/.ssh/config} file of the user currently running
@@ -53,10 +49,6 @@ public class DefaultConfigFileHostEntryResolver extends ConfigFileHostEntryResol
      */
     public DefaultConfigFileHostEntryResolver(boolean strict) {
         this(HostConfigEntry.getDefaultHostConfigFile(), strict);
-    }
-
-    public DefaultConfigFileHostEntryResolver(File file, boolean strict) {
-        this(Objects.requireNonNull(file, "No file provided").toPath(), strict, IoUtils.getLinkOptions(true));
     }
 
     public DefaultConfigFileHostEntryResolver(Path path, boolean strict, LinkOption... options) {
