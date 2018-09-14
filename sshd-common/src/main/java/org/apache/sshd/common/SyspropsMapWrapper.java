@@ -46,6 +46,13 @@ public final class SyspropsMapWrapper implements Map<String, Object> {
     public static final String SYSPROPS_MAPPED_PREFIX = "org.apache.sshd.config";
 
     /**
+     * Exposes the &quot;raw&quot; system properties as a {@link PropertyResolver}
+     * without any further filtering
+     */
+    public static final PropertyResolver RAW_PROPS_RESOLVER =
+        PropertyResolverUtils.toPropertyResolver(System.getProperties());
+
+    /**
      * The one and only wrapper instance
      */
     public static final SyspropsMapWrapper INSTANCE = new SyspropsMapWrapper();
@@ -114,7 +121,8 @@ public final class SyspropsMapWrapper implements Map<String, Object> {
 
             Object v = props.getProperty(key);
             if (v != null) {
-                entries.add(new SimpleImmutableEntry<>(getUnmappedSyspropKey(key), v));
+                String unmappedKey = getUnmappedSyspropKey(key);
+                entries.add(new SimpleImmutableEntry<>(unmappedKey, v));
             }
         }
 
@@ -123,7 +131,8 @@ public final class SyspropsMapWrapper implements Map<String, Object> {
 
     @Override
     public Object get(Object key) {
-        return (key instanceof String) ? System.getProperty(getMappedSyspropKey(key)) : null;
+        String propName = getMappedSyspropKey(key);
+        return (key instanceof String) ? System.getProperty(propName) : null;
     }
 
     @Override
@@ -134,11 +143,12 @@ public final class SyspropsMapWrapper implements Map<String, Object> {
     @Override
     public Set<String> keySet() {
         return System.getProperties()
-                .stringPropertyNames().stream()
-                // filter out any non-SSHD properties
-                .filter(SyspropsMapWrapper::isMappedSyspropKey)
-                .map(SyspropsMapWrapper::getUnmappedSyspropKey)
-                .collect(Collectors.toSet());
+            .stringPropertyNames()
+            .stream()
+            // filter out any non-SSHD properties
+            .filter(SyspropsMapWrapper::isMappedSyspropKey)
+            .map(SyspropsMapWrapper::getUnmappedSyspropKey)
+            .collect(Collectors.toSet());
     }
 
     @Override
@@ -166,15 +176,16 @@ public final class SyspropsMapWrapper implements Map<String, Object> {
         Properties props = System.getProperties();
         // return a copy in order to avoid concurrent modifications
         return props
-                .stringPropertyNames().stream()
-                .filter(SyspropsMapWrapper::isMappedSyspropKey)
-                .map(props::get)
-                .collect(Collectors.toList());
+            .stringPropertyNames()
+            .stream()
+            .filter(SyspropsMapWrapper::isMappedSyspropKey)
+            .map(props::get)
+            .collect(Collectors.toList());
     }
 
     @Override
     public String toString() {
-        return Objects.toString(System.getProperties(), null);
+        return Objects.toString(entrySet(), null);
     }
 
     /**

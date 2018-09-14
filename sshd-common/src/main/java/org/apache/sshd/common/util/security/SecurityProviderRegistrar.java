@@ -106,12 +106,13 @@ public interface SecurityProviderRegistrar extends SecurityProviderChoice, Optio
             return false;
         }
 
-        return this.getBooleanProperty(getConfigurationPropertyName(ENABLED_PROPERTY), true);
+        String configPropName = getConfigurationPropertyName(ENABLED_PROPERTY);
+        return this.getBooleanProperty(configPropName, true);
     }
 
     @Override
     default PropertyResolver getParentPropertyResolver() {
-        return SyspropsMapWrapper.SYSPROPS_RESOLVER;
+        return SyspropsMapWrapper.RAW_PROPS_RESOLVER;
     }
 
     @Override

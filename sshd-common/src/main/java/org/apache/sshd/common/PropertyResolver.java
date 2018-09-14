@@ -81,8 +81,7 @@ public interface PropertyResolver {
      * be converted into one.
      * </P>
      *
-     * @return a valid <code>Map</code> containing configuration values, never
-     *         {@code null}
+     * @return a valid <code>Map</code> containing configuration values, never {@code null}
      */
     Map<String, Object> getProperties();
 

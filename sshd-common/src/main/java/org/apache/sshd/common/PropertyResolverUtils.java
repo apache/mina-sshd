@@ -268,11 +268,13 @@ public final class PropertyResolverUtils {
     }
 
     public static Boolean getBoolean(PropertyResolver resolver, String name) {
-        return toBoolean(resolvePropertyValue(resolver, name));
+        Object propValue = resolvePropertyValue(resolver, name);
+        return toBoolean(propValue);
     }
 
     public static Boolean getBoolean(Map<String, ?> props, String name) {
-        return toBoolean(resolvePropertyValue(props, name));
+        Object propValue = resolvePropertyValue(props, name);
+        return toBoolean(propValue);
     }
 
     public static Boolean toBoolean(Object value) {
