@@ -40,6 +40,9 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ECDH extends AbstractDH {
+    public static final String KEX_TYPE = "ECDH";
+
+    private ECCurves curve;
     private ECParameterSpec params;
     private ECPoint f;
 
@@ -53,10 +56,11 @@ public class ECDH extends AbstractDH {
 
     public ECDH(ECCurves curve) throws Exception {
         this(Objects.requireNonNull(curve, "No known curve instance provided").getParameters());
+        this.curve = curve;
     }
 
     public ECDH(ECParameterSpec paramSpec) throws Exception {
-        myKeyAgree = SecurityUtils.getKeyAgreement("ECDH");
+        myKeyAgree = SecurityUtils.getKeyAgreement(KEX_TYPE);
         params = paramSpec; // do not check for null-ity since in some cases it can be
     }
 
@@ -76,8 +80,9 @@ public class ECDH extends AbstractDH {
     @Override
     protected byte[] calculateK() throws Exception {
         Objects.requireNonNull(params, "No ECParameterSpec(s)");
-        KeyFactory myKeyFac = SecurityUtils.getKeyFactory(KeyUtils.EC_ALGORITHM);
+        Objects.requireNonNull(f, "Missing 'f' value");
         ECPublicKeySpec keySpec = new ECPublicKeySpec(f, params);
+        KeyFactory myKeyFac = SecurityUtils.getKeyFactory(KeyUtils.EC_ALGORITHM);
         PublicKey yourPubKey = myKeyFac.generatePublic(keySpec);
         myKeyAgree.doPhase(yourPubKey, true);
         return stripLeadingZeroes(myKeyAgree.generateSecret());
@@ -90,13 +95,17 @@ public class ECDH extends AbstractDH {
     @Override
     public void setF(byte[] f) {
         Objects.requireNonNull(params, "No ECParameterSpec(s)");
+        Objects.requireNonNull(f, "No 'f' value specified");
         this.f = ECCurves.octetStringToEcPoint(f);
     }
 
     @Override
     public Digest getHash() throws Exception {
-        Objects.requireNonNull(params, "No ECParameterSpec(s)");
-        ECCurves curve = Objects.requireNonNull(ECCurves.fromCurveParameters(params), "Unknown curve parameters");
+        if (curve == null) {
+            Objects.requireNonNull(params, "No ECParameterSpec(s)");
+            curve = Objects.requireNonNull(ECCurves.fromCurveParameters(params), "Unknown curve parameters");
+        }
+
         return curve.getDigestForParams();
     }
 }
