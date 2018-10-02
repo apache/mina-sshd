@@ -1967,6 +1967,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         outBlocksCount.set(0L);
         lastKeyTimeValue.set(System.currentTimeMillis());
         firstKexPacketFollows = null;
+        kex = null;
     }
 
     /**
