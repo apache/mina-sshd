@@ -28,8 +28,6 @@ import java.security.spec.ECPoint;
 import java.security.spec.ECPublicKeySpec;
 import java.util.Objects;
 
-import javax.crypto.KeyAgreement;
-
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.digest.Digest;
@@ -42,13 +40,8 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ECDH extends AbstractDH {
-
     private ECParameterSpec params;
-    private ECPoint e;
-    private byte[] e_array;
     private ECPoint f;
-    private KeyPairGenerator myKpairGen;
-    private KeyAgreement myKeyAgree;
 
     public ECDH() throws Exception {
         this((ECParameterSpec) null);
@@ -63,22 +56,21 @@ public class ECDH extends AbstractDH {
     }
 
     public ECDH(ECParameterSpec paramSpec) throws Exception {
-        myKpairGen = SecurityUtils.getKeyPairGenerator(KeyUtils.EC_ALGORITHM);
         myKeyAgree = SecurityUtils.getKeyAgreement("ECDH");
-        params = paramSpec;
+        params = paramSpec; // do not check for null-ity since in some cases it can be
     }
 
     @Override
-    public byte[] getE() throws Exception {
-        if (e == null) {
-            Objects.requireNonNull(params, "No ECParameterSpec(s)");
-            myKpairGen.initialize(params);
-            KeyPair myKpair = myKpairGen.generateKeyPair();
-            myKeyAgree.init(myKpair.getPrivate());
-            e = ((ECPublicKey) myKpair.getPublic()).getW();
-            e_array = ECCurves.encodeECPoint(e, params);
-        }
-        return e_array;
+    protected byte[] calculateE() throws Exception {
+        Objects.requireNonNull(params, "No ECParameterSpec(s)");
+        KeyPairGenerator myKpairGen = SecurityUtils.getKeyPairGenerator(KeyUtils.EC_ALGORITHM);
+        myKpairGen.initialize(params);
+        KeyPair myKpair = myKpairGen.generateKeyPair();
+        myKeyAgree.init(myKpair.getPrivate());
+
+        ECPublicKey pubKey = (ECPublicKey) myKpair.getPublic();
+        ECPoint e = pubKey.getW();
+        return ECCurves.encodeECPoint(e, params);
     }
 
     @Override

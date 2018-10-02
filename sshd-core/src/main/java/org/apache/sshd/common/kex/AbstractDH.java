@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.common.kex;
 
-import java.math.BigInteger;
+import javax.crypto.KeyAgreement;
 
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.util.NumberUtils;
@@ -28,8 +28,10 @@ import org.apache.sshd.common.util.NumberUtils;
  */
 public abstract class AbstractDH {
 
-    protected BigInteger k; // shared secret key
-    private byte[] k_array;
+    protected KeyAgreement myKeyAgree;
+
+    private byte[] k_array; // shared secret key
+    private byte[] e_array; // public key used in the exchange
 
     protected AbstractDH() {
         super();
@@ -37,14 +39,21 @@ public abstract class AbstractDH {
 
     public abstract void setF(byte[] e);
 
-    public abstract byte[] getE() throws Exception;
+    protected abstract byte[] calculateE() throws Exception;
+
+    public byte[] getE() throws Exception {
+        if (e_array == null) {
+            e_array = calculateE();
+        }
+
+        return e_array;
+    }
 
     protected abstract byte[] calculateK() throws Exception;
 
     public byte[] getK() throws Exception {
-        if (k == null) {
+        if (k_array == null) {
             k_array = calculateK();
-            k = new BigInteger(k_array);
         }
         return k_array;
     }
