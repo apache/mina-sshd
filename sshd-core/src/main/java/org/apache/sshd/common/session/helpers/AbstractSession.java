@@ -681,15 +681,16 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected void handleKexMessage(int cmd, Buffer buffer) throws Exception {
         validateKexState(cmd, KexState.RUN);
 
+        boolean debugEnabled = log.isDebugEnabled();
         if (kex.next(cmd, buffer)) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("handleKexMessage({})[{}] KEX processing complete after cmd={}", this, kex.getName(), cmd);
             }
             checkKeys();
             sendNewKeys();
             kexState.set(KexState.KEYS);
         } else {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("handleKexMessage({})[{}] more KEX packets expected after cmd={}", this, kex.getName(), cmd);
             }
         }
@@ -889,6 +890,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         synchronized (pendingPackets) {
             pendingWrites = sendPendingPackets(pendingPackets);
             kexState.set(KexState.DONE);
+            kex = null; // discard and GC since KEX is completed
         }
 
         int pendingCount = pendingWrites.size();
@@ -934,7 +936,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         KexState actual = kexState.get();
         if (!expected.equals(actual)) {
             throw new IllegalStateException("Received KEX command=" + SshConstants.getCommandMessageName(cmd)
-                                          + " while in state=" + actual + " instead of " + expected);
+                  + " while in state=" + actual + " instead of " + expected);
         }
     }
 
@@ -1022,9 +1024,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .parallel(toString(), getServices())
-                .close(getIoSession())
-                .build();
+            .parallel(toString(), getServices())
+            .close(getIoSession())
+            .build();
     }
 
     @Override
@@ -2016,11 +2018,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             if (log.isDebugEnabled()) {
                 if (t == null) {
                     log.debug("disconnect({}) operation successfully completed for reason={} [{}]",
-                              AbstractSession.this, SshConstants.getDisconnectReasonName(reason), msg);
+                          AbstractSession.this, SshConstants.getDisconnectReasonName(reason), msg);
                 } else {
                     log.debug("disconnect({}) operation failed ({}) for reason={} [{}]: {}",
-                               AbstractSession.this, t.getClass().getSimpleName(),
-                               SshConstants.getDisconnectReasonName(reason), msg, t.getMessage());
+                           AbstractSession.this, t.getClass().getSimpleName(),
+                           SshConstants.getDisconnectReasonName(reason), msg, t.getMessage());
                 }
             }
 
@@ -2832,11 +2834,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * Checks if idle timeout expired
      *
      * @param now           The current time in millis
-     * @param idleTimeoutMs The configured timeout in millis - if non-positive
-     *                      then no timeout
+     * @param idleTimeoutMs The configured timeout in millis - if non-positive then no timeout
      * @return A {@link SimpleImmutableEntry} specifying the timeout status and disconnect reason
-     * message if timeout expired, {@code null} or {@code NoTimeout} if no timeout
-     * occurred
+     * message if timeout expired, {@code null} or {@code NoTimeout} if no timeout occurred
      * @see #getIdleTimeout()
      */
     protected SimpleImmutableEntry<TimeoutStatus, String> checkIdleTimeout(long now, long idleTimeoutMs) {

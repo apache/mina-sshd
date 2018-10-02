@@ -29,6 +29,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
@@ -63,8 +64,10 @@ public class UserAuthAgent extends AbstractUserAuth {
             buffer.putString(KeyUtils.getKeyType(key));
             buffer.putPublicKey(key);
 
+            KeyExchange kexValue = session.getKex();
+            byte[] hValue = kexValue.getH();
             Buffer bs = new ByteArrayBuffer();
-            bs.putBytes(session.getKex().getH());
+            bs.putBytes(hValue);
             bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             bs.putString(session.getUsername());
             bs.putString(service);
