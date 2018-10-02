@@ -23,6 +23,7 @@ import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
+import java.util.Objects;
 
 import javax.crypto.interfaces.DHPublicKey;
 import javax.crypto.spec.DHParameterSpec;
@@ -38,6 +39,8 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DHG extends AbstractDH {
+    public static final String KEX_TYPE = "DH";
+
     private BigInteger p;
     private BigInteger g;
     private BigInteger f;  // your public key
@@ -48,7 +51,7 @@ public class DHG extends AbstractDH {
     }
 
     public DHG(Factory<? extends Digest> digestFactory, BigInteger pValue, BigInteger gValue) throws Exception {
-        myKeyAgree = SecurityUtils.getKeyAgreement("DH");
+        myKeyAgree = SecurityUtils.getKeyAgreement(KEX_TYPE);
         factory = digestFactory;
         p = pValue;  // do not check for null-ity since in some cases it can be
         g = gValue;  // do not check for null-ity since in some cases it can be
@@ -69,6 +72,7 @@ public class DHG extends AbstractDH {
 
     @Override
     protected byte[] calculateK() throws Exception {
+        Objects.requireNonNull(f, "Missing 'f' value");
         DHPublicKeySpec keySpec = new DHPublicKeySpec(f, p, g);
         KeyFactory myKeyFac = SecurityUtils.getKeyFactory("DH");
         PublicKey yourPubKey = myKeyFac.generatePublic(keySpec);
@@ -106,7 +110,7 @@ public class DHG extends AbstractDH {
     }
 
     public void setF(BigInteger f) {
-        this.f = f;
+        this.f = Objects.requireNonNull(f, "No 'f' value specified");
     }
 
     @Override
