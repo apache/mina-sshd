@@ -38,6 +38,10 @@ public abstract class AbstractDH {
 
     public abstract void setF(byte[] f);
 
+    public boolean isPublicDataAvailable() {
+        return e_array != null;
+    }
+
     /**
      * Lazy-called by {@link #getE()} if the public key data has not
      * been generated yet.
@@ -58,6 +62,10 @@ public abstract class AbstractDH {
         }
 
         return e_array;
+    }
+
+    public boolean isSharedSecretAvailable() {
+        return k_array != null;
     }
 
     /**
@@ -101,6 +109,14 @@ public abstract class AbstractDH {
     }
 
     public abstract Digest getHash() throws Exception;
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName()
+            + "[publicDataAvailable=" + isPublicDataAvailable()
+            + ", sharedSecretAvailable=" + isSharedSecretAvailable()
+            + "]";
+    }
 
     /**
      * The shared secret returned by {@link javax.crypto.KeyAgreement#generateSecret()}

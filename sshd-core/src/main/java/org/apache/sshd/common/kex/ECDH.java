@@ -69,6 +69,7 @@ public class ECDH extends AbstractDH {
         Objects.requireNonNull(params, "No ECParameterSpec(s)");
         KeyPairGenerator myKpairGen = SecurityUtils.getKeyPairGenerator(KeyUtils.EC_ALGORITHM);
         myKpairGen.initialize(params);
+
         KeyPair myKpair = myKpairGen.generateKeyPair();
         myKeyAgree.init(myKpair.getPrivate());
 
@@ -107,5 +108,13 @@ public class ECDH extends AbstractDH {
         }
 
         return curve.getDigestForParams();
+    }
+
+    @Override
+    public String toString() {
+        return super.toString()
+            + "[curve=" + curve
+            + ", f=" + f
+            + "]";
     }
 }

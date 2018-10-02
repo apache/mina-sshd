@@ -65,6 +65,7 @@ public class DHG extends AbstractDH {
 
         KeyPair myKpair = myKpairGen.generateKeyPair();
         myKeyAgree.init(myKpair.getPrivate());
+
         DHPublicKey pubKey = (DHPublicKey) myKpair.getPublic();
         BigInteger e = pubKey.getY();
         return e.toByteArray();
@@ -116,5 +117,15 @@ public class DHG extends AbstractDH {
     @Override
     public Digest getHash() throws Exception {
         return factory.create();
+    }
+
+    @Override
+    public String toString() {
+        return super.toString()
+            + "[p=" + p
+            + ", g=" + g
+            + ", f=" + f
+            + ", digest=" + factory
+            + "]";
     }
 }
