@@ -27,7 +27,6 @@ import org.apache.sshd.common.util.NumberUtils;
  * Base class for the Diffie-Hellman key agreement.
  */
 public abstract class AbstractDH {
-
     protected KeyAgreement myKeyAgree;
 
     private byte[] k_array; // shared secret key
@@ -37,25 +36,68 @@ public abstract class AbstractDH {
         super();
     }
 
-    public abstract void setF(byte[] e);
+    public abstract void setF(byte[] f);
 
+    /**
+     * Lazy-called by {@link #getE()} if the public key data has not
+     * been generated yet.
+     *
+     * @return The calculated public key data
+     * @throws Exception If failed to generate the relevant data
+     */
     protected abstract byte[] calculateE() throws Exception;
 
+    /**
+     * @return The local public key data
+     * @throws Exception If failed to calculate it
+     */
     public byte[] getE() throws Exception {
         if (e_array == null) {
             e_array = calculateE();
+            checkKeyAgreementNecessity();
         }
 
         return e_array;
     }
 
+    /**
+     * Lazy-called by {@link #getK()} if the shared secret data has
+     * not been calculated yet
+     *
+     * @return The shared secret data
+     * @throws Exception If failed to calculate it
+     */
     protected abstract byte[] calculateK() throws Exception;
 
+    /**
+     * @return The shared secret key
+     * @throws Exception If failed to calculate it
+     */
     public byte[] getK() throws Exception {
         if (k_array == null) {
             k_array = calculateK();
+            checkKeyAgreementNecessity();
         }
         return k_array;
+    }
+
+    /**
+     * Called after either public or private parts have been calculated
+     * in order to check if the key-agreement mediator is still required.
+     * By default, if both public and private parts have been calculated
+     * then key-agreement mediator is null-ified to enable GC for it.
+     *
+     * @see #getE()
+     * @see #getK()
+     */
+    protected void checkKeyAgreementNecessity() {
+        if ((e_array == null) || (k_array == null)) {
+            return;
+        }
+
+        if (myKeyAgree != null) {
+            myKeyAgree = null;  // allow GC for key agreement object
+        }
     }
 
     public abstract Digest getHash() throws Exception;
