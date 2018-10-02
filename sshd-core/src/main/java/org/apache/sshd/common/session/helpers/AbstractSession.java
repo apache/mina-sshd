@@ -849,9 +849,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         Map<KexProposalOption, String> result = negotiate();
         String kexAlgorithm = result.get(KexProposalOption.ALGORITHMS);
         Collection<? extends NamedFactory<KeyExchange>> kexFactories = getKeyExchangeFactories();
-        kex = ValidateUtils.checkNotNull(NamedFactory.create(kexFactories, kexAlgorithm),
-                "Unknown negotiated KEX algorithm: %s",
-                kexAlgorithm);
+        synchronized (pendingPackets) {
+            kex = ValidateUtils.checkNotNull(NamedFactory.create(kexFactories, kexAlgorithm),
+                    "Unknown negotiated KEX algorithm: %s",
+                    kexAlgorithm);
+        }
 
         byte[] v_s = serverVersion.getBytes(StandardCharsets.UTF_8);
         byte[] v_c = clientVersion.getBytes(StandardCharsets.UTF_8);
@@ -889,8 +891,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         Collection<? extends Map.Entry<? extends SshFutureListener<IoWriteFuture>, IoWriteFuture>> pendingWrites;
         synchronized (pendingPackets) {
             pendingWrites = sendPendingPackets(pendingPackets);
-            kexState.set(KexState.DONE);
             kex = null; // discard and GC since KEX is completed
+            kexState.set(KexState.DONE);
         }
 
         int pendingCount = pendingWrites.size();
