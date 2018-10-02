@@ -69,6 +69,9 @@ public class DHG extends AbstractDH {
             myKeyAgree.init(myKpair.getPrivate());
             e = ((javax.crypto.interfaces.DHPublicKey) (myKpair.getPublic())).getY();
             e_array = e.toByteArray();
+
+            // At this point we will not need the KeyPairGenerator, allow it to be garbage-collected
+            myKpairGen = null;
         }
         return e_array;
     }

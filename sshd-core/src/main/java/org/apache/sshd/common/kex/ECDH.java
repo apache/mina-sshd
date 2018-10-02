@@ -77,6 +77,9 @@ public class ECDH extends AbstractDH {
             myKeyAgree.init(myKpair.getPrivate());
             e = ((ECPublicKey) myKpair.getPublic()).getW();
             e_array = ECCurves.encodeECPoint(e, params);
+
+            // At this point we will not need the KeyPairGenerator, allow it to be garbage-collected
+            myKpairGen = null;
         }
         return e_array;
     }
