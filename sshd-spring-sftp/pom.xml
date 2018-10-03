@@ -34,7 +34,7 @@
 
     <properties>
         <projectRoot>${project.basedir}/..</projectRoot>
-        <spring.integration.version>5.0.7.RELEASE</spring.integration.version>
+        <spring.integration.version>5.0.8.RELEASE</spring.integration.version>
     </properties>
 
     <dependencyManagement>
