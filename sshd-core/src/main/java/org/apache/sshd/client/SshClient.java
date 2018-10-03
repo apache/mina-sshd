@@ -141,16 +141,16 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
      * @see <A HREF="http://linux.die.net/man/5/ssh_config">ssh_config(5) - PreferredAuthentications</A>
      */
     public static final List<NamedFactory<UserAuth>> DEFAULT_USER_AUTH_FACTORIES =
-            Collections.unmodifiableList(Arrays.<NamedFactory<UserAuth>>asList(
-                    UserAuthPublicKeyFactory.INSTANCE,
-                    UserAuthKeyboardInteractiveFactory.INSTANCE,
-                    UserAuthPasswordFactory.INSTANCE
-            ));
+        Collections.unmodifiableList(Arrays.<NamedFactory<UserAuth>>asList(
+                UserAuthPublicKeyFactory.INSTANCE,
+                UserAuthKeyboardInteractiveFactory.INSTANCE,
+                UserAuthPasswordFactory.INSTANCE
+        ));
     public static final List<ServiceFactory> DEFAULT_SERVICE_FACTORIES =
-            Collections.unmodifiableList(Arrays.asList(
-                    ClientUserAuthServiceFactory.INSTANCE,
-                    ClientConnectionServiceFactory.INSTANCE
-            ));
+        Collections.unmodifiableList(Arrays.asList(
+                ClientUserAuthServiceFactory.INSTANCE,
+                ClientConnectionServiceFactory.INSTANCE
+        ));
 
     protected IoConnector connector;
     protected SessionFactory sessionFactory;
@@ -702,7 +702,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     @Override
     public String toString() {
-        return "SshClient[" + Integer.toHexString(hashCode()) + "]";
+        return getClass().getSimpleName() + "[" + Integer.toHexString(hashCode()) + "]";
     }
 
     /**
@@ -767,10 +767,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     /**
      * Setup a default client.  The client does not require any additional setup.
      *
-     * @return a newly create SSH client
+     * @return a newly create {@link SshClient} with default configurations
      */
     public static SshClient setUpDefaultClient() {
-        return ClientBuilder.builder().build();
+        ClientBuilder builder = ClientBuilder.builder();
+        return builder.build();
     }
 
     /**
@@ -820,7 +821,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
      */
     public static <C extends SshClient> C setKeyPairProvider(
             C client, Path dir, boolean strict, boolean supportedOnly, FilePasswordProvider provider, LinkOption... options)
-            throws IOException, GeneralSecurityException {
+                throws IOException, GeneralSecurityException {
         KeyPairProvider kpp =
             ClientIdentity.loadDefaultKeyPairProvider(dir, strict, supportedOnly, provider, options);
         if (kpp != null) {
