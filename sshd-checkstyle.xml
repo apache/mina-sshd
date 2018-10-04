@@ -315,4 +315,10 @@
 	<module name="FileTabCharacter">
 		<property name="eachLine" value="true" />
 	</module>
+	    <!-- '{samedir}' is an Eclipse built in environment variable initialized with the value of the external checkstyle configuration file -->
+	    <!-- See https://checkstyle.org/eclipse-cs/#!/properties -->
+    <module name="SuppressionFilter">
+        <property name="file" value="${samedir}/sshd-checkstyle-suppressions.xml"/>
+        <property name="optional" value="true"/>
+    </module>
 </module>

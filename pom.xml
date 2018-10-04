@@ -895,7 +895,9 @@
                 <configuration>
                     <configLocation>${workspace.root.dir}${file.separator}sshd-checkstyle.xml</configLocation>
                     <headerLocation>${workspace.root.dir}${file.separator}java-checkstyle-license-header.txt</headerLocation>
-                    <suppressionsLocation>${workspace.root.dir}${file.separator}sshd-checkstyle-suppressions.xml</suppressionsLocation>
+                        <!-- '{samedir}' is an Eclipse built in environment variable initialized with the value of the external checkstyle configuration file -->
+                        <!-- See See https://checkstyle.org/eclipse-cs/#!/properties -->
+                    <propertyExpansion>samedir=${workspace.root.dir}</propertyExpansion>
                     <includeTestSourceDirectory>true</includeTestSourceDirectory>
                 </configuration>
                 <executions>
@@ -968,7 +970,7 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-clean-plugin</artifactId>            
+                <artifactId>maven-clean-plugin</artifactId>
                 <executions>
                         <!-- Delete temporary serialized key files generated during tests run -->
                     <execution>
