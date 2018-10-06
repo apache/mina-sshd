@@ -172,8 +172,8 @@ public abstract class JUnitTestSupport extends Assert {
     protected Path detectTargetFolder() throws IllegalArgumentException {
         synchronized (TEMP_SUBFOLDER_NAME) {
             if (targetFolder == null) {
-                File path = CommonTestSupportUtils.detectTargetFolder(getClass());
-                targetFolder = Objects.requireNonNull(path, "Failed to detect target folder").toPath();
+                Path path = CommonTestSupportUtils.detectTargetFolder(getClass());
+                targetFolder = Objects.requireNonNull(path, "Failed to detect target folder");
             }
         }
 

@@ -28,12 +28,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -931,19 +933,19 @@ public class ScpTest extends BaseTestSupport {
             String unixDir = "target/scp";
             String fileName = getCurrentTestName() + ".txt";
             String unixPath = unixDir + "/" + fileName;
-            File root = new File(unixDir);
-            File target = new File(unixPath);
+            Path root = Paths.get(unixDir);
+            Path target = Paths.get(unixPath);
             CommonTestSupportUtils.deleteRecursive(root);
-            root.mkdirs();
-            assertTrue("Failed to ensure existence of " + root, root.exists());
+            Files.createDirectories(root);
+            assertTrue("Failed to ensure existence of " + root, Files.exists(root));
 
-            target.delete();
-            assertFalse("Failed to delete 1st time: " + target, target.exists());
+            Files.deleteIfExists(target);
+            assertFalse("Failed to delete 1st time: " + target, Files.exists(target));
             sendFile(session, unixPath, target, data);
             assertFileLength(target, data.length(), TimeUnit.SECONDS.toMillis(11L));
 
-            target.delete();
-            assertFalse("Failed to delete 2nd time: " + target, target.exists());
+            Files.deleteIfExists(target);
+            assertFalse("Failed to delete 2nd time: " + target, Files.exists(target));
             sendFile(session, unixDir, target, data);
             assertFileLength(target, data.length(), TimeUnit.SECONDS.toMillis(11L));
 
@@ -954,8 +956,8 @@ public class ScpTest extends BaseTestSupport {
             assertEquals("Mismatched file data", data, readFile(session, unixPath, target));
             assertEquals("Mismatched dir data", data, readDir(session, unixDir, target));
 
-            target.delete();
-            root.delete();
+            Files.deleteIfExists(target);
+            Files.deleteIfExists(root);
 
             sendDir(session, "target", ScpHelper.SCP_COMMAND_PREFIX, fileName, data);
             assertFileLength(target, data.length(), TimeUnit.SECONDS.toMillis(11L));
@@ -1024,12 +1026,12 @@ public class ScpTest extends BaseTestSupport {
         }
     }
 
-    protected String readFile(com.jcraft.jsch.Session session, String path, File target) throws Exception {
+    protected String readFile(com.jcraft.jsch.Session session, String path, Path target) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel(Channel.CHANNEL_EXEC);
         c.setCommand("scp -f " + path);
         c.connect();
 
-        String fileName = target.getName();
+        String fileName = Objects.toString(target.getFileName(), null);
         try (OutputStream os = c.getOutputStream();
              InputStream is = c.getInputStream()) {
 
@@ -1037,7 +1039,7 @@ public class ScpTest extends BaseTestSupport {
             os.flush();
 
             String header = readLine(is);
-            String expHeader = "C" + ScpHelper.DEFAULT_FILE_OCTAL_PERMISSIONS + " " + target.length() + " " + fileName;
+            String expHeader = "C" + ScpHelper.DEFAULT_FILE_OCTAL_PERMISSIONS + " " + Files.size(target) + " " + fileName;
             assertEquals("Mismatched header for " + path, expHeader, header);
 
             String lenValue = header.substring(6, header.indexOf(' ', 6));
@@ -1059,7 +1061,7 @@ public class ScpTest extends BaseTestSupport {
         }
     }
 
-    protected String readDir(com.jcraft.jsch.Session session, String path, File target) throws Exception {
+    protected String readDir(com.jcraft.jsch.Session session, String path, Path target) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel(Channel.CHANNEL_EXEC);
         c.setCommand("scp -r -f " + path);
         c.connect();
@@ -1076,7 +1078,8 @@ public class ScpTest extends BaseTestSupport {
             os.flush();
 
             header = readLine(is);
-            String expHeader = "C" + ScpHelper.DEFAULT_FILE_OCTAL_PERMISSIONS + " " + target.length() + " " + target.getName();
+            String fileName = Objects.toString(target.getFileName(), null);
+            String expHeader = "C" + ScpHelper.DEFAULT_FILE_OCTAL_PERMISSIONS + " " + Files.size(target) + " " + fileName;
             assertEquals("Mismatched dir header for " + path, expHeader, header);
             int length = Integer.parseInt(header.substring(6, header.indexOf(' ', 6)));
             os.write(0);
@@ -1118,7 +1121,7 @@ public class ScpTest extends BaseTestSupport {
         }
     }
 
-    protected void sendFile(com.jcraft.jsch.Session session, String path, File target, String data) throws Exception {
+    protected void sendFile(com.jcraft.jsch.Session session, String path, Path target, String data) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel(Channel.CHANNEL_EXEC);
         String command = "scp -t " + path;
         c.setCommand(command);
@@ -1129,10 +1132,10 @@ public class ScpTest extends BaseTestSupport {
 
             assertAckReceived(is, command);
 
-            File parent = target.getParentFile();
-            Collection<PosixFilePermission> perms = IoUtils.getPermissions(parent.toPath());
+            Path parent = target.getParent();
+            Collection<PosixFilePermission> perms = IoUtils.getPermissions(parent);
             String octalPerms = ScpHelper.getOctalPermissions(perms);
-            String name = target.getName();
+            String name = Objects.toString(target.getFileName(), null);
             assertAckReceived(os, is, "C" + octalPerms + " " + data.length() + " " + name);
 
             os.write(data.getBytes(StandardCharsets.UTF_8));

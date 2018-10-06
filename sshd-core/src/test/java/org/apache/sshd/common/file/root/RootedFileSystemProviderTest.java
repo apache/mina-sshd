@@ -67,7 +67,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     @BeforeClass
     public static void initializeFileSystem() throws IOException {
         Path targetFolder = Objects.requireNonNull(
-            CommonTestSupportUtils.detectTargetFolder(RootedFileSystemProviderTest.class), "Failed to detect target folder").toPath();
+            CommonTestSupportUtils.detectTargetFolder(RootedFileSystemProviderTest.class), "Failed to detect target folder");
         rootSandbox = FileHelper.createTestSandbox(targetFolder.resolve(TEMP_SUBFOLDER_NAME));
         fileSystem = (RootedFileSystem) new RootedFileSystemProvider().newFileSystem(rootSandbox, Collections.emptyMap());
     }

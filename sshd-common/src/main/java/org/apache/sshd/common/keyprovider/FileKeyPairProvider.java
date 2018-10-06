@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.common.keyprovider;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -62,10 +61,6 @@ public class FileKeyPairProvider extends AbstractResourceKeyPairProvider<Path> {
 
     public Collection<? extends Path> getPaths() {
         return files;
-    }
-
-    public void setFiles(Collection<File> files) {
-        setPaths(GenericUtils.map(files, File::toPath));
     }
 
     public void setPaths(Collection<? extends Path> paths) {

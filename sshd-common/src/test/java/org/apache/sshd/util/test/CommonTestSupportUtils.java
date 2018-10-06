@@ -31,6 +31,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.CodeSource;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
@@ -305,26 +306,26 @@ public final class CommonTestSupportUtils {
      * as the starting point for the &quot;target&quot; folder lookup up the
      * hierarchy
      * @return The &quot;target&quot; <U>folder</U> - {@code null} if not found
-     * @see #detectTargetFolder(File)
+     * @see #detectTargetFolder(Path)
      */
-    public static File detectTargetFolder(Class<?> anchor) {
-        return detectTargetFolder(getClassContainerLocationFile(anchor));
+    public static Path detectTargetFolder(Class<?> anchor) {
+        return detectTargetFolder(getClassContainerLocationPath(anchor));
     }
 
     /**
      * @param clazz A {@link Class} object
-     * @return A {@link File} of the location of the class bytes container
+     * @return A {@link Path} of the location of the class bytes container
      * - e.g., the root folder, the containing JAR, etc.. Returns
      * {@code null} if location could not be resolved
-     * @throws IllegalArgumentException If location is not a valid {@link File} location
+     * @throws IllegalArgumentException If location is not a valid {@link Path} location
      * @see #getClassContainerLocationURI(Class)
-     * @see #toFileSource(URI)
+     * @see #toPathSource(URI)
      */
-    public static File getClassContainerLocationFile(Class<?> clazz)
+    public static Path getClassContainerLocationPath(Class<?> clazz)
             throws IllegalArgumentException {
         try {
             URI uri = getClassContainerLocationURI(clazz);
-            return toFileSource(uri);
+            return toPathSource(uri);
         } catch (URISyntaxException | MalformedURLException e) {
             throw new IllegalArgumentException(e.getClass().getSimpleName() + ": " + e.getMessage(), e);
         }
@@ -332,21 +333,21 @@ public final class CommonTestSupportUtils {
 
     /**
      * Converts a {@link URL} that may refer to an internal resource to
-     * a {@link File} representing is &quot;source&quot; container (e.g.,
+     * a {@link Path} representing is &quot;source&quot; container (e.g.,
      * if it is a resource in a JAR, then the result is the JAR's path)
      *
      * @param url The {@link URL} - ignored if {@code null}
-     * @return The matching {@link File}
+     * @return The matching {@link Path}
      * @throws MalformedURLException If source URL does not refer to a file location
-     * @see #toFileSource(URI)
+     * @see #toPathSource(URI)
      */
-    public static File toFileSource(URL url) throws MalformedURLException {
+    public static Path toPathSource(URL url) throws MalformedURLException {
         if (url == null) {
             return null;
         }
 
         try {
-            return toFileSource(url.toURI());
+            return toPathSource(url.toURI());
         } catch (URISyntaxException e) {
             throw new MalformedURLException("toFileSource(" + url.toExternalForm() + ")"
                     + " cannot (" + e.getClass().getSimpleName() + ")"
@@ -356,15 +357,15 @@ public final class CommonTestSupportUtils {
 
     /**
      * Converts a {@link URI} that may refer to an internal resource to
-     * a {@link File} representing is &quot;source&quot; container (e.g.,
+     * a {@link Path} representing is &quot;source&quot; container (e.g.,
      * if it is a resource in a JAR, then the result is the JAR's path)
      *
      * @param uri The {@link URI} - ignored if {@code null}
-     * @return The matching {@link File}
+     * @return The matching {@link Path}
      * @throws MalformedURLException If source URI does not refer to a file location
      * @see #getURLSource(URI)
      */
-    public static File toFileSource(URI uri) throws MalformedURLException {
+    public static Path toPathSource(URI uri) throws MalformedURLException {
         String src = getURLSource(uri);
         if (GenericUtils.isEmpty(src)) {
             return null;
@@ -375,7 +376,7 @@ public final class CommonTestSupportUtils {
         }
 
         try {
-            return new File(new URI(src));
+            return Paths.get(new URI(src));
         } catch (URISyntaxException e) {
             throw new MalformedURLException("toFileSource(" + src + ")"
                     + " cannot (" + e.getClass().getSimpleName() + ")"
@@ -384,18 +385,18 @@ public final class CommonTestSupportUtils {
     }
 
     /**
-     * @param anchorFile An anchor {@link File} we want to use
+     * @param anchorFile An anchor {@link Path} we want to use
      * as the starting point for the &quot;target&quot; or &quot;build&quot; folder
      * lookup up the hierarchy
      * @return The &quot;target&quot; <U>folder</U> - {@code null} if not found
      */
-    public static File detectTargetFolder(File anchorFile) {
-        for (File file = anchorFile; file != null; file = file.getParentFile()) {
-            if (!file.isDirectory()) {
+    public static Path detectTargetFolder(Path anchorFile) {
+        for (Path file = anchorFile; file != null; file = file.getParent()) {
+            if (!Files.isDirectory(file)) {
                 continue;
             }
 
-            String name = file.getName();
+            String name = Objects.toString(file.getFileName(), "");
             if (TARGET_FOLDER_NAMES.contains(name)) {
                 return file;
             }
@@ -425,8 +426,8 @@ public final class CommonTestSupportUtils {
             return provider;
         }
 
-        File targetFolder = Objects.requireNonNull(CommonTestSupportUtils.detectTargetFolder(anchor), "Failed to detect target folder");
-        File file = new File(targetFolder, "hostkey." + DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM.toLowerCase());
+        Path targetFolder = Objects.requireNonNull(CommonTestSupportUtils.detectTargetFolder(anchor), "Failed to detect target folder");
+        Path file = targetFolder.resolve("hostkey." + DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM.toLowerCase());
         provider = createTestHostKeyProvider(file);
 
         KeyPairProvider prev = KEYPAIR_PROVIDER_HOLDER.getAndSet(provider);
@@ -435,10 +436,6 @@ public final class CommonTestSupportUtils {
         } else {
             return provider;
         }
-    }
-
-    public static KeyPairProvider createTestHostKeyProvider(File file) {
-        return createTestHostKeyProvider(Objects.requireNonNull(file, "No file").toPath());
     }
 
     public static KeyPairProvider createTestHostKeyProvider(Path path) {
@@ -460,67 +457,13 @@ public final class CommonTestSupportUtils {
         return Objects.requireNonNull(iter.next(), "No key pair in iterator");
     }
 
-    private static File getFile(String resource) {
+    private static Path getFile(String resource) {
         URL url = CommonTestSupportUtils.class.getClassLoader().getResource(resource);
         try {
-            return new File(url.toURI());
+            return Paths.get(url.toURI());
         } catch (URISyntaxException e) {
-            return new File(url.getPath());
+            return Paths.get(url.getPath());
         }
-    }
-
-    public static File resolve(File root, String... children) {
-        if (GenericUtils.isEmpty(children)) {
-            return root;
-        } else {
-            return resolve(root, Arrays.asList(children));
-        }
-    }
-
-    public static File resolve(File root, Collection<String> children) {
-        File path = root;
-        if (!GenericUtils.isEmpty(children)) {
-            for (String child : children) {
-                path = new File(path, child);
-            }
-        }
-
-        return path;
-    }
-
-    /**
-     * Removes the specified file - if it is a directory, then its children
-     * are deleted recursively and then the directory itself. <B>Note:</B>
-     * no attempt is made to make sure that {@link File#delete()} was successful
-     *
-     * @param file The {@link File} to be deleted - ignored if {@code null}
-     *             or does not exist anymore
-     * @return The <tt>file</tt> argument
-     */
-    public static File deleteRecursive(File file) {
-        if ((file == null) || (!file.exists())) {
-            return file;
-        }
-
-        if (file.isDirectory()) {
-            File[] children = file.listFiles();
-            if (!GenericUtils.isEmpty(children)) {
-                for (File child : children) {
-                    deleteRecursive(child);
-                }
-            }
-        }
-
-        // seems that if a file is not writable it cannot be deleted
-        if (!file.canWrite()) {
-            file.setWritable(true, false);
-        }
-
-        if (!file.delete()) {
-            System.err.append("Failed to delete ").println(file.getAbsolutePath());
-        }
-
-        return file;
     }
 
     /**
@@ -568,15 +511,16 @@ public final class CommonTestSupportUtils {
     }
 
     public static FileKeyPairProvider createTestKeyPairProvider(String resource) {
-        File file = getFile(resource);
-        String filePath = file.getAbsolutePath();
+        Path file = getFile(resource);
+        file = file.toAbsolutePath();
+        String filePath = Objects.toString(file, "");
         FileKeyPairProvider provider = PROVIDERS_MAP.get(filePath);
         if (provider != null) {
             return provider;
         }
 
         provider = new FileKeyPairProvider();
-        provider.setFiles(Collections.singletonList(file));
+        provider.setPaths(Collections.singletonList(file));
         provider = validateKeyPairProvider(provider);
 
         FileKeyPairProvider prev = PROVIDERS_MAP.put(filePath, provider);

@@ -19,11 +19,11 @@
 
 package org.apache.sshd.cli.server;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -310,11 +310,11 @@ public final class SshFsMounter extends SshServerCliSupport {
         Map<String, Object> props = sshd.getProperties();
         props.putAll(options);
         PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
-        File targetFolder = Objects.requireNonNull(CommonTestSupportUtils.detectTargetFolder(MounterCommandFactory.class), "Failed to detect target folder");
+        Path targetFolder = Objects.requireNonNull(CommonTestSupportUtils.detectTargetFolder(MounterCommandFactory.class), "Failed to detect target folder");
         if (SecurityUtils.isBouncyCastleRegistered()) {
-            sshd.setKeyPairProvider(SecurityUtils.createGeneratorHostKeyProvider(new File(targetFolder, "key.pem").toPath()));
+            sshd.setKeyPairProvider(SecurityUtils.createGeneratorHostKeyProvider(targetFolder.resolve("key.pem")));
         } else {
-            sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(new File(targetFolder, "key.ser").toPath()));
+            sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(targetFolder.resolve("key.ser")));
         }
         // Should come AFTER key pair provider setup so auto-welcome can be generated if needed
         setupServerBanner(sshd, resolver);

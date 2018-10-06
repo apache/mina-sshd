@@ -19,12 +19,12 @@
 
 package org.apache.sshd.client.keyverifier;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.KeyPair;
 import java.security.PublicKey;
@@ -79,7 +79,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
     public static void loadHostsEntries() throws Exception {
         URL url = KnownHostsServerKeyVerifierTest.class.getResource(KnownHostEntry.STD_HOSTS_FILENAME);
         assertNotNull("Missing test file resource", url);
-        entriesFile = new File(url.toURI()).toPath();
+        entriesFile = Paths.get(url.toURI());
         outputDebugMessage("loadHostsEntries(%s)", entriesFile);
         hostsEntries = loadEntries(entriesFile);
 
