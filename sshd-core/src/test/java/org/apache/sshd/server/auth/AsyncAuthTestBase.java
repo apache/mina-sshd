@@ -18,7 +18,9 @@
  */
 package org.apache.sshd.server.auth;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.server.SshServer;
@@ -55,9 +57,13 @@ public abstract class AsyncAuthTestBase extends BaseTestSupport {
         }
         server = SshServer.setUpDefaultServer();
         if (timeout != null) {
-            server.getProperties().put(FactoryManager.AUTH_TIMEOUT, timeout.toString());
+            Map<String, Object> props = server.getProperties();
+            props.put(FactoryManager.AUTH_TIMEOUT, timeout.toString());
         }
-        server.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(new File("hostkey.ser").toPath()));
+
+        Path tmpDir = Files.createDirectories(getTempTargetFolder());
+        Path keyFile = tmpDir.resolve("hostkey.ser");
+        server.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(keyFile));
         server.setPasswordAuthenticator((username, password, session) -> authenticator.authenticate(username, password, session));
         server.setShellFactory(new EchoShellFactory());
         server.start();
