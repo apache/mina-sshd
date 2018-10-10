@@ -153,6 +153,32 @@ Required for supporting [ssh-ed25519](https://tools.ietf.org/html/draft-bjh21-ss
 
 The code contains support for reading _ed25519_ [OpenSSH formatted private keys](https://issues.apache.org/jira/browse/SSHD-703).
 
+# Basic artifacts structure
+
+* *sshd-common* - contains basic classes used throughout the project as well as code that does not require client or server network support.
+
+* *sshd-core* - contains the basic SSH client/server code implementing the connection, transport, channels, forwarding, etc..
+    * *sshd-mina*, *sshd-netty* - replacements for the default NIO2 connector used to establish and manage network connections using
+[MINA](https://mina.apache.org/mina-project/index.html) and/or [Netty](https://netty.io/) libraries respectively.
+
+* *sshd-sftp* - contains the server side SFTP subsystem and the SFTP client code.
+    * *sshd-spring-sftp* - contains a [Spring Integration](https://spring.io/projects/spring-integration) compatible SFTP adapter
+
+* *sshd-scp* - contains the server side SCP command handler and the SCP client code.
+
+* *sshd-ldap* - contains server-side password and public key authenticators that use and LDAP server.
+
+* *sshd-git* - contains replacements for [JGit](https://www.eclipse.org/jgit/) SSH session factory.
+
+* *sshd-osgi* - contains an artifact that combines *sshd-common* and *sshd-core* so it can be deployed in OSGi environments.
+
+* *sshd-putty* - contains code that can parse [PUTTY](https://www.putty.org/) key files.
+
+* *sshd-cli* - contains simple templates for command-line client/server - used to provide look-and-feel similar to the Linux *ssh/sshd* commands.
+
+* *sshd-contrib* - **experimental** code that is currently under review and may find its way into one of the other artifacts
+(or become an entirely new artifact - e.g., *sshd-putty* evolved this way).
+
 # Set up an SSH client in 5 minutes
 
 SSHD is designed to easily allow setting up and using an SSH client in a few simple steps. The client needs to be configured and then started before it can be used to connect to an SSH server. There are a few simple steps for creating a client instance - for more details refer to the `SshClient` class.
