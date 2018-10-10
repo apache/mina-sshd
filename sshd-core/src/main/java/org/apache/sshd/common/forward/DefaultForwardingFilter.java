@@ -971,7 +971,6 @@ public class DefaultForwardingFilter
                     OpenFuture openFuture = channel.getOpenFuture();
                     if (!openFuture.isDone()) {
                         openFuture.addListener(f -> {
-                            // If exception signaled then close channel immediately
                             channel.close(false);        
                         });
                     } else {
