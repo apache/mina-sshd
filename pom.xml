@@ -1204,6 +1204,7 @@
         <module>sshd-contrib</module>
         <module>sshd-spring-sftp</module>
         <module>sshd-cli</module>
+        <module>sshd-osgi</module>
         <module>assembly</module>
     </modules>
 </project>
