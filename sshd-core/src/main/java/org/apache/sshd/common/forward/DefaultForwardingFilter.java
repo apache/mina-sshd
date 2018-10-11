@@ -1032,15 +1032,26 @@ public class DefaultForwardingFilter
 
         @Override
         public void sessionClosed(IoSession session) throws Exception {
-            TcpipClientChannel channel = (TcpipClientChannel) session.removeAttribute(TcpipClientChannel.class);
+            TcpipClientChannel channel = (TcpipClientChannel) session.removeAttribute(TcpipClientChannel.class);                      
             Throwable cause = (Throwable) session.removeAttribute(TcpipForwardingExceptionMarker.class);
             if (channel != null) {
                 if (debugEnabled) {
                     log.debug("sessionClosed({}) closing channel={} after {} messages - cause={}",
-                            session, channel, messagesCounter, (cause == null) ? null : cause.getClass().getSimpleName());
+                        session, channel, messagesCounter, (cause == null) ? null : cause.getClass().getSimpleName());
                 }
-                // If exception signaled then close channel immediately
-                channel.close(cause != null);
+              
+                if (cause != null) {
+                    channel.close(true);
+                } else {
+                    OpenFuture openFuture = channel.getOpenFuture();
+                    if (!openFuture.isDone()) {
+                        openFuture.addListener(f -> {
+                            channel.close(false);        
+                        });
+                    } else {
+                        channel.close(false);                            
+                    }                  
+                }
             }
         }
 
