@@ -715,7 +715,7 @@
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>8.12</version>
+                            <version>8.13</version>
                             <exclusions>
                                 <!-- MCHECKSTYLE-156 -->
                                 <exclusion>
