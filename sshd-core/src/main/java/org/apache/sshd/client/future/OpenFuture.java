@@ -68,5 +68,4 @@ public interface OpenFuture extends SshFuture<OpenFuture>, VerifiableFuture<Open
      * this future.
      */
     void cancel();
-
 }

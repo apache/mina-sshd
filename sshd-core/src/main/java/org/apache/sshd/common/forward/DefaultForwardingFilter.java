@@ -1034,13 +1034,32 @@ public class DefaultForwardingFilter
         public void sessionClosed(IoSession session) throws Exception {
             TcpipClientChannel channel = (TcpipClientChannel) session.removeAttribute(TcpipClientChannel.class);
             Throwable cause = (Throwable) session.removeAttribute(TcpipForwardingExceptionMarker.class);
-            if (channel != null) {
-                if (debugEnabled) {
-                    log.debug("sessionClosed({}) closing channel={} after {} messages - cause={}",
-                            session, channel, messagesCounter, (cause == null) ? null : cause.getClass().getSimpleName());
-                }
-                // If exception signaled then close channel immediately
-                channel.close(cause != null);
+            if (debugEnabled) {
+                log.debug("sessionClosed({}) closing channel={} after {} messages - cause={}",
+                    session, channel, messagesCounter, (cause == null) ? null : cause.getClass().getSimpleName());
+            }
+            if (channel == null) {
+                return;
+            }
+
+            if (cause != null) {
+                // If exception occurred close the channel immediately
+                channel.close(true);
+            } else {
+                /*
+                 *  Make sure channel is fully open in case the client was very fast
+                 *  and sent data + closed the connection before channel open was completed.
+                 */
+                OpenFuture openFuture = channel.getOpenFuture();
+                // If channel is established then listener is invoked immediately
+                openFuture.addListener(f -> {
+                    Throwable err = f.getException();
+                    if (err != null) {
+                        log.warn("sessionClosed({}) closing incompletely open channel={} after {} messages due to {}[{}]",
+                            session, channel, messagesCounter, err.getClass().getSimpleName(), err.getMessage());
+                    }
+                    channel.close(err != null);
+                });
             }
         }
 
