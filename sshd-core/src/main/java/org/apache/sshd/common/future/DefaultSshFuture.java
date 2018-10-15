@@ -106,10 +106,9 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
             }
 
             result = (newValue != null) ? newValue : GenericUtils.NULL;
+            notifyListeners();
             lock.notifyAll();
         }
-
-        notifyListeners();
     }
 
     public int getNumRegisteredListeners() {
@@ -161,10 +160,9 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
                 nl[l] = listener;
                 listeners = nl;
             }
-        }
-
-        if (notifyNow) {
-            notifyListener(listener);
+            if (notifyNow) {
+                notifyListener(listener);
+            }
         }
 
         return asT();
