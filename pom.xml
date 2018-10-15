@@ -102,7 +102,7 @@
         <ant.build.javac.target>${javac.target}</ant.build.javac.target>
 
         <min.required.maven.version>3.5.0</min.required.maven.version>
-        <gmaven.plugin.version>2.0</gmaven.plugin.version>
+        <gmaven.plugin.version>2.1</gmaven.plugin.version>
         <groovy.major.version>2</groovy.major.version>
         <groovy.minor.version>4</groovy.minor.version>
         <groovy.release.version>15</groovy.release.version>
