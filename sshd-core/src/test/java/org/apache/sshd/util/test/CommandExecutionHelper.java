@@ -37,7 +37,7 @@ public abstract class CommandExecutionHelper extends AbstractCommandSupport {
     }
 
     protected CommandExecutionHelper(String command) {
-        super(command, null, true);
+        super(command, null);
     }
 
     @Override

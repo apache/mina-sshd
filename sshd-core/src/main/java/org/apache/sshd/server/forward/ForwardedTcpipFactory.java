@@ -24,6 +24,7 @@ import org.apache.sshd.server.forward.TcpipServerChannel.TcpipFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ForwardedTcpipFactory extends TcpipFactory {
+
     public static final ForwardedTcpipFactory INSTANCE = new ForwardedTcpipFactory();
 
     public ForwardedTcpipFactory() {

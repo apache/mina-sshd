@@ -124,7 +124,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             Path path = new MockPath(line);
             receiveStream(line, new ScpTargetStreamResolver() {
                 @Override
-                @SuppressWarnings("synthetic-access")
+                @SuppressWarnings("synthetic-access")   // see https://bugs.eclipse.org/bugs/show_bug.cgi?id=537593
                 public OutputStream resolveTargetStream(
                         Session session, String name, long length, Set<PosixFilePermission> perms, OpenOption... options)
                             throws IOException {
@@ -141,8 +141,10 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                 }
 
                 @Override
-                @SuppressWarnings("synthetic-access")
-                public void postProcessReceivedData(String name, boolean preserve, Set<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
+                @SuppressWarnings("synthetic-access")   // see https://bugs.eclipse.org/bugs/show_bug.cgi?id=537593
+                public void postProcessReceivedData(
+                        String name, boolean preserve, Set<PosixFilePermission> perms, ScpTimestamp time)
+                            throws IOException {
                     if (log.isDebugEnabled()) {
                         log.debug("postProcessReceivedData({}) name={}, perms={}, preserve={} time={}",
                                   ScpHelper.this, name, perms, preserve, time);

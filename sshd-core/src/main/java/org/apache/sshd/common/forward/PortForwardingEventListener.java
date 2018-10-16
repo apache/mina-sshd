@@ -48,8 +48,8 @@ public interface PortForwardingEventListener extends SshdEventListener {
      */
     default void establishingExplicitTunnel(
             Session session, SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding)
-                    throws IOException {
-                        // ignored
+                throws IOException {
+        // ignored
     }
 
     /**
@@ -67,8 +67,8 @@ public interface PortForwardingEventListener extends SshdEventListener {
     default void establishedExplicitTunnel(
             Session session, SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding,
             SshdSocketAddress boundAddress, Throwable reason)
-                    throws IOException {
-                        // ignored
+                throws IOException {
+        // ignored
     }
 
     /**
@@ -77,12 +77,15 @@ public interface PortForwardingEventListener extends SshdEventListener {
      * @param session The {@link Session} through which the request is made
      * @param address The (bound) address - local/remote according to the forwarding type
      * @param localForwarding Local/remote port forwarding indicator
+     * @param remoteAddress The specified peer address when tunnel was established - may
+     * be {@code null} for server-side local tunneling requests
      * @throws IOException If failed to handle the event - in which case
      * the request is aborted
      */
-    default void tearingDownExplicitTunnel(Session session, SshdSocketAddress address, boolean localForwarding)
-            throws IOException {
-                // ignored
+    default void tearingDownExplicitTunnel(
+            Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress)
+                    throws IOException {
+        // ignored
     }
 
     /**
@@ -91,14 +94,17 @@ public interface PortForwardingEventListener extends SshdEventListener {
      * @param session The {@link Session} through which the request is made
      * @param address The (bound) address - local/remote according to the forwarding type
      * @param localForwarding Local/remote port forwarding indicator
+     * @param remoteAddress The specified peer address when tunnel was established - may
+     * be {@code null} for server-side local tunneling requests
      * @param reason Reason for failure - {@code null} if successful
      * @throws IOException If failed to handle the event - <B>Note:</B>
      * the exception is propagated, but the port forwarding may have
      * been torn down - no rollback
      */
-    default void tornDownExplicitTunnel(Session session, SshdSocketAddress address, boolean localForwarding, Throwable reason)
-            throws IOException {
-                // ignored
+    default void tornDownExplicitTunnel(
+            Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress, Throwable reason)
+                throws IOException {
+        // ignored
     }
 
     /**
@@ -125,8 +131,8 @@ public interface PortForwardingEventListener extends SshdEventListener {
      */
     default void establishedDynamicTunnel(
             Session session, SshdSocketAddress local, SshdSocketAddress boundAddress, Throwable reason)
-                    throws IOException {
-                        // ignored
+                throws IOException {
+        // ignored
     }
 
     /**

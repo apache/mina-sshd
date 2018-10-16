@@ -290,6 +290,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         return getService(ClientUserAuthService.class);
     }
 
+    @Override
     protected ConnectionService getConnectionService() {
         return getService(ConnectionService.class);
     }
@@ -330,6 +331,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         filter.stopDynamicPortForwarding(local);
     }
 
+    @Override
     protected ForwardingFilter getForwardingFilter() {
         ConnectionService service = Objects.requireNonNull(getConnectionService(), "No connection service");
         return Objects.requireNonNull(service.getForwardingFilter(), "No forwarder");
@@ -441,8 +443,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     public KeyExchangeFuture switchToNoneCipher() throws IOException {
-        if (!(currentService instanceof AbstractConnectionService<?>)
-                || !GenericUtils.isEmpty(((AbstractConnectionService<?>) currentService).getChannels())) {
+        if (!(currentService instanceof AbstractConnectionService)
+                || !GenericUtils.isEmpty(((AbstractConnectionService) currentService).getChannels())) {
             throw new IllegalStateException("The switch to the none cipher must be done immediately after authentication");
         }
 

@@ -70,8 +70,9 @@ public class UserAuthPassword extends AbstractUserAuth {
      */
     protected Boolean checkPassword(Buffer buffer, ServerSession session, String username, String password) throws Exception {
         PasswordAuthenticator auth = session.getPasswordAuthenticator();
+        boolean debugEnabled = log.isDebugEnabled();
         if (auth == null) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("checkPassword({}) no password authenticator", session);
             }
             return false;
@@ -84,18 +85,18 @@ public class UserAuthPassword extends AbstractUserAuth {
             } catch (Error e) {
                 log.warn("checkPassword({}) failed ({}) to consult authenticator: {}",
                          session, e.getClass().getSimpleName(), e.getMessage());
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("checkPassword(" + session + ") authenticator failure details", e);
                 }
 
                 throw new RuntimeSshException(e);
             }
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("checkPassword({}) authentication result: {}", session, authed);
             }
             return authed;
         } catch (PasswordChangeRequiredException e) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("checkPassword({}) password change required: {}", session, e.getMessage());
             }
             return handleServerPasswordChangeRequest(buffer, session, username, password, e);
@@ -117,7 +118,7 @@ public class UserAuthPassword extends AbstractUserAuth {
      */
     protected Boolean handleClientPasswordChangeRequest(
             Buffer buffer, ServerSession session, String username, String oldPassword, String newPassword)
-                        throws Exception {
+                throws Exception {
         throw new UnsupportedOperationException("Password change not supported");
     }
 

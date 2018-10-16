@@ -23,13 +23,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Environment;
@@ -55,21 +55,18 @@ public abstract class AbstractCommandSupport
     protected Environment environment;
     protected Future<?> cmdFuture;
     protected Thread cmdRunner;
-    protected ExecutorService executorService;
-    protected boolean shutdownOnExit;
+    protected CloseableExecutorService executorService;
     protected boolean cbCalled;
     protected ServerSession serverSession;
 
-    protected AbstractCommandSupport(String command, ExecutorService executorService, boolean shutdownOnExit) {
+    protected AbstractCommandSupport(String command, CloseableExecutorService executorService) {
         this.command = command;
 
         if (executorService == null) {
             String poolName = GenericUtils.isEmpty(command) ? getClass().getSimpleName() : command.replace(' ', '_').replace('/', ':');
             this.executorService = ThreadUtils.newSingleThreadExecutor(poolName);
-            this.shutdownOnExit = true;    // we always close the ad-hoc executor service
         } else {
             this.executorService = executorService;
-            this.shutdownOnExit = shutdownOnExit;
         }
     }
 
@@ -93,13 +90,8 @@ public abstract class AbstractCommandSupport
     }
 
     @Override
-    public ExecutorService getExecutorService() {
+    public CloseableExecutorService getExecutorService() {
         return executorService;
-    }
-
-    @Override
-    public boolean isShutdownOnExit() {
-        return shutdownOnExit;
     }
 
     public InputStream getInputStream() {
@@ -150,7 +142,7 @@ public abstract class AbstractCommandSupport
     public void start(Environment env) throws IOException {
         environment = env;
         try {
-            ExecutorService executors = getExecutorService();
+            CloseableExecutorService executors = getExecutorService();
             cmdFuture = executors.submit(() -> {
                 cmdRunner = Thread.currentThread();
                 this.run();
@@ -175,8 +167,8 @@ public abstract class AbstractCommandSupport
 
         cmdFuture = null;
 
-        ExecutorService executors = getExecutorService();
-        if ((executors != null) && (!executors.isShutdown()) && isShutdownOnExit()) {
+        CloseableExecutorService executors = getExecutorService();
+        if ((executors != null) && (!executors.isShutdown())) {
             Collection<Runnable> runners = executors.shutdownNow();
             if (debugEnabled) {
                 log.debug("destroy() - shutdown executor service - runners count=" + runners.size());

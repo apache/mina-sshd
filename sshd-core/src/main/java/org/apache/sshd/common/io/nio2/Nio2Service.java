@@ -39,6 +39,7 @@ import org.apache.sshd.common.FactoryManagerHolder;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
+import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
@@ -66,6 +67,7 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
     private final FactoryManager manager;
     private final IoHandler handler;
     private final AsynchronousChannelGroup group;
+    private IoServiceEventListener eventListener;
 
     protected Nio2Service(FactoryManager manager, IoHandler handler, AsynchronousChannelGroup group) {
         if (log.isTraceEnabled()) {
@@ -75,6 +77,16 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
         this.handler = Objects.requireNonNull(handler, "No I/O handler provided");
         this.group = Objects.requireNonNull(group, "No async. channel group provided");
         this.sessions = new ConcurrentHashMap<>();
+    }
+
+    @Override
+    public IoServiceEventListener getIoServiceEventListener() {
+        return eventListener;
+    }
+
+    @Override
+    public void setIoServiceEventListener(IoServiceEventListener listener) {
+        eventListener = listener;
     }
 
     protected AsynchronousChannelGroup getChannelGroup() {

@@ -60,6 +60,7 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
+@SuppressWarnings("checkstyle:MethodCount")
 public class SshConfigFileReaderTest extends BaseTestSupport {
     public SshConfigFileReaderTest() {
         super();
@@ -70,7 +71,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
         URL url = getClass().getResource("sshd_config");
         assertNotNull("Cannot locate test file", url);
 
-        Properties props = SshConfigFileReader.readConfigFile(url);
+        Properties props = ConfigFileReaderSupport.readConfigFile(url);
         assertFalse("No properties read", props.isEmpty());
         assertTrue("Unexpected commented property data", GenericUtils.isEmpty(props.getProperty("ListenAddress")));
         assertTrue("Unexpected non-existing property data", GenericUtils.isEmpty(props.getProperty(getCurrentTestName())));
@@ -85,62 +86,62 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     @Test
     public void testParseCiphersList() {
         List<? extends NamedResource> expected = BaseBuilder.DEFAULT_CIPHERS_PREFERENCE;
-        Properties props = initNamedResourceProperties(SshConfigFileReader.CIPHERS_CONFIG_PROP, expected);
+        Properties props = initNamedResourceProperties(ConfigFileReaderSupport.CIPHERS_CONFIG_PROP, expected);
         BuiltinCiphers.ParseResult result = SshConfigFileReader.getCiphers(PropertyResolverUtils.toPropertyResolver(props));
         testParsedFactoriesList(expected, result.getParsedFactories(), result.getUnsupportedFactories());
     }
 
     @Test
     public void testKnownDefaultCipherFactoriesList() {
-        testKnownDefaultFactoriesList(SshConfigFileReader.DEFAULT_CIPHERS, BuiltinCiphers::fromFactoryName,
+        testKnownDefaultFactoriesList(ConfigFileReaderSupport.DEFAULT_CIPHERS, BuiltinCiphers::fromFactoryName,
             GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, "cast128-cbc", "arcfour"));
     }
 
     @Test
     public void testParseMacsList() {
         List<? extends NamedResource> expected = BaseBuilder.DEFAULT_MAC_PREFERENCE;
-        Properties props = initNamedResourceProperties(SshConfigFileReader.MACS_CONFIG_PROP, expected);
+        Properties props = initNamedResourceProperties(ConfigFileReaderSupport.MACS_CONFIG_PROP, expected);
         BuiltinMacs.ParseResult result = SshConfigFileReader.getMacs(PropertyResolverUtils.toPropertyResolver(props));
         testParsedFactoriesList(expected, result.getParsedFactories(), result.getUnsupportedFactories());
     }
 
     @Test
     public void testKnownDefaultMacFactoriesList() {
-        testKnownDefaultFactoriesList(SshConfigFileReader.DEFAULT_MACS, BuiltinMacs::fromFactoryName,
+        testKnownDefaultFactoriesList(ConfigFileReaderSupport.DEFAULT_MACS, BuiltinMacs::fromFactoryName,
             GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, "umac-64@openssh.com", "hmac-ripemd160", "hmac-sha2-256-96", "hmac-sha2-512-96"));
     }
 
     @Test
     public void testParseSignaturesList() {
         List<? extends NamedResource> expected = BaseBuilder.DEFAULT_SIGNATURE_PREFERENCE;
-        Properties props = initNamedResourceProperties(SshConfigFileReader.HOST_KEY_ALGORITHMS_CONFIG_PROP, expected);
+        Properties props = initNamedResourceProperties(ConfigFileReaderSupport.HOST_KEY_ALGORITHMS_CONFIG_PROP, expected);
         BuiltinSignatures.ParseResult result = SshConfigFileReader.getSignatures(PropertyResolverUtils.toPropertyResolver(props));
         testParsedFactoriesList(expected, result.getParsedFactories(), result.getUnsupportedFactories());
     }
 
     @Test
     public void testKnownDefaultSignatureFactoriesList() {
-        testKnownDefaultFactoriesList(SshConfigFileReader.DEFAULT_HOST_KEY_ALGORITHMS, BuiltinSignatures::fromFactoryName);
+        testKnownDefaultFactoriesList(ConfigFileReaderSupport.DEFAULT_HOST_KEY_ALGORITHMS, BuiltinSignatures::fromFactoryName);
     }
 
     @Test
     public void testParseKexFactoriesList() {
         List<? extends NamedResource> expected = BaseBuilder.DEFAULT_KEX_PREFERENCE;
-        Properties props = initNamedResourceProperties(SshConfigFileReader.KEX_ALGORITHMS_CONFIG_PROP, expected);
+        Properties props = initNamedResourceProperties(ConfigFileReaderSupport.KEX_ALGORITHMS_CONFIG_PROP, expected);
         BuiltinDHFactories.ParseResult result = SshConfigFileReader.getKexFactories(PropertyResolverUtils.toPropertyResolver(props));
         testParsedFactoriesList(expected, result.getParsedFactories(), result.getUnsupportedFactories());
     }
 
     @Test
     public void testKnownDefaultKexFactoriesList() {
-        testKnownDefaultFactoriesList(SshConfigFileReader.DEFAULT_KEX_ALGORITHMS, BuiltinDHFactories::fromFactoryName);
+        testKnownDefaultFactoriesList(ConfigFileReaderSupport.DEFAULT_KEX_ALGORITHMS, BuiltinDHFactories::fromFactoryName);
     }
 
-    private void testKnownDefaultFactoriesList(String factories, Function<? super String, ? extends NamedResource> resolver) {
+    private static void testKnownDefaultFactoriesList(String factories, Function<? super String, ? extends NamedResource> resolver) {
         testKnownDefaultFactoriesList(factories, resolver, Collections.emptySet());
     }
 
-    private void testKnownDefaultFactoriesList(
+    private static void testKnownDefaultFactoriesList(
             String factories, Function<? super String, ? extends NamedResource> resolver, Collection<String> excludedNames) {
         String[] names = GenericUtils.split(factories, ',');
         assertTrue("No default names", GenericUtils.length(names) > 0);
@@ -158,7 +159,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     public void testGetCompression() {
         Properties props = new Properties();
         for (CompressionConfigValue expected : CompressionConfigValue.VALUES) {
-            props.setProperty(SshConfigFileReader.COMPRESSION_PROP, expected.name().toLowerCase());
+            props.setProperty(ConfigFileReaderSupport.COMPRESSION_PROP, expected.name().toLowerCase());
 
             NamedResource actual = SshConfigFileReader.getCompression(PropertyResolverUtils.toPropertyResolver(props));
             assertNotNull("No match for " + expected.name(), actual);
@@ -176,7 +177,8 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
             }
         };
         // must be lenient since we do not cover the full default spectrum
-        AbstractFactoryManager actual = SshConfigFileReader.configure(expected, PropertyResolverUtils.toPropertyResolver(props), true, true);
+        AbstractFactoryManager actual = SshConfigFileReader.configure(
+            expected, PropertyResolverUtils.toPropertyResolver(props), true, true);
         assertSame("Mismatched configured result", expected, actual);
         validateAbstractFactoryManagerConfiguration(expected, props, true);
     }
@@ -236,7 +238,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     public void testInvalidDelimiter() throws IOException {
         String line = getClass().getSimpleName() + "+" + getCurrentTestName();
         try (Reader rdr = new StringReader(line)) {
-            Properties props = SshConfigFileReader.readConfigFile(rdr, true);
+            Properties props = ConfigFileReaderSupport.readConfigFile(rdr, true);
             fail("Unexpected success: " + props);
         }
     }
@@ -247,7 +249,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
         String expected = getCurrentTestName();
         Properties props;
         try (Reader rdr = new StringReader(name + "\t" + expected)) {
-            props = SshConfigFileReader.readConfigFile(rdr, true);
+            props = ConfigFileReaderSupport.readConfigFile(rdr, true);
         }
 
         String actual = props.getProperty(name);
@@ -284,7 +286,8 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     }
 
     private static <M extends FactoryManager> M validateFactoryManagerCiphers(M manager, Properties props) {
-        return validateFactoryManagerCiphers(manager, props.getProperty(SshConfigFileReader.CIPHERS_CONFIG_PROP, SshConfigFileReader.DEFAULT_CIPHERS));
+        return validateFactoryManagerCiphers(manager,
+            props.getProperty(ConfigFileReaderSupport.CIPHERS_CONFIG_PROP, ConfigFileReaderSupport.DEFAULT_CIPHERS));
     }
 
     private static <M extends FactoryManager> M validateFactoryManagerCiphers(M manager, String value) {
@@ -294,7 +297,8 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     }
 
     private static <M extends FactoryManager> M validateFactoryManagerSignatures(M manager, Properties props) {
-        return validateFactoryManagerSignatures(manager, props.getProperty(SshConfigFileReader.HOST_KEY_ALGORITHMS_CONFIG_PROP, SshConfigFileReader.DEFAULT_HOST_KEY_ALGORITHMS));
+        return validateFactoryManagerSignatures(manager,
+            props.getProperty(ConfigFileReaderSupport.HOST_KEY_ALGORITHMS_CONFIG_PROP, ConfigFileReaderSupport.DEFAULT_HOST_KEY_ALGORITHMS));
     }
 
     private static <M extends FactoryManager> M validateFactoryManagerSignatures(M manager, String value) {
@@ -304,7 +308,8 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     }
 
     private static <M extends FactoryManager> M validateFactoryManagerMacs(M manager, Properties props) {
-        return validateFactoryManagerMacs(manager, props.getProperty(SshConfigFileReader.MACS_CONFIG_PROP, SshConfigFileReader.DEFAULT_MACS));
+        return validateFactoryManagerMacs(manager,
+            props.getProperty(ConfigFileReaderSupport.MACS_CONFIG_PROP, ConfigFileReaderSupport.DEFAULT_MACS));
     }
 
     private static <M extends FactoryManager> M validateFactoryManagerMacs(M manager, String value) {
@@ -314,7 +319,8 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     }
 
     private static <M extends FactoryManager> M validateFactoryManagerCompressions(M manager, Properties props, boolean lenient) {
-        return validateFactoryManagerCompressions(manager, props.getProperty(SshConfigFileReader.COMPRESSION_PROP, SshConfigFileReader.DEFAULT_COMPRESSION), lenient);
+        return validateFactoryManagerCompressions(manager,
+            props.getProperty(ConfigFileReaderSupport.COMPRESSION_PROP, ConfigFileReaderSupport.DEFAULT_COMPRESSION), lenient);
     }
 
     private static <M extends FactoryManager> M validateFactoryManagerCompressions(M manager, String value, boolean lenient) {

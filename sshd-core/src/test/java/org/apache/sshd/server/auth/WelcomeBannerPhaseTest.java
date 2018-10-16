@@ -30,8 +30,8 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.server.ServerAuthenticationManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.apache.sshd.util.test.Utils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -66,11 +66,11 @@ public class WelcomeBannerPhaseTest extends BaseTestSupport {
 
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
-        sshd = Utils.setupTestServer(WelcomeBannerPhaseTest.class);
+        sshd = CoreTestSupportUtils.setupTestServer(WelcomeBannerPhaseTest.class);
         sshd.start();
         port = sshd.getPort();
 
-        client = Utils.setupTestClient(WelcomeBannerPhaseTest.class);
+        client = CoreTestSupportUtils.setupTestClient(WelcomeBannerPhaseTest.class);
         client.start();
     }
 

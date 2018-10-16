@@ -23,8 +23,9 @@ import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
+import java.util.Objects;
 
-import javax.crypto.KeyAgreement;
+import javax.crypto.interfaces.DHPublicKey;
 import javax.crypto.spec.DHParameterSpec;
 import javax.crypto.spec.DHPublicKeySpec;
 
@@ -38,14 +39,11 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DHG extends AbstractDH {
+    public static final String KEX_TYPE = "DH";
 
     private BigInteger p;
     private BigInteger g;
-    private BigInteger e;  // my public key
-    private byte[] e_array;
     private BigInteger f;  // your public key
-    private KeyPairGenerator myKpairGen;
-    private KeyAgreement myKeyAgree;
     private Factory<? extends Digest> factory;
 
     public DHG(Factory<? extends Digest> digestFactory) throws Exception {
@@ -53,30 +51,31 @@ public class DHG extends AbstractDH {
     }
 
     public DHG(Factory<? extends Digest> digestFactory, BigInteger pValue, BigInteger gValue) throws Exception {
-        myKpairGen = SecurityUtils.getKeyPairGenerator("DH");
-        myKeyAgree = SecurityUtils.getKeyAgreement("DH");
+        myKeyAgree = SecurityUtils.getKeyAgreement(KEX_TYPE);
         factory = digestFactory;
-        p = pValue;
-        g = gValue;
+        p = pValue;  // do not check for null-ity since in some cases it can be
+        g = gValue;  // do not check for null-ity since in some cases it can be
     }
 
     @Override
-    public byte[] getE() throws Exception {
-        if (e == null) {
-            DHParameterSpec dhSkipParamSpec = new DHParameterSpec(p, g);
-            myKpairGen.initialize(dhSkipParamSpec);
-            KeyPair myKpair = myKpairGen.generateKeyPair();
-            myKeyAgree.init(myKpair.getPrivate());
-            e = ((javax.crypto.interfaces.DHPublicKey) (myKpair.getPublic())).getY();
-            e_array = e.toByteArray();
-        }
-        return e_array;
+    protected byte[] calculateE() throws Exception {
+        DHParameterSpec dhSkipParamSpec = new DHParameterSpec(p, g);
+        KeyPairGenerator myKpairGen = SecurityUtils.getKeyPairGenerator("DH");
+        myKpairGen.initialize(dhSkipParamSpec);
+
+        KeyPair myKpair = myKpairGen.generateKeyPair();
+        myKeyAgree.init(myKpair.getPrivate());
+
+        DHPublicKey pubKey = (DHPublicKey) myKpair.getPublic();
+        BigInteger e = pubKey.getY();
+        return e.toByteArray();
     }
 
     @Override
     protected byte[] calculateK() throws Exception {
-        KeyFactory myKeyFac = SecurityUtils.getKeyFactory("DH");
+        Objects.requireNonNull(f, "Missing 'f' value");
         DHPublicKeySpec keySpec = new DHPublicKeySpec(f, p, g);
+        KeyFactory myKeyFac = SecurityUtils.getKeyFactory("DH");
         PublicKey yourPubKey = myKeyFac.generatePublic(keySpec);
         myKeyAgree.doPhase(yourPubKey, true);
         return stripLeadingZeroes(myKeyAgree.generateSecret());
@@ -112,11 +111,21 @@ public class DHG extends AbstractDH {
     }
 
     public void setF(BigInteger f) {
-        this.f = f;
+        this.f = Objects.requireNonNull(f, "No 'f' value specified");
     }
 
     @Override
     public Digest getHash() throws Exception {
         return factory.create();
+    }
+
+    @Override
+    public String toString() {
+        return super.toString()
+            + "[p=" + p
+            + ", g=" + g
+            + ", f=" + f
+            + ", digest=" + factory
+            + "]";
     }
 }

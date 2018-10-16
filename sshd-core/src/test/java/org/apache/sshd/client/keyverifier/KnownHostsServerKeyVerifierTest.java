@@ -19,12 +19,12 @@
 
 package org.apache.sshd.client.keyverifier;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.KeyPair;
 import java.security.PublicKey;
@@ -51,8 +51,8 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.NoIoTestCase;
-import org.apache.sshd.util.test.Utils;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -79,7 +79,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
     public static void loadHostsEntries() throws Exception {
         URL url = KnownHostsServerKeyVerifierTest.class.getResource(KnownHostEntry.STD_HOSTS_FILENAME);
         assertNotNull("Missing test file resource", url);
-        entriesFile = new File(url.toURI()).toPath();
+        entriesFile = Paths.get(url.toURI());
         outputDebugMessage("loadHostsEntries(%s)", entriesFile);
         hostsEntries = loadEntries(entriesFile);
 
@@ -230,7 +230,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
     @Test
     public void testRejectModifiedServerKey() throws Exception {
-        KeyPair kp = Utils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
+        KeyPair kp = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
         final PublicKey modifiedKey = kp.getPublic();
         final AtomicInteger acceptCount = new AtomicInteger(0);
         ServerKeyVerifier verifier = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, createKnownHostsCopy()) {
@@ -258,7 +258,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
     @Test
     public void testAcceptModifiedServerKeyUpdatesFile() throws Exception {
-        KeyPair kp = Utils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
+        KeyPair kp = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
         final PublicKey modifiedKey = kp.getPublic();
         Path path = createKnownHostsCopy();
         ServerKeyVerifier verifier = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, path) {

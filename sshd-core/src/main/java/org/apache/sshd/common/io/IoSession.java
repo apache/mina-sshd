@@ -25,8 +25,8 @@ import org.apache.sshd.common.Closeable;
 public interface IoSession extends PacketWriter, Closeable {
 
     /**
-     * @return a unique identifier for this session.  Every session has its own
-     * ID which is different from each other.
+     * @return a unique identifier for this session. Every session has its own
+     * ID which is different from any other.
      */
     long getId();
 
@@ -34,7 +34,7 @@ public interface IoSession extends PacketWriter, Closeable {
      * Returns the value of the user-defined attribute of this session.
      *
      * @param key the key of the attribute
-     * @return <tt>null</tt> if there is no attribute with the specified key
+     * @return {@code null} if there is no attribute with the specified key
      */
     Object getAttribute(Object key);
 
@@ -43,13 +43,13 @@ public interface IoSession extends PacketWriter, Closeable {
      *
      * @param key   the key of the attribute
      * @param value the value of the attribute
-     * @return The old value of the attribute.  <tt>null</tt> if it is new.
+     * @return The old value of the attribute - {@code null} if it is new.
      */
     Object setAttribute(Object key, Object value);
 
     /**
      * Sets a user defined attribute if the attribute with the specified key
-     * is not set yet.  This method is same with the following code except
+     * is not set yet. This method is same with the following code except
      * that the operation is performed atomically.
      * <code><pre>
      * if (containsAttribute(key)) {
@@ -61,7 +61,7 @@ public interface IoSession extends PacketWriter, Closeable {
      *
      * @param key The key of the attribute we want to set
      * @param value The value we want to set
-     * @return The old value of the attribute.  <tt>null</tt> if not found.
+     * @return The old value of the attribute - {@code null} if not found.
      */
     Object setAttributeIfAbsent(Object key, Object value);
 
@@ -69,7 +69,7 @@ public interface IoSession extends PacketWriter, Closeable {
      * Removes a user-defined attribute with the specified key.
      *
      * @param key The key of the attribute we want to remove
-     * @return The old value of the attribute - <tt>null</tt> if not found.
+     * @return The old value of the attribute - {@code null} if not found.
      */
     Object removeAttribute(Object key);
 
@@ -79,8 +79,7 @@ public interface IoSession extends PacketWriter, Closeable {
     SocketAddress getRemoteAddress();
 
     /**
-     * @return the socket address of local machine which is associated with this
-     * session.
+     * @return the socket address of local machine which is associated with this session.
      */
     SocketAddress getLocalAddress();
 

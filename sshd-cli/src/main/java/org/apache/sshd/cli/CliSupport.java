@@ -18,10 +18,19 @@
  */
 package org.apache.sshd.cli;
 
+import java.io.IOException;
 import java.io.PrintStream;
+import java.net.SocketAddress;
+import java.util.Map;
+import java.util.Objects;
 
+import org.apache.sshd.common.config.ConfigFileReaderSupport;
+import org.apache.sshd.common.config.LogLevelValue;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.BuiltinIoServiceFactoryFactories;
+import org.apache.sshd.common.io.IoAcceptor;
+import org.apache.sshd.common.io.IoConnector;
+import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.io.IoServiceFactoryFactory;
 import org.apache.sshd.common.util.GenericUtils;
 
@@ -87,13 +96,75 @@ public abstract class CliSupport {
         return factory;
     }
 
-    public static <M extends AbstractFactoryManager> M setupIoServiceFactory(M manager, PrintStream stderr, String... args) {
+    public static <M extends AbstractFactoryManager> M setupIoServiceFactory(
+            M manager, Map<String, ?> options, PrintStream stdout, PrintStream stderr, String... args) {
         BuiltinIoServiceFactoryFactories factory = resolveIoServiceFactory(stderr, args);
         if (factory == null) {
             return null;
         }
 
         manager.setIoServiceFactoryFactory(factory.create());
+
+        String levelValue = (options == null) ? null : Objects.toString(options.get(ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP), null);
+        if (GenericUtils.isEmpty(levelValue)) {
+            return manager;
+        }
+
+        LogLevelValue level = LogLevelValue.fromName(levelValue);
+        if (level == null) {
+            throw new IllegalArgumentException("Unknown " + ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP + " option value: " + levelValue);
+        }
+
+        if ((level != LogLevelValue.FATAL) && (level != LogLevelValue.ERROR) && (level != LogLevelValue.INFO)) {
+            return manager;
+        }
+
+        manager.setIoServiceEventListener(new IoServiceEventListener() {
+            private final PrintStream out = (level == LogLevelValue.INFO) ? stdout : stderr;
+
+            @Override
+            public void connectionEstablished(
+                    IoConnector connector, SocketAddress local, SocketAddress remote)
+                        throws IOException {
+                out.append("Connection established via ").append(Objects.toString(connector))
+                    .append("- local=").append(Objects.toString(local))
+                    .append(", remote=").append(Objects.toString(remote))
+                    .println();
+            }
+
+            @Override
+            public void abortEstablishedConnection(
+                    IoConnector connector, SocketAddress local, SocketAddress remote, Throwable reason)
+                        throws IOException {
+                out.append("Abort established connection ").append(Objects.toString(connector))
+                    .append(" - local=").append(Objects.toString(local))
+                    .append(", remote=").append(Objects.toString(remote))
+                    .append(": (").append(reason.getClass().getSimpleName()).append(')')
+                    .append(" ").println(reason.getMessage());
+                reason.printStackTrace(out);
+            }
+
+            @Override
+            public void connectionAccepted(IoAcceptor acceptor, SocketAddress local, SocketAddress remote)
+                    throws IOException {
+                out.append("Connection accepted via ").append(Objects.toString(acceptor))
+                    .append(" - local=").append(Objects.toString(local))
+                    .append(", remote=").append(Objects.toString(remote))
+                    .println();
+            }
+
+            @Override
+            public void abortAcceptedConnection(
+                    IoAcceptor acceptor, SocketAddress local, SocketAddress remote, Throwable reason)
+                        throws IOException {
+                out.append("Abort accepted connection ").append(Objects.toString(acceptor))
+                    .append(" - local=").append(Objects.toString(local))
+                    .append(", remote=").append(Objects.toString(remote))
+                    .append(": (").append(reason.getClass().getSimpleName()).append(')')
+                    .append(" ").println(reason.getMessage());
+                reason.printStackTrace(out);
+            }
+        });
         return manager;
     }
 }

@@ -1527,6 +1527,10 @@ public class ClientTest extends BaseTestSupport {
     }
 
     public static class TestEchoShellFactory extends EchoShellFactory {
+        public TestEchoShellFactory() {
+            super();
+        }
+
         @Override
         public Command create() {
             return new TestEchoShell();

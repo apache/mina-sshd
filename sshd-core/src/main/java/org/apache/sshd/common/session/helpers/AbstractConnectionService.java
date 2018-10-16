@@ -52,7 +52,6 @@ import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.UnknownChannelReferenceHandler;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
@@ -66,10 +65,9 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
 /**
  * Base implementation of ConnectionService.
  *
- * @param <S> Type of {@link AbstractSession} being used
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractConnectionService<S extends AbstractSession>
+public abstract class AbstractConnectionService
                 extends AbstractInnerCloseable
                 implements ConnectionService {
     /**
@@ -105,10 +103,10 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
     private final Collection<PortForwardingEventListener> listeners = new CopyOnWriteArraySet<>();
     private final Collection<PortForwardingEventListenerManager> managersHolder = new CopyOnWriteArraySet<>();
     private final PortForwardingEventListener listenerProxy;
-    private final S sessionInstance;
+    private final AbstractSession sessionInstance;
     private UnknownChannelReferenceHandler unknownChannelReferenceHandler;
 
-    protected AbstractConnectionService(S session) {
+    protected AbstractConnectionService(AbstractSession session) {
         sessionInstance = Objects.requireNonNull(session, "No session");
         listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, getClass().getClassLoader(), listeners);
     }
@@ -166,7 +164,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
     }
 
     @Override
-    public S getSession() {
+    public AbstractSession getSession() {
         return sessionInstance;
     }
 
@@ -178,7 +176,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
     @Override
     public ForwardingFilter getForwardingFilter() {
         ForwardingFilter forwarder;
-        S session = getSession();
+        AbstractSession session = getSession();
         synchronized (forwarderHolder) {
             forwarder = forwarderHolder.get();
             if (forwarder != null) {
@@ -202,7 +200,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
         super.preClose();
     }
 
-    protected ForwardingFilter createForwardingFilter(S session) {
+    protected ForwardingFilter createForwardingFilter(AbstractSession session) {
         FactoryManager manager =
             Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         ForwardingFilterFactory factory =
@@ -215,7 +213,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
     @Override
     public X11ForwardSupport getX11ForwardSupport() {
         X11ForwardSupport x11Support;
-        S session = getSession();
+        AbstractSession session = getSession();
         synchronized (x11ForwardHolder) {
             x11Support = x11ForwardHolder.get();
             if (x11Support != null) {
@@ -232,14 +230,14 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
         return x11Support;
     }
 
-    protected X11ForwardSupport createX11ForwardSupport(S session) {
+    protected X11ForwardSupport createX11ForwardSupport(AbstractSession session) {
         return new DefaultX11ForwardSupport(this);
     }
 
     @Override
     public AgentForwardSupport getAgentForwardSupport() {
         AgentForwardSupport agentForward;
-        S session = getSession();
+        AbstractSession session = getSession();
         synchronized (agentForwardHolder) {
             agentForward = agentForwardHolder.get();
             if (agentForward != null) {
@@ -257,7 +255,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
         return agentForward;
     }
 
-    protected AgentForwardSupport createAgentForwardSupport(S session) {
+    protected AgentForwardSupport createAgentForwardSupport(AbstractSession session) {
         return new DefaultAgentForwardSupport(this);
     }
 
@@ -275,7 +273,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
 
     @Override
     public int registerChannel(Channel channel) throws IOException {
-        Session session = getSession();
+        AbstractSession session = getSession();
         int maxChannels = session.getIntProperty(MAX_CONCURRENT_CHANNELS_PROP, DEFAULT_MAX_CHANNELS);
         int curSize = channels.size();
         if (curSize > maxChannels) {
@@ -370,8 +368,21 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
             case SshConstants.SSH_MSG_REQUEST_FAILURE:
                 requestFailure(buffer);
                 break;
-            default:
-                throw new IllegalStateException("Unsupported command: " + SshConstants.getCommandMessageName(cmd));
+            default: {
+                /*
+                 * According to https://tools.ietf.org/html/rfc4253#section-11.4
+                 *
+                 *      An implementation MUST respond to all unrecognized messages
+                 *      with an SSH_MSG_UNIMPLEMENTED message in the order in which
+                 *      the messages were received.
+                 */
+                AbstractSession session = getSession();
+                if (log.isDebugEnabled()) {
+                    log.debug("process({}) Unsupported command: {}",
+                        session, SshConstants.getCommandMessageName(cmd));
+                }
+                session.notImplemented();
+            }
         }
     }
 
@@ -584,7 +595,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
             return handler;
         }
 
-        Session s = getSession();
+        AbstractSession s = getSession();
         return (s == null) ? null : s.resolveUnknownChannelReferenceHandler();
     }
 
@@ -614,7 +625,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
             return;
         }
 
-        Session session = getSession();
+        AbstractSession session = getSession();
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         Channel channel = NamedFactory.create(manager.getChannelFactories(), type);
         if (channel == null) {
@@ -673,7 +684,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
                       this, sender, SshConstants.getOpenErrorCodeName(reasonCode), lang, message);
         }
 
-        Session session = getSession();
+        AbstractSession session = getSession();
         Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE,
                 Long.SIZE + GenericUtils.length(message) + GenericUtils.length(lang));
         buf.putInt(sender);
@@ -701,7 +712,7 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
                       this, req, wantReply);
         }
 
-        Session session = getSession();
+        AbstractSession session = getSession();
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         Collection<RequestHandler<ConnectionService>> handlers = manager.getGlobalRequestHandlers();
         if (GenericUtils.size(handlers) > 0) {
@@ -755,18 +766,18 @@ public abstract class AbstractConnectionService<S extends AbstractSession>
         byte cmd = RequestHandler.Result.ReplySuccess.equals(result)
                  ? SshConstants.SSH_MSG_REQUEST_SUCCESS
                  : SshConstants.SSH_MSG_REQUEST_FAILURE;
-        Session session = getSession();
+        AbstractSession session = getSession();
         Buffer rsp = session.createBuffer(cmd, 2);
         return session.writePacket(rsp);
     }
 
     protected void requestSuccess(Buffer buffer) throws Exception {
-        S s = getSession();
+        AbstractSession s = getSession();
         s.requestSuccess(buffer);
     }
 
     protected void requestFailure(Buffer buffer) throws Exception {
-        S s = getSession();
+        AbstractSession s = getSession();
         s.requestFailure(buffer);
     }
 

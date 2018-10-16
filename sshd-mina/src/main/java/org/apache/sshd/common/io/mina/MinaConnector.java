@@ -32,6 +32,7 @@ import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
+import org.apache.sshd.common.io.IoServiceEventListener;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -74,7 +75,38 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
     }
 
     @Override
-    public IoConnectFuture connect(SocketAddress address) {
+    public void sessionCreated(IoSession session) throws Exception {
+        IoServiceEventListener listener = getIoServiceEventListener();
+        SocketAddress local = session.getLocalAddress();
+        SocketAddress remote = session.getRemoteAddress();
+        try {
+            if (listener != null) {
+                try {
+                    listener.connectionEstablished(this, local, remote);
+                } catch (Exception e) {
+                    session.closeNow();
+                    throw e;
+                }
+            }
+
+            super.sessionCreated(session);
+        } catch (Exception e) {
+            if (listener != null) {
+                try {
+                    listener.abortEstablishedConnection(this, local, remote, e);
+                } catch (Exception exc) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("sessionCreated(" + session + ") listener=" + listener + " ignoring abort event exception", exc);
+                    }
+                }
+            }
+
+            throw e;
+        }
+    }
+
+    @Override
+    public IoConnectFuture connect(SocketAddress address, SocketAddress localAddress) {
         class Future extends DefaultSshFuture<IoConnectFuture> implements IoConnectFuture {
             Future(Object lock) {
                 super(address, lock);
@@ -110,7 +142,7 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
 
         IoConnectFuture future = new Future(null);
         IoConnector connector = getConnector();
-        ConnectFuture connectFuture = connector.connect(address);
+        ConnectFuture connectFuture = connector.connect(address, localAddress);
         connectFuture.addListener((IoFutureListener<ConnectFuture>) cf -> {
             Throwable t = cf.getException();
             if (t != null) {

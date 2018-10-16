@@ -1,0 +1,22 @@
+# Global section first
+
+    User global
+    Port 7365
+    IdentityFile ~/.ssh/github.key
+    HostName 37.77.34.7
+
+# User override
+Host *.apache.org
+    User mina-sshd
+
+# Port override
+Host *.github.com
+    Port 443
+
+# Host name override
+Host 10.*.*.*
+    HostName 7.3.6.5
+
+# Identity override
+Host 192.168.*.*
+    IdentityFile ~/.ssh/internal.key

@@ -7,10 +7,10 @@
     Checkstyle is very configurable. Be sure to read the documentation at
     http://checkstyle.sf.net (or in your downloaded distribution).
     To completely disable a check, just comment it out or delete it from the file.
-    
+
     Authors: Guillaume Nodet, Goldstein Lyor
  -->
- 
+
 <module name="Checker">
 	<!-- Checks whether files end with a new line.                        -->
 	<!-- See http://checkstyle.sf.net/config_misc.html#NewlineAtEndOfFile -->
@@ -58,9 +58,15 @@
             <property name="format" value="^[a-z][a-zA-Z0-9_]*$" />
         </module>
         <module name="MethodName" />
-        <module name="PackageName" />
+            <!-- Allow only lowercase and digits in package name -->
+        <module name="PackageName">
+            <property name="format" value="^[a-z]+(\.[a-z][a-z0-9]*)*$"/>
+        </module>
         <module name="ParameterName">
             <property name="format" value="^[a-z][a-zA-Z0-9_]*$" />
+        </module>
+        <module name="InterfaceTypeParameterName">
+            <property name="format" value="^[A-Z]+$" />
         </module>
         <module name="StaticVariableName" />
         <module name="TypeName" />
@@ -73,11 +79,11 @@
         <module name="RedundantImport" />
         <module name="UnusedImports" />
         <module name="ImportOrder">
-            <property name="groups" value="java,javax,org.w3c,org.xml,junit,antlr,com.,net,org,*" />
+            <property name="groups" value="java,javax,org,net,io,com,*" />
             <property name="ordered" value="true" />
             <property name="separated" value="true" />
         </module>
-	
+
             <!--
                 <module name="ImportControl">
                     <property name="file" value="etc/import-control.xml" />
@@ -99,18 +105,23 @@
             <property name="max" value="150" />
             <property name="countEmpty" value="false" />
         </module>
-	
-        <!-- DISABLED
-            <module name="ParameterNumber">
-                <property name="max" value="7" />
-            </module>
-        -->
+        <module name="ParameterNumber">
+            <property name="max" value="8" />
+        </module>
+        <module name="OuterTypeNumber">
+            <property name="max" value="2"/>
+        </module>
+        <module name="MethodCount">
+            <property name="maxPrivate" value="5"/>
+            <property name="maxPackage" value="5"/>
+        </module>
 
             <!-- Checks for whitespace                               -->
             <!-- See http://checkstyle.sf.net/config_whitespace.html -->
         <module name="EmptyForIteratorPad" />
         <module name="EmptyForInitializerPad" />
         <module name="MethodParamPad" />
+        <module name="WhitespaceAfter" />
         <module name="NoWhitespaceAfter">
             <property name="tokens" value="ARRAY_INIT,BNOT,DEC,DOT,INC,AT,LNOT,UNARY_MINUS,UNARY_PLUS" />
         </module>
@@ -126,9 +137,6 @@
         <module name="ParenPad" />
         <module name="NoLineWrap" />
         <module name="TypecastParenPad" />
-        <module name="WhitespaceAfter">
-            <property name="tokens" value="COMMA, SEMI" />
-        </module>
         <module name="WhitespaceAround">
             <property name="tokens" value="ASSIGN, BAND, BAND_ASSIGN, BOR, BOR_ASSIGN, BSR, BSR_ASSIGN, BXOR, BXOR_ASSIGN, COLON, DIV, DIV_ASSIGN, EQUAL, GE, GT, LAND, LCURLY, LE, LITERAL_ASSERT, LITERAL_CATCH, LITERAL_DO, LITERAL_ELSE, LITERAL_FINALLY, LITERAL_FOR, LITERAL_IF, LITERAL_RETURN, LITERAL_SYNCHRONIZED, LITERAL_TRY, LITERAL_WHILE, LOR, LT, MINUS, MINUS_ASSIGN, MOD, MOD_ASSIGN, NOT_EQUAL, PLUS, PLUS_ASSIGN, QUESTION, RCURLY, SL, SLIST, SL_ASSIGN, SR, SR_ASSIGN, STAR, STAR_ASSIGN,TYPE_EXTENSION_AND" />
         </module>
@@ -184,6 +192,9 @@
         <module name="NestedTryDepth">
             <property name="max" value="3" />
         </module>
+        <module name="NestedForDepth">
+          <property name="max" value="3"/>
+        </module>
         <module name="SuperClone" />
         <module name="SuperFinalize" />
         <!--<module name="IllegalCatch" />-->
@@ -206,12 +217,12 @@
         <!--<module name="ParameterAssignment" />-->
         <module name="ExplicitInitialization" />
         <module name="DefaultComesLast" />
-        <!--<module name="MissingCtor" />-->
+        <module name="MissingCtor" />
         <module name="FallThrough" />
         <!--<module name="MultipleStringLiterals" />-->
-        <!--<module name="VariableDeclarationUsageDistance">
+        <module name="VariableDeclarationUsageDistance">
             <property name="allowedDistance" value="8" />
-        </module>-->
+        </module>
         <module name="MultipleVariableDeclarations" />
         <!--<module name="RequireThis" />-->
         <module name="UnnecessaryParentheses" />
@@ -255,12 +266,6 @@
             <module name="ArrayTypeStyle" />
             <module name="FinalParameters" />
         -->
-        <!--
-            <module name="GenericIllegalRegexp">
-                <property name="format" value="\s+$" />
-                <property name="message" value="Line has trailing spaces." />
-            </module>
-        -->
         <!-- DISABLED
             <module name="TodoComment">
                 <property name="format" value="TODO" />
@@ -302,11 +307,21 @@
         <property name="fileExtensions" value="java"/>
 	</module>
 	<!-- <module name="RegexpHeader" /> -->
+    <module name="RegexpSingleline">
+        <property name="format" value="\s+$"/>
+        <property name="message" value="Trailing whitespace"/>
+        <!-- <property name="fileExtensions" value="......" /> -->
+    </module>
 	<module name="FileLength">
 		<property name="max" value="4096" />
 	</module>
 	<module name="FileTabCharacter">
 		<property name="eachLine" value="true" />
 	</module>
+	    <!-- '{samedir}' is an Eclipse built in environment variable initialized with the value of the external checkstyle configuration file -->
+	    <!-- See https://checkstyle.org/eclipse-cs/#!/properties -->
+    <module name="SuppressionFilter">
+        <property name="file" value="${samedir}/sshd-checkstyle-suppressions.xml"/>
+        <property name="optional" value="true"/>
+    </module>
 </module>
-

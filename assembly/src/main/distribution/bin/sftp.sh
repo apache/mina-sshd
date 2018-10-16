@@ -246,7 +246,6 @@ init() {
 
     # Install debug options
     setupDebugOptions
-
 }
 
 run() {

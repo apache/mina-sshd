@@ -104,6 +104,7 @@ import org.apache.sshd.server.session.ServerSession;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@SuppressWarnings("checkstyle:MethodCount") // TODO split this big class and remove the suppression
 public abstract class AbstractSftpSubsystemHelper
             extends AbstractLoggingBean
             implements SftpEventListenerManager, SftpSubsystemEnvironment {
@@ -1924,6 +1925,7 @@ public abstract class AbstractSftpSubsystemHelper
      * @see SftpConstants#EXT_SUPPORTED
      * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-10">DRAFT 13 section 5.4</A>
      */
+    @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
     protected void appendSupported2Extension(Buffer buffer, Collection<String> extras) {
         buffer.putString(SftpConstants.EXT_SUPPORTED2);
 

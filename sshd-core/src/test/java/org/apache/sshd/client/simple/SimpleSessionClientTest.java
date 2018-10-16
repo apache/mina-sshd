@@ -32,7 +32,7 @@ import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
-import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.client.simple.BaseSimpleClientTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -60,8 +60,8 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
 
     @Test
     public void testLoginSessionWithIdentity() throws Exception {
-        final KeyPair identity = Utils.getFirstKeyPair(createTestHostKeyProvider());
-        final AtomicBoolean identityQueried = new AtomicBoolean(false);
+        KeyPair identity = CommonTestSupportUtils.getFirstKeyPair(createTestHostKeyProvider());
+        AtomicBoolean identityQueried = new AtomicBoolean(false);
         sshd.setPublickeyAuthenticator((username, key, session) -> {
             if (username.equals(getCurrentTestName())) {
                 identityQueried.set(true);

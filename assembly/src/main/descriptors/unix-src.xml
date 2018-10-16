@@ -82,7 +82,8 @@
                 <exclude>**/*.ipr</exclude>
                 <exclude>**/*.iws</exclude>
 
-                <exclude>**/cobertura.ser</exclude>
+                <exclude>**/*.ser</exclude>
+                <exclude>**/key.pem</exclude>
 
                 <exclude>sshd-core/src/docs/*.txt</exclude>
             </excludes>

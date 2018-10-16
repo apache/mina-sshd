@@ -43,8 +43,8 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.apache.sshd.util.test.Utils;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -135,18 +135,18 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
     private void testCopyDataExtension(byte[] data, int readOffset, int readLength, long writeOffset) throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         LinkOption[] options = IoUtils.getLinkOptions(true);
         String baseName = readOffset + "-" + readLength + "-" + writeOffset;
         Path srcFile = assertHierarchyTargetFolderExists(lclSftp, options).resolve(baseName + "-src.txt");
         Files.write(srcFile, data, IoUtils.EMPTY_OPEN_OPTIONS);
-        String srcPath = Utils.resolveRelativeRemotePath(parentPath, srcFile);
+        String srcPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
 
         Path dstFile = srcFile.getParent().resolve(baseName + "-dst.txt");
         if (Files.exists(dstFile, options)) {
             Files.delete(dstFile);
         }
-        String dstPath = Utils.resolveRelativeRemotePath(parentPath, dstFile);
+        String dstPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, dstFile);
         if (writeOffset > 0L) {
             Factory<? extends Random> factory = client.getRandomFactory();
             Random randomizer = factory.create();

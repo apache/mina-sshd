@@ -81,7 +81,7 @@ public final class SftpHelper {
     public static final boolean DEFAULT_APPEND_END_OF_LIST_INDICATOR = true;
 
     public static final Map<Integer, String> DEFAULT_SUBSTATUS_MESSAGE;
-    
+
     static {
         Map<Integer, String> map = new TreeMap<>(Comparator.naturalOrder());
         map.put(SftpConstants.SSH_FX_OK, "Success");

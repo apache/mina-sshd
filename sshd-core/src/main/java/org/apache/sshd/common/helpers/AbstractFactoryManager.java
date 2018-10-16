@@ -29,7 +29,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.agent.SshAgentFactory;
-import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
@@ -46,6 +45,7 @@ import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.forward.ForwardingFilterFactory;
 import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
+import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoServiceFactoryFactory;
 import org.apache.sshd.common.kex.AbstractKexFactoryManager;
@@ -92,6 +92,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     private ReservedSessionMessagesHandler reservedSessionMessagesHandler;
     private ChannelStreamPacketWriterResolver channelStreamPacketWriterResolver;
     private UnknownChannelReferenceHandler unknownChannelReferenceHandler;
+    private IoServiceEventListener eventListener;
 
     protected AbstractFactoryManager() {
         ClassLoader loader = getClass().getClassLoader();
@@ -116,6 +117,16 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
 
     public void setIoServiceFactoryFactory(IoServiceFactoryFactory ioServiceFactory) {
         this.ioServiceFactoryFactory = ioServiceFactory;
+    }
+
+    @Override
+    public IoServiceEventListener getIoServiceEventListener() {
+        return eventListener;
+    }
+
+    @Override
+    public void setIoServiceEventListener(IoServiceEventListener listener) {
+        eventListener = listener;
     }
 
     @Override
@@ -150,11 +161,6 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     @SuppressWarnings("unchecked")
     public <T> T removeAttribute(AttributeKey<T> key) {
         return (T) attributes.remove(Objects.requireNonNull(key, "No key"));
-    }
-
-    @Override
-    public <T> T resolveAttribute(AttributeKey<T> key) {
-        return AttributeStore.resolveAttribute(this, key);
     }
 
     @Override

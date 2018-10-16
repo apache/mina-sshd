@@ -48,7 +48,7 @@ public class UserAuthPassword extends AbstractUserAuth {
     @Override
     public void init(ClientSession session, String service) throws Exception {
         super.init(session, service);
-        passwords = PasswordIdentityProvider.iteratorOf(session);
+        passwords = ClientSession.passwordIteratorOf(session);
     }
 
     @Override
@@ -64,7 +64,7 @@ public class UserAuthPassword extends AbstractUserAuth {
         current = passwords.next();
         String username = session.getUsername();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
-                            username.length() + service.length() + getName().length() + current.length() + Integer.SIZE);
+                username.length() + service.length() + getName().length() + current.length() + Integer.SIZE);
         sendPassword(buffer, session, current, current);
         return true;
     }
@@ -82,13 +82,14 @@ public class UserAuthPassword extends AbstractUserAuth {
         UserInteraction ui = session.getUserInteraction();
         boolean interactive;
         String password;
+        boolean debugEnabled = log.isDebugEnabled();
         try {
             interactive = (ui != null) && ui.isInteractionAllowed(session);
             password = interactive ? ui.getUpdatedPassword(session, prompt, lang) : null;
         } catch (Error e) {
             log.warn("processAuthDataRequest({})[{}] failed ({}) to consult interaction: {}",
-                     session, service, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
+                 session, service, e.getClass().getSimpleName(), e.getMessage());
+            if (debugEnabled) {
                 log.debug("processAuthDataRequest(" + session + ")[" + service + "] interaction consultation failure details", e);
             }
 
@@ -97,9 +98,9 @@ public class UserAuthPassword extends AbstractUserAuth {
 
         if (interactive) {
             if (GenericUtils.isEmpty(password)) {
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("processAuthDataRequest({})[{}] No updated password for prompt={}, lang={}",
-                              session, service, prompt, lang);
+                          session, service, prompt, lang);
                 }
                 return false;
             } else {
@@ -108,9 +109,9 @@ public class UserAuthPassword extends AbstractUserAuth {
             }
         }
 
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("processAuthDataRequest({})[{}] no UI for password change request for prompt={}, lang={}",
-                      session, service, prompt, lang);
+                  session, service, prompt, lang);
         }
 
         return false;

@@ -123,8 +123,10 @@ public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
     }
 
     private PublickeyAuthenticator testAuthorizedKeysAuth(Collection<AuthorizedKeyEntry> entries) throws Exception {
-        Collection<PublicKey> keySet = AuthorizedKeyEntry.resolveAuthorizedKeys(PublicKeyEntryResolver.FAILING, entries);
-        PublickeyAuthenticator auth = AuthorizedKeyEntry.fromAuthorizedEntries(PublicKeyEntryResolver.FAILING, entries);
+        Collection<PublicKey> keySet =
+            AuthorizedKeyEntry.resolveAuthorizedKeys(PublicKeyEntryResolver.FAILING, entries);
+        PublickeyAuthenticator auth =
+            PublickeyAuthenticator.fromAuthorizedEntries(PublicKeyEntryResolver.FAILING, entries);
         for (PublicKey key : keySet) {
             assertTrue("Failed to authenticate with key=" + key.getAlgorithm(), auth.authenticate(getCurrentTestName(), key, null));
         }

@@ -84,14 +84,13 @@ import org.apache.sshd.server.session.SessionFactory;
  * @see org.apache.sshd.common.FactoryManager
  */
 public class SshServer extends AbstractFactoryManager implements ServerFactoryManager, Closeable {
-
     public static final Factory<SshServer> DEFAULT_SSH_SERVER_FACTORY = SshServer::new;
 
     public static final List<ServiceFactory> DEFAULT_SERVICE_FACTORIES =
-            Collections.unmodifiableList(Arrays.asList(
-                    ServerUserAuthServiceFactory.INSTANCE,
-                    ServerConnectionServiceFactory.INSTANCE
-            ));
+        Collections.unmodifiableList(Arrays.asList(
+                ServerUserAuthServiceFactory.INSTANCE,
+                ServerConnectionServiceFactory.INSTANCE
+        ));
 
 
     protected IoAcceptor acceptor;
@@ -278,6 +277,9 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
      * @throws IOException If failed to start
      */
     public void start() throws IOException {
+        if (isClosed()) {
+            throw new IllegalStateException("Can not start the server again");
+        }
         if (isStarted()) {
             return;
         }
@@ -394,10 +396,18 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     @Override
     public String toString() {
-        return "SshServer[" + Integer.toHexString(hashCode()) + "]";
+        return getClass().getSimpleName()
+            + "[" + Integer.toHexString(hashCode()) + "]"
+            + "(port=" + getPort() + ")";
     }
 
+    /**
+     * Setup a default server
+     *
+     * @return a newly create {@link SshServer} with default configurations
+     */
     public static SshServer setUpDefaultServer() {
-        return ServerBuilder.builder().build();
+        ServerBuilder builder = ServerBuilder.builder();
+        return builder.build();
     }
 }

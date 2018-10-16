@@ -70,7 +70,8 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemEnvironment;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -79,6 +80,7 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@SuppressWarnings("checkstyle:MethodCount")
 public class SftpFileSystemTest extends BaseTestSupport {
     private static SshServer sshd;
     private static int port;
@@ -93,7 +95,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
     @BeforeClass
     public static void setupServerInstance() throws Exception {
-        sshd = Utils.setupTestServer(SftpFileSystemTest.class);
+        sshd = CoreTestSupportUtils.setupTestServer(SftpFileSystemTest.class);
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
         sshd.start();
         port = sshd.getPort();
@@ -156,8 +158,9 @@ public class SftpFileSystemTest extends BaseTestSupport {
     @Test
     public void testAttributes() throws IOException {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
-        Utils.deleteRecursive(lclSftp);
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath,
+            SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(lclSftp);
 
         try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
                 GenericUtils.<String, Object>mapBuilder()
@@ -167,7 +170,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
             Path parentPath = targetPath.getParent();
             Path clientFolder = lclSftp.resolve("client");
-            String remFilePath = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve("file.txt"));
+            String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, clientFolder.resolve("file.txt"));
             Path file = fs.getPath(remFilePath);
             assertHierarchyTargetFolderExists(file.getParent());
             Files.write(file, (getCurrentTestName() + "\n").getBytes(StandardCharsets.UTF_8));
@@ -202,7 +205,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
     public void testRootFileSystem() throws IOException {
         Path targetPath = detectTargetFolder();
         Path rootNative = targetPath.resolve("root").toAbsolutePath();
-        Utils.deleteRecursive(rootNative);
+        CommonTestSupportUtils.deleteRecursive(rootNative);
         assertHierarchyTargetFolderExists(rootNative);
 
         try (FileSystem fs = FileSystems.newFileSystem(URI.create("root:" + rootNative.toUri().toString() + "!/"), null)) {
@@ -214,13 +217,14 @@ public class SftpFileSystemTest extends BaseTestSupport {
     @Test   // see SSHD-697
     public void testFileChannel() throws IOException {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath,
+            SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path lclFile = lclSftp.resolve(getCurrentTestName() + ".txt");
         Files.deleteIfExists(lclFile);
         byte[] expected = (getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")").getBytes(StandardCharsets.UTF_8);
         try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap())) {
             Path parentPath = targetPath.getParent();
-            String remFilePath = Utils.resolveRelativeRemotePath(parentPath, lclFile);
+            String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
             Path file = fs.getPath(remFilePath);
 
             FileSystemProvider provider = fs.provider();
@@ -375,15 +379,16 @@ public class SftpFileSystemTest extends BaseTestSupport {
         }
 
         Path targetPath = detectTargetFolder();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
-        Utils.deleteRecursive(lclSftp);
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath,
+            SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(lclSftp);
 
         Path current = fs.getPath(".").toRealPath().normalize();
         outputDebugMessage("CWD: %s", current);
 
         Path parentPath = targetPath.getParent();
         Path clientFolder = lclSftp.resolve("client");
-        String remFile1Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve("file-1.txt"));
+        String remFile1Path = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, clientFolder.resolve("file-1.txt"));
         Path file1 = fs.getPath(remFile1Path);
         assertHierarchyTargetFolderExists(file1.getParent());
 
@@ -408,9 +413,9 @@ public class SftpFileSystemTest extends BaseTestSupport {
             assertListEquals("Mismatched ACLs for " + file1, aclView.getAcl(), acl);
         }
 
-        String remFile2Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve("file-2.txt"));
+        String remFile2Path = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, clientFolder.resolve("file-2.txt"));
         Path file2 = fs.getPath(remFile2Path);
-        String remFile3Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve("file-3.txt"));
+        String remFile3Path = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, clientFolder.resolve("file-3.txt"));
         Path file3 = fs.getPath(remFile3Path);
         try {
             outputDebugMessage("Move with failure expected %s => %s", file2, file3);

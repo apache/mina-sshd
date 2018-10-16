@@ -33,7 +33,7 @@ import org.apache.sshd.client.subsystem.sftp.extensions.CopyFileExtension;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -56,17 +56,18 @@ public class CopyFileExtensionImplTest extends AbstractSftpClientTestSupport {
     @Test
     public void testCopyFileExtension() throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
-        Utils.deleteRecursive(lclSftp);
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath,
+            SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(lclSftp);
 
         byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
         Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve("src.txt");
         Files.write(srcFile, data, IoUtils.EMPTY_OPEN_OPTIONS);
 
         Path parentPath = targetPath.getParent();
-        String srcPath = Utils.resolveRelativeRemotePath(parentPath, srcFile);
+        String srcPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
         Path dstFile = lclSftp.resolve("dst.txt");
-        String dstPath = Utils.resolveRelativeRemotePath(parentPath, dstFile);
+        String dstPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, dstFile);
 
         LinkOption[] options = IoUtils.getLinkOptions(true);
         assertFalse("Destination file unexpectedly exists", Files.exists(dstFile, options));

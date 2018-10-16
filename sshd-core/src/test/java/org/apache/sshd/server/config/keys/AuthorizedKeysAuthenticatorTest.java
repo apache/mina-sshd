@@ -52,12 +52,12 @@ public class AuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
 
     @Test
     public void testAutomaticReload() throws Exception {
-        final Path file = getTempTargetRelativeFile(getCurrentTestName());
+        Path file = getTempTargetRelativeFile(getCurrentTestName());
         if (Files.exists(file)) {
             Files.delete(file);
         }
 
-        final AtomicInteger reloadCount = new AtomicInteger(0);
+        AtomicInteger reloadCount = new AtomicInteger(0);
         PublickeyAuthenticator auth = new AuthorizedKeysAuthenticator(file) {
             @Override
             protected Collection<AuthorizedKeyEntry> reloadAuthorizedKeys(Path path, String username, ServerSession session) throws IOException {

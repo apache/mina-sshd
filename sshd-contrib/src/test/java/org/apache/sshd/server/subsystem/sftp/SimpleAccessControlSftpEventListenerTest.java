@@ -38,7 +38,7 @@ import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -89,7 +89,7 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
     public void testReadOnlyFileAccess() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
         byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
         Files.deleteIfExists(testFile);
@@ -103,7 +103,7 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 try (SftpClient sftp = SftpClientFactory.instance().createSftpClient(session)) {
-                    String file = Utils.resolveRelativeRemotePath(parentPath, testFile);
+                    String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
                     try (CloseableHandle handle = sftp.open(file, OpenMode.Read)) {
                         byte[] actual = new byte[data.length];
                         int readLen = sftp.read(handle, 0L, actual);
@@ -139,7 +139,7 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
     public void testReadOnlyDirectoryAccess() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
         byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
         Files.deleteIfExists(testFile);
@@ -153,12 +153,12 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 try (SftpClient sftp = SftpClientFactory.instance().createSftpClient(session)) {
-                    String folder = Utils.resolveRelativeRemotePath(parentPath, targetPath);
+                    String folder = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, targetPath);
                     for (SftpClient.DirEntry entry : sftp.readDir(folder)) {
                         assertNotNull("No entry", entry);
                     }
 
-                    String file = Utils.resolveRelativeRemotePath(parentPath, testFile);
+                    String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
                     try {
                         sftp.remove(file);
                         fail("Unexpected file remove success");

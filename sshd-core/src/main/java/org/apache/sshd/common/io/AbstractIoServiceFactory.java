@@ -19,12 +19,13 @@
 
 package org.apache.sshd.common.io;
 
-import java.util.concurrent.ExecutorService;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerHolder;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 
 /**
@@ -34,14 +35,14 @@ public abstract class AbstractIoServiceFactory
                 extends AbstractCloseable
                 implements IoServiceFactory, FactoryManagerHolder, ExecutorServiceCarrier {
 
+    private IoServiceEventListener eventListener;
     private final FactoryManager manager;
-    private final ExecutorService executor;
-    private final boolean shutdownExecutor;
+    private final CloseableExecutorService executor;
 
-    protected AbstractIoServiceFactory(FactoryManager factoryManager, ExecutorService executorService, boolean shutdownOnExit) {
-        manager = factoryManager;
-        executor = executorService;
-        shutdownExecutor = shutdownOnExit;
+    protected AbstractIoServiceFactory(FactoryManager factoryManager, CloseableExecutorService executorService) {
+        manager = Objects.requireNonNull(factoryManager, "No factory manager provided");
+        executor = Objects.requireNonNull(executorService, "No executor service provided");
+        eventListener = factoryManager.getIoServiceEventListener();
     }
 
     @Override
@@ -50,20 +51,25 @@ public abstract class AbstractIoServiceFactory
     }
 
     @Override
-    public final ExecutorService getExecutorService() {
+    public final CloseableExecutorService getExecutorService() {
         return executor;
     }
 
     @Override
-    public final boolean isShutdownOnExit() {
-        return shutdownExecutor;
+    public IoServiceEventListener getIoServiceEventListener() {
+        return eventListener;
+    }
+
+    @Override
+    public void setIoServiceEventListener(IoServiceEventListener listener) {
+        eventListener = listener;
     }
 
     @Override
     protected void doCloseImmediately() {
         try {
-            ExecutorService service = getExecutorService();
-            if ((service != null) && isShutdownOnExit() && (!service.isShutdown())) {
+            CloseableExecutorService service = getExecutorService();
+            if ((service != null) && (!service.isShutdown())) {
                 log.debug("Shutdown executor");
                 service.shutdownNow();
                 if (service.awaitTermination(5, TimeUnit.SECONDS)) {
@@ -77,6 +83,15 @@ public abstract class AbstractIoServiceFactory
         } finally {
             super.doCloseImmediately();
         }
+    }
+
+    protected <S extends IoService> S autowireCreatedService(S service) {
+        if (service == null) {
+            return service;
+        }
+
+        service.setIoServiceEventListener(getIoServiceEventListener());
+        return service;
     }
 
     public static int getNioWorkers(FactoryManager manager) {

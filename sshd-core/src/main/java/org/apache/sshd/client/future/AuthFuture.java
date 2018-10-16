@@ -30,7 +30,7 @@ public interface AuthFuture extends SshFuture<AuthFuture>, VerifiableFuture<Auth
     /**
      * Returns the cause of the authentication failure.
      *
-     * @return <code>null</code> if the authentication operation is not finished yet,
+     * @return {@code null} if the authentication operation is not finished yet,
      * or if the connection attempt is successful (use {@link #isDone()} to distinguish
      * between the two).
      */

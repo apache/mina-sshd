@@ -19,12 +19,10 @@
 
 package org.apache.sshd.common.io;
 
-import java.io.IOException;
 import java.util.Collections;
-import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -48,7 +46,7 @@ public class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
             }
             String name = f.getName();
             IoServiceFactoryFactory factoryInstance =
-                    DefaultIoServiceFactoryFactory.newInstance(IoServiceFactoryFactory.class, name);
+                DefaultIoServiceFactoryFactory.newInstance(IoServiceFactoryFactory.class, name);
             Class<?> expected = f.getFactoryClass();
             Class<?> actual = factoryInstance.getClass();
             assertSame(name, expected, actual);
@@ -57,8 +55,8 @@ public class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
 
     @SuppressWarnings("boxing")
     @Test
-    public void testExecutorServiceInitialization() throws IOException {
-        ExecutorService service = Mockito.mock(ExecutorService.class);
+    public void testExecutorServiceInitialization() throws Exception {
+        CloseableExecutorService service = Mockito.mock(CloseableExecutorService.class);
         Mockito.when(service.shutdownNow()).thenReturn(Collections.emptyList());
         Mockito.when(service.isShutdown()).thenReturn(Boolean.TRUE);
         Mockito.when(service.isTerminated()).thenReturn(Boolean.TRUE);
@@ -74,18 +72,14 @@ public class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
             String name = f.getName();
             try {
                 System.setProperty(propName, name);
-                for (boolean shutdownOnExit : new boolean[]{true, false}) {
-                    DefaultIoServiceFactoryFactory defaultFactory = new DefaultIoServiceFactoryFactory(service, shutdownOnExit);
+                DefaultIoServiceFactoryFactory defaultFactory = new DefaultIoServiceFactoryFactory(() -> service);
 
-                    try (IoServiceFactory factory = defaultFactory.create(manager)) {
-                        if (!(factory instanceof ExecutorServiceCarrier)) {
-                            continue;
-                        }
+                try (IoServiceFactory factory = defaultFactory.create(manager)) {
 
-                        ExecutorServiceCarrier carrier = (ExecutorServiceCarrier) factory;
-                        assertSame(name + "/" + shutdownOnExit + " - mismatched executor service", service, carrier.getExecutorService());
-                        assertEquals(name + "/" + shutdownOnExit + " - mismatched shutdown on exit", shutdownOnExit, carrier.isShutdownOnExit());
-                    }
+                    CloseableExecutorService svc = (CloseableExecutorService) factory.getClass().getMethod("getExecutorService").invoke(factory);
+                    assertSame(name + " - mismatched executor service", service, svc);
+                } catch (NoSuchMethodException e) {
+                    // ignore if there's no executor service
                 }
             } finally {
                 System.clearProperty(propName);

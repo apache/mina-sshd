@@ -29,13 +29,11 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntUnaryOperator;
 
-import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolver;
@@ -59,7 +57,8 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 import org.apache.sshd.common.util.closeable.IoBaseCloseable;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
+import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 
 /**
  * Provides common client/server channel functionality
@@ -68,7 +67,7 @@ import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
  */
 public abstract class AbstractChannel
         extends AbstractInnerCloseable
-        implements Channel, ExecutorServiceConfigurer {
+        implements Channel, ExecutorServiceCarrier {
 
     /**
      * Default growth factor function used to resize response buffers
@@ -94,8 +93,7 @@ public abstract class AbstractChannel
     private int id = -1;
     private int recipient = -1;
     private Session sessionInstance;
-    private ExecutorService executor;
-    private boolean shutdownExecutor;
+    private CloseableExecutorService executor;
     private final List<RequestHandler<Channel>> requestHandlers = new CopyOnWriteArrayList<>();
 
     private final Window localWindow;
@@ -115,19 +113,20 @@ public abstract class AbstractChannel
     }
 
     protected AbstractChannel(boolean client, Collection<? extends RequestHandler<Channel>> handlers) {
-        this("", client, handlers);
+        this("", client, handlers, null);
     }
 
     protected AbstractChannel(String discriminator, boolean client) {
-        this(discriminator, client, Collections.emptyList());
+        this(discriminator, client, Collections.emptyList(), null);
     }
 
-    protected AbstractChannel(String discriminator, boolean client, Collection<? extends RequestHandler<Channel>> handlers) {
+    protected AbstractChannel(String discriminator, boolean client, Collection<? extends RequestHandler<Channel>> handlers, CloseableExecutorService executorService) {
         super(discriminator);
         gracefulFuture = new DefaultCloseFuture(discriminator, lock);
         localWindow = new Window(this, null, client, true);
         remoteWindow = new Window(this, null, client, false);
         channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, getClass().getClassLoader(), channelListeners);
+        executor = executorService;
         addRequestHandlers(handlers);
     }
 
@@ -184,23 +183,8 @@ public abstract class AbstractChannel
     }
 
     @Override
-    public ExecutorService getExecutorService() {
+    public CloseableExecutorService getExecutorService() {
         return executor;
-    }
-
-    @Override
-    public void setExecutorService(ExecutorService service) {
-        executor = service;
-    }
-
-    @Override
-    public boolean isShutdownOnExit() {
-        return shutdownExecutor;
-    }
-
-    @Override
-    public void setShutdownOnExit(boolean shutdown) {
-        shutdownExecutor = shutdown;
     }
 
     @Override
@@ -552,7 +536,7 @@ public abstract class AbstractChannel
             log.debug("handleClose({}) SSH_MSG_CHANNEL_CLOSE", this);
         }
 
-        if (!eofSent.getAndSet(true)) {
+        if (!isEofSent()) {
             if (debugEnabled) {
                 log.debug("handleClose({}) prevent sending EOF", this);
             }
@@ -566,19 +550,15 @@ public abstract class AbstractChannel
     }
 
     @Override
-    public CloseFuture close(boolean immediately) {
-        if (!eofSent.getAndSet(true)) {
-            if (log.isDebugEnabled()) {
-                log.debug("close({}) prevent sending EOF", this);
-            }
-        }
-
-        return super.close(immediately);
-    }
-
-    @Override
     protected Closeable getInnerCloseable() {
-        return new GracefulChannelCloseable();
+        return builder()
+                .sequential(new GracefulChannelCloseable(), getExecutorService())
+                .run(toString(), () -> {
+                    if (service != null) {
+                        service.unregisterChannel(AbstractChannel.this);
+                    }
+                })
+                .build();
     }
 
     public class GracefulChannelCloseable extends IoBaseCloseable {
@@ -654,8 +634,8 @@ public abstract class AbstractChannel
                 }
             }
 
-            ExecutorService service = getExecutorService();
-            if ((service != null) && isShutdownOnExit() && (!service.isShutdown())) {
+            CloseableExecutorService service = getExecutorService();
+            if ((service != null) && (!service.isShutdown())) {
                 Collection<?> running = service.shutdownNow();
                 if (debugEnabled) {
                     log.debug("close({})[immediately={}] shutdown executor service on close - running count={}",
@@ -699,6 +679,10 @@ public abstract class AbstractChannel
 
     @Override
     protected void preClose() {
+        if (!isEofSent()) {
+            log.debug("close({}) prevent sending EOF", this);
+        }
+
         try {
             signalChannelClosed(null);
         } finally {
@@ -780,15 +764,6 @@ public abstract class AbstractChannel
         if (err != null) {
             throw err;
         }
-    }
-
-    @Override
-    protected void doCloseImmediately() {
-        if (service != null) {
-            service.unregisterChannel(AbstractChannel.this);
-        }
-
-        super.doCloseImmediately();
     }
 
     @Override
@@ -935,16 +910,16 @@ public abstract class AbstractChannel
     protected abstract void doWriteExtendedData(byte[] data, int off, long len) throws IOException;
 
     protected void sendEof() throws IOException {
-        if (eofSent.getAndSet(true)) {
+        if (isClosing()) {
             if (log.isDebugEnabled()) {
-                log.debug("sendEof({}) already sent", this);
+                log.debug("sendEof({}) already closing or closed", this);
             }
             return;
         }
 
-        if (isClosing()) {
+        if (eofSent.getAndSet(true)) {
             if (log.isDebugEnabled()) {
-                log.debug("sendEof({}) already closing or closed", this);
+                log.debug("sendEof({}) already sent", this);
             }
             return;
         }
@@ -986,11 +961,6 @@ public abstract class AbstractChannel
     @SuppressWarnings("unchecked")
     public <T> T removeAttribute(AttributeKey<T> key) {
         return (T) attributes.remove(Objects.requireNonNull(key, "No key"));
-    }
-
-    @Override
-    public <T> T resolveAttribute(AttributeKey<T> key) {
-        return AttributeStore.resolveAttribute(this, key);
     }
 
     protected void configureWindow() {

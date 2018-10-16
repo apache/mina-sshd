@@ -19,6 +19,7 @@
 package org.apache.sshd.common;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -30,6 +31,7 @@ import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolver
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.forward.ForwardingFilterFactory;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
+import org.apache.sshd.common.io.IoServiceEventListenerManager;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.random.Random;
@@ -56,6 +58,7 @@ public interface FactoryManager
                 ChannelStreamPacketWriterResolverManager,
                 UnknownChannelReferenceHandlerManager,
                 PortForwardingEventListenerManager,
+                IoServiceEventListenerManager,
                 AttributeStore,
                 PropertyResolver {
 
@@ -465,4 +468,19 @@ public interface FactoryManager
      */
     List<RequestHandler<ConnectionService>> getGlobalRequestHandlers();
 
+    @Override
+    default <T> T resolveAttribute(AttributeKey<T> key) {
+        return resolveAttribute(this, key);
+    }
+
+    /**
+     * @param <T> The generic attribute type
+     * @param manager The {@link FactoryManager} - ignored if {@code null}
+     * @param key The attribute key - never {@code null}
+     * @return Associated value - {@code null} if not found
+     */
+    static <T> T resolveAttribute(FactoryManager manager, AttributeKey<T> key) {
+        Objects.requireNonNull(key, "No key");
+        return (manager == null) ? null : manager.getAttribute(key);
+    }
 }

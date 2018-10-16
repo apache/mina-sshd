@@ -19,7 +19,7 @@
 
 package org.apache.sshd.client.simple;
 
-import org.apache.sshd.common.config.SshConfigFileReader;
+import org.apache.sshd.common.config.ConfigFileReaderSupport;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -35,7 +35,7 @@ public interface SimpleClientConfigurator {
      */
     long DEFAULT_AUTHENTICATION_TIMEOUT = Long.MAX_VALUE;   // virtually infinite
 
-    int DEFAULT_PORT = SshConfigFileReader.DEFAULT_PORT;
+    int DEFAULT_PORT = ConfigFileReaderSupport.DEFAULT_PORT;
 
     /**
      * @return Current connect timeout (msec.) - always positive

@@ -82,16 +82,19 @@ public class ProxyTest extends BaseTestSupport {
         }
 
         @Override
-        public void tearingDownExplicitTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress address,
-                boolean localForwarding) throws IOException {
-            log.info("tearingDownExplicitTunnel(session={}, address={}, localForwarding={})", session, address, localForwarding);
+        public void tearingDownExplicitTunnel(
+                org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress)
+                    throws IOException {
+            log.info("tearingDownExplicitTunnel(session={}, address={}, localForwarding={}, remote={})",
+                session, address, localForwarding, remoteAddress);
         }
 
         @Override
-        public void tornDownExplicitTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress address,
-                boolean localForwarding, Throwable reason) throws IOException {
-            log.info("tornDownExplicitTunnel(session={}, address={}, localForwarding={}, reason={})",
-                     session, address, localForwarding, reason);
+        public void tornDownExplicitTunnel(
+                org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress, Throwable reason)
+                    throws IOException {
+            log.info("tornDownExplicitTunnel(session={}, address={}, localForwarding={}, remote={}, reason={})",
+                     session, address, localForwarding, remoteAddress, reason);
         }
 
         @Override
@@ -172,7 +175,7 @@ public class ProxyTest extends BaseTestSupport {
         PortForwardingEventListener listener = new PortForwardingEventListener() {
             @Override
             public void tornDownExplicitTunnel(
-                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, Throwable reason)
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress, Throwable reason)
                             throws IOException {
                 throw new UnsupportedOperationException("Unexpected explicit tunnel torn down indication: session=" + session + ", address=" + address);
             }
@@ -187,8 +190,8 @@ public class ProxyTest extends BaseTestSupport {
 
             @Override
             public void tearingDownExplicitTunnel(
-                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding)
-                            throws IOException {
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress)
+                        throws IOException {
                 throw new UnsupportedOperationException("Unexpected explicit tunnel tear down indication: session=" + session + ", address=" + address);
             }
 

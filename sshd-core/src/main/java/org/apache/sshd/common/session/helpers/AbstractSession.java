@@ -32,6 +32,7 @@ import java.util.EnumMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,7 +44,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
@@ -63,6 +63,7 @@ import org.apache.sshd.common.cipher.CipherInformation;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.compression.CompressionInformation;
 import org.apache.sshd.common.digest.Digest;
+import org.apache.sshd.common.forward.ForwardingFilter;
 import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
@@ -77,6 +78,7 @@ import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.mac.MacInformation;
 import org.apache.sshd.common.random.Random;
+import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
@@ -91,6 +93,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
  * <P>
@@ -107,6 +110,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@SuppressWarnings("checkstyle:MethodCount")  // TODO split this big class and remove the suppression
 public abstract class AbstractSession extends AbstractKexFactoryManager implements Session {
     /**
      * Name of the property where this session is stored in the attributes of the
@@ -622,7 +626,18 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                     currentService.process(cmd, buffer);
                     resetIdleTimeout();
                 } else {
-                    throw new IllegalStateException("Unsupported command " + SshConstants.getCommandMessageName(cmd));
+                    /*
+                     * According to https://tools.ietf.org/html/rfc4253#section-11.4
+                     *
+                     *      An implementation MUST respond to all unrecognized messages
+                     *      with an SSH_MSG_UNIMPLEMENTED message in the order in which
+                     *      the messages were received.
+                     */
+                    if (log.isDebugEnabled()) {
+                        log.debug("process({}) Unsupported command: {}",
+                            this, SshConstants.getCommandMessageName(cmd));
+                    }
+                    notImplemented();
                 }
                 break;
         }
@@ -666,15 +681,16 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected void handleKexMessage(int cmd, Buffer buffer) throws Exception {
         validateKexState(cmd, KexState.RUN);
 
+        boolean debugEnabled = log.isDebugEnabled();
         if (kex.next(cmd, buffer)) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("handleKexMessage({})[{}] KEX processing complete after cmd={}", this, kex.getName(), cmd);
             }
             checkKeys();
             sendNewKeys();
             kexState.set(KexState.KEYS);
         } else {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("handleKexMessage({})[{}] more KEX packets expected after cmd={}", this, kex.getName(), cmd);
             }
         }
@@ -833,9 +849,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         Map<KexProposalOption, String> result = negotiate();
         String kexAlgorithm = result.get(KexProposalOption.ALGORITHMS);
         Collection<? extends NamedFactory<KeyExchange>> kexFactories = getKeyExchangeFactories();
-        kex = ValidateUtils.checkNotNull(NamedFactory.create(kexFactories, kexAlgorithm),
-                "Unknown negotiated KEX algorithm: %s",
-                kexAlgorithm);
+        synchronized (pendingPackets) {
+            kex = ValidateUtils.checkNotNull(NamedFactory.create(kexFactories, kexAlgorithm),
+                    "Unknown negotiated KEX algorithm: %s",
+                    kexAlgorithm);
+        }
 
         byte[] v_s = serverVersion.getBytes(StandardCharsets.UTF_8);
         byte[] v_c = clientVersion.getBytes(StandardCharsets.UTF_8);
@@ -873,6 +891,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         Collection<? extends Map.Entry<? extends SshFutureListener<IoWriteFuture>, IoWriteFuture>> pendingWrites;
         synchronized (pendingPackets) {
             pendingWrites = sendPendingPackets(pendingPackets);
+            kex = null; // discard and GC since KEX is completed
             kexState.set(KexState.DONE);
         }
 
@@ -919,7 +938,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         KexState actual = kexState.get();
         if (!expected.equals(actual)) {
             throw new IllegalStateException("Received KEX command=" + SshConstants.getCommandMessageName(cmd)
-                                          + " while in state=" + actual + " instead of " + expected);
+                  + " while in state=" + actual + " instead of " + expected);
         }
     }
 
@@ -1007,9 +1026,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .parallel(toString(), getServices())
-                .close(getIoSession())
-                .build();
+            .parallel(toString(), getServices())
+            .close(getIoSession())
+            .build();
     }
 
     @Override
@@ -1823,6 +1842,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      *
      * @throws Exception if an error occurs
      */
+    @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
     protected void receiveNewKeys() throws Exception {
         byte[] k = kex.getK();
         byte[] h = kex.getH();
@@ -2000,11 +2020,11 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             if (log.isDebugEnabled()) {
                 if (t == null) {
                     log.debug("disconnect({}) operation successfully completed for reason={} [{}]",
-                              AbstractSession.this, SshConstants.getDisconnectReasonName(reason), msg);
+                          AbstractSession.this, SshConstants.getDisconnectReasonName(reason), msg);
                 } else {
                     log.debug("disconnect({}) operation failed ({}) for reason={} [{}]: {}",
-                               AbstractSession.this, t.getClass().getSimpleName(),
-                               SshConstants.getDisconnectReasonName(reason), msg, t.getMessage());
+                           AbstractSession.this, t.getClass().getSimpleName(),
+                           SshConstants.getDisconnectReasonName(reason), msg, t.getMessage());
                 }
             }
 
@@ -2028,7 +2048,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * @see #sendNotImplemented(long)
      */
     protected IoWriteFuture notImplemented() throws IOException {
-        return sendNotImplemented(seqi - 1);
+        return sendNotImplemented(seqi - 1L);
     }
 
     /**
@@ -2233,11 +2253,6 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     @SuppressWarnings("unchecked")
     public <T> T removeAttribute(AttributeKey<T> key) {
         return (T) attributes.remove(Objects.requireNonNull(key, "No key"));
-    }
-
-    @Override
-    public <T> T resolveAttribute(AttributeKey<T> key) {
-        return AttributeStore.resolveAttribute(this, key);
     }
 
     @Override
@@ -2707,6 +2722,61 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         return proposal;
     }
 
+    protected abstract ConnectionService getConnectionService();
+
+    protected ForwardingFilter getForwardingFilter() {
+        ConnectionService service = getConnectionService();
+        return (service == null) ? null : service.getForwardingFilter();
+    }
+
+    @Override
+    public List<Map.Entry<Integer, SshdSocketAddress>> getLocalForwardsBindings() {
+        ForwardingFilter filter = getForwardingFilter();
+        return (filter == null) ? Collections.emptyList() : filter.getLocalForwardsBindings();
+    }
+
+    @Override
+    public boolean isLocalPortForwardingStartedForPort(int port) {
+        ForwardingFilter filter = getForwardingFilter();
+        return (filter != null) && filter.isLocalPortForwardingStartedForPort(port);
+    }
+
+    @Override
+    public NavigableSet<Integer> getStartedLocalPortForwards() {
+        ForwardingFilter filter = getForwardingFilter();
+        return (filter == null) ? Collections.emptyNavigableSet() : filter.getStartedLocalPortForwards();
+    }
+
+    @Override
+    public SshdSocketAddress getBoundLocalPortForward(int port) {
+        ForwardingFilter filter = getForwardingFilter();
+        return (filter == null) ? null : filter.getBoundLocalPortForward(port);
+    }
+
+    @Override
+    public List<Map.Entry<Integer, SshdSocketAddress>> getRemoteForwardsBindings() {
+        ForwardingFilter filter = getForwardingFilter();
+        return (filter == null) ? Collections.emptyList() : filter.getRemoteForwardsBindings();
+    }
+
+    @Override
+    public boolean isRemotePortForwardingStartedForPort(int port) {
+        ForwardingFilter filter = getForwardingFilter();
+        return (filter != null) && filter.isRemotePortForwardingStartedForPort(port);
+    }
+
+    @Override
+    public NavigableSet<Integer> getStartedRemotePortForwards() {
+        ForwardingFilter filter = getForwardingFilter();
+        return (filter == null) ? Collections.emptyNavigableSet() : filter.getStartedRemotePortForwards();
+    }
+
+    @Override
+    public SshdSocketAddress getBoundRemotePortForward(int port) {
+        ForwardingFilter filter = getForwardingFilter();
+        return (filter == null) ? null : filter.getBoundRemotePortForward(port);
+    }
+
     /**
      * Checks whether the session has timed out (both auth and idle timeouts are checked).
      * If the session has timed out, a DISCONNECT message will be sent.
@@ -2766,11 +2836,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      * Checks if idle timeout expired
      *
      * @param now           The current time in millis
-     * @param idleTimeoutMs The configured timeout in millis - if non-positive
-     *                      then no timeout
+     * @param idleTimeoutMs The configured timeout in millis - if non-positive then no timeout
      * @return A {@link SimpleImmutableEntry} specifying the timeout status and disconnect reason
-     * message if timeout expired, {@code null} or {@code NoTimeout} if no timeout
-     * occurred
+     * message if timeout expired, {@code null} or {@code NoTimeout} if no timeout occurred
      * @see #getIdleTimeout()
      */
     protected SimpleImmutableEntry<TimeoutStatus, String> checkIdleTimeout(long now, long idleTimeoutMs) {

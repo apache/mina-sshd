@@ -32,7 +32,8 @@ public final class SshClientConfigFileReader {
         throw new UnsupportedOperationException("No instance allowed");
     }
 
-    public static <C extends SshClient> C configure(C client, PropertyResolver props, boolean lenient, boolean ignoreUnsupported) {
+    public static <C extends SshClient> C configure(
+            C client, PropertyResolver props, boolean lenient, boolean ignoreUnsupported) {
         SshConfigFileReader.configure((AbstractFactoryManager) client, props, lenient, ignoreUnsupported);
         SshConfigFileReader.configureKeyExchanges(client, props, lenient, ClientBuilder.DH2KEX, ignoreUnsupported);
         return client;

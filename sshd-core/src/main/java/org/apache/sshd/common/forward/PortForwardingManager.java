@@ -26,7 +26,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface PortForwardingManager {
+public interface PortForwardingManager extends PortForwardingInformationProvider {
     /**
      * Start forwarding the given local address on the client to the given address on the server.
      *

@@ -26,8 +26,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 
-import com.jcraft.jsch.JSch;
-
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.mac.MacTest;
@@ -35,10 +33,11 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.SimpleUserInfo;
-import org.apache.sshd.util.test.Utils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -51,6 +50,8 @@ import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+
+import com.jcraft.jsch.JSch;
 
 /**
  * Test compression algorithms.
@@ -96,8 +97,8 @@ public class CompressionTest extends BaseTestSupport {
     public static void setupClientAndServer() throws Exception {
         JSchLogger.init();
 
-        sshd = Utils.setupTestServer(MacTest.class);
-        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider(MacTest.class));
+        sshd = CoreTestSupportUtils.setupTestServer(MacTest.class);
+        sshd.setKeyPairProvider(CommonTestSupportUtils.createTestHostKeyProvider(MacTest.class));
         sshd.start();
         port = sshd.getPort();
     }

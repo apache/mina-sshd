@@ -20,9 +20,9 @@ package org.apache.sshd.client.channel;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
@@ -35,6 +35,7 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
@@ -44,9 +45,8 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
  */
 public class ChannelSession extends AbstractClientChannel {
 
-    private ExecutorService pumperService;
+    private CloseableExecutorService pumperService;
     private Future<?> pumper;
-    private boolean shutdownPumper;
 
     public ChannelSession() {
         super("session");
@@ -89,15 +89,12 @@ public class ChannelSession extends AbstractClientChannel {
 
             if (in != null) {
                 // allocate a temporary executor service if none provided
-                ExecutorService service = getExecutorService();
+                CloseableExecutorService service = getExecutorService();
                 if (service == null) {
                     pumperService = ThreadUtils.newSingleThreadExecutor("ClientInputStreamPump[" + this.toString() + "]");
                 } else {
-                    pumperService = service;
+                    pumperService = ThreadUtils.noClose(service);
                 }
-
-                // shutdown the temporary executor service if had to create it
-                shutdownPumper = (pumperService != service) || isShutdownOnExit();
 
                 // Interrupt does not really work and the thread will only exit when
                 // the call to read() will return.  So ensure this thread is a daemon
@@ -129,8 +126,15 @@ public class ChannelSession extends AbstractClientChannel {
     }
 
     @Override
-    protected void doCloseImmediately() {
-        if ((pumper != null) && (pumperService != null) && shutdownPumper && (!pumperService.isShutdown())) {
+    protected Closeable getInnerCloseable() {
+        return builder()
+                .close(super.getInnerCloseable())
+                .run(toString(), this::closeImmediately0)
+                .build();
+    }
+
+    protected void closeImmediately0() {
+        if ((pumper != null) && (pumperService != null) && (!pumperService.isShutdown())) {
             try {
                 if (!pumper.isDone()) {
                     pumper.cancel(true);
@@ -151,8 +155,6 @@ public class ChannelSession extends AbstractClientChannel {
                 pumperService = null;
             }
         }
-
-        super.doCloseImmediately();
     }
 
     protected void pumpInputStream() {

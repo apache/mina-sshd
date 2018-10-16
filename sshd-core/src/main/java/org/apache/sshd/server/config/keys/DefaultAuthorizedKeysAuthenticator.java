@@ -19,7 +19,6 @@
 
 package org.apache.sshd.server.config.keys;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystemException;
 import java.nio.file.LinkOption;
@@ -28,7 +27,6 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
 
 import org.apache.sshd.common.auth.UsernameHolder;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
@@ -67,14 +65,6 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
 
     public DefaultAuthorizedKeysAuthenticator(String user, boolean strict) {
         this(user, getDefaultAuthorizedKeysFile(), strict);
-    }
-
-    public DefaultAuthorizedKeysAuthenticator(File file, boolean strict) {
-        this(Objects.requireNonNull(file, "No file provided").toPath(), strict, IoUtils.getLinkOptions(true));
-    }
-
-    public DefaultAuthorizedKeysAuthenticator(String user, File file, boolean strict) {
-        this(user, Objects.requireNonNull(file, "No file provided").toPath(), strict, IoUtils.getLinkOptions(true));
     }
 
     public DefaultAuthorizedKeysAuthenticator(Path path, boolean strict, LinkOption... options) {

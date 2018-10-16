@@ -19,9 +19,8 @@
 
 package org.apache.sshd.server.subsystem.sftp;
 
-import java.util.concurrent.ExecutorService;
-
-import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
+import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -34,7 +33,7 @@ import org.mockito.Mockito;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
-public class SftpSubsystemFactoryTest extends BaseTestSupport {
+public class SftpSubsystemFactoryTest extends JUnitTestSupport {
     public SftpSubsystemFactoryTest() {
         super();
     }
@@ -47,7 +46,6 @@ public class SftpSubsystemFactoryTest extends BaseTestSupport {
     public void testBuilderDefaultFactoryValues() {
         SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder().build();
         assertNull("Mismatched executor", factory.getExecutorService());
-        assertFalse("Mismatched shutdown state", factory.isShutdownOnExit());
         assertSame("Mismatched unsupported attribute policy", SftpSubsystemFactory.DEFAULT_POLICY, factory.getUnsupportedAttributePolicy());
     }
 
@@ -57,12 +55,10 @@ public class SftpSubsystemFactoryTest extends BaseTestSupport {
     @Test
     public void testBuilderCorrectlyInitializesFactory() {
         SftpSubsystemFactory.Builder builder = new SftpSubsystemFactory.Builder();
-        ExecutorService service = dummyExecutor();
+        CloseableExecutorService service = dummyExecutor();
         SftpSubsystemFactory factory = builder.withExecutorService(service)
-                .withShutdownOnExit(true)
                 .build();
         assertSame("Mismatched executor", service, factory.getExecutorService());
-        assertTrue("Mismatched shutdown state", factory.isShutdownOnExit());
 
         for (UnsupportedAttributePolicy policy : UnsupportedAttributePolicy.VALUES) {
             SftpSubsystemFactory actual = builder.withUnsupportedAttributePolicy(policy).build();
@@ -95,7 +91,7 @@ public class SftpSubsystemFactoryTest extends BaseTestSupport {
         assertNotSame("Executor service not changed", f1.getExecutorService(), f3.getExecutorService());
     }
 
-    private static ExecutorService dummyExecutor() {
-        return Mockito.mock(ExecutorService.class);
+    private static CloseableExecutorService dummyExecutor() {
+        return Mockito.mock(CloseableExecutorService.class);
     }
 }

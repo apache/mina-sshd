@@ -101,6 +101,12 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         });
     }
 
+// TODO: investigate how to fix the forwarding channel failures when enabled
+//    @Override
+//    public ClientSession getSession() {
+//        return (ClientSession) super.getSession();
+//    }
+
     protected void addChannelSignalRequestHandlers(EventNotifier<String> notifier) {
         addRequestHandler(new ExitStatusChannelRequestHandler(exitStatusHolder, notifier));
         addRequestHandler(new ExitSignalChannelRequestHandler(exitSignalHolder, notifier));
@@ -198,7 +204,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                     IoUtils.closeQuietly(invertedIn, invertedOut, invertedErr);
                 })
                 .parallel(asyncIn, asyncOut, asyncErr)
-                .close(new GracefulChannelCloseable())
+                .close(super.getInnerCloseable())
                 .build();
     }
 

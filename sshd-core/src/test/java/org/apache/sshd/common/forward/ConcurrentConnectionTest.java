@@ -72,6 +72,10 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
     // SSH Client State
     private ClientSession session;
 
+    public ConcurrentConnectionTest() {
+        super();
+    }
+
     /*
      * Start a server to forward to.
      *

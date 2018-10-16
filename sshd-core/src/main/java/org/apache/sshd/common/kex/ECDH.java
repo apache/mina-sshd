@@ -28,8 +28,6 @@ import java.security.spec.ECPoint;
 import java.security.spec.ECPublicKeySpec;
 import java.util.Objects;
 
-import javax.crypto.KeyAgreement;
-
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.digest.Digest;
@@ -42,13 +40,11 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ECDH extends AbstractDH {
+    public static final String KEX_TYPE = "ECDH";
 
+    private ECCurves curve;
     private ECParameterSpec params;
-    private ECPoint e;
-    private byte[] e_array;
     private ECPoint f;
-    private KeyPairGenerator myKpairGen;
-    private KeyAgreement myKeyAgree;
 
     public ECDH() throws Exception {
         this((ECParameterSpec) null);
@@ -60,32 +56,34 @@ public class ECDH extends AbstractDH {
 
     public ECDH(ECCurves curve) throws Exception {
         this(Objects.requireNonNull(curve, "No known curve instance provided").getParameters());
+        this.curve = curve;
     }
 
     public ECDH(ECParameterSpec paramSpec) throws Exception {
-        myKpairGen = SecurityUtils.getKeyPairGenerator(KeyUtils.EC_ALGORITHM);
-        myKeyAgree = SecurityUtils.getKeyAgreement("ECDH");
-        params = paramSpec;
+        myKeyAgree = SecurityUtils.getKeyAgreement(KEX_TYPE);
+        params = paramSpec; // do not check for null-ity since in some cases it can be
     }
 
     @Override
-    public byte[] getE() throws Exception {
-        if (e == null) {
-            Objects.requireNonNull(params, "No ECParameterSpec(s)");
-            myKpairGen.initialize(params);
-            KeyPair myKpair = myKpairGen.generateKeyPair();
-            myKeyAgree.init(myKpair.getPrivate());
-            e = ((ECPublicKey) myKpair.getPublic()).getW();
-            e_array = ECCurves.encodeECPoint(e, params);
-        }
-        return e_array;
+    protected byte[] calculateE() throws Exception {
+        Objects.requireNonNull(params, "No ECParameterSpec(s)");
+        KeyPairGenerator myKpairGen = SecurityUtils.getKeyPairGenerator(KeyUtils.EC_ALGORITHM);
+        myKpairGen.initialize(params);
+
+        KeyPair myKpair = myKpairGen.generateKeyPair();
+        myKeyAgree.init(myKpair.getPrivate());
+
+        ECPublicKey pubKey = (ECPublicKey) myKpair.getPublic();
+        ECPoint e = pubKey.getW();
+        return ECCurves.encodeECPoint(e, params);
     }
 
     @Override
     protected byte[] calculateK() throws Exception {
         Objects.requireNonNull(params, "No ECParameterSpec(s)");
-        KeyFactory myKeyFac = SecurityUtils.getKeyFactory(KeyUtils.EC_ALGORITHM);
+        Objects.requireNonNull(f, "Missing 'f' value");
         ECPublicKeySpec keySpec = new ECPublicKeySpec(f, params);
+        KeyFactory myKeyFac = SecurityUtils.getKeyFactory(KeyUtils.EC_ALGORITHM);
         PublicKey yourPubKey = myKeyFac.generatePublic(keySpec);
         myKeyAgree.doPhase(yourPubKey, true);
         return stripLeadingZeroes(myKeyAgree.generateSecret());
@@ -98,13 +96,25 @@ public class ECDH extends AbstractDH {
     @Override
     public void setF(byte[] f) {
         Objects.requireNonNull(params, "No ECParameterSpec(s)");
+        Objects.requireNonNull(f, "No 'f' value specified");
         this.f = ECCurves.octetStringToEcPoint(f);
     }
 
     @Override
     public Digest getHash() throws Exception {
-        Objects.requireNonNull(params, "No ECParameterSpec(s)");
-        ECCurves curve = Objects.requireNonNull(ECCurves.fromCurveParameters(params), "Unknown curve parameters");
+        if (curve == null) {
+            Objects.requireNonNull(params, "No ECParameterSpec(s)");
+            curve = Objects.requireNonNull(ECCurves.fromCurveParameters(params), "Unknown curve parameters");
+        }
+
         return curve.getDigestForParams();
+    }
+
+    @Override
+    public String toString() {
+        return super.toString()
+            + "[curve=" + curve
+            + ", f=" + f
+            + "]";
     }
 }

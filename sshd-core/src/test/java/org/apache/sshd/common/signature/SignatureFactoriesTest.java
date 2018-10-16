@@ -43,8 +43,8 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.apache.sshd.util.test.Utils;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -122,11 +122,11 @@ public class SignatureFactoriesTest extends BaseTestSupport implements OptionalF
 
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
-        sshd = Utils.setupTestServer(SignatureFactoriesTest.class);
+        sshd = CoreTestSupportUtils.setupTestServer(SignatureFactoriesTest.class);
         sshd.start();
         port = sshd.getPort();
 
-        client = Utils.setupTestClient(SignatureFactoriesTest.class);
+        client = CoreTestSupportUtils.setupTestClient(SignatureFactoriesTest.class);
         client.start();
     }
 

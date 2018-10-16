@@ -331,6 +331,10 @@ public class WindowTest extends BaseTestSupport {
     }
 
     public static class TestEchoShellFactory extends EchoShellFactory {
+        public TestEchoShellFactory() {
+            super();
+        }
+
         @Override
         public Command create() {
             return new TestEchoShell();
@@ -338,8 +342,11 @@ public class WindowTest extends BaseTestSupport {
     }
 
     public static class TestEchoShell extends EchoShell {
-
         public static final CountDownLatch LATCH = new CountDownLatch(1);
+
+        public TestEchoShell() {
+            super();
+        }
 
         @Override
         public void destroy() {

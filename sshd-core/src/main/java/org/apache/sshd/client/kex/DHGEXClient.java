@@ -64,7 +64,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
         return factory.getName();
     }
 
-    public static KeyExchangeFactory newFactory(final DHFactory delegate) {
+    public static KeyExchangeFactory newFactory(DHFactory delegate) {
         return new KeyExchangeFactory() {
             @Override
             public String getName() {
@@ -101,6 +101,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
     }
 
     @Override
+    @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
     public boolean next(int cmd, Buffer buffer) throws Exception {
         Session session = getSession();
         boolean debugEnabled = log.isDebugEnabled();

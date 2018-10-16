@@ -22,19 +22,23 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.OpenFuture;
@@ -91,9 +95,16 @@ public class DefaultForwardingFilter
     private final ConnectionService service;
     private final IoHandlerFactory socksProxyIoHandlerFactory = () -> new SocksProxy(getConnectionService());
     private final Session sessionInstance;
+
+    private final Object localLock = new Object();
     private final Map<Integer, SshdSocketAddress> localToRemote = new TreeMap<>(Comparator.naturalOrder());
+    private final Map<Integer, InetSocketAddress> boundLocals = new TreeMap<>(Comparator.naturalOrder());
+
+    private final Object dynamicLock = new Object();
     private final Map<Integer, SshdSocketAddress> remoteToLocal = new TreeMap<>(Comparator.naturalOrder());
     private final Map<Integer, SocksProxy> dynamicLocal = new TreeMap<>(Comparator.naturalOrder());
+    private final Map<Integer, InetSocketAddress> boundDynamic = new TreeMap<>(Comparator.naturalOrder());
+
     private final Set<LocalForwardingEntry> localForwards = new HashSet<>();
     private final IoHandlerFactory staticIoHandlerFactory = StaticIoHandler::new;
     private final Collection<PortForwardingEventListener> listeners = new CopyOnWriteArraySet<>();
@@ -187,23 +198,31 @@ public class DefaultForwardingFilter
             throw new IllegalStateException("TcpipForwarder is closing");
         }
 
-        InetSocketAddress bound;
+        InetSocketAddress bound = null;
         int port;
         signalEstablishingExplicitTunnel(local, remote, true);
         try {
             bound = doBind(local, staticIoHandlerFactory);
             port = bound.getPort();
-            SshdSocketAddress prev;
-            synchronized (localToRemote) {
-                prev = localToRemote.put(port, remote);
-            }
+            synchronized (localLock) {
+                SshdSocketAddress prevRemote = localToRemote.get(port);
+                if (prevRemote != null) {
+                    throw new IOException("Multiple local port forwarding addressing on port=" + port
+                        + ": current=" + remote + ", previous=" + prevRemote);
+                }
 
-            if (prev != null) {
-                throw new IOException("Multiple local port forwarding bindings on port=" + port + ": current=" + remote + ", previous=" + prev);
+                InetSocketAddress prevBound = boundLocals.get(port);
+                if (prevBound != null) {
+                    throw new IOException("Multiple local port forwarding bindings on port=" + port
+                        + ": current=" + bound + ", previous=" + prevBound);
+                }
+
+                localToRemote.put(port, remote);
+                boundLocals.put(port, bound);
             }
         } catch (IOException | RuntimeException e) {
             try {
-                stopLocalPortForwarding(local);
+                unbindLocalForwarding(local, remote, bound);
             } catch (IOException | RuntimeException err) {
                 e.addSuppressed(err);
             }
@@ -228,28 +247,42 @@ public class DefaultForwardingFilter
     public synchronized void stopLocalPortForwarding(SshdSocketAddress local) throws IOException {
         Objects.requireNonNull(local, "Local address is null");
 
-        SshdSocketAddress bound;
-        synchronized (localToRemote) {
-            bound = localToRemote.remove(local.getPort());
+        SshdSocketAddress remote;
+        InetSocketAddress bound;
+        int port = local.getPort();
+        synchronized (localLock) {
+            remote = localToRemote.remove(port);
+            bound = boundLocals.remove(port);
         }
 
+        unbindLocalForwarding(local, remote, bound);
+    }
+
+    protected void unbindLocalForwarding(
+            SshdSocketAddress local, SshdSocketAddress remote, InetSocketAddress bound)
+                throws IOException {
         if ((bound != null) && (acceptor != null)) {
             if (log.isDebugEnabled()) {
-                log.debug("stopLocalPortForwarding(" + local + ") unbind " + bound);
+                log.debug("unbindLocalForwarding({} => {}) unbind {}", local, remote, bound);
             }
 
-            signalTearingDownExplicitTunnel(bound, true);
+            SshdSocketAddress boundAddress = new SshdSocketAddress(bound);
             try {
-                acceptor.unbind(bound.toInetSocketAddress());
-            } catch (RuntimeException e) {
-                signalTornDownExplicitTunnel(bound, true, e);
-                throw e;
+                signalTearingDownExplicitTunnel(boundAddress, true, remote);
+            } finally {
+                try {
+                    acceptor.unbind(bound);
+                } catch (RuntimeException e) {
+                    signalTornDownExplicitTunnel(boundAddress, true, remote, e);
+                    throw e;
+                }
             }
 
-            signalTornDownExplicitTunnel(bound, true, null);
+            signalTornDownExplicitTunnel(boundAddress, true, remote, null);
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("stopLocalPortForwarding(" + local + ") no mapping/acceptor for " + bound);
+                log.debug("unbindLocalForwarding({} => {}) no mapping({}) or acceptor({})",
+                    local, remote, bound, acceptor);
             }
         }
     }
@@ -279,14 +312,14 @@ public class DefaultForwardingFilter
             }
             port = (remotePort == 0) ? result.getInt() : remote.getPort();
             // TODO: Is it really safe to only store the local address after the request ?
-            SshdSocketAddress prev;
             synchronized (remoteToLocal) {
-                prev = remoteToLocal.put(port, local);
+                SshdSocketAddress prev = remoteToLocal.get(port);
+                if (prev != null) {
+                    throw new IOException("Multiple remote port forwarding bindings on port=" + port + ": current=" + remote + ", previous=" + prev);
+                }
+                remoteToLocal.put(port, local);
             }
 
-            if (prev != null) {
-                throw new IOException("Multiple remote port forwarding bindings on port=" + port + ": current=" + remote + ", previous=" + prev);
-            }
         } catch (IOException | RuntimeException e) {
             try {
                 stopRemotePortForwarding(remote);
@@ -314,8 +347,9 @@ public class DefaultForwardingFilter
     @Override
     public synchronized void stopRemotePortForwarding(SshdSocketAddress remote) throws IOException {
         SshdSocketAddress bound;
+        int port = remote.getPort();
         synchronized (remoteToLocal) {
-            bound = remoteToLocal.remove(remote.getPort());
+            bound = remoteToLocal.remove(port);
         }
 
         if (bound != null) {
@@ -329,17 +363,17 @@ public class DefaultForwardingFilter
             buffer.putString("cancel-tcpip-forward");
             buffer.putBoolean(false);   // want reply
             buffer.putString(remoteHost);
-            buffer.putInt(remote.getPort());
+            buffer.putInt(port);
 
-            signalTearingDownExplicitTunnel(bound, false);
+            signalTearingDownExplicitTunnel(bound, false, remote);
             try {
                 session.writePacket(buffer);
             } catch (IOException | RuntimeException e) {
-                signalTornDownExplicitTunnel(bound, false, e);
+                signalTornDownExplicitTunnel(bound, false, remote, e);
                 throw e;
             }
 
-            signalTornDownExplicitTunnel(bound, false, null);
+            signalTornDownExplicitTunnel(bound, false, remote, null);
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("stopRemotePortForwarding(" + remote + ") no binding found");
@@ -347,10 +381,12 @@ public class DefaultForwardingFilter
         }
     }
 
-    protected void signalTearingDownExplicitTunnel(SshdSocketAddress boundAddress, boolean localForwarding) throws IOException {
+    protected void signalTearingDownExplicitTunnel(
+            SshdSocketAddress boundAddress, boolean localForwarding, SshdSocketAddress remote)
+                throws IOException {
         try {
             invokePortEventListenerSignaller(l -> {
-                signalTearingDownExplicitTunnel(l, boundAddress, localForwarding);
+                signalTearingDownExplicitTunnel(l, boundAddress, localForwarding, remote);
                 return null;
             });
         } catch (Throwable t) {
@@ -369,19 +405,21 @@ public class DefaultForwardingFilter
     }
 
     protected void signalTearingDownExplicitTunnel(
-            PortForwardingEventListener listener, SshdSocketAddress boundAddress, boolean localForwarding)
-                    throws IOException {
+            PortForwardingEventListener listener, SshdSocketAddress boundAddress, boolean localForwarding, SshdSocketAddress remoteAddress)
+                throws IOException {
         if (listener == null) {
             return;
         }
 
-        listener.tearingDownExplicitTunnel(getSession(), boundAddress, localForwarding);
+        listener.tearingDownExplicitTunnel(getSession(), boundAddress, localForwarding, remoteAddress);
     }
 
-    protected void signalTornDownExplicitTunnel(SshdSocketAddress boundAddress, boolean localForwarding, Throwable reason) throws IOException {
+    protected void signalTornDownExplicitTunnel(
+            SshdSocketAddress boundAddress, boolean localForwarding, SshdSocketAddress remoteAddress, Throwable reason)
+                throws IOException {
         try {
             invokePortEventListenerSignaller(l -> {
-                signalTornDownExplicitTunnel(l, boundAddress, localForwarding, reason);
+                signalTornDownExplicitTunnel(l, boundAddress, localForwarding, remoteAddress, reason);
                 return null;
             });
         } catch (Throwable t) {
@@ -400,13 +438,13 @@ public class DefaultForwardingFilter
     }
 
     protected void signalTornDownExplicitTunnel(
-            PortForwardingEventListener listener, SshdSocketAddress boundAddress, boolean localForwarding, Throwable reason)
+            PortForwardingEventListener listener, SshdSocketAddress boundAddress, boolean localForwarding, SshdSocketAddress remoteAddress, Throwable reason)
                     throws IOException {
         if (listener == null) {
             return;
         }
 
-        listener.tornDownExplicitTunnel(getSession(), boundAddress, localForwarding, reason);
+        listener.tornDownExplicitTunnel(getSession(), boundAddress, localForwarding, remoteAddress, reason);
     }
 
     @Override
@@ -421,24 +459,33 @@ public class DefaultForwardingFilter
             throw new IllegalStateException("TcpipForwarder is closing");
         }
 
-        SocksProxy socksProxy = new SocksProxy(service);
-        SocksProxy prev;
-        InetSocketAddress bound;
+        SocksProxy proxy = null;
+        InetSocketAddress bound = null;
         int port;
         signalEstablishingDynamicTunnel(local);
         try {
             bound = doBind(local, socksProxyIoHandlerFactory);
             port = bound.getPort();
-            synchronized (dynamicLocal) {
-                prev = dynamicLocal.put(port, socksProxy);
-            }
+            synchronized (dynamicLock) {
+                SocksProxy prevProxy = dynamicLocal.get(port);
+                if (prevProxy != null) {
+                    throw new IOException("Multiple dynamic port mappings found for port=" + port
+                        + ": current=" + proxy + ", previous=" + prevProxy);
+                }
 
-            if (prev != null) {
-                throw new IOException("Multiple dynamic port mappings found for port=" + port + ": current=" + socksProxy + ", previous=" + prev);
+                InetSocketAddress prevBound = boundDynamic.get(port);
+                if (prevBound != null) {
+                    throw new IOException("Multiple dynamic port bindings found for port=" + port
+                        + ": current=" + bound + ", previous=" + prevBound);
+                }
+
+                proxy = new SocksProxy(service);
+                dynamicLocal.put(port, proxy);
+                boundDynamic.put(port, bound);
             }
         } catch (IOException | RuntimeException e) {
             try {
-                stopDynamicPortForwarding(local);
+                unbindDynamicForwarding(local, proxy, bound);
             } catch (IOException | RuntimeException err) {
                 e.addSuppressed(err);
             }
@@ -523,29 +570,57 @@ public class DefaultForwardingFilter
 
     @Override
     public synchronized void stopDynamicPortForwarding(SshdSocketAddress local) throws IOException {
-        SocksProxy obj;
-        synchronized (dynamicLocal) {
-            obj = dynamicLocal.remove(local.getPort());
+        SocksProxy proxy;
+        InetSocketAddress bound;
+        int port = local.getPort();
+        synchronized (dynamicLock) {
+            proxy = dynamicLocal.remove(port);
+            bound = boundDynamic.remove(port);
         }
 
-        if (obj != null) {
-            if (log.isDebugEnabled()) {
-                log.debug("stopDynamicPortForwarding(" + local + ") unbinding");
-            }
+        unbindDynamicForwarding(local, proxy, bound);
+    }
 
-            signalTearingDownDynamicTunnel(local);
+    protected void unbindDynamicForwarding(
+            SshdSocketAddress local, SocksProxy proxy, InetSocketAddress bound) throws IOException {
+        boolean debugEnabled = log.isDebugEnabled();
+        if ((bound != null) || (proxy != null)) {
+
             try {
-                obj.close(true);
-                acceptor.unbind(local.toInetSocketAddress());
-            } catch (RuntimeException e) {
-                signalTornDownDynamicTunnel(local, e);
-                throw e;
+                signalTearingDownDynamicTunnel(local);
+            } finally {
+                try {
+                    try {
+                        if (proxy != null) {
+                            if (debugEnabled) {
+                                log.debug("stopDynamicPortForwarding({}) close proxy={}", local, proxy);
+                            }
+
+                            proxy.close(true);
+                        }
+                    } finally {
+                        if ((bound != null) && (acceptor != null)) {
+                            if (debugEnabled) {
+                                log.debug("stopDynamicPortForwarding({}) unbind address={}", local, bound);
+                            }
+                            acceptor.unbind(bound);
+                        } else {
+                            if (debugEnabled) {
+                                log.debug("stopDynamicPortForwarding({}) no acceptor({}) or no binding({})",
+                                    local, acceptor, bound);
+                            }
+                        }
+                    }
+                } catch (RuntimeException e) {
+                    signalTornDownDynamicTunnel(local, e);
+                    throw e;
+                }
             }
 
             signalTornDownDynamicTunnel(local, null);
         } else {
-            if (log.isDebugEnabled()) {
-                log.debug("stopDynamicPortForwarding(" + local + ") no binding found");
+            if (debugEnabled) {
+                log.debug("stopDynamicPortForwarding({}) no binding found", local);
             }
         }
     }
@@ -690,15 +765,15 @@ public class DefaultForwardingFilter
                 log.debug("localPortForwardingCancelled(" + local + ") unbind " + entry);
             }
 
-            signalTearingDownExplicitTunnel(entry, true);
+            signalTearingDownExplicitTunnel(entry, true, null);
             try {
                 acceptor.unbind(entry.toInetSocketAddress());
             } catch (RuntimeException e) {
-                signalTornDownExplicitTunnel(entry, true, e);
+                signalTornDownExplicitTunnel(entry, true, null, e);
                 throw e;
             }
 
-            signalTornDownExplicitTunnel(entry, true, null);
+            signalTornDownExplicitTunnel(entry, true, null, null);
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("localPortForwardingCancelled(" + local + ") no match/acceptor: " + entry);
@@ -729,9 +804,9 @@ public class DefaultForwardingFilter
         }
     }
 
-    protected void signalEstablishingExplicitTunnel(PortForwardingEventListener listener,
-            SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding)
-                    throws IOException {
+    protected void signalEstablishingExplicitTunnel(
+            PortForwardingEventListener listener, SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding)
+                throws IOException {
         if (listener == null) {
             return;
         }
@@ -957,26 +1032,34 @@ public class DefaultForwardingFilter
 
         @Override
         public void sessionClosed(IoSession session) throws Exception {
-            TcpipClientChannel channel = (TcpipClientChannel) session.removeAttribute(TcpipClientChannel.class);                      
+            TcpipClientChannel channel = (TcpipClientChannel) session.removeAttribute(TcpipClientChannel.class);
             Throwable cause = (Throwable) session.removeAttribute(TcpipForwardingExceptionMarker.class);
-            if (channel != null) {
-                if (debugEnabled) {
-                    log.debug("sessionClosed({}) closing channel={} after {} messages - cause={}",
-                        session, channel, messagesCounter, (cause == null) ? null : cause.getClass().getSimpleName());
-                }
-              
-                if (cause != null) {
-                    channel.close(true);
-                } else {
-                    OpenFuture openFuture = channel.getOpenFuture();
-                    if (!openFuture.isDone()) {
-                        openFuture.addListener(f -> {
-                            channel.close(false);        
-                        });
-                    } else {
-                        channel.close(false);                            
-                    }                  
-                }
+            if (debugEnabled) {
+                log.debug("sessionClosed({}) closing channel={} after {} messages - cause={}",
+                    session, channel, messagesCounter, (cause == null) ? null : cause.getClass().getSimpleName());
+            }
+            if (channel == null) {
+                return;
+            }
+
+            if (cause != null) {
+                // If exception occurred close the channel immediately
+                channel.close(true);
+            } else {
+                /*
+                 *  Make sure channel is fully open in case the client was very fast
+                 *  and sent data + closed the connection before channel open was completed.
+                 */
+                OpenFuture openFuture = channel.getOpenFuture();
+                // If channel is established then listener is invoked immediately
+                openFuture.addListener(f -> {
+                    Throwable err = f.getException();
+                    if (err != null) {
+                        log.warn("sessionClosed({}) closing incompletely open channel={} after {} messages due to {}[{}]",
+                            session, channel, messagesCounter, err.getClass().getSimpleName(), err.getMessage());
+                    }
+                    channel.close(err != null);
+                });
             }
         }
 
@@ -1026,6 +1109,72 @@ public class DefaultForwardingFilter
                 log.trace("exceptionCaught(" + session + ") caught exception details", cause);
             }
             session.close(true);
+        }
+    }
+
+    @Override
+    public SshdSocketAddress getBoundLocalPortForward(int port) {
+        ValidateUtils.checkTrue(port > 0, "Invalid local port: %d", port);
+
+        Integer portKey = Integer.valueOf(port);
+        synchronized (localToRemote) {
+            return localToRemote.get(portKey);
+        }
+    }
+
+    @Override
+    public List<Map.Entry<Integer, SshdSocketAddress>> getLocalForwardsBindings() {
+        synchronized (localToRemote) {
+            return localToRemote.isEmpty()
+                 ? Collections.emptyList()
+                 : localToRemote.entrySet()
+                     .stream()  // return an immutable clone to avoid 'setValue' calls on a shared instance
+                     .map(e -> new SimpleImmutableEntry<>(e.getKey(), e.getValue()))
+                     .collect(Collectors.toCollection(() -> new ArrayList<>(localToRemote.size())));
+        }
+    }
+
+    @Override
+    public NavigableSet<Integer> getStartedLocalPortForwards() {
+        synchronized (localToRemote) {
+            if (localToRemote.isEmpty()) {
+                return Collections.emptyNavigableSet();
+            }
+
+            return GenericUtils.asSortedSet(localToRemote.keySet());
+        }
+    }
+
+    @Override
+    public List<Map.Entry<Integer, SshdSocketAddress>> getRemoteForwardsBindings() {
+        synchronized (remoteToLocal) {
+            return remoteToLocal.isEmpty()
+                 ? Collections.emptyList()
+                 : remoteToLocal.entrySet()
+                     .stream()  // return an immutable clone to avoid 'setValue' calls on a shared instance
+                     .map(e -> new SimpleImmutableEntry<>(e.getKey(), e.getValue()))
+                     .collect(Collectors.toCollection(() -> new ArrayList<>(remoteToLocal.size())));
+        }
+    }
+
+    @Override
+    public SshdSocketAddress getBoundRemotePortForward(int port) {
+        ValidateUtils.checkTrue(port > 0, "Invalid remote port: %d", port);
+
+        Integer portKey = Integer.valueOf(port);
+        synchronized (remoteToLocal) {
+            return remoteToLocal.get(portKey);
+        }
+    }
+
+    @Override
+    public NavigableSet<Integer> getStartedRemotePortForwards() {
+        synchronized (remoteToLocal) {
+            if (remoteToLocal.isEmpty()) {
+                return Collections.emptyNavigableSet();
+            }
+
+            return GenericUtils.asSortedSet(remoteToLocal.keySet());
         }
     }
 }

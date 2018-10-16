@@ -44,6 +44,6 @@ public class ChannelAgentForwardingFactory implements ChannelFactory {
 
     @Override
     public Channel create() {
-        return new ChannelAgentForwarding();
+        return new ChannelAgentForwarding(null);
     }
 }

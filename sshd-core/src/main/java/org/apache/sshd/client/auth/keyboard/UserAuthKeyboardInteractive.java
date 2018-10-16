@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.ClientAuthenticationManager;
 import org.apache.sshd.client.auth.AbstractUserAuth;
-import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
@@ -87,7 +86,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     @Override
     public void init(ClientSession session, String service) throws Exception {
         super.init(session, service);
-        passwords = PasswordIdentityProvider.iteratorOf(session);
+        passwords = ClientSession.passwordIteratorOf(session);
         maxTrials = session.getIntProperty(ClientAuthenticationManager.PASSWORD_PROMPTS, ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS);
         ValidateUtils.checkTrue(maxTrials > 0, "Non-positive max. trials: %d", maxTrials);
     }
@@ -95,8 +94,9 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     @Override
     protected boolean sendAuthDataRequest(ClientSession session, String service) throws Exception {
         String name = getName();
+        boolean debugEnabled = log.isDebugEnabled();
         if (requestPending.get()) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("sendAuthDataRequest({})[{}] no reply for previous request for {}",
                           session, service, name);
             }
@@ -110,15 +110,15 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         String username = session.getUsername();
         String lang = getExchangeLanguageTag(session);
         String subMethods = getExchangeSubMethods(session);
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("sendAuthDataRequest({})[{}] send SSH_MSG_USERAUTH_REQUEST for {}: lang={}, methods={}",
                       session, service, name, lang, subMethods);
         }
 
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
-                            username.length() + service.length() + name.length()
-                          + GenericUtils.length(lang) + GenericUtils.length(subMethods)
-                          + Long.SIZE /* a bit extra for the lengths */);
+                username.length() + service.length() + name.length()
+              + GenericUtils.length(lang) + GenericUtils.length(subMethods)
+              + Long.SIZE /* a bit extra for the lengths */);
         buffer.putString(username);
         buffer.putString(service);
         buffer.putString(name);
@@ -246,8 +246,9 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     protected String[] getUserResponses(String name, String instruction, String lang, String[] prompt, boolean[] echo) {
         ClientSession session = getClientSession();
         int num = GenericUtils.length(prompt);
+        boolean debugEnabled = log.isDebugEnabled();
         if (num == 0) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("getUserResponses({}) no prompts for interaction={}", session, name);
             }
             return GenericUtils.EMPTY_STRING_ARRAY;
@@ -255,7 +256,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
         String candidate = getCurrentPasswordCandidate();
         if (useCurrentPassword(candidate, name, instruction, lang, prompt, echo)) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("getUserResponses({}) use password candidate for interaction={}", session, name);
             }
             return new String[]{candidate};
@@ -269,14 +270,14 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         } catch (Error e) {
             log.warn("getUserResponses({}) failed ({}) to consult interaction: {}",
                      session, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("getUserResponses(" + session + ") interaction consultation failure details", e);
             }
 
             throw new RuntimeSshException(e);
         }
 
-        if (log.isDebugEnabled()) {
+        if (debugEnabled) {
             log.debug("getUserResponses({}) no user interaction for name={}", session, name);
         }
 

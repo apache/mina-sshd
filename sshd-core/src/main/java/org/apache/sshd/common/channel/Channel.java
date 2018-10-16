@@ -21,6 +21,7 @@ package org.apache.sshd.common.channel;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.AttributeStore;
@@ -211,4 +212,29 @@ public interface Channel
      * @throws IOException If failed to handle the success
      */
     void handleOpenFailure(Buffer buffer) throws IOException;
+
+    @Override
+    default <T> T resolveAttribute(AttributeKey<T> key) {
+        return resolveAttribute(this, key);
+    }
+
+    /**
+     * Attempts to use the channel attribute, if not found then tries the session
+     *
+     * @param <T> The generic attribute type
+     * @param channel The {@link Channel} - ignored if {@code null}
+     * @param key The attribute key - never {@code null}
+     * @return Associated value - {@code null} if not found
+     * @see #getSession()
+     * @see Session#resolveAttribute(Session, AttributeKey)
+     */
+    static <T> T resolveAttribute(Channel channel, AttributeKey<T> key) {
+        Objects.requireNonNull(key, "No key");
+        if (channel == null) {
+            return null;
+        }
+
+        T value = channel.getAttribute(key);
+        return (value != null) ? value : Session.resolveAttribute(channel.getSession(), key);
+    }
 }

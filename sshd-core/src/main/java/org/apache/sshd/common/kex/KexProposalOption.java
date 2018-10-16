@@ -123,5 +123,9 @@ public enum KexProposalOption {
         public static final int PROPOSAL_COMP_ALGS_STOC = 7;
         public static final int PROPOSAL_LANG_CTOS = 8;
         public static final int PROPOSAL_LANG_STOC = 9;
+
+        private Constants() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
     }
 }

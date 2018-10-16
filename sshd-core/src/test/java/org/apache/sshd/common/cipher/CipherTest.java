@@ -28,8 +28,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.jcraft.jsch.JSch;
-
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.channel.Channel;
@@ -37,10 +35,11 @@ import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.SimpleUserInfo;
-import org.apache.sshd.util.test.Utils;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -51,6 +50,8 @@ import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+
+import com.jcraft.jsch.JSch;
 
 /**
  * Test Cipher algorithms.
@@ -67,15 +68,15 @@ public class CipherTest extends BaseTestSupport {
      * NOTE !!! order is important since we build from it the C2S/S2C ciphers proposal
      */
     private static final List<Object[]> PARAMETERS =
-            Collections.unmodifiableList(Arrays.asList(
-                    new Object[]{BuiltinCiphers.aes128cbc, com.jcraft.jsch.jce.AES128CBC.class, NUM_LOADTEST_ROUNDS},
-                    new Object[]{BuiltinCiphers.tripledescbc, com.jcraft.jsch.jce.TripleDESCBC.class, NUM_LOADTEST_ROUNDS},
-                    new Object[]{BuiltinCiphers.blowfishcbc, com.jcraft.jsch.jce.BlowfishCBC.class, NUM_LOADTEST_ROUNDS},
-                    new Object[]{BuiltinCiphers.aes192cbc, com.jcraft.jsch.jce.AES192CBC.class, NUM_LOADTEST_ROUNDS},
-                    new Object[]{BuiltinCiphers.aes256cbc, com.jcraft.jsch.jce.AES256CBC.class, NUM_LOADTEST_ROUNDS},
-                    new Object[]{BuiltinCiphers.arcfour128, com.jcraft.jsch.jce.ARCFOUR128.class, NUM_LOADTEST_ROUNDS},
-                    new Object[]{BuiltinCiphers.arcfour256, com.jcraft.jsch.jce.ARCFOUR256.class, NUM_LOADTEST_ROUNDS}
-            ));
+        Collections.unmodifiableList(Arrays.asList(
+            new Object[]{BuiltinCiphers.aes128cbc, com.jcraft.jsch.jce.AES128CBC.class, NUM_LOADTEST_ROUNDS},
+            new Object[]{BuiltinCiphers.tripledescbc, com.jcraft.jsch.jce.TripleDESCBC.class, NUM_LOADTEST_ROUNDS},
+            new Object[]{BuiltinCiphers.blowfishcbc, com.jcraft.jsch.jce.BlowfishCBC.class, NUM_LOADTEST_ROUNDS},
+            new Object[]{BuiltinCiphers.aes192cbc, com.jcraft.jsch.jce.AES192CBC.class, NUM_LOADTEST_ROUNDS},
+            new Object[]{BuiltinCiphers.aes256cbc, com.jcraft.jsch.jce.AES256CBC.class, NUM_LOADTEST_ROUNDS},
+            new Object[]{BuiltinCiphers.arcfour128, com.jcraft.jsch.jce.ARCFOUR128.class, NUM_LOADTEST_ROUNDS},
+            new Object[]{BuiltinCiphers.arcfour256, com.jcraft.jsch.jce.ARCFOUR256.class, NUM_LOADTEST_ROUNDS}
+        ));
 
     private static final List<NamedResource> TEST_CIPHERS =
         Collections.unmodifiableList(
@@ -86,7 +87,7 @@ public class CipherTest extends BaseTestSupport {
     private static SshServer sshd;
     private static int port;
 
-    private final Random random = Utils.getRandomizerInstance();
+    private final Random random = CommonTestSupportUtils.getRandomizerInstance();
     private final BuiltinCiphers builtInCipher;
     private final Class<? extends com.jcraft.jsch.Cipher> jschCipher;
     private final int loadTestRounds;
@@ -105,7 +106,7 @@ public class CipherTest extends BaseTestSupport {
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
         JSchLogger.init();
-        sshd = Utils.setupTestServer(CipherTest.class);
+        sshd = CoreTestSupportUtils.setupTestServer(CipherTest.class);
         sshd.start();
         port = sshd.getPort();
     }

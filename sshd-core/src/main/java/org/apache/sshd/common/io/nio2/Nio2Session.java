@@ -32,7 +32,6 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Level;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.RuntimeSshException;
@@ -44,7 +43,6 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
-import org.apache.sshd.common.util.logging.LoggingUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -255,7 +253,9 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         } catch (IOException e) {
             log.info("doCloseImmediately({}) {} caught while closing socket={}: {}",
                     this, e.getClass().getSimpleName(), socket, e.getMessage());
-            LoggingUtils.logExceptionStackTrace(log, Level.INFO, e);
+            if (debugEnabled) {
+                log.debug("doCloseImmediately(" + this + ") socket=" + socket + " close failure details", e);
+            }
         }
 
         service.sessionClosed(this);

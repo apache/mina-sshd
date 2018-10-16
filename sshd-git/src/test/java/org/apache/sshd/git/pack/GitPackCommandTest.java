@@ -22,8 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 
-import com.jcraft.jsch.JSch;
-
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.git.GitLocationResolver;
@@ -32,8 +30,8 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.AcceptAllPasswordAuthenticator;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
-import org.apache.sshd.util.test.Utils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -44,6 +42,8 @@ import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+
+import com.jcraft.jsch.JSch;
 
 /**
  */
@@ -79,14 +79,14 @@ public class GitPackCommandTest extends BaseTestSupport {
             int port = sshd.getPort();
             try {
                 Path serverDir = serverRootDir.resolve(getCurrentTestName() + Constants.DOT_GIT_EXT);
-                Utils.deleteRecursive(serverDir);
+                CommonTestSupportUtils.deleteRecursive(serverDir);
                 Git.init().setBare(true).setDirectory(serverDir.toFile()).call();
 
                 JSch.setConfig("StrictHostKeyChecking", "no");
                 CredentialsProvider.setDefault(new UsernamePasswordCredentialsProvider(getCurrentTestName(), getCurrentTestName()));
                 Path localRootDir = gitRootDir.resolve("local");
                 Path localDir = localRootDir.resolve(serverDir.getFileName());
-                Utils.deleteRecursive(localDir);
+                CommonTestSupportUtils.deleteRecursive(localDir);
 
                 SshClient client = SshClient.setUpDefaultClient();
                 SshSessionFactory.setInstance(new GitSshdSessionFactory(client));

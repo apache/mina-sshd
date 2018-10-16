@@ -19,10 +19,12 @@
 package org.apache.sshd.common.session;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerHolder;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.Service;
@@ -32,6 +34,7 @@ import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolver
 import org.apache.sshd.common.cipher.CipherInformation;
 import org.apache.sshd.common.compression.CompressionInformation;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
+import org.apache.sshd.common.forward.PortForwardingInformationProvider;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -58,6 +61,7 @@ public interface Session
                 PortForwardingEventListenerManager,
                 UnknownChannelReferenceHandlerManager,
                 FactoryManagerHolder,
+                PortForwardingInformationProvider,
                 PropertyResolver,
                 AttributeStore,
                 Closeable,
@@ -114,8 +118,8 @@ public interface Session
     /**
      * Retrieve one of the negotiated values during the KEX stage
      *
-     * @param paramType The request {@link KexProposalOption} value - ignored
-     *                  if {@code null}
+     * @param paramType The request {@link KexProposalOption} value
+     * - ignored if {@code null}
      * @return The negotiated parameter value - {@code null} if invalid
      * parameter or no negotiated value
      */
@@ -126,7 +130,7 @@ public interface Session
      * key re-exchange executed
      *
      * @param incoming If {@code true} then the cipher for the incoming data,
-     *                 otherwise for the outgoing data
+     * otherwise for the outgoing data
      * @return The {@link CipherInformation} - or {@code null} if not negotiated yet.
      */
     CipherInformation getCipherInformation(boolean incoming);
@@ -136,7 +140,7 @@ public interface Session
      * key re-exchange executed
      *
      * @param incoming If {@code true} then the compression for the incoming data,
-     *                 otherwise for the outgoing data
+     * otherwise for the outgoing data
      * @return The {@link CompressionInformation} - or {@code null} if not negotiated yet.
      */
     CompressionInformation getCompressionInformation(boolean incoming);
@@ -146,7 +150,7 @@ public interface Session
      * key re-exchange executed
      *
      * @param incoming If {@code true} then the MAC for the incoming data,
-     *                 otherwise for the outgoing data
+     * otherwise for the outgoing data
      * @return The {@link MacInformation} - or {@code null} if not negotiated yet.
      */
     MacInformation getMacInformation(boolean incoming);
@@ -261,7 +265,7 @@ public interface Session
     <T extends Service> T getService(Class<T> clazz);
 
     /**
-     * @return the {@link IoSession} associated to this session
+     * @return The {@link IoSession} associated to this session
      */
     IoSession getIoSession();
 
@@ -316,6 +320,11 @@ public interface Session
      */
     void startService(String name) throws Exception;
 
+    @Override
+    default <T> T resolveAttribute(AttributeKey<T> key) {
+        return resolveAttribute(this, key);
+    }
+
     /**
      * @param version The reported client/server version
      * @return {@code true} if version not empty and starts with either
@@ -324,5 +333,25 @@ public interface Session
     static boolean isValidVersionPrefix(String version) {
         return GenericUtils.isNotEmpty(version)
             && (version.startsWith(DEFAULT_SSH_VERSION_PREFIX) || version.startsWith(FALLBACK_SSH_VERSION_PREFIX));
+    }
+
+    /**
+     * Attempts to use the session's attribute, if not found then tries the factory manager
+     *
+     * @param <T> The generic attribute type
+     * @param session The {@link Session} - ignored if {@code null}
+     * @param key The attribute key - never {@code null}
+     * @return Associated value - {@code null} if not found
+     * @see Session#getFactoryManager()
+     * @see FactoryManager#resolveAttribute(FactoryManager, AttributeKey)
+     */
+    static <T> T resolveAttribute(Session session, AttributeKey<T> key) {
+        Objects.requireNonNull(key, "No key");
+        if (session == null) {
+            return null;
+        }
+
+        T value = session.getAttribute(key);
+        return (value != null) ? value : FactoryManager.resolveAttribute(session.getFactoryManager(), key);
     }
 }

@@ -39,7 +39,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.ServerAuthenticationManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -61,11 +61,11 @@ public class WelcomeBannerTest extends BaseTestSupport {
 
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
-        sshd = Utils.setupTestServer(WelcomeBannerTest.class);
+        sshd = CoreTestSupportUtils.setupTestServer(WelcomeBannerTest.class);
         sshd.start();
         port = sshd.getPort();
 
-        client = Utils.setupTestClient(WelcomeBannerTest.class);
+        client = CoreTestSupportUtils.setupTestClient(WelcomeBannerTest.class);
         client.start();
     }
 

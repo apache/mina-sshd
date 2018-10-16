@@ -48,7 +48,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -132,7 +132,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
 
     @Test
     public void testPreloadedIdentities() throws Exception {
-        KeyPair identity = Utils.getFirstKeyPair(sshd);
+        KeyPair identity = CommonTestSupportUtils.getFirstKeyPair(sshd);
         String user = getCurrentTestName();
         // make sure authentication is achieved only via the identity public key
         sshd.setPublickeyAuthenticator((username, key, session) -> {
@@ -182,10 +182,9 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
     public void testUseIdentitiesOnly() throws Exception {
         Path clientIdFile = assertHierarchyTargetFolderExists(getTempTargetRelativeFile(getClass().getSimpleName()));
         KeyPairProvider clientIdProvider =
-                Utils.createTestHostKeyProvider(clientIdFile.resolve(getCurrentTestName() + ".pem"));
-
-        KeyPair specificIdentity = Utils.getFirstKeyPair(sshd);
-        KeyPair defaultIdentity = Utils.getFirstKeyPair(clientIdProvider);
+            CommonTestSupportUtils.createTestHostKeyProvider(clientIdFile.resolve(getCurrentTestName() + ".pem"));
+        KeyPair specificIdentity = CommonTestSupportUtils.getFirstKeyPair(sshd);
+        KeyPair defaultIdentity = CommonTestSupportUtils.getFirstKeyPair(clientIdProvider);
         ValidateUtils.checkTrue(!KeyUtils.compareKeyPairs(specificIdentity, defaultIdentity),
                 "client identity not different then entry one");
         client.setKeyPairProvider(clientIdProvider);

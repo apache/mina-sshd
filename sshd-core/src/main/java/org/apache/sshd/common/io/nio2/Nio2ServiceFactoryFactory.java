@@ -20,37 +20,34 @@ package org.apache.sshd.common.io.nio2;
 
 import java.nio.channels.AsynchronousChannel;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
 
+import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.io.AbstractIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 
 /**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class Nio2ServiceFactoryFactory extends AbstractIoServiceFactoryFactory {
-
     public Nio2ServiceFactoryFactory() {
-        this(null, true);
+        this(null);
     }
 
     /**
-     * @param executors      The {@link ExecutorService} to use for spawning threads.
-     *                       If {@code null} then an internal service is allocated - in which case it
-     *                       is automatically shutdown regardless of the value of the <tt>shutdownOnExit</tt>
-     *                       parameter value
-     * @param shutdownOnExit If {@code true} then the {@link ExecutorService#shutdownNow()}
-     *                       will be called (unless it is an internally allocated service which is always
-     *                       closed)
+     * @param executors The {@link CloseableExecutorService} to use for spawning threads.
+     * If {@code null} then an internal service is allocated - in which case it
+     * is automatically shutdown
      */
-    public Nio2ServiceFactoryFactory(ExecutorService executors, boolean shutdownOnExit) {
-        super(executors, shutdownOnExit);
+    public Nio2ServiceFactoryFactory(Factory<CloseableExecutorService> executors) {
+        super(executors);
         // Make sure NIO2 is available
         Objects.requireNonNull(AsynchronousChannel.class, "Missing NIO2 class");
     }
 
     @Override
     public IoServiceFactory create(FactoryManager manager) {
-        return new Nio2ServiceFactory(manager, getExecutorService(), isShutdownOnExit());
+        return new Nio2ServiceFactory(manager, newExecutor());
     }
 }

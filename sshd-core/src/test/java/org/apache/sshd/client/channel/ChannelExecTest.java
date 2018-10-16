@@ -28,7 +28,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommandExecutionHelper;
-import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -50,7 +50,7 @@ public class ChannelExecTest extends BaseTestSupport {
 
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
-        sshd = Utils.setupTestServer(ChannelExecTest.class);
+        sshd = CoreTestSupportUtils.setupTestServer(ChannelExecTest.class);
         sshd.setCommandFactory(command -> new CommandExecutionHelper(command) {
             @Override
             protected boolean handleCommandLine(String command) throws Exception {
@@ -63,7 +63,7 @@ public class ChannelExecTest extends BaseTestSupport {
         sshd.start();
         port = sshd.getPort();
 
-        client = Utils.setupTestClient(ChannelExecTest.class);
+        client = CoreTestSupportUtils.setupTestClient(ChannelExecTest.class);
         client.start();
     }
 

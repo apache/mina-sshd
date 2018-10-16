@@ -27,14 +27,17 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
 import java.rmi.ServerException;
+import java.security.KeyPair;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.sshd.client.ClientAuthenticationManager;
 import org.apache.sshd.client.ClientFactoryManager;
+import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
@@ -46,6 +49,7 @@ import org.apache.sshd.client.session.forward.DynamicPortForwardingTracker;
 import org.apache.sshd.client.session.forward.ExplicitPortForwardingTracker;
 import org.apache.sshd.common.forward.PortForwardingManager;
 import org.apache.sshd.common.future.KeyExchangeFuture;
+import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.common.util.io.NullOutputStream;
@@ -353,4 +357,54 @@ public interface ClientSession
      * @throws IOException if a key exchange is already running
      */
     KeyExchangeFuture switchToNoneCipher() throws IOException;
+
+    /**
+     * Creates a &quot;unified&quot; {@link KeyIdentityProvider} of key pairs out of the registered
+     * {@link KeyPair} identities and the extra available ones as a single iterator
+     * of key pairs
+     *
+     *
+     * @param session The {@link ClientSession} - ignored if {@code null} (i.e., empty
+     * iterator returned)
+     * @return The wrapping KeyIdentityProvider
+     * @see ClientSession#getRegisteredIdentities()
+     * @see ClientSession#getKeyPairProvider()
+     */
+    static KeyIdentityProvider providerOf(ClientSession session) {
+        return session == null
+            ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER
+            : KeyIdentityProvider.resolveKeyIdentityProvider(
+                    session.getRegisteredIdentities(), session.getKeyPairProvider());
+    }
+
+    /**
+     * Creates a &quot;unified&quot; {@link Iterator} of key pairs out of the registered
+     * {@link KeyPair} identities and the extra available ones as a single iterator
+     * of key pairs
+     *
+     * @param session The {@link ClientSession} - ignored if {@code null} (i.e., empty
+     * iterator returned)
+     * @return The wrapping iterator
+     * @see ClientSession#getRegisteredIdentities()
+     * @see ClientSession#getKeyPairProvider()
+     */
+    static Iterator<KeyPair> keyPairIteratorOf(ClientSession session) {
+        return KeyIdentityProvider.iteratorOf(providerOf(session));
+    }
+
+    /**
+     * Creates a &quot;unified&quot; {@link Iterator} of passwords out of the registered
+     * passwords and the extra available ones as a single iterator of passwords
+     *
+     * @param session The {@link ClientSession} - ignored if {@code null} (i.e., empty
+     * iterator returned)
+     * @return The wrapping iterator
+     * @see ClientSession#getRegisteredIdentities()
+     * @see ClientSession#getPasswordIdentityProvider()
+     */
+    static Iterator<String> passwordIteratorOf(ClientSession session) {
+        return (session == null)
+            ? Collections.<String>emptyIterator()
+            : PasswordIdentityProvider.iteratorOf(session.getRegisteredIdentities(), session.getPasswordIdentityProvider());
+    }
 }

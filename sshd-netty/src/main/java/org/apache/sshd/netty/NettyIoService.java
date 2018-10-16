@@ -20,11 +20,14 @@
 package org.apache.sshd.netty;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.sshd.common.io.IoConnectFuture;
+import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
+import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
@@ -35,17 +38,32 @@ import io.netty.util.AttributeKey;
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class NettyIoService extends AbstractCloseable implements IoService {
+public abstract class NettyIoService extends AbstractCloseable implements IoService {
 
     public static final AttributeKey<IoConnectFuture> CONNECT_FUTURE_KEY = AttributeKey.valueOf(IoConnectFuture.class.getName());
 
     protected final AtomicLong sessionSeq = new AtomicLong();
     protected final Map<Long, IoSession> sessions = new ConcurrentHashMap<>();
-    protected NettyIoServiceFactory factory;
     protected ChannelGroup channelGroup;
+    protected final NettyIoServiceFactory factory;
+    protected final IoHandler handler;
 
-    public NettyIoService() {
-        super();
+    private IoServiceEventListener eventListener;
+
+    protected NettyIoService(NettyIoServiceFactory factory, IoHandler handler) {
+        this.factory = Objects.requireNonNull(factory, "No factory instance provided");
+        this.handler = Objects.requireNonNull(handler, "No I/O handler provied");
+        this.eventListener = factory.getIoServiceEventListener();
+    }
+
+    @Override
+    public IoServiceEventListener getIoServiceEventListener() {
+        return eventListener;
+    }
+
+    @Override
+    public void setIoServiceEventListener(IoServiceEventListener listener) {
+        eventListener = listener;
     }
 
     @Override

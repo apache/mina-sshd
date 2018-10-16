@@ -70,7 +70,7 @@ public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKey
             }
         }
 
-        identities.add(Stream.of(KeyIdentityProvider.providerOf(session))
+        identities.add(Stream.of(ClientSession.providerOf(session))
             .map(KeyIdentityProvider::loadKeys)
             .flatMap(GenericUtils::stream)
             .map(kp -> new KeyPairIdentity(signatureFactories, session, kp)));

@@ -74,7 +74,7 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.config.SshConfigFileReader;
+import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
@@ -180,7 +180,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         String host = ValidateUtils.checkNotNullAndNotEmpty(uri.getHost(), "Host not provided");
         int port = uri.getPort();
         if (port <= 0) {
-            port = SshConfigFileReader.DEFAULT_PORT;
+            port = ConfigFileReaderSupport.DEFAULT_PORT;
         }
 
         String userInfo = ValidateUtils.checkNotNullAndNotEmpty(uri.getUserInfo(), "UserInfo not provided");
@@ -1219,13 +1219,13 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             InetSocketAddress inetAddr = (InetSocketAddress) addr;
             return getFileSystemIdentifier(inetAddr.getHostString(), inetAddr.getPort(), username);
         } else {
-            return getFileSystemIdentifier(addr.toString(), SshConfigFileReader.DEFAULT_PORT, username);
+            return getFileSystemIdentifier(addr.toString(), ConfigFileReaderSupport.DEFAULT_PORT, username);
         }
     }
 
     public static String getFileSystemIdentifier(String host, int port, String username) {
         return GenericUtils.trimToEmpty(host) + ':'
-                + ((port <= 0) ? SshConfigFileReader.DEFAULT_PORT : port) + ':'
+                + ((port <= 0) ? ConfigFileReaderSupport.DEFAULT_PORT : port) + ':'
                 + GenericUtils.trimToEmpty(username);
     }
 

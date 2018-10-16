@@ -21,10 +21,10 @@ package org.apache.sshd.git.pack;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.git.AbstractGitCommand;
 import org.apache.sshd.git.GitLocationResolver;
 import org.apache.sshd.server.Environment;
@@ -44,13 +44,11 @@ public class GitPackCommand extends AbstractGitCommand {
     /**
      * @param rootDirResolver Resolver for GIT root directory
      * @param command Command to execute
-     * @param executorService An {@link ExecutorService} to be used when {@link #start(Environment)}-ing
+     * @param executorService An {@link CloseableExecutorService} to be used when {@link #start(Environment)}-ing
      * execution. If {@code null} an ad-hoc single-threaded service is created and used.
-     * @param shutdownOnExit  If {@code true} the {@link ExecutorService#shutdownNow()} will be called when
-     * command terminates - unless it is the ad-hoc service, which will be shutdown regardless
      */
-    public GitPackCommand(GitLocationResolver rootDirResolver, String command, ExecutorService executorService, boolean shutdownOnExit) {
-        super(rootDirResolver, command, executorService, shutdownOnExit);
+    public GitPackCommand(GitLocationResolver rootDirResolver, String command, CloseableExecutorService executorService) {
+        super(rootDirResolver, command, executorService);
     }
 
     @Override

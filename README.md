@@ -53,9 +53,8 @@ Required mainly for writing keys to PEM files or for special keys/ciphers/etc. t
 ## NIO2 default socket factory replacements
 
 Optional dependency to enable choosing between NIO asynchronous sockets (the default - for improved performance), and "legacy" sockets.
-See `IoServiceFactoryFactory` implementations and specifically the `DefaultIoServiceFactoryFactory` for the available options and how it
-can be configured to select among them. **Note:** the required Maven module(s) are defined as `optional` so must be added as an **explicit**
-dependency in order to be included in the classpath.
+**Note:** the required Maven module(s) are defined as `optional` so must be added as an **explicit** dependency in order to be included
+in the classpath.
 
 ### [MINA core](https://mina.apache.org/mina-project/)
 
@@ -93,7 +92,7 @@ implementation. This is also an **optional** dependency and must be add explicit
         <artifactId>netty-handler</artifactId>
         <version>...Netty version...</version>
     </dependency>
-    
+
     <dependency>
         <groupId>org.apache.sshd</groupId>
         <artifactId>sshd-netty</artifactId>
@@ -101,6 +100,40 @@ implementation. This is also an **optional** dependency and must be add explicit
     </dependency>
 
 ```
+
+### Selecting an `IoServiceFactoryFactory`
+
+As part of the their initialization, both client and server code require the specification of a `IoServiceFactoryFactory`
+that is used to initialize network connections.
+
+```java
+
+    SshServer server = ...create server instance...
+    server.setIoServiceFactoryFactory(new MyIoServiceFactoryFactory());
+
+    SshClient client = ... create client instance ...
+    client.setIoServiceFactoryFactory(new MyIoServiceFactoryFactory());
+
+```
+
+If not set explicitly during the client/server setup code, then a factory is automatically detected and selected when the
+client/server is `#start()`-ed. The used `IoServiceFactoryFactory` is a **singleton** that is lazy created the 1st time
+`DefaultIoServiceFactoryFactory#create` is invoked. The selection process is as follows:
+
+* The `org.apache.sshd.common.io.IoServiceFactoryFactory` system property is examined for a factory specification. The
+specification can be either a **fully-qualified** class name or one of the `BuiltinIoServiceFactoryFactories` values.
+
+* If no specific factory is specified, then the [ServiceLoader#load](https://docs.oracle.com/javase/tutorial/ext/basics/spi.html#register-service-providers)
+mechanism is used to detect and instantiate any registered services in any `META-INF\services\org.apache.sshd.common.io.IoServiceFactoryFactory`
+location in the classpath. If **exactly one** implementation was instantiated, then it is used. If several such implementations are found then
+an exception is thrown.
+
+* Otherwise, the built-in `Nio2ServiceFactoryFactory` is used.
+
+**Note:** the default command line scripts for SSH/SCP/SFTP client/server are set up to use NIO2 as their default provider,
+unless overridden via the `-io` command line option. The `org.apache.sshd.common.io.IoServiceFactoryFactory` system property does
+not apply for the command line wrappers since they look only for the `-io` option and use it to initialize the client/server **explicitly**
+before starting the client/server. Therefore, the default selection process described in this section does not apply for them.
 
 ## [ed25519-java](https://github.com/str4d/ed25519-java)
 
@@ -119,6 +152,32 @@ Required for supporting [ssh-ed25519](https://tools.ietf.org/html/draft-bjh21-ss
 ```
 
 The code contains support for reading _ed25519_ [OpenSSH formatted private keys](https://issues.apache.org/jira/browse/SSHD-703).
+
+# Basic artifacts structure
+
+* *sshd-common* - contains basic classes used throughout the project as well as code that does not require client or server network support.
+
+* *sshd-core* - contains the basic SSH client/server code implementing the connection, transport, channels, forwarding, etc..
+    * *sshd-mina*, *sshd-netty* - replacements for the default NIO2 connector used to establish and manage network connections using
+[MINA](https://mina.apache.org/mina-project/index.html) and/or [Netty](https://netty.io/) libraries respectively.
+
+* *sshd-sftp* - contains the server side SFTP subsystem and the SFTP client code.
+    * *sshd-spring-sftp* - contains a [Spring Integration](https://spring.io/projects/spring-integration) compatible SFTP adapter
+
+* *sshd-scp* - contains the server side SCP command handler and the SCP client code.
+
+* *sshd-ldap* - contains server-side password and public key authenticators that use and LDAP server.
+
+* *sshd-git* - contains replacements for [JGit](https://www.eclipse.org/jgit/) SSH session factory.
+
+* *sshd-osgi* - contains an artifact that combines *sshd-common* and *sshd-core* so it can be deployed in OSGi environments.
+
+* *sshd-putty* - contains code that can parse [PUTTY](https://www.putty.org/) key files.
+
+* *sshd-cli* - contains simple templates for command-line client/server - used to provide look-and-feel similar to the Linux *ssh/sshd* commands.
+
+* *sshd-contrib* - **experimental** code that is currently under review and may find its way into one of the other artifacts
+(or become an entirely new artifact - e.g., *sshd-putty* evolved this way).
 
 # Set up an SSH client in 5 minutes
 
@@ -409,27 +468,48 @@ be tailored to present different views for different clients
 ## `ExecutorService`-s
 
 The framework requires from time to time spawning some threads in order to function correctly - e.g., commands, SFTP subsystem,
-port forwarding (among others) require such support. By default, the framework will allocate an [ExecutorService](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ExecutorService.html) for each specific purpose and then shut it down when the module has completed its work - e.g., session
-was closed. Users may provide their own `ExecutorService`(s) instead of the internally auto-allocated ones - e.g., in
-order to control the max. spawned threads, stack size, track threads, etc... If this is done, then one must also provide
-the `shutdownOnExit` value indicating to the overridden module whether to shut down the service once it is no longer necessary.
+port forwarding (among others) require such support. By default, the framework will allocate an [ExecutorService](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ExecutorService.html)
+for each specific purpose and then shut it down when the module has completed its work - e.g., session was closed. Note that
+SSHD uses the `CloseableExecutorService` interface instead of the usual `ExecutorService` in order to provide graceful shutdown.
+Users may provide their own `CloseableExecutorService`(s) instead of the internally auto-allocated ones - e.g., in order to
+control the max. spawned threads, stack size, track threads, etc... but they can leverage the `SshThreadPoolExecutor` implementation
+which should cover most use cases.
+
+Users who want to provide their own `ExecutorService` and not use `SshThreadPoolExecutor` should wrap it as a `NoCloseExecutor`
+and take care of shutting it down when SSHD is done with (provided, of course, that the user's own code does not need it to
+remain active afterwards...).
 
 ```java
 
     /*
-     * An example for SFTP - there are other such locations. By default,
-     * the SftpSubsystem implementation creates a single-threaded executor
+     * An example user-provided executor service for SFTP - there are other such locations.
+     * By default, the SftpSubsystem implementation creates a single-threaded executor
      * for each session, uses it to spawn the SFTP command handler and shuts
      * it down when the command is destroyed
      */
     SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
-        .withExecutorService(mySuperDuperExecutorService)
-        .withShutdownOnExit(false)  // I will take care of shutting it down
+        .withExecutorService(new NoCloseExecutor(mySuperDuperExecutorService))
         .build();
     SshServer sshd = SshServer.setupDefaultServer();
     sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(factory));
 
 ```
+
+If a single `CloseableExecutorService` is shared between several services, it needs to be wrapped with the
+`ThreadUtils.noClose(executor)` method.
+
+```java
+    CloseableExecutorService sharedService = ...obtain/create an instance...;
+
+    SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
+        .withExecutorService(ThreadUtils.noClose(sharedService))
+        .build();
+
+   ChannelAgentForwarding forward = new ChannelAgentForwarding(ThreadUtils.noClose(sharedService));
+```
+
+**Note:** Do not share the instance returned by `ThreadUtils.noClose` between services as it interferes with
+the graceful closing mechanism. Use a new wrapper instance for each service.
 
 ## Remote command execution
 
@@ -929,7 +1009,7 @@ On the client side, all the supported extensions are classes that implement `Sft
                 if (SftpConstants.EXT_ACL_SUPPORTED.equalsIgnoreCase(extName)) {
                     AclCapabilities capabilities = (AclCapabilities) extValue;
                     ...see what other information can be gleaned from it...
-                } else if ((SftpConstants.EXT_VERSIONS.equalsIgnoreCase(extName)) {
+                } else if (SftpConstants.EXT_VERSIONS.equalsIgnoreCase(extName)) {
                     Versions versions = (Versions) extValue;
                     ...see what other information can be gleaned from it...
                 } else if ("my-special-extension".equalsIgnoreCase(extName)) {
@@ -1113,6 +1193,12 @@ In general, event listeners are **cumulative** - e.g., any channel event listene
 
 ```
 
+### `IoServiceEventListener`
+
+This listener provides low-level events regarding connection establishment (by the client) or acceptance (by the server). The listener is registered
+on the `IoServiceFactory` via the `FactoryManager`-s (i.e., `SshClient/Server#setIoServiceEventListener`). Unlike other listeners defined in this
+section, it is **not cumulative** - i.e., one can `setIoServiceEventListener` but not `addIoServiceEventListener` - thus **replacing** any previously
+registered listener.
 
 ### `SessionListener`
 
@@ -1518,13 +1604,49 @@ The code contains [support for "wrapper" protocols](https://issues.apache.org/ji
 
 * `SshServer/ServerSession#setServerProxyAcceptor` - sets a proxy that intercept the 1st incoming packet before being processed by the server
 
+## Configuration/data files parsing support
+
+Most of the configuration data files parsing support resides in the _sshd-common_ artfiact:
+
+```xml
+    <dependency>
+        <groupId>org.apache.sshd</groupId>
+        <artifactId>sshd-common</artifactId>
+        <version>...same version as the rest of the artifacts...</version>
+    </dependency>
+```
+
+The code contains support for parsing the [_authorized_keys_](http://man.openbsd.org/sshd.8#AUTHORIZED_KEYS_FILE_FORMAT),
+[_known\_hosts_](http://www.manpagez.com/man/8/sshd/), [_ssh\_config_, _sshd\_config_](https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5),
+and [_~/config_](http://www.gsp.com/cgi-bin/man.cgi?topic=ssh_config) files. The code resides in the _sshd-common_ artifact - specifically
+the `KeyUtils#getPublicKeyEntryDecoder`, `AuthorizedKeyEntry#readAuthorizedKeys`, `KnownHostEntry#readKnownHostEntries`
+and `HostConfigEntry#readHostConfigEntries`.
+
+### PEM/OpenSSH
+
+The common code contains built-in support for parsing PEM and/or _OpenSSH_ formatted key files and using them for authentication purposes.
+As mentioned previously, it can leverage _Bouncycastle_ if available, but can do most of the work without it as well. For _ed25519_ support,
+one must provide the _eddsa_ artifact dependency.
+
+### [PUTTY](https://www.putty.org/)
+
+The code contains built-in support for parsing PUTTY key files (usually _.ppk_) and using them same as SSH ones as key-pair
+providers for autentication purposes. The PUTTY key file(s) readers are contained in the `org.apache.sshd.common.config.keys.loader.putty`
+package (specifically `PuttyKeyUtils#DEFAULT_INSTANCE KeyPairResourceParser`) of the _sshd-putty_ artifact. **Note:** the artifact should
+be included as an extra dependency:
+
+```xml
+    <dependency>
+        <groupId>org.apache.sshd</groupId>
+        <artifactId>sshd-putty</artifactId>
+        <version>...same version as the rest of the artifacts...</version>
+    </dependency>
+```
+
 ## Useful extra components in _sshd-contrib_
 
-* PUTTY key file(s) readers - see `org.apache.sshd.common.config.keys.loader.putty` package - specifically `PuttyKeyUtils#DEFAULT_INSTANCE KeyPairResourceParser`.
-
-
-* `InteractivePasswordIdentityProvider` - helps implement a `PasswordIdentityProvider` by delegating calls to `UserInteraction#getUpdatedPassword`.
-The way to use it would be as follows:
+* `InteractivePasswordIdentityProvider` - helps implement a `PasswordIdentityProvider` by delegating calls
+to `UserInteraction#getUpdatedPassword`. The way to use it would be as follows:
 
 
 ```java

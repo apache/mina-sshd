@@ -145,10 +145,11 @@ public interface SftpEventListener extends SshdEventListener {
      * @param thrown       Non-{@code null} if read failed due to this exception
      * @throws IOException If failed to handle the call
      */
+    @SuppressWarnings("checkstyle:ParameterNumber")
     default void read(ServerSession session, String remoteHandle, FileHandle localHandle,
-              long offset, byte[] data, int dataOffset, int dataLen, int readLen, Throwable thrown)
-                      throws IOException {
-                          // ignored
+          long offset, byte[] data, int dataOffset, int dataLen, int readLen, Throwable thrown)
+              throws IOException {
+                      // ignored
     }
 
     /**

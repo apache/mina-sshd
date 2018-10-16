@@ -25,6 +25,7 @@ import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
+import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.io.IoSession;
 
 import io.netty.bootstrap.Bootstrap;
@@ -48,36 +49,67 @@ import io.netty.util.concurrent.GlobalEventExecutor;
 public class NettyIoConnector extends NettyIoService implements IoConnector {
 
     protected final Bootstrap bootstrap = new Bootstrap();
-    protected final IoHandler handler;
 
     public NettyIoConnector(NettyIoServiceFactory factory, IoHandler handler) {
-        this.factory = factory;
-        this.handler = handler;
+        super(factory, handler);
+
         channelGroup = new DefaultChannelGroup("sshd-connector-channels", GlobalEventExecutor.INSTANCE);
         bootstrap.group(factory.eventLoopGroup)
             .channel(NioSocketChannel.class)
             .option(ChannelOption.SO_BACKLOG, 100)  // TODO make this configurable
             .handler(new ChannelInitializer<SocketChannel>() {
                 @Override
+                @SuppressWarnings("synthetic-access")
                 protected void initChannel(SocketChannel ch) throws Exception {
-                    @SuppressWarnings("resource")
-                    NettyIoSession session = new NettyIoSession(NettyIoConnector.this, handler);
-                    ChannelPipeline p = ch.pipeline();
-                    p.addLast(new LoggingHandler(LogLevel.INFO));   // TODO make this configurable
-                    p.addLast(session.adapter);
+                    IoServiceEventListener listener = getIoServiceEventListener();
+                    SocketAddress local = ch.localAddress();
+                    SocketAddress remote = ch.remoteAddress();
+                    try {
+                        if (listener != null) {
+                            try {
+                                listener.connectionEstablished(NettyIoConnector.this, local, remote);
+                            } catch (Exception e) {
+                                ch.close();
+                                throw e;
+                            }
+                        }
+
+                        @SuppressWarnings("resource")
+                        NettyIoSession session = new NettyIoSession(NettyIoConnector.this, handler);
+                        ChannelPipeline p = ch.pipeline();
+                        p.addLast(new LoggingHandler(LogLevel.INFO));   // TODO make this configurable
+                        p.addLast(session.adapter);
+                    } catch (Exception e) {
+                        if (listener != null) {
+                            try {
+                                listener.abortEstablishedConnection(NettyIoConnector.this, local, remote, e);
+                            } catch (Exception exc) {
+                                if (log.isDebugEnabled()) {
+                                    log.debug("initChannel(" + ch + ") listener=" + listener + " ignoring abort event exception", exc);
+                                }
+                            }
+                        }
+
+                        throw e;
+                    }
                 }
             });
     }
 
     @Override
-    public IoConnectFuture connect(SocketAddress address) {
+    public IoConnectFuture connect(SocketAddress address, SocketAddress localAddress) {
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("Connecting to {}", address);
         }
 
         IoConnectFuture future = new DefaultIoConnectFuture(address, null);
-        ChannelFuture chf = bootstrap.connect(address);
+        ChannelFuture chf;
+        if (localAddress != null) {
+            chf = bootstrap.connect(address, localAddress);
+        } else {
+            chf = bootstrap.connect(address);
+        }
         Channel channel = chf.channel();
         channel.attr(CONNECT_FUTURE_KEY).set(future);
         chf.addListener(cf -> {

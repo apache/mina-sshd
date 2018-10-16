@@ -52,7 +52,7 @@ import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
-import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -75,12 +75,12 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
     @Test
     public void testFsync() throws IOException {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + ".txt");
         byte[] expected = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
 
         Path parentPath = targetPath.getParent();
-        String srcPath = Utils.resolveRelativeRemotePath(parentPath, srcFile);
+        String srcPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
@@ -101,11 +101,11 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
     @Test
     public void testStat() throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + ".txt");
         Files.write(srcFile, (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8), IoUtils.EMPTY_OPEN_OPTIONS);
         Path parentPath = targetPath.getParent();
-        String srcPath = Utils.resolveRelativeRemotePath(parentPath, srcFile);
+        String srcPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
 
         final AtomicReference<String> extensionHolder = new AtomicReference<>(null);
         final OpenSSHStatExtensionInfo expected = new OpenSSHStatExtensionInfo();
@@ -124,7 +124,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory() {
             @Override
             public Command create() {
-                return new SftpSubsystem(getExecutorService(), isShutdownOnExit(),
+                return new SftpSubsystem(getExecutorService(),
                         getUnsupportedAttributePolicy(), getFileSystemAccessor(), getErrorStatusDataHandler()) {
                     @Override
                     protected List<OpenSSHExtension> resolveOpenSSHExtensions(ServerSession session) {

@@ -18,25 +18,31 @@
  */
 package org.apache.sshd.agent.unix;
 
-import java.util.concurrent.ExecutorService;
-
+import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ChannelAgentForwardingFactory implements ChannelFactory, ExecutorServiceCarrier {
+public class ChannelAgentForwardingFactory implements ChannelFactory {
+
     public static final ChannelAgentForwardingFactory OPENSSH = new ChannelAgentForwardingFactory("auth-agent@openssh.com");
     // see https://tools.ietf.org/html/draft-ietf-secsh-agent-02
     public static final ChannelAgentForwardingFactory IETF = new ChannelAgentForwardingFactory("auth-agent");
 
     private final String name;
+    private final Factory<CloseableExecutorService> executorServiceFactory;
 
     public ChannelAgentForwardingFactory(String name) {
+        this(name, null);
+    }
+
+    public ChannelAgentForwardingFactory(String name, Factory<CloseableExecutorService> executorServiceFactory) {
         this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No channel factory name specified");
+        this.executorServiceFactory = executorServiceFactory;
     }
 
     @Override
@@ -44,21 +50,10 @@ public class ChannelAgentForwardingFactory implements ChannelFactory, ExecutorSe
         return name;
     }
 
-    @Override   // user can override to provide an alternative
-    public ExecutorService getExecutorService() {
-        return null;
-    }
-
-    @Override
-    public boolean isShutdownOnExit() {
-        return false;
-    }
-
     @Override
     public Channel create() {
-        ChannelAgentForwarding channel = new ChannelAgentForwarding();
-        channel.setExecutorService(getExecutorService());
-        channel.setShutdownOnExit(isShutdownOnExit());
+        CloseableExecutorService executorService = executorServiceFactory != null ? executorServiceFactory.create() : null;
+        ChannelAgentForwarding channel = new ChannelAgentForwarding(executorService);
         return channel;
     }
 }

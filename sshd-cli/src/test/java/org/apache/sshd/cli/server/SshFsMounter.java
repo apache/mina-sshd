@@ -19,11 +19,11 @@
 
 package org.apache.sshd.cli.server;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,7 +35,7 @@ import java.util.concurrent.Future;
 
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
-import org.apache.sshd.common.config.SshConfigFileReader;
+import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.io.BuiltinIoServiceFactoryFactories;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.util.GenericUtils;
@@ -56,7 +56,8 @@ import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.shell.ShellFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
-import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 
 /**
  * A basic implementation to allow remote mounting of the local file system via SFTP
@@ -249,7 +250,7 @@ public final class SshFsMounter extends SshServerCliSupport {
     //////////////////////////////////////////////////////////////////////////
 
     public static void main(String[] args) throws Exception {
-        int port = SshConfigFileReader.DEFAULT_PORT;
+        int port = ConfigFileReaderSupport.DEFAULT_PORT;
         boolean error = false;
         Map<String, Object> options = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         int numArgs = GenericUtils.length(args);
@@ -283,6 +284,7 @@ public final class SshFsMounter extends SshServerCliSupport {
                     error = true;
                     break;
                 }
+
                 String opt = args[++i];
                 int idx = opt.indexOf('=');
                 if (idx <= 0) {
@@ -294,7 +296,8 @@ public final class SshFsMounter extends SshServerCliSupport {
             }
         }
 
-        SshServer sshd = error ? null : setupIoServiceFactory(Utils.setupTestServer(SshFsMounter.class), System.err, args);
+        SshServer sshd = error ? null : setupIoServiceFactory(
+            CoreTestSupportUtils.setupTestServer(SshFsMounter.class), options, System.out, System.err, args);
         if (sshd == null) {
             error = true;
         }
@@ -307,11 +310,11 @@ public final class SshFsMounter extends SshServerCliSupport {
         Map<String, Object> props = sshd.getProperties();
         props.putAll(options);
         PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
-        File targetFolder = Objects.requireNonNull(Utils.detectTargetFolder(MounterCommandFactory.class), "Failed to detect target folder");
+        Path targetFolder = Objects.requireNonNull(CommonTestSupportUtils.detectTargetFolder(MounterCommandFactory.class), "Failed to detect target folder");
         if (SecurityUtils.isBouncyCastleRegistered()) {
-            sshd.setKeyPairProvider(SecurityUtils.createGeneratorHostKeyProvider(new File(targetFolder, "key.pem").toPath()));
+            sshd.setKeyPairProvider(SecurityUtils.createGeneratorHostKeyProvider(targetFolder.resolve("key.pem")));
         } else {
-            sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(new File(targetFolder, "key.ser")));
+            sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(targetFolder.resolve("key.ser")));
         }
         // Should come AFTER key pair provider setup so auto-welcome can be generated if needed
         setupServerBanner(sshd, resolver);

@@ -52,17 +52,21 @@ public class Supported2Parser extends AbstractParser<Supported2> {
         public Collection<String> extensionNames;
         // CHECKSTYLE:ON
 
+        public Supported2() {
+            super();
+        }
+
         @Override
         public String toString() {
             return "attrsMask=0x" + Integer.toHexString(supportedAttributeMask)
-                    + ",attrsBits=0x" + Integer.toHexString(supportedAttributeBits)
-                    + ",openFlags=0x" + Integer.toHexString(supportedOpenFlags)
-                    + ",accessMask=0x" + Integer.toHexString(supportedAccessMask)
-                    + ",maxRead=" + maxReadSize
-                    + ",openBlock=0x" + Integer.toHexString(supportedOpenBlockVector & 0xFFFF)
-                    + ",block=" + Integer.toHexString(supportedBlock & 0xFFFF)
-                    + ",attribs=" + attribExtensionNames
-                    + ",exts=" + extensionNames;
+                + ",attrsBits=0x" + Integer.toHexString(supportedAttributeBits)
+                + ",openFlags=0x" + Integer.toHexString(supportedOpenFlags)
+                + ",accessMask=0x" + Integer.toHexString(supportedAccessMask)
+                + ",maxRead=" + maxReadSize
+                + ",openBlock=0x" + Integer.toHexString(supportedOpenBlockVector & 0xFFFF)
+                + ",block=" + Integer.toHexString(supportedBlock & 0xFFFF)
+                + ",attribs=" + attribExtensionNames
+                + ",exts=" + extensionNames;
         }
     }
 

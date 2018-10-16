@@ -26,6 +26,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -65,13 +66,15 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 buffer.putPublicKey(key.getPublic());
 
                 Signature verif =
-                        ValidateUtils.checkNotNull(NamedFactory.create(session.getSignatureFactories(), alg),
-                                "No signature factory located for algorithm=%s",
-                                alg);
+                    ValidateUtils.checkNotNull(NamedFactory.create(session.getSignatureFactories(), alg),
+                        "No signature factory located for algorithm=%s",
+                        alg);
                 verif.initSigner(key.getPrivate());
 
+                KeyExchange kexValue = session.getKex();
+                byte[] hValue = kexValue.getH();
                 Buffer bs = new ByteArrayBuffer();
-                bs.putBytes(session.getKex().getH());
+                bs.putBytes(hValue);
                 bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
                 bs.putString(session.getUsername());
                 bs.putString(service);

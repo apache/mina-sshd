@@ -23,6 +23,7 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
+import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
@@ -39,6 +40,8 @@ public class NettyIoServiceFactory extends AbstractCloseable implements IoServic
     protected final EventLoopGroup eventLoopGroup;
     protected final boolean closeEventLoopGroup;
 
+    private IoServiceEventListener eventListener;
+
     public NettyIoServiceFactory() {
         this(null);
     }
@@ -46,6 +49,16 @@ public class NettyIoServiceFactory extends AbstractCloseable implements IoServic
     public NettyIoServiceFactory(EventLoopGroup group) {
         this.eventLoopGroup = (group != null) ? group : new NioEventLoopGroup();
         this.closeEventLoopGroup = group == null;
+    }
+
+    @Override
+    public IoServiceEventListener getIoServiceEventListener() {
+        return eventListener;
+    }
+
+    @Override
+    public void setIoServiceEventListener(IoServiceEventListener listener) {
+        eventListener = listener;
     }
 
     @Override

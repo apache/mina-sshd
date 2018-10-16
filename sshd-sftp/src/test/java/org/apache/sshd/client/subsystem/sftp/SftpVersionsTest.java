@@ -61,8 +61,8 @@ import org.apache.sshd.server.subsystem.sftp.SftpEventListener;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemEnvironment;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.apache.sshd.util.test.Utils;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -84,6 +84,9 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
             IntStream.rangeClosed(SftpSubsystemEnvironment.LOWER_SFTP_IMPL, SftpSubsystemEnvironment.HIGHER_SFTP_IMPL)
                 .boxed()
                 .collect(Collectors.toList()));
+
+    private static final long CONNECT_TIMEOUT = 7L;
+    private static final long AUTH_TIMEOUT = 5L;
 
     private final int testVersion;
 
@@ -108,16 +111,18 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
     @Test   // See SSHD-749
     public void testSftpOpenFlags() throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path lclParent = assertHierarchyTargetFolderExists(lclSftp);
         Path lclFile = lclParent.resolve(getCurrentTestName() + "-" + getTestedVersion() + ".txt");
         Files.deleteIfExists(lclFile);
 
         Path parentPath = targetPath.getParent();
-        String remotePath = Utils.resolveRelativeRemotePath(parentPath, lclFile);
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
             try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
                 try (OutputStream out = sftp.write(remotePath, OpenMode.Create, OpenMode.Write)) {
                     out.write(getCurrentTestName().getBytes(StandardCharsets.UTF_8));
@@ -130,9 +135,11 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testSftpVersionSelector() throws Exception {
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
 
             try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
                 assertEquals("Mismatched negotiated version", getTestedVersion(), sftp.getVersion());
@@ -143,14 +150,16 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
     @Test   // see SSHD-572
     public void testSftpFileTimesUpdate() throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path lclFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-" + getTestedVersion() + ".txt");
         Files.write(lclFile, getClass().getName().getBytes(StandardCharsets.UTF_8));
         Path parentPath = targetPath.getParent();
-        String remotePath = Utils.resolveRelativeRemotePath(parentPath, lclFile);
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
 
             try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
                 Attributes attrs = sftp.lstat(remotePath);
@@ -177,7 +186,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
     @Test   // see SSHD-573
     public void testSftpFileTypeAndPermissionsUpdate() throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path subFolder = Files.createDirectories(lclSftp.resolve("sub-folder"));
         String subFolderName = subFolder.getFileName().toString();
         Path lclFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-" + getTestedVersion() + ".txt");
@@ -185,10 +194,12 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         Files.write(lclFile, getClass().getName().getBytes(StandardCharsets.UTF_8));
 
         Path parentPath = targetPath.getParent();
-        String remotePath = Utils.resolveRelativeRemotePath(parentPath, lclSftp);
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclSftp);
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
 
             try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
                 for (DirEntry entry : sftp.readDir(remotePath)) {
@@ -227,7 +238,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         SftpSubsystemFactory factory = new SftpSubsystemFactory() {
             @Override
             public Command create() {
-                SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(), isShutdownOnExit(),
+                SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(),
                         getUnsupportedAttributePolicy(), getFileSystemAccessor(), getErrorStatusDataHandler()) {
                     @Override
                     protected NavigableMap<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options) throws IOException {
@@ -288,20 +299,22 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         });
 
         Path targetPath = detectTargetFolder();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Files.createDirectories(lclSftp.resolve("sub-folder"));
         Path lclFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-" + getTestedVersion() + ".txt");
         Files.write(lclFile, getClass().getName().getBytes(StandardCharsets.UTF_8));
 
         Path parentPath = targetPath.getParent();
-        String remotePath = Utils.resolveRelativeRemotePath(parentPath, lclSftp);
+        String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclSftp);
         int numInvoked = 0;
 
         List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();
         sshd.setSubsystemFactories(Collections.singletonList(factory));
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
 
             try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
                 for (DirEntry entry : sftp.readDir(remotePath)) {
@@ -346,7 +359,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         SftpSubsystemFactory factory = new SftpSubsystemFactory() {
             @Override
             public Command create() {
-                SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(), isShutdownOnExit(),
+                SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(),
                         getUnsupportedAttributePolicy(), getFileSystemAccessor(), getErrorStatusDataHandler()) {
                     @Override
                     protected NavigableMap<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options) throws IOException {
@@ -405,20 +418,22 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         });
 
         Path targetPath = detectTargetFolder();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Files.createDirectories(lclSftp.resolve("sub-folder"));
         Path lclFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-" + getTestedVersion() + ".txt");
         Files.write(lclFile, getClass().getName().getBytes(StandardCharsets.UTF_8));
 
         Path parentPath = targetPath.getParent();
-        String remotePath = Utils.resolveRelativeRemotePath(parentPath, lclSftp);
+        String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclSftp);
         int numInvoked = 0;
 
         List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();
         sshd.setSubsystemFactories(Collections.singletonList(factory));
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
 
             try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
                 for (DirEntry entry : sftp.readDir(remotePath)) {
@@ -445,16 +460,18 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
 
     @Test   // see SSHD-623
     public void testEndOfListIndicator() throws Exception {
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
 
             try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
                 AtomicReference<Boolean> eolIndicator = new AtomicReference<>();
                 int version = sftp.getVersion();
                 Path targetPath = detectTargetFolder();
                 Path parentPath = targetPath.getParent();
-                String remotePath = Utils.resolveRelativeRemotePath(parentPath, targetPath);
+                String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, targetPath);
 
                 try (CloseableHandle handle = sftp.openDir(remotePath)) {
                     List<DirEntry> entries = sftp.readDir(handle, eolIndicator);

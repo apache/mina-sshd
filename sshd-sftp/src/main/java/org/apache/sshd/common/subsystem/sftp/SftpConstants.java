@@ -276,17 +276,21 @@ public final class SftpConstants {
         throw new UnsupportedOperationException("No instance");
     }
 
-    private static class LazyCommandNameHolder {
+    private static final class LazyCommandNameHolder {
         private static final Map<Integer, String> NAMES_MAP =
-                Collections.unmodifiableMap(
-                    LoggingUtils.generateMnemonicMap(SftpConstants.class, f -> {
-                        String name = f.getName();
-                        return name.startsWith("SSH_FXP_")
-                            // exclude the rename modes which are not opcodes
-                            && (!name.startsWith("SSH_FXP_RENAME_"))
-                            // exclude the realpath modes wich are not opcodes
-                            && (!name.startsWith("SSH_FXP_REALPATH_"));
-                    }));
+            Collections.unmodifiableMap(
+                LoggingUtils.generateMnemonicMap(SftpConstants.class, f -> {
+                    String name = f.getName();
+                    return name.startsWith("SSH_FXP_")
+                        // exclude the rename modes which are not opcodes
+                        && (!name.startsWith("SSH_FXP_RENAME_"))
+                        // exclude the realpath modes wich are not opcodes
+                        && (!name.startsWith("SSH_FXP_REALPATH_"));
+                }));
+
+        private LazyCommandNameHolder() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
     }
 
     /**
@@ -306,9 +310,13 @@ public final class SftpConstants {
         }
     }
 
-    private static class LazyStatusNameHolder {
+    private static final class LazyStatusNameHolder {
         private static final Map<Integer, String> STATUS_MAP =
-                Collections.unmodifiableMap(LoggingUtils.generateMnemonicMap(SftpConstants.class, "SSH_FX_"));
+            Collections.unmodifiableMap(LoggingUtils.generateMnemonicMap(SftpConstants.class, "SSH_FX_"));
+
+        private LazyStatusNameHolder() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
     }
 
     /**

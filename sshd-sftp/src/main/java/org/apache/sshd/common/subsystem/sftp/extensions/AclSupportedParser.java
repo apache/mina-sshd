@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
@@ -99,11 +100,16 @@ public class AclSupportedParser extends AbstractParser<AclCapabilities> {
             return Objects.toString(decodeAclCapabilities(getCapabilities()));
         }
 
-        private static class LazyAclCapabilityNameHolder {
+        private static final class LazyAclCapabilityNameHolder {
             private static final String ACL_CAP_NAME_PREFIX = "SSH_ACL_CAP_";
-            private static final Map<Integer, String> ACL_VALUES_MAP = LoggingUtils.generateMnemonicMap(SftpConstants.class, ACL_CAP_NAME_PREFIX);
-            private static final Map<String, Integer> ACL_NAMES_MAP =
-                    Collections.unmodifiableMap(GenericUtils.flipMap(ACL_VALUES_MAP, GenericUtils.caseInsensitiveMap(), false));
+            private static final Map<Integer, String> ACL_VALUES_MAP =
+                LoggingUtils.generateMnemonicMap(SftpConstants.class, ACL_CAP_NAME_PREFIX);
+            private static final NavigableMap<String, Integer> ACL_NAMES_MAP =
+                Collections.unmodifiableNavigableMap(GenericUtils.flipMap(ACL_VALUES_MAP, GenericUtils.caseInsensitiveMap(), false));
+
+            private LazyAclCapabilityNameHolder() {
+                throw new UnsupportedOperationException("No instance allowed");
+            }
         }
 
         @SuppressWarnings("synthetic-access")

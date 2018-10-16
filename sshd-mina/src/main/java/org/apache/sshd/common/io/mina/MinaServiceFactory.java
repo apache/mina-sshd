@@ -18,8 +18,6 @@
  */
 package org.apache.sshd.common.io.mina;
 
-import java.util.concurrent.ExecutorService;
-
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.SimpleIoProcessorPool;
 import org.apache.mina.transport.socket.nio.NioProcessor;
@@ -29,6 +27,7 @@ import org.apache.sshd.common.io.AbstractIoServiceFactory;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
@@ -40,20 +39,18 @@ public class MinaServiceFactory extends AbstractIoServiceFactory {
 
     private final IoProcessor<NioSession> ioProcessor;
 
-    public MinaServiceFactory(FactoryManager factoryManager, ExecutorService service, boolean shutdownOnExit) {
-        super(factoryManager,
-                (service == null) ? ThreadUtils.newCachedThreadPool(factoryManager.toString() + "-mina") : service,
-                (service == null) || shutdownOnExit);
+    public MinaServiceFactory(FactoryManager factoryManager, CloseableExecutorService service) {
+        super(factoryManager, ThreadUtils.newCachedThreadPoolIf(service, factoryManager.toString() + "-mina"));
         ioProcessor = new SimpleIoProcessorPool<>(NioProcessor.class, getExecutorService(), getNioWorkers(factoryManager), null);
     }
 
     @Override
     public IoConnector createConnector(IoHandler handler) {
-        return new MinaConnector(getFactoryManager(), handler, ioProcessor);
+        return autowireCreatedService(new MinaConnector(getFactoryManager(), handler, ioProcessor));
     }
 
     @Override
     public IoAcceptor createAcceptor(IoHandler handler) {
-        return new MinaAcceptor(getFactoryManager(), handler, ioProcessor);
+        return autowireCreatedService(new MinaAcceptor(getFactoryManager(), handler, ioProcessor));
     }
 }

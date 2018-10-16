@@ -24,7 +24,7 @@
     <parent>
         <groupId>org.apache.sshd</groupId>
         <artifactId>sshd</artifactId>
-        <version>2.0.1-SNAPSHOT</version>
+        <version>2.1.1-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
 
@@ -52,6 +52,13 @@
         <dependency>
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-core</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-common</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
@@ -155,9 +162,6 @@
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <reportsDirectory>${project.build.directory}/surefire-reports-mina</reportsDirectory>
-                    <systemProperties>
-                        <org.apache.sshd.common.io.IoServiceFactoryFactory>org.apache.sshd.common.io.mina.MinaServiceFactoryFactory</org.apache.sshd.common.io.IoServiceFactoryFactory>
-                    </systemProperties>
                     <excludes>
                             <!-- These tests use NIO explicitly -->
                         <exclude>**/*LoadTest.java</exclude>
@@ -168,7 +172,7 @@
                         <exclude>**/CipherTest.java</exclude>
                         <exclude>**/CompressionTest.java</exclude>
                         <exclude>**/NoServerNoClientTest.java</exclude>
-                        <exclude>**/PortForwardingTest.java</exclude>
+                        <!-- exclude>**/PortForwardingTest.java</exclude -->
                         <exclude>**/MacTest.java</exclude>
                         <exclude>**/SpringConfigTest.java</exclude>
                         <exclude>**/ConcurrentConnectionTest.java</exclude>

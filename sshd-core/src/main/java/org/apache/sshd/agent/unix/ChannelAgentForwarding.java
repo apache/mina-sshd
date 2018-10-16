@@ -21,18 +21,19 @@ package org.apache.sshd.agent.unix;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
-import java.util.concurrent.ExecutorService;
+import java.util.Collections;
 import java.util.concurrent.Future;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
-import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.channel.AbstractServerChannel;
 import org.apache.tomcat.jni.Local;
@@ -61,12 +62,11 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     private long pool;
     private long handle;
     private OutputStream out;
-    private ExecutorService forwardService;
+    private CloseableExecutorService forwardService;
     private Future<?> forwarder;
-    private boolean shutdownForwarder;
 
-    public ChannelAgentForwarding() {
-        super();
+    public ChannelAgentForwarding(CloseableExecutorService executor) {
+        super("", Collections.emptyList(), executor);
     }
 
     @Override
@@ -82,9 +82,10 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
                 throwException(result);
             }
 
-            ExecutorService service = getExecutorService();
-            forwardService = (service == null) ? ThreadUtils.newSingleThreadExecutor("ChannelAgentForwarding[" + authSocket + "]") : service;
-            shutdownForwarder = service != forwardService || isShutdownOnExit();
+            CloseableExecutorService service = getExecutorService();
+            forwardService = (service == null)
+                    ? ThreadUtils.newSingleThreadExecutor("ChannelAgentForwarding[" + authSocket + "]")
+                    : ThreadUtils.noClose(service);
 
             final int copyBufSize = this.getIntProperty(FORWARDER_BUFFER_SIZE, DEFAULT_FORWARDER_BUF_SIZE);
             ValidateUtils.checkTrue(copyBufSize >= MIN_FORWARDER_BUF_SIZE, "Copy buf size below min.: %d", copyBufSize);
@@ -136,7 +137,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
         }
 
         try {
-            if ((forwardService != null) && shutdownForwarder) {
+            if (forwardService != null) {
                 Collection<?> runners = forwardService.shutdownNow();
                 if (log.isDebugEnabled()) {
                     log.debug("Shut down runners count=" + GenericUtils.size(runners));
@@ -144,13 +145,15 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
             }
         } finally {
             forwardService = null;
-            shutdownForwarder = false;
         }
     }
 
     @Override
-    public CloseFuture close(boolean immediately) {
-        return super.close(immediately).addListener(sshFuture -> closeImmediately0());
+    protected Closeable getInnerCloseable() {
+        return builder()
+                .close(super.getInnerCloseable())
+                .run(toString(), this::closeImmediately0)
+                .build();
     }
 
     @Override

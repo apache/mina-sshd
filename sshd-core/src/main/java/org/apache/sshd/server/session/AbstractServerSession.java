@@ -42,6 +42,7 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
@@ -436,5 +437,10 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     public long getId() {
         IoSession networkSession = getIoSession();
         return networkSession.getId();
+    }
+
+    @Override
+    protected ConnectionService getConnectionService() {
+        return (this.currentService instanceof ConnectionService) ? (ConnectionService) this.currentService : null;
     }
 }

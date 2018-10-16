@@ -28,7 +28,7 @@
 
     <groupId>org.apache.sshd</groupId>
     <artifactId>sshd</artifactId>
-    <version>2.0.1-SNAPSHOT</version>
+    <version>2.1.1-SNAPSHOT</version>
     <name>Apache Mina SSHD</name>
     <packaging>pom</packaging>
     <inceptionYear>2008</inceptionYear>
@@ -92,7 +92,7 @@
         <javac.source>${java.major.version}.${java.minor.version}</javac.source>
         <project.build.java.source>${javac.source}</project.build.java.source>
         <maven.compiler.source>${javac.source}</maven.compiler.source>
-        <ant.version>1.10.3</ant.version>
+        <ant.version>1.10.5</ant.version>
         <ant.build.javac.source>${javac.source}</ant.build.javac.source>
         <build-helper-maven-plugin.version>3.0.0</build-helper-maven-plugin.version>
 
@@ -102,21 +102,25 @@
         <ant.build.javac.target>${javac.target}</ant.build.javac.target>
 
         <min.required.maven.version>3.5.0</min.required.maven.version>
-        <gmaven.plugin.version>2.0</gmaven.plugin.version>
+        <gmaven.plugin.version>2.1</gmaven.plugin.version>
         <groovy.major.version>2</groovy.major.version>
         <groovy.minor.version>4</groovy.minor.version>
         <groovy.release.version>15</groovy.release.version>
         <groovy.compliance.level>2.0</groovy.compliance.level>
         <groovy.version>${groovy.major.version}.${groovy.minor.version}.${groovy.release.version}</groovy.version>
 
-        <bouncycastle.version>1.59</bouncycastle.version>
+        <bouncycastle.version>1.60</bouncycastle.version>
         <slf4j.version>1.7.25</slf4j.version>
-        <spring.version>5.0.6.RELEASE</spring.version>
-        <jgit.version>4.11.0.201803080745-r</jgit.version>
+        <spring.version>5.1.0.RELEASE</spring.version>
+        <jgit.version>5.1.2.201810061102-r</jgit.version>
         <junit.version>4.12</junit.version>
-        <surefire.plugin.version>2.21.0</surefire.plugin.version>
+        <bytebuddy.version>1.9.1</bytebuddy.version>
+
+        <surefire.plugin.version>2.22.0</surefire.plugin.version>
+        <maven.archiver.version>3.2.0</maven.archiver.version>
+        <plexus.archiver.version>3.6.0</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
-        <pmd.version>6.4.0</pmd.version>
+        <pmd.version>6.8.0</pmd.version>
     </properties>
 
     <profiles>
@@ -134,7 +138,6 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>findbugs-maven-plugin</artifactId>
-                        <version>3.0.5</version>
                         <configuration>
                             <xmlOutput>true</xmlOutput>
                             <fork>false</fork>
@@ -146,6 +149,54 @@
                                 <id>run-findbugs</id>
                                 <!-- Note: phase must be AFTER detection of workspace root dir -->
                                 <phase>compile</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+                <!-- mvn -Powasp verify
+
+                    NOTE: recommend also
+
+                    * Activating 'quick' profile
+                    * Skip PMD, checkstyle
+
+                mvn -Powasp,quick -Dpmd.skip=true -Dcheckstyle.skip=true verify
+
+                -->
+            <id>owasp</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.owasp</groupId>
+                        <artifactId>dependency-check-maven</artifactId>
+                        <version>3.3.1</version>
+                            <!-- see https://jeremylong.github.io/DependencyCheck/dependency-check-maven/configuration.html -->
+                        <configuration>
+                                <!-- see https://github.com/jeremylong/DependencyCheck/issues/1394 -->
+                            <retireJsAnalyzerEnabled>false</retireJsAnalyzerEnabled>
+                            <suppressionFiles>
+                                 <suppressionFile>${workspace.root.dir}${file.separator}sshd-owasp-suppressions.xml</suppressionFile>
+                            </suppressionFiles>
+                                <!-- Not much we can do about system scope - e.g, JDK 'tools.jar' (nor do we use it) -->
+                            <skipSystemScope>true</skipSystemScope>
+                                <!-- We do not disseminate the test code nor do we expect it to be used in production sites -->
+                            <skipTestScope>true</skipTestScope>
+                                <!-- We currently don't have any .NET assemblies -->
+                            <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
+                            <nuspecAnalyzerEnabled>false</nuspecAnalyzerEnabled>
+                                <!-- We take care of such checks manually/periodically -->
+                            <versionCheckEnabled>false</versionCheckEnabled>
+                        </configuration>
+                        <executions>
+                           <execution>
+                                <id>run-owasp-dependency-check</id>
+                                <!-- Note: phase must be AFTER detection of workspace root dir -->
                                 <goals>
                                     <goal>check</goal>
                                 </goals>
@@ -261,6 +312,19 @@
                                         </pluginExecution>
                                         <pluginExecution>
                                             <pluginExecutionFilter>
+                                                <groupId>org.apache.maven.plugins</groupId>
+                                                <artifactId>maven-pmd-plugin</artifactId>
+                                                <versionRange>[3.9.0,)</versionRange>
+                                                <goals>
+                                                    <goal>check</goal>
+                                                </goals>
+                                            </pluginExecutionFilter>
+                                            <action>
+                                                <ignore />
+                                            </action>
+                                        </pluginExecution>
+                                        <pluginExecution>
+                                            <pluginExecutionFilter>
                                                 <groupId>org.apache.felix</groupId>
                                                 <artifactId>maven-bundle-plugin</artifactId>
                                                 <versionRange>[1.0,)</versionRange>
@@ -290,12 +354,12 @@
                 <version>${groovy.version}</version>
             </dependency>
                 <!-- NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
-                
+
                     Upgrading it beyond 2.0.19 causes problems for the sshd-ldap
                     since the Apache DS server used to run the unit tests fails
                     in LdapProtocolHandler#messageReceived due to the fact that
                     the SslFilter#SESSION_SECURED has been moved in version 2.0.18.
-                    
+
                     See https://issues.apache.org/jira/browse/DIRMINA-1087
                 -->
             <dependency>
@@ -367,6 +431,35 @@
                 <version>1.1.3</version>
             </dependency>
 
+                <!-- Transitive dependencies by various 3rd party packages -->
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>2.6</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>2.6</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-collections</groupId>
+                <artifactId>commons-collections</artifactId>
+                <version>3.2.2</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-core</artifactId>
+                <version>${spring.version}</version>
+                <exclusions>
+                        <!-- We use jcl-over-slf4j -->
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-jcl</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-framework-bom</artifactId>
@@ -411,11 +504,24 @@
                 <artifactId>junit</artifactId>
                 <version>${junit.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>2.18.3</version>
+                <version>2.23.0</version>
             </dependency>
+                <!-- Used by mockito -->
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy</artifactId>
+                <version>${bytebuddy.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy-agent</artifactId>
+                <version>${bytebuddy.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>net.sf.jpam</groupId>
                 <artifactId>jpam</artifactId>
@@ -435,7 +541,7 @@
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
-                <version>4.5.5</version>
+                <version>4.5.6</version>
                 <exclusions>
                     <exclusion>    <!-- we are using jcl-over-slf4j -->
                         <groupId>commons-logging</groupId>
@@ -446,7 +552,7 @@
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpcore</artifactId>
-                <version>4.4.9</version>
+                <version>4.4.10</version>
             </dependency>
             <dependency>
                 <groupId>ch.ethz.ganymed</groupId>
@@ -480,16 +586,20 @@
                     <version>0.12</version>
                     <configuration>
                         <excludes>
-                            <exclude>**/*.iml</exclude>
                             <exclude>README.md</exclude>
-                            <exclude>*pmd*</exclude>
                             <exclude>src/docs/**</exclude>
                             <exclude>src/test/resources/**</exclude>
                             <exclude>**/stty-output-*.txt</exclude>
                             <exclude>*checkstyle*</exclude>
                             <exclude>*findbugs*</exclude>
+                            <exclude>*suppressions*</exclude>
                             <exclude>**/big-msg.txt</exclude>
-                                <!-- Eclipse files -->
+                            <exclude>LICENSE*</exclude>
+                            <exclude>NOTICE*</exclude>
+                                <!-- IDE files -->
+                            <exclude>*pmd*</exclude>
+                            <exclude>*.ser</exclude>
+                            <exclude>*.iml</exclude>
                             <exclude>.metadata/**</exclude>
                             <exclude>.recommenders/**</exclude>
                             <exclude>RemoteSystemsTempFiles/**</exclude>
@@ -498,8 +608,6 @@
                             <exclude>.springBeans</exclude>
                             <exclude>.settings/**</exclude>
                             <exclude>.repository/**</exclude>
-                            <exclude>LICENSE*</exclude>
-                            <exclude>NOTICE*</exclude>
                         </excludes>
                     </configuration>
                 </plugin>
@@ -607,7 +715,7 @@
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>8.10.1</version>
+                            <version>8.13</version>
                             <exclusions>
                                 <!-- MCHECKSTYLE-156 -->
                                 <exclusion>
@@ -642,7 +750,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>findbugs-maven-plugin</artifactId>
-                    <version>3.0.5F</version>
+                    <version>3.0.5</version>
                         <!-- see https://www.petrikainulainen.net/programming/maven/findbugs-maven-plugin-tutorial/ -->
                     <configuration>
                         <effort>Max</effort>
@@ -787,6 +895,10 @@
                 <configuration>
                     <configLocation>${workspace.root.dir}${file.separator}sshd-checkstyle.xml</configLocation>
                     <headerLocation>${workspace.root.dir}${file.separator}java-checkstyle-license-header.txt</headerLocation>
+                        <!-- '{samedir}' is an Eclipse built in environment variable initialized with the value of the external checkstyle configuration file -->
+                        <!-- See See https://checkstyle.org/eclipse-cs/#!/properties -->
+                    <propertyExpansion>samedir=${workspace.root.dir}</propertyExpansion>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
                 </configuration>
                 <executions>
                     <execution>
@@ -836,7 +948,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.0.0-M1</version>
+                <version>3.0.0-M2</version>
                 <executions>
                     <execution>
                         <id>enforce-versions</id>
@@ -855,6 +967,31 @@
                         </requireJavaVersion>
                     </rules>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <executions>
+                        <!-- Delete temporary serialized key files generated during tests run -->
+                    <execution>
+                        <id>auto-clean-key-files</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <filesets>
+                                <fileset>
+                                    <directory>${projects.basedir}</directory>
+                                    <includes>
+                                        <include>*.ser</include>
+                                        <include>*.pem</include>
+                                    </includes>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -966,6 +1103,18 @@
                         <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
                     </archive>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven</groupId>
+                        <artifactId>maven-archiver</artifactId>
+                        <version>${maven.archiver.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.codehaus.plexus</groupId>
+                        <artifactId>plexus-archiver</artifactId>
+                        <version>${plexus.archiver.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -1043,16 +1192,19 @@
     </reporting>
 
     <modules>
+        <module>sshd-common</module>
+        <module>sshd-putty</module>
         <module>sshd-core</module>
-        <module>sshd-scp</module>
-        <module>sshd-sftp</module>
         <module>sshd-mina</module>
         <module>sshd-netty</module>
+        <module>sshd-scp</module>
+        <module>sshd-sftp</module>
         <module>sshd-ldap</module>
         <module>sshd-git</module>
         <module>sshd-contrib</module>
         <module>sshd-spring-sftp</module>
         <module>sshd-cli</module>
+        <module>sshd-osgi</module>
         <module>assembly</module>
     </modules>
 </project>

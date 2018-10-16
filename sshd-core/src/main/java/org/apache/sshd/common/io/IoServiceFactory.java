@@ -23,7 +23,7 @@ import org.apache.sshd.common.Closeable;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface IoServiceFactory extends Closeable {
+public interface IoServiceFactory extends Closeable, IoServiceEventListenerManager {
 
     IoConnector createConnector(IoHandler handler);
 

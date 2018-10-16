@@ -35,6 +35,7 @@ import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
@@ -48,10 +49,22 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
     protected final IoProcessor<NioSession> ioProcessor;
     protected IoSessionConfig sessionConfig;
 
-    public MinaService(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler, IoProcessor<NioSession> ioProcessor) {
+    private IoServiceEventListener eventListener;
+
+    protected MinaService(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler, IoProcessor<NioSession> ioProcessor) {
         this.manager = Objects.requireNonNull(manager, "No factory manager provided");
         this.handler = Objects.requireNonNull(handler, "No IoHandler provided");
         this.ioProcessor = Objects.requireNonNull(ioProcessor, "No IoProcessor provided");
+    }
+
+    @Override
+    public IoServiceEventListener getIoServiceEventListener() {
+        return eventListener;
+    }
+
+    @Override
+    public void setIoServiceEventListener(IoServiceEventListener listener) {
+        eventListener = listener;
     }
 
     protected abstract IoService getIoService();

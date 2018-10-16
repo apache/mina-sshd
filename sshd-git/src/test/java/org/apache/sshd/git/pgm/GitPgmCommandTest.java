@@ -34,7 +34,7 @@ import org.apache.sshd.git.GitLocationResolver;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.eclipse.jgit.api.Git;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -58,7 +58,7 @@ public class GitPgmCommandTest extends BaseTestSupport {
 
             int port = sshd.getPort();
             try {
-                Utils.deleteRecursive(serverDir);
+                CommonTestSupportUtils.deleteRecursive(serverDir);
 
                 try (SshClient client = setupTestClient()) {
                     client.start();

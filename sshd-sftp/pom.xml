@@ -24,7 +24,7 @@
     <parent>
         <groupId>org.apache.sshd</groupId>
         <artifactId>sshd</artifactId>
-        <version>2.0.1-SNAPSHOT</version>
+        <version>2.1.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>sshd-sftp</artifactId>
@@ -42,10 +42,17 @@
             <artifactId>sshd-core</artifactId>
             <version>${project.version}</version>
         </dependency>
-
+            <!-- Test dependencies -->
         <dependency>
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-core</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-common</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
@@ -188,6 +195,7 @@
 				                    <excludes>
 				                            <!-- TODO need some more research as to why this fails frequently on Netty -->
 				                        <exclude>**/AbstractCheckFileExtensionTest.java</exclude>
+                                        <exclude>**/SftpVersionsTest.java</exclude>
 				                    </excludes>
                                 </configuration>
                             </execution>

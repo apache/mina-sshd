@@ -40,7 +40,7 @@ import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.Utils;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -62,11 +62,11 @@ public class ClientSessionListenerTest extends BaseTestSupport {
 
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
-        sshd = Utils.setupTestServer(ClientSessionListenerTest.class);
+        sshd = CoreTestSupportUtils.setupTestServer(ClientSessionListenerTest.class);
         sshd.start();
         port = sshd.getPort();
 
-        client = Utils.setupTestClient(ClientSessionListenerTest.class);
+        client = CoreTestSupportUtils.setupTestClient(ClientSessionListenerTest.class);
         client.start();
     }
 

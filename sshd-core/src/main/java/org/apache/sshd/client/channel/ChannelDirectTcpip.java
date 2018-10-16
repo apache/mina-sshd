@@ -52,7 +52,8 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
         super("direct-tcpip");
         if (local == null) {
             try {
-                local = new SshdSocketAddress(InetAddress.getLocalHost().getHostName(), 0);
+                InetAddress localHost = InetAddress.getLocalHost();
+                local = new SshdSocketAddress(localHost.getHostName(), 0);
             } catch (UnknownHostException e) {
                 throw new IllegalStateException("Unable to retrieve local host name");
             }
@@ -117,5 +118,13 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
 
         Window wLocal = getLocalWindow();
         wLocal.consumeAndCheck(len);
+    }
+
+    public SshdSocketAddress getLocalSocketAddress() {
+        return this.local;
+    }
+
+    public SshdSocketAddress getRemoteSocketAddress() {
+        return this.remote;
     }
 }
