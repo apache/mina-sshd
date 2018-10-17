@@ -43,6 +43,8 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseReader;
 
+import static org.apache.sshd.common.config.ConfigFileReaderSupport.DEFAULT_PORT;
+
 /**
  * Contains a representation of an entry in the <code>known_hosts</code> file
  *
@@ -127,7 +129,11 @@ public class KnownHostEntry extends HostPatternsHolder {
         }
 
         KnownHostHashValue hash = getHashedEntry();
-        return (hash != null) && hash.isHostMatch(host);
+        String address = host;
+        if (port > 0 && DEFAULT_PORT != port ) {
+            address = HostPatternsHolder.NON_STANDARD_PORT_PATTERN_ENCLOSURE_START_DELIM + host + HostPatternsHolder.NON_STANDARD_PORT_PATTERN_ENCLOSURE_END_DELIM + HostPatternsHolder.PORT_VALUE_DELIMITER + port;
+        }
+        return (hash != null) && hash.isHostMatch(address);
     }
 
     @Override
