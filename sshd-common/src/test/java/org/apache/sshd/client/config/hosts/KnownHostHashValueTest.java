@@ -54,8 +54,13 @@ public class KnownHostHashValueTest extends JUnitTestSupport {
 
     @Parameters(name = "host={0}, hash={1}")
     public static Collection<Object[]> parameters() {
-        return Arrays.<Object[]>asList(
-                (Object[]) new String[]{"192.168.1.61", "|1|F1E1KeoE/eEWhi10WpGv4OdiO6Y=|3988QV0VE8wmZL7suNrYQLITLCg="});
+        return Arrays.asList(
+            // line generated `ssh xenon@localhost -p 10022 hostname` (SSH-2.0-OpenSSH_7.5)
+            new String[]{"[localhost]:10022", "|1|qhjoqX12EcnwZO3KNbpoFbxrdYE=|J+voEFzRbRL49TiHV+jbUfaS+kg="},
+            // line generated `ssh xenon@localhost hostname` (SSH-2.0-OpenSSH_7.5)
+            new String[]{"localhost", "|1|vLQs+atPgodQmPes21ZaMSgLD0s=|A2K2Ym0ZPtQmD8kB3FVViQvQ7qQ="},
+            new String[]{"192.168.1.61", "|1|F1E1KeoE/eEWhi10WpGv4OdiO6Y=|3988QV0VE8wmZL7suNrYQLITLCg="}
+        );
     }
 
     @Test
@@ -75,5 +80,10 @@ public class KnownHostHashValueTest extends JUnitTestSupport {
         byte[] expected = hash.getDigestValue();
         byte[] actual = KnownHostHashValue.calculateHashValue(hostName, hash.getDigester(), hash.getSaltValue());
         assertArrayEquals("Mismatched hash value", expected, actual);
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[host=" + hostName + ", hashValue=" + hashValue + "]";
     }
 }
