@@ -19,7 +19,6 @@
 package org.apache.sshd.common.forward;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -38,9 +37,11 @@ import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.sshd.client.channel.ClientChannelEvent;
+import org.apache.sshd.client.channel.ClientChannelPendingMessagesQueue;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
@@ -85,7 +86,7 @@ public class DefaultForwardingFilter
     public static final String FORWARD_REQUEST_TIMEOUT = "tcpip-forward-request-timeout";
 
     /**
-     * Default value for {@link #FORWARD_REQUEST_TIMEOUT} if none specified
+     * Default value for {@value #FORWARD_REQUEST_TIMEOUT} if none specified
      */
     public static final long DEFAULT_FORWARD_REQUEST_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
 
@@ -1047,19 +1048,25 @@ public class DefaultForwardingFilter
                 channel.close(true);
             } else {
                 /*
-                 *  Make sure channel is fully open in case the client was very fast
+                 *  Make sure channel is pending messages have all been sent in case the client was very fast
                  *  and sent data + closed the connection before channel open was completed.
                  */
                 OpenFuture openFuture = channel.getOpenFuture();
-                // If channel is established then listener is invoked immediately
-                openFuture.addListener(f -> {
-                    Throwable err = f.getException();
-                    if (err != null) {
-                        log.warn("sessionClosed({}) closing incompletely open channel={} after {} messages due to {}[{}]",
-                            session, channel, messagesCounter, err.getClass().getSimpleName(), err.getMessage());
-                    }
-                    channel.close(err != null);
-                });
+                Throwable err = openFuture.getException();
+                ClientChannelPendingMessagesQueue queue = channel.getPendingMessagesQueue();
+                OpenFuture completedFuture = queue.getCompletedFuture();
+                if (err == null) {
+                    err = completedFuture.getException();
+                }
+                boolean immediately = err != null;
+                if (immediately) {
+                    channel.close(true);
+                } else {
+                    completedFuture.addListener(f -> {
+                        Throwable thrown = f.getException();
+                        channel.close(immediately || (thrown != null));
+                    });
+                }
             }
         }
 
@@ -1072,30 +1079,24 @@ public class DefaultForwardingFilter
 
             if (traceEnabled) {
                 log.trace("messageReceived({}) channel={}, count={}, handle len={}",
-                          session, channel, totalMessages, message.available());
+                      session, channel, totalMessages, message.available());
             }
 
             OpenFuture future = channel.getOpenFuture();
-            if (future.isOpened()) {
-                OutputStream outputStream = channel.getInvertedIn();
-                outputStream.write(buffer.array(), buffer.rpos(), buffer.available());
-                outputStream.flush();
-            } else {
-                future.addListener(f -> {
-                    try {
-                        OutputStream outputStream = channel.getInvertedIn();
-                        outputStream.write(buffer.array(), buffer.rpos(), buffer.available());
-                        outputStream.flush();
-                    } catch (IOException e) {
-                        try {
-                            exceptionCaught(session, e);
-                        } catch (Exception err) {
-                            log.warn("messageReceived({}) failed ({}) to signal {}[{}] on channel={}: {}",
-                                session, err.getClass().getSimpleName(), e.getClass().getSimpleName(),
-                                e.getMessage(), channel, err.getMessage());
-                        }
-                    }
-                });
+            Consumer<Throwable> errHandler = future.isOpened() ? null : e -> {
+                try {
+                    exceptionCaught(session, e);
+                } catch (Exception err) {
+                    log.warn("messageReceived({}) failed ({}) to signal {}[{}] on channel={}: {}",
+                        session, err.getClass().getSimpleName(), e.getClass().getSimpleName(),
+                        e.getMessage(), channel, err.getMessage());
+                }
+            };
+            ClientChannelPendingMessagesQueue messagesQueue = channel.getPendingMessagesQueue();
+            int pendCount = messagesQueue.handleIncomingMessage(buffer, errHandler);
+            if (traceEnabled) {
+                log.trace("messageReceived({}) channel={} pend count={} after processing message",
+                    session, channel, pendCount);
             }
         }
 
