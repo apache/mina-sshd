@@ -116,7 +116,7 @@
         <junit.version>4.12</junit.version>
         <bytebuddy.version>1.9.1</bytebuddy.version>
 
-        <surefire.plugin.version>2.22.0</surefire.plugin.version>
+        <surefire.plugin.version>2.22.1</surefire.plugin.version>
         <maven.archiver.version>3.2.0</maven.archiver.version>
         <plexus.archiver.version>3.6.0</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
