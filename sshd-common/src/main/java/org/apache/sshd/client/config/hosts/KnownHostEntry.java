@@ -126,17 +126,8 @@ public class KnownHostEntry extends HostPatternsHolder {
             return true;
         }
 
-        String address;
-        if ((port > 0) && (port != ConfigFileReaderSupport.DEFAULT_PORT)) {
-            address = HostPatternsHolder.NON_STANDARD_PORT_PATTERN_ENCLOSURE_START_DELIM
-                + host + HostPatternsHolder.NON_STANDARD_PORT_PATTERN_ENCLOSURE_END_DELIM
-                + HostPatternsHolder.PORT_VALUE_DELIMITER + port;
-        } else {
-            address = host;
-        }
-
         KnownHostHashValue hash = getHashedEntry();
-        return (hash != null) && hash.isHostMatch(address);
+        return (hash != null) && hash.isHostMatch(host, port);
     }
 
     @Override
