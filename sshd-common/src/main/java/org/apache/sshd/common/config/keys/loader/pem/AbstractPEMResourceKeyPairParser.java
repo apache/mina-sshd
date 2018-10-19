@@ -22,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StreamCorruptedException;
+import java.net.ProtocolException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
@@ -33,6 +34,7 @@ import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.FailedLoginException;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
 import org.apache.sshd.common.config.keys.loader.AbstractKeyPairResourceParser;
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceParser;
 import org.apache.sshd.common.config.keys.loader.PrivateKeyEncryptionContext;
@@ -71,7 +73,7 @@ public abstract class AbstractPEMResourceKeyPairParser
     @Override
     public Collection<KeyPair> extractKeyPairs(
             String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, List<String> lines)
-                    throws IOException, GeneralSecurityException {
+                throws IOException, GeneralSecurityException {
         if (GenericUtils.isEmpty(lines)) {
             return Collections.emptyList();
         }
@@ -129,18 +131,42 @@ public abstract class AbstractPEMResourceKeyPairParser
                 throw new CredentialException("Missing password provider for encrypted resource=" + resourceKey);
             }
 
-            String password = passwordProvider.getPassword(resourceKey);
-            if (GenericUtils.isEmpty(password)) {
-                throw new FailedLoginException("No password data for encrypted resource=" + resourceKey);
-            }
+            while (true) {
+                String password = passwordProvider.getPassword(resourceKey);
+                Collection<KeyPair> keys;
+                try {
+                    if (GenericUtils.isEmpty(password)) {
+                        throw new FailedLoginException("No password data for encrypted resource=" + resourceKey);
+                    }
 
-            PrivateKeyEncryptionContext encContext = new PrivateKeyEncryptionContext(algInfo);
-            encContext.setPassword(password);
-            encContext.setInitVector(initVector);
-            byte[] encryptedData = KeyPairResourceParser.extractDataBytes(dataLines);
-            byte[] decodedData = applyPrivateKeyCipher(encryptedData, encContext, false);
-            try (InputStream bais = new ByteArrayInputStream(decodedData)) {
-                return extractKeyPairs(resourceKey, beginMarker, endMarker, passwordProvider, bais);
+                    PrivateKeyEncryptionContext encContext = new PrivateKeyEncryptionContext(algInfo);
+                    encContext.setPassword(password);
+                    encContext.setInitVector(initVector);
+                    byte[] encryptedData = KeyPairResourceParser.extractDataBytes(dataLines);
+                    byte[] decodedData = applyPrivateKeyCipher(encryptedData, encContext, false);
+                    try (InputStream bais = new ByteArrayInputStream(decodedData)) {
+                        keys = extractKeyPairs(resourceKey, beginMarker, endMarker, passwordProvider, bais);
+                    }
+                } catch (IOException | GeneralSecurityException | RuntimeException e) {
+                    ResourceDecodeResult result =
+                        passwordProvider.handleDecodeAttemptResult(resourceKey, password, e);
+                    if (result == null) {
+                        result = ResourceDecodeResult.TERMINATE;
+                    }
+                    switch (result) {
+                        case TERMINATE:
+                            throw e;
+                        case RETRY:
+                            continue;
+                        case IGNORE:
+                            return Collections.emptyList();
+                        default:
+                            throw new ProtocolException("Unsupported decode attempt result (" + result + ") for " + resourceKey);
+                    }
+                }
+
+                passwordProvider.handleDecodeAttemptResult(resourceKey, password, null);
+                return keys;
             }
         }
 

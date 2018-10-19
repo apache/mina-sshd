@@ -72,7 +72,7 @@ public class ECDSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<ECPublicKey, E
             throw new InvalidKeySpecException("Mismatched key curve name (" + keyCurveName + ") vs. encoded one (" + encCurveName + ")");
         }
 
-        byte[] octets = pubReader.read();
+        byte[] octets = pubReader.read(Short.MAX_VALUE);    // reasonable max. allowed size
         ECPoint w;
         try {
             w = ECCurves.octetStringToEcPoint(octets);

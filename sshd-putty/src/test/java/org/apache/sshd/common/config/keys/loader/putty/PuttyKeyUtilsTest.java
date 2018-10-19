@@ -27,8 +27,11 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.loader.openssh.OpenSSHKeyPairResourceParser;
@@ -100,7 +103,7 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
                 }
 
                 assertFalse(other.getClass().getSimpleName() + "/" + resource + " - unexpected extraction capability",
-                        other.canExtractKeyPairs(resource, lines));
+                    other.canExtractKeyPairs(resource, lines));
             }
         }
     }
@@ -126,6 +129,79 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
         assertEquals("Mismatched loaded keys count from " + encryptedFile, 1, GenericUtils.size(keys));
 
         assertLoadedKeyPair(encryptedFile, keys.iterator().next());
+    }
+
+    @Test
+    public void testDecideEncryptedFileWithRetries() throws IOException, GeneralSecurityException {
+        Assume.assumeTrue(BuiltinCiphers.aes256cbc.getTransformation() + " N/A", BuiltinCiphers.aes256cbc.isSupported());
+        URL url = getClass().getResource(encryptedFile);
+        Assume.assumeTrue("Skip non-existent encrypted file: " + encryptedFile, url != null);
+        assertNotNull("Missing test resource: " + encryptedFile, url);
+
+        int maxRetries = 3;
+        for (ResourceDecodeResult result : ResourceDecodeResult.values()) {
+            AtomicInteger retriesCount = new AtomicInteger(0);
+            FilePasswordProvider provider = new FilePasswordProvider() {
+                @Override
+                public String getPassword(String resourceKey) throws IOException {
+                    switch (result) {
+                        case IGNORE:
+                        case TERMINATE:
+                            return "qweryuiop123456!@#$%^";
+                        case RETRY: {
+                            int count = retriesCount.incrementAndGet();
+                            if (count == maxRetries) {
+                                return PASSWORD;
+                            } else {
+                                return "retry #" + count;
+                            }
+                        }
+                        default:
+                            throw new UnsupportedOperationException("Unknown decode result type: " + result);
+                    }
+                }
+
+                @Override
+                public ResourceDecodeResult handleDecodeAttemptResult(
+                        String resourceKey, String password, Exception err)
+                            throws IOException, GeneralSecurityException {
+                    if (err == null) {
+                        return null;
+                    }
+
+                    if (result == ResourceDecodeResult.RETRY) {
+                        if (retriesCount.get() >= maxRetries) {
+                            return ResourceDecodeResult.TERMINATE;
+                        }
+                    }
+
+                    return result;
+                }
+
+                @Override
+                public String toString() {
+                    return FilePasswordProvider.class.getSimpleName() + "[" + result + "]";
+                }
+            };
+
+            try {
+                Collection<KeyPair> keys = parser.loadKeyPairs(url, provider);
+                if (result == ResourceDecodeResult.IGNORE) {
+                    assertEquals("Unexpected loaded keys count from " + encryptedFile, 0, GenericUtils.size(keys));
+                    assertEquals("Mismatched " + result + " retries count", 0, retriesCount.get());
+                } else {
+                    assertEquals("Mismatched loaded keys count from " + encryptedFile, 1, GenericUtils.size(keys));
+                    assertEquals("Mismatched " + result + " retries count", maxRetries, retriesCount.get());
+                    assertLoadedKeyPair(encryptedFile, keys.iterator().next());
+                }
+            } catch (IOException | GeneralSecurityException | RuntimeException e) {
+                if (result != ResourceDecodeResult.TERMINATE) {
+                    throw e;
+                }
+
+                assertEquals("Mismatched " + result + " retries count", 0, retriesCount.get());
+            }
+        }
     }
 
     private void assertLoadedKeyPair(String prefix, KeyPair kp) throws GeneralSecurityException {

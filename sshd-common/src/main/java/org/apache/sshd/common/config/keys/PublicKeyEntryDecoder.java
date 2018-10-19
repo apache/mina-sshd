@@ -30,6 +30,7 @@ import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Collection;
 
+import org.apache.sshd.common.config.keys.loader.KeyPairResourceLoader;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -78,7 +79,7 @@ public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends Privat
 
     default PUB decodePublicKey(InputStream keyData) throws IOException, GeneralSecurityException {
         // the actual data is preceded by a string that repeats the key type
-        String type = KeyEntryResolver.decodeString(keyData);
+        String type = KeyEntryResolver.decodeString(keyData, KeyPairResourceLoader.MAX_KEY_TYPE_NAME_LENGTH);
         if (GenericUtils.isEmpty(type)) {
             throw new StreamCorruptedException("Missing key type string");
         }

@@ -52,17 +52,23 @@ public class PuttyKeyReader implements Closeable {
     }
 
     public String readString(Charset cs) throws IOException {
-        byte[] data = read();
+        byte[] data = read(Short.MAX_VALUE);    // reasonable value for any expected string
         return new String(data, cs);
     }
 
     public BigInteger readInt() throws IOException {
-        byte[] bytes = read();
+        byte[] bytes = read(Short.MAX_VALUE);   // reasonable value for any expected BigInteger
         return new BigInteger(bytes);
     }
 
-    public byte[] read() throws IOException {
+    public byte[] read(int maxAllowed) throws IOException {
         int len = di.readInt();
+        if (len > maxAllowed) {
+            throw new StreamCorruptedException("Requested block length (" + len + ") exceeds max. allowed (" + maxAllowed + ")");
+        }
+        if (len < 0) {
+            throw new StreamCorruptedException("Negative block length requested: " + len);
+        }
         byte[] r = new byte[len];
         di.readFully(r);
         return r;

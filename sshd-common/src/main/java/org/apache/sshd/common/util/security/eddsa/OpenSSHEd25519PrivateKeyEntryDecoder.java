@@ -74,8 +74,8 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
         // we expect to find two byte arrays with the following structure (type:size):
         // [pk:32], [sk:32,pk:32]
 
-        byte[] pk = KeyEntryResolver.readRLEBytes(keyData);
-        byte[] keypair = KeyEntryResolver.readRLEBytes(keyData);
+        byte[] pk = KeyEntryResolver.readRLEBytes(keyData, PK_SIZE * 2);
+        byte[] keypair = KeyEntryResolver.readRLEBytes(keyData, KEYPAIR_SIZE * 2);
 
         if (pk.length != PK_SIZE) {
             throw new InvalidKeyException(String.format(Locale.ENGLISH, "Unexpected pk size: %s (expected %s)", pk.length, PK_SIZE));

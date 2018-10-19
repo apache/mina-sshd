@@ -48,6 +48,12 @@ import org.apache.sshd.common.util.io.IoUtils;
  */
 @FunctionalInterface
 public interface KeyPairResourceLoader {
+    int MAX_CIPHER_NAME_LENGTH = 256;
+    int MAX_KEY_TYPE_NAME_LENGTH = 256;
+    int MAX_KEY_COMMENT_LENGTH = 1024;
+    int MAX_PUBLIC_KEY_DATA_SIZE = 2 * Short.MAX_VALUE;
+    int MAX_PRIVATE_KEY_DATA_SIZE = 4 * MAX_PUBLIC_KEY_DATA_SIZE;
+
     /**
      * An empty loader that never fails but always returns an empty list
      */

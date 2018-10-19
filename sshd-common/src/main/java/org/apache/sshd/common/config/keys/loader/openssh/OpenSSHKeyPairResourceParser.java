@@ -59,6 +59,9 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser {
+    public static final int MAX_KDF_NAME_LENGTH = 1024;
+    public static final int MAX_KDF_OPTIONS_SIZE = Short.MAX_VALUE;
+
     public static final String BEGIN_MARKER = "BEGIN OPENSSH PRIVATE KEY";
     public static final List<String> BEGINNERS =
             Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
@@ -96,10 +99,10 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     @Override
     public Collection<KeyPair> extractKeyPairs(
             String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, InputStream stream)
-                    throws IOException, GeneralSecurityException {
+                throws IOException, GeneralSecurityException {
         stream = validateStreamMagicMarker(resourceKey, stream);
 
-        String cipher = KeyEntryResolver.decodeString(stream);
+        String cipher = KeyEntryResolver.decodeString(stream, MAX_CIPHER_NAME_LENGTH);
         if (!OpenSSHParserContext.IS_NONE_CIPHER.test(cipher)) {
             throw new NoSuchAlgorithmException("Unsupported cipher: " + cipher);
         }
@@ -109,12 +112,12 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
             log.debug("extractKeyPairs({}) cipher={}", resourceKey, cipher);
         }
 
-        String kdfName = KeyEntryResolver.decodeString(stream);
+        String kdfName = KeyEntryResolver.decodeString(stream, MAX_KDF_NAME_LENGTH);
         if (!OpenSSHParserContext.IS_NONE_KDF.test(kdfName)) {
             throw new NoSuchAlgorithmException("Unsupported KDF: " + kdfName);
         }
 
-        byte[] kdfOptions = KeyEntryResolver.readRLEBytes(stream);
+        byte[] kdfOptions = KeyEntryResolver.readRLEBytes(stream, MAX_KDF_OPTIONS_SIZE);
         if (debugEnabled) {
             log.debug("extractKeyPairs({}) KDF={}, options={}",
                       resourceKey, kdfName, BufferUtils.toHex(':', kdfOptions));
@@ -141,7 +144,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
             publicKeys.add(pubKey);
         }
 
-        byte[] privateData = KeyEntryResolver.readRLEBytes(stream);
+        byte[] privateData = KeyEntryResolver.readRLEBytes(stream, MAX_PRIVATE_KEY_DATA_SIZE);
         try (InputStream bais = new ByteArrayInputStream(privateData)) {
             return readPrivateKeys(resourceKey, context, publicKeys, passwordProvider, bais);
         }
@@ -150,9 +153,9 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     protected PublicKey readPublicKey(
             String resourceKey, OpenSSHParserContext context, InputStream stream)
                     throws IOException, GeneralSecurityException {
-        byte[] keyData = KeyEntryResolver.readRLEBytes(stream);
+        byte[] keyData = KeyEntryResolver.readRLEBytes(stream, MAX_PUBLIC_KEY_DATA_SIZE);
         try (InputStream bais = new ByteArrayInputStream(keyData)) {
-            String keyType = KeyEntryResolver.decodeString(bais);
+            String keyType = KeyEntryResolver.decodeString(bais, MAX_KEY_TYPE_NAME_LENGTH);
             PublicKeyEntryDecoder<?, ?> decoder = KeyUtils.getPublicKeyEntryDecoder(keyType);
             if (decoder == null) {
                 throw new NoSuchAlgorithmException("Unsupported key type (" + keyType + ") in " + resourceKey);
@@ -209,7 +212,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     protected SimpleImmutableEntry<PrivateKey, String> readPrivateKey(
             String resourceKey, OpenSSHParserContext context, String keyType, FilePasswordProvider passwordProvider, InputStream stream)
                     throws IOException, GeneralSecurityException {
-        String prvType = KeyEntryResolver.decodeString(stream);
+        String prvType = KeyEntryResolver.decodeString(stream, MAX_KEY_TYPE_NAME_LENGTH);
         if (!Objects.equals(keyType, prvType)) {
             throw new StreamCorruptedException("Mismatched private key type: "
                     + ", expected=" + keyType + ", actual=" + prvType
@@ -226,7 +229,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
             throw new InvalidKeyException("Cannot parse key type (" + prvType + ") in " + resourceKey);
         }
 
-        String comment = KeyEntryResolver.decodeString(stream);
+        String comment = KeyEntryResolver.decodeString(stream, MAX_KEY_COMMENT_LENGTH);
         return new SimpleImmutableEntry<>(prvKey, comment);
     }
 

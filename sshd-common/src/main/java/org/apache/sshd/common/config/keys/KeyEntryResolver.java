@@ -22,6 +22,7 @@ package org.apache.sshd.common.config.keys;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StreamCorruptedException;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -155,25 +156,32 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
         return bytes;
     }
 
-    static String decodeString(InputStream s) throws IOException {
-        return decodeString(s, StandardCharsets.UTF_8);
+    static String decodeString(InputStream s, int maxChars) throws IOException {
+        return decodeString(s, StandardCharsets.UTF_8, maxChars);
     }
 
-    static String decodeString(InputStream s, String charset) throws IOException {
-        return decodeString(s, Charset.forName(charset));
+    static String decodeString(InputStream s, String charset, int maxChars) throws IOException {
+        return decodeString(s, Charset.forName(charset), maxChars);
     }
 
-    static String decodeString(InputStream s, Charset cs) throws IOException {
-        byte[] bytes = readRLEBytes(s);
+    static String decodeString(InputStream s, Charset cs, int maxChars) throws IOException {
+        byte[] bytes = readRLEBytes(s, maxChars * 4 /* in case UTF-8 with weird characters */);
         return new String(bytes, cs);
     }
 
     static BigInteger decodeBigInt(InputStream s) throws IOException {
-        return new BigInteger(readRLEBytes(s));
+        return new BigInteger(readRLEBytes(s, IdentityResourceLoader.MAX_BIGINT_OCTETS_COUNT));
     }
 
-    static byte[] readRLEBytes(InputStream s) throws IOException {
+    static byte[] readRLEBytes(InputStream s, int maxAllowed) throws IOException {
         int len = decodeInt(s);
+        if (len > maxAllowed) {
+            throw new StreamCorruptedException("Requested block length (" + len + ") exceeds max. allowed (" + maxAllowed + ")");
+        }
+        if (len < 0) {
+            throw new StreamCorruptedException("Negative block length requested: " + len);
+        }
+
         byte[] bytes = new byte[len];
         IoUtils.readFully(s, bytes);
         return bytes;

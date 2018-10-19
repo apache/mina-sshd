@@ -216,16 +216,30 @@ Of course, one can implement the verifier in whatever other manner is suitable f
 
 ### ClientIdentityLoader/KeyPairProvider
 
-One can set up the public/private keys to be used in case a password-less authentication is needed. By default, the client is configured to automatically detect and use the identity files residing in the user's *~/.ssh* folder (e.g., *id_rsa*, *id_ecdsa*) and present them as part of the authentication process. **Note:** if the identity files are encrypted via a password, one must configure a `FilePasswordProvider` so that the code can decrypt them before using and presenting them to the server as part of the authentication process. Reading key files in PEM format (including encrypted ones) is supported by default for the standard keys and formats. Using additional non-standard special features requires that the [Bouncy Castle](https://www.bouncycastle.org/) supporting artifacts be available in the code's classpath. One can also read files in
-[OpenSSH](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/PROTOCOL.key?rev=1.1&content-type=text/x-cvsweb-markup)
-format without any specific extra artifacts (although for reading _ed25519_ keys one needs to add the _EdDSA_ support
-artifacts). **Note:** for the time being, password encrypted _ed25519_ private key files are not supported.
+One can set up the public/private keys to be used in case a password-less authentication is needed. By default, the client is configured to automatically
+detect and use the identity files residing in the user's *~/.ssh* folder (e.g., *id_rsa*, *id_ecdsa*) and present them as part of the authentication process.
+**Note:** if the identity files are encrypted via a password, one must configure a `FilePasswordProvider` so that the code can decrypt them before using
+and presenting them to the server as part of the authentication process. Reading key files in PEM format (including encrypted ones) is supported by default
+for the standard keys and formats. Using additional non-standard special features requires that the [Bouncy Castle](https://www.bouncycastle.org/) supporting
+artifacts be available in the code's classpath. One can also read files in
+[OpenSSH](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/PROTOCOL.key?rev=1.1&content-type=text/x-cvsweb-markup) format without any specific extra
+artifacts (although for reading _ed25519_ keys one needs to add the _EdDSA_ support artifacts). **Note:** for the time being, password
+encrypted _ed25519_ private key files are not supported.
+
+The `FilePasswordProvider` has support for a retry mechanism via its `handleDecodeAttemptResult`. When the code detects an encrypted private key,
+it will start a loop where it prompts for the password, attempts to decode the key using the provided password and then informs the provider of
+the outcome - success or failure. If failure is signaled, then the provider can decide whether to retry using a new password, abort (with exception)
+or ignore. If the provider chooses to ignore the failure, then the code will make a best effort to proceed without the key.
 
 ### UserInteraction
 
-This interface is required for full support of `keyboard-interactive` authentication protocol as described in [RFC 4256](https://www.ietf.org/rfc/rfc4256.txt). The client can handle a simple password request from the server, but if more complex challenge-response interaction is required, then this interface must be provided - including support for `SSH_MSG_USERAUTH_PASSWD_CHANGEREQ` as described in [RFC 4252 section 8](https://www.ietf.org/rfc/rfc4252.txt).
+This interface is required for full support of `keyboard-interactive` authentication protocol as described in [RFC 4256](https://www.ietf.org/rfc/rfc4256.txt).
+The client can handle a simple password request from the server, but if more complex challenge-response interaction is required, then this interface must be
+provided - including support for `SSH_MSG_USERAUTH_PASSWD_CHANGEREQ` as described in [RFC 4252 section 8](https://www.ietf.org/rfc/rfc4252.txt).
 
-While RFC-4256 support is the primary purpose of this interface, it can also be used to retrieve the server's welcome banner as described in [RFC 4252 section 5.4](https://www.ietf.org/rfc/rfc4252.txt) as well as its initial identification string as described in [RFC 4253 section 4.2](https://tools.ietf.org/html/rfc4253#section-4.2).
+While RFC-4256 support is the primary purpose of this interface, it can also be used to retrieve the server's welcome banner as described
+in [RFC 4252 section 5.4](https://www.ietf.org/rfc/rfc4252.txt) as well as its initial identification string as described
+in [RFC 4253 section 4.2](https://tools.ietf.org/html/rfc4253#section-4.2).
 
 ## Using the `SshClient` to connect to a server
 

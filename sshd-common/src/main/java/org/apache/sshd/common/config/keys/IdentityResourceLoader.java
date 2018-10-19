@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.config.keys;
 
+import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Collection;
@@ -28,6 +29,12 @@ import java.util.Collection;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface IdentityResourceLoader<PUB extends PublicKey, PRV extends PrivateKey> {
+    /**
+     * A reasonable max. number of octets used for a {@link BigInteger} in the
+     * context of keys based on such numbers
+     */
+    int MAX_BIGINT_OCTETS_COUNT = Short.MAX_VALUE;
+
     /**
      * @return The {@link Class} of the {@link PublicKey} that is the result
      * of decoding
