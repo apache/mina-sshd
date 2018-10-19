@@ -1186,7 +1186,7 @@
            <plugin>    <!-- used by PMD to create a source XREF -->
                <groupId>org.apache.maven.plugins</groupId>
                <artifactId>maven-jxr-plugin</artifactId>
-               <version>2.5</version>
+               <version>3.0.0</version>
            </plugin>
        </plugins>
     </reporting>
