@@ -135,6 +135,10 @@ public class KnownHostHashValue {
     }
 
     public static String createHostPattern(String host, int port) {
+        if ((port <= 0) || (port == ConfigFileReaderSupport.DEFAULT_PORT)) {
+            return host;
+        }
+
         try {
             return appendHostPattern(new StringBuilder(host.length() + 8 /* port if necessary */), host, port).toString();
         } catch (IOException e) {
