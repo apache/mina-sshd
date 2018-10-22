@@ -19,7 +19,6 @@
 package org.apache.sshd.common.forward;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -38,9 +37,11 @@ import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.sshd.client.channel.ClientChannelEvent;
+import org.apache.sshd.client.channel.ClientChannelPendingMessagesQueue;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
@@ -85,9 +86,23 @@ public class DefaultForwardingFilter
     public static final String FORWARD_REQUEST_TIMEOUT = "tcpip-forward-request-timeout";
 
     /**
-     * Default value for {@link #FORWARD_REQUEST_TIMEOUT} if none specified
+     * Default value for {@value #FORWARD_REQUEST_TIMEOUT} if none specified
      */
     public static final long DEFAULT_FORWARD_REQUEST_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
+
+    /**
+     * Used to configure timeout (seconds) for waiting on pending messages
+     * on an open tunnel to be flushed when channel is being closed due to
+     * normal tunnel tear-down.
+     *
+     * @see #DEFAULT_PENDING_FORWARD_MSG_WAIT
+     */
+    public static final String MAX_PENDING_FORWARD_MSG_WAIT = "tcip-forward-flush-timeout";
+
+    /**
+     * Default value for {@value #MAX_PENDING_FORWARD_MSG_WAIT}
+     */
+    public static final long DEFAULT_PENDING_FORWARD_MSG_WAIT = 30L;
 
     public static final Set<ClientChannelEvent> STATIC_IO_MSG_RECEIVED_EVENTS =
             Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.OPENED, ClientChannelEvent.CLOSED));
@@ -1030,6 +1045,7 @@ public class DefaultForwardingFilter
             });
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public void sessionClosed(IoSession session) throws Exception {
             TcpipClientChannel channel = (TcpipClientChannel) session.removeAttribute(TcpipClientChannel.class);
@@ -1047,19 +1063,21 @@ public class DefaultForwardingFilter
                 channel.close(true);
             } else {
                 /*
-                 *  Make sure channel is fully open in case the client was very fast
+                 *  Make sure channel is pending messages have all been sent in case the client was very fast
                  *  and sent data + closed the connection before channel open was completed.
                  */
-                OpenFuture openFuture = channel.getOpenFuture();
-                // If channel is established then listener is invoked immediately
-                openFuture.addListener(f -> {
-                    Throwable err = f.getException();
-                    if (err != null) {
-                        log.warn("sessionClosed({}) closing incompletely open channel={} after {} messages due to {}[{}]",
-                            session, channel, messagesCounter, err.getClass().getSimpleName(), err.getMessage());
-                    }
-                    channel.close(err != null);
-                });
+                OpenFuture f = channel.getOpenFuture();
+                Throwable err = f.getException();
+                boolean immediatly = err != null;
+
+                if (immediatly) {
+                    channel.close(immediatly);
+                } else {
+                    ClientChannelPendingMessagesQueue queue = channel.getPendingMessagesQueue();
+                    queue.getCompletedFuture().addListener(l -> {
+                        channel.close(immediatly);
+                    });
+                }
             }
         }
 
@@ -1072,30 +1090,24 @@ public class DefaultForwardingFilter
 
             if (traceEnabled) {
                 log.trace("messageReceived({}) channel={}, count={}, handle len={}",
-                          session, channel, totalMessages, message.available());
+                      session, channel, totalMessages, message.available());
             }
 
             OpenFuture future = channel.getOpenFuture();
-            if (future.isOpened()) {
-                OutputStream outputStream = channel.getInvertedIn();
-                outputStream.write(buffer.array(), buffer.rpos(), buffer.available());
-                outputStream.flush();
-            } else {
-                future.addListener(f -> {
-                    try {
-                        OutputStream outputStream = channel.getInvertedIn();
-                        outputStream.write(buffer.array(), buffer.rpos(), buffer.available());
-                        outputStream.flush();
-                    } catch (IOException e) {
-                        try {
-                            exceptionCaught(session, e);
-                        } catch (Exception err) {
-                            log.warn("messageReceived({}) failed ({}) to signal {}[{}] on channel={}: {}",
-                                session, err.getClass().getSimpleName(), e.getClass().getSimpleName(),
-                                e.getMessage(), channel, err.getMessage());
-                        }
-                    }
-                });
+            Consumer<Throwable> errHandler = future.isOpened() ? null : e -> {
+                try {
+                    exceptionCaught(session, e);
+                } catch (Exception err) {
+                    log.warn("messageReceived({}) failed ({}) to signal {}[{}] on channel={}: {}",
+                        session, err.getClass().getSimpleName(), e.getClass().getSimpleName(),
+                        e.getMessage(), channel, err.getMessage());
+                }
+            };
+            ClientChannelPendingMessagesQueue messagesQueue = channel.getPendingMessagesQueue();
+            int pendCount = messagesQueue.handleIncomingMessage(future, buffer, errHandler);
+            if (traceEnabled) {
+                log.trace("messageReceived({}) channel={} pend count={} after processing message",
+                    session, channel, pendCount);
             }
         }
 

@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.sshd.client.channel.AbstractClientChannel;
+import org.apache.sshd.client.channel.ClientChannelPendingMessagesQueue;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
@@ -40,6 +41,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
@@ -74,6 +76,7 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
     private final Type typeEnum;
     private final IoSession serverSession;
     private final SshdSocketAddress remote;
+    private final ClientChannelPendingMessagesQueue messagesQueue;
     private SshdSocketAddress tunnelEntrance;
     private SshdSocketAddress tunnelExit;
 
@@ -82,6 +85,7 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
         this.typeEnum = type;
         this.serverSession = Objects.requireNonNull(serverSession, "No server session provided");
         this.remote = remote;
+        this.messagesQueue = new ClientChannelPendingMessagesQueue(this);
     }
 
     public OpenFuture getOpenFuture() {
@@ -90,6 +94,10 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
 
     public Type getTcpipChannelType() {
         return typeEnum;
+    }
+
+    public ClientChannelPendingMessagesQueue getPendingMessagesQueue() {
+        return messagesQueue;
     }
 
     @Override
@@ -120,7 +128,9 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
             throw new SshException("Session has been closed");
         }
 
-        openFuture = new DefaultOpenFuture(src, lock);
+        // make sure the pending messages queue is 1st in line
+        openFuture = new DefaultOpenFuture(src, lock)
+            .addListener(getPendingMessagesQueue());
         if (log.isDebugEnabled()) {
             log.debug("open({}) send SSH_MSG_CHANNEL_OPEN", this);
         }
@@ -156,8 +166,26 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
     }
 
     @Override
+    protected void preClose() {
+        IOException err = IoUtils.closeQuietly(getPendingMessagesQueue());
+        if (err != null) {
+            if (log.isDebugEnabled()) {
+                log.debug("preClose({}) Failed ({}) to close pending messages queue: {}",
+                    this, err.getClass().getSimpleName(), err.getMessage());
+            }
+            if (log.isTraceEnabled()) {
+                log.trace("preClose(" + this + ") pending messages queue close failure details", err);
+            }
+        }
+
+        super.preClose();
+    }
+
+    @Override
     protected Closeable getInnerCloseable() {
-        return builder().sequential(serverSession, super.getInnerCloseable()).build();
+        return builder()
+            .sequential(serverSession, super.getInnerCloseable())
+            .build();
     }
 
     @Override
