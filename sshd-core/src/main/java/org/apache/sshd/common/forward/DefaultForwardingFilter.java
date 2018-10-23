@@ -1093,7 +1093,7 @@ public class DefaultForwardingFilter
                       session, channel, totalMessages, message.available());
             }
 
-            OpenFuture future = channel.getOpenFuture();
+            OpenFuture future = channel.getPendingMessagesQueue().getCompletedFuture();
             Consumer<Throwable> errHandler = future.isOpened() ? null : e -> {
                 try {
                     exceptionCaught(session, e);

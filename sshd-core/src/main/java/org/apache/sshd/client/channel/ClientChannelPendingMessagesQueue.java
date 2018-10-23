@@ -47,10 +47,11 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ClientChannelPendingMessagesQueue
-    extends AbstractLoggingBean
+public class ClientChannelPendingMessagesQueue extends AbstractLoggingBean
     implements SshFutureListener<OpenFuture>, Channel, ClientChannelHolder {
-    protected final Deque<Map.Entry<Buffer, Consumer<? super Throwable>>> pendingQueue = new LinkedList<>();
+
+    protected final Deque<Map.Entry<Buffer, Consumer<? super Throwable>>> pendingQueue =
+        new LinkedList<>();
 
     private final ClientChannel clientChannel;
     private final AtomicBoolean open = new AtomicBoolean(true);
@@ -86,7 +87,7 @@ public class ClientChannelPendingMessagesQueue
      * Marks the queue as closed
      *
      * @return {@code true} if was open and now is closed
-     */
+    */
     protected boolean markClosed() {
         return open.getAndSet(false);
     }
@@ -129,13 +130,11 @@ public class ClientChannelPendingMessagesQueue
         Objects.requireNonNull(buffer, "No message to enqueue");
 
         synchronized (pendingQueue) {
-
             boolean enqueue = !completedFuture.isDone();
+
             if (enqueue) {
                 Objects.requireNonNull(errHandler, "No pending message error handler provided");
-            }
 
-            if (enqueue) {
                 pendingQueue.add(new SimpleImmutableEntry<>(buffer, errHandler));
             } else {
                 writeMessage(buffer, errHandler);
@@ -177,7 +176,7 @@ public class ClientChannelPendingMessagesQueue
                 err.getMessage());
             } else {
                 log.warn("operationComplete({}) got {}[{}] signal while queue is closed", this,
-                err.getClass().getSimpleName(), err.getMessage());
+                    err.getClass().getSimpleName(), err.getMessage());
             }
 
             clearPendingQueue();
@@ -200,7 +199,7 @@ public class ClientChannelPendingMessagesQueue
                     writeMessage(msgEntry.getKey(), msgEntry.getValue());
                 }
 
-                completedFuture.setValue(Boolean.TRUE);
+                completedFuture.setOpened();
             }
 
             if (debugEnabled) {
@@ -222,7 +221,6 @@ public class ClientChannelPendingMessagesQueue
             if (numEntries > 0) {
                 pendingQueue.clear();
             }
-            pendingQueue.notifyAll(); // in case anyone waiting
         }
 
         return numEntries;
