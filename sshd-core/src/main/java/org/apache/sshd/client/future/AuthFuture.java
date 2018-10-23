@@ -61,7 +61,7 @@ public interface AuthFuture extends SshFuture<AuthFuture>, VerifiableFuture<Auth
 
     /**
      * Notifies that the session has been authenticated.
-     * This method is invoked by SSHD internally.  Please do not
+     * This method is invoked by SSHD internally. Please do not
      * call this method directly.
      *
      * @param authed Authentication success state
@@ -70,8 +70,8 @@ public interface AuthFuture extends SshFuture<AuthFuture>, VerifiableFuture<Auth
 
     /**
      * Sets the exception caught due to connection failure and notifies all
-     * threads waiting for this future.  This method is invoked by SSHD
-     * internally.  Please do not call this method directly.
+     * threads waiting for this future. This method is invoked by SSHD
+     * internally. Please do not call this method directly.
      *
      * @param exception The caught {@link Throwable}
      */

@@ -97,7 +97,7 @@ public class ChannelSession extends AbstractClientChannel {
                 }
 
                 // Interrupt does not really work and the thread will only exit when
-                // the call to read() will return.  So ensure this thread is a daemon
+                // the call to read() will return. So ensure this thread is a daemon
                 // to avoid blocking the whole app
                 pumper = pumperService.submit(this::pumpInputStream);
             }

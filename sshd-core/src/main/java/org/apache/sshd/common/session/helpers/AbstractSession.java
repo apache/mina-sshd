@@ -1608,7 +1608,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     /**
      * Read the remote identification from this buffer.
      * If more data is needed, the buffer will be reset to its original state
-     * and a {@code null} value will be returned.  Else the identification
+     * and a {@code null} value will be returned. Else the identification
      * string will be returned and the data read will be consumed from the buffer.
      *
      * @param buffer the buffer containing the identification string
@@ -2039,7 +2039,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     }
 
     /**
-     * Send a {@code SSH_MSG_UNIMPLEMENTED} packet.  This packet should
+     * Send a {@code SSH_MSG_UNIMPLEMENTED} packet. This packet should
      * contain the sequence id of the unsupported packet: this number
      * is assumed to be the last packet received.
      *

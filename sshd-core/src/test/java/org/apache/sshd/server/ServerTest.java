@@ -127,7 +127,7 @@ public class ServerTest extends BaseTestSupport {
     }
 
     /*
-     * Send bad password.  The server should disconnect after a few attempts
+     * Send bad password. The server should disconnect after a few attempts
      */
     @Test
     public void testFailAuthenticationWithWaitFor() throws Exception {

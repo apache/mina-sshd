@@ -32,7 +32,7 @@ import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
 
 /**
- * A client channel used to communicate with the SSH server.  Client channels can be shells,
+ * A client channel used to communicate with the SSH server. Client channels can be shells,
  * simple commands or subsystems. <B>Note:</B> client channels may be associated with a
  * <U>server</U> session if they are opened by the server - e.g., for agent proxy, port
  * forwarding, etc..
@@ -75,9 +75,9 @@ public interface ClientChannel extends Channel {
 
     /**
      * Set an input stream that will be read by this channel and forwarded to
-     * the remote channel.  Note that using such a stream will create an additional
+     * the remote channel. Note that using such a stream will create an additional
      * thread for pumping the stream which will only be able to end when that stream
-     * is actually closed or some data is read.  It is recommended to use the
+     * is actually closed or some data is read. It is recommended to use the
      * {@link #getInvertedIn()} method instead and write data directly.
      *
      * @param in an InputStream to be polled and forwarded

@@ -26,7 +26,7 @@ import org.apache.sshd.server.command.CommandLifecycle;
 
 /**
  * This shell have inverted streams, such as the one obtained when launching a
- * new {@link Process} from java.  This interface is meant to be used with
+ * new {@link Process} from java. This interface is meant to be used with
  * {@link InvertedShellWrapper} class as an implementation of
  * {@link org.apache.sshd.common.Factory}.
  *

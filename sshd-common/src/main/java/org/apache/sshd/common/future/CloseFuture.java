@@ -32,7 +32,7 @@ public interface CloseFuture extends SshFuture<CloseFuture> {
 
     /**
      * Marks this future as closed and notifies all threads waiting for this
-     * future.  This method is invoked by SSHD internally.  Please do not call
+     * future. This method is invoked by SSHD internally. Please do not call
      * this method directly.
      */
     void setClosed();

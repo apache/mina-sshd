@@ -60,7 +60,7 @@ public class ClientUserAuthServiceOld extends AbstractCloseable implements Servi
     private UserAuth userAuth;
 
     /**
-     * The AuthFuture that is being used by the current auth request.  This encodes the state.
+     * The AuthFuture that is being used by the current auth request. This encodes the state.
      * isSuccess -> authenticated, else if isDone -> server waiting for user auth, else authenticating.
      */
     private volatile AuthFuture authFuture;
@@ -147,7 +147,7 @@ public class ClientUserAuthServiceOld extends AbstractCloseable implements Servi
             log.debug("authentication already in progress");
             throw new IllegalStateException("Authentication already in progress?");
         }
-        // Set up the next round of authentication.  Each round gets a new lock.
+        // Set up the next round of authentication. Each round gets a new lock.
         this.userAuth = userAuth;
         // The new future !isDone() - i.e., in progress blocking out other waits.
         this.authFuture = new DefaultAuthFuture(getClass().getSimpleName(), lock);

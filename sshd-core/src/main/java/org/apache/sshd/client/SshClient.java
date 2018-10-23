@@ -90,7 +90,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  *
  * <P>
  * The default configured client can be created using
- * the {@link #setUpDefaultClient()}.  The next step is to
+ * the {@link #setUpDefaultClient()}. The next step is to
  * start the client using the {@link #start()} method.
  * </P>
  *
@@ -765,7 +765,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     /**
-     * Setup a default client.  The client does not require any additional setup.
+     * Setup a default client. The client does not require any additional setup.
      *
      * @return a newly create {@link SshClient} with default configurations
      */

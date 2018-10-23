@@ -68,7 +68,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  *
  * <P>
  * From this session, channels can be created using the
- * {@link #createChannel(String)} method.  Multiple channels can
+ * {@link #createChannel(String)} method. Multiple channels can
  * be created on a given session concurrently.
  * </P>
  *

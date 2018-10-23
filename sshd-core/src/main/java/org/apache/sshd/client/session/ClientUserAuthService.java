@@ -54,7 +54,7 @@ public class ClientUserAuthService
         implements Service, SessionHolder<ClientSession>, ClientSessionHolder {
 
     /**
-     * The AuthFuture that is being used by the current auth request.  This encodes the state.
+     * The AuthFuture that is being used by the current auth request. This encodes the state.
      * isSuccess -> authenticated, else if isDone -> server waiting for user auth, else authenticating.
      */
     private final AtomicReference<AuthFuture> authFutureHolder = new AtomicReference<>();

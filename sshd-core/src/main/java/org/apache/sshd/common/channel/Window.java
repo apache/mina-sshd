@@ -36,7 +36,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * A Window for a given channel.
  * Windows are used to not overflow the client or server when sending datas.
  * Both clients and servers have a local and remote window and won't send
- * anymore data until the window has been expanded.  When the local window
+ * anymore data until the window has been expanded. When the local window
  * is
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -128,7 +128,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
              * See RFC-4254 section 5.2:
              *
              *      "Implementations MUST correctly handle window sizes
-             *      of up to 2^32 - 1 bytes.  The window MUST NOT be increased above
+             *      of up to 2^32 - 1 bytes. The window MUST NOT be increased above
              *      2^32 - 1 bytes.
              */
             expandedSize = size + window;

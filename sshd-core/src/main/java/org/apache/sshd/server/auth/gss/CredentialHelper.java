@@ -34,7 +34,7 @@ import org.ietf.jgss.GSSException;
 import org.ietf.jgss.GSSManager;
 
 /**
- * Simple helper class which gets GSS credential using a fixed Krb5 login configuration.  May need generalizing to deal
+ * Simple helper class which gets GSS credential using a fixed Krb5 login configuration. May need generalizing to deal
  * with non-Sun JREs.
  */
 public final class CredentialHelper {

@@ -116,7 +116,7 @@ public enum PtyMode {
     ///////////////////////////////// I-flags ////////////////////////////////
 
     /**
-     * The ignore parity flag.  The parameter SHOULD be 0 if this flag
+     * The ignore parity flag. The parameter SHOULD be 0 if this flag
      * is FALSE, and 1 if it is TRUE.
      */
     IGNPAR(30),

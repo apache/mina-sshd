@@ -1011,7 +1011,7 @@ public abstract class AbstractSftpSubsystemHelper
              *
              *      If this is a zero length string, the client does not have the
              *      data, and is requesting the hash for reasons other than comparing
-             *      with a local file.  The server MAY return SSH_FX_OP_UNSUPPORTED in
+             *      with a local file. The server MAY return SSH_FX_OP_UNSUPPORTED in
              *      this case.
              */
             if (NumberUtils.length(quickCheckHash) <= 0) {

@@ -62,7 +62,7 @@ import org.apache.sshd.server.session.SessionFactory;
  * </p>
  *
  * <p>
- * The SshServer has to be configured before being started.  Such configuration can be
+ * The SshServer has to be configured before being started. Such configuration can be
  * done either using a dependency injection mechanism (such as the Spring framework)
  * or programmatically. Basic setup is usually done using the {@link #setUpDefaultServer()}
  * method, which will known ciphers, macs, channels, etc...
@@ -325,7 +325,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     /**
-     * Stop the SSH server.  This method will block until all resources are actually disposed.
+     * Stop the SSH server. This method will block until all resources are actually disposed.
      * @throws IOException if stopping failed somehow
      */
     public void stop() throws IOException {

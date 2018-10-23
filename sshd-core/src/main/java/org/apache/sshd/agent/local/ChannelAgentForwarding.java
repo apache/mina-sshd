@@ -93,7 +93,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     private void closeImmediately0() {
         // We need to close the channel immediately to remove it from the
         // server session's channel table and *not* send a packet to the
-        // client.  A notification was already sent by our caller, or will
+        // client. A notification was already sent by our caller, or will
         // be sent after we return.
         try {
             if ((agent != null) && agent.isOpen()) {

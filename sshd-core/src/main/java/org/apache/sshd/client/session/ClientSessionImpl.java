@@ -68,7 +68,7 @@ public class ClientSessionImpl extends AbstractClientSession {
             log.debug("Client session created: {}", ioSession);
         }
         // Need to set the initial service early as calling code likes to start trying to
-        // manipulate it before the connection has even been established.  For instance, to
+        // manipulate it before the connection has even been established. For instance, to
         // set the authPassword.
         List<ServiceFactory> factories = client.getServiceFactories();
         int numFactories = GenericUtils.size(factories);
@@ -194,7 +194,7 @@ public class ClientSessionImpl extends AbstractClientSession {
         // Assuming that MINA-SSHD only implements "explicit server authentication" it is permissible
         // for the client's service to start sending data before the service-accept has been received.
         // If "implicit authentication" were to ever be supported, then this would need to be
-        // called after service-accept comes back.  See SSH-TRANSPORT.
+        // called after service-accept comes back. See SSH-TRANSPORT.
         currentService.start();
     }
 

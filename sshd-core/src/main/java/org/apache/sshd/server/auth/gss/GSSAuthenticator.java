@@ -29,7 +29,7 @@ import org.ietf.jgss.GSSException;
 import org.ietf.jgss.GSSManager;
 
 /**
- * Class providing basic GSS authentication services.  Can be used as-is, but is often extended to provide environment
+ * Class providing basic GSS authentication services. Can be used as-is, but is often extended to provide environment
  * specific implementations.
  *
  * @author Richard Evans
@@ -58,7 +58,7 @@ public class GSSAuthenticator {
     }
 
     /**
-     * Overridable method to get GSS accept credential suitable for the current environment.  The default
+     * Overridable method to get GSS accept credential suitable for the current environment. The default
      * implementation uses a Kerberos key table.
      *
      * @param mgr The GSS manager
@@ -77,8 +77,8 @@ public class GSSAuthenticator {
     }
 
     /**
-     * Validate the user name passed in the initial SSH_MSG_USERAUTH_REQUEST message.  This is sort of mandated by RFC 4462, but it
-     * may be more useful to wait for the GSS negotiation to complete.  The default implementation here always succeeds.
+     * Validate the user name passed in the initial SSH_MSG_USERAUTH_REQUEST message. This is sort of mandated by RFC 4462, but it
+     * may be more useful to wait for the GSS negotiation to complete. The default implementation here always succeeds.
      *
      * @param session The current session
      * @param user    The user name from the initial request
@@ -101,7 +101,7 @@ public class GSSAuthenticator {
     }
 
     /**
-     * Set the service principal name to be used.  The default is host/hostname.
+     * Set the service principal name to be used. The default is host/hostname.
      *
      * @param servicePrincipalName The principal name
      */
@@ -110,7 +110,7 @@ public class GSSAuthenticator {
     }
 
     /**
-     * Set the location of the Kerberos keytab.  The default is defined by the JRE.
+     * Set the location of the Kerberos keytab. The default is defined by the JRE.
      *
      * @param keytabFile The location of the keytab
      */

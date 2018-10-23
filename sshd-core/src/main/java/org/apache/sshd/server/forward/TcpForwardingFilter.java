@@ -56,7 +56,7 @@ public interface TcpForwardingFilter {
      *
      * <p>
      * This server process will open a new listen socket on the address given
-     * by the client (usually 127.0.0.1 but may be any address).  Any inbound
+     * by the client (usually 127.0.0.1 but may be any address). Any inbound
      * connections to this socket will be tunneled over the session to the
      * client, which the client will then forward the connection to another
      * host on the client's side of the network.
@@ -147,7 +147,7 @@ public interface TcpForwardingFilter {
      *
      * <p>
      * This server process will connect to another server listening on the
-     * address specified by the client.  Usually this is to another port on
+     * address specified by the client. Usually this is to another port on
      * the same host (127.0.0.1) but may be to any other system this server
      * can reach on the server's side of the network.
      * </p>
