@@ -24,6 +24,8 @@ import java.net.ConnectException;
 import java.net.SocketAddress;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
@@ -320,8 +322,14 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
                     @Override
                     @SuppressWarnings("synthetic-access")
                     protected CloseFuture doCloseGracefully() {
-                        executor.submit(() -> connector.close(false));
-                        return null;
+                        Future<CloseFuture> closeFeature = executor.submit(() -> connector.close(false));
+
+                        try {
+                            return closeFeature.get();
+                        } catch (InterruptedException | ExecutionException e) {
+                            log.error("CloseFuture execution completed with error ", e);
+                            return null;
+                        }
                     }
 
                     @Override
