@@ -87,7 +87,7 @@
 
                 <exclude>sshd-core/src/docs/*.txt</exclude>
             </excludes>
-            <lineEnding>unix</lineEnding>
+            <lineEnding>dos</lineEnding>
         </fileSet>
     </fileSets>
 </assembly>

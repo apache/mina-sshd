@@ -17,9 +17,15 @@
 -->
 <assembly>
     <id>bin</id>
+
     <formats>
         <format>zip</format>
     </formats>
+
+    <componentDescriptors>
+        <componentDescriptor>${project.basedir}/src/main/components/modules.xml</componentDescriptor>
+    </componentDescriptors>
+
     <fileSets>
         <fileSet>
             <directory>src/main/distribution</directory>
@@ -44,31 +50,4 @@
             <lineEnding>dos</lineEnding>
         </file>
     </files>
-
-    <dependencySets>
-        <dependencySet>
-            <excludes>
-                <exclude>org.apache.sshd:sshd-osgi</exclude>
-                <exclude>org.apache.sshd:sshd-git</exclude>
-                <exclude>org.apache.sshd:sshd-ldap</exclude>
-                <exclude>org.apache.sshd:sshd-contrib</exclude>
-                <exclude>org.apache.sshd:sshd-putty</exclude>
-                <exclude>org.apache.sshd:sshd-spring-sftp</exclude>
-            </excludes>
-            <outputDirectory>lib</outputDirectory>
-            <useProjectArtifact>false</useProjectArtifact>
-        </dependencySet>
-        <dependencySet>
-            <includes>
-                <include>org.apache.sshd:sshd-osgi</include>
-                <include>org.apache.sshd:sshd-git</include>
-                <include>org.apache.sshd:sshd-ldap</include>
-                <include>org.apache.sshd:sshd-contrib</include>
-                <include>org.apache.sshd:sshd-putty</include>
-                <include>org.apache.sshd:sshd-spring-sftp</include>
-            </includes>
-            <outputDirectory>extras</outputDirectory>
-            <useProjectArtifact>false</useProjectArtifact>
-        </dependencySet>
-    </dependencySets>
 </assembly>
