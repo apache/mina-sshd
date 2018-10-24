@@ -35,10 +35,15 @@
         <fileSet>
             <directory>..</directory>
             <outputDirectory></outputDirectory>
-            <lineEnding>dos</lineEnding>
             <includes>
-                <include>LICENSE*</include>
+                <include>LICENSE.txt</include>
             </includes>
+            <lineEnding>dos</lineEnding>
+        </fileSet>
+        <fileSet>
+            <directory>src/main/legal/licenses</directory>
+            <outputDirectory>licenses</outputDirectory>
+            <lineEnding>dos</lineEnding>
         </fileSet>
     </fileSets>
 

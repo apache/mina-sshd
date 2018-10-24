@@ -120,4 +120,55 @@
             </licenses>
         </project>
     </supplement>
+    <supplement>
+        <project>
+            <groupId>org.eclipse.jgt</groupId>
+            <artifactId>org.eclipse.jgit</artifactId>
+            <name>Java Git</name>
+            <organization>
+                <name>Eclipse foundation</name>
+                <url>https://github.com/eclipse/jgit</url>
+            </organization>
+            <licenses>
+                <license>
+                    <name>Eclipse Distribution License v1.0</name>
+                    <url>https://github.com/eclipse/jgit/blob/master/LICENSE</url>
+                </license>
+            </licenses>
+        </project>
+    </supplement>
+    <supplement>
+        <project>
+            <groupId>org.springframework.integration</groupId>
+            <artifactId>spring-integration-bom</artifactId>
+            <name>Spring integration</name>
+            <organization>
+                <name>Spring</name>
+                <url>https://spring.io/</url>
+            </organization>
+            <licenses>
+                <license>
+                    <name>The Apache Software License, Version 2.0</name>
+                    <url>https://github.com/spring-projects/spring-integration/blob/master/src/dist/license.txt</url>
+                </license>
+            </licenses>
+        </project>
+    </supplement>
+    <supplement>
+        <project>
+            <groupId>tomcat</groupId>
+            <artifactId>tomcat-apr</artifactId>
+            <name>Apache Tomcat Native Library</name>
+            <organization>
+                <name>Apache Tomcat</name>
+                <url>http://tomcat.apache.org/native-doc/</url>
+            </organization>
+            <licenses>
+                <license>
+                    <name>The Apache Software License, Version 2.0</name>
+                    <url>http://tomcat.apache.org/legal.html</url>
+                </license>
+            </licenses>
+        </project>
+    </supplement>
 </supplementalDataModels>

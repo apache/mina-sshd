@@ -621,6 +621,7 @@
                             <exclude>.metadata/**</exclude>
                             <exclude>.recommenders/**</exclude>
                             <exclude>RemoteSystemsTempFiles/**</exclude>
+                            <exclude>**/licenses/*.txt</exclude>
                             <exclude>.project</exclude>
                             <exclude>.classpath</exclude>
                             <exclude>.springBeans</exclude>
@@ -1075,7 +1076,7 @@
                                 <resourceBundle>org.apache:apache-jar-resource-bundle:1.4</resourceBundle>
                             </resourceBundles>
                             <supplementalModels>
-                                <supplementalModel>${projectRoot}/src/legal/notices.xml</supplementalModel>
+                                <supplementalModel>${workspace.root.dir}/assembly/src/main/legal/notices.xml</supplementalModel>
                             </supplementalModels>
                             <properties>
                                 <projectName>Apache MINA SSHD</projectName>

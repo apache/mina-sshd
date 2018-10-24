@@ -42,10 +42,15 @@
         <fileSet>
             <directory>..</directory>
             <outputDirectory></outputDirectory>
-            <lineEnding>unix</lineEnding>
             <includes>
-                <include>LICENSE*</include>
+                <include>LICENSE.txt</include>
             </includes>
+            <lineEnding>unix</lineEnding>
+        </fileSet>
+        <fileSet>
+            <directory>src/main/legal/licenses</directory>
+            <outputDirectory>licenses</outputDirectory>
+            <lineEnding>unix</lineEnding>
         </fileSet>
     </fileSets>
 
