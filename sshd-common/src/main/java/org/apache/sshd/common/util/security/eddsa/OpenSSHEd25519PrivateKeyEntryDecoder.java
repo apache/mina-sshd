@@ -56,7 +56,9 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
 
     public OpenSSHEd25519PrivateKeyEntryDecoder() {
         super(EdDSAPublicKey.class, EdDSAPrivateKey.class,
-            Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_ED25519)));
+            Collections.unmodifiableList(
+                Collections.singletonList(
+                    KeyPairProvider.SSH_ED25519)));
     }
 
     @Override

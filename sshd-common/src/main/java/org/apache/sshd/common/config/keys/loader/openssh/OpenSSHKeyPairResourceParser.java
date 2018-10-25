@@ -64,21 +64,21 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
 
     public static final String BEGIN_MARKER = "BEGIN OPENSSH PRIVATE KEY";
     public static final List<String> BEGINNERS =
-            Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
+        Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
 
     public static final String END_MARKER = "END OPENSSH PRIVATE KEY";
     public static final List<String> ENDERS =
-            Collections.unmodifiableList(Collections.singletonList(END_MARKER));
+        Collections.unmodifiableList(Collections.singletonList(END_MARKER));
 
     public static final String AUTH_MAGIC = "openssh-key-v1";
     public static final OpenSSHKeyPairResourceParser INSTANCE = new OpenSSHKeyPairResourceParser();
 
     private static final byte[] AUTH_MAGIC_BYTES = AUTH_MAGIC.getBytes(StandardCharsets.UTF_8);
     private static final Map<String, PrivateKeyEntryDecoder<?, ?>> BY_KEY_TYPE_DECODERS_MAP =
-            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private static final Map<Class<?>, PrivateKeyEntryDecoder<?, ?>> BY_KEY_CLASS_DECODERS_MAP =
-            new HashMap<>();
+        new HashMap<>();
 
     static {
         registerPrivateKeyEntryDecoder(OpenSSHRSAPrivateKeyDecoder.INSTANCE);

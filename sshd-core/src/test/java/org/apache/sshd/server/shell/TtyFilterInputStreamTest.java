@@ -58,10 +58,9 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @Category({ NoIoTestCase.class })
 public class TtyFilterInputStreamTest extends BaseTestSupport {
     private static final List<PtyMode> MODES =
-            Collections.unmodifiableList(
-                    Stream.concat(Stream.of(PtyMode.ECHO),
-                                  TtyFilterInputStream.INPUT_OPTIONS.stream())
-                    .collect(Collectors.toList()));
+        Collections.unmodifiableList(
+            Stream.concat(Stream.of(PtyMode.ECHO), TtyFilterInputStream.INPUT_OPTIONS.stream())
+                .collect(Collectors.toList()));
 
     private final PtyMode mode;
 

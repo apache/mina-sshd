@@ -40,6 +40,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.scp.ScpException;
 import org.apache.sshd.common.scp.ScpHelper;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -50,14 +51,15 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  */
 public abstract class AbstractScpClient extends AbstractLoggingBean implements ScpClient {
     public static final Set<ClientChannelEvent> COMMAND_WAIT_EVENTS =
-            Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.EXIT_STATUS, ClientChannelEvent.CLOSED));
+        Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.EXIT_STATUS, ClientChannelEvent.CLOSED));
 
     protected AbstractScpClient() {
         super();
     }
 
     public boolean isOpen() {
-        return getSession().isOpen();
+        Session session = getSession();
+        return session.isOpen();
     }
 
     @Override
@@ -136,7 +138,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
             } catch (UnsupportedOperationException e) {
                 if (log.isDebugEnabled()) {
                     log.debug("download({}) {} => {} - failed ({}) to close file system={}: {}",
-                              session, remote, local, e.getClass().getSimpleName(), fs, e.getMessage());
+                          session, remote, local, e.getClass().getSimpleName(), fs, e.getMessage());
                 }
             }
         }
@@ -146,25 +148,27 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
 
     @Override
     public void upload(String[] local, String remote, Collection<Option> options) throws IOException {
-        final Collection<String> paths = Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", (Object) local));
+        Collection<String> paths = Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", (Object) local));
         runUpload(remote, options, paths, (helper, local1, sendOptions) ->
-                helper.send(local1,
-                            sendOptions.contains(Option.Recursive),
-                            sendOptions.contains(Option.PreserveAttributes),
-                            ScpHelper.DEFAULT_SEND_BUFFER_SIZE));
+            helper.send(local1,
+                sendOptions.contains(Option.Recursive),
+                sendOptions.contains(Option.PreserveAttributes),
+                ScpHelper.DEFAULT_SEND_BUFFER_SIZE));
     }
 
     @Override
     public void upload(Path[] local, String remote, Collection<Option> options) throws IOException {
-        final Collection<Path> paths = Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", (Object) local));
+        Collection<Path> paths = Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", (Object) local));
         runUpload(remote, options, paths, (helper, local1, sendOptions) ->
-                helper.sendPaths(local1,
-                                 sendOptions.contains(Option.Recursive),
-                                 sendOptions.contains(Option.PreserveAttributes),
-                                 ScpHelper.DEFAULT_SEND_BUFFER_SIZE));
+            helper.sendPaths(local1,
+                sendOptions.contains(Option.Recursive),
+                sendOptions.contains(Option.PreserveAttributes),
+                ScpHelper.DEFAULT_SEND_BUFFER_SIZE));
     }
 
-    protected abstract <T> void runUpload(String remote, Collection<Option> options, Collection<T> local, AbstractScpClient.ScpOperationExecutor<T> executor) throws IOException;
+    protected abstract <T> void runUpload(
+        String remote, Collection<Option> options, Collection<T> local, AbstractScpClient.ScpOperationExecutor<T> executor)
+            throws IOException;
 
     /**
      * Invoked by the various <code>upload/download</code> methods after having successfully
@@ -214,7 +218,8 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
      */
     protected void handleCommandExitStatus(String cmd, Integer exitStatus) throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("handleCommandExitStatus({}) cmd='{}', exit-status={}", getClientSession(), cmd, ScpHelper.getExitStatusName(exitStatus));
+            log.debug("handleCommandExitStatus({}) cmd='{}', exit-status={}",
+                getClientSession(), cmd, ScpHelper.getExitStatusName(exitStatus));
         }
 
         if (exitStatus == null) {

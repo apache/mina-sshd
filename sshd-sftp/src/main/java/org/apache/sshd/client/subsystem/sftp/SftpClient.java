@@ -81,12 +81,12 @@ public interface SftpClient extends SubsystemClient {
          * The {@link Set} of {@link OpenOption}-s supported by {@link #fromOpenOptions(Collection)}
          */
         public static final Set<OpenOption> SUPPORTED_OPTIONS =
-                Collections.unmodifiableSet(
-                        EnumSet.of(
-                                StandardOpenOption.READ, StandardOpenOption.APPEND,
-                                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
-                                StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW,
-                                StandardOpenOption.SPARSE));
+            Collections.unmodifiableSet(
+                EnumSet.of(
+                    StandardOpenOption.READ, StandardOpenOption.APPEND,
+                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
+                    StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW,
+                    StandardOpenOption.SPARSE));
 
         /**
          * Converts {@link StandardOpenOption}-s into {@link OpenMode}-s
@@ -566,7 +566,7 @@ public interface SftpClient extends SubsystemClient {
      * Default modes for opening a channel if no specific modes specified
      */
     Set<OpenMode> DEFAULT_CHANNEL_MODES =
-            Collections.unmodifiableSet(EnumSet.of(OpenMode.Read, OpenMode.Write));
+        Collections.unmodifiableSet(EnumSet.of(OpenMode.Read, OpenMode.Write));
 
     /**
      * @return The negotiated SFTP protocol version

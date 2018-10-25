@@ -40,7 +40,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  */
 public class TtyFilterInputStream extends FilterInputStream {
     public static final Set<PtyMode> INPUT_OPTIONS =
-            Collections.unmodifiableSet(EnumSet.of(PtyMode.ONLCR, PtyMode.OCRNL, PtyMode.ONLRET, PtyMode.ONOCR));
+        Collections.unmodifiableSet(EnumSet.of(PtyMode.ONLCR, PtyMode.OCRNL, PtyMode.ONLRET, PtyMode.ONOCR));
 
     private final Set<PtyMode> ttyOptions;
     private Buffer buffer = new ByteArrayBuffer(Integer.SIZE, false);

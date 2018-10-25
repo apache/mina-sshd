@@ -74,10 +74,10 @@ public enum BuiltinCiphers implements CipherFactory {
     tripledescbc(Constants.TRIPLE_DES_CBC, 8, 24, "DESede", "DESede/CBC/NoPadding");
 
     public static final Set<BuiltinCiphers> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(BuiltinCiphers.class));
+        Collections.unmodifiableSet(EnumSet.allOf(BuiltinCiphers.class));
 
     private static final Map<String, CipherFactory> EXTENSIONS =
-            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private final String factoryName;
     private final int ivsize;

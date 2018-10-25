@@ -49,11 +49,11 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
     // Not exactly according to standard but good enough
     public static final String BEGIN_MARKER = "BEGIN PRIVATE KEY";
     public static final List<String> BEGINNERS =
-            Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
+        Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
 
     public static final String END_MARKER = "END PRIVATE KEY";
     public static final List<String> ENDERS =
-            Collections.unmodifiableList(Collections.singletonList(END_MARKER));
+        Collections.unmodifiableList(Collections.singletonList(END_MARKER));
 
     public static final String PKCS8_FORMAT = "PKCS#8";
 

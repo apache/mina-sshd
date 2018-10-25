@@ -119,10 +119,11 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     public static final String VERSION_PARAM = "version";
 
     public static final Set<Class<? extends FileAttributeView>> UNIVERSAL_SUPPORTED_VIEWS =
-            Collections.unmodifiableSet(GenericUtils.asSet(
-                    PosixFileAttributeView.class,
-                    FileOwnerAttributeView.class,
-                    BasicFileAttributeView.class
+        Collections.unmodifiableSet(
+            GenericUtils.asSet(
+                PosixFileAttributeView.class,
+                FileOwnerAttributeView.class,
+                BasicFileAttributeView.class
             ));
 
     protected final Logger log;
@@ -208,8 +209,8 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             ClientSession session = null;
             try {
                 session = client.connect(username, host, port)
-                        .verify(maxConnectTime)
-                        .getSession();
+                    .verify(maxConnectTime)
+                    .getSession();
                 if (GenericUtils.size(params) > 0) {
                     // Cannot use forEach because the session is not effectively final
                     for (Map.Entry<String, ?> pe : params.entrySet()) {

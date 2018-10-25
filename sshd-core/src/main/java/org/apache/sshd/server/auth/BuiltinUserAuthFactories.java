@@ -51,7 +51,7 @@ public enum BuiltinUserAuthFactories implements NamedFactory<UserAuthFactory> {
     GSS(UserAuthGSSFactory.INSTANCE);
 
     public static final Set<BuiltinUserAuthFactories> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(BuiltinUserAuthFactories.class));
+        Collections.unmodifiableSet(EnumSet.allOf(BuiltinUserAuthFactories.class));
 
     private final UserAuthFactory factory;
 

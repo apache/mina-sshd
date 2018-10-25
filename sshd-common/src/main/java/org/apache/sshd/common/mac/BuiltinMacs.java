@@ -53,10 +53,10 @@ public enum BuiltinMacs implements MacFactory {
     hmacsha512(Constants.HMAC_SHA2_512, "HmacSHA512", 64, 64);
 
     public static final Set<BuiltinMacs> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(BuiltinMacs.class));
+        Collections.unmodifiableSet(EnumSet.allOf(BuiltinMacs.class));
 
     private static final Map<String, MacFactory> EXTENSIONS =
-            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private final String factoryName;
     private final String algorithm;

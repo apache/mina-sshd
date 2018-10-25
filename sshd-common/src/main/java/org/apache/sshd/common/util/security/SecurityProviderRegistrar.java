@@ -80,11 +80,11 @@ public interface SecurityProviderRegistrar extends SecurityProviderChoice, Optio
      * All the entities that are used in calls to {@link #isSecurityEntitySupported(Class, String)}
      */
     List<Class<?>> SECURITY_ENTITIES =
-            Collections.unmodifiableList(
-                    Arrays.asList(
-                            Cipher.class, KeyFactory.class, MessageDigest.class,
-                            KeyPairGenerator.class, KeyAgreement.class, Mac.class,
-                            Signature.class, CertificateFactory.class));
+        Collections.unmodifiableList(
+            Arrays.asList(
+                Cipher.class, KeyFactory.class, MessageDigest.class,
+                KeyPairGenerator.class, KeyAgreement.class, Mac.class,
+                Signature.class, CertificateFactory.class));
 
     default String getBasePropertyName() {
         return CONFIG_PROP_BASE + "." + getName();

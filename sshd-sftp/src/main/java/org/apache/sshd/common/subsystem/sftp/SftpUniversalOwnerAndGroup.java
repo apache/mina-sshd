@@ -43,7 +43,7 @@ public enum SftpUniversalOwnerAndGroup implements NamedResource {
     Service;        // Access from a system service.
 
     public static final Set<SftpUniversalOwnerAndGroup> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(SftpUniversalOwnerAndGroup.class));
+        Collections.unmodifiableSet(EnumSet.allOf(SftpUniversalOwnerAndGroup.class));
 
     private final String name;
 

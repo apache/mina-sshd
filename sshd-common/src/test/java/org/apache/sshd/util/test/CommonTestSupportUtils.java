@@ -105,7 +105,9 @@ public final class CommonTestSupportUtils {
 
     public static final List<String> TARGET_FOLDER_NAMES =    // NOTE: order is important
         Collections.unmodifiableList(
-            Arrays.asList("target" /* Maven */, "build" /* Gradle */));
+            Arrays.asList(
+                "target" /* Maven */,
+                "build" /* Gradle */));
 
     public static final String DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM = KeyUtils.RSA_ALGORITHM;
     // uses a cached instance to avoid re-creating the keys as it is a time-consuming effort

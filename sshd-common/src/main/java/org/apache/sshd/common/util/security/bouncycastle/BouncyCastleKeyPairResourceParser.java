@@ -55,18 +55,18 @@ import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
  */
 public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourceParser {
     public static final List<String> BEGINNERS =
-            Collections.unmodifiableList(
-                    Arrays.asList(
-                            "BEGIN RSA PRIVATE KEY",
-                            "BEGIN DSA PRIVATE KEY",
-                            "BEGIN EC PRIVATE KEY"));
+        Collections.unmodifiableList(
+            Arrays.asList(
+                "BEGIN RSA PRIVATE KEY",
+                "BEGIN DSA PRIVATE KEY",
+                "BEGIN EC PRIVATE KEY"));
 
     public static final List<String> ENDERS =
-            Collections.unmodifiableList(
-                    Arrays.asList(
-                            "END RSA PRIVATE KEY",
-                            "END DSA PRIVATE KEY",
-                            "END EC PRIVATE KEY"));
+        Collections.unmodifiableList(
+            Arrays.asList(
+                "END RSA PRIVATE KEY",
+                "END DSA PRIVATE KEY",
+                "END EC PRIVATE KEY"));
 
     public static final BouncyCastleKeyPairResourceParser INSTANCE = new BouncyCastleKeyPairResourceParser();
 

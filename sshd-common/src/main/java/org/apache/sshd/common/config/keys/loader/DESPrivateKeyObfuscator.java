@@ -28,7 +28,9 @@ import java.util.List;
 public class DESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
     public static final int DEFAULT_KEY_LENGTH = 24 /* hardwired size for 3DES */;
     public static final List<Integer> AVAILABLE_KEY_LENGTHS =
-            Collections.unmodifiableList(Collections.singletonList(Integer.valueOf(DEFAULT_KEY_LENGTH)));
+        Collections.unmodifiableList(
+            Collections.singletonList(
+                Integer.valueOf(DEFAULT_KEY_LENGTH)));
     public static final DESPrivateKeyObfuscator INSTANCE = new DESPrivateKeyObfuscator();
 
     public DESPrivateKeyObfuscator() {

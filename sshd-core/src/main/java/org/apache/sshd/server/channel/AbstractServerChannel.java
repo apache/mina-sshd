@@ -51,15 +51,11 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
         super("", false, Collections.emptyList(), executor);
     }
 
-    protected AbstractServerChannel(String discriminator, Collection<? extends RequestHandler<Channel>> handlers, CloseableExecutorService executor) {
+    protected AbstractServerChannel(String discriminator,
+            Collection<? extends RequestHandler<Channel>> handlers,
+            CloseableExecutorService executor) {
         super(discriminator, false, handlers, executor);
     }
-
-// TODO: investigate how to fix the forwarding channel failures when enabled
-//    @Override
-//    public ServerSession getSession() {
-//        return (ServerSession) super.getSession();
-//    }
 
     @Override
     public ServerSession getServerSession() {

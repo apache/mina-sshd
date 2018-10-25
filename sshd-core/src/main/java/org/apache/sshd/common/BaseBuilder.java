@@ -69,20 +69,21 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
      * as specified by <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">ssh_config(5)</A>
      */
     public static final List<BuiltinCiphers> DEFAULT_CIPHERS_PREFERENCE =
-        Collections.unmodifiableList(Arrays.asList(
-            BuiltinCiphers.aes128ctr,
-            BuiltinCiphers.aes192ctr,
-            BuiltinCiphers.aes256ctr,
-            BuiltinCiphers.arcfour256,
-            BuiltinCiphers.arcfour128,
-            BuiltinCiphers.aes128cbc,
-            BuiltinCiphers.tripledescbc,
-            BuiltinCiphers.blowfishcbc,
-            // TODO add support for cast128-cbc cipher
-            BuiltinCiphers.aes192cbc,
-            BuiltinCiphers.aes256cbc
-            // TODO add support for arcfour cipher
-        ));
+        Collections.unmodifiableList(
+            Arrays.asList(
+                BuiltinCiphers.aes128ctr,
+                BuiltinCiphers.aes192ctr,
+                BuiltinCiphers.aes256ctr,
+                BuiltinCiphers.arcfour256,
+                BuiltinCiphers.arcfour128,
+                BuiltinCiphers.aes128cbc,
+                BuiltinCiphers.tripledescbc,
+                BuiltinCiphers.blowfishcbc,
+                // TODO add support for cast128-cbc cipher
+                BuiltinCiphers.aes192cbc,
+                BuiltinCiphers.aes256cbc
+                // TODO add support for arcfour cipher
+            ));
 
     /**
      * The default {@link BuiltinDHFactories} setup in order of preference
@@ -90,22 +91,23 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
      * ssh_config(5)</A>
      */
     public static final List<BuiltinDHFactories> DEFAULT_KEX_PREFERENCE =
-        Collections.unmodifiableList(Arrays.asList(
-            BuiltinDHFactories.ecdhp521,
-            BuiltinDHFactories.ecdhp384,
-            BuiltinDHFactories.ecdhp256,
+        Collections.unmodifiableList(
+            Arrays.asList(
+                BuiltinDHFactories.ecdhp521,
+                BuiltinDHFactories.ecdhp384,
+                BuiltinDHFactories.ecdhp256,
 
-            BuiltinDHFactories.dhgex256,
-            BuiltinDHFactories.dhgex,
+                BuiltinDHFactories.dhgex256,
+                BuiltinDHFactories.dhgex,
 
-            BuiltinDHFactories.dhg18_512,
-            BuiltinDHFactories.dhg17_512,
-            BuiltinDHFactories.dhg16_512,
-            BuiltinDHFactories.dhg15_512,
-            BuiltinDHFactories.dhg14_256,
-            BuiltinDHFactories.dhg14,
-            BuiltinDHFactories.dhg1
-        ));
+                BuiltinDHFactories.dhg18_512,
+                BuiltinDHFactories.dhg17_512,
+                BuiltinDHFactories.dhg16_512,
+                BuiltinDHFactories.dhg15_512,
+                BuiltinDHFactories.dhg14_256,
+                BuiltinDHFactories.dhg14,
+                BuiltinDHFactories.dhg1
+            ));
 
     /**
      * The default {@link BuiltinMacs} setup in order of preference
@@ -113,14 +115,15 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
      * ssh_config(5)</A>
      */
     public static final List<BuiltinMacs> DEFAULT_MAC_PREFERENCE =
-        Collections.unmodifiableList(Arrays.asList(
-            BuiltinMacs.hmacmd5,
-            BuiltinMacs.hmacsha1,
-            BuiltinMacs.hmacsha256,
-            BuiltinMacs.hmacsha512,
-            BuiltinMacs.hmacsha196,
-            BuiltinMacs.hmacmd596
-        ));
+        Collections.unmodifiableList(
+            Arrays.asList(
+                BuiltinMacs.hmacmd5,
+                BuiltinMacs.hmacsha1,
+                BuiltinMacs.hmacsha256,
+                BuiltinMacs.hmacsha512,
+                BuiltinMacs.hmacsha196,
+                BuiltinMacs.hmacmd596
+            ));
 
     /**
      * Preferred {@link BuiltinSignatures} according to
@@ -128,14 +131,15 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
      * {@code HostKeyAlgorithms} recommendation
      */
     public static final List<BuiltinSignatures> DEFAULT_SIGNATURE_PREFERENCE =
-        Collections.unmodifiableList(Arrays.asList(
-            BuiltinSignatures.nistp256,
-            BuiltinSignatures.nistp384,
-            BuiltinSignatures.nistp521,
-            BuiltinSignatures.ed25519,
-            BuiltinSignatures.rsa,
-            BuiltinSignatures.dsa
-        ));
+        Collections.unmodifiableList(
+            Arrays.asList(
+                BuiltinSignatures.nistp256,
+                BuiltinSignatures.nistp384,
+                BuiltinSignatures.nistp521,
+                BuiltinSignatures.ed25519,
+                BuiltinSignatures.rsa,
+                BuiltinSignatures.dsa
+            ));
 
     public static final UnknownChannelReferenceHandler DEFAULT_UNKNOWN_CHANNEL_REFERENCE_HANDLER =
             DefaultUnknownChannelReferenceHandler.INSTANCE;

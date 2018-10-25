@@ -54,7 +54,9 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
      */
     public static final Set<PosixFilePermission> STRICTLY_PROHIBITED_FILE_PERMISSION =
         Collections.unmodifiableSet(
-            EnumSet.of(PosixFilePermission.GROUP_WRITE, PosixFilePermission.OTHERS_WRITE));
+            EnumSet.of(
+                PosixFilePermission.GROUP_WRITE,
+                PosixFilePermission.OTHERS_WRITE));
 
     protected final LinkOption[] options;
 

@@ -34,9 +34,10 @@ public final class UnixDateFormat {
      * A {@link List} of <U>short</U> months names where Jan=0, Feb=1, etc.
      */
     public static final List<String> MONTHS =
-        Collections.unmodifiableList(Arrays.asList(
-            "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-        ));
+        Collections.unmodifiableList(
+            Arrays.asList(
+                "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+            ));
 
     /**
      * Six months duration in msec.

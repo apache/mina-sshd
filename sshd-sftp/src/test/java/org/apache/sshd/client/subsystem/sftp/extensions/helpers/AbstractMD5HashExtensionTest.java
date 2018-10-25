@@ -64,13 +64,13 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport {
     private static final List<Integer> DATA_SIZES =
-            Collections.unmodifiableList(
-                    Arrays.asList(
-                            (int) Byte.MAX_VALUE,
-                            SftpConstants.MD5_QUICK_HASH_SIZE,
-                            IoUtils.DEFAULT_COPY_SIZE,
-                            Byte.SIZE * IoUtils.DEFAULT_COPY_SIZE
-                    ));
+        Collections.unmodifiableList(
+            Arrays.asList(
+                (int) Byte.MAX_VALUE,
+                SftpConstants.MD5_QUICK_HASH_SIZE,
+                IoUtils.DEFAULT_COPY_SIZE,
+                Byte.SIZE * IoUtils.DEFAULT_COPY_SIZE
+            ));
 
     private final int size;
 

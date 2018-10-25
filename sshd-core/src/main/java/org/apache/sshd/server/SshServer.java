@@ -87,10 +87,10 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     public static final Factory<SshServer> DEFAULT_SSH_SERVER_FACTORY = SshServer::new;
 
     public static final List<ServiceFactory> DEFAULT_SERVICE_FACTORIES =
-        Collections.unmodifiableList(Arrays.asList(
+        Collections.unmodifiableList(
+            Arrays.asList(
                 ServerUserAuthServiceFactory.INSTANCE,
-                ServerConnectionServiceFactory.INSTANCE
-        ));
+                ServerConnectionServiceFactory.INSTANCE));
 
 
     protected IoAcceptor acceptor;

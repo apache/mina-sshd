@@ -106,25 +106,21 @@ public enum ECCurves implements NamedResource, OptionalFeature {
      * A {@link Set} of all the known curves
      */
     public static final Set<ECCurves> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(ECCurves.class));
+        Collections.unmodifiableSet(EnumSet.allOf(ECCurves.class));
 
     /**
      * A {@link Set} of all the known curves names
      */
     public static final NavigableSet<String> NAMES =
-            Collections.unmodifiableNavigableSet(GenericUtils.mapSort(
-                    VALUES,
-                    ECCurves::getName,
-                    String.CASE_INSENSITIVE_ORDER));
+        Collections.unmodifiableNavigableSet(
+            GenericUtils.mapSort(VALUES, ECCurves::getName, String.CASE_INSENSITIVE_ORDER));
 
     /**
      * A {@link Set} of all the known curves key types
      */
     public static final NavigableSet<String> KEY_TYPES =
-            Collections.unmodifiableNavigableSet(GenericUtils.mapSort(
-                    VALUES,
-                    ECCurves::getKeyType,
-                    String.CASE_INSENSITIVE_ORDER));
+        Collections.unmodifiableNavigableSet(
+            GenericUtils.mapSort(VALUES, ECCurves::getKeyType, String.CASE_INSENSITIVE_ORDER));
 
     public static final Comparator<ECCurves> BY_KEY_SIZE = (o1, o2) -> {
         int k1 = (o1 == null) ? Integer.MAX_VALUE : o1.getKeySize();
@@ -133,9 +129,9 @@ public enum ECCurves implements NamedResource, OptionalFeature {
     };
 
     public static final List<ECCurves> SORTED_KEY_SIZE =
-            Collections.unmodifiableList(VALUES.stream()
-                    .sorted(BY_KEY_SIZE)
-                    .collect(Collectors.toList()));
+        Collections.unmodifiableList(VALUES.stream()
+            .sorted(BY_KEY_SIZE)
+            .collect(Collectors.toList()));
 
     private final String name;
     private final String keyType;
@@ -503,7 +499,7 @@ public enum ECCurves implements NamedResource, OptionalFeature {
         };
 
         public static final Set<ECPointCompression> VALUES =
-                Collections.unmodifiableSet(EnumSet.allOf(ECPointCompression.class));
+            Collections.unmodifiableSet(EnumSet.allOf(ECPointCompression.class));
 
         private final byte indicatorValue;
 

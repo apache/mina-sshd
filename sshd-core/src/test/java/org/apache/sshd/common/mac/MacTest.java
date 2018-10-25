@@ -64,8 +64,8 @@ import ch.ethz.ssh2.ConnectionInfo;
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class MacTest extends BaseTestSupport {
     private static final Collection<String> GANYMEDE_MACS =
-            Collections.unmodifiableSet(
-                    GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, Connection.getAvailableMACs()));
+        Collections.unmodifiableSet(
+            GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, Connection.getAvailableMACs()));
 
     private static SshServer sshd;
     private static int port;

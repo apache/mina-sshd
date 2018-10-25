@@ -123,10 +123,10 @@ public class ChannelSession extends AbstractServerChannel {
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .sequential(new CommandCloseable(), super.getInnerCloseable())
-                .parallel(asyncOut, asyncErr)
-                .run(toString(), this::closeImmediately0)
-                .build();
+            .sequential(new CommandCloseable(), super.getInnerCloseable())
+            .parallel(asyncOut, asyncErr)
+            .run(toString(), this::closeImmediately0)
+            .build();
     }
 
     public class CommandCloseable extends IoBaseCloseable {
@@ -160,14 +160,15 @@ public class ChannelSession extends AbstractServerChannel {
                 commandExitFuture.setClosed();
             } else if (!commandExitFuture.isClosed()) {
                 IOException e = IoUtils.closeQuietly(receiver);
+                boolean debugEnabled = log.isDebugEnabled();
                 if (e != null) {
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("close({})[immediately={}] failed ({}) to close receiver: {}",
-                                  this, immediately, e.getClass().getSimpleName(), e.getMessage());
+                              this, immediately, e.getClass().getSimpleName(), e.getMessage());
                     }
                 }
 
-                final TimerTask task = new TimerTask() {
+                TimerTask task = new TimerTask() {
                     @Override
                     public void run() {
                         commandExitFuture.setClosed();
@@ -175,9 +176,9 @@ public class ChannelSession extends AbstractServerChannel {
                 };
 
                 ChannelSession channel = ChannelSession.this;
-                long timeout = PropertyResolverUtils.getLongProperty(
-                        channel, ServerFactoryManager.COMMAND_EXIT_TIMEOUT, ServerFactoryManager.DEFAULT_COMMAND_EXIT_TIMEOUT);
-                if (log.isDebugEnabled()) {
+                long timeout = PropertyResolverUtils.getLongProperty(channel,
+                    ServerFactoryManager.COMMAND_EXIT_TIMEOUT, ServerFactoryManager.DEFAULT_COMMAND_EXIT_TIMEOUT);
+                if (debugEnabled) {
                     log.debug("Wait {} ms for shell to exit cleanly on {}", timeout, channel);
                 }
 
@@ -198,7 +199,7 @@ public class ChannelSession extends AbstractServerChannel {
                 commandInstance.destroy();
             } catch (Throwable e) {
                 log.warn("doCloseImmediately({}) failed ({}) to destroy command: {}",
-                         this, e.getClass().getSimpleName(), e.getMessage());
+                     this, e.getClass().getSimpleName(), e.getMessage());
                 if (debugEnabled) {
                     log.debug("doCloseImmediately(" + this + ") command destruction failure details", e);
                 }
@@ -211,7 +212,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (e != null) {
             if (debugEnabled) {
                 log.debug("doCloseImmediately({}) failed ({}) to close resources: {}",
-                          this, e.getClass().getSimpleName(), e.getMessage());
+                      this, e.getClass().getSimpleName(), e.getMessage());
             }
 
             if (log.isTraceEnabled()) {
@@ -233,7 +234,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (e != null) {
             if (log.isDebugEnabled()) {
                 log.debug("handleEof({}) failed ({}) to close receiver: {}",
-                          this, e.getClass().getSimpleName(), e.getMessage());
+                      this, e.getClass().getSimpleName(), e.getMessage());
             }
 
             if (log.isTraceEnabled()) {
@@ -293,7 +294,7 @@ public class ChannelSession extends AbstractServerChannel {
                 } else {
                     if (log.isDebugEnabled()) {
                         log.debug("handleInternalRequest({})[want-reply={}] type already set for request={}: {}",
-                                  this, wantReply, requestType, this.type);
+                              this, wantReply, requestType, this.type);
                     }
                     return RequestHandler.Result.ReplyFailure;
                 }
@@ -307,7 +308,7 @@ public class ChannelSession extends AbstractServerChannel {
                 } else {
                     if (log.isDebugEnabled()) {
                         log.debug("handleInternalRequest({})[want-reply={}] type already set for request={}: {}",
-                                  this, wantReply, requestType, this.type);
+                              this, wantReply, requestType, this.type);
                     }
                     return RequestHandler.Result.ReplyFailure;
                 }
@@ -321,7 +322,7 @@ public class ChannelSession extends AbstractServerChannel {
                 } else {
                     if (log.isDebugEnabled()) {
                         log.debug("handleInternalRequest({})[want-reply={}] type already set for request={}: {}",
-                                  this, wantReply, requestType, this.type);
+                              this, wantReply, requestType, this.type);
                     }
                     return RequestHandler.Result.ReplyFailure;
                 }
@@ -417,7 +418,7 @@ public class ChannelSession extends AbstractServerChannel {
 
         if (log.isDebugEnabled()) {
             log.debug("handlePtyReq({}): term={}, size=({} - {}), pixels=({}, {}), modes=[{}]",
-                      this, term, tColumns, tRows, tWidth, tHeight, ptyModes);
+                  this, term, tColumns, tRows, tWidth, tHeight, ptyModes);
         }
 
         addEnvVariable(Environment.ENV_TERM, term);
@@ -432,8 +433,7 @@ public class ChannelSession extends AbstractServerChannel {
         int tWidth = buffer.getInt();
         int tHeight = buffer.getInt();
         if (log.isDebugEnabled()) {
-            log.debug("handleWindowChange({}): ({} - {}), ({}, {})",
-                      this, tColumns, tRows, tWidth, tHeight);
+            log.debug("handleWindowChange({}): ({} - {}), ({}, {})", this, tColumns, tRows, tWidth, tHeight);
         }
 
         StandardEnvironment e = getEnvironment();
@@ -492,7 +492,7 @@ public class ChannelSession extends AbstractServerChannel {
             commandInstance = factory.create();
         } catch (RuntimeException | Error e) {
             log.warn("handleShell({}) Failed ({}) to create shell: {}",
-                     this, e.getClass().getSimpleName(), e.getMessage());
+                 this, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("handleShell(" + this + ") shell creation failure details", e);
             }
@@ -532,7 +532,7 @@ public class ChannelSession extends AbstractServerChannel {
             commandInstance = factory.createCommand(commandLine);
         } catch (RuntimeException | Error e) {
             log.warn("handleExec({}) Failed ({}) to create command for {}: {}",
-                     this, e.getClass().getSimpleName(), commandLine, e.getMessage());
+                 this, e.getClass().getSimpleName(), commandLine, e.getMessage());
             if (debugEnabled) {
                 log.debug("handleExec(" + this + ") command=" + commandLine + " creation failure details", e);
             }
@@ -551,8 +551,7 @@ public class ChannelSession extends AbstractServerChannel {
     protected RequestHandler.Result handleSubsystem(String request, Buffer buffer, boolean wantReply) throws IOException {
         String subsystem = buffer.getString();
         if (log.isDebugEnabled()) {
-            log.debug("handleSubsystem({})[want-reply={}] subsystem={}",
-                      this, wantReply, subsystem);
+            log.debug("handleSubsystem({})[want-reply={}] subsystem={}", this, wantReply, subsystem);
         }
 
         ServerFactoryManager manager = Objects.requireNonNull(getServerSession(), "No server session").getFactoryManager();
@@ -566,7 +565,7 @@ public class ChannelSession extends AbstractServerChannel {
             commandInstance = NamedFactory.create(factories, subsystem);
         } catch (RuntimeException | Error e) {
             log.warn("handleSubsystem({}) Failed ({}) to create command for subsystem={}: {}",
-                      this, e.getClass().getSimpleName(), subsystem, e.getMessage());
+                  this, e.getClass().getSimpleName(), subsystem, e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("handleSubsystem(" + this + ") subsystem=" + subsystem + " creation failure details", e);
             }
@@ -693,7 +692,7 @@ public class ChannelSession extends AbstractServerChannel {
                 }
             } catch (IOException e) {
                 log.warn("onExit({}) code={} message='{}' {} closing shell: {}",
-                         ChannelSession.this, exitValue, exitMessage, e.getClass().getSimpleName(), e.getMessage());
+                     ChannelSession.this, exitValue, exitMessage, e.getClass().getSimpleName(), e.getMessage());
             }
         });
 
@@ -715,7 +714,8 @@ public class ChannelSession extends AbstractServerChannel {
         try {
             if ((factory == null) || (filter == null) || (!filter.canForwardAgent(session, requestType))) {
                 if (debugEnabled) {
-                    log.debug("handleAgentForwarding(" + this + ")[haveFactory=" + (factory != null) + ",haveFilter=" + (filter != null) + "] filtered out request=" + requestType);
+                    log.debug("handleAgentForwarding(" + this + ")[haveFactory=" + (factory != null)
+                        + ",haveFilter=" + (filter != null) + "] filtered out request=" + requestType);
                 }
                 return RequestHandler.Result.ReplyFailure;
             }
@@ -755,13 +755,13 @@ public class ChannelSession extends AbstractServerChannel {
             if ((filter == null) || (!filter.canForwardX11(session, requestType))) {
                 if (debugEnabled) {
                     log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={}, filter={}: filtered request={}",
-                              this, singleConnection, authProtocol, authCookie, screenId, filter, requestType);
+                          this, singleConnection, authProtocol, authCookie, screenId, filter, requestType);
                 }
                 return RequestHandler.Result.ReplyFailure;
             }
         } catch (Error e) {
             log.warn("handleX11Forwarding({}) failed ({}) to consult forwarding filter for '{}': {}",
-                     this, e.getClass().getSimpleName(), requestType, e.getMessage());
+                 this, e.getClass().getSimpleName(), requestType, e.getMessage());
             if (debugEnabled) {
                 log.debug("handleX11Forwarding(" + this + ")[" + requestType + "] filter consultation failure details", e);
             }
@@ -772,7 +772,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (x11Forward == null) {
             if (debugEnabled) {
                 log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={} - no forwarder'",
-                          this, singleConnection, authProtocol, authCookie, screenId);
+                      this, singleConnection, authProtocol, authCookie, screenId);
             }
             return RequestHandler.Result.ReplyFailure;
         }
@@ -780,7 +780,7 @@ public class ChannelSession extends AbstractServerChannel {
         String display = x11Forward.createDisplay(singleConnection, authProtocol, authCookie, screenId);
         if (debugEnabled) {
             log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={} - display='{}'",
-                      this, singleConnection, authProtocol, authCookie, screenId, display);
+                  this, singleConnection, authProtocol, authCookie, screenId, display);
         }
         if (GenericUtils.isEmpty(display)) {
             return RequestHandler.Result.ReplyFailure;

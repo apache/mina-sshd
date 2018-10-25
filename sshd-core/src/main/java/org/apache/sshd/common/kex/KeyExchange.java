@@ -20,7 +20,7 @@ package org.apache.sshd.common.kex;
 
 import java.security.PublicKey;
 import java.util.Collections;
-import java.util.Map;
+import java.util.NavigableMap;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.SshConstants;
@@ -36,11 +36,13 @@ import org.apache.sshd.common.util.logging.LoggingUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface KeyExchange extends NamedResource {
-    Map<Integer, String> GROUP_KEX_OPCODES_MAP =
-            Collections.unmodifiableMap(LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_MSG_KEX_DH_GEX_"));
+    NavigableMap<Integer, String> GROUP_KEX_OPCODES_MAP =
+        Collections.unmodifiableNavigableMap(
+            LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_MSG_KEX_DH_GEX_"));
 
-    Map<Integer, String> SIMPLE_KEX_OPCODES_MAP =
-            Collections.unmodifiableMap(LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_MSG_KEXDH_"));
+    NavigableMap<Integer, String> SIMPLE_KEX_OPCODES_MAP =
+        Collections.unmodifiableNavigableMap(
+            LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_MSG_KEXDH_"));
 
     /**
      * Initialize the key exchange algorithm.

@@ -289,7 +289,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             Throwable e = GenericUtils.peelException(err);
             if (log.isDebugEnabled()) {
                 log.debug("Failed ({}) to announce session={} created: {}",
-                          e.getClass().getSimpleName(), ioSession, e.getMessage());
+                      e.getClass().getSimpleName(), ioSession, e.getMessage());
             }
             if (log.isTraceEnabled()) {
                 log.trace("Session=" + ioSession + " creation failure details", e);
@@ -661,7 +661,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             if (result != null) {
                 if (debugEnabled) {
                     log.debug("handleFirstKexPacketFollows({})[{}] 1st follow KEX packet {} option mismatch: client={}, server={}",
-                              this, SshConstants.getCommandMessageName(cmd), option, result.getKey(), result.getValue());
+                          this, SshConstants.getCommandMessageName(cmd), option, result.getKey(), result.getValue());
                 }
                 return false;
             }
@@ -780,7 +780,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected void handleDisconnect(int code, String msg, String lang, Buffer buffer) throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("handleDisconnect({}) SSH_MSG_DISCONNECT reason={}, [lang={}] msg={}",
-                      this, SshConstants.getDisconnectReasonName(code), lang, msg);
+                  this, SshConstants.getDisconnectReasonName(code), lang, msg);
         }
 
         close(true);
@@ -803,7 +803,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         } catch (Throwable e) {
             if (debugEnabled) {
                 log.debug("handleServiceRequest({}) Service {} rejected: {} = {}",
-                          this, serviceName, e.getClass().getSimpleName(), e.getMessage());
+                      this, serviceName, e.getClass().getSimpleName(), e.getMessage());
             }
 
             if (log.isTraceEnabled()) {
@@ -915,7 +915,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         }
     }
 
-    protected List<SimpleImmutableEntry<PendingWriteFuture, IoWriteFuture>> sendPendingPackets(Queue<PendingWriteFuture> packetsQueue) throws IOException {
+    protected List<SimpleImmutableEntry<PendingWriteFuture, IoWriteFuture>> sendPendingPackets(
+            Queue<PendingWriteFuture> packetsQueue)
+                throws IOException {
         if (GenericUtils.isEmpty(packetsQueue)) {
             return Collections.emptyList();
         }
@@ -956,7 +958,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         if ((!State.Opened.equals(curState)) && (!State.Graceful.equals(curState))) {
             if (log.isDebugEnabled()) {
                 log.debug("exceptionCaught({}) ignore {} due to state={}, message='{}'",
-                          this, t.getClass().getSimpleName(), curState, t.getMessage());
+                      this, t.getClass().getSimpleName(), curState, t.getMessage());
             }
             if (log.isTraceEnabled()) {
                 log.trace("exceptionCaught(" + this + ")[state=" + curState + "] ignored exception details", t);
@@ -979,7 +981,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 } catch (Throwable t2) {
                     if (log.isDebugEnabled()) {
                         log.debug("exceptionCaught({}) {} while disconnect with code={}: {}",
-                                  this, t2.getClass().getSimpleName(), SshConstants.getDisconnectReasonName(code), t2.getMessage());
+                              this, t2.getClass().getSimpleName(), SshConstants.getDisconnectReasonName(code), t2.getMessage());
                     }
                     if (log.isTraceEnabled()) {
                         log.trace("exceptionCaught(" + this + ")[code=" + SshConstants.getDisconnectReasonName(code) + "] disconnect exception details", t2);
@@ -1071,7 +1073,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             });
         } catch (Throwable err) {
             Throwable e = GenericUtils.peelException(err);
-            log.warn("signalSessionClosed({}) {} while signal session closed: {}", this, e.getClass().getSimpleName(), e.getMessage());
+            log.warn("signalSessionClosed({}) {} while signal session closed: {}",
+                this, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("signalSessionClosed(" + this + ") signal session closed exception details", e);
             }
@@ -1126,8 +1129,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 synchronized (pendingPackets) {
                     if (!KexState.DONE.equals(kexState.get())) {
                         if (pendingPackets.isEmpty()) {
-                            log.debug("writePacket({})[{}] Start flagging packets as pending until key exchange is done",
-                                      this, cmdName);
+                            log.debug("writePacket({})[{}] Start flagging packets as pending until key exchange is done", this, cmdName);
                         }
                         PendingWriteFuture future = new PendingWriteFuture(cmdName, buffer);
                         pendingPackets.add(future);
@@ -1289,7 +1291,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
         if (debugEnabled) {
             log.debug("request({}) request={}, timeout={} {}, result received={}",
-                      this, request, timeout, unit, result != null);
+                  this, request, timeout, unit, result != null);
         }
 
         if (result == null) {
@@ -1620,7 +1622,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
      */
     protected List<String> doReadIdentification(Buffer buffer, boolean server) {
         int maxIdentSize = PropertyResolverUtils.getIntProperty(this,
-                FactoryManager.MAX_IDENTIFICATION_SIZE, FactoryManager.DEFAULT_MAX_IDENTIFICATION_SIZE);
+            FactoryManager.MAX_IDENTIFICATION_SIZE, FactoryManager.DEFAULT_MAX_IDENTIFICATION_SIZE);
         List<String> ident = null;
         int rpos = buffer.rpos();
         for (byte[] data = new byte[MAX_VERSION_LINE_LENGTH];;) {
@@ -1697,22 +1699,22 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected Map<KexProposalOption, String> createProposal(String hostKeyTypes) {
         Map<KexProposalOption, String> proposal = new EnumMap<>(KexProposalOption.class);
         proposal.put(KexProposalOption.ALGORITHMS,
-                NamedResource.getNames(
-                        ValidateUtils.checkNotNullAndNotEmpty(getKeyExchangeFactories(), "No KEX factories")));
+            NamedResource.getNames(
+                ValidateUtils.checkNotNullAndNotEmpty(getKeyExchangeFactories(), "No KEX factories")));
         proposal.put(KexProposalOption.SERVERKEYS, hostKeyTypes);
 
         String ciphers = NamedResource.getNames(
-                ValidateUtils.checkNotNullAndNotEmpty(getCipherFactories(), "No cipher factories"));
+            ValidateUtils.checkNotNullAndNotEmpty(getCipherFactories(), "No cipher factories"));
         proposal.put(KexProposalOption.S2CENC, ciphers);
         proposal.put(KexProposalOption.C2SENC, ciphers);
 
         String macs = NamedResource.getNames(
-                ValidateUtils.checkNotNullAndNotEmpty(getMacFactories(), "No MAC factories"));
+            ValidateUtils.checkNotNullAndNotEmpty(getMacFactories(), "No MAC factories"));
         proposal.put(KexProposalOption.S2CMAC, macs);
         proposal.put(KexProposalOption.C2SMAC, macs);
 
         String compressions = NamedResource.getNames(
-                ValidateUtils.checkNotNullAndNotEmpty(getCompressionFactories(), "No compression factories"));
+            ValidateUtils.checkNotNullAndNotEmpty(getCompressionFactories(), "No compression factories"));
         proposal.put(KexProposalOption.S2CCOMP, compressions);
         proposal.put(KexProposalOption.C2SCOMP, compressions);
 
@@ -1744,7 +1746,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         boolean traceEnabled = log.isTraceEnabled();
         if (traceEnabled) {
             log.trace("sendKexInit({}) cookie={}",
-                      this, BufferUtils.toHex(buffer.array(), p, SshConstants.MSG_KEX_COOKIE_SIZE, ':'));
+                  this, BufferUtils.toHex(buffer.array(), p, SshConstants.MSG_KEX_COOKIE_SIZE, ':'));
         }
 
         for (KexProposalOption paramType : KexProposalOption.VALUES) {
@@ -1786,7 +1788,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         boolean traceEnabled = log.isTraceEnabled();
         if (traceEnabled) {
             log.trace("receiveKexInit({}) cookie={}",
-                      this, BufferUtils.toHex(d, cookieStartPos, SshConstants.MSG_KEX_COOKIE_SIZE, ':'));
+                  this, BufferUtils.toHex(d, cookieStartPos, SshConstants.MSG_KEX_COOKIE_SIZE, ':'));
         }
 
         // Read proposal
@@ -1960,7 +1962,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         maxRekeyBlocks.set(this.getLongProperty(FactoryManager.REKEY_BLOCKS_LIMIT, recommendedByteRekeyBlocks));
         if (debugEnabled) {
             log.debug("receiveNewKeys({}) inCipher={}, outCipher={}, recommended blocks limit={}, actual={}",
-                      this, inCipher, outCipher, recommendedByteRekeyBlocks, maxRekeyBlocks);
+                  this, inCipher, outCipher, recommendedByteRekeyBlocks, maxRekeyBlocks);
         }
 
         inBytesCount.set(0L);
@@ -2103,7 +2105,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 String value = guess.get(paramType);
                 if (value == null) {
                     String message = "Unable to negotiate key exchange for " + paramType.getDescription()
-                            + " (client: " + clientParamValue + " / server: " + serverParamValue + ")";
+                        + " (client: " + clientParamValue + " / server: " + serverParamValue + ")";
                     // OK if could not negotiate languages
                     if (KexProposalOption.S2CLANG.equals(paramType) || KexProposalOption.C2SLANG.equals(paramType)) {
                         if (traceEnabled) {
@@ -2115,7 +2117,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
                 } else {
                     if (traceEnabled) {
                         log.trace("negotiate(" + this + ")[" + paramType.getDescription() + "] guess=" + value
-                                + " (client: " + clientParamValue + " / server: " + serverParamValue + ")");
+                            + " (client: " + clientParamValue + " / server: " + serverParamValue + ")");
                     }
                 }
             }
@@ -2193,13 +2195,13 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
 
         if (log.isDebugEnabled()) {
             log.debug("setNegotiationResult({}) Kex: server->client {} {} {}", this,
-                      guess.get(KexProposalOption.S2CENC),
-                      guess.get(KexProposalOption.S2CMAC),
-                      guess.get(KexProposalOption.S2CCOMP));
+                  guess.get(KexProposalOption.S2CENC),
+                  guess.get(KexProposalOption.S2CMAC),
+                  guess.get(KexProposalOption.S2CCOMP));
             log.debug("setNegotiationResult({}) Kex: client->server {} {} {}", this,
-                      guess.get(KexProposalOption.C2SENC),
-                      guess.get(KexProposalOption.C2SMAC),
-                      guess.get(KexProposalOption.C2SCOMP));
+                  guess.get(KexProposalOption.C2SENC),
+                  guess.get(KexProposalOption.C2SMAC),
+                  guess.get(KexProposalOption.C2SCOMP));
         }
 
         return guess;
@@ -2245,8 +2247,8 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     @SuppressWarnings("unchecked")
     public <T> T setAttribute(AttributeKey<T> key, T value) {
         return (T) attributes.put(
-                Objects.requireNonNull(key, "No key"),
-                Objects.requireNonNull(value, "No value"));
+            Objects.requireNonNull(key, "No key"),
+            Objects.requireNonNull(value, "No value"));
     }
 
     @Override
@@ -2272,7 +2274,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     @Override
     public ReservedSessionMessagesHandler getReservedSessionMessagesHandler() {
         return resolveEffectiveProvider(ReservedSessionMessagesHandler.class,
-                reservedSessionMessagesHandler, getFactoryManager().getReservedSessionMessagesHandler());
+            reservedSessionMessagesHandler, getFactoryManager().getReservedSessionMessagesHandler());
     }
 
     @Override
@@ -2425,7 +2427,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
             Throwable t = GenericUtils.peelException(err);
             if (log.isDebugEnabled()) {
                 log.debug("sendSessionEvent({})[{}] failed ({}) to inform listeners: {}",
-                           this, event, t.getClass().getSimpleName(), t.getMessage());
+                       this, event, t.getClass().getSimpleName(), t.getMessage());
             }
             if (log.isTraceEnabled()) {
                 log.trace("sendSessionEvent(" + this + ")[" + event + "] listener inform details", t);
@@ -2550,8 +2552,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         if (rekey) {
             if (log.isDebugEnabled()) {
                 log.debug("isRekeyTimeIntervalExceeded({}) re-keying: last={}, now={}, diff={}, max={}",
-                          this, new Date(lastKeyTimeValue.get()), new Date(now),
-                          rekeyDiff, maxRekeyInterval);
+                      this, new Date(lastKeyTimeValue.get()), new Date(now), rekeyDiff, maxRekeyInterval);
             }
         }
 
@@ -2567,7 +2568,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         if (rekey) {
             if (log.isDebugEnabled()) {
                 log.debug("isRekeyPacketCountsExceeded({}) re-keying: in={}, out={}, max={}",
-                          this, inPacketsCount, outPacketsCount, maxRekyPackets);
+                      this, inPacketsCount, outPacketsCount, maxRekyPackets);
             }
         }
 
@@ -2583,7 +2584,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         if (rekey) {
             if (log.isDebugEnabled()) {
                 log.debug("isRekeyDataSizeExceeded({}) re-keying: in={}, out={}, max={}",
-                          this, inBytesCount, outBytesCount, maxRekeyBytes);
+                      this, inBytesCount, outBytesCount, maxRekeyBytes);
             }
         }
 
@@ -2600,7 +2601,7 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
         if (rekey) {
             if (log.isDebugEnabled()) {
                 log.debug("isRekeyBlocksCountExceeded({}) re-keying: in={}, out={}, max={}",
-                          this, inBlocksCount, outBlocksCount, maxBlocks);
+                      this, inBlocksCount, outBlocksCount, maxBlocks);
             }
         }
 
@@ -2702,7 +2703,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected abstract void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed) throws IOException;
 
     // returns the proposal argument
-    protected Map<KexProposalOption, String> mergeProposals(Map<KexProposalOption, String> current, Map<KexProposalOption, String> proposal) {
+    protected Map<KexProposalOption, String> mergeProposals(
+            Map<KexProposalOption, String> current, Map<KexProposalOption, String> proposal) {
+        // Checking references by design
         if (current == proposal) {
             return proposal; // nothing to merge
         }
@@ -2826,7 +2829,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected SimpleImmutableEntry<TimeoutStatus, String> checkAuthenticationTimeout(long now, long authTimeoutMs) {
         long authDiff = now - authTimeoutStart;
         if ((!authed) && (authTimeoutMs > 0L) && (authDiff > authTimeoutMs)) {
-            return new SimpleImmutableEntry<>(TimeoutStatus.AuthTimeout, "Session has timed out waiting for authentication after " + authTimeoutMs + " ms.");
+            return new SimpleImmutableEntry<>(
+                TimeoutStatus.AuthTimeout,
+                "Session has timed out waiting for authentication after " + authTimeoutMs + " ms.");
         } else {
             return null;
         }
@@ -2844,7 +2849,9 @@ public abstract class AbstractSession extends AbstractKexFactoryManager implemen
     protected SimpleImmutableEntry<TimeoutStatus, String> checkIdleTimeout(long now, long idleTimeoutMs) {
         long idleDiff = now - idleTimeoutStart;
         if ((idleTimeoutMs > 0L) && (idleDiff > idleTimeoutMs)) {
-            return new SimpleImmutableEntry<>(TimeoutStatus.IdleTimeout, "User session has timed out idling after " + idleTimeoutMs + " ms.");
+            return new SimpleImmutableEntry<>(
+                TimeoutStatus.IdleTimeout,
+                "User session has timed out idling after " + idleTimeoutMs + " ms.");
         } else {
             return null;
         }

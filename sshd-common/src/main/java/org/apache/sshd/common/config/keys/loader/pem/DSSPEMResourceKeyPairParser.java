@@ -49,11 +49,11 @@ public class DSSPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParse
     // Not exactly according to standard but good enough
     public static final String BEGIN_MARKER = "BEGIN DSA PRIVATE KEY";
     public static final List<String> BEGINNERS =
-            Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
+        Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
 
     public static final String END_MARKER = "END DSA PRIVATE KEY";
     public static final List<String> ENDERS =
-            Collections.unmodifiableList(Collections.singletonList(END_MARKER));
+        Collections.unmodifiableList(Collections.singletonList(END_MARKER));
 
     /**
      * @see <A HREF="https://tools.ietf.org/html/rfc3279#section-2.3.2">RFC-3279 section 2.3.2</A>

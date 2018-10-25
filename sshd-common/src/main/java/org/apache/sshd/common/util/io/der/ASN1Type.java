@@ -55,7 +55,7 @@ public enum ASN1Type {
     GENERALIZED_TIME((byte) 0x18);
 
     public static final Set<ASN1Type> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(ASN1Type.class));
+        Collections.unmodifiableSet(EnumSet.allOf(ASN1Type.class));
 
     private final byte typeValue;
 

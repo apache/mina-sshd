@@ -103,7 +103,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
     @Override
     public PasswordAuthenticator getPasswordAuthenticator() {
-        return resolveEffectiveProvider(PasswordAuthenticator.class, passwordAuthenticator, getFactoryManager().getPasswordAuthenticator());
+        ServerFactoryManager manager = getFactoryManager();
+        return resolveEffectiveProvider(PasswordAuthenticator.class, passwordAuthenticator, manager.getPasswordAuthenticator());
     }
 
     @Override
@@ -113,7 +114,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
     @Override
     public PublickeyAuthenticator getPublickeyAuthenticator() {
-        return resolveEffectiveProvider(PublickeyAuthenticator.class, publickeyAuthenticator, getFactoryManager().getPublickeyAuthenticator());
+        ServerFactoryManager manager = getFactoryManager();
+        return resolveEffectiveProvider(PublickeyAuthenticator.class, publickeyAuthenticator, manager.getPublickeyAuthenticator());
     }
 
     @Override
@@ -123,7 +125,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
     @Override
     public KeyboardInteractiveAuthenticator getKeyboardInteractiveAuthenticator() {
-        return resolveEffectiveProvider(KeyboardInteractiveAuthenticator.class, interactiveAuthenticator, getFactoryManager().getKeyboardInteractiveAuthenticator());
+        ServerFactoryManager manager = getFactoryManager();
+        return resolveEffectiveProvider(KeyboardInteractiveAuthenticator.class, interactiveAuthenticator, manager.getKeyboardInteractiveAuthenticator());
     }
 
     @Override
@@ -133,7 +136,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
     @Override
     public GSSAuthenticator getGSSAuthenticator() {
-        return resolveEffectiveProvider(GSSAuthenticator.class, gssAuthenticator, getFactoryManager().getGSSAuthenticator());
+        ServerFactoryManager manager = getFactoryManager();
+        return resolveEffectiveProvider(GSSAuthenticator.class, gssAuthenticator, manager.getGSSAuthenticator());
     }
 
     @Override
@@ -143,7 +147,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
     @Override
     public HostBasedAuthenticator getHostBasedAuthenticator() {
-        return resolveEffectiveProvider(HostBasedAuthenticator.class, hostBasedAuthenticator, getFactoryManager().getHostBasedAuthenticator());
+        ServerFactoryManager manager = getFactoryManager();
+        return resolveEffectiveProvider(HostBasedAuthenticator.class, hostBasedAuthenticator, manager.getHostBasedAuthenticator());
     }
 
     @Override
@@ -153,7 +158,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
     @Override
     public List<NamedFactory<UserAuth>> getUserAuthFactories() {
-        return resolveEffectiveFactories(UserAuth.class, userAuthFactories, getFactoryManager().getUserAuthFactories());
+        ServerFactoryManager manager = getFactoryManager();
+        return resolveEffectiveFactories(UserAuth.class, userAuthFactories, manager.getUserAuthFactories());
     }
 
     @Override
@@ -208,9 +214,9 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     public void startService(String name) throws Exception {
         FactoryManager factoryManager = getFactoryManager();
         currentService = ServiceFactory.create(
-                        factoryManager.getServiceFactories(),
-                        ValidateUtils.checkNotNullAndNotEmpty(name, "No service name"),
-                        this);
+            factoryManager.getServiceFactories(),
+            ValidateUtils.checkNotNullAndNotEmpty(name, "No service name"),
+            this);
         /*
          * According to RFC4253:
          *
@@ -255,7 +261,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             provided = (kpp == null) ? null : kpp.getKeyTypes();
         } catch (Error e) {
             log.warn("resolveAvailableSignaturesProposal({}) failed ({}) to get key types: {}",
-                     this, e.getClass().getSimpleName(), e.getMessage());
+                 this, e.getClass().getSimpleName(), e.getMessage());
             if (debugEnabled) {
                 log.debug("resolveAvailableSignaturesProposal(" + this + ") fetch key types failure details", e);
             }
@@ -272,7 +278,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             if (!supported.contains(keyType)) {
                 if (debugEnabled) {
                     log.debug("resolveAvailableSignaturesProposal({})[{}] {} not in supported list: {}",
-                              this, provided, keyType, supported);
+                          this, provided, keyType, supported);
                 }
                 continue;
             }
@@ -307,7 +313,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     protected String resolveEmptySignaturesProposal(Iterable<String> supported, Iterable<String> provided) {
         if (log.isDebugEnabled()) {
             log.debug("resolveEmptySignaturesProposal({})[{}] none of the keys appears in supported list: {}",
-                      this, provided, supported);
+                  this, provided, supported);
         }
         return null;
     }
@@ -326,7 +332,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
                 }
             } catch (Throwable t) {
                 log.warn("readIdentification({}) failed ({}) to accept proxy metadata: {}",
-                         this, t.getClass().getSimpleName(), t.getMessage());
+                     this, t.getClass().getSimpleName(), t.getMessage());
                 if (debugEnabled) {
                     log.debug("readIdentification(" + this + ") proxy metadata acceptance failure details", t);
                 }
@@ -368,7 +374,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         if (GenericUtils.length(errorMessage) > 0) {
             IoSession networkSession = getIoSession();
             networkSession.writePacket(new ByteArrayBuffer((errorMessage + "\n").getBytes(StandardCharsets.UTF_8)))
-                     .addListener(future -> close(true));
+                 .addListener(future -> close(true));
             throw new SshException(errorMessage);
         }
 
@@ -391,7 +397,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             return provider.loadKey(keyType);
         } catch (Error e) {
             log.warn("getHostKey({}) failed ({}) to load key of type={}: {}",
-                     this, e.getClass().getSimpleName(), keyType, e.getMessage());
+                 this, e.getClass().getSimpleName(), keyType, e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("getHostKey(" + this + ") " + keyType + " key load failure details", e);
             }

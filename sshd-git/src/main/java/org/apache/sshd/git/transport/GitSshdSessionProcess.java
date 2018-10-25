@@ -75,7 +75,6 @@ public class GitSshdSessionProcess extends Process {
         }
 
         Collection<ClientChannelEvent> res = channel.waitFor(CLOSE_WAIT_EVENTS, waitTimeout);
-
         if (traceEnabled) {
             log.trace("waitFor({}) channel={} events={}", commandName, channel, res);
         }
@@ -95,7 +94,7 @@ public class GitSshdSessionProcess extends Process {
         }
         if (log.isTraceEnabled()) {
             log.trace("exitValue({}) channel={}, timeout={} millis.: {}",
-                      commandName, channel, waitTimeout, status);
+                  commandName, channel, waitTimeout, status);
         }
         return status;
     }

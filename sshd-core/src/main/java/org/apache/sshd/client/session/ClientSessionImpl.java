@@ -144,7 +144,7 @@ public class ClientSessionImpl extends AbstractClientSession {
 
         if (log.isDebugEnabled()) {
             log.debug("signalAuthFailure({}) type={}, signalled={}, message=\"{}\"",
-                      this, t.getClass().getSimpleName(), signalled, t.getMessage());
+                  this, t.getClass().getSimpleName(), signalled, t.getMessage());
         }
     }
 

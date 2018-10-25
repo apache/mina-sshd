@@ -69,8 +69,8 @@ public class DHGServer extends AbstractDHServerKeyExchange {
             @Override
             public String toString() {
                 return NamedFactory.class.getSimpleName()
-                        + "<" + KeyExchange.class.getSimpleName() + ">"
-                        + "[" + getName() + "]";
+                    + "<" + KeyExchange.class.getSimpleName() + ">"
+                    + "[" + getName() + "]";
             }
         };
     }
@@ -93,7 +93,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
 
         if (cmd != SshConstants.SSH_MSG_KEXDH_INIT) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "Protocol error: expected packet SSH_MSG_KEXDH_INIT, got " + KeyExchange.getSimpleKexOpcodeName(cmd));
+                "Protocol error: expected packet SSH_MSG_KEXDH_INIT, got " + KeyExchange.getSimpleKexOpcodeName(cmd));
         }
 
         e = buffer.getMPIntAsBytes();
@@ -103,9 +103,8 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         KeyPair kp = Objects.requireNonNull(session.getHostKey(), "No server key pair available");
         String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
         Signature sig = ValidateUtils.checkNotNull(
-                NamedFactory.create(session.getSignatureFactories(), algo),
-                "Unknown negotiated server keys: %s",
-                algo);
+            NamedFactory.create(session.getSignatureFactories(), algo),
+            "Unknown negotiated server keys: %s", algo);
         sig.initSigner(kp.getPrivate());
 
         buffer = new ByteArrayBuffer();

@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -291,11 +292,12 @@ public enum PtyMode {
     /**
      * An un-modifiable {@link Set} of all defined {@link PtyMode}s
      */
-    public static final Set<PtyMode> MODES = Collections.unmodifiableSet(EnumSet.allOf(PtyMode.class));
+    public static final Set<PtyMode> MODES =
+        Collections.unmodifiableSet(EnumSet.allOf(PtyMode.class));
 
-    private static final Map<Integer, PtyMode> COMMANDS =
-            Collections.unmodifiableMap(
-                    GenericUtils.toSortedMap(MODES, PtyMode::toInt, Function.identity(), Comparator.naturalOrder()));
+    private static final NavigableMap<Integer, PtyMode> COMMANDS =
+        Collections.unmodifiableNavigableMap(
+            GenericUtils.toSortedMap(MODES, PtyMode::toInt, Function.identity(), Comparator.naturalOrder()));
 
     private final int v;
 

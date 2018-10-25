@@ -45,21 +45,21 @@ import org.apache.sshd.common.util.GenericUtils;
  */
 public final class ParserUtils {
     public static final Collection<ExtensionParser<?>> BUILT_IN_PARSERS =
-            Collections.unmodifiableList(
-                    Arrays.<ExtensionParser<?>>asList(
-                            VendorIdParser.INSTANCE,
-                            NewlineParser.INSTANCE,
-                            VersionsParser.INSTANCE,
-                            SupportedParser.INSTANCE,
-                            Supported2Parser.INSTANCE,
-                            AclSupportedParser.INSTANCE,
-                            // OpenSSH extensions
-                            PosixRenameExtensionParser.INSTANCE,
-                            StatVfsExtensionParser.INSTANCE,
-                            FstatVfsExtensionParser.INSTANCE,
-                            HardLinkExtensionParser.INSTANCE,
-                            FsyncExtensionParser.INSTANCE
-                    ));
+        Collections.unmodifiableList(
+            Arrays.<ExtensionParser<?>>asList(
+                VendorIdParser.INSTANCE,
+                NewlineParser.INSTANCE,
+                VersionsParser.INSTANCE,
+                SupportedParser.INSTANCE,
+                Supported2Parser.INSTANCE,
+                AclSupportedParser.INSTANCE,
+                // OpenSSH extensions
+                PosixRenameExtensionParser.INSTANCE,
+                StatVfsExtensionParser.INSTANCE,
+                FstatVfsExtensionParser.INSTANCE,
+                HardLinkExtensionParser.INSTANCE,
+                FsyncExtensionParser.INSTANCE
+            ));
 
     private static final Map<String, ExtensionParser<?>> PARSERS_MAP;
 

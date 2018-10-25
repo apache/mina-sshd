@@ -141,13 +141,15 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
      * @see <A HREF="http://linux.die.net/man/5/ssh_config">ssh_config(5) - PreferredAuthentications</A>
      */
     public static final List<NamedFactory<UserAuth>> DEFAULT_USER_AUTH_FACTORIES =
-        Collections.unmodifiableList(Arrays.<NamedFactory<UserAuth>>asList(
+        Collections.unmodifiableList(
+            Arrays.<NamedFactory<UserAuth>>asList(
                 UserAuthPublicKeyFactory.INSTANCE,
                 UserAuthKeyboardInteractiveFactory.INSTANCE,
                 UserAuthPasswordFactory.INSTANCE
         ));
     public static final List<ServiceFactory> DEFAULT_SERVICE_FACTORIES =
-        Collections.unmodifiableList(Arrays.asList(
+        Collections.unmodifiableList(
+            Arrays.asList(
                 ClientUserAuthServiceFactory.INSTANCE,
                 ClientConnectionServiceFactory.INSTANCE
         ));

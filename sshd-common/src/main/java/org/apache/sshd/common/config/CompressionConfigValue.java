@@ -40,7 +40,7 @@ public enum CompressionConfigValue implements CompressionFactory {
     DELAYED(BuiltinCompressions.delayedZlib);
 
     public static final Set<CompressionConfigValue> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(CompressionConfigValue.class));
+        Collections.unmodifiableSet(EnumSet.allOf(CompressionConfigValue.class));
 
     private final CompressionFactory factory;
 

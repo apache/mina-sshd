@@ -93,7 +93,10 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
      * Default key types if not overridden from the command line
      */
     public static final List<String> DEFAULT_KEY_TYPES =
-            Collections.unmodifiableList(Arrays.asList(BuiltinIdentities.Constants.RSA, BuiltinIdentities.Constants.ECDSA));
+        Collections.unmodifiableList(
+            Arrays.asList(
+                BuiltinIdentities.Constants.RSA,
+                BuiltinIdentities.Constants.ECDSA));
     public static final long DEFAULT_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
     public static final Level DEFAULT_LEVEL = Level.INFO;
 

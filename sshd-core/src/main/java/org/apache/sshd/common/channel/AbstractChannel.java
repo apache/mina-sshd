@@ -120,12 +120,15 @@ public abstract class AbstractChannel
         this(discriminator, client, Collections.emptyList(), null);
     }
 
-    protected AbstractChannel(String discriminator, boolean client, Collection<? extends RequestHandler<Channel>> handlers, CloseableExecutorService executorService) {
+    protected AbstractChannel(String discriminator, boolean client,
+            Collection<? extends RequestHandler<Channel>> handlers,
+            CloseableExecutorService executorService) {
         super(discriminator);
         gracefulFuture = new DefaultCloseFuture(discriminator, lock);
         localWindow = new Window(this, null, client, true);
         remoteWindow = new Window(this, null, client, false);
-        channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, getClass().getClassLoader(), channelListeners);
+        channelListenerProxy = EventListenerUtils.proxyWrapper(
+            ChannelListener.class, getClass().getClassLoader(), channelListeners);
         executor = executorService;
         addRequestHandlers(handlers);
     }
@@ -268,12 +271,12 @@ public abstract class AbstractChannel
                 result = handler.process(this, req, wantReply, buffer);
             } catch (Throwable e) {
                 log.warn("handleRequest({}) {} while {}#process({})[want-reply={}]: {}",
-                         this, e.getClass().getSimpleName(), handler.getClass().getSimpleName(),
-                         req, wantReply, e.getMessage());
+                     this, e.getClass().getSimpleName(), handler.getClass().getSimpleName(),
+                     req, wantReply, e.getMessage());
                 if (debugEnabled) {
                     log.debug("handleRequest(" + this + ") request=" + req
-                            + "[want-reply=" + wantReply + "] processing failure details",
-                              e);
+                        + "[want-reply=" + wantReply + "] processing failure details",
+                          e);
                 }
                 result = RequestHandler.Result.ReplyFailure;
             }
@@ -282,7 +285,7 @@ public abstract class AbstractChannel
             if (RequestHandler.Result.Unsupported.equals(result)) {
                 if (traceEnabled) {
                     log.trace("handleRequest({})[{}#process({})[want-reply={}]]: {}",
-                              this, handler.getClass().getSimpleName(), req, wantReply, result);
+                          this, handler.getClass().getSimpleName(), req, wantReply, result);
                 }
             } else {
                 sendResponse(buffer, req, result, wantReply);
@@ -327,8 +330,7 @@ public abstract class AbstractChannel
      */
     protected RequestHandler.Result handleInternalRequest(String req, boolean wantReply, Buffer buffer) throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("handleInternalRequest({})[want-reply={}] unknown type: {}",
-                      this, wantReply, req);
+            log.debug("handleInternalRequest({})[want-reply={}] unknown type: {}", this, wantReply, req);
         }
         return RequestHandler.Result.Unsupported;
     }
@@ -347,8 +349,8 @@ public abstract class AbstractChannel
         }
 
         byte cmd = RequestHandler.Result.ReplySuccess.equals(result)
-                 ? SshConstants.SSH_MSG_CHANNEL_SUCCESS
-                 : SshConstants.SSH_MSG_CHANNEL_FAILURE;
+             ? SshConstants.SSH_MSG_CHANNEL_SUCCESS
+             : SshConstants.SSH_MSG_CHANNEL_FAILURE;
         Session session = getSession();
         Buffer rsp = session.createBuffer(cmd, Integer.BYTES);
         rsp.putInt(recipient);
@@ -434,7 +436,7 @@ public abstract class AbstractChannel
         } catch (Throwable err) {
             Throwable ignored = GenericUtils.peelException(err);
             log.warn("signalChannelOpenFailure({}) failed ({}) to inform listener of open failure={}: {}",
-                     this, ignored.getClass().getSimpleName(), reason.getClass().getSimpleName(), ignored.getMessage());
+                 this, ignored.getClass().getSimpleName(), reason.getClass().getSimpleName(), ignored.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("doInit(" + this + ") inform listener open failure details", ignored);
             }
@@ -467,7 +469,7 @@ public abstract class AbstractChannel
         } catch (Throwable err) {
             Throwable e = GenericUtils.peelException(err);
             log.warn("notifyStateChanged({})[{}] {} while signal channel state change: {}",
-                     this, hint, e.getClass().getSimpleName(), e.getMessage());
+                 this, hint, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("notifyStateChanged(" + this + ")[" + hint + "] channel state signalling failure details", e);
             }
@@ -552,13 +554,13 @@ public abstract class AbstractChannel
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .sequential(new GracefulChannelCloseable(), getExecutorService())
-                .run(toString(), () -> {
-                    if (service != null) {
-                        service.unregisterChannel(AbstractChannel.this);
-                    }
-                })
-                .build();
+            .sequential(new GracefulChannelCloseable(), getExecutorService())
+            .run(toString(), () -> {
+                if (service != null) {
+                    service.unregisterChannel(AbstractChannel.this);
+                }
+            })
+            .build();
     }
 
     public class GracefulChannelCloseable extends IoBaseCloseable {
@@ -613,7 +615,8 @@ public abstract class AbstractChannel
                 buffer.putInt(getRecipient());
 
                 try {
-                    long timeout = channel.getLongProperty(FactoryManager.CHANNEL_CLOSE_TIMEOUT, FactoryManager.DEFAULT_CHANNEL_CLOSE_TIMEOUT);
+                    long timeout = channel.getLongProperty(
+                        FactoryManager.CHANNEL_CLOSE_TIMEOUT, FactoryManager.DEFAULT_CHANNEL_CLOSE_TIMEOUT);
                     s.writePacket(buffer, timeout, TimeUnit.MILLISECONDS).addListener(future -> {
                         if (future.isWritten()) {
                             handleClosePacketWritten(channel, immediately);
@@ -624,7 +627,7 @@ public abstract class AbstractChannel
                 } catch (IOException e) {
                     if (debugEnabled) {
                         log.debug("close({})[immediately={}] {} while writing SSH_MSG_CHANNEL_CLOSE packet on channel: {}",
-                                  channel, immediately, e.getClass().getSimpleName(), e.getMessage());
+                              channel, immediately, e.getClass().getSimpleName(), e.getMessage());
                     }
 
                     if (log.isTraceEnabled()) {
@@ -639,7 +642,7 @@ public abstract class AbstractChannel
                 Collection<?> running = service.shutdownNow();
                 if (debugEnabled) {
                     log.debug("close({})[immediately={}] shutdown executor service on close - running count={}",
-                              channel, immediately, GenericUtils.size(running));
+                          channel, immediately, GenericUtils.size(running));
                 }
             }
 
@@ -649,7 +652,7 @@ public abstract class AbstractChannel
         protected void handleClosePacketWritten(Channel channel, boolean immediately) {
             if (log.isDebugEnabled()) {
                 log.debug("handleClosePacketWritten({})[immediately={}] SSH_MSG_CHANNEL_CLOSE written on channel",
-                          channel, immediately);
+                      channel, immediately);
             }
 
             if (gracefulState.compareAndSet(GracefulState.Opened, GracefulState.CloseSent)) {
@@ -663,7 +666,7 @@ public abstract class AbstractChannel
         protected void handleClosePacketWriteFailure(Channel channel, boolean immediately, Throwable t) {
             if (log.isDebugEnabled()) {
                 log.debug("handleClosePacketWriteFailure({})[immediately={}] failed ({}) to write SSH_MSG_CHANNEL_CLOSE on channel: {}",
-                          this, immediately, t.getClass().getSimpleName(), t.getMessage());
+                      this, immediately, t.getClass().getSimpleName(), t.getMessage());
             }
             if (log.isTraceEnabled()) {
                 log.trace("handleClosePacketWriteFailure(" + channel + ") SSH_MSG_CHANNEL_CLOSE failure details", t);
@@ -791,7 +794,7 @@ public abstract class AbstractChannel
         }
         if (log.isTraceEnabled()) {
             BufferUtils.dumpHex(getSimplifiedLogger(), BufferUtils.DEFAULT_HEXDUMP_LEVEL, "handleData(" + this + ")",
-                    this, BufferUtils.DEFAULT_HEX_SEPARATOR, buffer.array(), buffer.rpos(), (int) len);
+                this, BufferUtils.DEFAULT_HEX_SEPARATOR, buffer.array(), buffer.rpos(), (int) len);
         }
         if (isEofSignalled()) {
             // TODO consider throwing an exception
@@ -821,7 +824,7 @@ public abstract class AbstractChannel
         }
         if (log.isTraceEnabled()) {
             BufferUtils.dumpHex(getSimplifiedLogger(), BufferUtils.DEFAULT_HEXDUMP_LEVEL, "handleExtendedData(" + this + ")",
-                    this, BufferUtils.DEFAULT_HEX_SEPARATOR, buffer.array(), buffer.rpos(), (int) len);
+                this, BufferUtils.DEFAULT_HEX_SEPARATOR, buffer.array(), buffer.rpos(), (int) len);
         }
         if (isEofSignalled()) {
             // TODO consider throwing an exception
@@ -953,8 +956,8 @@ public abstract class AbstractChannel
     @SuppressWarnings("unchecked")
     public <T> T setAttribute(AttributeKey<T> key, T value) {
         return (T) attributes.put(
-                Objects.requireNonNull(key, "No key"),
-                Objects.requireNonNull(value, "No value"));
+            Objects.requireNonNull(key, "No key"),
+            Objects.requireNonNull(value, "No value"));
     }
 
     @Override

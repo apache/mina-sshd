@@ -40,7 +40,7 @@ public enum KnownHostDigest implements NamedFactory<Mac> {
     SHA1("1", BuiltinMacs.hmacsha1);
 
     public static final Set<KnownHostDigest> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(KnownHostDigest.class));
+        Collections.unmodifiableSet(EnumSet.allOf(KnownHostDigest.class));
 
     private final String name;
     private final Factory<Mac> factory;

@@ -94,7 +94,7 @@ public interface ClientSession
     }
 
     Set<ClientChannelEvent> REMOTE_COMMAND_WAIT_EVENTS =
-            Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.CLOSED));
+        Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.CLOSED));
 
     /**
      * Returns the original address (after having been translated through host

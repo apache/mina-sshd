@@ -30,10 +30,20 @@ import org.apache.sshd.common.util.GenericUtils;
  * @see <A HREF="https://www.freebsd.org/cgi/man.cgi?query=sshd_config&sektion=5"><I>SyslogFacility</I> configuration value</A>
  */
 public enum SyslogFacilityValue {
-    DAEMON, USER, AUTH, LOCAL0, LOCAL1, LOCAL2, LOCAL3, LOCAL4, LOCAL5, LOCAL6, LOCAL7;
+    DAEMON,
+    USER,
+    AUTH,
+    LOCAL0,
+    LOCAL1,
+    LOCAL2,
+    LOCAL3,
+    LOCAL4,
+    LOCAL5,
+    LOCAL6,
+    LOCAL7;
 
     public static final Set<SyslogFacilityValue> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(SyslogFacilityValue.class));
+        Collections.unmodifiableSet(EnumSet.allOf(SyslogFacilityValue.class));
 
     public static SyslogFacilityValue fromName(String n) {
         if (GenericUtils.isEmpty(n)) {

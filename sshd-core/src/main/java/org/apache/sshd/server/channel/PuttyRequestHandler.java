@@ -41,7 +41,7 @@ public class PuttyRequestHandler extends AbstractChannelRequestHandler {
     public static final String REQUEST_SUFFIX = "@putty.projects.tartarus.org";
 
     public static final Set<PtyMode> PUTTY_OPTIONS =
-            Collections.unmodifiableSet(EnumSet.of(PtyMode.ECHO, PtyMode.ICRNL, PtyMode.ONLCR));
+        Collections.unmodifiableSet(EnumSet.of(PtyMode.ECHO, PtyMode.ICRNL, PtyMode.ONLCR));
 
     public static final PuttyRequestHandler INSTANCE = new PuttyRequestHandler();
 

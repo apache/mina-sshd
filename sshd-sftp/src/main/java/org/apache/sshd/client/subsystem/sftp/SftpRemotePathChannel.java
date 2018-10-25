@@ -54,11 +54,15 @@ public class SftpRemotePathChannel extends FileChannel {
     public static final int DEFAULT_TRANSFER_BUFFER_SIZE = IoUtils.DEFAULT_COPY_SIZE;
 
     public static final Set<SftpClient.OpenMode> READ_MODES =
-            Collections.unmodifiableSet(EnumSet.of(SftpClient.OpenMode.Read));
+        Collections.unmodifiableSet(EnumSet.of(SftpClient.OpenMode.Read));
 
     public static final Set<SftpClient.OpenMode> WRITE_MODES =
-            Collections.unmodifiableSet(
-                    EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Append, SftpClient.OpenMode.Create, SftpClient.OpenMode.Truncate));
+        Collections.unmodifiableSet(
+            EnumSet.of(
+                SftpClient.OpenMode.Write,
+                SftpClient.OpenMode.Append,
+                SftpClient.OpenMode.Create,
+                SftpClient.OpenMode.Truncate));
 
     private final String path;
     private final Collection<SftpClient.OpenMode> modes;

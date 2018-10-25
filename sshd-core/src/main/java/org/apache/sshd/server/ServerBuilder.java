@@ -60,25 +60,30 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
                     : DHGServer.newFactory(factory);
 
     public static final List<NamedFactory<Channel>> DEFAULT_CHANNEL_FACTORIES =
-        Collections.unmodifiableList(Arrays.<NamedFactory<Channel>>asList(
-            ChannelSessionFactory.INSTANCE,
-            DirectTcpipFactory.INSTANCE
-        ));
+        Collections.unmodifiableList(
+            Arrays.<NamedFactory<Channel>>asList(
+                ChannelSessionFactory.INSTANCE,
+                DirectTcpipFactory.INSTANCE
+            ));
 
     public static final List<RequestHandler<ConnectionService>> DEFAULT_GLOBAL_REQUEST_HANDLERS =
-        Collections.unmodifiableList(Arrays.<RequestHandler<ConnectionService>>asList(
-            KeepAliveHandler.INSTANCE,
-            NoMoreSessionsHandler.INSTANCE,
-            TcpipForwardHandler.INSTANCE,
-            CancelTcpipForwardHandler.INSTANCE,
-            OpenSshHostKeysHandler.INSTANCE
-        ));
+        Collections.unmodifiableList(
+            Arrays.<RequestHandler<ConnectionService>>asList(
+                KeepAliveHandler.INSTANCE,
+                NoMoreSessionsHandler.INSTANCE,
+                TcpipForwardHandler.INSTANCE,
+                CancelTcpipForwardHandler.INSTANCE,
+                OpenSshHostKeysHandler.INSTANCE
+            ));
 
     public static final PublickeyAuthenticator DEFAULT_PUBLIC_KEY_AUTHENTICATOR = DefaultAuthorizedKeysAuthenticator.INSTANCE;
     public static final KeyboardInteractiveAuthenticator DEFAULT_INTERACTIVE_AUTHENTICATOR = DefaultKeyboardInteractiveAuthenticator.INSTANCE;
     public static final List<CompressionFactory> DEFAULT_COMPRESSION_FACTORIES =
-        Collections.unmodifiableList(Arrays.<CompressionFactory>asList(
-                BuiltinCompressions.none, BuiltinCompressions.zlib, BuiltinCompressions.delayedZlib));
+        Collections.unmodifiableList(
+            Arrays.<CompressionFactory>asList(
+                BuiltinCompressions.none,
+                BuiltinCompressions.zlib,
+                BuiltinCompressions.delayedZlib));
 
     protected PublickeyAuthenticator pubkeyAuthenticator;
     protected KeyboardInteractiveAuthenticator interactiveAuthenticator;

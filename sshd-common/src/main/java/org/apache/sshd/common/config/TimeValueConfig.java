@@ -40,7 +40,7 @@ public enum TimeValueConfig {
     WEEKS('w', 'W', TimeUnit.DAYS.toMillis(7L));
 
     public static final Set<TimeValueConfig> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(TimeValueConfig.class));
+        Collections.unmodifiableSet(EnumSet.allOf(TimeValueConfig.class));
 
     private final char loChar;
     private final char hiChar;

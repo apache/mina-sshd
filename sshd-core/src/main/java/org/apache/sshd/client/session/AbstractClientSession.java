@@ -102,7 +102,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     public ServerKeyVerifier getServerKeyVerifier() {
-        return resolveEffectiveProvider(ServerKeyVerifier.class, serverKeyVerifier, getFactoryManager().getServerKeyVerifier());
+        ClientFactoryManager manager = getFactoryManager();
+        return resolveEffectiveProvider(ServerKeyVerifier.class, serverKeyVerifier, manager.getServerKeyVerifier());
     }
 
     @Override
@@ -112,7 +113,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     public UserInteraction getUserInteraction() {
-        return resolveEffectiveProvider(UserInteraction.class, userInteraction, getFactoryManager().getUserInteraction());
+        ClientFactoryManager manager = getFactoryManager();
+        return resolveEffectiveProvider(UserInteraction.class, userInteraction, manager.getUserInteraction());
     }
 
     @Override
@@ -122,7 +124,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     public List<NamedFactory<UserAuth>> getUserAuthFactories() {
-        return resolveEffectiveFactories(UserAuth.class, userAuthFactories, getFactoryManager().getUserAuthFactories());
+        ClientFactoryManager manager = getFactoryManager();
+        return resolveEffectiveFactories(UserAuth.class, userAuthFactories, manager.getUserAuthFactories());
     }
 
     @Override
@@ -137,7 +140,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     public PasswordIdentityProvider getPasswordIdentityProvider() {
-        return resolveEffectiveProvider(PasswordIdentityProvider.class, passwordIdentityProvider, getFactoryManager().getPasswordIdentityProvider());
+        ClientFactoryManager manager = getFactoryManager();
+        return resolveEffectiveProvider(PasswordIdentityProvider.class, passwordIdentityProvider, manager.getPasswordIdentityProvider());
     }
 
     @Override
@@ -147,7 +151,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     public ClientProxyConnector getClientProxyConnector() {
-        return resolveEffectiveProvider(ClientProxyConnector.class, proxyConnector, getFactoryManager().getClientProxyConnector());
+        ClientFactoryManager manager = getFactoryManager();
+        return resolveEffectiveProvider(ClientProxyConnector.class, proxyConnector, manager.getClientProxyConnector());
     }
 
     @Override
@@ -172,7 +177,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         }
 
         int index = AuthenticationIdentitiesProvider.findIdentityIndex(
-                identities, AuthenticationIdentitiesProvider.PASSWORD_IDENTITY_COMPARATOR, password);
+            identities, AuthenticationIdentitiesProvider.PASSWORD_IDENTITY_COMPARATOR, password);
         if (index >= 0) {
             return (String) identities.remove(index);
         } else {
@@ -191,7 +196,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         if (log.isDebugEnabled()) {
             PublicKey key = kp.getPublic();
             log.debug("addPublicKeyIdentity({}) {}-{}",
-                      this, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+                  this, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
         }
     }
 
@@ -202,7 +207,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         }
 
         int index = AuthenticationIdentitiesProvider.findIdentityIndex(
-                identities, AuthenticationIdentitiesProvider.KEYPAIR_IDENTITY_COMPARATOR, kp);
+            identities, AuthenticationIdentitiesProvider.KEYPAIR_IDENTITY_COMPARATOR, kp);
         if (index >= 0) {
             return (KeyPair) identities.remove(index);
         } else {
@@ -219,7 +224,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
                 proxyConnector.sendClientProxyMetadata(this);
             } catch (Throwable t) {
                 log.warn("sendClientIdentification({}) failed ({}) to send proxy metadata: {}",
-                         this, t.getClass().getSimpleName(), t.getMessage());
+                     this, t.getClass().getSimpleName(), t.getMessage());
                 if (log.isDebugEnabled()) {
                     log.debug("sendClientIdentification(" + this + ") proxy metadata send failure details", t);
                 }
@@ -433,7 +438,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         boolean verified = serverKeyVerifier.verifyServerKey(this, remoteAddress, serverKey);
         if (log.isDebugEnabled()) {
             log.debug("checkKeys({}) key={}-{}, verified={}",
-                      this, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey), verified);
+                  this, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey), verified);
         }
 
         if (!verified) {

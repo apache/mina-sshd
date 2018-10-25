@@ -33,6 +33,7 @@ import org.apache.sshd.client.channel.exit.ExitSignalChannelRequestHandler;
 import org.apache.sshd.client.channel.exit.ExitStatusChannelRequestHandler;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshConstants;
@@ -101,11 +102,10 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         });
     }
 
-// TODO: investigate how to fix the forwarding channel failures when enabled
-//    @Override
-//    public ClientSession getSession() {
-//        return (ClientSession) super.getSession();
-//    }
+    @Override
+    public ClientSession getClientSession() {
+        return (ClientSession) super.getSession();
+    }
 
     protected void addChannelSignalRequestHandlers(EventNotifier<String> notifier) {
         addRequestHandler(new ExitStatusChannelRequestHandler(exitStatusHolder, notifier));
@@ -187,25 +187,25 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .when(openFuture)
-                .run(toString(), () -> {
-                    // If the channel has not been opened yet,
-                    // skip the SSH_MSG_CHANNEL_CLOSE exchange
-                    if (openFuture == null) {
-                        gracefulFuture.setClosed();
-                    }
-                    // Close inverted streams after
-                    // If the inverted stream is closed before, there's a small time window
-                    // in which we have:
-                    //    ChannelPipedInputStream#closed = true
-                    //    ChannelPipedInputStream#writerClosed = false
-                    // which leads to an IOException("Pipe closed") when reading.
-                    IoUtils.closeQuietly(in, out, err);
-                    IoUtils.closeQuietly(invertedIn, invertedOut, invertedErr);
-                })
-                .parallel(asyncIn, asyncOut, asyncErr)
-                .close(super.getInnerCloseable())
-                .build();
+            .when(openFuture)
+            .run(toString(), () -> {
+                // If the channel has not been opened yet,
+                // skip the SSH_MSG_CHANNEL_CLOSE exchange
+                if (openFuture == null) {
+                    gracefulFuture.setClosed();
+                }
+                // Close inverted streams after
+                // If the inverted stream is closed before, there's a small time window
+                // in which we have:
+                //    ChannelPipedInputStream#closed = true
+                //    ChannelPipedInputStream#writerClosed = false
+                // which leads to an IOException("Pipe closed") when reading.
+                IoUtils.closeQuietly(in, out, err);
+                IoUtils.closeQuietly(invertedIn, invertedOut, invertedErr);
+            })
+            .parallel(asyncIn, asyncOut, asyncErr)
+            .close(super.getInnerCloseable())
+            .build();
     }
 
     @Override
