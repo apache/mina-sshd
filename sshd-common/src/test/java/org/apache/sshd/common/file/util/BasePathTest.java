@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -45,7 +45,7 @@ import org.mockito.Mockito;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
 @SuppressWarnings("checkstyle:MethodCount")
-public class BasePathTest extends BaseTestSupport {
+public class BasePathTest extends JUnitTestSupport {
     private TestFileSystem fileSystem;
 
     public BasePathTest() {
@@ -83,15 +83,15 @@ public class BasePathTest extends BaseTestSupport {
     @Test
     public void testRootPath() {
         new PathTester(fileSystem, "/")
-                .root("/")
-                .test("/");
+            .root("/")
+            .test("/");
     }
 
     @Test
     public void testRelativePathSingleName() {
         new PathTester(fileSystem, "test")
-                .names("test")
-                .test("test");
+            .names("test")
+            .test("test");
 
         Path path = parsePath("test");
         assertEquals(path, path.getFileName());
@@ -99,47 +99,45 @@ public class BasePathTest extends BaseTestSupport {
 
     @Test
     public void testRelativePathTwoNames() {
-        PathTester tester = new PathTester(fileSystem, "foo/bar")
-                .names("foo", "bar");
-
-        tester.test("foo/bar");
+        new PathTester(fileSystem, "foo/bar")
+            .names("foo", "bar")
+            .test("foo/bar");
     }
 
     @Test
     public void testRelativePathFourNames() {
         new PathTester(fileSystem, "foo/bar/baz/test")
-                .names("foo", "bar", "baz", "test")
-                .test("foo/bar/baz/test");
+            .names("foo", "bar", "baz", "test")
+            .test("foo/bar/baz/test");
     }
 
     @Test
     public void testAbsolutePathSingleName() {
         new PathTester(fileSystem, "/foo")
-                .root("/")
-                .names("foo")
-                .test("/foo");
+            .root("/")
+            .names("foo")
+            .test("/foo");
     }
 
     @Test
     public void testAbsolutePathTwoNames() {
         new PathTester(fileSystem, "/foo/bar")
-                .root("/")
-                .names("foo", "bar")
-                .test("/foo/bar");
+            .root("/")
+            .names("foo", "bar")
+            .test("/foo/bar");
     }
 
     @Test
     public void testAbsoluteMultiNamePathFourNames() {
         new PathTester(fileSystem, "/foo/bar/baz/test")
-                .root("/")
-                .names("foo", "bar", "baz", "test")
-                .test("/foo/bar/baz/test");
+            .root("/")
+            .names("foo", "bar", "baz", "test")
+            .test("/foo/bar/baz/test");
     }
 
     @Test
     public void testResolveFromRoot() {
         Path root = parsePath("/");
-
         assertResolvedPathEquals("/foo", root, "foo");
         assertResolvedPathEquals("/foo/bar", root, "foo/bar");
         assertResolvedPathEquals("/foo/bar", root, "foo", "bar");
@@ -150,7 +148,6 @@ public class BasePathTest extends BaseTestSupport {
     @Test
     public void testResolveFromAbsolute() {
         Path path = parsePath("/foo");
-
         assertResolvedPathEquals("/foo/bar", path, "bar");
         assertResolvedPathEquals("/foo/bar/baz/test", path, "bar/baz/test");
         assertResolvedPathEquals("/foo/bar/baz/test", path, "bar/baz", "test");
@@ -160,7 +157,6 @@ public class BasePathTest extends BaseTestSupport {
     @Test
     public void testResolveFromRelative() {
         Path path = parsePath("foo");
-
         assertResolvedPathEquals("foo/bar", path, "bar");
         assertResolvedPathEquals("foo/bar/baz/test", path, "bar/baz/test");
         assertResolvedPathEquals("foo/bar/baz/test", path, "bar", "baz", "test");
@@ -170,7 +166,6 @@ public class BasePathTest extends BaseTestSupport {
     @Test
     public void testResolveWithThisAndParentDirNames() {
         Path path = parsePath("/foo");
-
         assertResolvedPathEquals("/foo/bar/../baz", path, "bar/../baz");
         assertResolvedPathEquals("/foo/bar/../baz", path, "bar", "..", "baz");
         assertResolvedPathEquals("/foo/./bar/baz", path, "./bar/baz");
@@ -236,15 +231,15 @@ public class BasePathTest extends BaseTestSupport {
     @Test
     public void testRelativizeOneAbsoluteOneRelative() {
         try {
-            parsePath("/foo/bar").relativize(parsePath("foo"));
-            fail();
+            Path result = parsePath("/foo/bar").relativize(parsePath("foo"));
+            fail("Unexpected 2-level result: " + result);
         } catch (IllegalArgumentException expected) {
             // ignored
         }
 
         try {
-            parsePath("foo").relativize(parsePath("/foo/bar"));
-            fail();
+            Path result = parsePath("foo").relativize(parsePath("/foo/bar"));
+            fail("Unexpected 1-level result: " + result);
         } catch (IllegalArgumentException expected) {
             // ignored
         }
@@ -415,7 +410,7 @@ public class BasePathTest extends BaseTestSupport {
         }
 
         public void test(Path path) {
-            assertEquals(string, path.toString());
+            assertEquals("Mismatched path value", string, path.toString());
 
             testRoot(path);
             testNames(path);
@@ -427,35 +422,39 @@ public class BasePathTest extends BaseTestSupport {
 
         protected void testRoot(Path path) {
             if (root != null) {
-                assertTrue(path + ".isAbsolute() should be true", path.isAbsolute());
-                assertNotNull(path + ".getRoot() should not be null", path.getRoot());
-                assertEquals(root, path.getRoot().toString());
+                assertTrue(path + ".isAbsolute() ?", path.isAbsolute());
+                assertNotNull(path + ".getRoot() <> null ?", path.getRoot());
+                assertEquals("Mismatched root path value", root, path.getRoot().toString());
             } else {
-                assertFalse(path + ".isAbsolute() should be false", path.isAbsolute());
-                assertNull(path + ".getRoot() should be null", path.getRoot());
+                assertFalse(path + ".is(Not)Absolute() ?", path.isAbsolute());
+                assertNull(path + ".getRoot() == null ?", path.getRoot());
             }
         }
 
         protected void testNames(Path path) {
-            assertEquals(names.size(), path.getNameCount());
-            assertEquals(names, names(path));
+            assertEquals("Mismatched names count", names.size(), path.getNameCount());
+            assertListEquals("Mismatched path names", names, names(path));
+
             for (int i = 0; i < names.size(); i++) {
-                assertEquals(names.get(i), path.getName(i).toString());
+                String nameAtIndex = names.get(i);
+                Path pathAtIndex = path.getName(i);
+                assertEquals("Mismatched component name at index=" + i, nameAtIndex, pathAtIndex.toString());
                 // don't test individual names if this is an individual name
                 if (names.size() > 1) {
-                    new PathTester(fileSystem, names.get(i))
-                            .names(names.get(i))
-                            .test(path.getName(i));
+                    new PathTester(fileSystem, nameAtIndex)
+                        .names(nameAtIndex)
+                        .test(pathAtIndex);
                 }
             }
+
             if (names.size() > 0) {
                 String fileName = names.get(names.size() - 1);
-                assertEquals(fileName, path.getFileName().toString());
+                assertEquals("Mismatched last component name", fileName, path.getFileName().toString());
                 // don't test individual names if this is an individual name
                 if (names.size() > 1) {
                     new PathTester(fileSystem, fileName)
-                            .names(fileName)
-                            .test(path.getFileName());
+                        .names(fileName)
+                        .test(path.getFileName());
                 }
             }
         }
@@ -463,15 +462,15 @@ public class BasePathTest extends BaseTestSupport {
         protected void testParents(Path path) {
             Path parent = path.getParent();
             if (((root != null) && (names.size() >= 1)) || (names.size() > 1)) {
-                assertNotNull(parent);
+                assertNotNull("No parent", parent);
             }
 
             if (parent != null) {
                 String parentName = names.size() == 1 ? root : string.substring(0, string.lastIndexOf('/'));
                 new PathTester(fileSystem, parentName)
-                        .root(root)
-                        .names(names.subList(0, names.size() - 1))
-                        .test(parent);
+                    .root(root)
+                    .names(names.subList(0, names.size() - 1))
+                    .test(parent);
             }
         }
 
@@ -488,31 +487,27 @@ public class BasePathTest extends BaseTestSupport {
                 // actually tests most possible subpaths multiple times but... eh
                 Path startSubpath = path.subpath(1, nameCount);
                 List<String> startNames = split(stringWithoutRoot, '/')
-                        .subList(1, nameCount);
-
+                    .subList(1, nameCount);
                 new PathTester(fileSystem, GenericUtils.join(startNames, '/'))
-                        .names(startNames)
-                        .test(startSubpath);
+                    .names(startNames)
+                    .test(startSubpath);
 
                 Path endSubpath = path.subpath(0, nameCount - 1);
                 List<String> endNames = split(stringWithoutRoot, '/')
-                        .subList(0, nameCount - 1);
-
+                    .subList(0, nameCount - 1);
                 new PathTester(fileSystem, GenericUtils.join(endNames, '/'))
-                        .names(endNames)
-                        .test(endSubpath);
+                    .names(endNames)
+                    .test(endSubpath);
             }
         }
 
         protected void testStartsWith(Path path) {
             // empty path doesn't start with any path
-            if (root != null || !names.isEmpty()) {
+            if ((root != null) || (!names.isEmpty())) {
                 Path other = path;
                 while (other != null) {
-                    assertTrue(path + ".startsWith(" + other + ") should be true",
-                            path.startsWith(other));
-                    assertTrue(path + ".startsWith(" + other + ") should be true",
-                            path.startsWith(other.toString()));
+                    assertTrue(path + ".startsWith(" + other + ")[path] ?", path.startsWith(other));
+                    assertTrue(path + ".startsWith(" + other + ")[string] ?", path.startsWith(other.toString()));
                     other = other.getParent();
                 }
             }
@@ -520,17 +515,17 @@ public class BasePathTest extends BaseTestSupport {
 
         protected void testEndsWith(Path path) {
             // empty path doesn't start with any path
-            if (root != null || !names.isEmpty()) {
+            if ((root != null) || (!names.isEmpty())) {
                 Path other = path;
                 while (other != null) {
-                    assertTrue(path + ".endsWith(" + other + ") should be true",
-                            path.endsWith(other));
-                    assertTrue(path + ".endsWith(" + other + ") should be true",
-                            path.endsWith(other.toString()));
-                    if (other.getRoot() != null && other.getNameCount() > 0) {
-                        other = other.subpath(0, other.getNameCount());
-                    } else if (other.getNameCount() > 1) {
-                        other = other.subpath(1, other.getNameCount());
+                    assertTrue(path + ".endsWith(" + other + ")[path] ?", path.endsWith(other));
+                    assertTrue(path + ".endsWith(" + other + ")[string] ?", path.endsWith(other.toString()));
+
+                    int otherNameCount = other.getNameCount();
+                    if ((other.getRoot() != null) && (otherNameCount > 0)) {
+                        other = other.subpath(0, otherNameCount);
+                    } else if (otherNameCount > 1) {
+                        other = other.subpath(1, otherNameCount);
                     } else {
                         other = null;
                     }

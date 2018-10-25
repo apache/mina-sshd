@@ -23,13 +23,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.apache.sshd.common.util.NumberUtils;
-import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.JUnitTestSupport;
 
 /**
  * TODO upgrade to default methods in JDK 8
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AssertableFile extends BaseTestSupport {
+public abstract class AssertableFile extends JUnitTestSupport {
     protected AssertableFile() {
         super();
     }
