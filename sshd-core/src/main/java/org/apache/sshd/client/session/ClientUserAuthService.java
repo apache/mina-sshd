@@ -101,6 +101,8 @@ public class ClientUserAuthService
         if (debugEnabled) {
             log.debug("ClientUserAuthService({}) client methods: {}", s, clientMethods);
         }
+
+        clientSession.resetAuthTimeout();
     }
 
     @Override

@@ -79,7 +79,8 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
     public ServerUserAuthService(Session s) throws IOException {
         boolean debugEnabled = log.isDebugEnabled();
-        serverSession = ValidateUtils.checkInstanceOf(s, ServerSession.class, "Server side service used on client side: %s", s);
+        serverSession = ValidateUtils.checkInstanceOf(
+            s, ServerSession.class, "Server side service used on client side: %s", s);
         if (s.isAuthenticated()) {
             throw new SshException("Session already authenticated");
         }
@@ -123,6 +124,8 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             log.debug("ServerUserAuthService({}) authorized authentication methods: {}",
                   s, NamedResource.getNames(userAuthFactories));
         }
+
+        s.resetAuthTimeout();
     }
 
     public WelcomeBannerPhase getWelcomePhase() {

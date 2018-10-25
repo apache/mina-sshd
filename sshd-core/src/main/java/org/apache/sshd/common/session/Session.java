@@ -160,9 +160,12 @@ public interface Session
      * (5 bytes) for the packet header.
      *
      * @param cmd the SSH command
-     * @return a new buffer ready for write
+     * @return a new buffer (of unknown size) ready for write
+     * @see #createBuffer(byte, int)
      */
-    Buffer createBuffer(byte cmd);
+    default Buffer createBuffer(byte cmd) {
+        return createBuffer(cmd, 0);
+    }
 
     /**
      * Create a new buffer for the specified SSH packet and reserve the needed space
@@ -270,11 +273,6 @@ public interface Session
     IoSession getIoSession();
 
     /**
-     * Re-start idle timeout timer
-     */
-    void resetIdleTimeout();
-
-    /**
      * Check if timeout has occurred.
      *
      * @return the timeout status, never {@code null}
@@ -282,16 +280,42 @@ public interface Session
     TimeoutStatus getTimeoutStatus();
 
     /**
+     * @return Timeout value in milliseconds for communication
+     */
+    long getIdleTimeout();
+
+    /**
+     * @return The timestamp value (milliseconds since EPOCH) when timer was started
+     */
+    long getIdleTimeoutStart();
+
+    /**
+     * Re-start idle timeout timer
+     *
+     * @return The timestamp value (milliseconds since EPOCH) when timer was started
+     * @see #getIdleTimeoutStart()
+     */
+    long resetIdleTimeout();
+
+    boolean isAuthenticated();
+
+    /**
      * @return Timeout value in milliseconds for authentication stage
      */
     long getAuthTimeout();
 
     /**
-     * @return Timeout value in milliseconds for communication
+     * @return The timestamp value (milliseconds since EPOCH) when timer was started
      */
-    long getIdleTimeout();
+    long getAuthTimeoutStart();
 
-    boolean isAuthenticated();
+    /**
+     * Re-start the authentication timeout timer
+     *
+     * @return The timestamp value (milliseconds since EPOCH) when timer was started
+     * @see #getAuthTimeoutStart()
+     */
+    long resetAuthTimeout();
 
     void setAuthenticated() throws IOException;
 

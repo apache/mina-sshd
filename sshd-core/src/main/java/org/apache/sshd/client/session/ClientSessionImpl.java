@@ -103,7 +103,7 @@ public class ClientSessionImpl extends AbstractClientSession {
 
     @Override
     public AuthFuture auth() throws IOException {
-        if (username == null) {
+        if (getUsername() == null) {
             throw new IllegalStateException("No username specified when the session was created");
         }
 
@@ -208,7 +208,7 @@ public class ClientSessionImpl extends AbstractClientSession {
                 if (closeFuture.isClosed()) {
                     cond.add(ClientSessionEvent.CLOSED);
                 }
-                if (authed) { // authFuture.isSuccess()
+                if (isAuthenticated()) { // authFuture.isSuccess()
                     cond.add(ClientSessionEvent.AUTHED);
                 }
                 if (KexState.DONE.equals(kexState.get()) && authFuture.isFailure()) {
