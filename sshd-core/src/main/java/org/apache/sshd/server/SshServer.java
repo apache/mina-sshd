@@ -249,7 +249,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     @Override
-    protected void checkConfig() {
+    public void checkConfig() {
         super.checkConfig();
 
         ValidateUtils.checkTrue(getPort() >= 0 /* zero means not set yet */, "Bad port number: %d", Integer.valueOf(getPort()));

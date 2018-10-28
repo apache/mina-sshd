@@ -477,7 +477,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
         }
     }
 
-    protected void checkConfig() {
+    public void checkConfig() {
         ValidateUtils.checkNotNullAndNotEmpty(getKeyExchangeFactories(), "KeyExchangeFactories not set");
 
         if (getScheduledExecutorService() == null) {

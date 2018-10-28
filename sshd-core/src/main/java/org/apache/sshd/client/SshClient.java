@@ -321,7 +321,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     @Override
-    protected void checkConfig() {
+    public void checkConfig() {
         super.checkConfig();
 
         Objects.requireNonNull(getForwarderFactory(), "ForwarderFactory not set");
