@@ -32,6 +32,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
 import org.apache.sshd.common.Closeable;
@@ -950,6 +951,13 @@ public abstract class AbstractChannel
     @SuppressWarnings("unchecked")
     public <T> T getAttribute(AttributeKey<T> key) {
         return (T) attributes.get(Objects.requireNonNull(key, "No key"));
+    }
+
+    @Override
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public <T> T computeAttributeIfAbsent(
+            AttributeKey<T> key, Function<? super AttributeKey<T>, ? extends T> resolver) {
+        return (T) attributes.computeIfAbsent(Objects.requireNonNull(key, "No key"), (Function) resolver);
     }
 
     @Override

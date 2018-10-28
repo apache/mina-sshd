@@ -38,6 +38,7 @@ import org.apache.sshd.server.auth.pubkey.CachingPublicKeyAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.auth.pubkey.UserAuthPublicKeyFactory;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
+import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.After;
 import org.junit.Before;
@@ -52,7 +53,7 @@ import org.junit.runners.MethodSorters;
 public class SinglePublicKeyAuthTest extends BaseTestSupport {
     private SshServer sshd;
     private int port;
-    private KeyPair pairRsa = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+    private final KeyPair pairRsaGood;
     private KeyPair pairRsaBad;
     private PublickeyAuthenticator delegate;
 
@@ -60,6 +61,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
         provider.setAlgorithm(KeyUtils.RSA_ALGORITHM);
         pairRsaBad = provider.loadKey(KeyPairProvider.SSH_RSA);
+        pairRsaGood = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
     }
 
     @Before
@@ -80,12 +82,12 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
 
     @Test
     public void testPublicKeyAuthWithCache() throws Exception {
-        final ConcurrentHashMap<String, AtomicInteger> count = new ConcurrentHashMap<>();
+        ConcurrentHashMap<String, AtomicInteger> count = new ConcurrentHashMap<>();
         TestCachingPublicKeyAuthenticator auth = new TestCachingPublicKeyAuthenticator((username, key, session) -> {
             String fp = KeyUtils.getFingerPrint(key);
-            count.putIfAbsent(fp, new AtomicInteger());
-            count.get(fp).incrementAndGet();
-            return key.equals(pairRsa.getPublic());
+            AtomicInteger counter = count.computeIfAbsent(fp, k -> new AtomicInteger());
+            counter.incrementAndGet();
+            return key.equals(pairRsaGood.getPublic());
         });
         delegate = auth;
 
@@ -94,34 +96,37 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
 
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPublicKeyIdentity(pairRsaBad);
-                session.addPublicKeyIdentity(pairRsa);
+                session.addPublicKeyIdentity(pairRsaGood);
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 assertEquals("Mismatched authentication invocations count", 2, count.size());
 
+                Map<Session, Map<PublicKey, Boolean>> cache = auth.getCache();
+                assertEquals("Mismatched cache size", 1, cache.size());
+
                 String fpBad = KeyUtils.getFingerPrint(pairRsaBad.getPublic());
-                String fpGood = KeyUtils.getFingerPrint(pairRsa.getPublic());
-                assertTrue("Missing bad public key", count.containsKey(fpBad));
-                assertTrue("Missing good public key", count.containsKey(fpGood));
-                assertEquals("Mismatched bad key authentication attempts", 1, count.get(fpBad).get());
-                assertEquals("Mismatched good key authentication attempts", 1, count.get(fpGood).get());
+                AtomicInteger badCounter = count.get(fpBad);
+                assertNotNull("Missing bad public key", badCounter);
+                assertEquals("Mismatched bad key authentication attempts", 1, badCounter.get());
+
+                String fpGood = KeyUtils.getFingerPrint(pairRsaGood.getPublic());
+                AtomicInteger goodCounter = count.get(fpGood);
+                assertNotNull("Missing good public key", goodCounter);
+                assertEquals("Mismatched good key authentication attempts", 1, goodCounter.get());
             } finally {
                 client.stop();
             }
         }
-
-        Thread.sleep(100L);
-        assertTrue("Cache not empty", auth.getCache().isEmpty());
     }
 
     @Test
     public void testPublicKeyAuthWithoutCache() throws Exception {
-        final ConcurrentHashMap<String, AtomicInteger> count = new ConcurrentHashMap<>();
+        ConcurrentHashMap<String, AtomicInteger> count = new ConcurrentHashMap<>();
         delegate = (username, key, session) -> {
             String fp = KeyUtils.getFingerPrint(key);
-            count.putIfAbsent(fp, new AtomicInteger());
-            count.get(fp).incrementAndGet();
-            return key.equals(pairRsa.getPublic());
+            AtomicInteger counter = count.computeIfAbsent(fp, k -> new AtomicInteger());
+            counter.incrementAndGet();
+            return key.equals(pairRsaGood.getPublic());
         };
 
         try (SshClient client = setupTestClient()) {
@@ -129,7 +134,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
 
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPublicKeyIdentity(pairRsaBad);
-                session.addPublicKeyIdentity(pairRsa);
+                session.addPublicKeyIdentity(pairRsaGood);
 
                 AuthFuture auth = session.auth();
                 assertTrue("Failed to authenticate on time", auth.await(5L, TimeUnit.SECONDS));
@@ -146,19 +151,27 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         assertNotNull("Missing bad RSA key", badIndex);
         assertEquals("Mismatched attempt index for bad key", 1, badIndex.intValue());
 
-        String goodFingerPrint = KeyUtils.getFingerPrint(pairRsa.getPublic());
+        String goodFingerPrint = KeyUtils.getFingerPrint(pairRsaGood.getPublic());
         Number goodIndex = count.get(goodFingerPrint);
         assertNotNull("Missing good RSA key", goodIndex);
         assertEquals("Mismatched attempt index for good key", 2, goodIndex.intValue());
     }
 
     public static class TestCachingPublicKeyAuthenticator extends CachingPublicKeyAuthenticator {
+        private final Map<Session, Map<PublicKey, Boolean>> cache = new ConcurrentHashMap<>();
+
         public TestCachingPublicKeyAuthenticator(PublickeyAuthenticator authenticator) {
             super(authenticator);
         }
 
         public Map<Session, Map<PublicKey, Boolean>> getCache() {
             return cache;
+        }
+
+        @Override
+        protected Map<PublicKey, Boolean> resolveCachedResults(String username, PublicKey key, ServerSession session) {
+            Map<PublicKey, Boolean> map = cache.computeIfAbsent(session, s -> new ConcurrentHashMap<>());
+            return session.computeAttributeIfAbsent(CACHE_ATTRIBUTE, k -> map);
         }
     }
 }

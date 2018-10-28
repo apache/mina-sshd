@@ -27,6 +27,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.Factory;
@@ -147,6 +148,13 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     @SuppressWarnings("unchecked")
     public <T> T getAttribute(AttributeKey<T> key) {
         return (T) attributes.get(Objects.requireNonNull(key, "No key"));
+    }
+
+    @Override
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public <T> T computeAttributeIfAbsent(
+            AttributeKey<T> key, Function<? super AttributeKey<T>, ? extends T> resolver) {
+        return (T) attributes.computeIfAbsent(Objects.requireNonNull(key, "No key"), (Function) resolver);
     }
 
     @Override

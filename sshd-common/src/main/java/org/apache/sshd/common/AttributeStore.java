@@ -19,6 +19,9 @@
 
 package org.apache.sshd.common;
 
+import java.util.Objects;
+import java.util.function.Function;
+
 /**
  * Provides the capability to attach in-memory attributes to the entity
  *
@@ -64,6 +67,37 @@ public interface AttributeStore {
      * @return {@code null} if there is no value associated with the specified key
      */
     <T> T getAttribute(AttributeKey<T> key);
+
+    /**
+     * If the specified key is not already associated with a value (or is mapped
+     * to {@code null}), attempts to compute its value using the given mapping
+     * function and enters it into this map unless {@code null}.
+     *
+     * @param <T> The generic attribute type
+     * @param key The key of the attribute; must not be {@code null}.
+     * @param resolver The (never {@code null}) mapping function to use if value
+     * not already mapped. If returns {@code null} then value is not mapped to
+     * the provided key.
+     * @return The resolved value - {@code null} if value not mapped and resolver
+     * did not return a non-{@code null} value for it
+     */
+    default <T> T computeAttributeIfAbsent(
+            AttributeKey<T> key, Function<? super AttributeKey<T>, ? extends T> resolver) {
+        Objects.requireNonNull(resolver, "No resolver provided");
+
+        T value = getAttribute(key);
+        if (value != null) {
+            return value;
+        }
+
+        value = resolver.apply(key);
+        if (value == null) {
+            return null;
+        }
+
+        setAttribute(key, value);
+        return value;
+    }
 
     /**
      * Sets a user-defined attribute.

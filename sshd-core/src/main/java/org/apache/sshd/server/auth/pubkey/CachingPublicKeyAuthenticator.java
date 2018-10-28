@@ -23,22 +23,25 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.sshd.common.AttributeStore.AttributeKey;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
- * Caches the result per session
+ * Caches the result per session - compensates for {@code OpenSSH} behavior
+ * where it sends 2 requests with the same key (see {@code SSHD-300}).
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class CachingPublicKeyAuthenticator extends AbstractLoggingBean implements PublickeyAuthenticator, SessionListener {
+public class CachingPublicKeyAuthenticator extends AbstractLoggingBean implements PublickeyAuthenticator {
+    /**
+     * The {@link AttributeKey} used to store the cached authentication results on the session instance
+     */
+    public static final AttributeKey<Map<PublicKey, Boolean>> CACHE_ATTRIBUTE = new AttributeKey<>();
 
     protected final PublickeyAuthenticator authenticator;
-    protected final Map<Session, Map<PublicKey, Boolean>> cache = new ConcurrentHashMap<>();
 
     public CachingPublicKeyAuthenticator(PublickeyAuthenticator authenticator) {
         this.authenticator = Objects.requireNonNull(authenticator, "No delegate authenticator");
@@ -46,21 +49,15 @@ public class CachingPublicKeyAuthenticator extends AbstractLoggingBean implement
 
     @Override
     public boolean authenticate(String username, PublicKey key, ServerSession session) {
-        Map<PublicKey, Boolean> map = cache.get(session);
-        if (map == null) {
-            map = new ConcurrentHashMap<>();
-            cache.put(session, map);
-            session.addSessionListener(this);
-        }
-
+        Map<PublicKey, Boolean> map = resolveCachedResults(username, key, session);
         Boolean result = map.get(key);
         if (result == null) {
             try {
                 result = authenticator.authenticate(username, key, session);
             } catch (Error e) {
                 log.warn("authenticate({}@{}) failed ({}) to consult delegate for {} key={}: {}",
-                         username, session, e.getClass().getSimpleName(),
-                         KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key), e.getMessage());
+                     username, session, e.getClass().getSimpleName(),
+                     KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key), e.getMessage());
                 if (log.isDebugEnabled()) {
                     log.debug("authenticate(" + username + "@" + session + ") delegate failure details", e);
                 }
@@ -69,52 +66,20 @@ public class CachingPublicKeyAuthenticator extends AbstractLoggingBean implement
             }
             if (log.isDebugEnabled()) {
                 log.debug("authenticate({}@{}) cache result={} for {} key={}",
-                          username, session, result, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+                      username, session, result, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
             }
             map.put(key, result);
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("authenticate({}@{}) use cached result={} for {} key={}",
-                          username, session, result, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+                      username, session, result, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
             }
         }
 
         return result;
     }
 
-    @Override
-    public void sessionCreated(Session session) {
-        // ignored
-    }
-
-    @Override
-    public void sessionEvent(Session session, Event event) {
-        // ignored
-    }
-
-    @Override
-    public void sessionException(Session session, Throwable t) {
-        if (log.isDebugEnabled()) {
-            log.debug("sessionException({}) {}: {}", session, t.getClass().getSimpleName(), t.getMessage());
-        }
-        if (log.isTraceEnabled()) {
-            log.trace("sessionException(" + session + ") details", t);
-        }
-        sessionClosed(session);
-    }
-
-    @Override
-    public void sessionClosed(Session session) {
-        Map<PublicKey, Boolean> map = cache.remove(session);
-        if (map == null) {
-            if (log.isDebugEnabled()) {
-                log.debug("sessionClosed({}) not cached", session);
-            }
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug("sessionClosed({}) removed from cache", session);
-            }
-        }
-        session.removeSessionListener(this);
+    protected Map<PublicKey, Boolean> resolveCachedResults(String username, PublicKey key, ServerSession session) {
+        return session.computeAttributeIfAbsent(CACHE_ATTRIBUTE, attr -> new ConcurrentHashMap<>());
     }
 }
