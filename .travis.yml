@@ -16,4 +16,4 @@
 # under the License.
 
 language: java
-install: mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V || cat target/rat.txt
+script: mvn test -B -Dtest=!org.apache.sshd.client.ClientTest#testConnectUsingIPv6Address
