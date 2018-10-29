@@ -37,10 +37,6 @@
     <rule ref="category/java/codestyle.xml/AtLeastOneConstructor" />
     <rule ref="category/java/codestyle.xml/ExtendsObject" />
     <rule ref="category/java/codestyle.xml/BooleanGetMethodName" />
-    <rule ref="category/java/codestyle.xml/ForLoopsMustUseBraces" />
-    <rule ref="category/java/codestyle.xml/IfElseStmtsMustUseBraces" />
-    <rule ref="category/java/codestyle.xml/IfStmtsMustUseBraces" />
-    <rule ref="category/java/codestyle.xml/WhileLoopsMustUseBraces" />
 
     <rule ref="category/java/design.xml/AvoidDeeplyNestedIfStmts">
         <properties>
