@@ -104,8 +104,8 @@
         <min.required.maven.version>3.5.0</min.required.maven.version>
         <gmaven.plugin.version>2.1</gmaven.plugin.version>
         <groovy.major.version>2</groovy.major.version>
-        <groovy.minor.version>4</groovy.minor.version>
-        <groovy.release.version>15</groovy.release.version>
+        <groovy.minor.version>5</groovy.minor.version>
+        <groovy.release.version>3</groovy.release.version>
         <groovy.compliance.level>2.0</groovy.compliance.level>
         <groovy.version>${groovy.major.version}.${groovy.minor.version}.${groovy.release.version}</groovy.version>
 
@@ -367,9 +367,21 @@
         <dependencies>
             <dependency>
                 <groupId>org.codehaus.groovy</groupId>
-                <artifactId>groovy-all</artifactId>
+                <artifactId>groovy</artifactId>
                 <version>${groovy.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.codehaus.groovy</groupId>
+                <artifactId>groovy-ant</artifactId>
+                <version>${groovy.version}</version>
+                <exclusions>
+                    <exclusion> <!-- replaced by ant-junit4 -->
+                        <groupId>org.apache.ant</groupId>
+                        <artifactId>ant-junit</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
                 <!-- NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 
                     Upgrading it beyond 2.0.19 causes problems for the sshd-ldap
@@ -716,12 +728,7 @@
                     <artifactId>groovy-maven-plugin</artifactId>
                     <version>${gmaven.plugin.version}</version>
                     <dependencies>
-                        <dependency>
-                            <groupId>org.codehaus.groovy</groupId>
-                            <artifactId>groovy-all</artifactId>
-                            <version>${groovy.version}</version>
-                        </dependency>
-                          <!-- referenced indirectly by groovy-all -->
+                          <!-- referenced indirectly by groovy-ant -->
                         <dependency>
                             <groupId>org.apache.ant</groupId>
                             <artifactId>ant</artifactId>
@@ -738,9 +745,31 @@
                             <version>${ant.version}</version>
                         </dependency>
                         <dependency>
+                            <groupId>org.apache.ant</groupId>
+                            <artifactId>ant-antlr</artifactId>
+                            <version>${ant.version}</version>
+                        </dependency>
+                        <dependency>
                             <groupId>junit</groupId>
                             <artifactId>junit</artifactId>
                             <version>${junit.version}</version>
+                        </dependency>
+
+                        <dependency>
+                            <groupId>org.codehaus.groovy</groupId>
+                            <artifactId>groovy</artifactId>
+                            <version>${groovy.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.codehaus.groovy</groupId>
+                            <artifactId>groovy-ant</artifactId>
+                            <version>${groovy.version}</version>
+                            <exclusions>
+                                <exclusion> <!-- replaced by ant-junit4 -->
+                                    <groupId>org.apache.ant</groupId>
+                                    <artifactId>ant-junit</artifactId>
+                                </exclusion>
+                            </exclusions>
                         </dependency>
                     </dependencies>
                 </plugin>
@@ -813,9 +842,9 @@
                             <artifactId>ant</artifactId>
                             <version>${ant.version}</version>
                         </dependency>
-                        <dependency>
+                        <dependency>    <!-- replace ant-junit artifact -->
                             <groupId>org.apache.ant</groupId>
-                            <artifactId>ant-junit</artifactId>
+                            <artifactId>ant-junit4</artifactId>
                             <version>${ant.version}</version>
                         </dependency>
                         <dependency>
@@ -853,6 +882,12 @@
                             <groupId>org.codehaus.groovy</groupId>
                             <artifactId>groovy-ant</artifactId>
                             <version>${groovy.version}</version>
+                            <exclusions>
+                                <exclusion> <!-- replaced by ant-junit4 -->
+                                    <groupId>org.apache.ant</groupId>
+                                    <artifactId>ant-junit</artifactId>
+                                </exclusion>
+                            </exclusions>
                         </dependency>
                     </dependencies>
                 </plugin>
