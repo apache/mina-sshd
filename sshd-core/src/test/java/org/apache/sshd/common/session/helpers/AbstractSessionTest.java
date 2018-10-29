@@ -202,7 +202,7 @@ public class AbstractSessionTest extends BaseTestSupport {
     public void testMalformedUnimplementedMessage() throws Exception {
         session.setReservedSessionMessagesHandler(new ReservedSessionMessagesHandler() {
             @Override
-            public void handleUnimplementedMessage(Session session, Buffer buffer) throws Exception {
+            public void handleUnimplementedMessage(Session session, int cmd, Buffer buffer) throws Exception {
                 fail("Unexpected invocation: available=" + buffer.available());
             }
         });

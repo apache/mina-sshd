@@ -64,6 +64,7 @@ import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.mac.MacInformation;
 import org.apache.sshd.common.random.Random;
+import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.SessionWorkBuffer;
 import org.apache.sshd.common.util.EventListenerUtils;
@@ -408,7 +409,7 @@ public abstract class AbstractSession extends SessionHelper {
                         log.debug("process({}) Unsupported command: {}",
                             this, SshConstants.getCommandMessageName(cmd));
                     }
-                    notImplemented();
+                    notImplemented(cmd, buffer);
                 }
                 break;
         }
@@ -1346,11 +1347,16 @@ public abstract class AbstractSession extends SessionHelper {
      * contain the sequence id of the unsupported packet: this number
      * is assumed to be the last packet received.
      *
+     * @param cmd The un-implemented command value
+     * @param buffer The {@link Buffer} that contains the command. <b>Note:</b> the
+     * buffer's read position is just beyond the command.
      * @return An {@link IoWriteFuture} that can be used to wait for packet write completion
-     * @throws IOException if an error occurred sending the packet
+     * @throws Exception if an error occurred while handling the packet.
      * @see #sendNotImplemented(long)
      */
-    protected IoWriteFuture notImplemented() throws IOException {
+    protected IoWriteFuture notImplemented(int cmd, Buffer buffer) throws Exception {
+        ReservedSessionMessagesHandler handler = resolveReservedSessionMessagesHandler();
+        handler.handleUnimplementedMessage(this, cmd, buffer);
         return sendNotImplemented(seqi - 1L);
     }
 

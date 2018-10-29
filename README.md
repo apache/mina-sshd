@@ -1335,6 +1335,17 @@ configuration properties that can be used to configure said behavior - please be
 
 #### `ReservedSessionMessagesHandler`
 
+Can be used to handle the following cases:
+
+* [SSH_MSG_IGNORE](https://tools.ietf.org/html/rfc4253#section-11.2)
+* [SSH_MSG_DEBUG](https://tools.ietf.org/html/rfc4253#section-11.3)
+* [SSH_MSG_UNIMPLEMENTED](https://tools.ietf.org/html/rfc4253#section-11.4)
+* Any other unrecognized message received in the session.
+
+**Note:** The `handleUnimplementedMessage` method serves both for handling `SSH_MSG_UNIMPLEMENTED` and any other unrecognized
+message received in the session as well.
+
+
 ```java
 
     // client side
@@ -1386,11 +1397,10 @@ rather than being accumulated. However, one can use the `EventListenerUtils` and
 
 ### `RequestHandler`(s)
 
-The code supports both [global](https://tools.ietf.org/html/rfc4254#section-4) and [channel-specific](https://tools.ietf.org/html/rfc4254#section-5.4) requests via the registration of `RequestHandler`(s).
-The global handlers are derived from `ConnectionServiceRequestHandler`(s) whereas the channel-specific
-ones are derived from `ChannelRequestHandler`(s). In order to add a handler one need only register the correct
-implementation and handle the request when it is detected. For global request handlers this is done by registering
-them on the server:
+The code supports both [global](https://tools.ietf.org/html/rfc4254#section-4) and [channel-specific](https://tools.ietf.org/html/rfc4254#section-5.4)
+requests via the registration of `RequestHandler`(s). The global handlers are derived from `ConnectionServiceRequestHandler`(s) whereas the channel-specific
+ones are derived from `ChannelRequestHandler`(s). In order to add a handler one need only register the correct implementation and handle the request when
+it is detected. For global request handlers this is done by registering them on the server:
 
 ```java
 

@@ -381,7 +381,7 @@ public abstract class AbstractConnectionService
                     log.debug("process({}) Unsupported command: {}",
                         session, SshConstants.getCommandMessageName(cmd));
                 }
-                session.notImplemented();
+                session.notImplemented(cmd, buffer);
             }
         }
     }
