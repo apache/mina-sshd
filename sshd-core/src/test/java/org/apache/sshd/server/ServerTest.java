@@ -228,7 +228,14 @@ public class ServerTest extends BaseTestSupport {
 
             @Override
             public void sessionException(Session session, Throwable t) {
-                outputDebugMessage("Session %s exception %s caught: %s", session, t.getClass().getSimpleName(), t.getMessage());
+                outputDebugMessage("Session %s exception %s caught: %s",
+                    session, t.getClass().getSimpleName(), t.getMessage());
+            }
+
+            @Override
+            public void sessionDisconnect(Session session, int reason, String msg, String language, boolean initiator) {
+                outputDebugMessage("Session %s disconnected (sender=%s): reason=%d, message=%s",
+                    session, initiator, reason, msg);
             }
 
             @Override
@@ -255,9 +262,9 @@ public class ServerTest extends BaseTestSupport {
             assertTrue("No changes in open channels", channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS));
 
             Collection<ClientSession.ClientSessionEvent> res =
-                    s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 2L * testIdleTimeout);
+                s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 2L * testIdleTimeout);
             assertTrue("Session should be closed and authenticated: " + res,
-                       res.containsAll(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.AUTHED)));
+                res.containsAll(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.AUTHED)));
         } finally {
             client.stop();
         }

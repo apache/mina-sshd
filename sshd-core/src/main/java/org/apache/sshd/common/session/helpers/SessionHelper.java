@@ -525,6 +525,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             (manager == null) ? null : manager.getSessionListenerProxy(),
             getSessionListenerProxy()
         };
+
         Throwable err = null;
         for (SessionListener l : listeners) {
             if (l == null) {
@@ -853,16 +854,20 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     @Override
     public void disconnect(int reason, String msg) throws IOException {
         log.info("Disconnecting({}): {} - {}", this, SshConstants.getDisconnectReasonName(reason), msg);
+        String languageTag = "";    // TODO configure language...
+        signalDisconnect(reason, msg, languageTag, true);
+
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_DISCONNECT, msg.length() + Short.SIZE);
         buffer.putInt(reason);
         buffer.putString(msg);
-        buffer.putString("");   // TODO configure language...
+        buffer.putString("");
 
         // Write the packet with a timeout to ensure a timely close of the session
         // in case the consumer does not read packets anymore.
         long disconnectTimeoutMs = this.getLongProperty(
             FactoryManager.DISCONNECT_TIMEOUT, FactoryManager.DEFAULT_DISCONNECT_TIMEOUT);
-        writePacket(buffer, disconnectTimeoutMs, TimeUnit.MILLISECONDS).addListener(future -> {
+        IoWriteFuture packetFuture = writePacket(buffer, disconnectTimeoutMs, TimeUnit.MILLISECONDS);
+        packetFuture.addListener(future -> {
             Throwable t = future.getException();
             if (log.isDebugEnabled()) {
                 if (t == null) {
@@ -885,6 +890,62 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
 
             close(true);
         });
+    }
+
+    protected void handleDisconnect(Buffer buffer) throws Exception  {
+        int code = buffer.getInt();
+        String message = buffer.getString();
+        String languageTag;
+        // SSHD-738: avoid spamming the log with uninteresting
+        // messages caused by buggy OpenSSH < 5.5
+        if (buffer.available() > 0) {
+            languageTag = buffer.getString();
+        } else {
+            languageTag = "";
+        }
+        handleDisconnect(code, message, languageTag, buffer);
+    }
+
+    protected void handleDisconnect(int code, String msg, String lang, Buffer buffer) throws Exception {
+        if (log.isDebugEnabled()) {
+            log.debug("handleDisconnect({}) SSH_MSG_DISCONNECT reason={}, [lang={}] msg={}",
+                  this, SshConstants.getDisconnectReasonName(code), lang, msg);
+        }
+
+        signalDisconnect(code, msg, lang, false);
+        close(true);
+    }
+
+    protected void signalDisconnect(int code, String msg, String lang, boolean initiator) {
+        try {
+            invokeSessionSignaller(l -> {
+                signalDisconnect(l, code, msg, lang, initiator);
+                return null;
+            });
+        } catch (Throwable err) {
+            Throwable e = GenericUtils.peelException(err);
+            if (log.isDebugEnabled()) {
+                log.debug("signalDisconnect(" + this + ") signal session disconnect details", e);
+            }
+
+            if (log.isTraceEnabled()) {
+                Throwable[] suppressed = e.getSuppressed();
+                if (GenericUtils.length(suppressed) > 0) {
+                    for (Throwable s : suppressed) {
+                        log.trace("signalDisconnect(" + this + ") suppressed session disconnect signalling", s);
+                    }
+                }
+            }
+        }
+    }
+
+    protected void signalDisconnect(
+            SessionListener listener, int code, String msg, String lang, boolean initiator) {
+        if (listener == null) {
+            return;
+        }
+
+        listener.sessionDisconnect(this, code, msg, lang, initiator);
     }
 
     /**
@@ -946,14 +1007,14 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         } catch (Throwable err) {
             Throwable e = GenericUtils.peelException(err);
             if (log.isDebugEnabled()) {
-                log.debug("exceptionCaught(" + this + ") signal session exception details", e);
+                log.debug("signalExceptionCaught(" + this + ") signal session exception details", e);
             }
 
             if (log.isTraceEnabled()) {
                 Throwable[] suppressed = e.getSuppressed();
                 if (GenericUtils.length(suppressed) > 0) {
                     for (Throwable s : suppressed) {
-                        log.trace("exceptionCaught(" + this + ") suppressed session exception signalling", s);
+                        log.trace("signalExceptionCaught(" + this + ") suppressed session exception signalling", s);
                     }
                 }
             }

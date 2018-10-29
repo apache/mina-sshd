@@ -467,29 +467,6 @@ public abstract class AbstractSession extends SessionHelper {
         }
     }
 
-    protected void handleDisconnect(Buffer buffer) throws Exception  {
-        int code = buffer.getInt();
-        String message = buffer.getString();
-        String languageTag;
-        // SSHD-738: avoid spamming the log with uninteresting
-        // messages caused by buggy OpenSSH < 5.5
-        if (buffer.available() > 0) {
-            languageTag = buffer.getString();
-        } else {
-            languageTag = "";
-        }
-        handleDisconnect(code, message, languageTag, buffer);
-    }
-
-    protected void handleDisconnect(int code, String msg, String lang, Buffer buffer) throws Exception {
-        if (log.isDebugEnabled()) {
-            log.debug("handleDisconnect({}) SSH_MSG_DISCONNECT reason={}, [lang={}] msg={}",
-                  this, SshConstants.getDisconnectReasonName(code), lang, msg);
-        }
-
-        close(true);
-    }
-
     protected void handleServiceRequest(Buffer buffer) throws Exception {
         String serviceName = buffer.getString();
         handleServiceRequest(serviceName, buffer);
