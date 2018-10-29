@@ -663,6 +663,18 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
                     <version>3.0.1</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.apache.maven</groupId>
+                            <artifactId>maven-archiver</artifactId>
+                            <version>${maven.archiver.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.codehaus.plexus</groupId>
+                            <artifactId>plexus-archiver</artifactId>
+                            <version>${plexus.archiver.version}</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -686,6 +698,18 @@
                     <configuration>
                         <additionalOptions>-Xdoclint:none </additionalOptions>
                     </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.apache.maven</groupId>
+                            <artifactId>maven-archiver</artifactId>
+                            <version>${maven.archiver.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.codehaus.plexus</groupId>
+                            <artifactId>plexus-archiver</artifactId>
+                            <version>${plexus.archiver.version}</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.gmaven</groupId>
@@ -868,6 +892,13 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-dependency-plugin</artifactId>
                     <version>3.1.1</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.codehaus.plexus</groupId>
+                            <artifactId>plexus-archiver</artifactId>
+                            <version>${plexus.archiver.version}</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
 
                 <plugin>
@@ -1048,7 +1079,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.0.2</version>
                 <executions>
                     <execution>
                         <id>install</id>
@@ -1100,6 +1130,15 @@
                     </execution>
                 </executions>
             </plugin>
+                <!-- NOTE: do not upgrade maven or plexus-archiver plugin
+                    dependency for this plugin in order to avoid
+
+                        Execution unix-bin of goal org.apache.maven.plugins:maven-assembly-plugin:3.1.0:single failed:
+                            An API incompatibility was encountered while executing org.apache.maven.plugins:maven-assembly-plugin:3.1.0:single:
+                                java.lang.AbstractMethodError:
+                                    org.apache.maven.plugins.assembly.archive.archiver.PrefixedFileSet.getFileMappers()
+                                        [Lorg/codehaus/plexus/components/io/filemappers/FileMapper;
+               -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -1131,6 +1170,17 @@
                         </configuration>
                     </execution>
                 </executions>
+                <!-- NOTE: do not upgrade maven-archiver plugin
+                    dependency for this plugin in order to avoid
+
+                    Execution bundle-manifest of goal org.apache.felix:maven-bundle-plugin:4.0.0:manifest failed:
+                        An API incompatibility was encountered while executing org.apache.felix:maven-bundle-plugin:4.0.0:manifest:
+                            java.lang.NoSuchMethodError:
+                                org.apache.maven.archiver.MavenArchiver.getManifest(
+                                    Lorg/apache/maven/project/MavenProject;
+                                    Lorg/apache/maven/archiver/MavenArchiveConfiguration;)
+                                        Lorg/codehaus/plexus/archiver/jar/Manifest;
+               -->
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
