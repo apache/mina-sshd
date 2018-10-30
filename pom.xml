@@ -1074,6 +1074,7 @@
                             <onlyWhenRelease>true</onlyWhenRelease>
                             <message>No Snapshot Dependencies Allowed</message>
                         </requireReleaseDeps>
+                        <dependencyConvergence/>
                     </rules>
                 </configuration>
             </plugin>
