@@ -23,7 +23,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.sshd.common.AttributeStore.AttributeKey;
+import org.apache.sshd.common.AttributeRepository;
+import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -37,9 +38,9 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public class CachingPublicKeyAuthenticator extends AbstractLoggingBean implements PublickeyAuthenticator {
     /**
-     * The {@link AttributeKey} used to store the cached authentication results on the session instance
+     * The {@link AttributeRepository.AttributeKey} used to store the cached authentication results on the session instance
      */
-    public static final AttributeKey<Map<PublicKey, Boolean>> CACHE_ATTRIBUTE = new AttributeKey<>();
+    public static final AttributeRepository.AttributeKey<Map<PublicKey, Boolean>> CACHE_ATTRIBUTE = new AttributeRepository.AttributeKey<>();
 
     protected final PublickeyAuthenticator authenticator;
 

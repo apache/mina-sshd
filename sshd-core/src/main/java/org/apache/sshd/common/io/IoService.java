@@ -40,5 +40,4 @@ public interface IoService extends Closeable, IoServiceEventListenerManager {
      * @return the sessions. An empty collection if there's no session.
      */
     Map<Long, IoSession> getManagedSessions();
-
 }

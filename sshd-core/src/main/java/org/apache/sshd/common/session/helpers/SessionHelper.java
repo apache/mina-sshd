@@ -23,8 +23,10 @@ import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -37,6 +39,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolver;
@@ -86,7 +89,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     /**
      * Session specific attributes
      */
-    private final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
+    private final Map<AttributeRepository.AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
 
     // Session timeout measurements
     private long authTimeoutStart = System.currentTimeMillis();
@@ -145,20 +148,25 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T getAttribute(AttributeKey<T> key) {
+    public <T> T getAttribute(AttributeRepository.AttributeKey<T> key) {
         return (T) attributes.get(Objects.requireNonNull(key, "No key"));
+    }
+
+    @Override
+    public Collection<AttributeKey<?>> attributeKeys() {
+        return attributes.isEmpty() ? Collections.emptySet() : new HashSet<>(attributes.keySet());
     }
 
     @Override
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public <T> T computeAttributeIfAbsent(
-            AttributeKey<T> key, Function<? super AttributeKey<T>, ? extends T> resolver) {
+            AttributeRepository.AttributeKey<T> key, Function<? super AttributeRepository.AttributeKey<T>, ? extends T> resolver) {
         return (T) attributes.computeIfAbsent(Objects.requireNonNull(key, "No key"), (Function) resolver);
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T setAttribute(AttributeKey<T> key, T value) {
+    public <T> T setAttribute(AttributeRepository.AttributeKey<T> key, T value) {
         return (T) attributes.put(
             Objects.requireNonNull(key, "No key"),
             Objects.requireNonNull(value, "No value"));
@@ -166,7 +174,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T removeAttribute(AttributeKey<T> key) {
+    public <T> T removeAttribute(AttributeRepository.AttributeKey<T> key) {
         return (T) attributes.remove(Objects.requireNonNull(key, "No key"));
     }
 

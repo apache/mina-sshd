@@ -40,7 +40,8 @@ import io.netty.util.AttributeKey;
  */
 public abstract class NettyIoService extends AbstractCloseable implements IoService {
 
-    public static final AttributeKey<IoConnectFuture> CONNECT_FUTURE_KEY = AttributeKey.valueOf(IoConnectFuture.class.getName());
+    public static final AttributeKey<IoConnectFuture> CONNECT_FUTURE_KEY =
+        AttributeKey.valueOf(IoConnectFuture.class.getName());
 
     protected final AtomicLong sessionSeq = new AtomicLong();
     protected final Map<Long, IoSession> sessions = new ConcurrentHashMap<>();

@@ -27,47 +27,7 @@ import java.util.function.Function;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface AttributeStore {
-    /**
-     * <P>
-     * Type safe key for storage of user attributes. Typically it is used as a static
-     * variable that is shared between the producer and the consumer. To further
-     * restrict access the setting or getting it from the store one can add static
-     * {@code get/set methods} e.g:
-     * </P>
-     *
-     * <pre>
-     * public static final AttributeKey&lt;MyValue&gt; MY_KEY = new AttributeKey&lt;MyValue&gt;();
-     *
-     * public static MyValue getMyValue(Session s) {
-     *   return s.getAttribute(MY_KEY);
-     * }
-     *
-     * public static void setMyValue(Session s, MyValue value) {
-     *   s.setAttribute(MY_KEY, value);
-     * }
-     * </pre>
-     *
-     * @param <T> type of value stored in the attribute.
-     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
-     */
-    // CHECKSTYLE:OFF
-    class AttributeKey<T> {
-        public AttributeKey() {
-            super();
-        }
-    }
-    // CHECKSTYLE:ON
-
-    /**
-     * Returns the value of the user-defined attribute.
-     *
-     * @param <T> The generic attribute type
-     * @param key The key of the attribute; must not be {@code null}.
-     * @return {@code null} if there is no value associated with the specified key
-     */
-    <T> T getAttribute(AttributeKey<T> key);
-
+public interface AttributeStore extends AttributeRepository {
     /**
      * If the specified key is not already associated with a value (or is mapped
      * to {@code null}), attempts to compute its value using the given mapping

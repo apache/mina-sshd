@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
@@ -345,7 +346,7 @@ public interface Session
     void startService(String name) throws Exception;
 
     @Override
-    default <T> T resolveAttribute(AttributeKey<T> key) {
+    default <T> T resolveAttribute(AttributeRepository.AttributeKey<T> key) {
         return resolveAttribute(this, key);
     }
 
@@ -369,7 +370,7 @@ public interface Session
      * @see Session#getFactoryManager()
      * @see FactoryManager#resolveAttribute(FactoryManager, AttributeKey)
      */
-    static <T> T resolveAttribute(Session session, AttributeKey<T> key) {
+    static <T> T resolveAttribute(Session session, AttributeRepository.AttributeKey<T> key) {
         Objects.requireNonNull(key, "No key");
         if (session == null) {
             return null;

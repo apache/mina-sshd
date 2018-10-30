@@ -74,12 +74,14 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
     }
 
     protected AsynchronousServerSocketChannel openAsynchronousServerSocketChannel(
-            SocketAddress address, AsynchronousChannelGroup group) throws IOException {
+            SocketAddress address, AsynchronousChannelGroup group)
+                throws IOException {
         return AsynchronousServerSocketChannel.open(group);
     }
 
     protected CompletionHandler<AsynchronousSocketChannel, ? super SocketAddress> createSocketCompletionHandler(
-            Map<SocketAddress, AsynchronousServerSocketChannel> channelsMap, AsynchronousServerSocketChannel socket) throws IOException {
+            Map<SocketAddress, AsynchronousServerSocketChannel> channelsMap, AsynchronousServerSocketChannel socket)
+                throws IOException {
         return new AcceptCompletionHandler(socket);
     }
 
@@ -112,7 +114,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                     channel.close();
                 } catch (IOException e) {
                     log.warn("unbind({}) {} while unbinding channel: {}",
-                         address, e.getClass().getSimpleName(), e.getMessage());
+                        address, e.getClass().getSimpleName(), e.getMessage());
                     if (debugEnabled) {
                         log.debug("unbind(" + address + ") failure details", e);
                     }
@@ -208,7 +210,9 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                 // Create a session
                 IoHandler handler = getIoHandler();
                 setSocketOptions(result);
-                session = Objects.requireNonNull(createSession(Nio2Acceptor.this, address, result, handler), "No NIO2 session created");
+                session = Objects.requireNonNull(
+                    createSession(Nio2Acceptor.this, address, result, handler),
+                    "No NIO2 session created");
                 sessionId = session.getId();
                 handler.sessionCreated(session);
                 sessions.put(sessionId, session);
@@ -264,7 +268,9 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
             }
         }
 
-        protected Nio2Session createSession(Nio2Acceptor acceptor, SocketAddress address, AsynchronousSocketChannel channel, IoHandler handler) throws Throwable {
+        protected Nio2Session createSession(
+                Nio2Acceptor acceptor, SocketAddress address, AsynchronousSocketChannel channel, IoHandler handler)
+                    throws Throwable {
             if (log.isTraceEnabled()) {
                 log.trace("createNio2Session({}) address={}", acceptor, address);
             }

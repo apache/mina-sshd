@@ -47,7 +47,6 @@ import io.netty.util.concurrent.GlobalEventExecutor;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class NettyIoConnector extends NettyIoService implements IoConnector {
-
     protected final Bootstrap bootstrap = new Bootstrap();
 
     public NettyIoConnector(NettyIoServiceFactory factory, IoHandler handler) {

@@ -469,7 +469,7 @@ public interface FactoryManager
     List<RequestHandler<ConnectionService>> getGlobalRequestHandlers();
 
     @Override
-    default <T> T resolveAttribute(AttributeKey<T> key) {
+    default <T> T resolveAttribute(AttributeRepository.AttributeKey<T> key) {
         return resolveAttribute(this, key);
     }
 
@@ -479,7 +479,7 @@ public interface FactoryManager
      * @param key The attribute key - never {@code null}
      * @return Associated value - {@code null} if not found
      */
-    static <T> T resolveAttribute(FactoryManager manager, AttributeKey<T> key) {
+    static <T> T resolveAttribute(FactoryManager manager, AttributeRepository.AttributeKey<T> key) {
         Objects.requireNonNull(key, "No key");
         return (manager == null) ? null : manager.getAttribute(key);
     }

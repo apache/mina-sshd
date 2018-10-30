@@ -21,7 +21,7 @@ package org.apache.sshd.common;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.sshd.common.AttributeStore.AttributeKey;
+import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -39,7 +39,7 @@ import org.mockito.Mockito;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
 public class AttributeStoreTest extends BaseTestSupport {
-    private static final AttributeKey<String> KEY = new AttributeKey<>();
+    private static final AttributeRepository.AttributeKey<String> KEY = new AttributeRepository.AttributeKey<>();
 
     public AttributeStoreTest() {
         super();
