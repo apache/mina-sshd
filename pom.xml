@@ -1070,6 +1070,10 @@
                         <requireJavaVersion>
                             <version>[${javac.target},)</version>
                         </requireJavaVersion>
+                        <requireReleaseDeps>
+                            <onlyWhenRelease>true</onlyWhenRelease>
+                            <message>No Snapshot Dependencies Allowed</message>
+                        </requireReleaseDeps>
                     </rules>
                 </configuration>
             </plugin>
