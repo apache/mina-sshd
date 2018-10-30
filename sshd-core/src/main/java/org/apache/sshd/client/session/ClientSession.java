@@ -47,6 +47,7 @@ import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.forward.DynamicPortForwardingTracker;
 import org.apache.sshd.client.session.forward.ExplicitPortForwardingTracker;
+import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.forward.PortForwardingManager;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
@@ -106,6 +107,12 @@ public interface ClientSession
      * @return The original requested address
      */
     SocketAddress getConnectAddress();
+
+    /**
+     * @return The &quot;context&quot; data provided when
+     * session connection was established - {@code null} if none.
+     */
+    AttributeRepository getConnectionContext();
 
     /**
      * Starts the authentication process.

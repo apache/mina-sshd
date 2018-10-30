@@ -236,7 +236,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
 
         IoServiceFactory ioServiceFactory = manager.getIoServiceFactory();
         connector = ioServiceFactory.createConnector(handler);
-        IoConnectFuture future = connector.connect(address.toInetSocketAddress(), getLocalAddress());
+        IoConnectFuture future = connector.connect(address.toInetSocketAddress(), null, getLocalAddress());
         future.addListener(future1 -> handleChannelConnectResult(f, future1));
         return f;
     }

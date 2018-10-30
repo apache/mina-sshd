@@ -60,6 +60,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.BuiltinCompressions;
@@ -236,7 +237,7 @@ public abstract class SshClientCliSupport extends CliSupport {
             }
 
             if (port <= 0) {
-                port = ConfigFileReaderSupport.DEFAULT_PORT;
+                port = SshConstants.DEFAULT_PORT;
             }
 
             // TODO use a configurable wait time

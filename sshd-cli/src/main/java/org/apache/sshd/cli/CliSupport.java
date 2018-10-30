@@ -24,6 +24,7 @@ import java.net.SocketAddress;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.LogLevelValue;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
@@ -124,7 +125,7 @@ public abstract class CliSupport {
 
             @Override
             public void connectionEstablished(
-                    IoConnector connector, SocketAddress local, SocketAddress remote)
+                    IoConnector connector, SocketAddress local, AttributeRepository context, SocketAddress remote)
                         throws IOException {
                 out.append("Connection established via ").append(Objects.toString(connector))
                     .append("- local=").append(Objects.toString(local))
@@ -134,7 +135,7 @@ public abstract class CliSupport {
 
             @Override
             public void abortEstablishedConnection(
-                    IoConnector connector, SocketAddress local, SocketAddress remote, Throwable reason)
+                    IoConnector connector, SocketAddress local, AttributeRepository context, SocketAddress remote, Throwable reason)
                         throws IOException {
                 out.append("Abort established connection ").append(Objects.toString(connector))
                     .append(" - local=").append(Objects.toString(local))

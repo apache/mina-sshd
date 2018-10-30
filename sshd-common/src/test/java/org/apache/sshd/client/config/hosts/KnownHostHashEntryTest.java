@@ -22,7 +22,7 @@ package org.apache.sshd.client.config.hosts;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.sshd.common.config.ConfigFileReaderSupport;
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
@@ -64,7 +64,7 @@ public class KnownHostHashEntryTest extends JUnitTestSupport {
         return Arrays.asList(
             // line generated `ssh xenon@localhost hostname` (SSH-2.0-OpenSSH_7.5)
             new Object[] {
-                "localhost", ConfigFileReaderSupport.DEFAULT_PORT,
+                "localhost", SshConstants.DEFAULT_PORT,
                 "|1|vLQs+atPgodQmPes21ZaMSgLD0s=|A2K2Ym0ZPtQmD8kB3FVViQvQ7qQ=", "ecdsa-sha2-nistp256",
                 "AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBJTsDTYFSYyRMlOec6JBfC8dEFqHNNWu7n8N0niS1zmHpggX+L4cndxhJPE0ILi9otHO7h0mp0cmqqho2tsX8lc=",
                 "xenon@localhost"
@@ -92,7 +92,7 @@ public class KnownHostHashEntryTest extends JUnitTestSupport {
 
     @Test
     public void testHostHashMatchOnDefaultPort() {
-        Assume.assumeTrue("No-default port used", port == ConfigFileReaderSupport.DEFAULT_PORT);
+        Assume.assumeTrue("No-default port used", port == SshConstants.DEFAULT_PORT);
         KnownHostEntry entry = KnownHostEntry.parseKnownHostEntry(line);
         assertTrue(entry.isHostMatch(host, 0));
     }

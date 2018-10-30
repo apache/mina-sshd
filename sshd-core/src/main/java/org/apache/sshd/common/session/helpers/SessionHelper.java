@@ -82,6 +82,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
      * The underlying network session
      */
     private final IoSession ioSession;
+
     /**
      * The session specific properties
      */

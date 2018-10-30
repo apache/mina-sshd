@@ -40,6 +40,7 @@ import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
+import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
@@ -74,6 +75,8 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
 public abstract class AbstractClientSession extends AbstractSession implements ClientSession {
     private final List<Object> identities = new CopyOnWriteArrayList<>();
     private final AuthenticationIdentitiesProvider identitiesProvider;
+    private final AttributeRepository connectionContext;
+
     private ServerKeyVerifier serverKeyVerifier;
     private UserInteraction userInteraction;
     private PasswordIdentityProvider passwordIdentityProvider;
@@ -84,6 +87,13 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     protected AbstractClientSession(ClientFactoryManager factoryManager, IoSession ioSession) {
         super(false, factoryManager, ioSession);
         identitiesProvider = AuthenticationIdentitiesProvider.wrapIdentities(identities);
+        this.connectionContext =
+            (AttributeRepository) ioSession.getAttribute(AttributeRepository.class);
+    }
+
+    @Override
+    public AttributeRepository getConnectionContext() {
+        return connectionContext;
     }
 
     @Override

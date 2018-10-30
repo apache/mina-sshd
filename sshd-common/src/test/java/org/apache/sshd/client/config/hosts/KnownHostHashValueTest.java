@@ -22,7 +22,7 @@ package org.apache.sshd.client.config.hosts;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.apache.sshd.common.config.ConfigFileReaderSupport;
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
@@ -62,9 +62,9 @@ public class KnownHostHashValueTest extends JUnitTestSupport {
             new Object[]{"localhost", 10022,
                 "|1|qhjoqX12EcnwZO3KNbpoFbxrdYE=|J+voEFzRbRL49TiHV+jbUfaS+kg="},
             // line generated `ssh xenon@localhost hostname` (SSH-2.0-OpenSSH_7.5)
-            new Object[]{"localhost", ConfigFileReaderSupport.DEFAULT_PORT,
+            new Object[]{"localhost", SshConstants.DEFAULT_PORT,
                 "|1|vLQs+atPgodQmPes21ZaMSgLD0s=|A2K2Ym0ZPtQmD8kB3FVViQvQ7qQ="},
-            new Object[]{"192.168.1.61", ConfigFileReaderSupport.DEFAULT_PORT,
+            new Object[]{"192.168.1.61", SshConstants.DEFAULT_PORT,
                 "|1|F1E1KeoE/eEWhi10WpGv4OdiO6Y=|3988QV0VE8wmZL7suNrYQLITLCg="}
         );
     }

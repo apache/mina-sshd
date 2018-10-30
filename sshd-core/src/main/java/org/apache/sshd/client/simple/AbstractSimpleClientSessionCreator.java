@@ -30,6 +30,7 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionCreator;
+import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -136,6 +137,7 @@ public abstract class AbstractSimpleClientSessionCreator extends AbstractSimpleC
      * @return The {@link SimpleClient} wrapper. <B>Note:</B> closing the wrapper
      * also closes the underlying sessions creator.
      */
+    @SuppressWarnings("checkstyle:anoninnerlength")
     public static SimpleClient wrap(ClientSessionCreator creator, Channel channel) {
         Objects.requireNonNull(creator, "No sessions creator");
         Objects.requireNonNull(channel, "No channel");
@@ -173,6 +175,44 @@ public abstract class AbstractSimpleClientSessionCreator extends AbstractSimpleC
             }
 
             @Override
+            public ConnectFuture connect(
+                    HostConfigEntry hostConfig, AttributeRepository context, SocketAddress localAddress)
+                        throws IOException {
+                return creator.connect(hostConfig, context, localAddress);
+            }
+
+            @Override
+            public ConnectFuture connect(
+                    String username, SocketAddress targetAddress, AttributeRepository context, SocketAddress localAddress)
+                        throws IOException {
+                return creator.connect(username, targetAddress, context, localAddress);
+            }
+
+            @Override
+            public ConnectFuture connect(
+                    String username, String host, int port, AttributeRepository context, SocketAddress localAddress)
+                        throws IOException {
+                return creator.connect(username, host, port, context, localAddress);
+            }
+
+            @Override
+            public ConnectFuture connect(HostConfigEntry hostConfig, AttributeRepository context) throws IOException {
+                return creator.connect(hostConfig, context);
+            }
+
+            @Override
+            public ConnectFuture connect(String username, SocketAddress address, AttributeRepository context)
+                    throws IOException {
+                return creator.connect(username, address, context);
+            }
+
+            @Override
+            public ConnectFuture connect(String username, String host, int port, AttributeRepository context)
+                    throws IOException {
+                return creator.connect(username, host, port, context);
+            }
+
+            @Override
             public boolean isOpen() {
                 return channel.isOpen();
             }
@@ -180,6 +220,11 @@ public abstract class AbstractSimpleClientSessionCreator extends AbstractSimpleC
             @Override
             public void close() throws IOException {
                 channel.close();
+            }
+
+            @Override
+            public String toString() {
+                return SimpleClient.class.getSimpleName() + "[" + channel + "]";
             }
         };
     }

@@ -1,7 +1,10 @@
 ![Apache MINA SSHD](https://mina.apache.org/staticresources/images/header-sshd.png "Apache MINA SSHD")
 # Apache MINA SSHD
 
-Apache SSHD is a 100% pure java library to support the SSH protocols on both the client and server side. This library can leverage [Apache MINA](http://mina.apache.org), a scalable and high performance asynchronous IO library. SSHD does not really aim at being a replacement for the SSH client or SSH server from Unix operating systems, but rather provides support for Java based applications requiring SSH support.
+Apache SSHD is a 100% pure java library to support the SSH protocols on both the client and server side. This library can
+leverage [Apache MINA](http://mina.apache.org), a scalable and high performance asynchronous IO library. SSHD does not really
+aim at being a replacement for the SSH client or SSH server from Unix operating systems, but rather provides support for Java
+based applications requiring SSH support.
 
 # Core requirements
 
@@ -11,7 +14,8 @@ Apache SSHD is a 100% pure java library to support the SSH protocols on both the
 * [Slf4j](http://www.slf4j.org/)
 
 
-The code only requires the core abstract [slf4j-api](https://mvnrepository.com/artifact/org.slf4j/slf4j-api) module. The actual implementation of the logging API can be selected from the many existing adaptors.
+The code only requires the core abstract [slf4j-api](https://mvnrepository.com/artifact/org.slf4j/slf4j-api) module. The actual
+implementation of the logging API can be selected from the many existing adaptors.
 
 # Optional dependencies
 
@@ -19,19 +23,25 @@ The code only requires the core abstract [slf4j-api](https://mvnrepository.com/a
 ## [Bouncy Castle](https://www.bouncycastle.org/)
 
 
-Required mainly for writing keys to PEM files or for special keys/ciphers/etc. that are not part of the standard [Java Cryptography Extension](https://en.wikipedia.org/wiki/Java_Cryptography_Extension). See [Java Cryptography Architecture (JCA) Reference Guide](https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html) for key classes and explanations as to how _Bouncy Castle_ is plugged in (other security providers).
+Required mainly for writing keys to PEM files or for special keys/ciphers/etc. that are not part of the standard
+[Java Cryptography Extension](https://en.wikipedia.org/wiki/Java_Cryptography_Extension). See
+[Java Cryptography Architecture (JCA) Reference Guide](https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html)
+for key classes and explanations as to how _Bouncy Castle_ is plugged in (other security providers).
 
-**Caveat**: If _Bouncy Castle_ modules are registered, then the code will use its implementation of the ciphers, keys, signatures, etc. rather than the default JCE provided in the JVM.
+**Caveat**: If _Bouncy Castle_ modules are registered, then the code will use its implementation of the ciphers,
+keys, signatures, etc. rather than the default JCE provided in the JVM.
 
  **Note:**
 
  - The security provider can also be registered for keys/ciphers/etc. that are already supported by the standard JCE as a **replacement** for them.
 
 
- - The _BouncyCastle_ code can also be used to load keys from PEM files instead or in parallel with the built-in code that already parses the standard PEM formats for the default JCE supported key types.
+ - The _BouncyCastle_ code can also be used to load keys from PEM files instead or in parallel with the built-in code that
+already parses the standard PEM formats for the default JCE supported key types.
 
 
-- One can use the `BouncyCastleKeyPairResourceParser` to load standard PEM files instead of the core one - either directly or via `SecurityUtils#setKeyPairResourceParser` for **global** usage - even without registering or enabling the provider.
+- One can use the `BouncyCastleKeyPairResourceParser` to load standard PEM files instead of the core one - either directly
+or via `SecurityUtils#setKeyPairResourceParser` for **global** usage - even without registering or enabling the provider.
 
 
  - The required _Maven_ module(s) are defined as `optional` so must be added as an **explicit** dependency in order to be included in the classpath:
@@ -138,7 +148,10 @@ before starting the client/server. Therefore, the default selection process desc
 ## [ed25519-java](https://github.com/str4d/ed25519-java)
 
 
-Required for supporting [ssh-ed25519](https://tools.ietf.org/html/draft-bjh21-ssh-ed25519-02) keys and [ed25519-sha-512](https://tools.ietf.org/html/draft-josefsson-eddsa-ed25519-02) signatures. **Note:** the required Maven module(s) are defined as `optional` so must be added as an **explicit** dependency in order to be included in the classpath:
+Required for supporting [ssh-ed25519](https://tools.ietf.org/html/draft-bjh21-ssh-ed25519-02) keys
+and [ed25519-sha-512](https://tools.ietf.org/html/draft-josefsson-eddsa-ed25519-02) signatures. **Note:**
+the required Maven module(s) are defined as `optional` so must be added as an **explicit** dependency in
+order to be included in the classpath:
 
 
 ```xml
@@ -181,7 +194,9 @@ The code contains support for reading _ed25519_ [OpenSSH formatted private keys]
 
 # Set up an SSH client in 5 minutes
 
-SSHD is designed to easily allow setting up and using an SSH client in a few simple steps. The client needs to be configured and then started before it can be used to connect to an SSH server. There are a few simple steps for creating a client instance - for more details refer to the `SshClient` class.
+SSHD is designed to easily allow setting up and using an SSH client in a few simple steps. The client needs to be configured
+and then started before it can be used to connect to an SSH server. There are a few simple steps for creating a client
+instance - for more details refer to the `SshClient` class.
 
 ## Creating an instance of the `SshClient` class
 
@@ -193,7 +208,10 @@ This is simply done by calling
 
 ```
 
-The call will create an instance with a default configuration suitable for most use cases - including ciphers, compression, MACs, key exchanges, signatures, etc... If your code requires some special configuration, you can look at the code for `setupDefaultClient` and `checkConfig` as a reference for available options and configure the SSH client the way you need.
+The call will create an instance with a default configuration suitable for most use cases - including ciphers,
+compression, MACs, key exchanges, signatures, etc... If your code requires some special configuration, one can
+look at the code for `setupDefaultClient` and `checkConfig` as a reference for available options and configure
+the SSH client the way you need.
 
 ## Set up client side security
 
@@ -201,15 +219,21 @@ The SSH client contains some security related configuration that one needs to co
 
 ### `ServerKeyVerifier`
 
-`client.setServerKeyVerifier(...);` sets up the server key verifier. As part of the SSH connection initialization protocol, the server proves its "identity" by presenting a public key. The client can examine the key (e.g., present it to the user via some UI) and decide whether to trust the server and continue with the connection setup. By default the client is initialized with an `AcceptAllServerKeyVerifier` that simply logs a warning that an un-verified server key was accepted. There are other out-of-the-box verifiers available in the code:
+`client.setServerKeyVerifier(...);` sets up the server key verifier. As part of the SSH connection initialization
+protocol, the server proves its "identity" by presenting a public key. The client can examine the key (e.g., present
+it to the user via some UI) and decide whether to trust the server and continue with the connection setup. By default
+the client is initialized with an `AcceptAllServerKeyVerifier` that simply logs a warning that an un-verified server
+key was accepted. There are other out-of-the-box verifiers available in the code:
 
-* `RejectAllServerKeyVerifier` - rejects all server key - usually used in tests or as a fallback verifier if none of it predecesors validated the server key
+* `RejectAllServerKeyVerifier` - rejects all server key - usually used in tests or as a fallback verifier if none
+of it predecesors validated the server key
 
 
 * `RequiredServerKeyVerifier` - accepts only **one** specific server key (similar to certificate pinning for SSL)
 
 
-* `KnownHostsServerKeyVerifier` - uses the [known_hosts](https://en.wikibooks.org/wiki/OpenSSH/Client_Configuration_Files#Public_Keys_from_other_Hosts_.E2.80.93_.7E.2F.ssh.2Fknown_hosts) file to validate the server key. One can use this class + some existing code to **update** the file when new servers are detected and their keys are accepted.
+* `KnownHostsServerKeyVerifier` - uses the [known_hosts](https://en.wikibooks.org/wiki/OpenSSH/Client_Configuration_Files#Public_Keys_from_other_Hosts_.E2.80.93_.7E.2F.ssh.2Fknown_hosts)
+file to validate the server key. One can use this class + some existing code to **update** the file when new servers are detected and their keys are accepted.
 
 
 Of course, one can implement the verifier in whatever other manner is suitable for the specific code needs.
@@ -243,7 +267,11 @@ in [RFC 4253 section 4.2](https://tools.ietf.org/html/rfc4253#section-4.2).
 
 ## Using the `SshClient` to connect to a server
 
-Once the `SshClient` instance is properly configured it needs to be `start()`-ed in order to connect to a server. **Note:** one can use a single `SshClient` instance to connnect to multiple servers as well as modifying the default configuration (ciphers, MACs, keys, etc.) on a per-session manner (see more in the *Advanced usage* section). Furthermore, one can change almost any configured `SshClient` parameter - although its influence on currently established sessions depends on the actual changed configuration. Here is how a typical usage would look like
+Once the `SshClient` instance is properly configured it needs to be `start()`-ed in order to connect to a server.
+**Note:** one can use a single `SshClient` instance to connnect to multiple servers as well as modifying the default
+configuration (ciphers, MACs, keys, etc.) on a per-session manner (see more in the *Advanced usage* section).
+Furthermore, one can change almost any configured `SshClient` parameter - although its influence on currently established
+sessions depends on the actual changed configuration. Here is how a typical usage would look like
 
 ```java
 
@@ -281,7 +309,9 @@ Once the `SshClient` instance is properly configured it needs to be `start()`-ed
 
 # Embedding an SSHD server instance in 5 minutes
 
-SSHD is designed to be easily embedded in your application as an SSH server. The embedded SSH server needs to be configured before it can be started. Essentially, there are a few simple steps for creating the server - for more details refer to the `SshServer` class.
+SSHD is designed to be easily embedded in your application as an SSH server. The embedded SSH server needs
+to be configured before it can be started. Essentially, there are a few simple steps for creating the
+server - for more details refer to the `SshServer` class.
 
 ## Creating an instance of the `SshServer` class
 
@@ -293,22 +323,36 @@ Creating an instance of `SshServer` is as simple as creating a new object
 
 ```
 
-It will configure the server with sensible defaults for ciphers, macs, key exchange algorithm, etc... If different behavior is required, one should consult the code of the `setUpDefaultServer` as well as `checkConfig` methods as a reference for available options and configure the SSH server the way it is needed.
+It will configure the server with sensible defaults for ciphers, macs, key exchange algorithm, etc...
+If different behavior is required, one should consult the code of the `setUpDefaultServer` as well as
+`checkConfig` methods as a reference for available options and configure the SSH server the way it is needed.
 
 ## Configuring the server instance
 
 There are a few things that need to be configured on the server before being able to actually use it:
 
-* Port - `sshd.setPort(22);` - sets the listen port for the server instance. If not set explicitly then a **random** free port is selected by the O/S. In any case, once the server is `start()`-ed one can query the instance as to the assigned port via `sshd.getPort()`.
+* Port - `sshd.setPort(22);` - sets the listen port for the server instance. If not set explicitly then a
+**random** free port is selected by the O/S. In any case, once the server is `start()`-ed one can query the
+instance as to the assigned port via `sshd.getPort()`.
 
 
-In this context, the listen bind address can also be specified explicitly via `sshd.setHost(...some IP address...)` that causes the server to bind to a specific network address rather than **all** addresses (the default). Using `"0.0.0.0"` as the bind address is also tantamount to binding to all addresses.
+In this context, the listen bind address can also be specified explicitly via `sshd.setHost(...some IP address...)`
+that causes the server to bind to a specific network address rather than **all** addresses (the default). Using
+`"0.0.0.0"` as the bind address is also tantamount to binding to all addresses.
 
 
-* `KeyPairProvider` - `sshd.setKeyPairProvider(...);` - sets the host's private keys used for key exchange with clients as well as representing the host's "identities". There are several choices - one can load keys from standard PEM files or generate them in the code.  It's usually a good idea to save generated keys, so that if the SSHD server is restarted, the same keys will be used to authenticate the server and avoid the warning the clients might get if the host keys are modified. **Note**: saving key files in PEM format requires  that the [Bouncy Castle](https://www.bouncycastle.org/) supporting artifacts be available in the code's classpath.
+* `KeyPairProvider` - `sshd.setKeyPairProvider(...);` - sets the host's private keys used for key exchange with
+clients as well as representing the host's "identities". There are several choices - one can load keys from standard
+PEM files or generate them in the code.  It's usually a good idea to save generated keys, so that if the SSHD server
+is restarted, the same keys will be used to authenticate the server and avoid the warning the clients might get if
+the host keys are modified. **Note**: saving key files in PEM format requires  that the [Bouncy Castle](https://www.bouncycastle.org/)
+supporting artifacts be available in the code's classpath.
 
 
-* `ShellFactory` - That's the part one usually has to write to customize the SSHD server. The shell factory will be used to create a new shell each time a user logs in and wants to run an interactive shell. SSHD provides a simple implementation that you can use if you want. This implementation will create a process and delegate everything to it, so it's mostly useful to launch the OS native shell. E.g.,
+* `ShellFactory` - That's the part one usually has to write to customize the SSHD server. The shell factory will
+be used to create a new shell each time a user logs in and wants to run an interactive shell. SSHD provides a simple
+implementation that you can use if you want. This implementation will create a process and delegate everything to it,
+so it's mostly useful to launch the OS native shell. E.g.,
 
 
 ```java
@@ -318,10 +362,12 @@ In this context, the listen bind address can also be specified explicitly via `s
 ```
 
 
-There is an out-of-the-box `InteractiveProcessShellFactory` that detects the O/S and spawns the relevant shell. Note that the `ShellFactory` is not required. If none is configured, any request for an interactive shell will be denied to clients.
+There is an out-of-the-box `InteractiveProcessShellFactory` that detects the O/S and spawns the relevant shell. Note
+that the `ShellFactory` is not required. If none is configured, any request for an interactive shell will be denied to clients.
 
 
-* `CommandFactory` - The `CommandFactory` provides the ability to run a **single** direct command at a time instead of an interactive session (it also uses a **different** channel type than shells). It can be used **in addition** to the `ShellFactory`.
+* `CommandFactory` - The `CommandFactory` provides the ability to run a **single** direct command at a time instead
+of an interactive session (it also uses a **different** channel type than shells). It can be used **in addition** to the `ShellFactory`.
 
 
 SSHD provides a `CommandFactory` to support SCP that can be configured in the following way:
@@ -333,7 +379,9 @@ SSHD provides a `CommandFactory` to support SCP that can be configured in the fo
 
 ```
 
-One can also use the `ScpCommandFactory` on top of one's own `CommandFactory` by placing the command factory as a **delegate** of the `ScpCommandFactory`. The `ScpCommandFactory` will intercept SCP commands and execute them by itself, while passing all other commands to the delegate `CommandFactory`
+One can also use the `ScpCommandFactory` on top of one's own `CommandFactory` by placing the command factory as a **delegate**
+of the `ScpCommandFactory`. The `ScpCommandFactory` will intercept SCP commands and execute them by itself, while passing all
+other commands to the delegate `CommandFactory`
 
 
 ```java
@@ -366,10 +414,12 @@ These custom classes can be configured on the SSHD server using the respective s
 
 ```
 
-Several useful implementations are available that can be used as-is or extended in order to provide some custom behavior. In any case, the default initializations are:
+Several useful implementations are available that can be used as-is or extended in order to provide some custom behavior. In any
+case, the default initializations are:
 
 * `DefaultAuthorizedKeysAuthenticator` - uses the _authorized_keys_ file the same way as the SSH daemon does
-* `DefaultKeyboardInteractiveAuthenticator` - for password-based or interactive authentication. **Note:** this authenticator requires a `PasswordAuthenticator` to be configured since it delegates some of the functionality to it.
+* `DefaultKeyboardInteractiveAuthenticator` - for password-based or interactive authentication. **Note:** this authenticator
+requires a `PasswordAuthenticator` to be configured since it delegates some of the functionality to it.
 
 ## Configuring ciphers, macs, digest...
 
@@ -385,71 +435,115 @@ Configuring supported factories can be done with the following code:
 
 ```
 
-One can configure other security components using built-in factories the same way. It is important to remember though that the **order** of the factories is important as it affects the key exchange phase where the client and server decide what options to use out of each peer's reported preferences.
+One can configure other security components using built-in factories the same way. It is important to remember though
+that the **order** of the factories is important as it affects the key exchange phase where the client and server decide
+what options to use out of each peer's reported preferences.
 
 ## Starting the Server
 
-Once we have configured the server, one need only call `sshd.start();`. **Note**: once the server is started, all of the configurations (except the port) can still be *overridden* while the server is running (caveat emptor). In such cases, only **new** clients that connect to the server after the change will be affected - with the exception of the negotiation options (keys, macs, ciphers, etc...) which take effect the next time keys are re-exchanged, that can affect live sessions and not only new ones.
+Once we have configured the server, one need only call `sshd.start();`. **Note**: once the server is started, all of the
+configurations (except the port) can still be *overridden* while the server is running (caveat emptor). In such cases,
+only **new** clients that connect to the server after the change will be affected - with the exception of the negotiation
+options (keys, macs, ciphers, etc...) which take effect the next time keys are re-exchanged, that can affect live sessions
+and not only new ones.
 
 # SSH functionality breakdown
 
 ## Security providers setup
 
 While the code supports _BouncyCastle_ and _EdDSA_ security providers out-of-the-box,
-it also provides a way to [add security providers](https://issues.apache.org/jira/browse/SSHD-713) via the `SecurityProviderRegistrar` interface implementation. In order to add support for a new security provider one needs to implement the registrar interface and make the code aware of it.
+it also provides a way to [add security providers](https://issues.apache.org/jira/browse/SSHD-713) via the `SecurityProviderRegistrar`
+interface implementation. In order to add support for a new security provider one needs to implement the registrar interface and make
+the code aware of it.
 
 ### Default/built-in security provider registrars
 
-The code contains built-in security provider registrars for _BouncyCastle_ and _EdDSA_ (a.k.a. `ed25519`). It automatically detects the existence of the required artifacts (since they are optional dependencies) and executes the respective security provider registration. This behavior is controlled by the `org.apache.sshd.security.registrars` system property. This property contains a comma-separated list of **fully-qualified** class names implementing the `SecurityProviderRegistrar` interface and assumed to contain a default **public** no-arguments constructor. The code automatically parses the list and attempts to instantiate and invoke the registrar.
+The code contains built-in security provider registrars for _BouncyCastle_ and _EdDSA_ (a.k.a. `ed25519`). It automatically detects
+the existence of the required artifacts (since they are optional dependencies) and executes the respective security provider registration.
+This behavior is controlled by the `org.apache.sshd.security.registrars` system property. This property contains a comma-separated list
+of **fully-qualified** class names implementing the `SecurityProviderRegistrar` interface and assumed to contain a default **public**
+no-arguments constructor. The code automatically parses the list and attempts to instantiate and invoke the registrar.
 
 **Note:**
 
 
-- The registration code automatically parses the configured registrars list and instantiates them. In this context, one can use the special `none` value to indicate that the code should not attempt to automatically register the default providers.
+- The registration code automatically parses the configured registrars list and instantiates them. In this context, one can use the
+special `none` value to indicate that the code should not attempt to automatically register the default providers.
 
-- A registrar instance might be created but eventually discarded and not invoked if it is disabled, unsupported or already registered programmatically via `SecurityUtils#registerSecurityProvider`.
-
-
-- The registration attempt is a **one-shot** deal - i.e., once the registrars list is parsed and successfully resolved, any modifications to the registered security providers must be done **programatically**. One can call `SecurityUtils#isRegistrationCompleted()` to find out if the registration phase has already been executed.
-
-
-- The registrars are consulted in the same **order** as they were initially registered - either programmatically or via the system property configuration. Therefore, if two or more registrars support the same algorithm, then the earlier registered one will be used.
+- A registrar instance might be created but eventually discarded and not invoked if it is disabled, unsupported or already registered
+programmatically via `SecurityUtils#registerSecurityProvider`.
 
 
-- If no matching registrar was found, then the default security provider is used. If none set, the JCE defaults are invoked. The default security provider can be configured either via the `org.apache.sshd.security.defaultProvider` system property or by programmatically invoking `SecurityUtils#setDefaultProviderChoice`. **Note:** if the system property option is used, then it is assumed to contain a security provider's **name** (rather than its `Provider` class name...).
+- The registration attempt is a **one-shot** deal - i.e., once the registrars list is parsed and successfully resolved, any modifications
+to the registered security providers must be done **programatically**. One can call `SecurityUtils#isRegistrationCompleted()` to find out
+if the registration phase has already been executed.
 
 
-- If programmatic selection of the default security provider choice is required, then the code flow must ensure that `SecurityUtils#setDefaultProviderChoice` is called before **any** security entity (e.g., ciphers, keys, etc...) are required. Theoretically, one could change the choice after ciphers have been been requested but before keys were generated (e.g....), but it is dangerous and may yield unpredictable behavior.
+- The registrars are consulted in the same **order** as they were initially registered - either programmatically or via the system property
+configuration. Therefore, if two or more registrars support the same algorithm, then the earlier registered one will be used.
+
+
+- If no matching registrar was found, then the default security provider is used. If none set, the JCE defaults are invoked. The default
+security provider can be configured either via the `org.apache.sshd.security.defaultProvider` system property or by programmatically
+invoking `SecurityUtils#setDefaultProviderChoice`. **Note:** if the system property option is used, then it is assumed to contain a security
+provider's **name** (rather than its `Provider` class name...).
+
+
+- If programmatic selection of the default security provider choice is required, then the code flow must ensure that
+`SecurityUtils#setDefaultProviderChoice` is called before **any** security entity (e.g., ciphers, keys, etc...) are
+required. Theoretically, one could change the choice after ciphers have been been requested but before keys were generated
+(e.g....), but it is dangerous and may yield unpredictable behavior.
 
 
 ### Implementing a new security provider registrar
 
-See `AbstractSecurityProviderRegistrar` helper class for a default implementation of most of the required functionality, as well as the existing implementations for _BouncyCastle_ and _EdDSA_ for examples of how to implement it. The most important issues to consider when adding such an implementation are:
+See `AbstractSecurityProviderRegistrar` helper class for a default implementation of most of the required functionality, as
+well as the existing implementations for _BouncyCastle_ and _EdDSA_ for examples of how to implement it. The most important
+issues to consider when adding such an implementation are:
 
-* Try using reflection API to detect the existence of the registered provider class and/or instantiate it. The main reason for this recommendation is that it isolates the code from a direct dependency on the provider's classes and makes class loading issue less likely.
+* Try using reflection API to detect the existence of the registered provider class and/or instantiate it. The main reason
+for this recommendation is that it isolates the code from a direct dependency on the provider's classes and makes class loading
+issue less likely.
 
 
-* Decide whether to use the provider's name or instance when creating security related entities such as ciphers, keys, etc... **Note:** the default preference is to use the provider name, thus registering via `Security.addProvider` call. In order to change that, either register the instance yourself or override the `isNamedProviderUsed` method. In this context, **cache** the generated `Provider` instance if the instance rather than the name is used. **Note:** using only the provider instance instead of the name is a rather new feature and has not been fully tested. It is possible though to decide and use it anyway as long as it can be configurably disabled.
+* Decide whether to use the provider's name or instance when creating security related entities such as ciphers, keys, etc...
+**Note:** the default preference is to use the provider name, thus registering via `Security.addProvider` call. In order to
+change that, either register the instance yourself or override the `isNamedProviderUsed` method. In this context, **cache**
+the generated `Provider` instance if the instance rather than the name is used. **Note:** using only the provider instance
+instead of the name is a rather new feature and has not been fully tested. It is possible though to decide and use it anyway
+as long as it can be configurably disabled.
 
 
-* The default implementation provides fine-grained control over the declared supported security entities - ciphers, signatures, key generators, etc... By default, it is done via consulting a system property composed of `org.apache.sshd.security.provider`, followed by the security provider name and the relevant security entity - e.g., `org.apache.sshd.security.provider.BC.KeyFactory` is assumed to contain a comma-separated list of supported `KeyFactory` algorithms.
+* The default implementation provides fine-grained control over the declared supported security entities - ciphers, signatures,
+key generators, etc... By default, it is done via consulting a system property composed of `org.apache.sshd.security.provider`,
+followed by the security provider name and the relevant security entity - e.g., `org.apache.sshd.security.provider.BC.KeyFactory`
+is assumed to contain a comma-separated list of supported `KeyFactory` algorithms.
 
 **Note:**
 
 
-* The same naming convention can be used to enable/disable the registrar - even if supported - e.g., `org.apache.sshd.security.provider.BC.enabled=false` disables the _BouncyCastle_ registrar.
+* The same naming convention can be used to enable/disable the registrar - even if supported - e.g.,
+`org.apache.sshd.security.provider.BC.enabled=false` disables the _BouncyCastle_ registrar.
 
 
-* One can use `all` or `*` to specify that all entities of the specified type are supported - e.g., `org.apache.sshd.security.provider.BC.MessageDigest=all`. In this context, one can override the `getDefaultSecurityEntitySupportValue` method if no fine-grained configuration is required per-entity type,
+* One can use `all` or `*` to specify that all entities of the specified type are supported - e.g.,
+`org.apache.sshd.security.provider.BC.MessageDigest=all`. In this context, one can override the
+`getDefaultSecurityEntitySupportValue` method if no fine-grained configuration is required per-entity type,
 
 
 * The result of an `isXxxSupported` call is/should be **cached** (see `AbstractSecurityProviderRegistrar`).
 
 
-* For ease of implementation, all support query calls are routed to the `isSecurityEntitySupported` method so that one can concentrate all the configuration in a single method. This is done for **convenience** reasons - the code will invoke the correct support query as per the type of entity it needs. E.g., if it needs a cipher, it will invoke `isCipherSupported` - which by default will invoke `isSecurityEntitySupported` with the `Cipher` class as its argument.
+* For ease of implementation, all support query calls are routed to the `isSecurityEntitySupported` method
+so that one can concentrate all the configuration in a single method. This is done for **convenience**
+reasons - the code will invoke the correct support query as per the type of entity it needs. E.g., if it
+needs a cipher, it will invoke `isCipherSupported` - which by default will invoke `isSecurityEntitySupported`
+with the `Cipher` class as its argument.
 
 
-* Specifically for **ciphers** the argument to the support query contains a **transformation** (e.g., `AES/CBC/NoPadding`) so one should take that into account when parsing the input argument to decide which cipher is referenced - see `SecurityProviderRegistrar.getEffectiveSecurityEntityName(Class<?>, String)` helper method
+* Specifically for **ciphers** the argument to the support query contains a **transformation** (e.g., `AES/CBC/NoPadding`)
+so one should take that into account when parsing the input argument to decide which cipher is referenced - see
+`SecurityProviderRegistrar.getEffectiveSecurityEntityName(Class<?>, String)` helper method
 
 
 ## `FileSystemFactory` usage
@@ -539,8 +633,8 @@ that it has finished. The framework will then take care of propagating the exit 
 the command. **Note**: the command may not assume that it is done until its `destroy()` method is called - i.e., it should not
 release or null-ify any of its internal state even if `onExit()` was called.
 
-Upon calling the `onExit` method the code sends an [SSH_MSG_CHANNEL_EOF](https://tools.ietf.org/html/rfc4254#section-5.3) message, and the provided result status code
-is sent as an `exit-status` message as described in [RFC4254 - section 6.10](https://tools.ietf.org/html/rfc4254#section-6.10).
+Upon calling the `onExit` method the code sends an [SSH_MSG_CHANNEL_EOF](https://tools.ietf.org/html/rfc4254#section-5.3) message,
+and the provided result status code is sent as an `exit-status` message as described in [RFC4254 - section 6.10](https://tools.ietf.org/html/rfc4254#section-6.10).
 The provided message is simply logged at DEBUG level.
 
 ```java
@@ -699,8 +793,8 @@ monitoring and intervention on the accessed local files.
 
 ## SFTP
 
-Both client-side and server-side SFTP are supported. Starting from version 2.0, the SFTP related code is located in the `sshd-sftp`, so you need to add
-this additional dependency to your maven project:
+Both client-side and server-side SFTP are supported. Starting from version 2.0, the SFTP related code is located
+in the `sshd-sftp` artifact, so one needs to add this additional dependency to one's maven project:
 
 ```xml
 
@@ -998,9 +1092,13 @@ Furthermore several [OpenSSH SFTP extensions](https://github.com/openssh/openssh
 * `statvfs@openssh.com`
 
 
-On the server side, the reported standard extensions are configured via the `SftpSubsystem.CLIENT_EXTENSIONS_PROP` configuration key, and the _OpenSSH_ ones via the `SftpSubsystem.OPENSSH_EXTENSIONS_PROP`.
+On the server side, the reported standard extensions are configured via the `SftpSubsystem.CLIENT_EXTENSIONS_PROP` configuration
+key, and the _OpenSSH_ ones via the `SftpSubsystem.OPENSSH_EXTENSIONS_PROP`.
 
-On the client side, all the supported extensions are classes that implement `SftpClientExtension`. These classes can be used to query the client whether the remote server supports the specific extension and then obtain a parser for its contents. Users can easily add support for more extensions in a similar manner as the existing ones by implementing an appropriate `ExtensionParser` and then registering it at the `ParserUtils` - see the existing ones for details how this can be achieved.
+On the client side, all the supported extensions are classes that implement `SftpClientExtension`. These classes can be used
+to query the client whether the remote server supports the specific extension and then obtain a parser for its contents. Users
+can easily add support for more extensions in a similar manner as the existing ones by implementing an appropriate `ExtensionParser`
+and then registering it at the `ParserUtils` - see the existing ones for details how this can be achieved.
 
 
 ```java
@@ -1061,24 +1159,33 @@ One can skip all the conditional code if a specific known extension is required:
 
 If an exception is thrown during processing of an SFTP command, then the exception is translated into a `SSH_FXP_STATUS` message
 using a registered `SftpErrorStatusDataHandler`. The default implementation provides a short description of the failure based on the thrown
-exception type. However, users may override it when creating the `SftpSubsystemFactory` and provide their own codes and/or messages - e.g., for debugging one can register a `DetailedSftpErrorStatusDataHandler` (see `sshd-contrib`) that "leaks" more information in the generated message.
+exception type. However, users may override it when creating the `SftpSubsystemFactory` and provide their own codes and/or messages - e.g.,
+for debugging one can register a `DetailedSftpErrorStatusDataHandler` (see `sshd-contrib`) that "leaks" more information in the generated message.
 
 
 ## Port forwarding
 
 ### Standard port forwarding
 
-Port forwarding as specified in [RFC 4254 - section 7](https://tools.ietf.org/html/rfc4254#section-7) is fully supported by the client and server. From the client side, this capability is exposed via the `start/stopLocal/RemotePortForwarding` method. The key player in this capability is the configured `ForwardingFilter` that controls this feature - on **both** sides - client and server. By default, this capability is **disabled** - i.e., the user must provide an implementation and call the appropriate `setForwardingFilter` method on the client/server.
+Port forwarding as specified in [RFC 4254 - section 7](https://tools.ietf.org/html/rfc4254#section-7) is fully
+supported by the client and server. From the client side, this capability is exposed via the `start/stopLocal/RemotePortForwarding`
+method. The key player in this capability is the configured `ForwardingFilter` that controls this feature - on **both** sides - client
+and server. By default, this capability is **disabled** - i.e., the user must provide an implementation and call the appropriate
+`setForwardingFilter` method on the client/server.
 
-The code contains 2 simple implementations - an accept-all and a reject-all one that can be used for these trivial policies. **Note:** setting a _null_ filter is equivalent to rejecting all such attempts.
+The code contains 2 simple implementations - an accept-all and a reject-all one that can be used for these trivial
+policies. **Note:** setting a _null_ filter is equivalent to rejecting all such attempts.
 
 ### SOCKS
 
-The code implements a [SOCKS](https://en.wikipedia.org/wiki/SOCKS) proxy for versions 4 and 5. The proxy capability is invoked via the `start/stopDynamicPortForwarding` methods.
+The code implements a [SOCKS](https://en.wikipedia.org/wiki/SOCKS) proxy for versions 4 and 5. The proxy capability is
+invoked via the `start/stopDynamicPortForwarding` methods.
 
 ### Proxy agent
 
-The code provides to some extent an SSH proxy agent via the available `SshAgentFactory` implementations. As of latest version both [Secure Shell Authentication Agent Protocol Draft 02](https://tools.ietf.org/html/draft-ietf-secsh-agent-02) and its [OpenSSH](https://www.libssh.org/features/) equivalent are supported. **Note:** in order to support this feature the
+The code provides to some extent an SSH proxy agent via the available `SshAgentFactory` implementations. As of latest version
+both [Secure Shell Authentication Agent Protocol Draft 02](https://tools.ietf.org/html/draft-ietf-secsh-agent-02) and its
+[OpenSSH](https://www.libssh.org/features/) equivalent are supported. **Note:** in order to support this feature the
 [Apache Portable Runtime Library](https://apr.apache.org/) needs to be added to the Maven dependencies:
 
 ```xml
@@ -1096,27 +1203,45 @@ is available in the LD\_LIBRARY\_PATH.
 # Advanced configuration and interaction
 
 ## Properties and inheritance model
-The code's behavior is highly customizable not only via non-default implementations of interfaces but also as far as the **parameters** that govern its behavior - e.g., timeouts, min./max. values, allocated memory size, etc... All the customization related code flow implements a **hierarchical** `PropertyResolver` inheritance model where the "closest" entity is consulted first, and then its "owner", and so on until the required value is found. If the entire hierarchy yielded no specific result, then some pre-configured default is used. E.g., if a channel requires some parameter in order to decide how to behave, then the following configuration hierarchy is consulted:
+The code's behavior is highly customizable not only via non-default implementations of interfaces but also as far as
+the **parameters** that govern its behavior - e.g., timeouts, min./max. values, allocated memory size, etc... All the
+customization related code flow implements a **hierarchical** `PropertyResolver` inheritance model where the "closest"
+entity is consulted first, and then its "owner", and so on until the required value is found. If the entire hierarchy
+yielded no specific result, then some pre-configured default is used. E.g., if a channel requires some parameter in order
+to decide how to behave, then the following configuration hierarchy is consulted:
 
 * The channel-specific configuration
 * The "owning" session configuration
 * The "owning" client/server instance configuration
-* The system properties - **Note:** any configuration value required by the code can be provided via a system property bearing the `org.apache.sshd.config` prefix - see `SyspropsMapWrapper` for the implementation details.
+* The system properties - **Note:** any configuration value required by the code can be provided via a system property bearing
+the `org.apache.sshd.config` prefix - see `SyspropsMapWrapper` for the implementation details.
 
 
 ### Using the inheritance model for fine-grained/targeted configuration
 
-As previously mentioned, this hierarchical lookup model is not limited to "simple" configuration values (strings, integers, etc.), but used also for **interfaces/implementations** such as cipher/MAC/compression/authentication/etc. factories - the exception being that the system properties are not consulted in such a case. This code behavior provides highly customizable fine-grained/targeted control of the code's behavior - e.g., one could impose usage of specific ciphers/authentication methods/etc. or present different public key "identities"/welcome banner behavior/etc., based on address, username or whatever other decision parameter is deemed relevant by the user's code. This can be done on __both__ sides of the connection - client or server. E.g., the client could present different keys based on the server's address/identity string/welcome banner, or the server could accept only specific types of authentication methods based on the client's address/username/etc... This can be done in conjunction with the usage of the various `EventListener`-s provided by the code (see below).
+As previously mentioned, this hierarchical lookup model is not limited to "simple" configuration values (strings, integers, etc.), but
+used also for **interfaces/implementations** such as cipher/MAC/compression/authentication/etc. factories - the exception being that
+the system properties are not consulted in such a case. This code behavior provides highly customizable fine-grained/targeted control
+of the code's behavior - e.g., one could impose usage of specific ciphers/authentication methods/etc. or present different public key
+"identities"/welcome banner behavior/etc., based on address, username or whatever other decision parameter is deemed relevant by the
+user's code. This can be done on __both__ sides of the connection - client or server. E.g., the client could present different keys
+based on the server's address/identity string/welcome banner, or the server could accept only specific types of authentication methods
+based on the client's address/username/etc... This can be done in conjunction with the usage of the various `EventListener`-s provided
+by the code (see below).
 
-One of the code locations where this behavior can be leveraged is when the server provides __file-based__ services (SCP, SFTP) in order to provide a different/limited view of the available files based on the username - see the section dealing with `FileSystemFactory`-ies.
+One of the code locations where this behavior can be leveraged is when the server provides __file-based__ services (SCP, SFTP) in
+order to provide a different/limited view of the available files based on the username - see the section dealing with `FileSystemFactory`-ies.
 
 ## Welcome banner configuration
 
-According to [RFC 4252 - section 5.4](https://tools.ietf.org/html/rfc4252#section-5.4) the server may send a welcome banner message during the authentication process. Both the message contents and the phase at which it is sent can be configured/customized.
+According to [RFC 4252 - section 5.4](https://tools.ietf.org/html/rfc4252#section-5.4) the server may send a welcome
+banner message during the authentication process. Both the message contents and the phase at which it is sent can be
+configured/customized.
 
 ### Welcome banner content customization
 
-The welcome banner contents are controlled by the `ServerAuthenticationManager.WELCOME_BANNER` configuration key - there are several possible values for this key:
+The welcome banner contents are controlled by the `ServerAuthenticationManager.WELCOME_BANNER` configuration
+key - there are several possible values for this key:
 
 * A simple string - in which case its contents are the welcome banner.
 
@@ -1124,13 +1249,18 @@ The welcome banner contents are controlled by the `ServerAuthenticationManager.W
 * A file [URI](https://docs.oracle.com/javase/8/docs/api/java/net/URI.html) - or a string starting with `"file:/"` followed by the file path - see below.
 
 
-* A [URL](https://docs.oracle.com/javase/8/docs/api/java/net/URL.html) - or a string containing "://" - in which case the [URL#openStream()](https://docs.oracle.com/javase/8/docs/api/java/net/URL.html#openStream) method is invoked and its contents are read.
+* A [URL](https://docs.oracle.com/javase/8/docs/api/java/net/URL.html) - or a string containing "://" - in which
+case the [URL#openStream()](https://docs.oracle.com/javase/8/docs/api/java/net/URL.html#openStream) method is invoked
+and its contents are read.
 
 
-* A [File](https://docs.oracle.com/javase/8/docs/api/java/io/File.html) or a [Path](https://docs.oracle.com/javase/8/docs/api/java/nio/file/Path.html) - in this case, the file's contents are __re-loaded__ every time it is required and sent as the banner contents.
+* A [File](https://docs.oracle.com/javase/8/docs/api/java/io/File.html) or
+a [Path](https://docs.oracle.com/javase/8/docs/api/java/nio/file/Path.html) - in this case, the file's contents are __re-loaded__ every time it is required and sent as the banner contents.
 
 
-* The special value `ServerAuthenticationManager.AUTO_WELCOME_BANNER_VALUE` which generates a combined "random art" of all the server's keys as described in `Perrig A.` and `Song D.`-s article [Hash Visualization: a New Technique to improve Real-World Security](http://sparrow.ece.cmu.edu/~adrian/projects/validation/validation.pdf) - _International Workshop on Cryptographic Techniques and E-Commerce (CrypTEC '99)_
+* The special value `ServerAuthenticationManager.AUTO_WELCOME_BANNER_VALUE` which generates a combined "random art" of
+all the server's keys as described in `Perrig A.` and `Song D.`-s article
+[Hash Visualization: a New Technique to improve Real-World Security](http://sparrow.ece.cmu.edu/~adrian/projects/validation/validation.pdf) - _International Workshop on Cryptographic Techniques and E-Commerce (CrypTEC '99)_
 
 
 * One can also override the `ServerUserAuthService#resolveWelcomeBanner` method and use whatever other content customization one sees fit.
@@ -1142,7 +1272,8 @@ The welcome banner contents are controlled by the `ServerAuthenticationManager.W
 
 2. If the banner is loaded from a file or URL resource, then one can configure the [Charset](https://docs.oracle.com/javase/8/docs/api/java/nio/charset/Charset.html) used to convert the file's contents into a string via the `ServerAuthenticationManager.WELCOME_BANNER_CHARSET` configuration key (default=`UTF-8`).
 
-3. In this context, see also the `ServerAuthenticationManager.WELCOME_BANNER_LANGUAGE` configuration key - which provides control over the declared language tag, although most clients seem to ignore it.
+3. In this context, see also the `ServerAuthenticationManager.WELCOME_BANNER_LANGUAGE` configuration key - which
+provides control over the declared language tag, although most clients seem to ignore it.
 
 
 ### Welcome banner sending phase
@@ -1152,12 +1283,17 @@ According to [RFC 4252 - section 5.4](https://tools.ietf.org/html/rfc4252#sectio
 > The SSH server may send an SSH_MSG_USERAUTH_BANNER message at any time after this authentication protocol starts and before authentication is successful.
 
 
-The code contains a `WelcomeBannerPhase` enumeration that can be used to configure via the `ServerAuthenticationManager.WELCOME_BANNER_PHASE` configuration key the authentication phase at which the welcome banner is sent (see also the `ServerAuthenticationManager.DEFAULT_BANNER_PHASE` value). In this context, note that if the `NEVER` phase is configured, no banner will be sent even if one has been configured via one of the methods mentioned previously.
+The code contains a `WelcomeBannerPhase` enumeration that can be used to configure via the `ServerAuthenticationManager.WELCOME_BANNER_PHASE`
+configuration key the authentication phase at which the welcome banner is sent (see also the `ServerAuthenticationManager.DEFAULT_BANNER_PHASE` value).
+In this context, note that if the `NEVER` phase is configured, no banner will be sent even if one has been configured via one of the methods mentioned previously.
 
 
 ## `HostConfigEntryResolver`
 
-This interface provides the ability to intervene during the connection and authentication phases and "re-write" the user's original parameters. The `DefaultConfigFileHostEntryResolver` instance used to set up the default client instance follows the [SSH config file](https://www.digitalocean.com/community/tutorials/how-to-configure-custom-connection-options-for-your-ssh-client) standards, but the interface can be replaced so as to implement whatever proprietary logic is required.
+This interface provides the ability to intervene during the connection and authentication phases and "re-write"
+the user's original parameters. The `DefaultConfigFileHostEntryResolver` instance used to set up the default
+client instance follows the [SSH config file](https://www.digitalocean.com/community/tutorials/how-to-configure-custom-connection-options-for-your-ssh-client)
+standards, but the interface can be replaced so as to implement whatever proprietary logic is required.
 
 
 ```java
@@ -1179,13 +1315,20 @@ This interface provides the ability to intervene during the connection and authe
 
 ## `SshConfigFileReader`
 
-Can be used to read various standard SSH [client](http://linux.die.net/man/5/ssh_config) or [server](http://manpages.ubuntu.com/manpages/precise/en/man5/sshd_config.5.html) configuration files and initialize the client/server respectively. Including (among other things), bind address, ciphers, signature, MAC(s), KEX protocols, compression, welcome banner, etc..
+Can be used to read various standard SSH [client](http://linux.die.net/man/5/ssh_config)
+or [server](http://manpages.ubuntu.com/manpages/precise/en/man5/sshd_config.5.html) configuration files
+and initialize the client/server respectively. Including (among other things), bind address, ciphers,
+signature, MAC(s), KEX protocols, compression, welcome banner, etc..
 
 ## Event listeners
 
-The code supports registering many types of event listeners that enable receiving notifications about important events as well as sometimes intervening in the way these events are handled. All listener interfaces extend `SshdEventListener` so they can be easily detected and distinguished from other `EventListener`(s).
+The code supports registering many types of event listeners that enable receiving notifications about important events
+as well as sometimes intervening in the way these events are handled. All listener interfaces extend `SshdEventListener`
+so they can be easily detected and distinguished from other `EventListener`(s).
 
-In general, event listeners are **cumulative** - e.g., any channel event listeners registered on the `SshClient/Server` are automatically added to all sessions, *in addition* to any such listeners registered on the `Session`, as well as any specific listeners registered on a specific `Channel` - e.g.,
+In general, event listeners are **cumulative** - e.g., any channel event listeners registered on the `SshClient/Server` are
+automatically added to all sessions, *in addition* to any such listeners registered on the `Session`, as well as any specific
+listeners registered on a specific `Channel` - e.g.,
 
 
 ```java
@@ -1216,7 +1359,10 @@ registered listener.
 
 ### `SessionListener`
 
-Informs about session related events. One can modify the session - although the modification effect depends on the session's **state**. E.g., if one changes the ciphers *after* the key exchange (KEX) phase, then they will take effect only if the keys are re-negotiated. It is important to read the documentation very carefully and understand at which stage each listener method is invoked and what are the repercussions of changes at that stage. In this context, it is worth mentioning that one can attach to sessions **arbitrary attributes** that can be retrieved by the user's code later on:
+Informs about session related events. One can modify the session - although the modification effect depends on the session's **state**. E.g., if one
+changes the ciphers *after* the key exchange (KEX) phase, then they will take effect only if the keys are re-negotiated. It is important to read the
+documentation very carefully and understand at which stage each listener method is invoked and what are the repercussions of changes at that stage.
+In this context, it is worth mentioning that one can attach to sessions **arbitrary attributes** that can be retrieved by the user's code later on:
 
 
 ```java
@@ -1244,18 +1390,25 @@ Informs about session related events. One can modify the session - although the 
 ### `ChannelListener`
 
 
-Informs about channel related events - as with sessions, once can influence the channel to some extent, depending on the channel's **state**. The ability to influence channels is much more limited than sessions. In this context, it is worth mentioning that one can attach to channels **arbitrary attributes** that can be retrieved by the user's code later on - same was as it is done for sessions.
+Informs about channel related events - as with sessions, once can influence the channel to some extent, depending on the channel's **state**.
+The ability to influence channels is much more limited than sessions. In this context, it is worth mentioning that one can attach to channels
+**arbitrary attributes** that can be retrieved by the user's code later on - same was as it is done for sessions.
 
 
 ### `UnknownChannelReferenceHandler`
 
 
-Invoked whenever a message intended for an unknown channel is received. By default, the code **ignores** the vast majority of such messages and logs them at DEBUG level. For a select few types of messages the code generates an `SSH_CHANNEL_MSG_FAILURE` packet that is sent to the peer session - see `DefaultUnknownChannelReferenceHandler` implementation. The user may register handlers at any level - client/server, session and/or connection service - the one registered "closest" to connection service will be used.
+Invoked whenever a message intended for an unknown channel is received. By default, the code **ignores** the vast majority of such messages
+and logs them at DEBUG level. For a select few types of messages the code generates an `SSH_CHANNEL_MSG_FAILURE` packet that is sent to the
+peer session - see `DefaultUnknownChannelReferenceHandler` implementation. The user may register handlers at any level - client/server, session
+and/or connection service - the one registered "closest" to connection service will be used.
 
 
 ### `SignalListener`
 
-Informs about signal requests as described in [RFC 4254 - section 6.9](https://tools.ietf.org/html/rfc4254#section-6.9), break requests (sent as SIGINT) as described in [RFC 4335](https://tools.ietf.org/html/rfc4335) and "window-change" (sent as SIGWINCH) requests as described in [RFC 4254 - section 6.7](https://tools.ietf.org/html/rfc4254#section-6.7)
+Informs about signal requests as described in [RFC 4254 - section 6.9](https://tools.ietf.org/html/rfc4254#section-6.9), break requests
+(sent as SIGINT) as described in [RFC 4335](https://tools.ietf.org/html/rfc4335) and "window-change" (sent as SIGWINCH) requests as described
+in [RFC 4254 - section 6.7](https://tools.ietf.org/html/rfc4254#section-6.7)
 
 
 ### `SftpEventListener`
@@ -1274,7 +1427,10 @@ Provides information about major SFTP protocol events. The listener is registere
 
 ### `PortForwardingEventListener`
 
-Informs and allows tracking of port forwarding events as described in [RFC 4254 - section 7](https://tools.ietf.org/html/rfc4254#section-7) as well as the (simple) [SOCKS](https://en.wikipedia.org/wiki/SOCKS) protocol (versions 4, 5). In this context, one can create a `PortForwardingTracker` that can be used in a `try-with-resource` block so that the set up forwarding is automatically torn down when the tracker is `close()`-d:
+Informs and allows tracking of port forwarding events as described in [RFC 4254 - section 7](https://tools.ietf.org/html/rfc4254#section-7)
+as well as the (simple) [SOCKS](https://en.wikipedia.org/wiki/SOCKS) protocol (versions 4, 5). In this context, one can create a
+`PortForwardingTracker` that can be used in a `try-with-resource` block so that the set up forwarding is automatically torn down when
+the tracker is `close()`-d:
 
 
 ```java
@@ -1316,22 +1472,27 @@ Inform about SCP related events. `ScpTransferEventListener`(s) can be registered
 
 ### Reserved messages
 
-The implementation can be used to intercept and process the [SSH_MSG_IGNORE](https://tools.ietf.org/html/rfc4253#section-11.2), [SSH_MSG_DEBUG](https://tools.ietf.org/html/rfc4253#section-11.3) and [SSH_MSG_UNIMPLEMENTED](https://tools.ietf.org/html/rfc4253#section-11.4) messages. The handler can be registered on either side - server
-or client, as well as on the session. A special [patch](https://issues.apache.org/jira/browse/SSHD-699) has been introduced
-that automatically ignores such messages if they are malformed - i.e., they never reach the handler.
+The implementation can be used to intercept and process the [SSH_MSG_IGNORE](https://tools.ietf.org/html/rfc4253#section-11.2),
+[SSH_MSG_DEBUG](https://tools.ietf.org/html/rfc4253#section-11.3) and [SSH_MSG_UNIMPLEMENTED](https://tools.ietf.org/html/rfc4253#section-11.4)
+messages. The handler can be registered on either side - server or client, as well as on the session. A special
+[patch](https://issues.apache.org/jira/browse/SSHD-699) has been introduced that automatically ignores such messages
+if they are malformed - i.e., they never reach the handler.
 
 #### SSH message stream "stuffing" and keys re-exchange
 
 [RFC 4253 - section 9](https://tools.ietf.org/html/rfc4253#section-9) recommends re-exchanging keys every once in a while
-based on the amount of traffic and the selected cipher - the matter is further clarified in [RFC 4251 - section 9.3.2](https://tools.ietf.org/html/rfc4251#section-9.3.2). These recommendations are mirrored in the code via the `FactoryManager`
-related `REKEY_TIME_LIMIT`, `REKEY_PACKETS_LIMIT` and `REKEY_BLOCKS_LIMIT` configuration properties that
-can be used to configure said behavior - please be sure to read the relevant _Javadoc_ as well as the aforementioned RFC section(s) when
-manipulating them. This behavior can also be controlled programmatically by overriding the `AbstractSession#isRekeyRequired()` method.
+based on the amount of traffic and the selected cipher - the matter is further clarified in [RFC 4251 - section 9.3.2](https://tools.ietf.org/html/rfc4251#section-9.3.2).
+These recommendations are mirrored in the code via the `FactoryManager` related `REKEY_TIME_LIMIT`, `REKEY_PACKETS_LIMIT`
+and `REKEY_BLOCKS_LIMIT` configuration properties that can be used to configure said behavior - please be sure to read
+the relevant _Javadoc_ as well as the aforementioned RFC section(s) when manipulating them. This behavior can also be
+controlled programmatically by overriding the `AbstractSession#isRekeyRequired()` method.
 
 As an added security mechanism [RFC 4251 - section 9.3.1](https://tools.ietf.org/html/rfc4251#section-9.3.1) recommends adding
 "spurious" [SSH_MSG_IGNORE](https://tools.ietf.org/html/rfc4253#section-11.2) messages. This functionality is mirrored in the
 `FactoryManager` related `IGNORE_MESSAGE_FREQUENCY`, `IGNORE_MESSAGE_VARIANCE` and `IGNORE_MESSAGE_SIZE`
-configuration properties that can be used to configure said behavior - please be sure to read the relevant _Javadoc_ as well as the aforementioned RFC section when manipulating them. This behavior can also be controlled programmatically by overriding the `AbstractSession#resolveIgnoreBufferDataLength()` method.
+configuration properties that can be used to configure said behavior - please be sure to read the relevant _Javadoc_ as well
+as the aforementioned RFC section when manipulating them. This behavior can also be controlled programmatically by overriding
+the `AbstractSession#resolveIgnoreBufferDataLength()` method.
 
 #### `ReservedSessionMessagesHandler`
 
@@ -1417,7 +1578,8 @@ it is detected. For global request handlers this is done by registering them on 
 
 ```
 
-For channel-specific requests, one uses the channel's `add/removeRequestHandler` method to manage its handlers. The way request handlers are invoked when a global/channel-specific request is received  is as follows:
+For channel-specific requests, one uses the channel's `add/removeRequestHandler` method to manage its handlers. The way
+request handlers are invoked when a global/channel-specific request is received  is as follows:
 
 * All currently registered handlers' `process` method is invoked with the request type string parameter (among others).
 The implementation should examine the request parameters and decide whether it is able to process it.
@@ -1470,24 +1632,33 @@ the handler may choose to build and send the response within its own code, in wh
 
 
 * `keepalive@*` - Used by many implementations (including this one) to "ping" the peer and make sure the connection is still alive.
-In this context, the SSHD code allows the user to configure both the frequency and content of the heartbeat request (including whether to send this request at all) via the `ClientFactoryManager`-s `HEARTBEAT_INTERVAL`, `HEARTBEAT_REQUEST` and `DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING` configuration properties.
+In this context, the SSHD code allows the user to configure both the frequency and content of the heartbeat request (including whether
+to send this request at all) via the `ClientFactoryManager`-s `HEARTBEAT_INTERVAL`, `HEARTBEAT_REQUEST` and `DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING`
+configuration properties.
 
 
-* `no-more-sessions@*` - As described in [OpenSSH protocol section 2.2](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL). In this context, the code consults the `ServerFactoryManagder.MAX_CONCURRENT_SESSIONS` server-side configuration property in order to
+* `no-more-sessions@*` - As described in [OpenSSH protocol section 2.2](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL).
+In this context, the code consults the `ServerFactoryManagder.MAX_CONCURRENT_SESSIONS` server-side configuration property in order to
 decide whether to accept a successfully authenticated session.
 
 
 # Extension modules
 
-There are several extension modules available - specifically, the _sshd-contrib_ module contains some of them. **Note:** the module contains experimental code that may find its way some time
-in the future to a standard artifact. It is also subject to changes and/or deletion without any prior announcement. Therefore, any code that relies on it should also store a copy of the sources
-in case the classes it used it are modified or deleted.
+There are several extension modules available - specifically, the _sshd-contrib_ module contains some of them. **Note:** the
+module contains experimental code that may find its way some time in the future to a standard artifact. It is also subject to
+changes and/or deletion without any prior announcement. Therefore, any code that relies on it should also store a copy of the
+sources in case the classes it used it are modified or deleted.
 
 ## Command line clients
 
-The _apache-sshd.zip_ distribution provides `Windows/Linux` scripts that use the MINA SSHD code base to implement the common _ssh, scp, sftp_ commands. The clients accept most useful switches from the original commands they mimic, where the `-o Option=Value` arguments can be used to configure the client/server in addition to the system properties mechanism. For more details, consult the _main_ methods code in the respective `SshClientMain`, `SftpCommandMain` and `ScpClientMain` classes. The code also includes `SshKeyScanMain` that is a simple implementation for [ssh-keyscan(1)](https://www.freebsd.org/cgi/man.cgi?query=ssh-keyscan&sektion=1).
+The _apache-sshd.zip_ distribution provides `Windows/Linux` scripts that use the MINA SSHD code base to implement the common
+_ssh, scp, sftp_ commands. The clients accept most useful switches from the original commands they mimic, where the `-o Option=Value`
+arguments can be used to configure the client/server in addition to the system properties mechanism. For more details, consult
+the _main_ methods code in the respective `SshClientMain`, `SftpCommandMain` and `ScpClientMain` classes. The code also includes
+`SshKeyScanMain` that is a simple implementation for [ssh-keyscan(1)](https://www.freebsd.org/cgi/man.cgi?query=ssh-keyscan&sektion=1).
 
-The distribution also includes also an _sshd_ script that can be used to launch a server instance - see `SshServerMain#main` for activation command line arguments and options.
+The distribution also includes also an _sshd_ script that can be used to launch a server instance - see `SshServerMain#main`
+for activation command line arguments and options.
 
 In order to use this CLI code as part of another project, one needs to include the _sshd-cli_ module:
 
@@ -1513,10 +1684,12 @@ the class that implements this interface. **Note:** if more than one such instan
 
 ### Command line SSH daemon
 
-* **Port** - by default the SSH server sets up to list on port 8000 in order to avoid conflicts with any running SSH O/S daemon. This can be modified by providing a `-p NNNN`
-or `-o Port=NNNN` command line option.
+* **Port** - by default the SSH server sets up to list on port 8000 in order to avoid conflicts with any running SSH O/S daemon.
+This can be modified by providing a `-p NNNN` or `-o Port=NNNN` command line option.
 
-* **Subsystem(s)** - the server automatically detects subsystems using the [Java ServiceLoader mechanism](https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html).
+* **Subsystem(s)** - the server automatically detects subsystems using the
+[Java ServiceLoader mechanism](https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html).
+
 This can be overwritten as follows (in this order):
 
 1. Provide a `org.apache.sshd.server.subsystem.SubsystemFactory` system property containing comma-separated fully-qualified names of classes implementing
@@ -1533,16 +1706,17 @@ name of a class that implements the `ShellFactory` interface. The implementation
 
 ## GIT support
 
-The _sshd-git_ artifact contains both client and server-side command factories for issuing and handling some _git_ commands. The code is based on [JGit](https://github.com/eclipse/jgit)
-and iteracts with it smoothly.
+The _sshd-git_ artifact contains both client and server-side command factories for issuing and handling some _git_ commands. The code is based
+on [JGit](https://github.com/eclipse/jgit) and iteracts with it smoothly.
 
 ### Client-side
 
-This module provides SSHD-based replacements for the SSH and SFTP transports used by the JGIT client - see `GitSshdSessionFactory` - it can be used as a drop-in replacement
-for the [JSCH](http://www.jcraft.com/jsch/) based built-in session factory provided by _jgit_. In this context, it is worth noting that the `GitSshdSessionFactory` has been tailored so as to provide
-flexible control over which `SshClient` instance to use, and even which `ClientSession`. The default instance allocates a **new** client every time a new `GitSshdSession` is created - which is
-started and stopped as necessary. However, this can be pretty wasteful, so if one intends to issue several commands that access GIT repositories via SSH, one should maintain a **single**
-client instance and re-use it:
+This module provides SSHD-based replacements for the SSH and SFTP transports used by the JGIT client - see `GitSshdSessionFactory` - it
+can be used as a drop-in replacement for the [JSCH](http://www.jcraft.com/jsch/) based built-in session factory provided by _jgit_. In
+this context, it is worth noting that the `GitSshdSessionFactory` has been tailored so as to provide flexible control over which `SshClient`
+instance to use, and even which `ClientSession`. The default instance allocates a **new** client every time a new `GitSshdSession` is
+created - which is started and stopped as necessary. However, this can be pretty wasteful, so if one intends to issue several commands
+that access GIT repositories via SSH, one should maintain a **single** client instance and re-use it:
 
 
 ```java
@@ -1618,11 +1792,19 @@ is completed (regardless of whether successful or not):
 
 ## LDAP adaptors
 
-The _sshd-ldap_ artifact contains an [LdapPasswordAuthenticator](https://issues.apache.org/jira/browse/SSHD-607) and an [LdapPublicKeyAuthenticator](https://issues.apache.org/jira/browse/SSHD-608) that have been written along the same lines as the [openssh-ldap-publickey](https://github.com/AndriiGrytsenko/openssh-ldap-publickey) project. The authenticators can be easily configured to match most LDAP schemes, or alternatively serve as base classes for code that extends them and adds proprietary logic.
+The _sshd-ldap_ artifact contains an [LdapPasswordAuthenticator](https://issues.apache.org/jira/browse/SSHD-607) and
+an [LdapPublicKeyAuthenticator](https://issues.apache.org/jira/browse/SSHD-608) that have been written along the same
+lines as the [openssh-ldap-publickey](https://github.com/AndriiGrytsenko/openssh-ldap-publickey) project. The authenticators
+can be easily configured to match most LDAP schemes, or alternatively serve as base classes for code that extends them
+and adds proprietary logic.
 
 ## PROXY / SSLH protocol hooks
 
-The code contains [support for "wrapper" protocols](https://issues.apache.org/jira/browse/SSHD-656) such as [PROXY](http://www.haproxy.org/download/1.6/doc/proxy-protocol.txt) or [sslh](http://www.rutschle.net/tech/sslh.shtml). The idea is that one can register either a `ClientProxyConnector` or `ServerProxyAcceptor` and intercept the 1st packet being sent/received (respectively) **before** it reaches the SSHD code. This gives the programmer the capability to write a front-end that routes outgoing/incoming packets:
+The code contains [support for "wrapper" protocols](https://issues.apache.org/jira/browse/SSHD-656) such
+as [PROXY](http://www.haproxy.org/download/1.6/doc/proxy-protocol.txt) or [sslh](http://www.rutschle.net/tech/sslh.shtml).
+The idea is that one can register either a `ClientProxyConnector` or `ServerProxyAcceptor` and intercept
+the 1st packet being sent/received (respectively) **before** it reaches the SSHD code. This gives the programmer
+the capability to write a front-end that routes outgoing/incoming packets:
 
 * `SshClient/ClientSesssion#setClientProxyConnector` - sets a proxy that intercepts the 1st packet before being sent to the server
 
@@ -1699,23 +1881,28 @@ try (ClientSession session = client.connect(login, host, port).await().getSessio
 ```
 
 
-**Note:** `UserInteraction#isInteractionAllowed` is consulted prior to invoking `getUpdatedPassword` - if it returns _false_ then password retrieval method is not invoked,
-and it is assumed that no more passwords are available
+**Note:** `UserInteraction#isInteractionAllowed` is consulted prior to invoking `getUpdatedPassword` - if it
+returns _false_ then password retrieval method is not invoked, and it is assumed that no more passwords are available
 
 
-* `SimpleAccessControlScpEventListener` - Provides a simple access control by making a distinction between methods that upload data and ones that download it via SCP.
-In order to use it, simply extend it and override its `isFileUpload/DownloadAllowed` methods
+* `SimpleAccessControlScpEventListener` - Provides a simple access control by making a distinction between
+methods that upload data and ones that download it via SCP. In order to use it, simply extend it and override
+its `isFileUpload/DownloadAllowed` methods
 
 
-* `SimpleAccessControlSftpEventListener` - Provides a simple access control by making a distinction between methods that provide SFTP file information - including
-reading data - and those that modify it
+* `SimpleAccessControlSftpEventListener` - Provides a simple access control by making a distinction between
+methods that provide SFTP file information - including reading data - and those that modify it
 
 
-* `ProxyProtocolAcceptor` - A working prototype to support the PROXY protocol as described in [HAProxy Documentation](http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt)
+* `ProxyProtocolAcceptor` - A working prototype to support the PROXY protocol as described in
+[HAProxy Documentation](http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt)
 
 
-* `ThrottlingPacketWriter` - An example of a way to overcome big window sizes when sending data - as described in [SSHD-754](https://issues.apache.org/jira/browse/SSHD-754)
-and [SSHD-768](https://issues.apache.org/jira/browse/SSHD-768)
+* `ThrottlingPacketWriter` - An example of a way to overcome big window sizes when sending data - as
+described in [SSHD-754](https://issues.apache.org/jira/browse/SSHD-754) and [SSHD-768](https://issues.apache.org/jira/browse/SSHD-768)
+
+* `AndroidOpenSSLSecurityProviderRegistrar` - A security registrar that uses the [AndroidOpenSSL](https://github.com/guardianproject/openssl-android)
+security provider
 
 # Builtin components
 

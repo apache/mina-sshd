@@ -29,7 +29,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.RuntimeSshException;
-import org.apache.sshd.common.config.ConfigFileReaderSupport;
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
@@ -135,7 +135,7 @@ public class KnownHostHashValue {
     }
 
     public static String createHostPattern(String host, int port) {
-        if ((port <= 0) || (port == ConfigFileReaderSupport.DEFAULT_PORT)) {
+        if ((port <= 0) || (port == SshConstants.DEFAULT_PORT)) {
             return host;
         }
 
@@ -148,7 +148,7 @@ public class KnownHostHashValue {
     }
 
     public static <A extends Appendable> A appendHostPattern(A sb, String host, int port) throws IOException {
-        boolean nonDefaultPort = (port > 0) && (port != ConfigFileReaderSupport.DEFAULT_PORT);
+        boolean nonDefaultPort = (port > 0) && (port != SshConstants.DEFAULT_PORT);
         if (nonDefaultPort) {
             sb.append(HostPatternsHolder.NON_STANDARD_PORT_PATTERN_ENCLOSURE_START_DELIM);
         }

@@ -23,6 +23,7 @@ import java.net.SocketAddress;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousSocketChannel;
 
+import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
@@ -44,7 +45,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
     }
 
     @Override
-    public IoConnectFuture connect(SocketAddress address, SocketAddress localAddress) {
+    public IoConnectFuture connect(SocketAddress address, AttributeRepository context, SocketAddress localAddress) {
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("Connecting to {}", address);
@@ -62,7 +63,8 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
             }
             Nio2CompletionHandler<Void, Object> completionHandler =
                 ValidateUtils.checkNotNull(
-                    createConnectionCompletionHandler(future, socket, getFactoryManager(), getIoHandler()),
+                    createConnectionCompletionHandler(
+                        future, socket, context, getFactoryManager(), getIoHandler()),
                     "No connection completion handler created for %s",
                     address);
             socket.connect(address, null, completionHandler);
@@ -111,20 +113,24 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
     }
 
     protected Nio2CompletionHandler<Void, Object> createConnectionCompletionHandler(
-            IoConnectFuture future, AsynchronousSocketChannel socket, FactoryManager manager, IoHandler handler) {
-        return new ConnectionCompletionHandler(future, socket, manager, handler);
+            IoConnectFuture future, AsynchronousSocketChannel socket,
+            AttributeRepository context, FactoryManager manager, IoHandler handler) {
+        return new ConnectionCompletionHandler(future, socket, context, manager, handler);
     }
 
     protected class ConnectionCompletionHandler extends Nio2CompletionHandler<Void, Object> {
         protected final IoConnectFuture future;
         protected final AsynchronousSocketChannel socket;
+        protected final AttributeRepository context;
         protected final FactoryManager manager;
         protected final IoHandler handler;
 
         protected ConnectionCompletionHandler(
-                IoConnectFuture future, AsynchronousSocketChannel socket, FactoryManager manager, IoHandler handler) {
+                IoConnectFuture future, AsynchronousSocketChannel socket,
+                AttributeRepository context, FactoryManager manager, IoHandler handler) {
             this.future = future;
             this.socket = socket;
+            this.context = context;
             this.manager = manager;
             this.handler = handler;
         }
@@ -138,10 +144,14 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                 if (listener != null) {
                     SocketAddress local = socket.getLocalAddress();
                     SocketAddress remote = socket.getRemoteAddress();
-                    listener.connectionEstablished(Nio2Connector.this, local, remote);
+                    listener.connectionEstablished(Nio2Connector.this, local, context, remote);
                 }
 
                 Nio2Session session = createSession(manager, handler, socket);
+                if (context != null) {
+                    session.setAttribute(AttributeRepository.class, context);
+                }
+
                 handler.sessionCreated(session);
                 sessionId = session.getId();
                 sessions.put(sessionId, session);
@@ -162,7 +172,8 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                     try {
                         SocketAddress localAddress = socket.getLocalAddress();
                         SocketAddress remoteAddress = socket.getRemoteAddress();
-                        listener.abortEstablishedConnection(Nio2Connector.this, localAddress, remoteAddress, t);
+                        listener.abortEstablishedConnection(
+                            Nio2Connector.this, localAddress, context, remoteAddress, t);
                     } catch (Exception e) {
                         if (debugEnabled) {
                             log.debug("onCompleted() listener=" + listener + " ignoring abort event exception", e);

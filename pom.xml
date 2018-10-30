@@ -616,6 +616,7 @@
                     <configuration>
                         <excludes>
                             <exclude>README.md</exclude>
+                            <exclude>CHANGES.md</exclude>
                             <exclude>src/docs/**</exclude>
                             <exclude>src/test/resources/**</exclude>
                             <exclude>**/stty-output-*.txt</exclude>

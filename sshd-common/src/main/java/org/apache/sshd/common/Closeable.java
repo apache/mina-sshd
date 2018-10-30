@@ -104,8 +104,9 @@ public interface Closeable extends Channel {
     }
 
     static long getMaxCloseWaitTime(PropertyResolver resolver) {
-        return (resolver == null) ? DEFAULT_CLOSE_WAIT_TIMEOUT
-                : resolver.getLongProperty(CLOSE_WAIT_TIMEOUT, DEFAULT_CLOSE_WAIT_TIMEOUT);
+        return (resolver == null)
+             ? DEFAULT_CLOSE_WAIT_TIMEOUT
+             : resolver.getLongProperty(CLOSE_WAIT_TIMEOUT, DEFAULT_CLOSE_WAIT_TIMEOUT);
     }
 
     static void close(Closeable closeable) throws IOException {
@@ -116,7 +117,8 @@ public interface Closeable extends Channel {
         if ((!closeable.isClosed()) && (!closeable.isClosing())) {
             CloseFuture future = closeable.close(true);
             long maxWait = (closeable instanceof PropertyResolver)
-                    ? getMaxCloseWaitTime((PropertyResolver) closeable) : DEFAULT_CLOSE_WAIT_TIMEOUT;
+                ? getMaxCloseWaitTime((PropertyResolver) closeable)
+                : DEFAULT_CLOSE_WAIT_TIMEOUT;
             boolean successful = future.await(maxWait);
             if (!successful) {
                 throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");

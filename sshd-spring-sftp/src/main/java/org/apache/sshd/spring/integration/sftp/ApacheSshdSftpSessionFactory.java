@@ -37,7 +37,7 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
 import org.apache.sshd.client.subsystem.sftp.SftpClientFactory;
 import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.common.PropertyResolverUtils;
-import org.apache.sshd.common.config.ConfigFileReaderSupport;
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.loader.pem.PEMResourceParserUtils;
@@ -72,7 +72,7 @@ public class ApacheSshdSftpSessionFactory
     private final AtomicReference<ClientSession> sharedSessionHolder = new AtomicReference<>();
 
     private volatile String hostValue;
-    private volatile int portValue = ConfigFileReaderSupport.DEFAULT_PORT;
+    private volatile int portValue = SshConstants.DEFAULT_PORT;
     private volatile String userValue;
     private volatile String passwordValue;
     private volatile Resource privateKey;

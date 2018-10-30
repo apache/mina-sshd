@@ -24,8 +24,13 @@ import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
 import java.rmi.ServerException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
+import org.apache.sshd.common.AttributeRepository;
+import org.apache.sshd.common.AttributeRepository.AttributeKey;
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommandExecutionHelper;
@@ -41,6 +46,9 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ClientSessionTest extends BaseTestSupport {
+    private static final long CONNECT_TIMEOUT = 7L;
+    private static final long AUTH_TIMEOUT = 5L;
+
     private static SshServer sshd;
     private static SshClient client;
     private static int port;
@@ -97,9 +105,11 @@ public class ClientSessionTest extends BaseTestSupport {
             }
         });
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
 
             // NOTE !!! The LF is only because we are using a buffered reader on the server end to read the command
             String actualResponse = session.executeRemoteCommand(expectedCommand + "\n");
@@ -127,9 +137,11 @@ public class ClientSessionTest extends BaseTestSupport {
         });
 
         String actualErrorMessage = null;
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
 
             // NOTE !!! The LF is only because we are using a buffered reader on the server end to read the command
             String response = session.executeRemoteCommand(expectedCommand + "\n");
@@ -175,9 +187,11 @@ public class ClientSessionTest extends BaseTestSupport {
         });
 
         String actualErrorMessage = null;
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
 
             // NOTE !!! The LF is only because we are using a buffered reader on the server end to read the command
             String response = session.executeRemoteCommand(expectedCommand + "\n");
@@ -196,5 +210,34 @@ public class ClientSessionTest extends BaseTestSupport {
         }
 
         assertEquals("Mismatched captured error code", Integer.toString(expectedErrorCode), actualErrorMessage);
+    }
+
+    @Test   // see SSHD-859
+    public void testConnectionContextPropagation() throws Exception {
+        AttributeRepository expected = AttributeRepository.ofKeyValuePair(
+            new AttributeKey<String>(), getCurrentTestName());
+        AtomicInteger creationCount = new AtomicInteger(0);
+        SessionListener listener = new SessionListener() {
+            @Override
+            public void sessionCreated(Session session) {
+                AttributeRepository actual = ((ClientSession) session).getConnectionContext();
+                assertSame("Mismatched connection context", expected, actual);
+                creationCount.incrementAndGet();
+            }
+        };
+
+        try {
+            client.addSessionListener(listener);
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port, expected)
+                        .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                        .getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
+                assertEquals("Session listener invocation count mismatch", 1, creationCount.getAndSet(0));
+            }
+        } finally {
+            client.removeSessionListener(listener);
+        }
     }
 }
