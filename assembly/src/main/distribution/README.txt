@@ -20,16 +20,32 @@
 Welcome to Apache SSHD
 
 Apache SSHD is a library to support the SSH2 protocol on both
-client and server side in java.
+client and server side using pure Java.
 
 This distribution provides a simple demonstration of a SSH
 server and client that you can launched using the shell scripts in the
-bin folder.  By default, the port used is 8000 and the authentication
+bin folder. By default, the port used is 8000 and the authentication
 will succeed if the username and password are the same.
-SCP and SFTP support are both enabled in this configuration.
+SCP and SFTP support are both enabled by default in this configuration.
 
-The lib folder contains the sshd-core jar which is the main jar
-and its required dependencies.
+The artifacts are distributed as follows:
+
+* /bin - contains Linux and Windows scripts that can be used to run
+  the code using the default settings.
+
+* /lib - contains all the JAR(s) necessary to run both SSH client and
+  server - including the various supported I/O factories (default is
+  the built-in NIO2), SCP, SFTP, SOCKS, ed25519 support.
+
+* /extras - contains various SSH-based or SSH-related extra functionality
+  that is not part of SSH per-se. E.g., JGit, Putty, LDAP, Spring SFTP,
+  various contributions.
+
+* /dependencies - contains various required 3rd party artifacts that are
+  used by the extra(s).
+
+* /licenses - contains a copy of all the 3rd party artifacts' licenses
+  that are used by this project
 
 Please send feedback to users@mina.apache.org.
 

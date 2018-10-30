@@ -25,6 +25,15 @@
                 <exclude>org.apache.sshd:sshd-contrib</exclude>
                 <exclude>org.apache.sshd:sshd-putty</exclude>
                 <exclude>org.apache.sshd:sshd-spring-sftp</exclude>
+                <exclude>org.springframework:*</exclude>
+                <exclude>org.springframework.retry:*</exclude>
+                <exclude>io.projectreactor:*</exclude>
+                <exclude>org.reactivestreams:*</exclude>
+                <exclude>commons-io:commons-io</exclude>
+                <exclude>org.springframework.integration:*</exclude>
+                <exclude>org.eclipse.jgit:*</exclude>
+                <exclude>com.jcraft:*</exclude>
+                <exclude>com.googlecode.javaewah:JavaEWAH</exclude>
             </excludes>
             <outputDirectory>lib</outputDirectory>
             <useProjectArtifact>false</useProjectArtifact>
@@ -39,6 +48,21 @@
                 <include>org.apache.sshd:sshd-spring-sftp</include>
             </includes>
             <outputDirectory>extras</outputDirectory>
+            <useProjectArtifact>false</useProjectArtifact>
+        </dependencySet>
+        <dependencySet>
+            <includes>
+                <include>org.springframework:*</include>
+                <include>org.springframework.retry:*</include>
+                <include>org.springframework.integration:*</include>
+                <include>org.eclipse.jgit:*</include>
+                <include>io.projectreactor:*</include>
+                <include>org.reactivestreams:*</include>
+                <include>commons-io:commons-io</include>
+                <include>com.jcraft:*</include>
+                <include>com.googlecode.javaewah:JavaEWAH</include>               
+            </includes>
+            <outputDirectory>dependencies</outputDirectory>
             <useProjectArtifact>false</useProjectArtifact>
         </dependencySet>
     </dependencySets>
