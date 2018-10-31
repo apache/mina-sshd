@@ -1069,7 +1069,6 @@ public class DefaultForwardingFilter
                 OpenFuture f = channel.getOpenFuture();
                 Throwable err = f.getException();
                 boolean immediatly = err != null;
-
                 if (immediatly) {
                     channel.close(immediatly);
                 } else {
