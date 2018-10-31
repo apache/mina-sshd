@@ -170,7 +170,6 @@ public class ClientChannelPendingMessagesQueue extends AbstractLoggingBean
     @Override
     public void operationComplete(OpenFuture future) {
         Throwable err = future.getException();
-
         if (err != null) {
             if (markClosed()) {
                 log.warn("operationComplete({}) {}[{}] signaled", this, err.getClass().getSimpleName(),
