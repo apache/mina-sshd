@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.NavigableMap;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
@@ -52,10 +53,9 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
     public static final String POOL_SIZE_PROP = "sftp-fs-pool-size";
     public static final int DEFAULT_POOL_SIZE = 8;
 
-    public static final Set<String> UNIVERSAL_SUPPORTED_VIEWS =
-            Collections.unmodifiableSet(
-                    GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
-                            "basic", "posix", "owner"));
+    public static final NavigableSet<String> UNIVERSAL_SUPPORTED_VIEWS =
+        Collections.unmodifiableNavigableSet(
+            GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, "basic", "posix", "owner"));
 
     private final String id;
     private final ClientSession clientSession;
@@ -70,7 +70,10 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
     private int writeBufferSize = SftpClient.DEFAULT_WRITE_BUFFER_SIZE;
     private final List<FileStore> stores;
 
-    public SftpFileSystem(SftpFileSystemProvider provider, String id, ClientSession session, SftpClientFactory factory, SftpVersionSelector selector) throws IOException {
+    public SftpFileSystem(
+            SftpFileSystemProvider provider, String id, ClientSession session,
+            SftpClientFactory factory, SftpVersionSelector selector)
+                throws IOException {
         super(provider);
         this.id = id;
         this.clientSession = Objects.requireNonNull(session, "No client session");
@@ -590,7 +593,6 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
     }
 
     public static class DefaultGroupPrincipal extends DefaultUserPrincipal implements GroupPrincipal {
-
         public DefaultGroupPrincipal(String name) {
             super(name);
         }

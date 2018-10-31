@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.session.helpers;
 
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -68,13 +69,15 @@ public class ReservedSessionMessagesHandlerAdapter
     }
 
     @Override
-    public void handleUnimplementedMessage(Session session, Buffer buffer) throws Exception {
-        handleUnimplementedMessage(session, buffer, buffer.getUInt());
-    }
-
-    public void handleUnimplementedMessage(Session session, Buffer buffer, long seqNo) throws Exception {
-        if (log.isDebugEnabled()) {
-            log.debug("handleUnimplementedMessage({}) SSH_MSG_UNIMPLEMENTED - seqNo={}", session, seqNo);
+    public void handleUnimplementedMessage(Session session, int cmd, Buffer buffer) throws Exception {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
+            if (cmd == SshConstants.SSH_MSG_UNIMPLEMENTED) {
+                long seqNo = buffer.getUInt();
+                log.debug("handleUnimplementedMessage({}) SSH_MSG_UNIMPLEMENTED - seqNo={}", session, seqNo);
+            } else {
+                log.debug("handleUnimplementedMessage({}): {}", session, SshConstants.getCommandMessageName(cmd));
+            }
         }
     }
 }

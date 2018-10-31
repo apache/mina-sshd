@@ -37,7 +37,8 @@ import org.slf4j.LoggerFactory;
 public final class VersionProperties {
     private static final class LazyVersionPropertiesHolder {
         private static final NavigableMap<String, String> PROPERTIES =
-            Collections.unmodifiableNavigableMap(loadVersionProperties(LazyVersionPropertiesHolder.class));
+            Collections.unmodifiableNavigableMap(
+                loadVersionProperties(LazyVersionPropertiesHolder.class));
 
         private LazyVersionPropertiesHolder() {
             throw new UnsupportedOperationException("No instance allowed");

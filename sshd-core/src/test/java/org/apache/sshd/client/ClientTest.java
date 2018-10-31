@@ -156,6 +156,12 @@ public class ClientTest extends BaseTestSupport {
         }
 
         @Override
+        public void sessionDisconnect(Session session, int reason, String msg, String language, boolean initiator) {
+            assertObjectInstanceOf("Non client session exception notification", ClientSession.class, session);
+            assertTrue("Invalid reason code: " + reason, reason >= 0);
+        }
+
+        @Override
         public void sessionClosed(Session session) {
             assertObjectInstanceOf("Non client session closure notification", ClientSession.class, session);
             assertSame("Mismatched client session closure instance", clientSessionHolder.getAndSet(null), session);

@@ -41,7 +41,7 @@ public interface RequestHandler<T> {
         ReplyFailure;
 
         public static final Set<Result> VALUES =
-                Collections.unmodifiableSet(EnumSet.allOf(Result.class));
+            Collections.unmodifiableSet(EnumSet.allOf(Result.class));
 
         /**
          * @param name The result name - ignored if {@code null}/empty

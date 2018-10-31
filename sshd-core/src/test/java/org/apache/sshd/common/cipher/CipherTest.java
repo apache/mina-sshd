@@ -68,20 +68,22 @@ public class CipherTest extends BaseTestSupport {
      * NOTE !!! order is important since we build from it the C2S/S2C ciphers proposal
      */
     private static final List<Object[]> PARAMETERS =
-        Collections.unmodifiableList(Arrays.asList(
-            new Object[]{BuiltinCiphers.aes128cbc, com.jcraft.jsch.jce.AES128CBC.class, NUM_LOADTEST_ROUNDS},
-            new Object[]{BuiltinCiphers.tripledescbc, com.jcraft.jsch.jce.TripleDESCBC.class, NUM_LOADTEST_ROUNDS},
-            new Object[]{BuiltinCiphers.blowfishcbc, com.jcraft.jsch.jce.BlowfishCBC.class, NUM_LOADTEST_ROUNDS},
-            new Object[]{BuiltinCiphers.aes192cbc, com.jcraft.jsch.jce.AES192CBC.class, NUM_LOADTEST_ROUNDS},
-            new Object[]{BuiltinCiphers.aes256cbc, com.jcraft.jsch.jce.AES256CBC.class, NUM_LOADTEST_ROUNDS},
-            new Object[]{BuiltinCiphers.arcfour128, com.jcraft.jsch.jce.ARCFOUR128.class, NUM_LOADTEST_ROUNDS},
-            new Object[]{BuiltinCiphers.arcfour256, com.jcraft.jsch.jce.ARCFOUR256.class, NUM_LOADTEST_ROUNDS}
-        ));
+        Collections.unmodifiableList(
+            Arrays.asList(
+                new Object[]{BuiltinCiphers.aes128cbc, com.jcraft.jsch.jce.AES128CBC.class, NUM_LOADTEST_ROUNDS},
+                new Object[]{BuiltinCiphers.tripledescbc, com.jcraft.jsch.jce.TripleDESCBC.class, NUM_LOADTEST_ROUNDS},
+                new Object[]{BuiltinCiphers.blowfishcbc, com.jcraft.jsch.jce.BlowfishCBC.class, NUM_LOADTEST_ROUNDS},
+                new Object[]{BuiltinCiphers.aes192cbc, com.jcraft.jsch.jce.AES192CBC.class, NUM_LOADTEST_ROUNDS},
+                new Object[]{BuiltinCiphers.aes256cbc, com.jcraft.jsch.jce.AES256CBC.class, NUM_LOADTEST_ROUNDS},
+                new Object[]{BuiltinCiphers.arcfour128, com.jcraft.jsch.jce.ARCFOUR128.class, NUM_LOADTEST_ROUNDS},
+                new Object[]{BuiltinCiphers.arcfour256, com.jcraft.jsch.jce.ARCFOUR256.class, NUM_LOADTEST_ROUNDS}
+            ));
 
     private static final List<NamedResource> TEST_CIPHERS =
         Collections.unmodifiableList(
-            Stream.concat(PARAMETERS.stream().map(params -> (NamedResource) params[0]), Stream.of(BuiltinCiphers.none))
-                  .collect(Collectors.toList()));
+            Stream.concat(PARAMETERS.stream()
+                .map(params -> (NamedResource) params[0]), Stream.of(BuiltinCiphers.none))
+                .collect(Collectors.toList()));
 
     private static final String CRYPT_NAMES = NamedResource.getNames(TEST_CIPHERS);
     private static SshServer sshd;

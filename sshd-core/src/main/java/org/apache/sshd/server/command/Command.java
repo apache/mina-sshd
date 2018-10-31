@@ -31,7 +31,7 @@ import org.apache.sshd.server.ExitCallback;
  * <p>
  * This command have direct streams, meaning those streams will be provided by the ssh server
  * for the shell to use directly. This interface is suitable for implementing commands in java,
- * rather than using external processes.  For wrapping such processes or using inverted streams,
+ * rather than using external processes. For wrapping such processes or using inverted streams,
  * </p>
  * see {@link org.apache.sshd.server.shell.InvertedShellWrapper}.
  */

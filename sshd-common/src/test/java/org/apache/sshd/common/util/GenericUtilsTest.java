@@ -44,7 +44,10 @@ public class GenericUtilsTest extends JUnitTestSupport {
     @Test
     public void testSplitAndJoin() {
         List<String> expected = Collections.unmodifiableList(
-                Arrays.asList(getClass().getPackage().getName().replace('.', '/'), getClass().getSimpleName(), getCurrentTestName()));
+            Arrays.asList(
+                getClass().getPackage().getName().replace('.', '/'),
+                getClass().getSimpleName(),
+                getCurrentTestName()));
 
         // NOTE: we also test characters that have meaning in String.split(...) as regex ones
         for (char ch : new char[]{',', '.', '*', '?'}) {

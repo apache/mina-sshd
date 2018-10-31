@@ -29,6 +29,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.RuntimeSshException;
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
@@ -82,17 +83,18 @@ public class KnownHostHashValue {
      * Checks if the host matches the hash
      *
      * @param host The host name/address - ignored if {@code null}/empty
+     * @param port The access port - ignored if non-positive or SSH default
      * @return {@code true} if host matches the hash
      * @throws RuntimeException If entry not properly initialized
      */
-    public boolean isHostMatch(String host) {
+    public boolean isHostMatch(String host, int port) {
         if (GenericUtils.isEmpty(host)) {
             return false;
         }
 
         try {
             byte[] expected = getDigestValue();
-            byte[] actual = calculateHashValue(host, getDigester(), getSaltValue());
+            byte[] actual = calculateHashValue(host, port, getDigester(), getSaltValue());
             return Arrays.equals(expected, actual);
         } catch (Throwable t) {
             if (t instanceof RuntimeException) {
@@ -119,16 +121,44 @@ public class KnownHostHashValue {
     }
 
     // see http://nms.lcs.mit.edu/projects/ssh/README.hashed-hosts
-    public static byte[] calculateHashValue(String host, Factory<? extends Mac> factory, byte[] salt) throws Exception {
-        return calculateHashValue(host, factory.create(), salt);
+    public static byte[] calculateHashValue(String host, int port, Factory<? extends Mac> factory, byte[] salt) throws Exception {
+        return calculateHashValue(host, port, factory.create(), salt);
     }
 
-    public static byte[] calculateHashValue(String host, Mac mac, byte[] salt) throws Exception {
+    public static byte[] calculateHashValue(String host, int port, Mac mac, byte[] salt) throws Exception {
         mac.init(salt);
 
-        byte[] hostBytes = host.getBytes(StandardCharsets.UTF_8);
+        String hostPattern = createHostPattern(host, port);
+        byte[] hostBytes = hostPattern.getBytes(StandardCharsets.UTF_8);
         mac.update(hostBytes);
         return mac.doFinal();
+    }
+
+    public static String createHostPattern(String host, int port) {
+        if ((port <= 0) || (port == SshConstants.DEFAULT_PORT)) {
+            return host;
+        }
+
+        try {
+            return appendHostPattern(new StringBuilder(host.length() + 8 /* port if necessary */), host, port).toString();
+        } catch (IOException e) {
+            throw new RuntimeException("Unexpected (" + e.getClass().getSimpleName() + ") failure"
+                + " to generate host pattern of " + host + ":" + port + ": " + e.getMessage(), e);
+        }
+    }
+
+    public static <A extends Appendable> A appendHostPattern(A sb, String host, int port) throws IOException {
+        boolean nonDefaultPort = (port > 0) && (port != SshConstants.DEFAULT_PORT);
+        if (nonDefaultPort) {
+            sb.append(HostPatternsHolder.NON_STANDARD_PORT_PATTERN_ENCLOSURE_START_DELIM);
+        }
+        sb.append(host);
+        if (nonDefaultPort) {
+            sb.append(HostPatternsHolder.NON_STANDARD_PORT_PATTERN_ENCLOSURE_END_DELIM);
+            sb.append(HostPatternsHolder.PORT_VALUE_DELIMITER);
+            sb.append(Integer.toString(port));
+        }
+        return sb;
     }
 
     public static <A extends Appendable> A append(A sb, KnownHostHashValue hashValue) throws IOException {

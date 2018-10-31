@@ -63,7 +63,6 @@ import org.junit.runners.MethodSorters;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
 public class AbstractSessionTest extends BaseTestSupport {
-
     private MySession session;
 
     public AbstractSessionTest() {
@@ -190,9 +189,9 @@ public class AbstractSessionTest extends BaseTestSupport {
 
     @Test   // see SSHD-652
     public void testCloseFutureListenerRegistration() throws Exception {
-        final AtomicInteger closeCount = new AtomicInteger();
+        AtomicInteger closeCount = new AtomicInteger();
         session.addCloseFutureListener(future -> {
-            assertTrue("Future not marted as closed", future.isClosed());
+            assertTrue("Future not marked as closed", future.isClosed());
             assertEquals("Unexpected multiple call to callback", 1, closeCount.incrementAndGet());
         });
         session.close();
@@ -203,7 +202,7 @@ public class AbstractSessionTest extends BaseTestSupport {
     public void testMalformedUnimplementedMessage() throws Exception {
         session.setReservedSessionMessagesHandler(new ReservedSessionMessagesHandler() {
             @Override
-            public void handleUnimplementedMessage(Session session, Buffer buffer) throws Exception {
+            public void handleUnimplementedMessage(Session session, int cmd, Buffer buffer) throws Exception {
                 fail("Unexpected invocation: available=" + buffer.available());
             }
         });
@@ -459,8 +458,13 @@ public class AbstractSessionTest extends BaseTestSupport {
         }
 
         @Override
-        public void resetIdleTimeout() {
-            // ignored
+        public long resetIdleTimeout() {
+            return 0L;  // ignored
+        }
+
+        @Override
+        public long resetAuthTimeout() {
+            return 0L;  // ignored
         }
 
         @Override

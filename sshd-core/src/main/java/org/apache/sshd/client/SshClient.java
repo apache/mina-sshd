@@ -63,6 +63,7 @@ import org.apache.sshd.client.session.ClientUserAuthServiceFactory;
 import org.apache.sshd.client.session.SessionFactory;
 import org.apache.sshd.client.simple.AbstractSimpleClientSessionCreator;
 import org.apache.sshd.client.simple.SimpleClient;
+import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
@@ -90,7 +91,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  *
  * <P>
  * The default configured client can be created using
- * the {@link #setUpDefaultClient()}.  The next step is to
+ * the {@link #setUpDefaultClient()}. The next step is to
  * start the client using the {@link #start()} method.
  * </P>
  *
@@ -141,13 +142,15 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
      * @see <A HREF="http://linux.die.net/man/5/ssh_config">ssh_config(5) - PreferredAuthentications</A>
      */
     public static final List<NamedFactory<UserAuth>> DEFAULT_USER_AUTH_FACTORIES =
-        Collections.unmodifiableList(Arrays.<NamedFactory<UserAuth>>asList(
+        Collections.unmodifiableList(
+            Arrays.<NamedFactory<UserAuth>>asList(
                 UserAuthPublicKeyFactory.INSTANCE,
                 UserAuthKeyboardInteractiveFactory.INSTANCE,
                 UserAuthPasswordFactory.INSTANCE
         ));
     public static final List<ServiceFactory> DEFAULT_SERVICE_FACTORIES =
-        Collections.unmodifiableList(Arrays.asList(
+        Collections.unmodifiableList(
+            Arrays.asList(
                 ClientUserAuthServiceFactory.INSTANCE,
                 ClientConnectionServiceFactory.INSTANCE
         ));
@@ -439,7 +442,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     @Override
     public ConnectFuture connect(
-            String username, String host, int port, SocketAddress localAddress)
+            String username, String host, int port, AttributeRepository context, SocketAddress localAddress)
                 throws IOException {
         HostConfigEntryResolver resolver = getHostConfigEntryResolver();
         HostConfigEntry entry = resolver.resolveEffectiveHost(host, port, username);
@@ -462,12 +465,12 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             }
         }
 
-        return connect(entry, localAddress);
+        return connect(entry, context, localAddress);
     }
 
     @Override
     public ConnectFuture connect(
-            String username, SocketAddress targetAddress, SocketAddress localAddress)
+            String username, SocketAddress targetAddress, AttributeRepository context, SocketAddress localAddress)
                 throws IOException {
         Objects.requireNonNull(targetAddress, "No target address");
         if (targetAddress instanceof InetSocketAddress) {
@@ -483,7 +486,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     log.debug("connect({}@{}:{}) no overrides", username, host, port);
                 }
 
-                return doConnect(username, targetAddress, localAddress, Collections.emptyList(), true);
+                return doConnect(username, targetAddress, context, localAddress, Collections.emptyList(), true);
             } else {
                 if (log.isDebugEnabled()) {
                     log.debug("connect({}@{}:{}) effective: {}", username, host, port, entry);
@@ -495,12 +498,14 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             if (log.isDebugEnabled()) {
                 log.debug("connect({}@{}) not an InetSocketAddress: {}", username, targetAddress, targetAddress.getClass().getName());
             }
-            return doConnect(username, targetAddress, localAddress, Collections.emptyList(), true);
+            return doConnect(username, targetAddress, context, localAddress, Collections.emptyList(), true);
         }
     }
 
     @Override
-    public ConnectFuture connect(HostConfigEntry hostConfig, SocketAddress localAddress) throws IOException {
+    public ConnectFuture connect(
+            HostConfigEntry hostConfig, AttributeRepository context, SocketAddress localAddress)
+                throws IOException {
         Objects.requireNonNull(hostConfig, "No host configuration");
         String host = ValidateUtils.checkNotNullAndNotEmpty(hostConfig.getHostName(), "No target host");
         int port = hostConfig.getPort();
@@ -508,7 +513,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
         Collection<KeyPair> keys = loadClientIdentities(hostConfig.getIdentities(), IoUtils.EMPTY_LINK_OPTIONS);
         return doConnect(hostConfig.getUsername(), new InetSocketAddress(host, port),
-                localAddress, keys, !hostConfig.isIdentitiesOnly());
+                context, localAddress, keys, !hostConfig.isIdentitiesOnly());
     }
 
     protected List<KeyPair> loadClientIdentities(Collection<String> locations, LinkOption... options) throws IOException {
@@ -554,7 +559,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     protected ConnectFuture doConnect(
-            String username, SocketAddress targetAddress, SocketAddress localAddress,
+            String username, SocketAddress targetAddress,
+            AttributeRepository context, SocketAddress localAddress,
             Collection<? extends KeyPair> identities, boolean useDefaultIdentities)
                 throws IOException {
         if (connector == null) {
@@ -563,8 +569,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
         ConnectFuture connectFuture = new DefaultConnectFuture(username + "@" + targetAddress, null);
         SshFutureListener<IoConnectFuture> listener =
-            createConnectCompletionListener(connectFuture, username, targetAddress, identities, useDefaultIdentities);
-        connector.connect(targetAddress, localAddress).addListener(listener);
+            createConnectCompletionListener(
+                connectFuture, username, targetAddress, identities, useDefaultIdentities);
+        IoConnectFuture connectingFuture = connector.connect(targetAddress, context, localAddress);
+        connectingFuture.addListener(listener);
         return connectFuture;
     }
 
@@ -584,7 +592,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 if (t != null) {
                     if (log.isDebugEnabled()) {
                         log.debug("operationComplete({}@{}) failed ({}): {}",
-                              username, address, t.getClass().getSimpleName(), t.getMessage());
+                            username, address, t.getClass().getSimpleName(), t.getMessage());
                     }
                     connectFuture.setException(t);
                 } else {
@@ -593,7 +601,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                         onConnectOperationComplete(ioSession, connectFuture, username, address, identities, useDefaultIdentities);
                     } catch (RuntimeException e) {
                         log.warn("operationComplete({}@{}) failed ({}) to signal completion of session={}: {}",
-                                username, address, e.getClass().getSimpleName(), ioSession, e.getMessage());
+                            username, address, e.getClass().getSimpleName(), ioSession, e.getMessage());
                         if (log.isDebugEnabled()) {
                             log.debug("operationComplete(" + username + "@" + address + ") session=" + ioSession + " completion signal failure details", e);
                         }
@@ -611,8 +619,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         };
     }
 
-    protected void onConnectOperationComplete(IoSession ioSession, ConnectFuture connectFuture,
-            String username, SocketAddress address, Collection<? extends KeyPair> identities, boolean useDefaultIdentities) {
+    protected void onConnectOperationComplete(
+            IoSession ioSession, ConnectFuture connectFuture,  String username,
+            SocketAddress address, Collection<? extends KeyPair> identities, boolean useDefaultIdentities) {
         AbstractClientSession session = (AbstractClientSession) AbstractSession.getSession(ioSession);
         session.setUsername(username);
         session.setConnectAddress(address);
@@ -631,7 +640,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             for (KeyPair kp : identities) {
                 if (traceEnabled) {
                     log.trace("onConnectOperationComplete({}) add identity type={}, fingerprint={}",
-                              session, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
+                        session, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
                 }
                 session.addPublicKeyIdentity(kp);
             }
@@ -674,14 +683,14 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             if (id instanceof String) {
                 if (traceEnabled) {
                     log.trace("setupDefaultSessionIdentities({}) add password fingerprint={}",
-                              session, KeyUtils.getFingerPrint(id.toString()));
+                        session, KeyUtils.getFingerPrint(id.toString()));
                 }
                 session.addPasswordIdentity((String) id);
             } else if (id instanceof KeyPair) {
                 KeyPair kp = (KeyPair) id;
                 if (traceEnabled) {
                     log.trace("setupDefaultSessionIdentities({}) add identity type={}, fingerprint={}",
-                              session, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
+                        session, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
                 }
                 session.addPublicKeyIdentity(kp);
             } else {
@@ -765,7 +774,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     /**
-     * Setup a default client.  The client does not require any additional setup.
+     * Setup a default client. The client does not require any additional setup.
      *
      * @return a newly create {@link SshClient} with default configurations
      */

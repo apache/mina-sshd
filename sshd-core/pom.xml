@@ -173,7 +173,10 @@
         <profile>
             <id>test-jce</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>test.jce</name>
+                    <value>!disable</value>
+                </property>
             </activation>
             <build>
                 <plugins>

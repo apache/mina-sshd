@@ -31,6 +31,7 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -60,8 +61,11 @@ public enum BuiltinIdentities implements Identity {
     public static final Set<BuiltinIdentities> VALUES =
         Collections.unmodifiableSet(EnumSet.allOf(BuiltinIdentities.class));
 
-    public static final Set<String> NAMES =
-        Collections.unmodifiableSet(
+    /**
+     * A case <u>insensitive</u> {@link NavigableSet} of all built-in identities names
+     */
+    public static final NavigableSet<String> NAMES =
+        Collections.unmodifiableNavigableSet(
             GenericUtils.asSortedSet(
                 String.CASE_INSENSITIVE_ORDER, NamedResource.getNameList(VALUES)));
 

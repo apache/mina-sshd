@@ -112,7 +112,7 @@ public enum BuiltinSftpClientExtensions implements SftpClientExtensionFactory {
     };
 
     public static final Set<BuiltinSftpClientExtensions> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(BuiltinSftpClientExtensions.class));
+        Collections.unmodifiableSet(EnumSet.allOf(BuiltinSftpClientExtensions.class));
 
     private final String name;
 

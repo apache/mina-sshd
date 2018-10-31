@@ -39,7 +39,7 @@ import org.apache.sshd.server.session.ServerSession;
 
 /**
  * A shell implementation that wraps an instance of {@link InvertedShell}
- * as a {@link Command}.  This is useful when using external
+ * as a {@link Command}. This is useful when using external
  * processes.
  * When starting the shell, this wrapper will also create a thread used
  * to pump the streams and also to check if the shell is alive.
@@ -215,7 +215,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
                     return;
                 }
 
-                // Sleep a bit.  This is not very good, as it consumes CPU, but the
+                // Sleep a bit. This is not very good, as it consumes CPU, but the
                 // input streams are not selectable for nio, and any other blocking
                 // method would consume at least two threads
                 Thread.sleep(pumpSleepTime);

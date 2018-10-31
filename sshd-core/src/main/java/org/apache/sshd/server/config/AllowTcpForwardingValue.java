@@ -79,7 +79,7 @@ public enum AllowTcpForwardingValue implements TcpForwardingFilter {
     };
 
     public static final Set<AllowTcpForwardingValue> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(AllowTcpForwardingValue.class));
+        Collections.unmodifiableSet(EnumSet.allOf(AllowTcpForwardingValue.class));
 
     // NOTE: it also interprets "yes" as "all" and "no" as "none"
     public static AllowTcpForwardingValue fromString(String s) {

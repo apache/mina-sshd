@@ -22,7 +22,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
- * See RFC 4253 [SSH-TRANS] and the SSH_MSG_SERVICE_REQUEST packet.  Examples include ssh-userauth
+ * See RFC 4253 [SSH-TRANS] and the SSH_MSG_SERVICE_REQUEST packet. Examples include ssh-userauth
  * and ssh-connection but developers are also free to implement their own custom service.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

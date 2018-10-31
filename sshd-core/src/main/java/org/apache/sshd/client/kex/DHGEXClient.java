@@ -79,8 +79,8 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             @Override
             public String toString() {
                 return NamedFactory.class.getSimpleName()
-                        + "<" + KeyExchange.class.getSimpleName() + ">"
-                        + "[" + getName() + "]";
+                    + "<" + KeyExchange.class.getSimpleName() + ">"
+                    + "[" + getName() + "]";
             }
         };
     }
@@ -167,14 +167,13 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             h = hash.digest();
 
             Signature verif = ValidateUtils.checkNotNull(
-                    NamedFactory.create(session.getSignatureFactories(), keyAlg),
-                    "No verifier located for algorithm=%s",
-                    keyAlg);
+                NamedFactory.create(session.getSignatureFactories(), keyAlg),
+                "No verifier located for algorithm=%s", keyAlg);
             verif.initVerifier(serverKey);
             verif.update(h);
             if (!verif.verify(sig)) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                        "KeyExchange signature verification failed for key type=" + keyAlg);
+                    "KeyExchange signature verification failed for key type=" + keyAlg);
             }
             return true;
         }

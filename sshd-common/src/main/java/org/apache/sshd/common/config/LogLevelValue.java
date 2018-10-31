@@ -35,10 +35,18 @@ public enum LogLevelValue {
      * 1. DEBUG and DEBUG1 are EQUIVALENT
      * 2. Order is important (!!!)
      */
-    QUIET, FATAL, ERROR, INFO, VERBOSE, DEBUG, DEBUG1, DEBUG2, DEBUG3;
+    QUIET,
+    FATAL,
+    ERROR,
+    INFO,
+    VERBOSE,
+    DEBUG,
+    DEBUG1,
+    DEBUG2,
+    DEBUG3;
 
     public static final Set<LogLevelValue> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(LogLevelValue.class));
+        Collections.unmodifiableSet(EnumSet.allOf(LogLevelValue.class));
 
     public static LogLevelValue fromName(String n) {
         if (GenericUtils.isEmpty(n)) {

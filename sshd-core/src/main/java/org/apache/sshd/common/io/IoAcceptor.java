@@ -40,5 +40,4 @@ public interface IoAcceptor extends IoService {
     void unbind();
 
     Set<SocketAddress> getBoundAddresses();
-
 }

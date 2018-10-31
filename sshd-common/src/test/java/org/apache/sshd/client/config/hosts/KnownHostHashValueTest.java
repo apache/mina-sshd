@@ -22,6 +22,7 @@ package org.apache.sshd.client.config.hosts;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
@@ -43,19 +44,29 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @Category({ NoIoTestCase.class })
 public class KnownHostHashValueTest extends JUnitTestSupport {
     private final String hostName;
+    private final int port;
     private final String hashValue;
     private final KnownHostHashValue hash;
 
-    public KnownHostHashValueTest(String hostName, String hashValue) {
+    public KnownHostHashValueTest(String hostName, int port, String hashValue) {
         this.hostName = hostName;
+        this.port = port;
         this.hashValue = hashValue;
         this.hash = KnownHostHashValue.parse(hashValue);
     }
 
     @Parameters(name = "host={0}, hash={1}")
     public static Collection<Object[]> parameters() {
-        return Arrays.<Object[]>asList(
-                (Object[]) new String[]{"192.168.1.61", "|1|F1E1KeoE/eEWhi10WpGv4OdiO6Y=|3988QV0VE8wmZL7suNrYQLITLCg="});
+        return Arrays.asList(
+            // line generated `ssh xenon@localhost -p 10022 hostname` (SSH-2.0-OpenSSH_7.5)
+            new Object[]{"localhost", 10022,
+                "|1|qhjoqX12EcnwZO3KNbpoFbxrdYE=|J+voEFzRbRL49TiHV+jbUfaS+kg="},
+            // line generated `ssh xenon@localhost hostname` (SSH-2.0-OpenSSH_7.5)
+            new Object[]{"localhost", SshConstants.DEFAULT_PORT,
+                "|1|vLQs+atPgodQmPes21ZaMSgLD0s=|A2K2Ym0ZPtQmD8kB3FVViQvQ7qQ="},
+            new Object[]{"192.168.1.61", SshConstants.DEFAULT_PORT,
+                "|1|F1E1KeoE/eEWhi10WpGv4OdiO6Y=|3988QV0VE8wmZL7suNrYQLITLCg="}
+        );
     }
 
     @Test
@@ -66,14 +77,24 @@ public class KnownHostHashValueTest extends JUnitTestSupport {
 
     @Test
     public void testHostMatch() {
-        assertTrue("Specified host does not match", hash.isHostMatch(hostName));
-        assertFalse("Unexpected host match", hash.isHostMatch(getCurrentTestName()));
+        assertTrue("Specified host does not match", hash.isHostMatch(hostName, port));
+        assertFalse("Unexpected host match", hash.isHostMatch(getCurrentTestName(), port));
     }
 
     @Test
     public void testCalculateHashValue() throws Exception {
         byte[] expected = hash.getDigestValue();
-        byte[] actual = KnownHostHashValue.calculateHashValue(hostName, hash.getDigester(), hash.getSaltValue());
+        byte[] actual = KnownHostHashValue.calculateHashValue(
+            hostName, port, hash.getDigester(), hash.getSaltValue());
         assertArrayEquals("Mismatched hash value", expected, actual);
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName()
+            + "[host=" + hostName
+            + ", port=" + port
+            + ", hashValue=" + hashValue
+            + "]";
     }
 }

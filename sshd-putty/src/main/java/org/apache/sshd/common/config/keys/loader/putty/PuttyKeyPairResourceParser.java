@@ -100,11 +100,11 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
     String PPK_FILE_SUFFIX = ".ppk";
 
     List<String> KNOWN_HEADERS =
-            Collections.unmodifiableList(
-                    Arrays.asList(
-                            KEY_FILE_HEADER_PREFIX,
-                            PUBLIC_LINES_HEADER,
-                            PRIVATE_LINES_HEADER));
+        Collections.unmodifiableList(
+            Arrays.asList(
+                KEY_FILE_HEADER_PREFIX,
+                PUBLIC_LINES_HEADER,
+                PRIVATE_LINES_HEADER));
 
     /**
      * Value (case insensitive) used to denote that private key is not encrypted

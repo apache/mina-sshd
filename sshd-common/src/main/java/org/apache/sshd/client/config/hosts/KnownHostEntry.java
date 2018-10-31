@@ -127,7 +127,7 @@ public class KnownHostEntry extends HostPatternsHolder {
         }
 
         KnownHostHashValue hash = getHashedEntry();
-        return (hash != null) && hash.isHostMatch(host);
+        return (hash != null) && hash.isHostMatch(host, port);
     }
 
     @Override

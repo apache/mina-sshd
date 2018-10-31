@@ -54,5 +54,5 @@ public enum ClientChannelEvent {
     OPENED;
 
     public static final Set<ClientChannelEvent> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(ClientChannelEvent.class));
+        Collections.unmodifiableSet(EnumSet.allOf(ClientChannelEvent.class));
 }

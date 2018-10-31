@@ -87,10 +87,10 @@ public class DefaultScpClient extends AbstractScpClient {
              OutputStream invIn = channel.getInvertedIn()) {
             ScpHelper helper = new ScpHelper(session, invOut, invIn, fs, opener, listener);
             helper.receive(local,
-                    options.contains(Option.Recursive),
-                    options.contains(Option.TargetIsDirectory),
-                    options.contains(Option.PreserveAttributes),
-                    ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE);
+                options.contains(Option.Recursive),
+                options.contains(Option.TargetIsDirectory),
+                options.contains(Option.PreserveAttributes),
+                ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE);
             handleCommandExitStatus(cmd, channel);
         } finally {
             channel.close(false);
@@ -121,7 +121,9 @@ public class DefaultScpClient extends AbstractScpClient {
     }
 
     @Override
-    protected <T> void runUpload(String remote, Collection<Option> options, Collection<T> local, AbstractScpClient.ScpOperationExecutor<T> executor) throws IOException {
+    protected <T> void runUpload(
+            String remote, Collection<Option> options, Collection<T> local, AbstractScpClient.ScpOperationExecutor<T> executor)
+                throws IOException {
         local = ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local);
         remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s", remote);
         if (local.size() > 1) {

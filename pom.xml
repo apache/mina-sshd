@@ -104,23 +104,23 @@
         <min.required.maven.version>3.5.0</min.required.maven.version>
         <gmaven.plugin.version>2.1</gmaven.plugin.version>
         <groovy.major.version>2</groovy.major.version>
-        <groovy.minor.version>4</groovy.minor.version>
-        <groovy.release.version>15</groovy.release.version>
+        <groovy.minor.version>5</groovy.minor.version>
+        <groovy.release.version>3</groovy.release.version>
         <groovy.compliance.level>2.0</groovy.compliance.level>
         <groovy.version>${groovy.major.version}.${groovy.minor.version}.${groovy.release.version}</groovy.version>
 
         <bouncycastle.version>1.60</bouncycastle.version>
         <slf4j.version>1.7.25</slf4j.version>
-        <spring.version>5.1.0.RELEASE</spring.version>
-        <jgit.version>5.1.2.201810061102-r</jgit.version>
+        <spring.version>5.1.1.RELEASE</spring.version>
+        <jgit.version>5.1.3.201810200350-r</jgit.version>
         <junit.version>4.12</junit.version>
-        <bytebuddy.version>1.9.1</bytebuddy.version>
+        <bytebuddy.version>1.9.3</bytebuddy.version>
 
-        <surefire.plugin.version>2.22.0</surefire.plugin.version>
+        <surefire.plugin.version>2.22.1</surefire.plugin.version>
         <maven.archiver.version>3.2.0</maven.archiver.version>
-        <plexus.archiver.version>3.6.0</plexus.archiver.version>
+        <plexus.archiver.version>3.7.0</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
-        <pmd.version>6.8.0</pmd.version>
+        <pmd.version>6.9.0</pmd.version>
     </properties>
 
     <profiles>
@@ -131,6 +131,7 @@
                 <maven.javadoc.skip>true</maven.javadoc.skip>
             </properties>
         </profile>
+
         <profile>
             <id>findbugs</id>
             <build>
@@ -158,6 +159,7 @@
                 </plugins>
             </build>
         </profile>
+
         <profile>
                 <!-- mvn -Powasp verify
 
@@ -175,7 +177,7 @@
                     <plugin>
                         <groupId>org.owasp</groupId>
                         <artifactId>dependency-check-maven</artifactId>
-                        <version>3.3.1</version>
+                        <version>3.3.3</version>
                             <!-- see https://jeremylong.github.io/DependencyCheck/dependency-check-maven/configuration.html -->
                         <configuration>
                                 <!-- see https://github.com/jeremylong/DependencyCheck/issues/1394 -->
@@ -206,6 +208,7 @@
                 </plugins>
             </build>
         </profile>
+
         <profile>
             <id>javac-errorprone</id>
             <build>
@@ -235,6 +238,7 @@
                  </plugins>
             </build>
         </profile>
+
         <profile>
             <id>only-eclipse</id>
             <activation>
@@ -336,6 +340,19 @@
                                                 <execute />
                                             </action>
                                         </pluginExecution>
+                                        <pluginExecution>
+                                            <pluginExecutionFilter>
+                                                <groupId>org.apache.maven.plugins</groupId>
+                                                <artifactId>maven-antrun-plugin</artifactId>
+                                                <versionRange>[1.8,)</versionRange>
+                                                <goals>
+                                                    <goal>run</goal>
+                                                </goals>
+                                            </pluginExecutionFilter>
+                                            <action>
+                                                <execute />
+                                            </action>
+                                        </pluginExecution>
                                     </pluginExecutions>
                                 </lifecycleMappingMetadata>
                             </configuration>
@@ -350,9 +367,21 @@
         <dependencies>
             <dependency>
                 <groupId>org.codehaus.groovy</groupId>
-                <artifactId>groovy-all</artifactId>
+                <artifactId>groovy</artifactId>
                 <version>${groovy.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.codehaus.groovy</groupId>
+                <artifactId>groovy-ant</artifactId>
+                <version>${groovy.version}</version>
+                <exclusions>
+                    <exclusion> <!-- replaced by ant-junit4 -->
+                        <groupId>org.apache.ant</groupId>
+                        <artifactId>ant-junit</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
                 <!-- NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 
                     Upgrading it beyond 2.0.19 causes problems for the sshd-ldap
@@ -587,9 +616,11 @@
                     <configuration>
                         <excludes>
                             <exclude>README.md</exclude>
+                            <exclude>CHANGES.md</exclude>
                             <exclude>src/docs/**</exclude>
                             <exclude>src/test/resources/**</exclude>
                             <exclude>**/stty-output-*.txt</exclude>
+                            <exclude>**/target/**</exclude>
                             <exclude>*checkstyle*</exclude>
                             <exclude>*findbugs*</exclude>
                             <exclude>*suppressions*</exclude>
@@ -603,6 +634,7 @@
                             <exclude>.metadata/**</exclude>
                             <exclude>.recommenders/**</exclude>
                             <exclude>RemoteSystemsTempFiles/**</exclude>
+                            <exclude>**/licenses/*.txt</exclude>
                             <exclude>.project</exclude>
                             <exclude>.classpath</exclude>
                             <exclude>.springBeans</exclude>
@@ -614,7 +646,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>animal-sniffer-maven-plugin</artifactId>
-                    <version>1.16</version>
+                    <version>1.17</version>
                     <configuration>
                         <signature>
                             <groupId>org.codehaus.mojo.signature</groupId>
@@ -644,6 +676,18 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
                     <version>3.0.1</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.apache.maven</groupId>
+                            <artifactId>maven-archiver</artifactId>
+                            <version>${maven.archiver.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.codehaus.plexus</groupId>
+                            <artifactId>plexus-archiver</artifactId>
+                            <version>${plexus.archiver.version}</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -667,18 +711,25 @@
                     <configuration>
                         <additionalOptions>-Xdoclint:none </additionalOptions>
                     </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.apache.maven</groupId>
+                            <artifactId>maven-archiver</artifactId>
+                            <version>${maven.archiver.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.codehaus.plexus</groupId>
+                            <artifactId>plexus-archiver</artifactId>
+                            <version>${plexus.archiver.version}</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.gmaven</groupId>
                     <artifactId>groovy-maven-plugin</artifactId>
                     <version>${gmaven.plugin.version}</version>
                     <dependencies>
-                        <dependency>
-                            <groupId>org.codehaus.groovy</groupId>
-                            <artifactId>groovy-all</artifactId>
-                            <version>${groovy.version}</version>
-                        </dependency>
-                          <!-- referenced indirectly by groovy-all -->
+                          <!-- referenced indirectly by groovy-ant -->
                         <dependency>
                             <groupId>org.apache.ant</groupId>
                             <artifactId>ant</artifactId>
@@ -695,9 +746,31 @@
                             <version>${ant.version}</version>
                         </dependency>
                         <dependency>
+                            <groupId>org.apache.ant</groupId>
+                            <artifactId>ant-antlr</artifactId>
+                            <version>${ant.version}</version>
+                        </dependency>
+                        <dependency>
                             <groupId>junit</groupId>
                             <artifactId>junit</artifactId>
                             <version>${junit.version}</version>
+                        </dependency>
+
+                        <dependency>
+                            <groupId>org.codehaus.groovy</groupId>
+                            <artifactId>groovy</artifactId>
+                            <version>${groovy.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.codehaus.groovy</groupId>
+                            <artifactId>groovy-ant</artifactId>
+                            <version>${groovy.version}</version>
+                            <exclusions>
+                                <exclusion> <!-- replaced by ant-junit4 -->
+                                    <groupId>org.apache.ant</groupId>
+                                    <artifactId>ant-junit</artifactId>
+                                </exclusion>
+                            </exclusions>
                         </dependency>
                     </dependencies>
                 </plugin>
@@ -715,7 +788,7 @@
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>8.13</version>
+                            <version>8.14</version>
                             <exclusions>
                                 <!-- MCHECKSTYLE-156 -->
                                 <exclusion>
@@ -770,9 +843,9 @@
                             <artifactId>ant</artifactId>
                             <version>${ant.version}</version>
                         </dependency>
-                        <dependency>
+                        <dependency>    <!-- replace ant-junit artifact -->
                             <groupId>org.apache.ant</groupId>
-                            <artifactId>ant-junit</artifactId>
+                            <artifactId>ant-junit4</artifactId>
                             <version>${ant.version}</version>
                         </dependency>
                         <dependency>
@@ -810,13 +883,19 @@
                             <groupId>org.codehaus.groovy</groupId>
                             <artifactId>groovy-ant</artifactId>
                             <version>${groovy.version}</version>
+                            <exclusions>
+                                <exclusion> <!-- replaced by ant-junit4 -->
+                                    <groupId>org.apache.ant</groupId>
+                                    <artifactId>ant-junit</artifactId>
+                                </exclusion>
+                            </exclusions>
                         </dependency>
                     </dependencies>
                 </plugin>
                 <plugin>
                    <groupId>org.apache.maven.plugins</groupId>
                    <artifactId>maven-pmd-plugin</artifactId>
-                   <version>3.9.0</version>
+                   <version>3.11.0</version>
                    <configuration>
                        <targetJdk>${javac.target}</targetJdk>
                        <printFailingErrors>true</printFailingErrors>
@@ -849,6 +928,33 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-dependency-plugin</artifactId>
                     <version>3.1.1</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.codehaus.plexus</groupId>
+                            <artifactId>plexus-archiver</artifactId>
+                            <version>${plexus.archiver.version}</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-antrun-plugin</artifactId>
+                    <version>1.8</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.apache.ant</groupId>
+                            <artifactId>ant</artifactId>
+                            <version>${ant.version}</version>
+                        </dependency>
+                        <dependency>    <!--Artificial dependency for tools.jar in case we invoke javac or javah -->
+                            <groupId>com.sun</groupId>
+                            <artifactId>tools</artifactId>
+                            <version>${java.version}</version>
+                            <scope>system</scope>
+                            <systemPath>${java.home}/../lib/tools.jar</systemPath>
+                        </dependency>
+                    </dependencies>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -965,6 +1071,11 @@
                         <requireJavaVersion>
                             <version>[${javac.target},)</version>
                         </requireJavaVersion>
+                        <requireReleaseDeps>
+                            <onlyWhenRelease>true</onlyWhenRelease>
+                            <message>No Snapshot Dependencies Allowed</message>
+                        </requireReleaseDeps>
+                        <dependencyConvergence/>
                     </rules>
                 </configuration>
             </plugin>
@@ -996,7 +1107,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.7.0</version>
+                <version>3.8.0</version>
                 <configuration>
                     <source>${javac.source}</source>
                     <target>${javac.target}</target>
@@ -1009,7 +1120,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.0.2</version>
                 <executions>
                     <execution>
                         <id>install</id>
@@ -1037,7 +1147,7 @@
                                 <resourceBundle>org.apache:apache-jar-resource-bundle:1.4</resourceBundle>
                             </resourceBundles>
                             <supplementalModels>
-                                <supplementalModel>${projectRoot}/src/legal/notices.xml</supplementalModel>
+                                <supplementalModel>${workspace.root.dir}/assembly/src/main/legal/notices.xml</supplementalModel>
                             </supplementalModels>
                             <properties>
                                 <projectName>Apache MINA SSHD</projectName>
@@ -1061,6 +1171,15 @@
                     </execution>
                 </executions>
             </plugin>
+                <!-- NOTE: do not upgrade maven or plexus-archiver plugin
+                    dependency for this plugin in order to avoid
+
+                        Execution unix-bin of goal org.apache.maven.plugins:maven-assembly-plugin:3.1.0:single failed:
+                            An API incompatibility was encountered while executing org.apache.maven.plugins:maven-assembly-plugin:3.1.0:single:
+                                java.lang.AbstractMethodError:
+                                    org.apache.maven.plugins.assembly.archive.archiver.PrefixedFileSet.getFileMappers()
+                                        [Lorg/codehaus/plexus/components/io/filemappers/FileMapper;
+               -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -1075,7 +1194,7 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>3.5.0</version>
+                <version>4.0.0</version>
                 <inherited>true</inherited>
                 <extensions>true</extensions>
                 <executions>
@@ -1092,6 +1211,17 @@
                         </configuration>
                     </execution>
                 </executions>
+                <!-- NOTE: do not upgrade maven-archiver plugin
+                    dependency for this plugin in order to avoid
+
+                    Execution bundle-manifest of goal org.apache.felix:maven-bundle-plugin:4.0.0:manifest failed:
+                        An API incompatibility was encountered while executing org.apache.felix:maven-bundle-plugin:4.0.0:manifest:
+                            java.lang.NoSuchMethodError:
+                                org.apache.maven.archiver.MavenArchiver.getManifest(
+                                    Lorg/apache/maven/project/MavenProject;
+                                    Lorg/apache/maven/archiver/MavenArchiveConfiguration;)
+                                        Lorg/codehaus/plexus/archiver/jar/Manifest;
+               -->
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -1186,7 +1316,7 @@
            <plugin>    <!-- used by PMD to create a source XREF -->
                <groupId>org.apache.maven.plugins</groupId>
                <artifactId>maven-jxr-plugin</artifactId>
-               <version>2.5</version>
+               <version>3.0.0</version>
            </plugin>
        </plugins>
     </reporting>
@@ -1194,6 +1324,7 @@
     <modules>
         <module>sshd-common</module>
         <module>sshd-putty</module>
+        <module>sshd-openpgp</module>
         <module>sshd-core</module>
         <module>sshd-mina</module>
         <module>sshd-netty</module>

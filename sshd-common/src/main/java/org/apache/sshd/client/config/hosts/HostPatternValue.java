@@ -19,6 +19,7 @@
 
 package org.apache.sshd.client.config.hosts;
 
+import java.io.IOException;
 import java.util.regex.Pattern;
 
 import org.apache.sshd.common.util.GenericUtils;
@@ -82,14 +83,11 @@ public class HostPatternValue {
         }
 
         int portValue = getPort();
-        if (portValue > 0) {
-            sb.append(HostPatternsHolder.NON_STANDARD_PORT_PATTERN_ENCLOSURE_START_DELIM);
-        }
-        sb.append(purePattern);
-        if (portValue > 0) {
-            sb.append(HostPatternsHolder.NON_STANDARD_PORT_PATTERN_ENCLOSURE_END_DELIM);
-            sb.append(HostPatternsHolder.PORT_VALUE_DELIMITER);
-            sb.append(portValue);
+        try {
+            KnownHostHashValue.appendHostPattern(sb, purePattern, portValue);
+        } catch (IOException e) {
+            throw new RuntimeException("Unexpected (" + e.getClass().getSimpleName() + ") failure"
+                + " to append host pattern of " + purePattern + ":" + portValue + ": " + e.getMessage(), e);
         }
 
         return sb.toString();

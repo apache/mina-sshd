@@ -51,7 +51,6 @@ import io.netty.util.Attribute;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class NettyIoSession extends AbstractCloseable implements IoSession {
-
     protected final Map<Object, Object> attributes = new HashMap<>();
     protected final NettyIoService service;
     protected final IoHandler handler;
@@ -163,7 +162,8 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
         remoteAddr = channel.remoteAddress();
         handler.sessionCreated(NettyIoSession.this);
 
-        Attribute<IoConnectFuture> connectFuture = channel.attr(NettyIoService.CONNECT_FUTURE_KEY);
+        Attribute<IoConnectFuture> connectFuture =
+            channel.attr(NettyIoService.CONNECT_FUTURE_KEY);
         IoConnectFuture future = connectFuture.get();
         if (future != null) {
             future.setSession(NettyIoSession.this);
@@ -186,7 +186,6 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     }
 
     protected static class DefaultIoWriteFuture extends AbstractIoWriteFuture {
-
         public DefaultIoWriteFuture(Object id, Object lock) {
             super(id, lock);
         }
@@ -196,7 +195,6 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
      * Simple netty adapter to use as a bridge.
      */
     protected class Adapter extends ChannelInboundHandlerAdapter {
-
         public Adapter() {
             super();
         }

@@ -99,7 +99,8 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
     protected Closeable getInnerCloseable() {
         return new IoBaseCloseable() {
             @SuppressWarnings("synthetic-access")
-            private final DefaultCloseFuture future = new DefaultCloseFuture(MinaSession.this.toString(), lock);
+            private final DefaultCloseFuture future =
+                new DefaultCloseFuture(MinaSession.this.toString(), lock);
 
             @SuppressWarnings("synthetic-access")
             @Override
@@ -126,7 +127,8 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
             @SuppressWarnings("synthetic-access")
             @Override
             public org.apache.sshd.common.future.CloseFuture close(boolean immediately) {
-                org.apache.mina.core.future.CloseFuture cf = immediately ? session.closeNow() : session.closeOnFlush();
+                org.apache.mina.core.future.CloseFuture cf =
+                    immediately ? session.closeNow() : session.closeOnFlush();
                 cf.addListener(f -> future.setValue(Boolean.TRUE));
                 return future;
             }
@@ -151,14 +153,15 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
     // NOTE !!! data buffer may NOT be re-used when method returns - at least until IoWriteFuture is signalled
     public IoWriteFuture write(IoBuffer buffer) {
         Future future = new Future(sessionWriteId, null);
-        session.write(buffer).addListener((IoFutureListener<WriteFuture>) cf -> {
-            Throwable t = cf.getException();
-            if (t != null) {
-                future.setException(t);
-            } else {
-                future.setWritten();
-            }
-        });
+        session.write(buffer)
+            .addListener((IoFutureListener<WriteFuture>) cf -> {
+                Throwable t = cf.getException();
+                if (t != null) {
+                    future.setException(t);
+                } else {
+                    future.setWritten();
+                }
+            });
         return future;
     }
 
@@ -183,6 +186,9 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[local=" + session.getLocalAddress() + ", remote=" + session.getRemoteAddress() + "]";
+        return getClass().getSimpleName()
+            + "[local=" + session.getLocalAddress()
+            + ", remote=" + session.getRemoteAddress()
+            + "]";
     }
 }

@@ -22,6 +22,7 @@ package org.apache.sshd.common.io;
 import java.io.IOException;
 import java.net.SocketAddress;
 
+import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.util.SshdEventListener;
 
 /**
@@ -34,10 +35,14 @@ public interface IoServiceEventListener extends SshdEventListener {
      *
      * @param connector The {@link IoConnector} through which the connection was established
      * @param local The local connection endpoint
+     * @param context An optional &quot;context&quot; provided by the user when connection
+     * was requested
      * @param remote The remote connection endpoint
      * @throws IOException If failed to handle the event - in which case connection will be aborted
      */
-    default void connectionEstablished(IoConnector connector, SocketAddress local, SocketAddress remote) throws IOException {
+    default void connectionEstablished(
+            IoConnector connector, SocketAddress local, AttributeRepository context, SocketAddress remote)
+                throws IOException {
         // Do nothing
     }
 
@@ -47,14 +52,16 @@ public interface IoServiceEventListener extends SshdEventListener {
      *
      * @param connector The {@link IoConnector} through which the connection was established
      * @param local The local connection endpoint
+     * @param context An optional &quot;context&quot; provided by the user when connection
+     * was requested
      * @param remote The remote connection endpoint
      * @param reason The reason for aborting - may be an exception thrown by
-     * {@link #connectionEstablished(IoConnector, SocketAddress, SocketAddress) connectionEstablished}
+     * {@link #connectionEstablished(IoConnector, SocketAddress, AttributeRepository, SocketAddress) connectionEstablished}
      * @throws IOException If failed to handle the event - the exception is logged but does not
      * prevent further connections from being accepted
      */
     default void abortEstablishedConnection(
-            IoConnector connector, SocketAddress local, SocketAddress remote, Throwable reason)
+            IoConnector connector, SocketAddress local, AttributeRepository context, SocketAddress remote, Throwable reason)
                 throws IOException {
         // Do nothing
     }

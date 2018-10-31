@@ -71,9 +71,9 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .close(super.getInnerCloseable())
-                .run(toString(), () -> Socket.close(socket))
-                .build();
+            .close(super.getInnerCloseable())
+            .run(toString(), () -> Socket.close(socket))
+            .build();
     }
 
     @Override

@@ -71,10 +71,10 @@ public enum BuiltinCompressions implements CompressionFactory {
     };
 
     public static final Set<BuiltinCompressions> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(BuiltinCompressions.class));
+        Collections.unmodifiableSet(EnumSet.allOf(BuiltinCompressions.class));
 
     private static final Map<String, CompressionFactory> EXTENSIONS =
-            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private final String name;
 

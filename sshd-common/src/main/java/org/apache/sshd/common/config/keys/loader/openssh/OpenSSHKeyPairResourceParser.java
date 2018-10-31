@@ -59,23 +59,26 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser {
+    public static final int MAX_KDF_NAME_LENGTH = 1024;
+    public static final int MAX_KDF_OPTIONS_SIZE = Short.MAX_VALUE;
+
     public static final String BEGIN_MARKER = "BEGIN OPENSSH PRIVATE KEY";
     public static final List<String> BEGINNERS =
-            Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
+        Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
 
     public static final String END_MARKER = "END OPENSSH PRIVATE KEY";
     public static final List<String> ENDERS =
-            Collections.unmodifiableList(Collections.singletonList(END_MARKER));
+        Collections.unmodifiableList(Collections.singletonList(END_MARKER));
 
     public static final String AUTH_MAGIC = "openssh-key-v1";
     public static final OpenSSHKeyPairResourceParser INSTANCE = new OpenSSHKeyPairResourceParser();
 
     private static final byte[] AUTH_MAGIC_BYTES = AUTH_MAGIC.getBytes(StandardCharsets.UTF_8);
     private static final Map<String, PrivateKeyEntryDecoder<?, ?>> BY_KEY_TYPE_DECODERS_MAP =
-            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private static final Map<Class<?>, PrivateKeyEntryDecoder<?, ?>> BY_KEY_CLASS_DECODERS_MAP =
-            new HashMap<>();
+        new HashMap<>();
 
     static {
         registerPrivateKeyEntryDecoder(OpenSSHRSAPrivateKeyDecoder.INSTANCE);
@@ -96,10 +99,10 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     @Override
     public Collection<KeyPair> extractKeyPairs(
             String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, InputStream stream)
-                    throws IOException, GeneralSecurityException {
+                throws IOException, GeneralSecurityException {
         stream = validateStreamMagicMarker(resourceKey, stream);
 
-        String cipher = KeyEntryResolver.decodeString(stream);
+        String cipher = KeyEntryResolver.decodeString(stream, MAX_CIPHER_NAME_LENGTH);
         if (!OpenSSHParserContext.IS_NONE_CIPHER.test(cipher)) {
             throw new NoSuchAlgorithmException("Unsupported cipher: " + cipher);
         }
@@ -109,15 +112,15 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
             log.debug("extractKeyPairs({}) cipher={}", resourceKey, cipher);
         }
 
-        String kdfName = KeyEntryResolver.decodeString(stream);
+        String kdfName = KeyEntryResolver.decodeString(stream, MAX_KDF_NAME_LENGTH);
         if (!OpenSSHParserContext.IS_NONE_KDF.test(kdfName)) {
             throw new NoSuchAlgorithmException("Unsupported KDF: " + kdfName);
         }
 
-        byte[] kdfOptions = KeyEntryResolver.readRLEBytes(stream);
+        byte[] kdfOptions = KeyEntryResolver.readRLEBytes(stream, MAX_KDF_OPTIONS_SIZE);
         if (debugEnabled) {
             log.debug("extractKeyPairs({}) KDF={}, options={}",
-                      resourceKey, kdfName, BufferUtils.toHex(':', kdfOptions));
+                  resourceKey, kdfName, BufferUtils.toHex(':', kdfOptions));
         }
 
         int numKeys = KeyEntryResolver.decodeInt(stream);
@@ -136,12 +139,12 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
             ValidateUtils.checkNotNull(pubKey, "Empty public key #%d in %s", index, resourceKey);
             if (traceEnabled) {
                 log.trace("extractKeyPairs({}) read public key #{}: {} {}",
-                          resourceKey, index, KeyUtils.getKeyType(pubKey), KeyUtils.getFingerPrint(pubKey));
+                      resourceKey, index, KeyUtils.getKeyType(pubKey), KeyUtils.getFingerPrint(pubKey));
             }
             publicKeys.add(pubKey);
         }
 
-        byte[] privateData = KeyEntryResolver.readRLEBytes(stream);
+        byte[] privateData = KeyEntryResolver.readRLEBytes(stream, MAX_PRIVATE_KEY_DATA_SIZE);
         try (InputStream bais = new ByteArrayInputStream(privateData)) {
             return readPrivateKeys(resourceKey, context, publicKeys, passwordProvider, bais);
         }
@@ -150,9 +153,9 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     protected PublicKey readPublicKey(
             String resourceKey, OpenSSHParserContext context, InputStream stream)
                     throws IOException, GeneralSecurityException {
-        byte[] keyData = KeyEntryResolver.readRLEBytes(stream);
+        byte[] keyData = KeyEntryResolver.readRLEBytes(stream, MAX_PUBLIC_KEY_DATA_SIZE);
         try (InputStream bais = new ByteArrayInputStream(keyData)) {
-            String keyType = KeyEntryResolver.decodeString(bais);
+            String keyType = KeyEntryResolver.decodeString(bais, MAX_KEY_TYPE_NAME_LENGTH);
             PublicKeyEntryDecoder<?, ?> decoder = KeyUtils.getPublicKeyEntryDecoder(keyType);
             if (decoder == null) {
                 throw new NoSuchAlgorithmException("Unsupported key type (" + keyType + ") in " + resourceKey);
@@ -165,7 +168,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     protected List<KeyPair> readPrivateKeys(
             String resourceKey, OpenSSHParserContext context, Collection<? extends PublicKey> publicKeys,
             FilePasswordProvider passwordProvider, InputStream stream)
-                    throws IOException, GeneralSecurityException {
+                throws IOException, GeneralSecurityException {
         if (GenericUtils.isEmpty(publicKeys)) {
             return Collections.emptyList();
         }
@@ -175,7 +178,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         int check2 = KeyEntryResolver.decodeInt(stream);
         if (traceEnabled) {
             log.trace("readPrivateKeys({}) check1=0x{}, check2=0x{}",
-                      resourceKey, Integer.toHexString(check1), Integer.toHexString(check2));
+                resourceKey, Integer.toHexString(check1), Integer.toHexString(check2));
         }
 
         List<KeyPair> keyPairs = new ArrayList<>(publicKeys.size());
@@ -184,7 +187,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
             int keyIndex = keyPairs.size() + 1;
             if (traceEnabled) {
                 log.trace("extractKeyPairs({}) read private key #{}: {}",
-                        resourceKey, keyIndex, pubType);
+                    resourceKey, keyIndex, pubType);
             }
 
             Map.Entry<PrivateKey, String> prvData = readPrivateKey(resourceKey, context, pubType, passwordProvider, stream);
@@ -193,12 +196,12 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
 
             String prvType = KeyUtils.getKeyType(prvKey);
             ValidateUtils.checkTrue(Objects.equals(pubType, prvType),
-                    "Mismatched public (%s) vs. private (%s) key type #%d in %s",
-                    pubType, prvType, keyIndex, resourceKey);
+                "Mismatched public (%s) vs. private (%s) key type #%d in %s",
+                pubType, prvType, keyIndex, resourceKey);
 
             if (traceEnabled) {
                 log.trace("extractKeyPairs({}) add private key #{}: {} {}",
-                        resourceKey, keyIndex, prvType, prvData.getValue());
+                    resourceKey, keyIndex, prvType, prvData.getValue());
             }
             keyPairs.add(new KeyPair(pubKey, prvKey));
         }
@@ -208,8 +211,8 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
 
     protected SimpleImmutableEntry<PrivateKey, String> readPrivateKey(
             String resourceKey, OpenSSHParserContext context, String keyType, FilePasswordProvider passwordProvider, InputStream stream)
-                    throws IOException, GeneralSecurityException {
-        String prvType = KeyEntryResolver.decodeString(stream);
+                throws IOException, GeneralSecurityException {
+        String prvType = KeyEntryResolver.decodeString(stream, MAX_KEY_TYPE_NAME_LENGTH);
         if (!Objects.equals(keyType, prvType)) {
             throw new StreamCorruptedException("Mismatched private key type: "
                     + ", expected=" + keyType + ", actual=" + prvType
@@ -226,7 +229,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
             throw new InvalidKeyException("Cannot parse key type (" + prvType + ") in " + resourceKey);
         }
 
-        String comment = KeyEntryResolver.decodeString(stream);
+        String comment = KeyEntryResolver.decodeString(stream, MAX_KEY_COMMENT_LENGTH);
         return new SimpleImmutableEntry<>(prvKey, comment);
     }
 
@@ -252,7 +255,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     /**
      * @param decoder The decoder to register
      * @throws IllegalArgumentException if no decoder or not key type or no
-     *                                  supported names for the decoder
+     * supported names for the decoder
      * @see PrivateKeyEntryDecoder#getPublicKeyType()
      * @see PrivateKeyEntryDecoder#getSupportedTypeNames()
      */
@@ -266,7 +269,8 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
             BY_KEY_CLASS_DECODERS_MAP.put(prvType, decoder);
         }
 
-        Collection<String> names = ValidateUtils.checkNotNullAndNotEmpty(decoder.getSupportedTypeNames(), "No supported key type");
+        Collection<String> names =
+            ValidateUtils.checkNotNullAndNotEmpty(decoder.getSupportedTypeNames(), "No supported key type");
         synchronized (BY_KEY_TYPE_DECODERS_MAP) {
             for (String n : names) {
                 PrivateKeyEntryDecoder<?, ?> prev = BY_KEY_TYPE_DECODERS_MAP.put(n, decoder);
@@ -280,7 +284,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
 
     /**
      * @param keyType The {@code OpenSSH} key type string -  e.g., {@code ssh-rsa, ssh-dss}
-     *                - ignored if {@code null}/empty
+     * - ignored if {@code null}/empty
      * @return The registered {@link PrivateKeyEntryDecoder} or {code null} if not found
      */
     public static PrivateKeyEntryDecoder<?, ?> getPrivateKeyEntryDecoder(String keyType) {
@@ -328,8 +332,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     }
 
     /**
-     * @param keyType The key {@link Class} - ignored if {@code null} or not a {@link Key}
-     *                compatible type
+     * @param keyType The key {@link Class} - ignored if {@code null} or not a {@link Key} compatible type
      * @return The registered {@link PrivateKeyEntryDecoder} or {code null} if no match found
      */
     public static PrivateKeyEntryDecoder<?, ?> getPrivateKeyEntryDecoder(Class<?> keyType) {

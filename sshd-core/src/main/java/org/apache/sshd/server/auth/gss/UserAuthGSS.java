@@ -36,7 +36,7 @@ import org.ietf.jgss.MessageProp;
 import org.ietf.jgss.Oid;
 
 /**
- * <p>Prototype user authentication handling gssapi-with-mic.  Implements <code>HandshakingUserAuth</code> because
+ * <p>Prototype user authentication handling gssapi-with-mic. Implements <code>HandshakingUserAuth</code> because
  * the process involves several steps.</p>
  *
  * <p>Several methods are available for overriding in specific circumstances.</p>

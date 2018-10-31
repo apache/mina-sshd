@@ -47,6 +47,7 @@ import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.forward.DynamicPortForwardingTracker;
 import org.apache.sshd.client.session.forward.ExplicitPortForwardingTracker;
+import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.forward.PortForwardingManager;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
@@ -68,7 +69,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  *
  * <P>
  * From this session, channels can be created using the
- * {@link #createChannel(String)} method.  Multiple channels can
+ * {@link #createChannel(String)} method. Multiple channels can
  * be created on a given session concurrently.
  * </P>
  *
@@ -94,7 +95,7 @@ public interface ClientSession
     }
 
     Set<ClientChannelEvent> REMOTE_COMMAND_WAIT_EVENTS =
-            Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.CLOSED));
+        Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.CLOSED));
 
     /**
      * Returns the original address (after having been translated through host
@@ -106,6 +107,12 @@ public interface ClientSession
      * @return The original requested address
      */
     SocketAddress getConnectAddress();
+
+    /**
+     * @return The &quot;context&quot; data provided when
+     * session connection was established - {@code null} if none.
+     */
+    AttributeRepository getConnectionContext();
 
     /**
      * Starts the authentication process.

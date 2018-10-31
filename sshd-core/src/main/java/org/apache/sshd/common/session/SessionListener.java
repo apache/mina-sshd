@@ -94,6 +94,21 @@ public interface SessionListener extends SshdEventListener {
     }
 
     /**
+     * Invoked when {@code SSH_MSG_DISCONNECT} message was sent/received
+     *
+     * @param session The referenced {@link Session}
+     * @param reason The signaled reason code
+     * @param msg The provided description message (may be empty)
+     * @param language The language tag indicator (may be empty)
+     * @param initiator Whether the session is the sender or recipient of the message
+     * @see <a href="https://tools.ietf.org/html/rfc4253#section-11.1">RFC 4253 - section 11.1</a>
+     */
+    default void sessionDisconnect(
+            Session session, int reason, String msg, String language, boolean initiator) {
+        // ignored
+    }
+
+    /**
      * A session has been closed
      *
      * @param session The closed {@link Session}

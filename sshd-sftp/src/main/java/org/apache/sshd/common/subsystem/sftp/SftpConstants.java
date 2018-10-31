@@ -312,7 +312,8 @@ public final class SftpConstants {
 
     private static final class LazyStatusNameHolder {
         private static final Map<Integer, String> STATUS_MAP =
-            Collections.unmodifiableMap(LoggingUtils.generateMnemonicMap(SftpConstants.class, "SSH_FX_"));
+            Collections.unmodifiableMap(
+                LoggingUtils.generateMnemonicMap(SftpConstants.class, "SSH_FX_"));
 
         private LazyStatusNameHolder() {
             throw new UnsupportedOperationException("No instance allowed");

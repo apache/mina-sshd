@@ -21,6 +21,7 @@ package org.apache.sshd.netty;
 
 import java.net.SocketAddress;
 
+import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
@@ -47,7 +48,6 @@ import io.netty.util.concurrent.GlobalEventExecutor;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class NettyIoConnector extends NettyIoService implements IoConnector {
-
     protected final Bootstrap bootstrap = new Bootstrap();
 
     public NettyIoConnector(NettyIoServiceFactory factory, IoHandler handler) {
@@ -64,10 +64,13 @@ public class NettyIoConnector extends NettyIoService implements IoConnector {
                     IoServiceEventListener listener = getIoServiceEventListener();
                     SocketAddress local = ch.localAddress();
                     SocketAddress remote = ch.remoteAddress();
+                    AttributeRepository context = ch.hasAttr(CONTEXT_KEY)
+                        ? ch.attr(CONTEXT_KEY).get()
+                        : null;
                     try {
                         if (listener != null) {
                             try {
-                                listener.connectionEstablished(NettyIoConnector.this, local, remote);
+                                listener.connectionEstablished(NettyIoConnector.this, local, context, remote);
                             } catch (Exception e) {
                                 ch.close();
                                 throw e;
@@ -76,13 +79,17 @@ public class NettyIoConnector extends NettyIoService implements IoConnector {
 
                         @SuppressWarnings("resource")
                         NettyIoSession session = new NettyIoSession(NettyIoConnector.this, handler);
+                        if (context != null) {
+                            session.setAttribute(AttributeRepository.class, context);
+                        }
+
                         ChannelPipeline p = ch.pipeline();
                         p.addLast(new LoggingHandler(LogLevel.INFO));   // TODO make this configurable
                         p.addLast(session.adapter);
                     } catch (Exception e) {
                         if (listener != null) {
                             try {
-                                listener.abortEstablishedConnection(NettyIoConnector.this, local, remote, e);
+                                listener.abortEstablishedConnection(NettyIoConnector.this, local, context, remote, e);
                             } catch (Exception exc) {
                                 if (log.isDebugEnabled()) {
                                     log.debug("initChannel(" + ch + ") listener=" + listener + " ignoring abort event exception", exc);
@@ -97,7 +104,7 @@ public class NettyIoConnector extends NettyIoService implements IoConnector {
     }
 
     @Override
-    public IoConnectFuture connect(SocketAddress address, SocketAddress localAddress) {
+    public IoConnectFuture connect(SocketAddress address, AttributeRepository context, SocketAddress localAddress) {
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("Connecting to {}", address);
@@ -112,6 +119,10 @@ public class NettyIoConnector extends NettyIoService implements IoConnector {
         }
         Channel channel = chf.channel();
         channel.attr(CONNECT_FUTURE_KEY).set(future);
+        if (context != null) {
+            channel.attr(CONTEXT_KEY).set(context);
+        }
+
         chf.addListener(cf -> {
             Throwable t = chf.cause();
             if (t != null) {

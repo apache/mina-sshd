@@ -70,8 +70,8 @@ public class DHGClient extends AbstractDHClientKeyExchange {
             @Override
             public String toString() {
                 return NamedFactory.class.getSimpleName()
-                        + "<" + KeyExchange.class.getSimpleName() + ">"
-                        + "[" + getName() + "]";
+                    + "<" + KeyExchange.class.getSimpleName() + ">"
+                    + "[" + getName() + "]";
             }
         };
     }
@@ -134,9 +134,9 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         hash.update(buffer.array(), 0, buffer.available());
         h = hash.digest();
 
-        Signature verif = ValidateUtils.checkNotNull(NamedFactory.create(session.getSignatureFactories(), keyAlg),
-                "No verifier located for algorithm=%s",
-                keyAlg);
+        Signature verif = ValidateUtils.checkNotNull(
+            NamedFactory.create(session.getSignatureFactories(), keyAlg),
+            "No verifier located for algorithm=%s", keyAlg);
         verif.initVerifier(serverKey);
         verif.update(h);
         if (!verif.verify(sig)) {

@@ -76,11 +76,11 @@ public abstract class JUnitTestSupport extends Assert {
 
     // useful test sizes for keys
     public static final List<Integer> DSS_SIZES =
-            Collections.unmodifiableList(Arrays.asList(512, 768, 1024));
+        Collections.unmodifiableList(Arrays.asList(512, 768, 1024));
     public static final List<Integer> RSA_SIZES =
-            Collections.unmodifiableList(Arrays.asList(1024, 2048, 3072, 4096));
+        Collections.unmodifiableList(Arrays.asList(1024, 2048, 3072, 4096));
     public static final List<Integer> ED25519_SIZES =
-            Collections.unmodifiableList(Arrays.asList(256));
+        Collections.unmodifiableList(Arrays.asList(256));
 
     @Rule
     public final TestName testNameHolder = new TestName();

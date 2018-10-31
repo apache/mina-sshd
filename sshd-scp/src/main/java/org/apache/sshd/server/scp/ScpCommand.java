@@ -187,7 +187,7 @@ public class ScpCommand
             } catch (IOException e2) {
                 if (debugEnabled) {
                     log.debug("run({})[{}] Failed ({}) to send error response: {}",
-                              session, command, e.getClass().getSimpleName(), e.getMessage());
+                          session, command, e.getClass().getSimpleName(), e.getMessage());
                 }
                 if (log.isTraceEnabled()) {
                     log.trace("run(" + session + ")[" + command + "] error response failure details", e2);
@@ -196,7 +196,7 @@ public class ScpCommand
 
             if (debugEnabled) {
                 log.debug("run({})[{}] Failed ({}) to run command: {}",
-                          session, command, e.getClass().getSimpleName(), e.getMessage());
+                      session, command, e.getClass().getSimpleName(), e.getMessage());
             }
             if (log.isTraceEnabled()) {
                 log.trace("run(" + session + ")[" + command + "] command execution failure details", e);
@@ -211,7 +211,7 @@ public class ScpCommand
     protected void writeCommandResponseMessage(String command, int exitValue, String exitMessage) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("writeCommandResponseMessage({}) command='{}', exit-status={}: {}",
-                      getServerSession(), command, exitValue, exitMessage);
+                  getServerSession(), command, exitValue, exitMessage);
         }
         ScpHelper.sendResponseMessage(out, exitValue, exitMessage);
     }

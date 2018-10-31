@@ -50,11 +50,11 @@ public class RSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParse
     // Not exactly according to standard but good enough
     public static final String BEGIN_MARKER = "BEGIN RSA PRIVATE KEY";
     public static final List<String> BEGINNERS =
-            Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
+        Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
 
     public static final String END_MARKER = "END RSA PRIVATE KEY";
     public static final List<String> ENDERS =
-            Collections.unmodifiableList(Collections.singletonList(END_MARKER));
+        Collections.unmodifiableList(Collections.singletonList(END_MARKER));
 
     /**
      * @see <A HREF="https://tools.ietf.org/html/rfc3279#section-2.3.1">RFC-3279 section 2.3.1</A>
@@ -70,7 +70,7 @@ public class RSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParse
     @Override
     public Collection<KeyPair> extractKeyPairs(
             String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, InputStream stream)
-                    throws IOException, GeneralSecurityException {
+                throws IOException, GeneralSecurityException {
         KeyPair kp = decodeRSAKeyPair(SecurityUtils.getKeyFactory(KeyUtils.RSA_ALGORITHM), stream, false);
         return Collections.singletonList(kp);
     }

@@ -54,9 +54,9 @@ public final class OsUtils {
     public static final String ROOT_USER = "root";
 
     public static final List<String> LINUX_COMMAND =
-            Collections.unmodifiableList(Arrays.asList(LINUX_SHELL_COMMAND_NAME, "-i", "-l"));
+        Collections.unmodifiableList(Arrays.asList(LINUX_SHELL_COMMAND_NAME, "-i", "-l"));
     public static final List<String> WINDOWS_COMMAND =
-            Collections.unmodifiableList(Collections.singletonList(WINDOWS_SHELL_COMMAND_NAME));
+        Collections.unmodifiableList(Collections.singletonList(WINDOWS_SHELL_COMMAND_NAME));
 
     private static final AtomicReference<String> CURRENT_USER_HOLDER = new AtomicReference<>(null);
     private static final AtomicReference<VersionInfo> JAVA_VERSION_HOLDER = new AtomicReference<>(null);

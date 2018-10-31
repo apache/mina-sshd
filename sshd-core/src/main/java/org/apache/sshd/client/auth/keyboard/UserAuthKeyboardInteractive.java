@@ -46,8 +46,8 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     /*
      * As per RFC-4256:
      *
-     *      The language tag is deprecated and SHOULD be the empty string.  It
-     *      may be removed in a future revision of this specification.  Instead,
+     *      The language tag is deprecated and SHOULD be the empty string. It
+     *      may be removed in a future revision of this specification. Instead,
      *      the server SHOULD select the language to be used based on the tags
      *      communicated during key exchange
      */
@@ -59,11 +59,11 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
      * As per RFC-4256:
      *
      *      The submethods field is included so the user can give a hint of which
-     *      actual methods he wants to use.  It is a comma-separated list of
+     *      actual methods he wants to use. It is a comma-separated list of
      *      authentication submethods (software or hardware) that the user
-     *      prefers.  If the client has knowledge of the submethods preferred by
+     *      prefers. If the client has knowledge of the submethods preferred by
      *      the user, presumably through a configuration setting, it MAY use the
-     *      submethods field to pass this information to the server.  Otherwise,
+     *      submethods field to pass this information to the server. Otherwise,
      *      it MUST send the empty string.
      *
      *      The actual names of the submethods is something the user and the

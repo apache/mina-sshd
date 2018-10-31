@@ -18,10 +18,9 @@
  */
 package org.apache.sshd.common.io.mina;
 
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.TreeMap;
 
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.buffer.IoBuffer;
@@ -87,8 +86,8 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
     public Map<Long, org.apache.sshd.common.io.IoSession> getManagedSessions() {
         IoService ioService = getIoService();
         Map<Long, IoSession> managedMap = ioService.getManagedSessions();
-        Map<Long, IoSession> mina = new TreeMap<>(managedMap);
-        Map<Long, org.apache.sshd.common.io.IoSession> sessions = new TreeMap<>(Comparator.naturalOrder());
+        Map<Long, IoSession> mina = new HashMap<>(managedMap);
+        Map<Long, org.apache.sshd.common.io.IoSession> sessions = new HashMap<>(mina.size());
         for (Long id : mina.keySet()) {
             // Avoid possible NPE if the MinaSession hasn't been created yet
             IoSession minaSession = mina.get(id);
@@ -209,10 +208,11 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
         }
     }
 
-    protected void handleConfigurationError(SocketSessionConfig config, String propName, Object propValue, RuntimeIoException t) {
+    protected void handleConfigurationError(
+            SocketSessionConfig config, String propName, Object propValue, RuntimeIoException t) {
         Throwable e = GenericUtils.resolveExceptionCause(t);
         log.warn("handleConfigurationError({}={}) failed ({}) to configure: {}",
-                 propName, propValue, e.getClass().getSimpleName(), e.getMessage());
+            propName, propValue, e.getClass().getSimpleName(), e.getMessage());
     }
 
     protected Integer getInteger(String property) {

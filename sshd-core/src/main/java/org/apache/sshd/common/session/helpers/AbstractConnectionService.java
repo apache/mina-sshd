@@ -262,9 +262,9 @@ public abstract class AbstractConnectionService
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .sequential(forwarderHolder.get(), agentForwardHolder.get(), x11ForwardHolder.get())
-                .parallel(toString(), channels.values())
-                .build();
+            .sequential(forwarderHolder.get(), agentForwardHolder.get(), x11ForwardHolder.get())
+            .parallel(toString(), channels.values())
+            .build();
     }
 
     protected int getNextChannelId() {
@@ -304,7 +304,7 @@ public abstract class AbstractConnectionService
     protected void handleChannelRegistrationFailure(Channel channel, int channelId) throws IOException {
         RuntimeException reason = new IllegalStateException("Channel id=" + channelId + " not registered because session is being closed: " + this);
         AbstractChannel notifier =
-                ValidateUtils.checkInstanceOf(channel, AbstractChannel.class, "Non abstract channel for id=%d", channelId);
+            ValidateUtils.checkInstanceOf(channel, AbstractChannel.class, "Non abstract channel for id=%d", channelId);
         notifier.signalChannelClosed(reason);
         throw reason;
     }
@@ -381,7 +381,7 @@ public abstract class AbstractConnectionService
                     log.debug("process({}) Unsupported command: {}",
                         session, SshConstants.getCommandMessageName(cmd));
                 }
-                session.notImplemented();
+                session.notImplemented(cmd, buffer);
             }
         }
     }
@@ -410,7 +410,7 @@ public abstract class AbstractConnectionService
         long rmpsize = buffer.getUInt();
         if (log.isDebugEnabled()) {
             log.debug("channelOpenConfirmation({}) SSH_MSG_CHANNEL_OPEN_CONFIRMATION sender={}, window-size={}, packet-size={}",
-                      channel, sender, rwsize, rmpsize);
+                  channel, sender, rwsize, rmpsize);
         }
         /*
          * NOTE: the 'sender' of the SSH_MSG_CHANNEL_OPEN_CONFIRMATION is the
@@ -580,7 +580,7 @@ public abstract class AbstractConnectionService
         if (handler == null) {
             // Throw a special exception - SSHD-777
             throw new SshChannelNotFoundException(recipient,
-                    "Received " + SshConstants.getCommandMessageName(cmd) + " on unknown channel " + recipient);
+                "Received " + SshConstants.getCommandMessageName(cmd) + " on unknown channel " + recipient);
 
         }
 
@@ -610,12 +610,13 @@ public abstract class AbstractConnectionService
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("channelOpen({}) SSH_MSG_CHANNEL_OPEN sender={}, type={}, window-size={}, packet-size={}",
-                      this, sender, type, rwsize, rmpsize);
+                  this, sender, type, rwsize, rmpsize);
         }
 
         if (isClosing()) {
             // TODO add language tag configurable control
-            sendChannelOpenFailure(buffer, sender, SshConstants.SSH_OPEN_CONNECT_FAILED, "Server is shutting down while attempting to open channel type=" + type, "");
+            sendChannelOpenFailure(buffer, sender, SshConstants.SSH_OPEN_CONNECT_FAILED,
+                "Server is shutting down while attempting to open channel type=" + type, "");
             return;
         }
 
@@ -642,7 +643,7 @@ public abstract class AbstractConnectionService
                     Window window = channel.getLocalWindow();
                     if (debugEnabled) {
                         log.debug("operationComplete({}) send SSH_MSG_CHANNEL_OPEN_CONFIRMATION recipient={}, sender={}, window-size={}, packet-size={}",
-                                  channel, sender, channelId, window.getSize(), window.getPacketSize());
+                              channel, sender, channelId, window.getSize(), window.getPacketSize());
                     }
                     Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_CONFIRMATION, Integer.SIZE);
                     buf.putInt(sender); // remote (server side) identifier
@@ -662,7 +663,7 @@ public abstract class AbstractConnectionService
                         }
                     } else {
                         log.warn("operationComplete({}) no exception on closed future={}",
-                                 AbstractConnectionService.this, future);
+                             AbstractConnectionService.this, future);
                     }
 
                     Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, message.length() + Long.SIZE);
@@ -681,12 +682,12 @@ public abstract class AbstractConnectionService
     protected IoWriteFuture sendChannelOpenFailure(Buffer buffer, int sender, int reasonCode, String message, String lang) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("sendChannelOpenFailure({}) sender={}, reason={}, lang={}, message='{}'",
-                      this, sender, SshConstants.getOpenErrorCodeName(reasonCode), lang, message);
+                  this, sender, SshConstants.getOpenErrorCodeName(reasonCode), lang, message);
         }
 
         AbstractSession session = getSession();
         Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE,
-                Long.SIZE + GenericUtils.length(message) + GenericUtils.length(lang));
+            Long.SIZE + GenericUtils.length(message) + GenericUtils.length(lang));
         buf.putInt(sender);
         buf.putInt(reasonCode);
         buf.putString(message);
@@ -708,8 +709,7 @@ public abstract class AbstractConnectionService
         boolean wantReply = buffer.getBoolean();
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
-            log.debug("globalRequest({}) received SSH_MSG_GLOBAL_REQUEST {} want-reply={}",
-                      this, req, wantReply);
+            log.debug("globalRequest({}) received SSH_MSG_GLOBAL_REQUEST {} want-reply={}", this, req, wantReply);
         }
 
         AbstractSession session = getSession();
@@ -723,7 +723,7 @@ public abstract class AbstractConnectionService
                     result = handler.process(this, req, wantReply, buffer);
                 } catch (Throwable e) {
                     log.warn("globalRequest({})[{}, want-reply={}] failed ({}) to process: {}",
-                             this, req, wantReply, e.getClass().getSimpleName(), e.getMessage());
+                         this, req, wantReply, e.getClass().getSimpleName(), e.getMessage());
                     if (debugEnabled) {
                         log.debug("globalRequest(" + this + ")[" + req + ", want-reply=" + wantReply + "] failure details", e);
                     }
@@ -734,7 +734,7 @@ public abstract class AbstractConnectionService
                 if (RequestHandler.Result.Unsupported.equals(result)) {
                     if (traceEnabled) {
                         log.trace("globalRequest({}) {}#process({})[want-reply={}] : {}",
-                                  this, handler.getClass().getSimpleName(), req, wantReply, result);
+                              this, handler.getClass().getSimpleName(), req, wantReply, result);
                     }
                 } else {
                     return sendGlobalResponse(buffer, req, result, wantReply);
@@ -764,8 +764,8 @@ public abstract class AbstractConnectionService
         }
 
         byte cmd = RequestHandler.Result.ReplySuccess.equals(result)
-                 ? SshConstants.SSH_MSG_REQUEST_SUCCESS
-                 : SshConstants.SSH_MSG_REQUEST_FAILURE;
+             ? SshConstants.SSH_MSG_REQUEST_SUCCESS
+             : SshConstants.SSH_MSG_REQUEST_FAILURE;
         AbstractSession session = getSession();
         Buffer rsp = session.createBuffer(cmd, 2);
         return session.writePacket(rsp);

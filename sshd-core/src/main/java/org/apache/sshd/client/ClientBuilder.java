@@ -57,12 +57,12 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
 
     // Compression is not enabled by default for the client
     public static final List<CompressionFactory> DEFAULT_COMPRESSION_FACTORIES =
-            Collections.unmodifiableList(Collections.singletonList(BuiltinCompressions.none));
+        Collections.unmodifiableList(Collections.singletonList(BuiltinCompressions.none));
 
     public static final List<NamedFactory<Channel>> DEFAULT_CHANNEL_FACTORIES =
-            Collections.unmodifiableList(Collections.singletonList(ForwardedTcpipFactory.INSTANCE));
+        Collections.unmodifiableList(Collections.singletonList(ForwardedTcpipFactory.INSTANCE));
     public static final List<RequestHandler<ConnectionService>> DEFAULT_GLOBAL_REQUEST_HANDLERS =
-            Collections.unmodifiableList(Collections.singletonList(OpenSshHostKeysHandler.INSTANCE));
+        Collections.unmodifiableList(Collections.singletonList(OpenSshHostKeysHandler.INSTANCE));
 
     public static final ServerKeyVerifier DEFAULT_SERVER_KEY_VERIFIER = AcceptAllServerKeyVerifier.INSTANCE;
     public static final HostConfigEntryResolver DEFAULT_HOST_CONFIG_ENTRY_RESOLVER = DefaultConfigFileHostEntryResolver.INSTANCE;

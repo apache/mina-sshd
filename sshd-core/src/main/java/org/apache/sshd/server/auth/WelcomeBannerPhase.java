@@ -49,5 +49,5 @@ public enum WelcomeBannerPhase {
     NEVER;
 
     public static final Set<WelcomeBannerPhase> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(WelcomeBannerPhase.class));
+        Collections.unmodifiableSet(EnumSet.allOf(WelcomeBannerPhase.class));
 }

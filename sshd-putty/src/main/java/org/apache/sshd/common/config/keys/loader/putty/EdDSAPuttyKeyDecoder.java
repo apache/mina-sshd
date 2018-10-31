@@ -59,9 +59,9 @@ public class EdDSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<EdDSAPublicKey
             throw new InvalidKeySpecException("Not an " + SecurityUtils.EDDSA + " key: " + keyType);
         }
 
-        byte[] seed = pubReader.read();
+        byte[] seed = pubReader.read(Short.MAX_VALUE);    // reasonable max. allowed size
         PublicKey pubKey = EdDSASecurityProviderUtils.generateEDDSAPublicKey(seed);
-        seed = prvReader.read();
+        seed = prvReader.read(Short.MAX_VALUE);    // reasonable max. allowed size
         PrivateKey prvKey = EdDSASecurityProviderUtils.generateEDDSAPrivateKey(seed);
         return Collections.singletonList(new KeyPair(pubKey, prvKey));
     }

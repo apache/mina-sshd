@@ -128,7 +128,10 @@
         <profile>
             <id>test-mina</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>test.mina</name>
+                    <value>!disable</value>
+                </property>
             </activation>
 
             <dependencies>
@@ -168,7 +171,10 @@
         <profile>
             <id>test-netty</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>test.netty</name>
+                    <value>!disable</value>
+                </property>
             </activation>
 
             <dependencies>

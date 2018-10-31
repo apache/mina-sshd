@@ -22,6 +22,7 @@ package org.apache.sshd.common.config.keys;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StreamCorruptedException;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -40,7 +41,8 @@ import org.apache.sshd.common.util.io.IoUtils;
  * @param <PRV> Type of {@link PrivateKey}
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey> extends IdentityResourceLoader<PUB, PRV> {
+public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
+        extends IdentityResourceLoader<PUB, PRV> {
     /**
      * @param keySize Key size in bits
      * @return A {@link KeyPair} with the specified key size
@@ -71,10 +73,12 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
         if (pubOriginal != null) {
             Class<?> orgType = pubOriginal.getClass();
             if (!pubExpected.isAssignableFrom(orgType)) {
-                throw new InvalidKeyException("Mismatched public key types: expected=" + pubExpected.getSimpleName() + ", actual=" + orgType.getSimpleName());
+                throw new InvalidKeyException(
+                    "Mismatched public key types: expected=" + pubExpected.getSimpleName() + ", actual=" + orgType.getSimpleName());
             }
 
-            pubCloned = clonePublicKey(pubExpected.cast(pubOriginal));
+            PUB castPub = pubExpected.cast(pubOriginal);
+            pubCloned = clonePublicKey(castPub);
         }
 
         PRV prvCloned = null;
@@ -83,10 +87,12 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
         if (prvOriginal != null) {
             Class<?> orgType = prvOriginal.getClass();
             if (!prvExpected.isAssignableFrom(orgType)) {
-                throw new InvalidKeyException("Mismatched private key types: expected=" + prvExpected.getSimpleName() + ", actual=" + orgType.getSimpleName());
+                throw new InvalidKeyException(
+                    "Mismatched private key types: expected=" + prvExpected.getSimpleName() + ", actual=" + orgType.getSimpleName());
             }
 
-            prvCloned = clonePrivateKey(prvExpected.cast(prvOriginal));
+            PRV castPrv = prvExpected.cast(prvOriginal);
+            prvCloned = clonePrivateKey(castPrv);
         }
 
         return new KeyPair(pubCloned, prvCloned);
@@ -155,25 +161,32 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
         return bytes;
     }
 
-    static String decodeString(InputStream s) throws IOException {
-        return decodeString(s, StandardCharsets.UTF_8);
+    static String decodeString(InputStream s, int maxChars) throws IOException {
+        return decodeString(s, StandardCharsets.UTF_8, maxChars);
     }
 
-    static String decodeString(InputStream s, String charset) throws IOException {
-        return decodeString(s, Charset.forName(charset));
+    static String decodeString(InputStream s, String charset, int maxChars) throws IOException {
+        return decodeString(s, Charset.forName(charset), maxChars);
     }
 
-    static String decodeString(InputStream s, Charset cs) throws IOException {
-        byte[] bytes = readRLEBytes(s);
+    static String decodeString(InputStream s, Charset cs, int maxChars) throws IOException {
+        byte[] bytes = readRLEBytes(s, maxChars * 4 /* in case UTF-8 with weird characters */);
         return new String(bytes, cs);
     }
 
     static BigInteger decodeBigInt(InputStream s) throws IOException {
-        return new BigInteger(readRLEBytes(s));
+        return new BigInteger(readRLEBytes(s, IdentityResourceLoader.MAX_BIGINT_OCTETS_COUNT));
     }
 
-    static byte[] readRLEBytes(InputStream s) throws IOException {
+    static byte[] readRLEBytes(InputStream s, int maxAllowed) throws IOException {
         int len = decodeInt(s);
+        if (len > maxAllowed) {
+            throw new StreamCorruptedException("Requested block length (" + len + ") exceeds max. allowed (" + maxAllowed + ")");
+        }
+        if (len < 0) {
+            throw new StreamCorruptedException("Negative block length requested: " + len);
+        }
+
         byte[] bytes = new byte[len];
         IoUtils.readFully(s, bytes);
         return bytes;

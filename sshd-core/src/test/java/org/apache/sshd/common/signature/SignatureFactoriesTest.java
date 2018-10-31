@@ -100,8 +100,8 @@ public class SignatureFactoriesTest extends BaseTestSupport implements OptionalF
             for (ECCurves curve : ECCurves.VALUES) {
                 BuiltinSignatures factory = BuiltinSignatures.fromFactoryName(curve.getKeyType());
                 addTests(list, curve.getName(), factory,
-                        curve.isSupported() ? Collections.singletonList(curve.getKeySize()) : Collections.singletonList(-1),
-                        curve.isSupported() ? ECDSAPublicKeyEntryDecoder.INSTANCE : null);
+                    curve.isSupported() ? Collections.singletonList(curve.getKeySize()) : Collections.singletonList(-1),
+                    curve.isSupported() ? ECDSAPublicKeyEntryDecoder.INSTANCE : null);
             }
         } else {
             for (String name : ECCurves.NAMES) {
@@ -109,7 +109,7 @@ public class SignatureFactoriesTest extends BaseTestSupport implements OptionalF
             }
         }
         addTests(list, KeyPairProvider.SSH_ED25519, BuiltinSignatures.ed25519, ED25519_SIZES,
-                SecurityUtils.isEDDSACurveSupported() ? SecurityUtils.getEDDSAPublicKeyEntryDecoder() : null);
+            SecurityUtils.isEDDSACurveSupported() ? SecurityUtils.getEDDSAPublicKeyEntryDecoder() : null);
         return Collections.unmodifiableList(list);
     }
 

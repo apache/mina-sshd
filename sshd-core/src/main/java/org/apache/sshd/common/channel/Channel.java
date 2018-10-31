@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.PropertyResolver;
@@ -214,7 +215,7 @@ public interface Channel
     void handleOpenFailure(Buffer buffer) throws IOException;
 
     @Override
-    default <T> T resolveAttribute(AttributeKey<T> key) {
+    default <T> T resolveAttribute(AttributeRepository.AttributeKey<T> key) {
         return resolveAttribute(this, key);
     }
 
@@ -228,7 +229,7 @@ public interface Channel
      * @see #getSession()
      * @see Session#resolveAttribute(Session, AttributeKey)
      */
-    static <T> T resolveAttribute(Channel channel, AttributeKey<T> key) {
+    static <T> T resolveAttribute(Channel channel, AttributeRepository.AttributeKey<T> key) {
         Objects.requireNonNull(key, "No key");
         if (channel == null) {
             return null;

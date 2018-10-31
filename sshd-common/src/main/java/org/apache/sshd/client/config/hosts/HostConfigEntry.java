@@ -43,8 +43,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Objects;
-import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.sshd.common.auth.MutableUserHolder;
@@ -83,10 +83,10 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     public static final boolean DEFAULT_EXCLUSIVE_IDENTITIES = false;
 
     /**
-     * A case <U>insensitive</U> {@link Set} of the properties that receive special handling
+     * A case <U>insensitive</U> {@link NavigableSet} of the properties that receive special handling
      */
-    public static final Set<String> EXPLICIT_PROPERTIES =
-        Collections.unmodifiableSet(
+    public static final NavigableSet<String> EXPLICIT_PROPERTIES =
+        Collections.unmodifiableNavigableSet(
             GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
                 HOST_CONFIG_PROP, HOST_NAME_CONFIG_PROP, PORT_CONFIG_PROP,
                 USER_CONFIG_PROP, IDENTITY_FILE_CONFIG_PROP, EXCLUSIVE_IDENTITIES_CONFIG_PROP

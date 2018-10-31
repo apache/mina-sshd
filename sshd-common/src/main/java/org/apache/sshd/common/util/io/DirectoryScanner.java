@@ -241,7 +241,7 @@ public class DirectoryScanner {
     /**
      * Scans the given directory for files and directories. Found files and
      * directories are placed in their respective collections, based on the
-     * matching of includes, excludes, and the selectors.  When a directory
+     * matching of includes, excludes, and the selectors. When a directory
      * is found, it is scanned recursively.
      *
      * @param dir   The directory to scan. Must not be {@code null}.

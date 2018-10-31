@@ -163,7 +163,7 @@ public class SftpSubsystem
      * @see ThreadUtils#newSingleThreadExecutor(String)
      */
     public SftpSubsystem(CloseableExecutorService executorService, UnsupportedAttributePolicy policy,
-                         SftpFileSystemAccessor accessor, SftpErrorStatusDataHandler errorStatusDataHandler) {
+                 SftpFileSystemAccessor accessor, SftpErrorStatusDataHandler errorStatusDataHandler) {
         super(policy, accessor, errorStatusDataHandler);
 
         if (executorService == null) {
@@ -313,7 +313,7 @@ public class SftpSubsystem
             if (!closed.get()) { // Ignore
                 Session session = getServerSession();
                 log.error("run({}) {} caught in SFTP subsystem: {}",
-                        session, t.getClass().getSimpleName(), t.getMessage());
+                    session, t.getClass().getSimpleName(), t.getMessage());
                 if (log.isDebugEnabled()) {
                     log.debug("run(" + session + ") caught exception details", t);
                 }
@@ -345,7 +345,7 @@ public class SftpSubsystem
         ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
             log.debug("createLink({})[id={}], existing={}[{}], link={}[{}], symlink={})",
-                    session, id, linkPath, link, existingPath, existing, symLink);
+                session, id, linkPath, link, existingPath, existing, symLink);
         }
 
         SftpEventListener listener = getSftpEventListenerProxy();
@@ -368,7 +368,7 @@ public class SftpSubsystem
         Handle h = handles.get(handle);
         if (log.isDebugEnabled()) {
             log.debug("doTextSeek({})[id={}] SSH_FXP_EXTENDED(text-seek) (handle={}[{}], line={})",
-                      getServerSession(), id, handle, h, line);
+                  getServerSession(), id, handle, h, line);
         }
 
         FileHandle fileHandle = validateHandle(handle, h, FileHandle.class);
@@ -392,7 +392,7 @@ public class SftpSubsystem
     protected void doCheckFileHash(
             int id, String targetType, String target, Collection<String> algos,
             long startOffset, long length, int blockSize, Buffer buffer)
-                    throws Exception {
+                throws Exception {
         Path path;
         if (SftpConstants.EXT_CHECK_FILE_HANDLE.equalsIgnoreCase(targetType)) {
             Handle h = handles.get(target);
@@ -448,11 +448,11 @@ public class SftpSubsystem
     @Override
     protected byte[] doMD5Hash(
             int id, String targetType, String target, long startOffset, long length, byte[] quickCheckHash)
-                    throws Exception {
+                throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("doMD5Hash({})({})[{}] offset={}, length={}, quick-hash={}",
-                      getServerSession(), targetType, target, startOffset, length,
-                      BufferUtils.toHex(':', quickCheckHash));
+                  getServerSession(), targetType, target, startOffset, length,
+                  BufferUtils.toHex(':', quickCheckHash));
         }
 
         Path path;
@@ -507,9 +507,8 @@ public class SftpSubsystem
          * channel.
          */
         if (requestsCount.get() > 0L) {
-            sendStatus(prepareReply(buffer), id,
-                    SftpConstants.SSH_FX_FAILURE,
-                    "Version selection not the 1st request for proposal = " + proposed);
+            sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_FAILURE,
+                "Version selection not the 1st request for proposal = " + proposed);
             session.close(true);
             return;
         }
@@ -537,7 +536,7 @@ public class SftpSubsystem
         ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
             log.debug("doBlock({})[id={}] SSH_FXP_BLOCK (handle={}[{}], offset={}, length={}, mask=0x{})",
-                      session, id, handle, p, offset, length, Integer.toHexString(mask));
+                  session, id, handle, p, offset, length, Integer.toHexString(mask));
         }
 
         FileHandle fileHandle = validateHandle(handle, p, FileHandle.class);
@@ -558,7 +557,7 @@ public class SftpSubsystem
         ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
             log.debug("doUnblock({})[id={}] SSH_FXP_UNBLOCK (handle={}[{}], offset={}, length={})",
-                      session, id, handle, p, offset, length);
+                  session, id, handle, p, offset, length);
         }
 
         FileHandle fileHandle = validateHandle(handle, p, FileHandle.class);
@@ -581,9 +580,9 @@ public class SftpSubsystem
         Handle wh = inPlaceCopy ? rh : handles.get(writeHandle);
         if (log.isDebugEnabled()) {
             log.debug("doCopyData({})[id={}] SSH_FXP_EXTENDED[{}] read={}[{}], read-offset={}, read-length={}, write={}[{}], write-offset={})",
-                      getServerSession(), id, SftpConstants.EXT_COPY_DATA,
-                      readHandle, rh, readOffset, readLength,
-                      writeHandle, wh, writeOffset);
+                  getServerSession(), id, SftpConstants.EXT_COPY_DATA,
+                  readHandle, rh, readOffset, readLength,
+                  writeHandle, wh, writeOffset);
         }
 
         FileHandle srcHandle = validateHandle(readHandle, rh, FileHandle.class);
@@ -654,8 +653,7 @@ public class SftpSubsystem
         ServerSession session = getServerSession();
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
-            log.debug("doReadDir({})[id={}] SSH_FXP_READDIR (handle={}[{}])",
-                    session, id, handle, h);
+            log.debug("doReadDir({})[id={}] SSH_FXP_READDIR (handle={}[{}])", session, id, handle, h);
         }
 
         Buffer reply = null;
@@ -759,7 +757,7 @@ public class SftpSubsystem
         Handle h = handles.get(handle);
         if (log.isDebugEnabled()) {
             log.debug("doFsetStat({})[id={}] SSH_FXP_FSETSTAT (handle={}[{}], attrs={})",
-                      getServerSession(), id, handle, h, attrs);
+                  getServerSession(), id, handle, h, attrs);
         }
 
         Handle fileHandle = validateHandle(handle, h, Handle.class);
@@ -771,7 +769,7 @@ public class SftpSubsystem
         Handle h = handles.get(handle);
         if (log.isDebugEnabled()) {
             log.debug("doFStat({})[id={}] SSH_FXP_FSTAT (handle={}[{}], flags=0x{})",
-                      getServerSession(), id, handle, h, Integer.toHexString(flags));
+                  getServerSession(), id, handle, h, Integer.toHexString(flags));
         }
 
         Handle fileHandle = validateHandle(handle, h, Handle.class);
@@ -784,7 +782,7 @@ public class SftpSubsystem
         ServerSession session = getServerSession();
         if (log.isTraceEnabled()) {
             log.trace("doWrite({})[id={}] SSH_FXP_WRITE (handle={}[{}], offset={}, data=byte[{}])",
-                      session, id, handle, h, offset, length);
+                  session, id, handle, h, offset, length);
         }
 
         FileHandle fh = validateHandle(handle, h, FileHandle.class);
@@ -817,7 +815,7 @@ public class SftpSubsystem
         ServerSession session = getServerSession();
         if (log.isTraceEnabled()) {
             log.trace("doRead({})[id={}] SSH_FXP_READ (handle={}[{}], offset={}, length={})",
-                    session, id, handle, h, offset, length);
+                session, id, handle, h, offset, length);
         }
 
         ValidateUtils.checkTrue(length > 0L, "Invalid read length: %d", length);
@@ -840,8 +838,7 @@ public class SftpSubsystem
         Handle h = handles.remove(handle);
         ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
-            log.debug("doClose({})[id={}] SSH_FXP_CLOSE (handle={}[{}])",
-                      session, id, handle, h);
+            log.debug("doClose({})[id={}] SSH_FXP_CLOSE (handle={}[{}])", session, id, handle, h);
         }
 
         Handle nodeHandle = validateHandle(handle, h, Handle.class);
@@ -860,7 +857,7 @@ public class SftpSubsystem
         ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
             log.debug("doOpen({})[id={}] SSH_FXP_OPEN (path={}, access=0x{}, pflags=0x{}, attrs={})",
-                      session, id, path, Integer.toHexString(access), Integer.toHexString(pflags), attrs);
+                  session, id, path, Integer.toHexString(access), Integer.toHexString(pflags), attrs);
         }
 
         Path file = resolveFile(path);
@@ -869,7 +866,7 @@ public class SftpSubsystem
         if (curHandleCount > maxHandleCount) {
             throw signalOpenFailure(id, path, file, false,
                 new SftpException(SftpConstants.SSH_FX_NO_SPACE_ON_FILESYSTEM,
-                        "Too many open handles: current=" + curHandleCount + ", max.=" + maxHandleCount));
+                    "Too many open handles: current=" + curHandleCount + ", max.=" + maxHandleCount));
         }
 
         String handle;
@@ -898,8 +895,7 @@ public class SftpSubsystem
 
             if (handles.containsKey(handle)) {
                 if (traceEnabled) {
-                    log.trace("generateFileHandle({})[{}] handle={} in use at round {}",
-                              session, file, handle, index);
+                    log.trace("generateFileHandle({})[{}] handle={} in use at round {}", session, file, handle, index);
                 }
                 continue;
             }
@@ -1026,7 +1022,7 @@ public class SftpSubsystem
                 }
             } catch (IOException e) {
                 log.error("closeAllHandles({}) failed ({}) to close handle={}[{}]: {}",
-                        session, e.getClass().getSimpleName(), id, handle, e.getMessage());
+                    session, e.getClass().getSimpleName(), id, handle, e.getMessage());
             }
         });
         handles.clear();

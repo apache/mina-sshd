@@ -44,13 +44,15 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
      */
     KeyPairResourceParser EMPTY = new KeyPairResourceParser() {
         @Override
-        public Collection<KeyPair> loadKeyPairs(String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
-                throws IOException, GeneralSecurityException {
+        public Collection<KeyPair> loadKeyPairs(
+                String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
+                    throws IOException, GeneralSecurityException {
             return Collections.emptyList();
         }
 
         @Override
-        public boolean canExtractKeyPairs(String resourceKey, List<String> lines) throws IOException, GeneralSecurityException {
+        public boolean canExtractKeyPairs(String resourceKey, List<String> lines)
+                throws IOException, GeneralSecurityException {
             return false;
         }
 
@@ -69,7 +71,7 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
      * the possibility to extract the key pairs
      */
     boolean canExtractKeyPairs(String resourceKey, List<String> lines)
-            throws IOException, GeneralSecurityException;
+        throws IOException, GeneralSecurityException;
 
     /**
      * Converts the lines assumed to contain BASE-64 encoded data into
@@ -94,7 +96,8 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
     }
 
     static boolean containsMarkerLine(List<String> lines, String marker) {
-        return containsMarkerLine(lines, Collections.singletonList(ValidateUtils.checkNotNullAndNotEmpty(marker, "No marker")));
+        return containsMarkerLine(
+            lines, Collections.singletonList(ValidateUtils.checkNotNullAndNotEmpty(marker, "No marker")));
     }
 
     static boolean containsMarkerLine(List<String> lines, List<String> markers) {
@@ -149,8 +152,9 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
         ValidateUtils.checkNotNullAndNotEmpty(parsers, "No parsers to aggregate");
         return new KeyPairResourceParser() {
             @Override
-            public Collection<KeyPair> loadKeyPairs(String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
-                    throws IOException, GeneralSecurityException {
+            public Collection<KeyPair> loadKeyPairs(
+                    String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
+                        throws IOException, GeneralSecurityException {
                 Collection<KeyPair> keyPairs = Collections.emptyList();
                 for (KeyPairResourceParser p : parsers) {
                     if (!p.canExtractKeyPairs(resourceKey, lines)) {
@@ -173,7 +177,8 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
             }
 
             @Override
-            public boolean canExtractKeyPairs(String resourceKey, List<String> lines) throws IOException, GeneralSecurityException {
+            public boolean canExtractKeyPairs(String resourceKey, List<String> lines)
+                    throws IOException, GeneralSecurityException {
                 for (KeyPairResourceParser p : parsers) {
                     if (p.canExtractKeyPairs(resourceKey, lines)) {
                         return true;

@@ -68,21 +68,21 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSupport {
     private static final Collection<Integer> DATA_SIZES =
-            Collections.unmodifiableList(
-                    Arrays.asList(
-                            (int) Byte.MAX_VALUE,
-                            SftpConstants.MIN_CHKFILE_BLOCKSIZE,
-                            IoUtils.DEFAULT_COPY_SIZE,
-                            Byte.SIZE * IoUtils.DEFAULT_COPY_SIZE
-                    ));
+        Collections.unmodifiableList(
+            Arrays.asList(
+                (int) Byte.MAX_VALUE,
+                SftpConstants.MIN_CHKFILE_BLOCKSIZE,
+                IoUtils.DEFAULT_COPY_SIZE,
+                Byte.SIZE * IoUtils.DEFAULT_COPY_SIZE
+            ));
     private static final Collection<Integer> BLOCK_SIZES =
-            Collections.unmodifiableList(
-                    Arrays.asList(
-                            0,
-                            SftpConstants.MIN_CHKFILE_BLOCKSIZE,
-                            1024,
-                            IoUtils.DEFAULT_COPY_SIZE
-                    ));
+        Collections.unmodifiableList(
+            Arrays.asList(
+                0,
+                SftpConstants.MIN_CHKFILE_BLOCKSIZE,
+                1024,
+                IoUtils.DEFAULT_COPY_SIZE
+            ));
     private static final Collection<Object[]> PARAMETERS;
 
     static {

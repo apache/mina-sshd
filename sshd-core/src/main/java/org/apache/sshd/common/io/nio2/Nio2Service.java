@@ -115,7 +115,8 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
             }
         } catch (IOException e) {
             if (log.isDebugEnabled()) {
-                log.debug("dispose({}) {} while stopping service: {}", this, e.getClass().getSimpleName(), e.getMessage());
+                log.debug("dispose({}) {} while stopping service: {}",
+                    this, e.getClass().getSimpleName(), e.getMessage());
             }
 
             if (log.isTraceEnabled()) {
@@ -126,7 +127,9 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
 
     @Override
     protected Closeable getInnerCloseable() {
-        return builder().parallel(toString(), sessions.values()).build();
+        return builder()
+            .parallel(toString(), sessions.values())
+            .build();
     }
 
     @Override
@@ -165,7 +168,9 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
         return socket;
     }
 
-    protected <T> boolean setOption(NetworkChannel socket, String property, SocketOption<T> option, T defaultValue) throws IOException {
+    protected <T> boolean setOption(
+            NetworkChannel socket, String property, SocketOption<T> option, T defaultValue)
+                throws IOException {
         PropertyResolver manager = getFactoryManager();
         String valStr = manager.getString(property);
         T val = defaultValue;

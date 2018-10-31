@@ -62,33 +62,33 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
     private static final List<Object[]> PARAMETERS =
-            Collections.unmodifiableList(
-                    Arrays.asList(
-                            new Object[]{
-                                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
-                                    Integer.valueOf(0),
-                                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
-                                    Long.valueOf(0L)
-                            },
-                            new Object[]{
-                                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
-                                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 2),
-                                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 4),
-                                    Long.valueOf(0L)
-                            },
-                            new Object[]{
-                                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
-                                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 2),
-                                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 4),
-                                    Long.valueOf(IoUtils.DEFAULT_COPY_SIZE / 2)
-                            },
-                            new Object[]{
-                                    Integer.valueOf(Byte.MAX_VALUE),
-                                    Integer.valueOf(Byte.MAX_VALUE / 2),
-                                    Integer.valueOf(Byte.MAX_VALUE),    // attempt to read more than available
-                                    Long.valueOf(0L)
-                            }
-                    ));
+        Collections.unmodifiableList(
+            Arrays.asList(
+                new Object[]{
+                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
+                    Integer.valueOf(0),
+                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
+                    Long.valueOf(0L)
+                },
+                new Object[]{
+                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
+                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 2),
+                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 4),
+                    Long.valueOf(0L)
+                },
+                new Object[]{
+                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
+                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 2),
+                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 4),
+                    Long.valueOf(IoUtils.DEFAULT_COPY_SIZE / 2)
+                },
+                new Object[]{
+                    Integer.valueOf(Byte.MAX_VALUE),
+                    Integer.valueOf(Byte.MAX_VALUE / 2),
+                    Integer.valueOf(Byte.MAX_VALUE),    // attempt to read more than available
+                    Long.valueOf(0L)
+                }
+            ));
 
     private int size;
     private int srcOffset;

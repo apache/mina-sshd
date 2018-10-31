@@ -64,7 +64,8 @@ public final class IoUtils {
     public static final LinkOption[] EMPTY_LINK_OPTIONS = new LinkOption[0];
     public static final FileAttribute<?>[] EMPTY_FILE_ATTRIBUTES = new FileAttribute<?>[0];
 
-    public static final List<String> WINDOWS_EXECUTABLE_EXTENSIONS = Collections.unmodifiableList(Arrays.asList(".bat", ".exe", ".cmd"));
+    public static final List<String> WINDOWS_EXECUTABLE_EXTENSIONS =
+        Collections.unmodifiableList(Arrays.asList(".bat", ".exe", ".cmd"));
 
     /**
      * Size of preferred work buffer when reading / writing data to / from streams

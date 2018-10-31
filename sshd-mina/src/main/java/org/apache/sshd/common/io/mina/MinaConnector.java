@@ -29,6 +29,7 @@ import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
+import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
@@ -79,10 +80,12 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
         IoServiceEventListener listener = getIoServiceEventListener();
         SocketAddress local = session.getLocalAddress();
         SocketAddress remote = session.getRemoteAddress();
+        AttributeRepository context =
+            (AttributeRepository) session.getAttribute(AttributeRepository.class);
         try {
             if (listener != null) {
                 try {
-                    listener.connectionEstablished(this, local, remote);
+                    listener.connectionEstablished(this, local, context, remote);
                 } catch (Exception e) {
                     session.closeNow();
                     throw e;
@@ -93,7 +96,7 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
         } catch (Exception e) {
             if (listener != null) {
                 try {
-                    listener.abortEstablishedConnection(this, local, remote, e);
+                    listener.abortEstablishedConnection(this, local, context, remote, e);
                 } catch (Exception exc) {
                     if (log.isDebugEnabled()) {
                         log.debug("sessionCreated(" + session + ") listener=" + listener + " ignoring abort event exception", exc);
@@ -106,7 +109,7 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
     }
 
     @Override
-    public IoConnectFuture connect(SocketAddress address, SocketAddress localAddress) {
+    public IoConnectFuture connect(SocketAddress address, AttributeRepository context, SocketAddress localAddress) {
         class Future extends DefaultSshFuture<IoConnectFuture> implements IoConnectFuture {
             Future(Object lock) {
                 super(address, lock);
@@ -131,6 +134,10 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
 
             @Override
             public void setSession(org.apache.sshd.common.io.IoSession session) {
+                if (context != null) {
+                    session.setAttribute(AttributeRepository.class, context);
+                }
+
                 setValue(session);
             }
 
@@ -142,7 +149,13 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
 
         IoConnectFuture future = new Future(null);
         IoConnector connector = getConnector();
-        ConnectFuture connectFuture = connector.connect(address, localAddress);
+        ConnectFuture connectFuture = connector.connect(
+            address, localAddress,
+            (s, f) -> {
+                if (context != null) {
+                    s.setAttribute(AttributeRepository.class, context);
+                }
+            });
         connectFuture.addListener((IoFutureListener<ConnectFuture>) cf -> {
             Throwable t = cf.getException();
             if (t != null) {
@@ -152,6 +165,9 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
             } else {
                 IoSession ioSession = cf.getSession();
                 org.apache.sshd.common.io.IoSession sshSession = getSession(ioSession);
+                if (context != null) {
+                    sshSession.setAttribute(AttributeRepository.class, context);
+                }
                 future.setSession(sshSession);
             }
         });

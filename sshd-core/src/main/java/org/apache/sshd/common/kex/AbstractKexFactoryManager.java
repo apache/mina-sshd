@@ -37,7 +37,7 @@ import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 public abstract class AbstractKexFactoryManager
               extends AbstractInnerCloseable
               implements KexFactoryManager {
-    private KexFactoryManager parent;
+    private final KexFactoryManager delegate;
     private List<NamedFactory<KeyExchange>> keyExchangeFactories;
     private List<NamedFactory<Cipher>> cipherFactories;
     private List<NamedFactory<Compression>> compressionFactories;
@@ -49,14 +49,19 @@ public abstract class AbstractKexFactoryManager
         this(null);
     }
 
-    protected AbstractKexFactoryManager(KexFactoryManager parent) {
-        this.parent = parent;
+    protected AbstractKexFactoryManager(KexFactoryManager delegate) {
+        this.delegate = delegate;
+    }
+
+    protected KexFactoryManager getDelegate() {
+        return delegate;
     }
 
     @Override
     public List<NamedFactory<KeyExchange>> getKeyExchangeFactories() {
+        KexFactoryManager parent = getDelegate();
         return resolveEffectiveFactories(KeyExchange.class, keyExchangeFactories,
-                (parent == null) ? Collections.emptyList() : parent.getKeyExchangeFactories());
+            (parent == null) ? Collections.emptyList() : parent.getKeyExchangeFactories());
     }
 
     @Override
@@ -66,8 +71,9 @@ public abstract class AbstractKexFactoryManager
 
     @Override
     public List<NamedFactory<Cipher>> getCipherFactories() {
+        KexFactoryManager parent = getDelegate();
         return resolveEffectiveFactories(Cipher.class, cipherFactories,
-                (parent == null) ? Collections.emptyList() : parent.getCipherFactories());
+            (parent == null) ? Collections.emptyList() : parent.getCipherFactories());
     }
 
     @Override
@@ -77,8 +83,9 @@ public abstract class AbstractKexFactoryManager
 
     @Override
     public List<NamedFactory<Compression>> getCompressionFactories() {
+        KexFactoryManager parent = getDelegate();
         return resolveEffectiveFactories(Compression.class, compressionFactories,
-                (parent == null) ? Collections.emptyList() : parent.getCompressionFactories());
+            (parent == null) ? Collections.emptyList() : parent.getCompressionFactories());
     }
 
     @Override
@@ -88,8 +95,9 @@ public abstract class AbstractKexFactoryManager
 
     @Override
     public List<NamedFactory<Mac>> getMacFactories() {
+        KexFactoryManager parent = getDelegate();
         return resolveEffectiveFactories(Mac.class, macFactories,
-                (parent == null) ? Collections.emptyList() : parent.getMacFactories());
+            (parent == null) ? Collections.emptyList() : parent.getMacFactories());
     }
 
     @Override
@@ -99,8 +107,9 @@ public abstract class AbstractKexFactoryManager
 
     @Override
     public List<NamedFactory<Signature>> getSignatureFactories() {
+        KexFactoryManager parent = getDelegate();
         return resolveEffectiveFactories(Signature.class, signatureFactories,
-                (parent == null) ? Collections.emptyList() : parent.getSignatureFactories());
+            (parent == null) ? Collections.emptyList() : parent.getSignatureFactories());
     }
 
     @Override
@@ -110,8 +119,9 @@ public abstract class AbstractKexFactoryManager
 
     @Override
     public KeyPairProvider getKeyPairProvider() {
+        KexFactoryManager parent = getDelegate();
         return resolveEffectiveProvider(KeyPairProvider.class, keyPairProvider,
-                (parent == null) ? null : parent.getKeyPairProvider());
+            (parent == null) ? null : parent.getKeyPairProvider());
     }
 
     @Override
@@ -119,7 +129,8 @@ public abstract class AbstractKexFactoryManager
         this.keyPairProvider = keyPairProvider;
     }
 
-    protected <V> List<NamedFactory<V>> resolveEffectiveFactories(Class<V> factoryType, List<NamedFactory<V>> local, List<NamedFactory<V>> inherited) {
+    protected <V> List<NamedFactory<V>> resolveEffectiveFactories(
+            Class<V> factoryType, List<NamedFactory<V>> local, List<NamedFactory<V>> inherited) {
         if (GenericUtils.isEmpty(local)) {
             return inherited;
         } else {

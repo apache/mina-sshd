@@ -63,7 +63,7 @@ import com.jcraft.jsch.JSch;
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class CompressionTest extends BaseTestSupport {
     private static final Collection<KexProposalOption> COMPRESSION_OPTIONS =
-            Collections.unmodifiableSet(EnumSet.of(KexProposalOption.C2SCOMP, KexProposalOption.S2CCOMP));
+        Collections.unmodifiableSet(EnumSet.of(KexProposalOption.C2SCOMP, KexProposalOption.S2CCOMP));
 
     private static SshServer sshd;
     private static int port;

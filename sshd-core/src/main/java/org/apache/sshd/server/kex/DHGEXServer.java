@@ -88,8 +88,8 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             @Override
             public String toString() {
                 return NamedFactory.class.getSimpleName()
-                        + "<" + KeyExchange.class.getSimpleName() + ">"
-                        + "[" + getName() + "]";
+                    + "<" + KeyExchange.class.getSimpleName() + ">"
+                    + "[" + getName() + "]";
             }
         };
     }
@@ -176,9 +176,8 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             KeyPair kp = Objects.requireNonNull(session.getHostKey(), "No server key pair available");
             String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
             Signature sig = ValidateUtils.checkNotNull(
-                    NamedFactory.create(session.getSignatureFactories(), algo),
-                    "Unknown negotiated server keys: %s",
-                    algo);
+                NamedFactory.create(session.getSignatureFactories(), algo),
+                "Unknown negotiated server keys: %s", algo);
             sig.initSigner(kp.getPrivate());
 
             buffer = new ByteArrayBuffer();

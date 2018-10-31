@@ -97,7 +97,7 @@ public class ChannelSession extends AbstractClientChannel {
                 }
 
                 // Interrupt does not really work and the thread will only exit when
-                // the call to read() will return.  So ensure this thread is a daemon
+                // the call to read() will return. So ensure this thread is a daemon
                 // to avoid blocking the whole app
                 pumper = pumperService.submit(this::pumpInputStream);
             }
@@ -118,8 +118,7 @@ public class ChannelSession extends AbstractClientChannel {
     protected RequestHandler.Result handleXonXoff(Buffer buffer, boolean wantReply) throws IOException {
         boolean clientCanDo = buffer.getBoolean();
         if (log.isDebugEnabled()) {
-            log.debug("handleXonXoff({})[want-reply={}] client-can-do={}",
-                      this, wantReply, clientCanDo);
+            log.debug("handleXonXoff({})[want-reply={}] client-can-do={}", this, wantReply, clientCanDo);
         }
 
         return RequestHandler.Result.ReplySuccess;
@@ -128,9 +127,9 @@ public class ChannelSession extends AbstractClientChannel {
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .close(super.getInnerCloseable())
-                .run(toString(), this::closeImmediately0)
-                .build();
+            .close(super.getInnerCloseable())
+            .run(toString(), this::closeImmediately0)
+            .build();
     }
 
     protected void closeImmediately0() {
@@ -145,7 +144,7 @@ public class ChannelSession extends AbstractClientChannel {
                 // we log it as DEBUG since it is relatively harmless
                 if (log.isDebugEnabled()) {
                     log.debug("doCloseImmediately({}) failed {} to shutdown stream pumper: {}",
-                              this, e.getClass().getSimpleName(), e.getMessage());
+                          this, e.getClass().getSimpleName(), e.getMessage());
                 }
                 if (log.isTraceEnabled()) {
                     log.trace("doCloseImmediately(" + this + ") stream pumper shutdown error details", e);

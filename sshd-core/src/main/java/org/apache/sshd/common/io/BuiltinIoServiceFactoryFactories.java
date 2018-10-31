@@ -37,7 +37,7 @@ public enum BuiltinIoServiceFactoryFactories implements NamedFactory<IoServiceFa
     NETTY("org.apache.sshd.netty.NettyIoServiceFactoryFactory");
 
     public static final Set<BuiltinIoServiceFactoryFactories> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(BuiltinIoServiceFactoryFactories.class));
+        Collections.unmodifiableSet(EnumSet.allOf(BuiltinIoServiceFactoryFactories.class));
 
     private final Class<? extends IoServiceFactoryFactory> factoryClass;
     private final String factoryClassName;

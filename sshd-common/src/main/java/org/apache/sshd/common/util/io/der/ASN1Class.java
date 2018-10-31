@@ -35,7 +35,7 @@ public enum ASN1Class {
     PRIVATE((byte) 0x03);
 
     public static final List<ASN1Class>  VALUES =
-            Collections.unmodifiableList(Arrays.asList(values()));
+        Collections.unmodifiableList(Arrays.asList(values()));
 
     private final byte  byteValue;
 

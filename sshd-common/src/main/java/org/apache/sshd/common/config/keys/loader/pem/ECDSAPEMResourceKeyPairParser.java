@@ -53,11 +53,11 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParser {
     public static final String BEGIN_MARKER = "BEGIN EC PRIVATE KEY";
     public static final List<String> BEGINNERS =
-            Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
+        Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
 
     public static final String END_MARKER = "END EC PRIVATE KEY";
     public static final List<String> ENDERS =
-            Collections.unmodifiableList(Collections.singletonList(END_MARKER));
+        Collections.unmodifiableList(Collections.singletonList(END_MARKER));
 
     /**
      * @see <A HREF="https://tools.ietf.org/html/rfc3279#section-2.3.5">RFC-3279 section 2.3.5</A>
@@ -73,7 +73,7 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
     @Override
     public Collection<KeyPair> extractKeyPairs(
             String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, InputStream stream)
-                    throws IOException, GeneralSecurityException {
+                throws IOException, GeneralSecurityException {
         Map.Entry<ECPublicKeySpec, ECPrivateKeySpec> spec = decodeECPrivateKeySpec(stream, false);
         if (!SecurityUtils.isECCSupported()) {
             throw new NoSuchProviderException("ECC not supported");
@@ -163,7 +163,7 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
 
         // TODO make sure params object tag is 0xA0
 
-        final List<Integer> curveOID;
+        List<Integer> curveOID;
         try (DERParser paramsParser = paramsObject.createParser()) {
             ASN1Object namedCurve = paramsParser.readObject();
             if (namedCurve == null) {

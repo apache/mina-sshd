@@ -19,6 +19,8 @@
 package org.apache.sshd.common.helpers;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -27,8 +29,10 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import org.apache.sshd.agent.SshAgentFactory;
+import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
@@ -87,7 +91,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     protected final PortForwardingEventListener tunnelListenerProxy;
 
     private final Map<String, Object> properties = new ConcurrentHashMap<>();
-    private final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
+    private final Map<AttributeRepository.AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
     private PropertyResolver parentResolver = SyspropsMapWrapper.SYSPROPS_RESOLVER;
     private ReservedSessionMessagesHandler reservedSessionMessagesHandler;
     private ChannelStreamPacketWriterResolver channelStreamPacketWriterResolver;
@@ -145,13 +149,25 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T getAttribute(AttributeKey<T> key) {
+    public <T> T getAttribute(AttributeRepository.AttributeKey<T> key) {
         return (T) attributes.get(Objects.requireNonNull(key, "No key"));
     }
 
     @Override
+    public Collection<AttributeKey<?>> attributeKeys() {
+        return attributes.isEmpty() ? Collections.emptySet() : new HashSet<>(attributes.keySet());
+    }
+
+    @Override
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public <T> T computeAttributeIfAbsent(
+            AttributeRepository.AttributeKey<T> key, Function<? super AttributeRepository.AttributeKey<T>, ? extends T> resolver) {
+        return (T) attributes.computeIfAbsent(Objects.requireNonNull(key, "No key"), (Function) resolver);
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
-    public <T> T setAttribute(AttributeKey<T> key, T value) {
+    public <T> T setAttribute(AttributeRepository.AttributeKey<T> key, T value) {
         return (T) attributes.put(
                 Objects.requireNonNull(key, "No key"),
                 Objects.requireNonNull(value, "No value"));
@@ -159,7 +175,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T removeAttribute(AttributeKey<T> key) {
+    public <T> T removeAttribute(AttributeRepository.AttributeKey<T> key) {
         return (T) attributes.remove(Objects.requireNonNull(key, "No key"));
     }
 

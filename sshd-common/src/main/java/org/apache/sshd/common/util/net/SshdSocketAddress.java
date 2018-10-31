@@ -63,7 +63,9 @@ public class SshdSocketAddress extends SocketAddress {
     public static final String IPV4_ANYADDR = "0.0.0.0";
 
     public static final Set<String> WELL_KNOWN_IPV4_ADDRESSES =
-        Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(LOCALHOST_IPV4, IPV4_ANYADDR)));
+        Collections.unmodifiableSet(
+            new LinkedHashSet<>(
+                Arrays.asList(LOCALHOST_IPV4, IPV4_ANYADDR)));
 
     // 10.0.0.0 - 10.255.255.255
     public static final String PRIVATE_CLASS_A_PREFIX = "10.";
@@ -89,9 +91,11 @@ public class SshdSocketAddress extends SocketAddress {
     public static final String IPV6_SHORT_LOCALHOST = "::1";
 
     public static final Set<String> WELL_KNOWN_IPV6_ADDRESSES =
-        Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
-                IPV6_LONG_LOCALHOST, IPV6_SHORT_LOCALHOST,
-                IPV6_LONG_ANY_ADDRESS, IPV6_SHORT_ANY_ADDRESS)));
+        Collections.unmodifiableSet(
+            new LinkedHashSet<>(
+                Arrays.asList(
+                    IPV6_LONG_LOCALHOST, IPV6_SHORT_LOCALHOST,
+                    IPV6_LONG_ANY_ADDRESS, IPV6_SHORT_ANY_ADDRESS)));
 
     /**
      * A dummy placeholder that can be used instead of {@code null}s

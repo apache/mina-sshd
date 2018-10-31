@@ -59,7 +59,7 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
         Forwarded("forwarded-tcpip");
 
         public static final Set<Type> VALUES =
-                Collections.unmodifiableSet(EnumSet.allOf(Type.class));
+            Collections.unmodifiableSet(EnumSet.allOf(Type.class));
 
         private final String channelType;
 

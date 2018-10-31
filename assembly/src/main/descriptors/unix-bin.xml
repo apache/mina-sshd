@@ -17,9 +17,15 @@
 -->
 <assembly>
     <id>bin</id>
+
     <formats>
         <format>tar.gz</format>
     </formats>
+
+    <componentDescriptors>
+        <componentDescriptor>${project.basedir}/src/main/components/modules.xml</componentDescriptor>
+    </componentDescriptors>
+
     <fileSets>
         <fileSet>
             <directory>src/main/distribution</directory>
@@ -36,10 +42,15 @@
         <fileSet>
             <directory>..</directory>
             <outputDirectory></outputDirectory>
-            <lineEnding>unix</lineEnding>
             <includes>
-                <include>LICENSE*</include>
+                <include>LICENSE.txt</include>
             </includes>
+            <lineEnding>unix</lineEnding>
+        </fileSet>
+        <fileSet>
+            <directory>src/main/legal/licenses</directory>
+            <outputDirectory>licenses</outputDirectory>
+            <lineEnding>unix</lineEnding>
         </fileSet>
     </fileSets>
 
@@ -81,11 +92,4 @@
             <lineEnding>unix</lineEnding>
         </file>
     </files>
-
-    <dependencySets>
-        <dependencySet>
-            <outputDirectory>lib</outputDirectory>
-            <useProjectArtifact>false</useProjectArtifact>
-        </dependencySet>
-    </dependencySets>
 </assembly>

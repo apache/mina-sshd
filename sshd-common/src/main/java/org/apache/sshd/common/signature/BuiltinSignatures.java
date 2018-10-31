@@ -105,10 +105,10 @@ public enum BuiltinSignatures implements SignatureFactory {
     };
 
     public static final Set<BuiltinSignatures> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(BuiltinSignatures.class));
+        Collections.unmodifiableSet(EnumSet.allOf(BuiltinSignatures.class));
 
     private static final Map<String, SignatureFactory> EXTENSIONS =
-            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private final String factoryName;
 

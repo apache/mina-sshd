@@ -228,10 +228,10 @@ public enum BuiltinDHFactories implements DHFactory {
     };
 
     public static final Set<BuiltinDHFactories> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(BuiltinDHFactories.class));
+        Collections.unmodifiableSet(EnumSet.allOf(BuiltinDHFactories.class));
 
     private static final Map<String, DHFactory> EXTENSIONS =
-            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private final String factoryName;
 

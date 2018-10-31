@@ -146,7 +146,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("doInit({}) Receiving request for direct tcpip: hostToConnect={}, portToConnect={}, originatorIpAddress={}, originatorPort={}",
-                      this, hostToConnect, portToConnect, originatorIpAddress, originatorPort);
+                  this, hostToConnect, portToConnect, originatorIpAddress, originatorPort);
         }
 
         SshdSocketAddress address;
@@ -178,7 +178,8 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
                     log.debug("doInit(" + this + ")[" + type + "][haveFilter=" + (filter != null) + "] filtered out " + address);
                 }
                 try {
-                    f.setException(new SshChannelOpenException(getId(), SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "Connection denied"));
+                    f.setException(new SshChannelOpenException(getId(),
+                        SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "Connection denied"));
                 } finally {
                     super.close(true);
                 }
@@ -235,7 +236,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
 
         IoServiceFactory ioServiceFactory = manager.getIoServiceFactory();
         connector = ioServiceFactory.createConnector(handler);
-        IoConnectFuture future = connector.connect(address.toInetSocketAddress(), getLocalAddress());
+        IoConnectFuture future = connector.connect(address.toInetSocketAddress(), null, getLocalAddress());
         future.addListener(future1 -> handleChannelConnectResult(f, future1));
         return f;
     }
@@ -296,42 +297,44 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .run(toString(), () -> {
-                    /*
-                     * In case of graceful shutdown (e.g. when the remote channel is gently closed)
-                     * we also need to close the ChannelOutputStream which flushes remaining buffer
-                     * and sends SSH_MSG_CHANNEL_EOF back to the client.
-                     */
-                    if (out != null) {
-                        try {
+            .run(toString(), () -> {
+                /*
+                 * In case of graceful shutdown (e.g. when the remote channel is gently closed)
+                 * we also need to close the ChannelOutputStream which flushes remaining buffer
+                 * and sends SSH_MSG_CHANNEL_EOF back to the client.
+                 */
+                if (out != null) {
+                    try {
+                        if (log.isDebugEnabled()) {
                             log.debug("Closing channel output stream of {}", this);
-                            out.close();
-                        } catch (IOException | RuntimeException ignored) {
-                            log.debug("{} while closing channel output stream of {}: {}",
-                                    ignored.getClass().getSimpleName(), this, ignored.getMessage(), ignored);
                         }
+                        out.close();
+                    } catch (IOException | RuntimeException ignored) {
+                        log.debug("{} while closing channel output stream of {}: {}",
+                            ignored.getClass().getSimpleName(), this, ignored.getMessage(), ignored);
                     }
-                })
-                .close(super.getInnerCloseable())
-                .close(new AbstractCloseable() {
-                    private final CloseableExecutorService executor =
-                        ThreadUtils.newCachedThreadPool("TcpIpServerChannel-ConnectorCleanup[" + getSession() + "]");
+                }
+            })
+            .close(super.getInnerCloseable())
+            .close(new AbstractCloseable() {
+                private final CloseableExecutorService executor =
+                    ThreadUtils.newCachedThreadPool("TcpIpServerChannel-ConnectorCleanup[" + getSession() + "]");
 
-                    @Override
-                    @SuppressWarnings("synthetic-access")
-                    protected CloseFuture doCloseGracefully() {
-                        executor.submit(() -> connector.close(false));
-                        return null;
-                    }
+                @Override
+                @SuppressWarnings("synthetic-access")
+                protected CloseFuture doCloseGracefully() {
+                    executor.submit(() -> connector.close(false));
+                    return null;
+                }
 
-                    @Override
-                    @SuppressWarnings("synthetic-access")
-                    protected void doCloseImmediately() {
-                        executor.submit(() -> connector.close(true).addListener(f -> executor.close(true)));
-                        super.doCloseImmediately();
-                    }
-                })
-                .build();
+                @Override
+                @SuppressWarnings("synthetic-access")
+                protected void doCloseImmediately() {
+                    executor.submit(() -> connector.close(true).addListener(f -> executor.close(true)));
+                    super.doCloseImmediately();
+                }
+            })
+            .build();
     }
 
     @Override
@@ -385,7 +388,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
             // SSHD-795 IOException (Broken pipe) on a socket local forwarding channel causes SSH client-server connection down
             if (debugEnabled) {
                 log.debug("handleWriteDataFailure({})[{}] closing session={}",
-                        this, SshConstants.getCommandMessageName(cmd & 0xFF), ioSession);
+                    this, SshConstants.getCommandMessageName(cmd & 0xFF), ioSession);
             }
             close(false);
         } else {

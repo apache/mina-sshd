@@ -117,7 +117,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
         while (l > 0) {
             // The maximum amount we should admit without flushing again
             // is enough to make up one full packet within our allowed
-            // window size.  We give ourselves a credit equal to the last
+            // window size. We give ourselves a credit equal to the last
             // packet we sent to allow the producer to race ahead and fill
             // out the next packet before we block and wait for space to
             // become available again.

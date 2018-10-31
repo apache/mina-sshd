@@ -84,10 +84,10 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
 
             CloseableExecutorService service = getExecutorService();
             forwardService = (service == null)
-                    ? ThreadUtils.newSingleThreadExecutor("ChannelAgentForwarding[" + authSocket + "]")
-                    : ThreadUtils.noClose(service);
+                ? ThreadUtils.newSingleThreadExecutor("ChannelAgentForwarding[" + authSocket + "]")
+                : ThreadUtils.noClose(service);
 
-            final int copyBufSize = this.getIntProperty(FORWARDER_BUFFER_SIZE, DEFAULT_FORWARDER_BUF_SIZE);
+            int copyBufSize = this.getIntProperty(FORWARDER_BUFFER_SIZE, DEFAULT_FORWARDER_BUF_SIZE);
             ValidateUtils.checkTrue(copyBufSize >= MIN_FORWARDER_BUF_SIZE, "Copy buf size below min.: %d", copyBufSize);
             ValidateUtils.checkTrue(copyBufSize <= MAX_FORWARDER_BUF_SIZE, "Copy buf size above max.: %d", copyBufSize);
 
@@ -120,7 +120,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     private void closeImmediately0() {
         // We need to close the channel immediately to remove it from the
         // server session's channel table and *not* send a packet to the
-        // client.  A notification was already sent by our caller, or will
+        // client. A notification was already sent by our caller, or will
         // be sent after we return.
         //
         super.close(true);
@@ -151,9 +151,9 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .close(super.getInnerCloseable())
-                .run(toString(), this::closeImmediately0)
-                .build();
+            .close(super.getInnerCloseable())
+            .run(toString(), this::closeImmediately0)
+            .build();
     }
 
     @Override

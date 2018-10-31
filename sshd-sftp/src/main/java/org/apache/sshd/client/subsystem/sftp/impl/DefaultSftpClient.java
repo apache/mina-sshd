@@ -247,7 +247,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
         if (log.isTraceEnabled()) {
             log.trace("process({}) id={}, type={}, len={}",
-                      getClientChannel(), id, SftpConstants.getCommandMessageName(type), length);
+                  getClientChannel(), id, SftpConstants.getCommandMessageName(type), length);
         }
 
         synchronized (messages) {
@@ -262,7 +262,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         int len = buffer.available();
         if (log.isTraceEnabled()) {
             log.trace("send({}) cmd={}, len={}, id={}",
-                      getClientChannel(), SftpConstants.getCommandMessageName(cmd), len, id);
+                  getClientChannel(), SftpConstants.getCommandMessageName(cmd), len, id);
         }
 
         OutputStream dos = channel.getInvertedIn();
@@ -377,7 +377,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         boolean traceEnabled = log.isTraceEnabled();
         if (traceEnabled) {
             log.trace("init({}) id={} type={} len={}",
-                      getClientChannel(), id, SftpConstants.getCommandMessageName(type), length);
+                  getClientChannel(), id, SftpConstants.getCommandMessageName(type), length);
         }
 
         if (type == SftpConstants.SSH_FXP_VERSION) {
@@ -404,7 +404,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
             String lang = buffer.getString();
             if (traceEnabled) {
                 log.trace("init({})[id={}] - status: {} [{}] {}",
-                          getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
+                      getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
             }
 
             throwStatusException(SftpConstants.SSH_FXP_INIT, id, substatus, msg, lang);

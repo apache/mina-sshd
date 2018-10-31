@@ -110,7 +110,8 @@ public final class KeyUtils {
      */
     public static final Set<PosixFilePermission> STRICTLY_PROHIBITED_FILE_PERMISSION =
         Collections.unmodifiableSet(
-            EnumSet.of(PosixFilePermission.GROUP_READ, PosixFilePermission.GROUP_WRITE, PosixFilePermission.GROUP_EXECUTE,
+            EnumSet.of(
+                PosixFilePermission.GROUP_READ, PosixFilePermission.GROUP_WRITE, PosixFilePermission.GROUP_EXECUTE,
                 PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_WRITE, PosixFilePermission.OTHERS_EXECUTE));
 
     /**

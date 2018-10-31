@@ -39,7 +39,7 @@ import org.apache.sshd.common.util.GenericUtils;
  */
 public class TtyFilterOutputStream extends FilterOutputStream {
     public static final Set<PtyMode> OUTPUT_OPTIONS =
-            Collections.unmodifiableSet(EnumSet.of(PtyMode.ECHO, PtyMode.INLCR, PtyMode.ICRNL, PtyMode.IGNCR));
+        Collections.unmodifiableSet(EnumSet.of(PtyMode.ECHO, PtyMode.INLCR, PtyMode.ICRNL, PtyMode.IGNCR));
 
     private final Set<PtyMode> ttyOptions;
     private final TtyFilterInputStream echo;

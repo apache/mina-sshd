@@ -83,7 +83,8 @@ public class AESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
     }
 
     private static final class LazyKeyLengthsHolder {
-        private static final List<Integer> KEY_LENGTHS = Collections.unmodifiableList(detectSupportedKeySizes());
+        private static final List<Integer> KEY_LENGTHS =
+            Collections.unmodifiableList(detectSupportedKeySizes());
 
         private LazyKeyLengthsHolder() {
             throw new UnsupportedOperationException("No instance allowed");

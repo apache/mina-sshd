@@ -35,7 +35,7 @@ import java.util.concurrent.Future;
 
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
-import org.apache.sshd.common.config.ConfigFileReaderSupport;
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.io.BuiltinIoServiceFactoryFactories;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.util.GenericUtils;
@@ -250,7 +250,7 @@ public final class SshFsMounter extends SshServerCliSupport {
     //////////////////////////////////////////////////////////////////////////
 
     public static void main(String[] args) throws Exception {
-        int port = ConfigFileReaderSupport.DEFAULT_PORT;
+        int port = SshConstants.DEFAULT_PORT;
         boolean error = false;
         Map<String, Object> options = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         int numArgs = GenericUtils.length(args);
