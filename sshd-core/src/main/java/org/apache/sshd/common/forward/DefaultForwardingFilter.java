@@ -90,8 +90,22 @@ public class DefaultForwardingFilter
      */
     public static final long DEFAULT_FORWARD_REQUEST_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
 
+    /**
+     * Used to configure timeout (seconds) for waiting on pending messages
+     * on an open tunnel to be flushed when channel is being closed due to
+     * normal tunnel tear-down.
+     *
+     * @see #DEFAULT_PENDING_FORWARD_MSG_WAIT
+     */
+    public static final String MAX_PENDING_FORWARD_MSG_WAIT = "tcip-forward-flush-timeout";
+
+    /**
+     * Default value for {@value #MAX_PENDING_FORWARD_MSG_WAIT}
+     */
+    public static final long DEFAULT_PENDING_FORWARD_MSG_WAIT = 30L;
+
     public static final Set<ClientChannelEvent> STATIC_IO_MSG_RECEIVED_EVENTS =
-        Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.OPENED, ClientChannelEvent.CLOSED));
+            Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.OPENED, ClientChannelEvent.CLOSED));
 
     private final ConnectionService service;
     private final IoHandlerFactory socksProxyIoHandlerFactory = () -> new SocksProxy(getConnectionService());
@@ -1031,6 +1045,7 @@ public class DefaultForwardingFilter
             });
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public void sessionClosed(IoSession session) throws Exception {
             TcpipClientChannel channel = (TcpipClientChannel) session.removeAttribute(TcpipClientChannel.class);
@@ -1051,20 +1066,16 @@ public class DefaultForwardingFilter
                  *  Make sure channel is pending messages have all been sent in case the client was very fast
                  *  and sent data + closed the connection before channel open was completed.
                  */
-                OpenFuture openFuture = channel.getOpenFuture();
-                Throwable err = openFuture.getException();
-                ClientChannelPendingMessagesQueue queue = channel.getPendingMessagesQueue();
-                OpenFuture completedFuture = queue.getCompletedFuture();
-                if (err == null) {
-                    err = completedFuture.getException();
-                }
-                boolean immediately = err != null;
-                if (immediately) {
-                    channel.close(true);
+                OpenFuture f = channel.getOpenFuture();
+                Throwable err = f.getException();
+                boolean immediatly = err != null;
+
+                if (immediatly) {
+                    channel.close(immediatly);
                 } else {
-                    completedFuture.addListener(f -> {
-                        Throwable thrown = f.getException();
-                        channel.close(immediately || (thrown != null));
+                    ClientChannelPendingMessagesQueue queue = channel.getPendingMessagesQueue();
+                    queue.getCompletedFuture().addListener(l -> {
+                        channel.close(immediatly);
                     });
                 }
             }
@@ -1082,7 +1093,7 @@ public class DefaultForwardingFilter
                       session, channel, totalMessages, message.available());
             }
 
-            OpenFuture future = channel.getOpenFuture();
+            OpenFuture future = channel.getPendingMessagesQueue().getCompletedFuture();
             Consumer<Throwable> errHandler = future.isOpened() ? null : e -> {
                 try {
                     exceptionCaught(session, e);
@@ -1093,7 +1104,7 @@ public class DefaultForwardingFilter
                 }
             };
             ClientChannelPendingMessagesQueue messagesQueue = channel.getPendingMessagesQueue();
-            int pendCount = messagesQueue.handleIncomingMessage(buffer, errHandler);
+            int pendCount = messagesQueue.handleIncomingMessage(future, buffer, errHandler);
             if (traceEnabled) {
                 log.trace("messageReceived({}) channel={} pend count={} after processing message",
                     session, channel, pendCount);

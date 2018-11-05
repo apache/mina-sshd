@@ -28,7 +28,6 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -39,41 +38,33 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * This is a specialized {@link SshFutureListener} that is used to enqueue data
- * that is sent while the channel is being set-up, so that when it is established
- * it will send them in the same order as they have been received.
+ * This is a specialized {@link SshFutureListener} that is used to enqueue data that is sent while
+ * the channel is being set-up, so that when it is established it will send them in the same order
+ * as they have been received.
  *
- * It also serves as a &quot;backstop&quot; in case session is closed (normally)
- * while the packets as still being written.
+ * It also serves as a &quot;backstop&quot; in case session is closed (normally) while the packets
+ * as still being written.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ClientChannelPendingMessagesQueue
-        extends AbstractLoggingBean
-        implements SshFutureListener<OpenFuture>, Channel, ClientChannelHolder {
-    protected final Deque<Map.Entry<Buffer, Consumer<? super Throwable>>> pendingQueue = new LinkedList<>();
-    protected final DefaultOpenFuture completedFuture;
+public class ClientChannelPendingMessagesQueue extends AbstractLoggingBean
+    implements SshFutureListener<OpenFuture>, Channel, ClientChannelHolder {
+
+    protected final Deque<Map.Entry<Buffer, Consumer<? super Throwable>>> pendingQueue =
+        new LinkedList<>();
 
     private final ClientChannel clientChannel;
     private final AtomicBoolean open = new AtomicBoolean(true);
+    private final DefaultOpenFuture completedFuture =
+        new DefaultOpenFuture(ClientChannelPendingMessagesQueue.class.toString(), null);
 
     public ClientChannelPendingMessagesQueue(ClientChannel channel) {
         this.clientChannel = Objects.requireNonNull(channel, "No channel provided");
-        this.completedFuture = new DefaultOpenFuture(getClass().getSimpleName() + "[" + channel + "]", null);
     }
 
     @Override
     public ClientChannel getClientChannel() {
         return clientChannel;
-    }
-
-    /**
-     * @return An internal {@link OpenFuture} that can be used to wait
-     * for all internal pending messages to be flushed before actually
-     * signaling that operation is complete
-     */
-    public OpenFuture getCompletedFuture() {
-        return completedFuture;
     }
 
     @Override
@@ -96,57 +87,54 @@ public class ClientChannelPendingMessagesQueue
      * Marks the queue as closed
      *
      * @return {@code true} if was open and now is closed
-     */
+    */
     protected boolean markClosed() {
-        OpenFuture f = getCompletedFuture();
-        if (!f.isDone()) {
-            f.setException(new CancellationException("Cancelled"));
-        }
         return open.getAndSet(false);
     }
 
     /**
      * Checks if the future is already open and manages the message handling accordingly:
      * <ul>
-     *      <p><li>
-     *      If channel is not open yet, it enqueues the request
-     *      </li></p>
+     * <p>
+     * <li>If channel is not open yet, it enqueues the request</li>
+     * </p>
      *
-     *      <p><li>
-     *      If channel is open but there are still pending messages not yet written
-     *      out, it will wait for them to be written (or exception signaled) before
-     *      proceeding to write out the incoming message.
-     *      </li></p>
+     * <p>
+     * <li>If channel is open but there are still pending messages not yet written out, it will wait
+     * for them to be written (or exception signaled) before proceeding to write out the incoming
+     * message.</li>
+     * </p>
      *
-     *      <p><li>
-     *      Otherwise (i.e., channel is open and no pending messages yet) it will
-     *      write the message to the underlying channel immediately.
-     *      </li></p>
+     * <p>
+     * <li>Otherwise (i.e., channel is open and no pending messages yet) it will write the message to
+     * the underlying channel immediately.</li>
+     * </p>
      * </ul>
+     *
+     * @param future The {@link OpenFuture} instance to consult
      * @param buffer The message {@link Buffer}
-     * @param errHandler The error handler to invoke it had to enqueue the
-     * message and was unsuccessful in writing it. Must be non-{@code null} if future not open yet.
-     * Otherwise, if {@code null} and exception occurs it will be simple re-thrown
-     * @return The total number of still pending messages - zero if none and
-     * message was written (either immediately or after waiting for the
-     * pending ones to be written).
-     * @throws IOException If wrote the message directly, encountered an error and
-     * no handler was provided.
-     */
-    public int handleIncomingMessage(Buffer buffer, Consumer<? super Throwable> errHandler) throws IOException {
+     * @param errHandler The error handler to invoke it had to enqueue the message and was
+     *        unsuccessful in writing it. Must be non-{@code null} if future not open yet. Otherwise,
+     *        if {@code null} and exception occurs it will be simple re-thrown
+     * @return The total number of still pending messages - zero if none and message was written
+     *         (either immediately or after waiting for the pending ones to be written).
+     * @throws IOException If wrote the message directly, encountered an error and no handler was
+     *         provided.
+    */
+    public int handleIncomingMessage(OpenFuture future, Buffer buffer,
+        Consumer<? super Throwable> errHandler) throws IOException {
         if (!isOpen()) {
             throw new EOFException("Queue is closed");
         }
 
         Objects.requireNonNull(buffer, "No message to enqueue");
-        OpenFuture future = getCompletedFuture();
+
         synchronized (pendingQueue) {
-            boolean enqueue = !future.isDone();
-            if (enqueue) {
-                Objects.requireNonNull(errHandler, "No pending message error handler provided");
-            }
+            boolean enqueue = !completedFuture.isDone();
 
             if (enqueue) {
+                Objects.requireNonNull(errHandler, "No pending message error handler provided");
+
                 pendingQueue.add(new SimpleImmutableEntry<>(buffer, errHandler));
             } else {
                 writeMessage(buffer, errHandler);
@@ -156,7 +144,8 @@ public class ClientChannelPendingMessagesQueue
         }
     }
 
-    protected void writeMessage(Buffer buffer, Consumer<? super IOException> errHandler) throws IOException {
+    protected void writeMessage(Buffer buffer, Consumer<? super IOException> errHandler)
+        throws IOException {
         ClientChannel channel = getClientChannel();
         try {
             if (!isOpen()) {
@@ -168,14 +157,12 @@ public class ClientChannelPendingMessagesQueue
             outputStream.flush();
         } catch (IOException e) {
             if (log.isDebugEnabled()) {
-                log.debug("writeMessage({}) failed ({}) to output message: {}",
-                    this, e.getClass().getSimpleName(), e.getMessage());
+                log.debug("writeMessage({}) failed ({}) to output message: {}", this,
+                    e.getClass().getSimpleName(), e.getMessage());
             }
             if (errHandler != null) {
                 errHandler.accept(e);
             }
-
-            markCompletionException(e);
             throw e;
         }
     }
@@ -184,14 +171,12 @@ public class ClientChannelPendingMessagesQueue
     public void operationComplete(OpenFuture future) {
         Throwable err = future.getException();
         if (err != null) {
-            markCompletionException(err);
-
             if (markClosed()) {
-                log.warn("operationComplete({}) {}[{}] signaled",
-                    this, err.getClass().getSimpleName(), err.getMessage());
+                log.warn("operationComplete({}) {}[{}] signaled", this, err.getClass().getSimpleName(),
+                err.getMessage());
             } else {
-                log.warn("operationComplete({}) got {}[{}] signal while queue is closed",
-                    this, err.getClass().getSimpleName(), err.getMessage());
+                log.warn("operationComplete({}) got {}[{}] signal while queue is closed", this,
+                    err.getClass().getSimpleName(), err.getMessage());
             }
 
             clearPendingQueue();
@@ -214,32 +199,19 @@ public class ClientChannelPendingMessagesQueue
                     writeMessage(msgEntry.getKey(), msgEntry.getValue());
                 }
 
-                markCompletionSuccessful();
+                completedFuture.setOpened();
             }
 
             if (debugEnabled) {
                 log.debug("flushPendingQueue({}) sent {} pending messages", this, numSent);
             }
         } catch (IOException e) {
-            markCompletionException(e);
-
             boolean closed = markClosed();
             int numPending = clearPendingQueue();
-            log.warn("flushPendingQueue({}) Failed ({}) after {} successfully sent messages (pending={}, markClosed={}): {}",
+            log.warn(
+                "flushPendingQueue({}) Failed ({}) after {} successfully sent messages (pending={}, markClosed={}): {}",
                 this, e.getClass().getSimpleName(), numSent, numPending, closed, e.getMessage());
         }
-    }
-
-    protected OpenFuture markCompletionSuccessful() {
-        OpenFuture f = getCompletedFuture();
-        f.setOpened();
-        return f;
-    }
-
-    protected OpenFuture markCompletionException(Throwable err) {
-        OpenFuture f = getCompletedFuture();
-        f.setException(err);
-        return f;
     }
 
     protected int clearPendingQueue() {
@@ -249,17 +221,18 @@ public class ClientChannelPendingMessagesQueue
             if (numEntries > 0) {
                 pendingQueue.clear();
             }
-            pendingQueue.notifyAll(); // in case anyone waiting
         }
 
         return numEntries;
     }
 
+    public DefaultOpenFuture getCompletedFuture() {
+        return completedFuture;
+    }
+
     @Override
     public String toString() {
-        return getClass().getSimpleName()
-            + "[channel=" + getClientChannel()
-            + ", open=" + isOpen()
+        return getClass().getSimpleName() + "[channel=" + getClientChannel() + ", open=" + isOpen()
             + "]";
     }
 }
