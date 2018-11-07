@@ -25,11 +25,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
@@ -77,29 +74,7 @@ public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements 
     }
 
     protected Iterable<KeyPair> loadKeys(Predicate<? super KeyPair> filter) {
-        return () -> {
-            Stream<KeyPair> stream = safeMap(GenericUtils.stream(providers), this::doGetKeyPair);
-            if (filter != null) {
-                stream = stream.filter(filter);
-            }
-            return stream.iterator();
-        };
-    }
-
-    /**
-     * Performs a mapping operation on the stream, discarding any null values
-     * returned by the mapper.
-     *
-     * @param <U> Original type
-     * @param <V> Mapped type
-     * @param stream Original values stream
-     * @param mapper Mapper to target type
-     * @return Mapped stream
-     */
-    protected <U, V> Stream<V> safeMap(Stream<U> stream, Function<? super U, ? extends V> mapper) {
-        return stream.map(u -> Optional.ofNullable(mapper.apply(u)))
-                .filter(Optional::isPresent)
-                .map(Optional::get);
+        return ClientIdentityProvider.lazyKeysLoader(providers, this::doGetKeyPair, filter);
     }
 
     protected KeyPair doGetKeyPair(ClientIdentityProvider p) {
@@ -110,12 +85,15 @@ public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements 
                     log.debug("loadKeys({}) no key loaded", p);
                 }
             }
+
             return kp;
         } catch (Throwable e) {
-            log.warn("loadKeys({}) failed ({}) to load key: {}", p, e.getClass().getSimpleName(), e.getMessage());
+            log.warn("loadKeys({}) failed ({}) to load key: {}",
+                p, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("loadKeys(" + p + ") key load failure details", e);
             }
+
             return null;
         }
     }
@@ -129,7 +107,8 @@ public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements 
     }
 
     public static List<ClientIdentityProvider> buildProviders(
-            Collection<? extends Path> paths, Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider, boolean strict) {
+            Collection<? extends Path> paths, Supplier<? extends ClientIdentityLoader> loader,
+            Supplier<? extends FilePasswordProvider> provider, boolean strict) {
         if (GenericUtils.isEmpty(paths)) {
             return Collections.emptyList();
         }

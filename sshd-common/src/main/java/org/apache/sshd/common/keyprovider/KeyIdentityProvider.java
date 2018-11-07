@@ -54,7 +54,7 @@ public interface KeyIdentityProvider {
      * {@code null} providers (i.e., returns an empty iterable instance)
      */
     Function<KeyIdentityProvider, Iterable<KeyPair>> LOADER = p ->
-            (p == null) ? Collections.<KeyPair>emptyList() : p.loadKeys();
+        (p == null) ? Collections.<KeyPair>emptyList() : p.loadKeys();
 
     /**
      * Load available keys.
