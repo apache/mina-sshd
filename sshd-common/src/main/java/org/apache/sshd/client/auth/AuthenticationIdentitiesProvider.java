@@ -20,11 +20,7 @@
 package org.apache.sshd.client.auth;
 
 import java.security.KeyPair;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
@@ -87,38 +83,17 @@ public interface AuthenticationIdentitiesProvider extends KeyIdentityProvider, P
         return new AuthenticationIdentitiesProvider() {
             @Override
             public Iterable<KeyPair> loadKeys() {
-                return selectIdentities(KeyPair.class);
+                return GenericUtils.lazySelectMatchingTypes(identities, KeyPair.class);
             }
 
             @Override
             public Iterable<String> loadPasswords() {
-                return selectIdentities(String.class);
+                return GenericUtils.lazySelectMatchingTypes(identities, String.class);
             }
 
             @Override
             public Iterable<?> loadIdentities() {
-                return selectIdentities(Object.class);
-            }
-
-            // NOTE: returns a NEW Collection on every call so that the original
-            //      identities remain unchanged
-            private <T> Collection<T> selectIdentities(Class<T> type) {
-                Collection<T> matches = null;
-                for (Iterator<?> iter = GenericUtils.iteratorOf(identities); iter.hasNext();) {
-                    Object o = iter.next();
-                    Class<?> t = o.getClass();
-                    if (!type.isAssignableFrom(t)) {
-                        continue;
-                    }
-
-                    if (matches == null) {
-                        matches = new LinkedList<>();
-                    }
-
-                    matches.add(type.cast(o));
-                }
-
-                return (matches == null) ? Collections.<T>emptyList() : matches;
+                return GenericUtils.lazySelectMatchingTypes(identities, Object.class);
             }
         };
     }

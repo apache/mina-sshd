@@ -19,10 +19,21 @@
 
 package org.apache.sshd.common.util;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.temporal.Temporal;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
@@ -172,5 +183,51 @@ public class GenericUtilsTest extends JUnitTestSupport {
         char[] c2 = s2.toCharArray();
         assertEquals("s1 vs. s2", Integer.signum(s1.compareTo(s2)), Integer.signum(GenericUtils.compare(c1, c2)));
         assertEquals("s2 vs. s1", Integer.signum(s2.compareTo(s1)), Integer.signum(GenericUtils.compare(c2, c1)));
+    }
+
+    @Test
+    public void testLazySelectMatchingTypes() {
+        Collection<String> strings = Arrays.asList(
+            getCurrentTestName(),
+            getClass().getSimpleName(),
+            getClass().getPackage().getName());
+        Collection<Temporal> times = Arrays.asList(
+            LocalDateTime.now(),
+            LocalTime.now(),
+            LocalDate.now());
+        List<Object> values = Stream.concat(strings.stream(), times.stream()).collect(Collectors.toList());
+        AtomicInteger matchCount = new AtomicInteger(0);
+        for (int index = 1, count = values.size(); index <= count; index++) {
+            Collections.shuffle(values);
+            Class<?> type = ((index & 0x01) == 0) ? String.class : Temporal.class;
+            Iterator<?> lazy = GenericUtils.lazySelectMatchingTypes(
+                new Iterator<Object>() {
+                    private final Iterator<?> iter = values.iterator();
+
+                    {
+                        matchCount.set(0);
+                    }
+
+                    @Override
+                    public boolean hasNext() {
+                        return iter.hasNext();
+                    }
+
+                    @Override
+                    public Object next() {
+                        Object v = iter.next();
+                        if (type.isInstance(v)) {
+                            matchCount.incrementAndGet();
+                        }
+                        return v;
+                    }
+                }, type);
+            Set<?> expected = (type == String.class) ? new HashSet<>(strings) : new HashSet<>(times);
+            for (int c = 1; lazy.hasNext(); c++) {
+                Object o = lazy.next();
+                assertEquals("Mismatched match count for " + o, c, matchCount.get());
+                assertTrue("Unexpected value: " + o, expected.remove(o));
+            }
+        }
     }
 }
