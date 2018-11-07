@@ -26,15 +26,15 @@ import java.util.Objects;
 import java.util.StringTokenizer;
 
 /**
- * <p>This is a utility class used by selectors and DirectoryScanner. The
+ * <p>
+ * This is a utility class used by selectors and DirectoryScanner. The
  * functionality more properly belongs just to selectors, but unfortunately
  * DirectoryScanner exposed these as protected methods. Thus we have to
  * support any subclasses of DirectoryScanner that may access these methods.
  * </p>
  * <p>This is a Singleton.</p>
  *
- * @author Arnout J. Kuiper
- *         <a href="mailto:ajkuiper@wxs.nl">ajkuiper@wxs.nl</a>
+ * @author Arnout J. Kuiper <a href="mailto:ajkuiper@wxs.nl">ajkuiper@wxs.nl</a>
  * @author Magesh Umasankar
  * @author <a href="mailto:bruce@callenish.com">Bruce Atherton</a>
  * @version $Id$
@@ -91,18 +91,19 @@ public final class SelectorUtils {
      * @param isCaseSensitive Whether or not matching should be performed
      *                        case sensitively.
      * @return whether or not a given path matches the start of a given
-     * pattern up to the first "**".
+     * pattern up to the first &quot;**&quot;.
      */
-    public static boolean matchPatternStart(String pattern, String str,
-                                            boolean isCaseSensitive) {
-        if (pattern.length() > (REGEX_HANDLER_PREFIX.length() + PATTERN_HANDLER_SUFFIX.length() + 1)
-                && pattern.startsWith(REGEX_HANDLER_PREFIX) && pattern.endsWith(PATTERN_HANDLER_SUFFIX)) {
+    public static boolean matchPatternStart(String pattern, String str, boolean isCaseSensitive) {
+        if ((pattern.length() > (REGEX_HANDLER_PREFIX.length() + PATTERN_HANDLER_SUFFIX.length() + 1))
+                && pattern.startsWith(REGEX_HANDLER_PREFIX)
+                && pattern.endsWith(PATTERN_HANDLER_SUFFIX)) {
             // FIXME: ICK! But we can't do partial matches for regex, so we have to reserve judgement until we have
             // a file to deal with, or we can definitely say this is an exclusion...
             return true;
         } else {
-            if (pattern.length() > (ANT_HANDLER_PREFIX.length() + PATTERN_HANDLER_SUFFIX.length() + 1)
-                    && pattern.startsWith(ANT_HANDLER_PREFIX) && pattern.endsWith(PATTERN_HANDLER_SUFFIX)) {
+            if ((pattern.length() > (ANT_HANDLER_PREFIX.length() + PATTERN_HANDLER_SUFFIX.length() + 1))
+                    && pattern.startsWith(ANT_HANDLER_PREFIX)
+                    && pattern.endsWith(PATTERN_HANDLER_SUFFIX)) {
                 pattern =
                         pattern.substring(ANT_HANDLER_PREFIX.length(), pattern.length() - PATTERN_HANDLER_SUFFIX.length());
             }
@@ -114,7 +115,8 @@ public final class SelectorUtils {
         }
     }
 
-    private static boolean matchAntPathPatternStart(String pattern, String str, String separator, boolean isCaseSensitive) {
+    private static boolean matchAntPathPatternStart(
+            String pattern, String str, String separator, boolean isCaseSensitive) {
         // When str starts with a File.separator, pattern has to start with a
         // File.separator.
         // When pattern starts with a File.separator, str has to start with a
@@ -182,17 +184,16 @@ public final class SelectorUtils {
      * or <code>false</code> otherwise.
      */
     public static boolean matchPath(String pattern, String str, boolean isCaseSensitive) {
-        if (pattern.length() > (REGEX_HANDLER_PREFIX.length() + PATTERN_HANDLER_SUFFIX.length() + 1)
-                && pattern.startsWith(REGEX_HANDLER_PREFIX) && pattern.endsWith(PATTERN_HANDLER_SUFFIX)) {
-            pattern = pattern.substring(REGEX_HANDLER_PREFIX.length(), pattern.length()
-                    - PATTERN_HANDLER_SUFFIX.length());
-
+        if ((pattern.length() > (REGEX_HANDLER_PREFIX.length() + PATTERN_HANDLER_SUFFIX.length() + 1))
+                && pattern.startsWith(REGEX_HANDLER_PREFIX)
+                && pattern.endsWith(PATTERN_HANDLER_SUFFIX)) {
+            pattern = pattern.substring(REGEX_HANDLER_PREFIX.length(), pattern.length() - PATTERN_HANDLER_SUFFIX.length());
             return str.matches(pattern);
         } else {
-            if (pattern.length() > (ANT_HANDLER_PREFIX.length() + PATTERN_HANDLER_SUFFIX.length() + 1)
-                    && pattern.startsWith(ANT_HANDLER_PREFIX) && pattern.endsWith(PATTERN_HANDLER_SUFFIX)) {
-                pattern =
-                        pattern.substring(ANT_HANDLER_PREFIX.length(), pattern.length() - PATTERN_HANDLER_SUFFIX.length());
+            if ((pattern.length() > (ANT_HANDLER_PREFIX.length() + PATTERN_HANDLER_SUFFIX.length() + 1))
+                    && pattern.startsWith(ANT_HANDLER_PREFIX)
+                    && pattern.endsWith(PATTERN_HANDLER_SUFFIX)) {
+                pattern = pattern.substring(ANT_HANDLER_PREFIX.length(), pattern.length() - PATTERN_HANDLER_SUFFIX.length());
             }
 
             return matchAntPathPattern(pattern, str, isCaseSensitive);
@@ -461,8 +462,7 @@ public final class SelectorUtils {
             int patLength = patIdxTmp - patIdxStart - 1;
             int strLength = strIdxEnd - strIdxStart + 1;
             int foundIdx = -1;
-            strLoop:
-            for (int i = 0; i <= strLength - patLength; i++) {
+            strLoop: for (int i = 0; i <= strLength - patLength; i++) {
                 for (int j = 0; j < patLength; j++) {
                     ch = patArr[patIdxStart + j + 1];
                     if (ch != '?' && !equals(ch, strArr[strIdxStart + i + j], isCaseSensitive)) {
@@ -545,7 +545,8 @@ public final class SelectorUtils {
      * @see #translateToLocalFileSystemPath(String, char, String)
      */
     public static String translateToLocalFileSystemPath(String path, char pathSeparator, FileSystem fs) {
-        return translateToLocalFileSystemPath(path, pathSeparator,  Objects.requireNonNull(fs, "No target file system").getSeparator());
+        return translateToLocalFileSystemPath(path, pathSeparator,
+            Objects.requireNonNull(fs, "No target file system").getSeparator());
     }
 
     /**

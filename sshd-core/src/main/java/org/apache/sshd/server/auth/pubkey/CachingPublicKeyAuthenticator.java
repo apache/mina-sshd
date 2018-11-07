@@ -24,7 +24,6 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.sshd.common.AttributeRepository;
-import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
