@@ -21,9 +21,11 @@ package org.apache.sshd.client.auth.pubkey;
 
 import java.io.IOException;
 import java.nio.channels.Channel;
+import java.security.PublicKey;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,9 +58,14 @@ public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKey
         if (factory != null) {
             try {
                 agent = Objects.requireNonNull(factory.createClient(manager), "No agent created");
-                identities.add(agent.getIdentities()
-                    .stream()
-                    .map(kp -> new KeyAgentIdentity(agent, kp.getKey(), kp.getValue())));
+                Iterable<? extends Map.Entry<PublicKey, String>> agentIds = agent.getIdentities();
+                Collection<KeyAgentIdentity> ids = new LinkedList<>();
+                for (Map.Entry<PublicKey, String> kp : agentIds) {
+                    ids.add(new KeyAgentIdentity(agent, kp.getKey(), kp.getValue()));
+                }
+                if (!ids.isEmpty()) {
+                    identities.add(ids.stream());
+                }
             } catch (Exception e) {
                 try {
                     closeAgent();

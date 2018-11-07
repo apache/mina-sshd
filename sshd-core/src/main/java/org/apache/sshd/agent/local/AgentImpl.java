@@ -60,7 +60,7 @@ public class AgentImpl implements SshAgent {
     }
 
     @Override
-    public List<? extends Map.Entry<PublicKey, String>> getIdentities() throws IOException {
+    public Iterable<? extends Map.Entry<PublicKey, String>> getIdentities() throws IOException {
         if (!isOpen()) {
             throw new SshException("Agent closed");
         }
@@ -138,7 +138,8 @@ public class AgentImpl implements SshAgent {
         }
     }
 
-    protected static Map.Entry<KeyPair, String> getKeyPair(Collection<? extends Map.Entry<KeyPair, String>> keys, PublicKey key) {
+    protected static Map.Entry<KeyPair, String> getKeyPair(
+            Collection<? extends Map.Entry<KeyPair, String>> keys, PublicKey key) {
         if (GenericUtils.isEmpty(keys) || (key == null)) {
             return null;
         }

@@ -24,3 +24,5 @@ accept also an `AttributeRepository` connection context argument (propagated fro
 
 * `FilePasswordProvider` has an extra method (`handleDecodeAttemptResult`) that enables
 user to try and repeat an encrypted private key decoding using a different password.
+
+* `SshAgent#getIdentities` returns an `Iterable` rather than a `List`

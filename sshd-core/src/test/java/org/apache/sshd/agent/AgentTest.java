@@ -24,7 +24,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PublicKey;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -82,20 +82,23 @@ public class AgentTest extends BaseTestSupport {
             String authSocket = agent.start();
 
             try (SshAgent client = new AgentClient(authSocket)) {
-                List<? extends Map.Entry<PublicKey, String>> keys = client.getIdentities();
+                Iterable<? extends Map.Entry<PublicKey, String>> keys = client.getIdentities();
                 assertNotNull("No initial identities", keys);
-                assertEquals("Unexpected initial identities size", 0, keys.size());
+                assertObjectInstanceOf("Non collection initial identities", Collection.class, keys);
+                assertEquals("Unexpected initial identities size", 0, ((Collection<?>) keys).size());
 
                 KeyPair k = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
                 client.addIdentity(k, "");
                 keys = client.getIdentities();
                 assertNotNull("No registered identities after add", keys);
-                assertEquals("Mismatched registered keys size", 1, keys.size());
+                assertObjectInstanceOf("Non collection registered identities", Collection.class, keys);
+                assertEquals("Mismatched registered keys size", 1, ((Collection<?>) keys).size());
 
                 client.removeIdentity(k.getPublic());
                 keys = client.getIdentities();
                 assertNotNull("No registered identities after remove", keys);
-                assertEquals("Registered keys size not empty", 0, keys.size());
+                assertObjectInstanceOf("Non collection removed identities", Collection.class, keys);
+                assertEquals("Registered keys size not empty", 0, ((Collection<?>) keys).size());
 
                 client.removeAllIdentities();
             }

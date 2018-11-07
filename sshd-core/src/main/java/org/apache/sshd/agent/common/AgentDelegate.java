@@ -21,7 +21,6 @@ package org.apache.sshd.agent.common;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.sshd.agent.SshAgent;
@@ -45,7 +44,7 @@ public class AgentDelegate implements SshAgent {
     }
 
     @Override
-    public List<? extends Map.Entry<PublicKey, String>> getIdentities() throws IOException {
+    public Iterable<? extends Map.Entry<PublicKey, String>> getIdentities() throws IOException {
         return agent.getIdentities();
     }
 

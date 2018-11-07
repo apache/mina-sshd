@@ -67,7 +67,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
     }
 
     @Override
-    public List<? extends Map.Entry<PublicKey, String>> getIdentities() throws IOException {
+    public Iterable<? extends Map.Entry<PublicKey, String>> getIdentities() throws IOException {
         int cmd = SshAgentConstants.SSH2_AGENTC_REQUEST_IDENTITIES;
         int okcmd = SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSWER;
         if (FactoryManager.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {

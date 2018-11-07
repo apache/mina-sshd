@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.Map;
 
 import org.apache.sshd.agent.SshAgent;
@@ -97,7 +98,18 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
         }
         switch (cmd) {
             case SshAgentConstants.SSH2_AGENTC_REQUEST_IDENTITIES: {
-                Collection<? extends Map.Entry<PublicKey, String>> keys = agent.getIdentities();
+                Iterable<? extends Map.Entry<PublicKey, String>> ids = agent.getIdentities();
+                Collection<? extends Map.Entry<PublicKey, String>> keys;
+                if (ids instanceof Collection<?>) {
+                    keys = (Collection<? extends Map.Entry<PublicKey, String>>) ids;
+                } else {
+                    Collection<Map.Entry<PublicKey, String>> c = new LinkedList<>();
+                    for (Map.Entry<PublicKey, String> i : ids) {
+                        c.add(i);
+                    }
+                    keys = c;
+                }
+
                 rep.putByte(SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSWER);
                 rep.putInt(keys.size());
                 for (Map.Entry<PublicKey, String> key : keys) {
@@ -112,7 +124,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
                 int flags = req.getInt();
                 if (debugEnabled) {
                     log.debug("SSH2_AGENTC_SIGN_REQUEST key={}, flags=0x{}, data={}",
-                              signingKey.getAlgorithm(), Integer.toHexString(flags), BufferUtils.toHex(':', data));
+                          signingKey.getAlgorithm(), Integer.toHexString(flags), BufferUtils.toHex(':', data));
                 }
                 String keyType = ValidateUtils.checkNotNullAndNotEmpty(
                         KeyUtils.getKeyType(signingKey),
