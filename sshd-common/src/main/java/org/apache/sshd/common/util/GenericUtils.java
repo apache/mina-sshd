@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
@@ -863,90 +862,6 @@ public final class GenericUtils {
             public V next() {
                 U value = iterator.next();
                 return mapper.apply(value);
-            }
-        };
-    }
-
-    /**
-     * @param <T> Generic selected identities type
-     * @param The source values - ignored if {@code null}
-     * @param type The (never @code null) type of values to select - any value
-     * whose type is assignable to this type will be selected by the iterator.
-     * @return {@link Iterable} whose {@link Iterator} selects only values
-     * matching the specific type. <b>Note:</b> the matching values are not
-     * pre-calculated (hence the &quot;lazy&quot; denomination) - i.e.,
-     * the match is performed only when {@link Iterator#hasNext()} is called.
-     */
-    public static <T> Iterable<T> lazySelectMatchingTypes(Iterable<?> values, Class<T> type) {
-        Objects.requireNonNull(type, "No type selector specified");
-        if (values == null) {
-            return Collections.emptyList();
-        }
-
-        return new Iterable<T>() {
-            @Override
-            public Iterator<T> iterator() {
-                return lazySelectMatchingTypes(values.iterator(), type);
-            }
-
-            @Override
-            public String toString() {
-                return Iterable.class.getSimpleName() + "[lazy-select](" + type.getSimpleName() + ")";
-            }
-        };
-    }
-
-    /**
-     * @param <T> Generic selected identities type
-     * @param The source values - ignored if {@code null}
-     * @param type The (never @code null) type of values to select - any value
-     * whose type is assignable to this type will be selected by the iterator.
-     * @return An {@link Iterator} whose {@code next()} call selects only values
-     * matching the specific type. <b>Note:</b> the matching values are not
-     * pre-calculated (hence the &quot;lazy&quot; denomination) - i.e.,
-     * the match is performed only when {@link Iterator#hasNext()} is called.
-     */
-    public static <T> Iterator<T> lazySelectMatchingTypes(Iterator<?> values, Class<T> type) {
-        Objects.requireNonNull(type, "No type selector specified");
-        if (values == null) {
-            return Collections.emptyIterator();
-        }
-
-        return new Iterator<T>() {
-            private boolean finished;
-            private T nextValue;
-
-            @Override
-            public boolean hasNext() {
-                if (finished) {
-                    return false;
-                }
-
-                nextValue = selectNextMatchingValue(values, type);
-                if (nextValue == null) {
-                    finished = true;
-                }
-
-                return !finished;
-            }
-
-            @Override
-            public T next() {
-                if (finished) {
-                    throw new NoSuchElementException("All values have been exhausted");
-                }
-                if (nextValue == null) {
-                    throw new IllegalStateException("'next()' called without asking 'hasNext()'");
-                }
-
-                T v = nextValue;
-                nextValue = null;   // so it will be re-fetched when 'hasNext' is called
-                return v;
-            }
-
-            @Override
-            public String toString() {
-                return Iterator.class.getSimpleName() + "[lazy-select](" + type.getSimpleName() + ")";
             }
         };
     }

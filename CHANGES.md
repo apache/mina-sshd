@@ -26,3 +26,9 @@ accept also an `AttributeRepository` connection context argument (propagated fro
 user to try and repeat an encrypted private key decoding using a different password.
 
 * `SshAgent#getIdentities` returns an `Iterable` rather than a `List`
+
+
+## Behavioral changes
+
+* [SSHD-860](https://issues.apache.org/jira/browse/SSHD-860) `UserAuthPublicKeyIterator` uses lazy loading
+of public key identities both from agent and client session

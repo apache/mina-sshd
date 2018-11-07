@@ -21,15 +21,17 @@ package org.apache.sshd.client.auth.pubkey;
 
 import java.io.IOException;
 import java.nio.channels.Channel;
+import java.security.KeyPair;
 import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
@@ -37,13 +39,13 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.helper.LazyIterablesConcatenator;
+import org.apache.sshd.common.util.helper.LazyMatchingTypeIterator;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKeyIdentity> implements Channel {
-
     private final AtomicBoolean open = new AtomicBoolean(true);
     private Iterator<? extends PublicKeyIdentity> current;
     private SshAgent agent;
@@ -51,38 +53,132 @@ public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKey
     public UserAuthPublicKeyIterator(ClientSession session, SignatureFactoriesManager signatureFactories) throws Exception {
         super(session);
 
-        Collection<Stream<? extends PublicKeyIdentity>> identities = new LinkedList<>();
+        try {
+            Collection<Iterable<? extends PublicKeyIdentity>> identities = new ArrayList<>(2);
+            Iterable<? extends PublicKeyIdentity> agentIds = initializeAgentIdentities(session);
+            if (agentIds != null) {
+                identities.add(agentIds);
+            }
 
+            Iterable<? extends PublicKeyIdentity> sessionIds =
+                initializeSessionIdentities(session, signatureFactories);
+            if (sessionIds != null) {
+                identities.add(sessionIds);
+            }
+
+            if (identities.isEmpty()) {
+                current = Collections.emptyIterator();
+            } else {
+                Iterable<? extends PublicKeyIdentity> keys =
+                    LazyIterablesConcatenator.lazyConcatenateIterables(identities);
+                current = LazyMatchingTypeIterator.lazySelectMatchingTypes(keys.iterator(), PublicKeyIdentity.class);
+            }
+        } catch (Exception e) {
+            try {
+                closeAgent();
+            } catch (Exception err) {
+                e.addSuppressed(err);
+            }
+
+            throw e;
+        }
+    }
+
+    protected Iterable<KeyPairIdentity> initializeSessionIdentities(
+            ClientSession session, SignatureFactoriesManager signatureFactories) {
+        return new Iterable<KeyPairIdentity>() {
+            private final String sessionId = session.toString();
+            private final AtomicReference<Iterable<KeyPair>> keysHolder = new AtomicReference<>();
+
+            @Override
+            public Iterator<KeyPairIdentity> iterator() {
+                // Lazy load the keys the 1st time the iterator is called
+                if (keysHolder.get() == null) {
+                    KeyIdentityProvider sessionKeysProvider = ClientSession.providerOf(session);
+                    keysHolder.set(sessionKeysProvider.loadKeys());
+                }
+
+                return new Iterator<KeyPairIdentity>() {
+                    private final Iterator<KeyPair> keys;
+
+                    {
+                        @SuppressWarnings("synthetic-access")
+                        Iterable<KeyPair> sessionKeys =
+                            Objects.requireNonNull(keysHolder.get(), "No session keys available");
+                        keys = sessionKeys.iterator();
+                    }
+
+                    @Override
+                    public boolean hasNext() {
+                        return keys.hasNext();
+                    }
+
+                    @Override
+                    public KeyPairIdentity next() {
+                        KeyPair kp = keys.next();
+                        return new KeyPairIdentity(signatureFactories, session, kp);
+                    }
+
+                    @Override
+                    @SuppressWarnings("synthetic-access")
+                    public String toString() {
+                        return KeyPairIdentity.class.getSimpleName() + "[iterator][" + sessionId + "]";
+                    }
+                };
+            }
+
+            @Override
+            public String toString() {
+                return KeyPairIdentity.class.getSimpleName() + "[iterable][" + sessionId + "]";
+            }
+        };
+    }
+
+    protected Iterable<KeyAgentIdentity> initializeAgentIdentities(ClientSession session) throws IOException {
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No session factory manager");
         SshAgentFactory factory = manager.getAgentFactory();
-        if (factory != null) {
-            try {
-                agent = Objects.requireNonNull(factory.createClient(manager), "No agent created");
-                Iterable<? extends Map.Entry<PublicKey, String>> agentIds = agent.getIdentities();
-                Collection<KeyAgentIdentity> ids = new LinkedList<>();
-                for (Map.Entry<PublicKey, String> kp : agentIds) {
-                    ids.add(new KeyAgentIdentity(agent, kp.getKey(), kp.getValue()));
-                }
-                if (!ids.isEmpty()) {
-                    identities.add(ids.stream());
-                }
-            } catch (Exception e) {
-                try {
-                    closeAgent();
-                } catch (Exception err) {
-                    e.addSuppressed(err);
-                }
-
-                throw e;
-            }
+        if (factory == null) {
+            return null;
         }
 
-        identities.add(Stream.of(ClientSession.providerOf(session))
-            .map(KeyIdentityProvider::loadKeys)
-            .flatMap(GenericUtils::stream)
-            .map(kp -> new KeyPairIdentity(signatureFactories, session, kp)));
+        agent = Objects.requireNonNull(factory.createClient(manager), "No agent created");
+        return new Iterable<KeyAgentIdentity>() {
+            @SuppressWarnings("synthetic-access")
+            private final Iterable<? extends Map.Entry<PublicKey, String>> agentIds = agent.getIdentities();
+            @SuppressWarnings("synthetic-access")
+            private final String agentId = agent.toString();
 
-        current = identities.stream().flatMap(r -> r).iterator();
+            @Override
+            public Iterator<KeyAgentIdentity> iterator() {
+                return new Iterator<KeyAgentIdentity>() {
+                    @SuppressWarnings("synthetic-access")
+                    private final Iterator<? extends Map.Entry<PublicKey, String>> iter = agentIds.iterator();
+
+                    @Override
+                    public boolean hasNext() {
+                        return iter.hasNext();
+                    }
+
+                    @Override
+                    @SuppressWarnings("synthetic-access")
+                    public KeyAgentIdentity next() {
+                        Map.Entry<PublicKey, String> kp = iter.next();
+                        return new KeyAgentIdentity(agent, kp.getKey(), kp.getValue());
+                    }
+
+                    @Override
+                    @SuppressWarnings("synthetic-access")
+                    public String toString() {
+                        return KeyAgentIdentity.class.getSimpleName() + "[iterator][" + agentId + "]";
+                    }
+                };
+            }
+
+            @Override
+            public String toString() {
+                return KeyAgentIdentity.class.getSimpleName() + "[iterable][" + agentId + "]";
+            }
+        };
     }
 
     @Override

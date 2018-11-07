@@ -26,7 +26,7 @@ import java.util.List;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.helper.LazyMatchingTypeIterable;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -83,17 +83,17 @@ public interface AuthenticationIdentitiesProvider extends KeyIdentityProvider, P
         return new AuthenticationIdentitiesProvider() {
             @Override
             public Iterable<KeyPair> loadKeys() {
-                return GenericUtils.lazySelectMatchingTypes(identities, KeyPair.class);
+                return LazyMatchingTypeIterable.lazySelectMatchingTypes(identities, KeyPair.class);
             }
 
             @Override
             public Iterable<String> loadPasswords() {
-                return GenericUtils.lazySelectMatchingTypes(identities, String.class);
+                return LazyMatchingTypeIterable.lazySelectMatchingTypes(identities, String.class);
             }
 
             @Override
             public Iterable<?> loadIdentities() {
-                return GenericUtils.lazySelectMatchingTypes(identities, Object.class);
+                return LazyMatchingTypeIterable.lazySelectMatchingTypes(identities, Object.class);
             }
         };
     }
