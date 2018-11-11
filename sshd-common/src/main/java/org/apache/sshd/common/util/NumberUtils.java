@@ -290,8 +290,8 @@ public final class NumberUtils {
             return false;
         }
 
-        for (int index = 0; index < cs.length(); index++) {
-            char c = cs.charAt(0);
+        for (int index = 0, len = cs.length(); index < len; index++) {
+            char c = cs.charAt(index);
             if ((c >= '0') && (c <= '9')) {
                 continue;
             }

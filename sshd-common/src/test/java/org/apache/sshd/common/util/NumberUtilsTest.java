@@ -74,4 +74,24 @@ public class NumberUtilsTest extends JUnitTestSupport {
             }
         }
     }
+
+    @Test
+    public void testIsValidIntegerNumber() {
+        for (String s : new String[]{"7", "73", "736", "7365", "19650307"}) {
+            assertTrue(s, NumberUtils.isIntegerNumber(s));
+
+            String pos = "+" + s;
+            assertTrue(pos, NumberUtils.isIntegerNumber(pos));
+
+            String neg = "-" + s;
+            assertTrue(neg, NumberUtils.isIntegerNumber(neg));
+        }
+    }
+
+    @Test
+    public void testIsInvalidIntegerNumber() {
+        for (String s : new String[]{null, "", "    ", getCurrentTestName(), "3rd", "3.14", "-.3"}) {
+            assertFalse(s, NumberUtils.isIntegerNumber(s));
+        }
+    }
 }
