@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.subsystem.sftp;
+package org.apache.sshd.client.subsystem.sftp.fs;
 
 import java.io.IOException;
 import java.nio.file.LinkOption;
@@ -29,6 +29,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.Set;
 
+import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.impl.AbstractSftpFileAttributeView;
 import org.apache.sshd.common.util.GenericUtils;
 

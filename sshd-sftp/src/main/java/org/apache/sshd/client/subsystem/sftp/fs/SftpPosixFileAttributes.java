@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.subsystem.sftp;
+package org.apache.sshd.client.subsystem.sftp.fs;
 
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;

@@ -16,9 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.subsystem.sftp;
+package org.apache.sshd.client.subsystem.sftp.fs;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -59,6 +63,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.subsystem.sftp.SftpClient;
+import org.apache.sshd.client.subsystem.sftp.SftpClientFactory;
+import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.session.Session;
@@ -318,7 +325,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
     @Test
     public void testSftpVersionSelector() throws Exception {
-        final AtomicInteger selected = new AtomicInteger(-1);
+        AtomicInteger selected = new AtomicInteger(-1);
         SftpVersionSelector selector = (session, current, available) -> {
             int value = GenericUtils.stream(available)
                     .mapToInt(Integer::intValue)
@@ -332,7 +339,9 @@ public class SftpFileSystemTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             client.start();
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(7L, TimeUnit.SECONDS)
+                    .getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -349,6 +358,32 @@ public class SftpFileSystemTest extends BaseTestSupport {
                 client.stop();
             }
         }
+    }
+
+    @Test
+    public void testFileSystemProviderServiceEntry() throws IOException {
+        Path configFile = CommonTestSupportUtils.resolve(detectSourcesFolder(),
+            MAIN_SUBFOLDER, "filtered-resources", "META-INF", "services", FileSystemProvider.class.getName());
+        assertTrue("Missing " + configFile, Files.exists(configFile));
+
+        boolean found = false;
+        try (InputStream stream = Files.newInputStream(configFile);
+             Reader r = new InputStreamReader(stream, StandardCharsets.UTF_8);
+             BufferedReader b = new BufferedReader(r)) {
+
+            for (String line = b.readLine(); line != null; line = b.readLine()) {
+                line = line.trim();
+                if (GenericUtils.isEmpty(line) || (line.charAt(0) == '#')) {
+                    continue;
+                }
+
+                assertFalse("Multiple configurations: " + line, found);
+                assertEquals("Mismatched configuration", SftpFileSystemProvider.class.getName(), line);
+                found = true;
+            }
+        }
+
+        assertTrue("No configuration found", found);
     }
 
     private FileSystem createSftpFileSystem(ClientSession session, SftpVersionSelector selector) throws IOException {

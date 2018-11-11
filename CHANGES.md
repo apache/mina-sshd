@@ -27,6 +27,10 @@ user to try and repeat an encrypted private key decoding using a different passw
 
 * `SshAgent#getIdentities` returns an `Iterable` rather than a `List`
 
+* `SftpFileSystemProvider` and its associated helper classes have been moved to
+`org.apache.sshd.client.subsystem.sftp.fs` package
+
+* Added `SftpFileSystemClientSessionInitializer` support in `SftpFileSystemProvider`
 
 ## Behavioral changes
 

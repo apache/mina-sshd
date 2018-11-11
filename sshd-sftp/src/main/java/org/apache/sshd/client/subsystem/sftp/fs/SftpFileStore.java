@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.client.subsystem.sftp;
+package org.apache.sshd.client.subsystem.sftp.fs;
 
 import java.io.IOException;
 import java.nio.file.FileStore;

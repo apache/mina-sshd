@@ -19,9 +19,9 @@
 package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.IOException;
-import java.nio.file.FileSystem;
 
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.subsystem.sftp.fs.SftpFileSystem;
 import org.apache.sshd.client.subsystem.sftp.impl.DefaultSftpClientFactory;
 
 /**
@@ -67,23 +67,23 @@ public interface SftpClientFactory {
      */
     SftpClient createSftpClient(ClientSession session, SftpVersionSelector selector) throws IOException;
 
-    default FileSystem createSftpFileSystem(ClientSession session) throws IOException {
+    default SftpFileSystem createSftpFileSystem(ClientSession session) throws IOException {
         return createSftpFileSystem(session, SftpVersionSelector.CURRENT);
     }
 
-    default FileSystem createSftpFileSystem(ClientSession session, int version) throws IOException {
+    default SftpFileSystem createSftpFileSystem(ClientSession session, int version) throws IOException {
         return createSftpFileSystem(session, SftpVersionSelector.fixedVersionSelector(version));
     }
 
-    default FileSystem createSftpFileSystem(ClientSession session, SftpVersionSelector selector) throws IOException {
+    default SftpFileSystem createSftpFileSystem(ClientSession session, SftpVersionSelector selector) throws IOException {
         return createSftpFileSystem(session, selector, SftpClient.DEFAULT_READ_BUFFER_SIZE, SftpClient.DEFAULT_WRITE_BUFFER_SIZE);
     }
 
-    default FileSystem createSftpFileSystem(ClientSession session, int version, int readBufferSize, int writeBufferSize) throws IOException {
+    default SftpFileSystem createSftpFileSystem(ClientSession session, int version, int readBufferSize, int writeBufferSize) throws IOException {
         return createSftpFileSystem(session, SftpVersionSelector.fixedVersionSelector(version), readBufferSize, writeBufferSize);
     }
 
-    default FileSystem createSftpFileSystem(ClientSession session, int readBufferSize, int writeBufferSize) throws IOException {
+    default SftpFileSystem createSftpFileSystem(ClientSession session, int readBufferSize, int writeBufferSize) throws IOException {
         return createSftpFileSystem(session, SftpVersionSelector.CURRENT, readBufferSize, writeBufferSize);
     }
 
@@ -92,10 +92,10 @@ public interface SftpClientFactory {
      * @param selector The {@link SftpVersionSelector} to use in order to negotiate the SFTP version
      * @param readBufferSize Default I/O read buffer size
      * @param writeBufferSize Default I/O write buffer size
-     * @return The created {@link FileSystem} instance
+     * @return The created {@link SftpFileSystem} instance
      * @throws IOException If failed to create the instance
      */
-    FileSystem createSftpFileSystem(
+    SftpFileSystem createSftpFileSystem(
         ClientSession session, SftpVersionSelector selector, int readBufferSize, int writeBufferSize)
             throws IOException;
 }

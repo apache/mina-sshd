@@ -25,9 +25,9 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClientFactory;
-import org.apache.sshd.client.subsystem.sftp.SftpFileSystem;
-import org.apache.sshd.client.subsystem.sftp.SftpFileSystemProvider;
 import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
+import org.apache.sshd.client.subsystem.sftp.fs.SftpFileSystem;
+import org.apache.sshd.client.subsystem.sftp.fs.SftpFileSystemProvider;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**

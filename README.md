@@ -957,9 +957,16 @@ system.
 It is highly recommended to `close()` the mounted file system once no longer necessary in order to release the
 associated SFTP session sooner rather than later - e.g., via a `try-with-resource` code block.
 
+**Caveat:** Due to URI encoding of the username/password as a basic authentication, the system currently
+does not allow colon (`:`) in either one in order to avoid parsing confusion. See [RFC 3986 - section 3.2.1](https://tools.ietf.org/html/rfc3986#section-3.2.1):
+
+>> Use of the format "user:password" in the userinfo field is
+>> deprecated ... Applications may choose to ignore or reject such
+>> data when it is received as part of a reference...
+
 #### Configuring the `SftpFileSystemProvider`
 
-When "mounting" a new file system one can provide configuration parameters using either the
+When "mounting" a new file system one can provide extra configuration parameters using either the
 environment map in the [FileSystems#newFileSystem](https://docs.oracle.com/javase/8/docs/api/java/nio/file/FileSystems.html#newFileSystem)
 method or via the URI query parameters. See the `SftpFileSystemProvider` for the available
 configuration keys and values.
@@ -1002,6 +1009,31 @@ configuration keys and values.
         Path remotePath = fs.getPath("/some/remote/path");
         ... work with the remote path...
     }
+
+```
+
+#### Configuring the client session used to create an `SftpFileSystem`
+
+It is possible to register a `SftpFileSystemClientSessionInitializer` with the provider instead of the default one
+and thus better control the `ClientSession` used to generate the file-system instance. The default implementation
+simply connects and authenticates before creating a default `SftpFileSystem` instance. Users may wish
+to override some options or provide their own - e.g., execute a password-less authentication instead of
+the (default) password-based one:
+
+```java
+
+    SftpFileSystemProvider provider = ... obtain/create a provider ...
+    provider.setSftpFileSystemClientSessionInitializer(new SftpFileSystemClientSessionInitializer() {
+        @Override
+        public void authenticateClientSession(
+                SftpFileSystemProvider provider, SftpFileSystemInitializationContext context, ClientSession session)
+                    throws IOException {
+            // Set up password-less login instead of password-based
+            KeyPair kp = ... obtain a registered key-pair...
+            session.addPublicKeyIdentity(kp);
+            return sesssion.auth().verify(context.getMaxAuthTime());
+        }
+    });
 
 ```
 

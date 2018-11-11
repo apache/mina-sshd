@@ -16,12 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.subsystem.sftp;
+package org.apache.sshd.client.subsystem.sftp.fs;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.util.Iterator;
+
+import org.apache.sshd.client.subsystem.sftp.SftpClient;
 
 /**
  * Implements a remote {@link DirectoryStream}

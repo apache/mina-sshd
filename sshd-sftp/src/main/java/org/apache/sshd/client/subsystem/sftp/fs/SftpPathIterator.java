@@ -17,11 +17,13 @@
  * under the License.
  */
 
-package org.apache.sshd.client.subsystem.sftp;
+package org.apache.sshd.client.subsystem.sftp.fs;
 
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+
+import org.apache.sshd.client.subsystem.sftp.SftpClient;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

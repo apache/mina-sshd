@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.client.subsystem.sftp;
+package org.apache.sshd.client.subsystem.sftp.fs;
 
 import java.net.URI;
 import java.util.ArrayList;

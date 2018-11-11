@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.subsystem.sftp;
+
+package org.apache.sshd.client.subsystem.sftp.fs;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -71,7 +72,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
+import org.apache.sshd.client.subsystem.sftp.SftpClientFactory;
+import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
@@ -132,10 +136,11 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     protected final Logger log;
 
-    private final SshClient client;
+    private final SshClient clientInstance;
     private final SftpClientFactory factory;
-    private final SftpVersionSelector selector;
+    private final SftpVersionSelector versionSelector;
     private final NavigableMap<String, SftpFileSystem> fileSystems = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private SftpFileSystemClientSessionInitializer fsSessionInitializer = SftpFileSystemClientSessionInitializer.DEFAULT;
 
     public SftpFileSystemProvider() {
         this((SshClient) null);
@@ -147,8 +152,8 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     /**
      * @param client The {@link SshClient} to use - if {@code null} then a
-     *               default one will be setup and started. Otherwise, it is assumed that
-     *               the client has already been started
+     * default one will be setup and started. Otherwise, it is assumed that
+     * the client has already been started
      * @see SshClient#setUpDefaultClient()
      */
     public SftpFileSystemProvider(SshClient client) {
@@ -162,13 +167,13 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     public SftpFileSystemProvider(SshClient client, SftpClientFactory factory, SftpVersionSelector selector) {
         this.log = LoggerFactory.getLogger(getClass());
         this.factory = factory;
-        this.selector = selector;
+        this.versionSelector = selector;
         if (client == null) {
             // TODO: make this configurable using system properties
             client = SshClient.setUpDefaultClient();
             client.start();
         }
-        this.client = client;
+        this.clientInstance = client;
     }
 
     @Override
@@ -177,7 +182,23 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     }
 
     public final SftpVersionSelector getSftpVersionSelector() {
-        return selector;
+        return versionSelector;
+    }
+
+    public final SshClient getClientInstance() {
+        return clientInstance;
+    }
+
+    public SftpClientFactory getSftpClientFactory() {
+        return factory;
+    }
+
+    public SftpFileSystemClientSessionInitializer getSftpFileSystemClientSessionInitializer() {
+        return fsSessionInitializer;
+    }
+
+    public void setSftpFileSystemClientSessionInitializer(SftpFileSystemClientSessionInitializer initializer) {
+        fsSessionInitializer = Objects.requireNonNull(initializer, "No initializer provided");
     }
 
     @Override // NOTE: co-variant return
@@ -190,17 +211,25 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
         BasicCredentialsProvider credentials = parseCredentials(uri);
         ValidateUtils.checkState(credentials != null, "No credentials provided");
+
         String username = credentials.getUsername();
         String id = getFileSystemIdentifier(host, port, username);
+        SftpFileSystemInitializationContext context = new SftpFileSystemInitializationContext(id, uri, env);
+        context.setHost(host);
+        context.setPort(port);
+        context.setCredentials(credentials);
+
         Map<String, Object> params = resolveFileSystemParameters(env, parseURIParameters(uri));
         PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(params);
-        SftpVersionSelector selector = resolveSftpVersionSelector(uri, getSftpVersionSelector(), resolver);
-        Charset decodingCharset =
-            PropertyResolverUtils.getCharset(resolver, NAME_DECORDER_CHARSET_PROP_NAME, DEFAULT_NAME_DECODER_CHARSET);
-        long maxConnectTime = resolver.getLongProperty(CONNECT_TIME_PROP_NAME, DEFAULT_CONNECT_TIME);
-        long maxAuthTime = resolver.getLongProperty(AUTH_TIME_PROP_NAME, DEFAULT_AUTH_TIME);
-        String password = credentials.getPassword();
+        context.setPropertyResolver(resolver);
+        context.setMaxConnectTime(resolver.getLongProperty(CONNECT_TIME_PROP_NAME, DEFAULT_CONNECT_TIME));
+        context.setMaxAuthTime(resolver.getLongProperty(AUTH_TIME_PROP_NAME, DEFAULT_AUTH_TIME));
 
+        SftpVersionSelector selector = resolveSftpVersionSelector(uri, getSftpVersionSelector(), resolver);
+        Charset decodingCharset = PropertyResolverUtils.getCharset(
+            resolver, NAME_DECORDER_CHARSET_PROP_NAME, DEFAULT_NAME_DECODER_CHARSET);
+
+        SftpFileSystemClientSessionInitializer initializer = getSftpFileSystemClientSessionInitializer();
         SftpFileSystem fileSystem;
         synchronized (fileSystems) {
             if (fileSystems.containsKey(id)) {
@@ -210,9 +239,9 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             // TODO try and find a way to avoid doing this while locking the file systems cache
             ClientSession session = null;
             try {
-                session = client.connect(username, host, port)
-                    .verify(maxConnectTime)
-                    .getSession();
+                session = initializer.createClientSession(this, context);
+
+                // Make any extra configuration parameters available to the session
                 if (GenericUtils.size(params) > 0) {
                     // Cannot use forEach because the session is not effectively final
                     for (Map.Entry<String, ?> pe : params.entrySet()) {
@@ -228,10 +257,9 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                     PropertyResolverUtils.updateProperty(session, SftpClient.NAME_DECODING_CHARSET, decodingCharset);
                 }
 
-                session.addPasswordIdentity(password);
-                session.auth().verify(maxAuthTime);
+                initializer.authenticateClientSession(this, context, session);
 
-                fileSystem = new SftpFileSystem(this, id, session, factory, selector);
+                fileSystem = initializer.createSftpFileSystem(this, context, session, selector);
                 fileSystems.put(id, fileSystem);
             } catch (Exception e) {
                 if (session != null) {

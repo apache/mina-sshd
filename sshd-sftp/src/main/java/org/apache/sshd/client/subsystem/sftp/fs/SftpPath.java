@@ -16,22 +16,28 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
-package org.apache.sshd.client.subsystem.sftp;
+package org.apache.sshd.client.subsystem.sftp.fs;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Objects;
+import java.nio.file.FileSystem;
+import java.nio.file.LinkOption;
+import java.nio.file.spi.FileSystemProvider;
+import java.util.List;
 
-/**
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- */
-public class SftpFileSystemChannel extends SftpRemotePathChannel {
-    public SftpFileSystemChannel(SftpPath p, Collection<SftpClient.OpenMode> modes) throws IOException {
-        this(Objects.requireNonNull(p, "No target path").toString(), p.getFileSystem(), modes);
+import org.apache.sshd.common.file.util.BasePath;
+
+public class SftpPath extends BasePath<SftpPath, SftpFileSystem> {
+    public SftpPath(SftpFileSystem fileSystem, String root, List<String> names) {
+        super(fileSystem, root, names);
     }
 
-    public SftpFileSystemChannel(String remotePath, SftpFileSystem fs, Collection<SftpClient.OpenMode> modes) throws IOException {
-        super(remotePath, Objects.requireNonNull(fs, "No SFTP file system").getClient(), true, modes);
+    @Override
+    public SftpPath toRealPath(LinkOption... options) throws IOException {
+        // TODO: handle links
+        SftpPath absolute = toAbsolutePath();
+        FileSystem fs = getFileSystem();
+        FileSystemProvider provider = fs.provider();
+        provider.checkAccess(absolute);
+        return absolute;
     }
 }
