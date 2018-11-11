@@ -73,8 +73,12 @@ public interface SftpFileSystemClientSessionInitializer {
     default void authenticateClientSession(
             SftpFileSystemProvider provider, SftpFileSystemInitializationContext context, ClientSession session)
                 throws IOException {
-        PasswordHolder password = context.getCredentials();
-        session.addPasswordIdentity(password.getPassword());
+        PasswordHolder passwordHolder = context.getCredentials();
+        String password = passwordHolder.getPassword();
+        // If no password provided perhaps the client is set-up to use registered public keys
+        if (password != null) {
+            session.addPasswordIdentity(password);
+        }
         session.auth().verify(context.getMaxAuthTime());
     }
 

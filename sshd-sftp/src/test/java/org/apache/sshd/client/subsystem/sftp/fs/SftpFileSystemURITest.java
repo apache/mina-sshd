@@ -88,6 +88,7 @@ public class SftpFileSystemURITest extends JUnitTestSupport {
                     }
                 });
                 add(new Object[] {"19.65.7.3", 0, "J%ck", "d%Ripper", null});
+                add(new Object[] {"19.65.7.3", 0, "user", null, null});
             }
         };
     }
@@ -106,6 +107,15 @@ public class SftpFileSystemURITest extends JUnitTestSupport {
 
         Map<String, ?> uriParams = SftpFileSystemProvider.parseURIParameters(uri);
         assertMapEquals(getCurrentTestName(), params, uriParams, (v1, v2) -> Objects.equals(v1.toString(), v2.toString()));
+    }
+
+    @Test
+    public void testEncodeDecodeCredentials() {
+        String userInfo = SftpFileSystemProvider.encodeCredentials(username, password);
+        BasicCredentialsProvider credentials = SftpFileSystemProvider.parseCredentials(userInfo);
+        assertNotNull("No credentials provided", credentials);
+        assertEquals("Mismatched user", username, credentials.getUsername());
+        assertEquals("Mismatched password", password, credentials.getPassword());
     }
 
     @Override

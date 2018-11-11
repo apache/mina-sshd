@@ -354,9 +354,12 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             return null;
         }
 
-        String[] ui = GenericUtils.split(userInfo, ':');
-        ValidateUtils.checkTrue(GenericUtils.length(ui) == 2, "Invalid user info: %s", userInfo);
-        return new BasicCredentialsImpl(ui[0], ui[1]);
+        int pos = userInfo.indexOf(':');
+        if (pos < 0) {
+            return new BasicCredentialsImpl(userInfo, null);    // assume password-less login
+        }
+
+        return new BasicCredentialsImpl(userInfo.substring(0, pos), userInfo.substring(pos + 1));
     }
 
     public static Map<String, Object> parseURIParameters(URI uri) {
@@ -1320,7 +1323,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     public static String encodeCredentials(String username, String password) {
         ValidateUtils.checkNotNullAndNotEmpty(username, "No username provided");
-        ValidateUtils.checkNotNullAndNotEmpty(password, "No password provided");
+
         /*
          * There is no way to properly encode/decode credentials that already contain
          * colon. See also https://tools.ietf.org/html/rfc3986#section-3.2.1:
@@ -1334,7 +1337,12 @@ public class SftpFileSystemProvider extends FileSystemProvider {
          *      reject such data when it is received as part of a reference and
          *      should reject the storage of such data in unencrypted form.
          */
-        ValidateUtils.checkTrue((username.indexOf(':') < 0) && (password.indexOf(':') < 0), "Reserved character used in credentials");
-        return username + ":" + password;
+        ValidateUtils.checkTrue((username.indexOf(':') < 0) && ((password == null) || (password.indexOf(':') < 0)),
+            "Reserved character used in credentials");
+        if (password == null) {
+            return username;    // assume password-less login required
+        } else {
+            return username + ":" + password;
+        }
     }
 }

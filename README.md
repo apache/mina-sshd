@@ -1028,7 +1028,13 @@ the (default) password-based one:
         public void authenticateClientSession(
                 SftpFileSystemProvider provider, SftpFileSystemInitializationContext context, ClientSession session)
                     throws IOException {
-            // Set up password-less login instead of password-based
+            /*
+             * Set up password-less login instead of password-based using the specified key
+             *
+             * Note: if SSH client and/or session already have a KeyPairProvider set up and the code
+             * knows that these keys are already registered with the remote server, then no need to
+             * add the public key identitiy - can simply call sesssion.auth().verify(context.getMaxAuthTime()).
+             */
             KeyPair kp = ... obtain a registered key-pair...
             session.addPublicKeyIdentity(kp);
             return sesssion.auth().verify(context.getMaxAuthTime());
