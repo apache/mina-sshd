@@ -30,13 +30,14 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.sshd.common.auth.MutablePassword;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class PrivateKeyEncryptionContext implements Cloneable {
+public class PrivateKeyEncryptionContext implements MutablePassword, Cloneable {
     public static final String  DEFAULT_CIPHER_MODE = "CBC";
 
     private static final Map<String, PrivateKeyObfuscator> OBFUSCATORS =
@@ -82,10 +83,12 @@ public class PrivateKeyEncryptionContext implements Cloneable {
         cipherMode = value;
     }
 
+    @Override
     public String getPassword() {
         return password;
     }
 
+    @Override
     public void setPassword(String value) {
         password = value;
     }

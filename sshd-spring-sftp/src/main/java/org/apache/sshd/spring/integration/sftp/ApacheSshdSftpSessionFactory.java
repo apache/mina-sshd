@@ -38,6 +38,7 @@ import org.apache.sshd.client.subsystem.sftp.SftpClientFactory;
 import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.auth.MutableBasicCredentials;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.loader.pem.PEMResourceParserUtils;
@@ -62,7 +63,7 @@ import org.springframework.integration.file.remote.session.SharedSessionCapable;
 public class ApacheSshdSftpSessionFactory
         extends AbstractLoggingBean
         implements SessionFactory<DirEntry>, SharedSessionCapable,
-        SimpleClientConfigurator,
+        MutableBasicCredentials, SimpleClientConfigurator,
         InitializingBean, DisposableBean {
 
     // TODO add support for loading multiple private keys
@@ -119,19 +120,22 @@ public class ApacheSshdSftpSessionFactory
         this.portValue = port;
     }
 
-    public String getUser() {
+    @Override
+    public String getUsername() {
         return userValue;
     }
 
     /**
      * The remote user to use. This is a mandatory property.
      *
-     * @param user The username
+     * @param user The (never {@code null}/empty) username
      */
-    public void setUser(String user) {
+    @Override
+    public void setUsername(String user) {
         this.userValue = ValidateUtils.checkNotNullAndNotEmpty(user, "No user specified: %s", user);
     }
 
+    @Override
     public String getPassword() {
         return passwordValue;
     }
@@ -143,6 +147,7 @@ public class ApacheSshdSftpSessionFactory
      * @param password The password to use - if {@code null} then no password
      * is set - in which case the {@link #getPrivateKey()} resource is used
      */
+    @Override
     public void setPassword(String password) {
         this.passwordValue = password;
     }
@@ -396,7 +401,7 @@ public class ApacheSshdSftpSessionFactory
 
     protected ClientSession createClientSession() throws Exception {
         String hostname = ValidateUtils.checkNotNullAndNotEmpty(getHost(), "Host must not be empty");
-        String username = ValidateUtils.checkNotNullAndNotEmpty(getUser(), "User must not be empty");
+        String username = ValidateUtils.checkNotNullAndNotEmpty(getUsername(), "User must not be empty");
         String passwordIdentity = getPassword();
         KeyPair kp = getPrivateKeyPair();
         ValidateUtils.checkState(GenericUtils.isNotEmpty(passwordIdentity) || (kp != null),

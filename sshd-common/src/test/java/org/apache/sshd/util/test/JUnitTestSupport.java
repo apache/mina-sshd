@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiPredicate;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
@@ -360,6 +361,11 @@ public abstract class JUnitTestSupport extends Assert {
     }
 
     public static <E> void assertListEquals(String message, List<? extends E> expected, List<? extends E> actual) {
+        assertListEquals(message, expected, actual, Objects::equals);
+    }
+
+    public static <E> void assertListEquals(
+            String message, List<? extends E> expected, List<? extends E> actual, BiPredicate<? super E, ? super E> equator) {
         int expSize = GenericUtils.size(expected);
         int actSize = GenericUtils.size(actual);
         assertEquals(message + "[size]", expSize, actSize);
@@ -367,18 +373,28 @@ public abstract class JUnitTestSupport extends Assert {
         for (int index = 0; index < expSize; index++) {
             E expValue = expected.get(index);
             E actValue = actual.get(index);
-            assertEquals(message + "[" + index + "]", expValue, actValue);
+            if (!equator.test(expValue, actValue)) {
+                fail(message + "[" + index + "]: expected=" + expValue + ", actual=" + actValue);
+            }
         }
     }
 
-    public static <K, V> void assertMapEquals(String message, Map<? extends K, ? extends V> expected, Map<? super K, ? extends V> actual) {
+    public static <K, V> void assertMapEquals(
+            String message, Map<? extends K, ? extends V> expected, Map<? super K, ? extends V> actual) {
+        assertMapEquals(message, expected, actual, Objects::equals);
+    }
+
+    public static <K, V> void assertMapEquals(
+            String message, Map<? extends K, ? extends V> expected, Map<? super K, ? extends V> actual, BiPredicate<? super V, ? super V> equator) {
         int numItems = GenericUtils.size(expected);
         assertEquals(message + "[size]", numItems, GenericUtils.size(actual));
 
         if (numItems > 0) {
             expected.forEach((key, expValue) -> {
                 V actValue = actual.get(key);
-                assertEquals(message + "[" + key + "]", expValue, actValue);
+                if (!equator.test(expValue, actValue)) {
+                    fail(message + "[" + key + "]: expected=" + expValue + ", actual=" + actValue);
+                }
             });
         }
     }

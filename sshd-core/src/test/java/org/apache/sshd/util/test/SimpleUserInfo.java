@@ -65,7 +65,8 @@ public class SimpleUserInfo implements UserInfo, UIKeyboardInteractive {
     }
 
     @Override
-    public String[] promptKeyboardInteractive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
+    public String[] promptKeyboardInteractive(
+            String destination, String name, String instruction, String[] prompt, boolean[] echo) {
         return new String[]{password};
     }
 }

@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.AccessDeniedException;
@@ -75,6 +76,9 @@ import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.auth.BasicCredentialsImpl;
+import org.apache.sshd.common.auth.BasicCredentialsProvider;
+import org.apache.sshd.common.auth.MutableBasicCredentials;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
@@ -184,12 +188,9 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             port = SshConstants.DEFAULT_PORT;
         }
 
-        String userInfo = ValidateUtils.checkNotNullAndNotEmpty(uri.getUserInfo(), "UserInfo not provided");
-        String[] ui = GenericUtils.split(userInfo, ':');
-        ValidateUtils.checkTrue(GenericUtils.length(ui) == 2, "Invalid user info: %s", userInfo);
-
-        String username = ui[0];
-        String password = ui[1];
+        BasicCredentialsProvider credentials = parseCredentials(uri);
+        ValidateUtils.checkState(credentials != null, "No credentials provided");
+        String username = credentials.getUsername();
         String id = getFileSystemIdentifier(host, port, username);
         Map<String, Object> params = resolveFileSystemParameters(env, parseURIParameters(uri));
         PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(params);
@@ -198,6 +199,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             PropertyResolverUtils.getCharset(resolver, NAME_DECORDER_CHARSET_PROP_NAME, DEFAULT_NAME_DECODER_CHARSET);
         long maxConnectTime = resolver.getLongProperty(CONNECT_TIME_PROP_NAME, DEFAULT_CONNECT_TIME);
         long maxAuthTime = resolver.getLongProperty(AUTH_TIME_PROP_NAME, DEFAULT_AUTH_TIME);
+        String password = credentials.getPassword();
 
         SftpFileSystem fileSystem;
         synchronized (fileSystems) {
@@ -308,6 +310,27 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         return resolved;
     }
 
+    /**
+     * Attempts to parse the user information from the URI
+     *
+     * @param uri The {@link URI} value - ignored if {@code null} or does not
+     * contain any {@link URI#getUserInfo() user info}.
+     * @return The parsed credentials - {@code null} if none available
+     */
+    public static MutableBasicCredentials parseCredentials(URI uri) {
+        return parseCredentials((uri == null) ? "" : uri.getUserInfo());
+    }
+
+    public static MutableBasicCredentials parseCredentials(String userInfo) {
+        if (GenericUtils.isEmpty(userInfo)) {
+            return null;
+        }
+
+        String[] ui = GenericUtils.split(userInfo, ':');
+        ValidateUtils.checkTrue(GenericUtils.length(ui) == 2, "Invalid user info: %s", userInfo);
+        return new BasicCredentialsImpl(ui[0], ui[1]);
+    }
+
     public static Map<String, Object> parseURIParameters(URI uri) {
         return parseURIParameters((uri == null) ? "" : uri.getQuery());
     }
@@ -336,7 +359,9 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             String key = p.substring(0, pos);
             String value = p.substring(pos + 1);
             if (NumberUtils.isIntegerNumber(value)) {
-                map.put(key, Long.parseLong(value));
+                map.put(key, Long.valueOf(value));
+            } else if ("true".equals(value) || "false".equals("value")) {
+                map.put(key, Boolean.valueOf(value));
             } else {
                 map.put(key, value);
             }
@@ -1235,22 +1260,53 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     }
 
     public static URI createFileSystemURI(String host, int port, String username, String password, Map<String, ?> params) {
-        StringBuilder sb = new StringBuilder(Byte.MAX_VALUE);
-        sb.append(SftpConstants.SFTP_SUBSYSTEM_NAME)
-            .append("://").append(username).append(':').append(password)
-            .append('@').append(host).append(':').append(port)
-            .append('/');
-        if (GenericUtils.size(params) > 0) {
-            boolean firstParam = true;
-            // Cannot use forEach because firstParam is not effectively final
+        ValidateUtils.checkNotNullAndNotEmpty(host, "No host provided");
+
+        String queryPart = null;
+        int numParams = GenericUtils.size(params);
+        if (numParams > 0) {
+            StringBuilder sb = new StringBuilder(numParams * Short.SIZE);
             for (Map.Entry<String, ?> pe : params.entrySet()) {
                 String key = pe.getKey();
                 Object value = pe.getValue();
-                sb.append(firstParam ? '?' : '&').append(key).append('=').append(Objects.toString(value, null));
-                firstParam = false;
+                if (sb.length() > 0) {
+                    sb.append('&');
+                }
+                sb.append(key);
+                if (value != null) {
+                    sb.append('=').append(Objects.toString(value, null));
+                }
             }
+
+            queryPart = sb.toString();
         }
 
-        return URI.create(sb.toString());
+        try {
+            String userAuth = encodeCredentials(username, password);
+            return new URI(SftpConstants.SFTP_SUBSYSTEM_NAME, userAuth, host, port, "/", queryPart, null);
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Failed (" + e.getClass().getSimpleName() + ")"
+                    + " to create access URI: " + e.getMessage(), e);
+        }
+    }
+
+    public static String encodeCredentials(String username, String password) {
+        ValidateUtils.checkNotNullAndNotEmpty(username, "No username provided");
+        ValidateUtils.checkNotNullAndNotEmpty(password, "No password provided");
+        /*
+         * There is no way to properly encode/decode credentials that already contain
+         * colon. See also https://tools.ietf.org/html/rfc3986#section-3.2.1:
+         *
+         *
+         *      Use of the format "user:password" in the userinfo field is
+         *      deprecated.  Applications should not render as clear text any data
+         *      after the first colon (":") character found within a userinfo
+         *      subcomponent unless the data after the colon is the empty string
+         *      (indicating no password).  Applications may choose to ignore or
+         *      reject such data when it is received as part of a reference and
+         *      should reject the storage of such data in unencrypted form.
+         */
+        ValidateUtils.checkTrue((username.indexOf(':') < 0) && (password.indexOf(':') < 0), "Reserved character used in credentials");
+        return username + ":" + password;
     }
 }

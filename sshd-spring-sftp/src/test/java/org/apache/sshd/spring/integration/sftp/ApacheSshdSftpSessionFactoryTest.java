@@ -388,7 +388,7 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
         ApacheSshdSftpSessionFactory factory = new ApacheSshdSftpSessionFactory(sharedSession);
         factory.setHost(TEST_LOCALHOST);
         factory.setPort(port);
-        factory.setUser(getCurrentTestName());
+        factory.setUsername(getCurrentTestName());
         factory.setPassword(getCurrentTestName());
         factory.setSshClient(client);
         factory.setConnectTimeout(TimeUnit.SECONDS.toMillis(7L));
