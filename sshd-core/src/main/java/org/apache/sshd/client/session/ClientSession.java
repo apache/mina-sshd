@@ -378,7 +378,7 @@ public interface ClientSession
      * @see ClientSession#getKeyPairProvider()
      */
     static KeyIdentityProvider providerOf(ClientSession session) {
-        return session == null
+        return (session == null)
             ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER
             : KeyIdentityProvider.resolveKeyIdentityProvider(
                     session.getRegisteredIdentities(), session.getKeyPairProvider());

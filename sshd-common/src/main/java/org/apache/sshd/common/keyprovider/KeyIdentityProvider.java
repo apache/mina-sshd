@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.apache.sshd.common.util.GenericUtils;
 
@@ -128,9 +127,17 @@ public interface KeyIdentityProvider {
      * @param providers The providers - ignored if {@code null}/empty (i.e., returns
      * {@link #EMPTY_KEYS_PROVIDER})
      * @return The wrapping provider
+     * @see MultiKeyIdentityProvider
      */
     static KeyIdentityProvider multiProvider(Collection<? extends KeyIdentityProvider> providers) {
-        return GenericUtils.isEmpty(providers) ? EMPTY_KEYS_PROVIDER : wrapKeyPairs(iterableOf(providers));
+        int numProviders = GenericUtils.size(providers);
+        if (numProviders <= 0) {
+            return EMPTY_KEYS_PROVIDER;
+        } else if (numProviders == 1) {
+            return GenericUtils.head(providers);
+        } else {
+            return new MultiKeyIdentityProvider(providers);
+        }
     }
 
     /**
@@ -141,9 +148,25 @@ public interface KeyIdentityProvider {
      * @return The wrapping iterable
      */
     static Iterable<KeyPair> iterableOf(Collection<? extends KeyIdentityProvider> providers) {
-        Iterable<Supplier<Iterable<KeyPair>>> keysSuppliers =
-                GenericUtils.<KeyIdentityProvider, Supplier<Iterable<KeyPair>>>wrapIterable(providers, p -> p::loadKeys);
-        return GenericUtils.multiIterableSuppliers(keysSuppliers);
+        int numProviders = GenericUtils.size(providers);
+        if (numProviders <= 0) {
+            return Collections.emptyList();
+        } else if (numProviders == 1) {
+            KeyIdentityProvider p = GenericUtils.head(providers);
+            return p.loadKeys();
+        } else {
+            return new Iterable<KeyPair>() {
+                @Override
+                public Iterator<KeyPair> iterator() {
+                    return new MultiKeyIdentityIterator(providers);
+                }
+
+                @Override
+                public String toString() {
+                    return Iterable.class.getSimpleName() + "[of(providers)]";
+                }
+            };
+        }
     }
 
     /**

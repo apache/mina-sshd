@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -38,6 +39,7 @@ import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
@@ -827,6 +829,32 @@ public final class GenericUtils {
      */
     public static <B, D extends B> Function<D, B> downcast() {
         return t -> t;
+    }
+
+    /**
+     * Returns the first element in iterable - it has some optimization for {@link List}-s
+     * {@link Deque}-s and {@link SortedSet}s.
+     *
+     * @param <T> Type of element
+     * @param it The {@link Iterable} instance - ignored if {@code null}/empty
+     * @return first element by iteration or {@code null} if none available
+     */
+    public static <T> T head(Iterable<? extends T> it) {
+        if (it == null) {
+            return null;
+        } else if (it instanceof Deque<?>) {   // check before (!) instanceof List since LinkedList implements List
+            Deque<? extends T> l = (Deque<? extends T>) it;
+            return (l.size() > 0) ? l.getFirst() : null;
+        } else if (it instanceof List<?>) {
+            List<? extends T> l = (List<? extends T>) it;
+            return (l.size() > 0) ? l.get(0) : null;
+        } else if (it instanceof SortedSet<?>) {
+            SortedSet<? extends T> s = (SortedSet<? extends T>) it;
+            return (s.size() > 0) ? s.first() : null;
+        } else {
+            Iterator<? extends T> iter = it.iterator();
+            return ((iter == null) || (!iter.hasNext())) ? null : iter.next();
+        }
     }
 
     /**
