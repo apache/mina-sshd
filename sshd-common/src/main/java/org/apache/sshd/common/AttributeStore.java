@@ -77,15 +77,5 @@ public interface AttributeStore extends AttributeRepository {
      * @return The removed value; {@code null} if no previous value
      */
     <T> T removeAttribute(AttributeKey<T> key);
-
-    /**
-     * Attempts to resolve the associated value by going up the store's
-     * hierarchy (if any)
-     *
-     * @param <T> The generic attribute type
-     * @param key The key of the attribute; must not be {@code null}.
-     * @return {@code null} if there is no value associated with the specified key
-     */
-    <T> T resolveAttribute(AttributeKey<T> key);
 }
 

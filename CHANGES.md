@@ -2,10 +2,13 @@
 
 ## Major code re-factoring
 
-* `AttributeKey` moved from `AttributeStore` to `AttributeRepository`
+* `AttributeStore` "read" methods moved to (new class) `AttributeRepository`
 
-* `getAttribute` moved from `AttributeStore` to `AttributeRepository` + added
-`attributeKeys` method.
+    * `AttributeKey` moved to `AttributeRepository`
+
+    * `getAttribute` and `resolveAttribute` moved to `AttributeRepository`
+
+    * Added `attributeKeys` enumeration method to `AttributeRepository`.
 
 * `DEFAULT_PORT` moved from `SshConfigFileReader` to `SshConstants`
 

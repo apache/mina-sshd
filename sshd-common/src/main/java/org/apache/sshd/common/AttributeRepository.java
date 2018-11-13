@@ -72,6 +72,19 @@ public interface AttributeRepository {
     <T> T getAttribute(AttributeKey<T> key);
 
     /**
+     * Attempts to resolve the associated value by going up the store's
+     * hierarchy (if any)
+     *
+     * @param <T> The generic attribute type
+     * @param key The key of the attribute; must not be {@code null}.
+     * @return {@code null} if there is no value associated with the specified key
+     * either in this repository or any of its ancestors (if any available)
+     */
+    default <T> T resolveAttribute(AttributeKey<T> key) {
+        return getAttribute(key);
+    }
+
+    /**
      * @return A {@link Collection} <u>snapshot</u> of all the currently registered
      * attributes in the repository
      */
