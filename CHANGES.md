@@ -40,6 +40,8 @@ accept also an `AttributeRepository` connection context argument (propagated fro
 * `SftpFileSystemProvider` and its associated helper classes have been moved to
 `org.apache.sshd.client.subsystem.sftp.fs` package
 
+* `KeyPairProvider` accepts a `SessionContext` argument in its `getKeyTypes/loadKey` methods
+
 ## Behavioral changes and enhancements
 
 * [SSHD-849](https://issues.apache.org/jira/browse/SSHD-849) - Data forwarding code makes sure all
@@ -65,3 +67,6 @@ identities both from agent and client session
 * [SSHD-861](https://issues.apache.org/jira/browse/SSHD-861) - Fixed username/password encoding for `SftpFileSystem` URI(s)
 
     * Also added `SftpFileSystemClientSessionInitializer` support in `SftpFileSystemProvider`
+
+* [SSHD-862](https://issues.apache.org/jira/browse/SSHD-862) - Provide session context argument when
+key loading methods are invoked

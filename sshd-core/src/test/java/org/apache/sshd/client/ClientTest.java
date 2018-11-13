@@ -1041,7 +1041,7 @@ public class ClientTest extends BaseTestSupport {
                 .getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             KeyPairProvider keys = createTestHostKeyProvider();
-            session.addPublicKeyIdentity(keys.loadKey(KeyPairProvider.SSH_RSA));
+            session.addPublicKeyIdentity(keys.loadKey(session, KeyPairProvider.SSH_RSA));
             session.auth().verify(5L, TimeUnit.SECONDS);
         } finally {
             client.stop();
@@ -1055,7 +1055,7 @@ public class ClientTest extends BaseTestSupport {
         provider.setAlgorithm(KeyUtils.RSA_ALGORITHM);
 
         KeyPairProvider keys = createTestHostKeyProvider();
-        KeyPair pair = keys.loadKey(KeyPairProvider.SSH_RSA);
+        KeyPair pair = keys.loadKey(null, KeyPairProvider.SSH_RSA);
         sshd.setPublickeyAuthenticator((username, key, session) -> key.equals(pair.getPublic()));
         client.setUserAuthFactories(Collections.singletonList(UserAuthPublicKeyFactory.INSTANCE));
         client.start();
@@ -1064,7 +1064,7 @@ public class ClientTest extends BaseTestSupport {
                 .verify(7L, TimeUnit.SECONDS)
                 .getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
-            session.addPublicKeyIdentity(provider.loadKey(KeyPairProvider.SSH_RSA));
+            session.addPublicKeyIdentity(provider.loadKey(session, KeyPairProvider.SSH_RSA));
             session.addPublicKeyIdentity(pair);
             session.auth().verify(5L, TimeUnit.SECONDS);
         } finally {

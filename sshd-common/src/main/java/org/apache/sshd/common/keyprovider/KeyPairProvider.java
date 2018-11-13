@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -75,12 +76,12 @@ public interface KeyPairProvider extends KeyIdentityProvider {
     KeyPairProvider EMPTY_KEYPAIR_PROVIDER =
         new KeyPairProvider() {
             @Override
-            public KeyPair loadKey(String type) {
+            public KeyPair loadKey(SessionContext session, String type) {
                 return null;
             }
 
             @Override
-            public Iterable<String> getKeyTypes() {
+            public Iterable<String> getKeyTypes(SessionContext session) {
                 return Collections.emptyList();
             }
 
@@ -100,10 +101,12 @@ public interface KeyPairProvider extends KeyIdentityProvider {
      * or &quot;ecdsa-sha2-nistp{256,384,521}&quot;. If there is no key of this type, return
      * {@code null}
      *
+     * @param session The {@link SessionContext} for invoking this load command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool).
      * @param type the type of key to load
      * @return a valid key pair or {@code null} if this type of key is not available
      */
-    default KeyPair loadKey(String type) {
+    default KeyPair loadKey(SessionContext session, String type) {
         ValidateUtils.checkNotNullAndNotEmpty(type, "No key type to load");
         return GenericUtils.stream(loadKeys())
                 .filter(key -> type.equals(KeyUtils.getKeyType(key)))
@@ -112,9 +115,11 @@ public interface KeyPairProvider extends KeyIdentityProvider {
     }
 
     /**
+     * @param session The {@link SessionContext} for invoking this load command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool).
      * @return The available {@link Iterable} key types in preferred order - never {@code null}
      */
-    default Iterable<String> getKeyTypes() {
+    default Iterable<String> getKeyTypes(SessionContext session) {
         return GenericUtils.stream(loadKeys())
                 .map(KeyUtils::getKeyType)
                 .filter(GenericUtils::isNotEmpty)
@@ -148,7 +153,7 @@ public interface KeyPairProvider extends KeyIdentityProvider {
             }
 
             @Override
-            public KeyPair loadKey(String type) {
+            public KeyPair loadKey(SessionContext session, String type) {
                 for (KeyPair kp : pairs) {
                     String t = KeyUtils.getKeyType(kp);
                     if (Objects.equals(type, t)) {
@@ -160,7 +165,7 @@ public interface KeyPairProvider extends KeyIdentityProvider {
             }
 
             @Override
-            public Iterable<String> getKeyTypes() {
+            public Iterable<String> getKeyTypes(SessionContext session) {
                 // use a LinkedHashSet so as to preserve the order but avoid duplicates
                 Collection<String> types = new LinkedHashSet<>();
                 for (KeyPair kp : pairs) {

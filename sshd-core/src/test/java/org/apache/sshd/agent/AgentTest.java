@@ -36,6 +36,7 @@ import org.apache.sshd.agent.unix.AprLibrary;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.Environment;
@@ -87,7 +88,8 @@ public class AgentTest extends BaseTestSupport {
                 assertObjectInstanceOf("Non collection initial identities", Collection.class, keys);
                 assertEquals("Unexpected initial identities size", 0, ((Collection<?>) keys).size());
 
-                KeyPair k = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+                KeyPairProvider provider = createTestHostKeyProvider();
+                KeyPair k = provider.loadKey(null, KeyPairProvider.SSH_RSA);
                 client.addIdentity(k, "");
                 keys = client.getIdentities();
                 assertNotNull("No registered identities after add", keys);
@@ -112,7 +114,8 @@ public class AgentTest extends BaseTestSupport {
         ProxyAgentFactory agentFactory = new ProxyAgentFactory();
         LocalAgentFactory localAgentFactory = new LocalAgentFactory();
         String username = getCurrentTestName();
-        KeyPair pair = CommonTestSupportUtils.createTestKeyPairProvider("dsaprivkey.pem").loadKey(KeyPairProvider.SSH_DSS);
+        FileKeyPairProvider provider = CommonTestSupportUtils.createTestKeyPairProvider("dsaprivkey.pem");
+        KeyPair pair = provider.loadKey(null, KeyPairProvider.SSH_DSS);
         localAgentFactory.getAgent().addIdentity(pair, username);
 
         try (SshServer sshd1 = setupTestServer()) {

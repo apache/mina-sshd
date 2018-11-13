@@ -84,7 +84,9 @@ public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler imple
     }
 
     @Override
-    protected Result handleHostKeys(Session session, Collection<? extends PublicKey> keys, boolean wantReply, Buffer buffer) throws Exception {
+    protected Result handleHostKeys(
+            Session session, Collection<? extends PublicKey> keys, boolean wantReply, Buffer buffer)
+                throws Exception {
         // according to the specification there MUST be reply required by the server
         ValidateUtils.checkTrue(wantReply, "No reply required for host keys of %s", session);
         Collection<? extends NamedFactory<Signature>> factories =
@@ -112,7 +114,7 @@ public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler imple
 
             KeyPair kp;
             try {
-                kp = ValidateUtils.checkNotNull(kpp.loadKey(keyType), "No key of type=%s available", keyType);
+                kp = ValidateUtils.checkNotNull(kpp.loadKey(session, keyType), "No key of type=%s available", keyType);
             } catch (Error e) {
                 log.warn("handleHostKeys({}) failed ({}) to load key of type={}: {}",
                          session, e.getClass().getSimpleName(), keyType, e.getMessage());

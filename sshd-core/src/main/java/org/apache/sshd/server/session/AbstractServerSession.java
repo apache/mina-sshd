@@ -258,7 +258,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         boolean debugEnabled = log.isDebugEnabled();
         Iterable<String> provided;
         try {
-            provided = (kpp == null) ? null : kpp.getKeyTypes();
+            provided = (kpp == null) ? null : kpp.getKeyTypes(this);
         } catch (Error e) {
             log.warn("resolveAvailableSignaturesProposal({}) failed ({}) to get key types: {}",
                  this, e.getClass().getSimpleName(), e.getMessage());
@@ -394,7 +394,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         String keyType = getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
         KeyPairProvider provider = Objects.requireNonNull(getKeyPairProvider(), "No host keys provider");
         try {
-            return provider.loadKey(keyType);
+            return provider.loadKey(this, keyType);
         } catch (Error e) {
             log.warn("getHostKey({}) failed ({}) to load key of type={}: {}",
                  this, e.getClass().getSimpleName(), keyType, e.getMessage());

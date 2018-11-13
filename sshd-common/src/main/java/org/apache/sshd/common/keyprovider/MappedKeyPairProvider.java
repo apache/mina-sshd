@@ -28,6 +28,7 @@ import java.util.TreeMap;
 import java.util.function.Function;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -66,18 +67,18 @@ public class MappedKeyPairProvider implements KeyPairProvider {
     }
 
     @Override
-    public KeyPair loadKey(String type) {
+    public KeyPair loadKey(SessionContext session, String type) {
         return pairsMap.get(type);
     }
 
     @Override
-    public Iterable<String> getKeyTypes() {
+    public Iterable<String> getKeyTypes(SessionContext session) {
         return pairsMap.keySet();
     }
 
     @Override
     public String toString() {
-        return String.valueOf(getKeyTypes());
+        return String.valueOf(pairsMap.keySet());
     }
 
     public static Map<String, KeyPair> mapUniquePairs(Collection<? extends KeyPair> pairs) {

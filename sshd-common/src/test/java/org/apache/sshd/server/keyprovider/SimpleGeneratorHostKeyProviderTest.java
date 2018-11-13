@@ -110,11 +110,11 @@ public class SimpleGeneratorHostKeyProviderTest extends JUnitTestSupport {
     }
 
     private static KeyPair validateKeyPairProvider(KeyPairProvider provider, String keyType) {
-        Iterable<String> types = provider.getKeyTypes();
+        Iterable<String> types = provider.getKeyTypes(null);
         KeyPair kp = null;
         for (String type : types) {
             if (keyType.equals(type)) {
-                kp = provider.loadKey(keyType);
+                kp = provider.loadKey(null, keyType);
                 assertNotNull("Failed to load key for " + keyType, kp);
                 break;
             }

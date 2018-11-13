@@ -276,13 +276,16 @@ public class AuthenticationTest extends BaseTestSupport {
 
             client.start();
 
-            try (ClientSession s = client.connect(null, TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession s = client.connect(null, TEST_LOCALHOST, port)
+                        .verify(7L, TimeUnit.SECONDS)
+                        .getSession()) {
                 Collection<ClientSession.ClientSessionEvent> result =
                         s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH),
                         TimeUnit.SECONDS.toMillis(11L));
                 assertFalse("Timeout while waiting for session", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
 
-                KeyPair pair = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+                KeyPairProvider provider = createTestHostKeyProvider();
+                KeyPair pair = provider.loadKey(s, KeyPairProvider.SSH_RSA);
                 try {
                     assertAuthenticationResult(UserAuthMethodFactory.PUBLIC_KEY, authPublicKey(s, getCurrentTestName(), pair), false);
                 } finally {
@@ -344,13 +347,16 @@ public class AuthenticationTest extends BaseTestSupport {
             });
             client.start();
 
-            try (ClientSession s = client.connect(null, TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession s = client.connect(null, TEST_LOCALHOST, port)
+                    .verify(7L, TimeUnit.SECONDS)
+                    .getSession()) {
                 Collection<ClientSession.ClientSessionEvent> result =
-                        s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH),
-                        TimeUnit.SECONDS.toMillis(11L));
+                    s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH),
+                    TimeUnit.SECONDS.toMillis(11L));
                 assertFalse("Timeout while waiting for session", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
 
-                KeyPair pair = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+                KeyPairProvider provider = createTestHostKeyProvider();
+                KeyPair pair = provider.loadKey(s, KeyPairProvider.SSH_RSA);
                 try {
                     assertAuthenticationResult(UserAuthMethodFactory.PUBLIC_KEY, authPublicKey(s, getCurrentTestName(), pair), false);
                 } finally {
@@ -587,9 +593,9 @@ public class AuthenticationTest extends BaseTestSupport {
     @Test   // see SSHD-618
     public void testPublicKeyAuthDifferentThanKex() throws Exception {
         KeyPairProvider serverKeys = KeyPairProvider.wrap(
-                    CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024),
-                    CommonTestSupportUtils.generateKeyPair(KeyUtils.DSS_ALGORITHM, 512),
-                    CommonTestSupportUtils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256));
+            CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024),
+            CommonTestSupportUtils.generateKeyPair(KeyUtils.DSS_ALGORITHM, 512),
+            CommonTestSupportUtils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256));
         sshd.setKeyPairProvider(serverKeys);
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
@@ -612,7 +618,7 @@ public class AuthenticationTest extends BaseTestSupport {
                 String expType = kexSignature.getName();
                 assertEquals("Mismatched server key type", expType, keyType);
 
-                KeyPair kp = ValidateUtils.checkNotNull(serverKeys.loadKey(keyType), "No server key for type=%s", keyType);
+                KeyPair kp = ValidateUtils.checkNotNull(serverKeys.loadKey(null, keyType), "No server key for type=%s", keyType);
                 assertKeyEquals("Mismatched server public keys", kp.getPublic(), serverKey);
                 return true;
             });
