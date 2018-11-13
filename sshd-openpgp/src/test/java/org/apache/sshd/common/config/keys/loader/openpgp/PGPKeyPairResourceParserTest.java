@@ -70,13 +70,14 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
 
             @Override
             @SuppressWarnings("synthetic-access")
-            public String getPassword(String resourceKey) throws IOException {
+            public String getPassword(String resourceKey, int retryIndex) throws IOException {
                 switch (result) {
                     case IGNORE:
                     case TERMINATE:
                         return "qweryuiop123456!@#$%^";
                     case RETRY: {
                         int count = retriesCount.incrementAndGet();
+                        assertEquals("Mismatched retries count", count, retryIndex + 1);
                         if (count == maxRetries) {
                             return PASSWORD;
                         } else {
@@ -91,7 +92,7 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
             @Override
             @SuppressWarnings("synthetic-access")
             public ResourceDecodeResult handleDecodeAttemptResult(
-                    String resourceKey, String password, Exception err)
+                    String resourceKey, int retryIndex, String password, Exception err)
                         throws IOException, GeneralSecurityException {
                 if (err == null) {
                     return null;

@@ -126,11 +126,11 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
     public Collection<KeyPair> extractKeyPairs(
             String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, InputStream stream)
                 throws IOException, GeneralSecurityException {
-        for (int retryCount = 1;; retryCount++) {
-            String password = (passwordProvider == null) ? null : passwordProvider.getPassword(resourceKey);
+        for (int retryCount = 0;; retryCount++) {
+            String password = (passwordProvider == null) ? null : passwordProvider.getPassword(resourceKey, retryCount);
             Collection<KeyPair> keys;
             try {
-                if (retryCount > 1) {
+                if (retryCount > 0) {
                     stream.reset();
                 }
 
@@ -144,7 +144,7 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
                 keys = extractKeyPairs(resourceKey, key.getSubkeys());
             } catch (IOException | GeneralSecurityException | PGPException | RuntimeException e) {
                 ResourceDecodeResult result = (passwordProvider != null)
-                    ? passwordProvider.handleDecodeAttemptResult(resourceKey, password, e)
+                    ? passwordProvider.handleDecodeAttemptResult(resourceKey, retryCount, password, e)
                     : ResourceDecodeResult.TERMINATE;
                 if (result == null) {
                     result = ResourceDecodeResult.TERMINATE;
@@ -173,7 +173,7 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
             }
 
             if (passwordProvider != null) {
-                passwordProvider.handleDecodeAttemptResult(resourceKey, password, null);
+                passwordProvider.handleDecodeAttemptResult(resourceKey, retryCount, password, null);
             }
             return keys;
         }

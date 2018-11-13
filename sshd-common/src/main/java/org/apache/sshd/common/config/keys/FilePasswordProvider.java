@@ -39,14 +39,17 @@ public interface FilePasswordProvider {
     /**
      * An &quot;empty&quot; provider that returns {@code null} - i.e., unprotected key file
      */
-    FilePasswordProvider EMPTY = resourceKey -> null;
+    FilePasswordProvider EMPTY = (resourceKey, retryIndex) -> null;
 
     /**
      * @param resourceKey The resource key representing the <U>private</U> file
+     * @param retryIndex The zero-based index of the invocation for the specific
+     * resource (in case invoked several times for the same resource)
      * @return The password - if {@code null}/empty then no password is required
      * @throws IOException if cannot resolve password
+     * @see #handleDecodeAttemptResult(String, int, String, Exception)
      */
-    String getPassword(String resourceKey) throws IOException;
+    String getPassword(String resourceKey, int retryIndex) throws IOException;
 
     /**
      * Invoked to inform the password provide about the decoding result. <b>Note:</b>
@@ -54,6 +57,9 @@ public interface FilePasswordProvider {
      * success) will be propagated instead of the original (if any was reported)
      *
      * @param resourceKey The resource key representing the <U>private</U> file
+     * @param retryIndex The zero-based index of the invocation for the specific
+     * resource (in case invoked several times for the same resource). If success
+     * report, it indicates the number of retries it took to succeed
      * @param password The password that was attempted
      * @param err The attempt result - {@code null} for success
      * @return How to proceed in case of error - <u>ignored</u> if invoked in order
@@ -62,12 +68,12 @@ public interface FilePasswordProvider {
      * @throws GeneralSecurityException If not attempting to resolve a new password
      */
     default ResourceDecodeResult handleDecodeAttemptResult(
-            String resourceKey, String password, Exception err)
+            String resourceKey, int retryIndex, String password, Exception err)
                 throws IOException, GeneralSecurityException {
         return ResourceDecodeResult.TERMINATE;
     }
 
     static FilePasswordProvider of(String password) {
-        return r -> password;
+        return (r, index) -> password;
     }
 }

@@ -67,7 +67,7 @@ public class SecurityUtilsTest extends JUnitTestSupport {
           + "." + SecurityProviderRegistrar.NAMED_PROVIDER_PROPERTY;
 
     private static final String DEFAULT_PASSWORD = "super secret passphrase";
-    private static final FilePasswordProvider TEST_PASSWORD_PROVIDER = file -> DEFAULT_PASSWORD;
+    private static final FilePasswordProvider TEST_PASSWORD_PROVIDER = (file, index) -> DEFAULT_PASSWORD;
 
     public SecurityUtilsTest() {
         super();

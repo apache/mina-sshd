@@ -121,8 +121,8 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
                     throw new CredentialException("Missing password provider for encrypted resource=" + resourceKey);
                 }
 
-                while (true) {
-                    String password = provider.getPassword(resourceKey);
+                for (int retryIndex = 0;; retryIndex++) {
+                    String password = provider.getPassword(resourceKey, retryIndex);
                     PEMKeyPair decoded;
                     try {
                         if (GenericUtils.isEmpty(password)) {
@@ -134,7 +134,7 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
                         decoded = ((PEMEncryptedKeyPair) o).decryptKeyPair(pemDecryptor);
                     } catch (IOException | GeneralSecurityException | RuntimeException e) {
                         ResourceDecodeResult result =
-                            provider.handleDecodeAttemptResult(resourceKey, password, e);
+                            provider.handleDecodeAttemptResult(resourceKey, retryIndex, password, e);
                         if (result == null) {
                             result = ResourceDecodeResult.TERMINATE;
                         }
@@ -151,7 +151,7 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
                     }
 
                     o = decoded;
-                    provider.handleDecodeAttemptResult(resourceKey, password, null);
+                    provider.handleDecodeAttemptResult(resourceKey, retryIndex, password, null);
                     break;
                 }
             }

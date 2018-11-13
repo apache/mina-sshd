@@ -255,7 +255,7 @@ encrypted _ed25519_ private key files are not supported.
 The `FilePasswordProvider` has support for a retry mechanism via its `handleDecodeAttemptResult`. When the code detects an encrypted private key,
 it will start a loop where it prompts for the password, attempts to decode the key using the provided password and then informs the provider of
 the outcome - success or failure. If failure is signaled, then the provider can decide whether to retry using a new password, abort (with exception)
-or ignore. If the provider chooses to ignore the failure, then the code will make a best effort to proceed without the key.
+or ignore. If the provider chooses to ignore the failure, then the code will make a best effort to proceed without the (undecoded) key.
 
 ### UserInteraction
 

@@ -186,8 +186,8 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
             throw new StreamCorruptedException("Missing private key encryption algorithm details in " + prvEncryption);
         }
 
-        while (true) {
-            String password = passwordProvider.getPassword(resourceKey);
+        for (int retryIndex = 0;; retryIndex++) {
+            String password = passwordProvider.getPassword(resourceKey, retryIndex);
 
             Collection<KeyPair> keys;
             try {
@@ -199,7 +199,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
                 keys = loadKeyPairs(resourceKey, pubBytes, decBytes);
             } catch (IOException | GeneralSecurityException | RuntimeException e) {
                 ResourceDecodeResult result =
-                    passwordProvider.handleDecodeAttemptResult(resourceKey, password, e);
+                    passwordProvider.handleDecodeAttemptResult(resourceKey, retryIndex, password, e);
                 if (result == null) {
                     result = ResourceDecodeResult.TERMINATE;
                 }
@@ -215,7 +215,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
                 }
             }
 
-            passwordProvider.handleDecodeAttemptResult(resourceKey, password, null);
+            passwordProvider.handleDecodeAttemptResult(resourceKey, retryIndex, password, null);
             return keys;
         }
     }

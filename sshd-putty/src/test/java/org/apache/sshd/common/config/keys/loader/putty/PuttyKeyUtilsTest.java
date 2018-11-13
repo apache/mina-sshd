@@ -125,7 +125,7 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
         Assume.assumeTrue("Skip non-existent encrypted file: " + encryptedFile, url != null);
         assertNotNull("Missing test resource: " + encryptedFile, url);
 
-        Collection<KeyPair> keys = parser.loadKeyPairs(url, r -> PASSWORD);
+        Collection<KeyPair> keys = parser.loadKeyPairs(url, (r, index) -> PASSWORD);
         assertEquals("Mismatched loaded keys count from " + encryptedFile, 1, GenericUtils.size(keys));
 
         assertLoadedKeyPair(encryptedFile, keys.iterator().next());
@@ -143,13 +143,14 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
             AtomicInteger retriesCount = new AtomicInteger(0);
             FilePasswordProvider provider = new FilePasswordProvider() {
                 @Override
-                public String getPassword(String resourceKey) throws IOException {
+                public String getPassword(String resourceKey, int retryIndex) throws IOException {
                     switch (result) {
                         case IGNORE:
                         case TERMINATE:
                             return "qweryuiop123456!@#$%^";
                         case RETRY: {
                             int count = retriesCount.incrementAndGet();
+                            assertEquals("Mismatched retries count", retryIndex + 1, count);
                             if (count == maxRetries) {
                                 return PASSWORD;
                             } else {
@@ -163,7 +164,7 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
 
                 @Override
                 public ResourceDecodeResult handleDecodeAttemptResult(
-                        String resourceKey, String password, Exception err)
+                        String resourceKey, int retryIndex, String password, Exception err)
                             throws IOException, GeneralSecurityException {
                     if (err == null) {
                         return null;

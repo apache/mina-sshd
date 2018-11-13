@@ -132,8 +132,8 @@ public abstract class AbstractPEMResourceKeyPairParser
                 throw new CredentialException("Missing password provider for encrypted resource=" + resourceKey);
             }
 
-            while (true) {
-                String password = passwordProvider.getPassword(resourceKey);
+            for (int retryIndex = 0;; retryIndex++) {
+                String password = passwordProvider.getPassword(resourceKey, retryIndex);
                 Collection<KeyPair> keys;
                 try {
                     if (GenericUtils.isEmpty(password)) {
@@ -150,7 +150,7 @@ public abstract class AbstractPEMResourceKeyPairParser
                     }
                 } catch (IOException | GeneralSecurityException | RuntimeException e) {
                     ResourceDecodeResult result =
-                        passwordProvider.handleDecodeAttemptResult(resourceKey, password, e);
+                        passwordProvider.handleDecodeAttemptResult(resourceKey, retryIndex, password, e);
                     if (result == null) {
                         result = ResourceDecodeResult.TERMINATE;
                     }
@@ -166,7 +166,7 @@ public abstract class AbstractPEMResourceKeyPairParser
                     }
                 }
 
-                passwordProvider.handleDecodeAttemptResult(resourceKey, password, null);
+                passwordProvider.handleDecodeAttemptResult(resourceKey, retryIndex, password, null);
                 return keys;
             }
         }
