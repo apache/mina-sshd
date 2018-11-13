@@ -127,7 +127,7 @@ public final class IdentityUtils {
      *                 <U>insensitive</U>), value=the {@link Path} of file with the identity key
      * @param provider A {@link FilePasswordProvider} - may be {@code null}
      *                 if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
-     *                 to {@link FilePasswordProvider#getPassword(String)} is the path of the
+     *                 to {@link FilePasswordProvider#getPassword(String, int)} is the path of the
      *                 file whose key is to be loaded
      * @param options  The {@link OpenOption}s to use when reading the key data
      * @return A {@link Map} of the identities where key=identity type (case

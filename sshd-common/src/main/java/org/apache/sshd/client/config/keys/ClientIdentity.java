@@ -101,7 +101,7 @@ public final class ClientIdentity {
      *                      supported internally
      * @param provider      A {@link FilePasswordProvider} - may be {@code null}
      *                      if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
-     *                      to {@link FilePasswordProvider#getPassword(String)} is the path of the
+     *                      to {@link FilePasswordProvider#getPassword(String, int)} is the path of the
      *                      file whose key is to be loaded
      * @param options       The {@link LinkOption}s to apply when checking
      *                      for existence
@@ -126,7 +126,7 @@ public final class ClientIdentity {
      *                      supported internally
      * @param provider      A {@link FilePasswordProvider} - may be {@code null}
      *                      if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
-     *                      to {@link FilePasswordProvider#getPassword(String)} is the path of the
+     *                      to {@link FilePasswordProvider#getPassword(String, int)} is the path of the
      *                      file whose key is to be loaded
      * @param options       The {@link LinkOption}s to apply when checking
      *                      for existence
@@ -149,7 +149,7 @@ public final class ClientIdentity {
      *                 access rights are excluded from consideration
      * @param provider A {@link FilePasswordProvider} - may be {@code null}
      *                 if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
-     *                 to {@link FilePasswordProvider#getPassword(String)} is the path of the
+     *                 to {@link FilePasswordProvider#getPassword(String, int)} is the path of the
      *                 file whose key is to be loaded
      * @param options  The {@link LinkOption}s to apply when checking
      *                 for existence
@@ -171,7 +171,7 @@ public final class ClientIdentity {
      *                 access rights are excluded from consideration
      * @param provider A {@link FilePasswordProvider} - may be {@code null}
      *                 if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
-     *                 to {@link FilePasswordProvider#getPassword(String)} is the path of the
+     *                 to {@link FilePasswordProvider#getPassword(String, int)} is the path of the
      *                 file whose key is to be loaded
      * @param options  The {@link LinkOption}s to apply when checking
      *                 for existence
@@ -198,7 +198,7 @@ public final class ClientIdentity {
      *                    holding the specified type
      * @param provider    A {@link FilePasswordProvider} - may be {@code null}
      *                    if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
-     *                    to {@link FilePasswordProvider#getPassword(String)} is the path of the
+     *                    to {@link FilePasswordProvider#getPassword(String, int)} is the path of the
      *                    file whose key is to be loaded
      * @param options     The {@link LinkOption}s to apply when checking
      *                    for existence

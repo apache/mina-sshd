@@ -469,7 +469,7 @@ public final class SecurityUtils {
 
     /**
      * @param resourceKey An identifier of the key being loaded - used as
-     *                    argument to the {@link FilePasswordProvider#getPassword(String)}
+     *                    argument to the {@link FilePasswordProvider#getPassword(String, int)}
      *                    invocation
      * @param inputStream The {@link InputStream} for the <U>private</U> key
      * @param provider    A {@link FilePasswordProvider} - may be {@code null}

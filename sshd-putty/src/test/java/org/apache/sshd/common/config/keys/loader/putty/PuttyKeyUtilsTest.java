@@ -147,7 +147,9 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
                     switch (result) {
                         case IGNORE:
                         case TERMINATE:
-                            return "qweryuiop123456!@#$%^";
+                            assertEquals("Mismatched retries invocation count", 0, retryIndex);
+                            assertEquals("Mismatched retries tracking count", retryIndex, retriesCount.get());
+                            return "qwertyuiop123456!@#$%^";
                         case RETRY: {
                             int count = retriesCount.incrementAndGet();
                             assertEquals("Mismatched retries count", retryIndex + 1, count);

@@ -107,7 +107,8 @@ public class SecurityUtilsTest extends JUnitTestSupport {
         }
     }
 
-    private KeyPair testLoadEncryptedRSAPrivateKey(String algorithm) throws IOException, GeneralSecurityException {
+    private KeyPair testLoadEncryptedRSAPrivateKey(String algorithm)
+            throws IOException, GeneralSecurityException {
         return testLoadRSAPrivateKey(DEFAULT_PASSWORD.replace(' ', '-') + "-RSA-" + algorithm.toUpperCase() + "-key");
     }
 
@@ -146,8 +147,9 @@ public class SecurityUtilsTest extends JUnitTestSupport {
         return testLoadPrivateKey(name, RSAPublicKey.class, RSAPrivateKey.class);
     }
 
-    private KeyPair testLoadPrivateKey(String name, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType)
-            throws IOException, GeneralSecurityException {
+    private KeyPair testLoadPrivateKey(
+            String name, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType)
+                throws IOException, GeneralSecurityException {
         Path folder = getTestResourcesFolder();
         Path file = folder.resolve(name);
         KeyPair kpFile = testLoadPrivateKeyFile(file, pubType, prvType);
@@ -167,15 +169,18 @@ public class SecurityUtilsTest extends JUnitTestSupport {
         return kpResource;
     }
 
-    private static KeyPair testLoadPrivateKeyResource(String name, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
+    private static KeyPair testLoadPrivateKeyResource(
+            String name, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
         return testLoadPrivateKey(name, new ClassLoadableResourceKeyPairProvider(name), pubType, prvType);
     }
 
-    private static KeyPair testLoadPrivateKeyFile(Path file, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
+    private static KeyPair testLoadPrivateKeyFile(
+            Path file, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
         return testLoadPrivateKey(file.toString(), new FileKeyPairProvider(file), pubType, prvType);
     }
 
-    private static KeyPair testLoadPrivateKey(String resourceKey, AbstractResourceKeyPairProvider<?> provider,
+    private static KeyPair testLoadPrivateKey(
+            String resourceKey, AbstractResourceKeyPairProvider<?> provider,
             Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
         provider.setPasswordFinder(TEST_PASSWORD_PROVIDER);
         Iterable<KeyPair> iterator = provider.loadKeys();

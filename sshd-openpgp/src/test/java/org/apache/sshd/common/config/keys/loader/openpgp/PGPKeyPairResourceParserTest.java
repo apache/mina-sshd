@@ -67,14 +67,15 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
         this.resourceName = resourceName;
         this.result = result;
         this.passwordProvider = new FilePasswordProvider() {
-
             @Override
             @SuppressWarnings("synthetic-access")
             public String getPassword(String resourceKey, int retryIndex) throws IOException {
                 switch (result) {
                     case IGNORE:
                     case TERMINATE:
-                        return "qweryuiop123456!@#$%^";
+                        assertEquals("Mismatched retries invocation count", 0, retryIndex);
+                        assertEquals("Mismatched retries tracking count", retryIndex, retriesCount.get());
+                        return "qwertyuiop123456!@#$%^";
                     case RETRY: {
                         int count = retriesCount.incrementAndGet();
                         assertEquals("Mismatched retries count", count, retryIndex + 1);
