@@ -60,6 +60,7 @@ import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.UnknownChannelReferenceHandler;
 import org.apache.sshd.common.util.GenericUtils;
@@ -619,7 +620,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     /**
      * Resolves the identification to send to the peer session by consulting
      * the associated {@link FactoryManager}. If a value is set, then it is
-     * <U>appended</U> to the standard {@link #DEFAULT_SSH_VERSION_PREFIX}.
+     * <U>appended</U> to the standard {@link SessionContext#DEFAULT_SSH_VERSION_PREFIX}.
      * Otherwise a default value is returned consisting of the prefix and
      * the core artifact name + version in <U>uppercase</U> - e.g.,'
      * &quot;SSH-2.0-SSHD-CORE-1.2.3.4&quot;
@@ -630,7 +631,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     protected String resolveIdentificationString(String configPropName) {
         FactoryManager manager = getFactoryManager();
         String ident = manager.getString(configPropName);
-        return DEFAULT_SSH_VERSION_PREFIX + (GenericUtils.isEmpty(ident) ? manager.getVersion() : ident);
+        return SessionContext.DEFAULT_SSH_VERSION_PREFIX + (GenericUtils.isEmpty(ident) ? manager.getVersion() : ident);
     }
 
     /**
@@ -669,7 +670,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             FactoryManager.MAX_IDENTIFICATION_SIZE, FactoryManager.DEFAULT_MAX_IDENTIFICATION_SIZE);
         List<String> ident = null;
         int rpos = buffer.rpos();
-        for (byte[] data = new byte[MAX_VERSION_LINE_LENGTH];;) {
+        for (byte[] data = new byte[SessionContext.MAX_VERSION_LINE_LENGTH];;) {
             int pos = 0;    // start accumulating line from scratch
             for (boolean needLf = false;;) {
                 if (buffer.available() == 0) {

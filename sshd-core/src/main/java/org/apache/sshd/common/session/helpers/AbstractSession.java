@@ -282,7 +282,7 @@ public abstract class AbstractSession extends SessionHelper {
             decoderBuffer.putBuffer(buffer);
             // One of those property will be set by the constructor and the other
             // one should be set by the readIdentification method
-            if (clientVersion == null || serverVersion == null) {
+            if ((clientVersion == null) || (serverVersion == null)) {
                 if (readIdentification(decoderBuffer)) {
                     decoderBuffer.compact();
                 } else {

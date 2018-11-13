@@ -19,6 +19,7 @@
 package org.apache.sshd.common.session;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -27,7 +28,6 @@ import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerHolder;
-import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.auth.MutableUserHolder;
 import org.apache.sshd.common.channel.ChannelListenerManager;
@@ -44,7 +44,6 @@ import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.mac.MacInformation;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -54,7 +53,10 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface Session
-        extends KexFactoryManager,
+        extends SessionContext,
+                AttributeStore,
+                MutableUserHolder,
+                KexFactoryManager,
                 SessionListenerManager,
                 ReservedSessionMessagesManager,
                 ChannelListenerManager,
@@ -63,35 +65,8 @@ public interface Session
                 UnknownChannelReferenceHandlerManager,
                 FactoryManagerHolder,
                 PortForwardingInformationProvider,
-                PropertyResolver,
-                AttributeStore,
-                Closeable,
-                MutableUserHolder,
-                PacketWriter {
-
-    /**
-     * Default prefix expected for the client / server identification string
-     * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>
-     */
-    String DEFAULT_SSH_VERSION_PREFIX = "SSH-2.0-";
-
-    /**
-     * Backward compatible special prefix
-     * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-5">RFC 4253 - section 5</A>
-     */
-    String FALLBACK_SSH_VERSION_PREFIX = "SSH-1.99-";
-
-    /**
-     * Maximum number of characters for any single line sent as part
-     * of the initial handshake - according to
-     * <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>:</BR>
-     *
-     * <P><CODE>
-     *      The maximum length of the string is 255 characters,
-     *      including the Carriage Return and Line Feed.
-     * </CODE></P>
-     */
-    int MAX_VERSION_LINE_LENGTH = 256;
+                PacketWriter,
+                Closeable {
 
     /**
      * Timeout status.
@@ -101,20 +76,6 @@ public interface Session
         AuthTimeout,
         IdleTimeout
     }
-
-    /**
-     * Retrieve the client version for this session.
-     *
-     * @return the client version.
-     */
-    String getClientVersion();
-
-    /**
-     * Retrieve the server version for this session.
-     *
-     * @return the server version.
-     */
-    String getServerVersion();
 
     /**
      * Retrieve one of the negotiated values during the KEX stage
@@ -273,6 +234,18 @@ public interface Session
      */
     IoSession getIoSession();
 
+    @Override
+    default SocketAddress getLocalAddress() {
+        IoSession s = getIoSession();
+        return (s == null) ? null : s.getLocalAddress();
+    }
+
+    @Override
+    default SocketAddress getRemoteAddress() {
+        IoSession s = getIoSession();
+        return (s == null) ? null : s.getRemoteAddress();
+    }
+
     /**
      * Check if timeout has occurred.
      *
@@ -298,8 +271,6 @@ public interface Session
      */
     long resetIdleTimeout();
 
-    boolean isAuthenticated();
-
     /**
      * @return Timeout value in milliseconds for authentication stage
      */
@@ -319,12 +290,6 @@ public interface Session
     long resetAuthTimeout();
 
     void setAuthenticated() throws IOException;
-
-    /**
-     * @return The established session identifier - {@code null} if
-     * not yet established
-     */
-    byte[] getSessionId();
 
     KeyExchange getKex();
 
@@ -348,16 +313,6 @@ public interface Session
     @Override
     default <T> T resolveAttribute(AttributeRepository.AttributeKey<T> key) {
         return resolveAttribute(this, key);
-    }
-
-    /**
-     * @param version The reported client/server version
-     * @return {@code true} if version not empty and starts with either
-     * {@value #DEFAULT_SSH_VERSION_PREFIX} or {@value #FALLBACK_SSH_VERSION_PREFIX}
-     */
-    static boolean isValidVersionPrefix(String version) {
-        return GenericUtils.isNotEmpty(version)
-            && (version.startsWith(DEFAULT_SSH_VERSION_PREFIX) || version.startsWith(FALLBACK_SSH_VERSION_PREFIX));
     }
 
     /**

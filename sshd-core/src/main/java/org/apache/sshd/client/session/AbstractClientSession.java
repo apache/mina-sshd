@@ -59,7 +59,7 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.session.helpers.AbstractConnectionService;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
@@ -392,7 +392,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
             log.debug("readIdentification({}) Server version string: {}", this, serverVersion);
         }
 
-        if (!Session.isValidVersionPrefix(serverVersion)) {
+        if (!SessionContext.isValidVersionPrefix(serverVersion)) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED,
                     "Unsupported protocol version: " + serverVersion);
         }

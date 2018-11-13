@@ -57,7 +57,7 @@ public interface PropertyResolver {
 
     /**
      * @return The parent resolver that can be used to query for missing
-     *         properties - {@code null} if no parent
+     * properties - {@code null} if no parent
      */
     PropertyResolver getParentPropertyResolver();
 
@@ -81,7 +81,8 @@ public interface PropertyResolver {
      * be converted into one.
      * </P>
      *
-     * @return a valid <code>Map</code> containing configuration values, never {@code null}
+     * @return a valid <code>Map</code> containing configuration values, never {@code null}.
+     * <b>Note:</b> may be immutable.
      */
     Map<String, Object> getProperties();
 

@@ -44,6 +44,7 @@ import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -120,11 +121,11 @@ public class AbstractSessionTest extends BaseTestSupport {
 
     @Test(expected = IllegalStateException.class)
     public void testReadIdentLongLine() {
-        StringBuilder sb = new StringBuilder(Session.MAX_VERSION_LINE_LENGTH + Integer.SIZE);
+        StringBuilder sb = new StringBuilder(SessionContext.MAX_VERSION_LINE_LENGTH + Integer.SIZE);
         sb.append("SSH-2.0-software");
         do {
             sb.append("01234567890123456789012345678901234567890123456789");
-        } while (sb.length() < Session.MAX_VERSION_LINE_LENGTH);
+        } while (sb.length() < SessionContext.MAX_VERSION_LINE_LENGTH);
 
         Buffer buf = new ByteArrayBuffer(sb.toString().getBytes(StandardCharsets.UTF_8));
         String ident = readIdentification(session, buf);

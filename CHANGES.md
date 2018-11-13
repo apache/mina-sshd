@@ -12,6 +12,8 @@
 
 * `DEFAULT_PORT` moved from `SshConfigFileReader` to `SshConstants`
 
+* Moved some session "summary" related definitions from `Session` to `SessionContext` (which `Session` extends)
+
 * Added new `sessionDisconnect` method to `SessionListener`
 
 * `ReservedSessionMessagesHandler#handleUnimplementedMessage` has an extra `cmd` argument

@@ -60,6 +60,7 @@ import org.apache.sshd.common.channel.WindowClosedException;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.helpers.AbstractConnectionService;
 import org.apache.sshd.common.session.helpers.AbstractSession;
@@ -787,11 +788,11 @@ public class ServerTest extends BaseTestSupport {
     public void testIdentificationStringsOverrides() throws Exception {
         String clientIdent = getCurrentTestName() + "-client";
         PropertyResolverUtils.updateProperty(client, ClientFactoryManager.CLIENT_IDENTIFICATION, clientIdent);
-        final String expClientIdent = Session.DEFAULT_SSH_VERSION_PREFIX + clientIdent;
+        final String expClientIdent = SessionContext.DEFAULT_SSH_VERSION_PREFIX + clientIdent;
 
         String serverIdent = getCurrentTestName() + "-server";
         PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.SERVER_IDENTIFICATION, serverIdent);
-        String expServerIdent = Session.DEFAULT_SSH_VERSION_PREFIX + serverIdent;
+        String expServerIdent = SessionContext.DEFAULT_SSH_VERSION_PREFIX + serverIdent;
         SessionListener listener = new SessionListener() {
             @Override
             public void sessionException(Session session, Throwable t) {

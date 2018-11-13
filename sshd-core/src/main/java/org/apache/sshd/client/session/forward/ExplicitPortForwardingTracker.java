@@ -24,12 +24,13 @@ import java.util.Objects;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.forward.PortForwardingManager;
+import org.apache.sshd.common.util.net.ConnectionEndpointsIndicator;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ExplicitPortForwardingTracker extends PortForwardingTracker {
+public class ExplicitPortForwardingTracker extends PortForwardingTracker implements ConnectionEndpointsIndicator {
     private final boolean localForwarding;
     private final SshdSocketAddress remoteAddress;
 
@@ -44,6 +45,7 @@ public class ExplicitPortForwardingTracker extends PortForwardingTracker {
         return localForwarding;
     }
 
+    @Override
     public SshdSocketAddress getRemoteAddress() {
         return remoteAddress;
     }

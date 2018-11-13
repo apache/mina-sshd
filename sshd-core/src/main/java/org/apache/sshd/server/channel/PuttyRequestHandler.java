@@ -27,6 +27,7 @@ import org.apache.sshd.common.channel.AbstractChannelRequestHandler;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -98,12 +99,12 @@ public class PuttyRequestHandler extends AbstractChannelRequestHandler {
 
     /**
      * @param clientVersion The client identification string - ignored if {@code null}/empty
-     * @return {@code true} if the identification starts with the {@link Session#DEFAULT_SSH_VERSION_PREFIX}
+     * @return {@code true} if the identification starts with the {@link SessionContext#DEFAULT_SSH_VERSION_PREFIX}
      * and it contains the &quot;putty&quot; string (case insensitive)
      */
     public static boolean isPuttyClient(String clientVersion) {
-        return (GenericUtils.length(clientVersion) > Session.DEFAULT_SSH_VERSION_PREFIX.length())
-            && clientVersion.startsWith(Session.DEFAULT_SSH_VERSION_PREFIX)
+        return (GenericUtils.length(clientVersion) > SessionContext.DEFAULT_SSH_VERSION_PREFIX.length())
+            && clientVersion.startsWith(SessionContext.DEFAULT_SSH_VERSION_PREFIX)
             && clientVersion.toLowerCase().contains("putty");
     }
 

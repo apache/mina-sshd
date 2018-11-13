@@ -18,11 +18,10 @@
  */
 package org.apache.sshd.common.io;
 
-import java.net.SocketAddress;
-
 import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.util.net.ConnectionEndpointsIndicator;
 
-public interface IoSession extends PacketWriter, Closeable {
+public interface IoSession extends ConnectionEndpointsIndicator, PacketWriter, Closeable {
 
     /**
      * @return a unique identifier for this session. Every session has its own
@@ -72,16 +71,6 @@ public interface IoSession extends PacketWriter, Closeable {
      * @return The old value of the attribute - {@code null} if not found.
      */
     Object removeAttribute(Object key);
-
-    /**
-     * @return the socket address of remote peer.
-     */
-    SocketAddress getRemoteAddress();
-
-    /**
-     * @return the socket address of local machine which is associated with this session.
-     */
-    SocketAddress getLocalAddress();
 
     /**
      * @return the {@link IoService} that created this session.
