@@ -32,6 +32,7 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
@@ -69,18 +70,20 @@ public class BuiltinClientIdentitiesWatcher extends ClientIdentitiesWatcher {
     }
 
     @Override
-    public Iterable<KeyPair> loadKeys() {
-        return isSupportedOnly() ? loadKeys(this::isSupported) : super.loadKeys();
+    public Iterable<KeyPair> loadKeys(SessionContext session) {
+        return isSupportedOnly()
+            ? loadKeys(session, p -> isSupported(session, p))
+            : super.loadKeys(session);
     }
 
-    private boolean isSupported(KeyPair kp) {
+    protected boolean isSupported(SessionContext session, KeyPair kp) {
         BuiltinIdentities id = BuiltinIdentities.fromKeyPair(kp);
         if ((id != null) && id.isSupported()) {
             return true;
         }
         if (log.isDebugEnabled()) {
             log.debug("loadKeys - remove unsupported identity={}, key-type={}, key={}",
-                    id, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
+                id, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
         }
         return false;
     }

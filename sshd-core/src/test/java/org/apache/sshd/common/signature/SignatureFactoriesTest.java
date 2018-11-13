@@ -39,6 +39,7 @@ import org.apache.sshd.common.config.keys.impl.DSSPublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.impl.ECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.impl.RSAPublicKeyDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.SshServer;
@@ -164,8 +165,8 @@ public class SignatureFactoriesTest extends BaseTestSupport implements OptionalF
     }
 
     protected void testKeyPairProvider(
-            final String keyName, final int keySize, final PublicKeyEntryDecoder<?, ?> decoder, List<NamedFactory<Signature>> signatures)
-                    throws Exception {
+            String keyName, int keySize, PublicKeyEntryDecoder<?, ?> decoder, List<NamedFactory<Signature>> signatures)
+                throws Exception {
         testKeyPairProvider(keyName, () -> {
             try {
                 KeyPair kp = decoder.generateKeyPair(keySize);
@@ -178,12 +179,12 @@ public class SignatureFactoriesTest extends BaseTestSupport implements OptionalF
     }
 
     protected void testKeyPairProvider(
-            final String keyName, final Factory<Iterable<KeyPair>> keyPairFactory, List<NamedFactory<Signature>> signatures)
+            String keyName, Factory<Iterable<KeyPair>> keyPairFactory, List<NamedFactory<Signature>> signatures)
                     throws Exception {
-        final Iterable<KeyPair> iter = keyPairFactory.create();
+        Iterable<KeyPair> iter = keyPairFactory.create();
         testKeyPairProvider(new KeyPairProvider() {
             @Override
-            public Iterable<KeyPair> loadKeys() {
+            public Iterable<KeyPair> loadKeys(SessionContext session) {
                 return iter;
             }
         }, signatures);

@@ -26,6 +26,7 @@ import java.security.KeyPair;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
@@ -84,8 +85,8 @@ public class ClassLoadableResourceKeyPairProvider extends AbstractResourceKeyPai
     }
 
     @Override
-    public Iterable<KeyPair> loadKeys() {
-        return loadKeys(getResources());
+    public Iterable<KeyPair> loadKeys(SessionContext session) {
+        return loadKeys(session, getResources());
     }
 
     @Override

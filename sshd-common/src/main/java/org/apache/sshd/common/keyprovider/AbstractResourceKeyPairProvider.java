@@ -35,6 +35,7 @@ import java.util.TreeSet;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -109,15 +110,16 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
         }
     }
 
-    protected Iterable<KeyPair> loadKeys(final Collection<? extends R> resources) {
+    protected Iterable<KeyPair> loadKeys(SessionContext session, Collection<? extends R> resources) {
         if (GenericUtils.isEmpty(resources)) {
             return Collections.emptyList();
         } else {
-            return () -> new KeyPairIterator(resources);
+            return () -> new KeyPairIterator(session, resources);
         }
     }
 
-    protected KeyPair doLoadKey(R resource) throws IOException, GeneralSecurityException {
+    protected KeyPair doLoadKey(SessionContext session, R resource)
+            throws IOException, GeneralSecurityException {
         String resourceKey = ValidateUtils.checkNotNullAndNotEmpty(Objects.toString(resource, null), "No resource string value");
         KeyPair kp;
         synchronized (cacheMap) {
@@ -129,12 +131,12 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
             if (log.isTraceEnabled()) {
                 PublicKey key = kp.getPublic();
                 log.trace("doLoadKey({}) use cached key {}-{}",
-                          resourceKey, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+                      resourceKey, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
             }
             return kp;
         }
 
-        kp = doLoadKey(resourceKey, resource, getPasswordFinder());
+        kp = doLoadKey(session, resourceKey, resource, getPasswordFinder());
         if (kp != null) {
             boolean reusedKey;
             synchronized (cacheMap) {
@@ -150,8 +152,8 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
             if (log.isDebugEnabled()) {
                 PublicKey key = kp.getPublic();
                 log.debug("doLoadKey({}) {} {}-{}",
-                          resourceKey, reusedKey ? "re-loaded" : "loaded",
-                          KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+                      resourceKey, reusedKey ? "re-loaded" : "loaded",
+                      KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
             }
         } else {
             if (log.isDebugEnabled()) {
@@ -162,26 +164,29 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
         return kp;
     }
 
-    protected KeyPair doLoadKey(String resourceKey, R resource, FilePasswordProvider provider) throws IOException, GeneralSecurityException {
+    protected KeyPair doLoadKey(SessionContext session, String resourceKey, R resource, FilePasswordProvider provider)
+            throws IOException, GeneralSecurityException {
         try (InputStream inputStream = openKeyPairResource(resourceKey, resource)) {
-            return doLoadKey(resourceKey, inputStream, provider);
+            return doLoadKey(session, resourceKey, inputStream, provider);
         }
     }
 
     protected abstract InputStream openKeyPairResource(String resourceKey, R resource) throws IOException;
 
-    protected KeyPair doLoadKey(String resourceKey, InputStream inputStream, FilePasswordProvider provider)
+    protected KeyPair doLoadKey(SessionContext session, String resourceKey, InputStream inputStream, FilePasswordProvider provider)
             throws IOException, GeneralSecurityException {
         return SecurityUtils.loadKeyPairIdentity(resourceKey, inputStream, provider);
     }
 
     protected class KeyPairIterator implements Iterator<KeyPair> {
+        protected final SessionContext session;
         private final Iterator<? extends R> iterator;
         private KeyPair nextKeyPair;
         private boolean nextKeyPairSet;
 
-        protected KeyPairIterator(Collection<? extends R> resources) {
-            iterator = resources.iterator();
+        protected KeyPairIterator(SessionContext session, Collection<? extends R> resources) {
+            this.session = session;
+            this.iterator = resources.iterator();
         }
 
         @Override
@@ -211,7 +216,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
             while (iterator.hasNext()) {
                 R r = iterator.next();
                 try {
-                    nextKeyPair = doLoadKey(r);
+                    nextKeyPair = doLoadKey(session, r);
                 } catch (Throwable e) {
                     log.warn("Failed (" + e.getClass().getSimpleName() + ")"
                            + " to load key resource=" + r + ": " + e.getMessage());

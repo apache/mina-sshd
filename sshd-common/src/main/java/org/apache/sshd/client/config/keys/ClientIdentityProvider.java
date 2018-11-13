@@ -28,6 +28,8 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.apache.sshd.common.session.SessionContext;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -36,6 +38,8 @@ public interface ClientIdentityProvider {
     /**
      * Provides a {@link KeyPair} representing the client identity
      *
+     * @param session The {@link SessionContext} for invoking this load command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool).
      * @return The client identity - may be {@code null} if no currently
      * available identity from this provider. <B>Note:</B> the provider
      * may return a <U>different</U> value every time this method is called
@@ -43,7 +47,7 @@ public interface ClientIdentityProvider {
      * @throws IOException If failed to load the identity
      * @throws GeneralSecurityException If failed to parse the identity
      */
-    KeyPair getClientIdentity() throws IOException, GeneralSecurityException;
+    KeyPair getClientIdentity(SessionContext session) throws IOException, GeneralSecurityException;
 
     /**
      * Wraps a {@link KeyPair} into a {@link ClientIdentityProvider} that
@@ -53,7 +57,7 @@ public interface ClientIdentityProvider {
      * @return The wrapping provider
      */
     static ClientIdentityProvider of(KeyPair kp) {
-        return () -> kp;
+        return session -> kp;
     }
 
     /**

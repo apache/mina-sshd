@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
@@ -69,17 +70,17 @@ public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements 
     }
 
     @Override
-    public Iterable<KeyPair> loadKeys() {
-        return loadKeys(null);
+    public Iterable<KeyPair> loadKeys(SessionContext session) {
+        return loadKeys(session, null);
     }
 
-    protected Iterable<KeyPair> loadKeys(Predicate<? super KeyPair> filter) {
-        return ClientIdentityProvider.lazyKeysLoader(providers, this::doGetKeyPair, filter);
+    protected Iterable<KeyPair> loadKeys(SessionContext session, Predicate<? super KeyPair> filter) {
+        return ClientIdentityProvider.lazyKeysLoader(providers, p -> doGetKeyPair(session, p), filter);
     }
 
-    protected KeyPair doGetKeyPair(ClientIdentityProvider p) {
+    protected KeyPair doGetKeyPair(SessionContext session, ClientIdentityProvider p) {
         try {
-            KeyPair kp = p.getClientIdentity();
+            KeyPair kp = p.getClientIdentity(session);
             if (kp == null) {
                 if (log.isDebugEnabled()) {
                     log.debug("loadKeys({}) no key loaded", p);

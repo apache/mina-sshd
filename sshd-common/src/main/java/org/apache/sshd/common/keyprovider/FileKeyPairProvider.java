@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 
@@ -71,13 +72,13 @@ public class FileKeyPairProvider extends AbstractResourceKeyPairProvider<Path> {
     }
 
     @Override
-    public Iterable<KeyPair> loadKeys() {
-        return loadKeys(getPaths());
+    public Iterable<KeyPair> loadKeys(SessionContext session) {
+        return loadKeys(session, getPaths());
     }
 
     @Override
-    protected KeyPair doLoadKey(Path resource) throws IOException, GeneralSecurityException {
-        return super.doLoadKey((resource == null) ? null : resource.toAbsolutePath());
+    protected KeyPair doLoadKey(SessionContext session, Path resource) throws IOException, GeneralSecurityException {
+        return super.doLoadKey(session, (resource == null) ? null : resource.toAbsolutePath());
     }
 
     @Override

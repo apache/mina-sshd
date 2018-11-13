@@ -90,7 +90,7 @@ public class ClientIdentityTest extends JUnitTestSupport {
         KeyIdentityProvider provider = IdentityUtils.createKeyPairProvider(ids, true /* supported only */);
         assertNotNull("No provider generated", provider);
 
-        Iterable<KeyPair> keys = provider.loadKeys();
+        Iterable<KeyPair> keys = provider.loadKeys(null);
         for (KeyPair kp : keys) {
             assertTrue("Unexpected loaded key: " + kp, pairs.remove(kp));
         }

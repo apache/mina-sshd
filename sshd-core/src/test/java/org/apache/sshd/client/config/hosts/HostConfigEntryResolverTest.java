@@ -43,6 +43,7 @@ import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.SshServer;
@@ -231,7 +232,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         Collection<KeyPair> clientIdentities = Collections.singletonList(defaultIdentity);
         KeyPairProvider provider = new AbstractKeyPairProvider() {
             @Override
-            public Iterable<KeyPair> loadKeys() {
+            public Iterable<KeyPair> loadKeys(SessionContext session) {
                 return clientIdentities;
             }
         };

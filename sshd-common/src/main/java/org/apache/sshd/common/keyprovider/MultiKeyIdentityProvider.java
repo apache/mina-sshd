@@ -23,6 +23,8 @@ import java.security.KeyPair;
 import java.util.Collections;
 import java.util.Iterator;
 
+import org.apache.sshd.common.session.SessionContext;
+
 /**
  * Aggregates several {@link KeyIdentityProvider}-s into a single logical
  * one that (lazily) exposes the keys from each aggregated provider
@@ -37,11 +39,11 @@ public class MultiKeyIdentityProvider implements KeyIdentityProvider {
     }
 
     @Override
-    public Iterable<KeyPair> loadKeys() {
+    public Iterable<KeyPair> loadKeys(SessionContext session) {
         return new Iterable<KeyPair>() {
             @Override
             public Iterator<KeyPair> iterator() {
-                return (providers == null) ? Collections.emptyIterator() : new MultiKeyIdentityIterator(providers);
+                return (providers == null) ? Collections.emptyIterator() : new MultiKeyIdentityIterator(session, providers);
             }
 
             @Override

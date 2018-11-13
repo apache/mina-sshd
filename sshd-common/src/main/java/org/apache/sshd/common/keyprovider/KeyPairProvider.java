@@ -86,7 +86,7 @@ public interface KeyPairProvider extends KeyIdentityProvider {
             }
 
             @Override
-            public Iterable<KeyPair> loadKeys() {
+            public Iterable<KeyPair> loadKeys(SessionContext session) {
                 return Collections.emptyList();
             }
 
@@ -108,7 +108,7 @@ public interface KeyPairProvider extends KeyIdentityProvider {
      */
     default KeyPair loadKey(SessionContext session, String type) {
         ValidateUtils.checkNotNullAndNotEmpty(type, "No key type to load");
-        return GenericUtils.stream(loadKeys())
+        return GenericUtils.stream(loadKeys(session))
                 .filter(key -> type.equals(KeyUtils.getKeyType(key)))
                 .findFirst()
                 .orElse(null);
@@ -120,7 +120,7 @@ public interface KeyPairProvider extends KeyIdentityProvider {
      * @return The available {@link Iterable} key types in preferred order - never {@code null}
      */
     default Iterable<String> getKeyTypes(SessionContext session) {
-        return GenericUtils.stream(loadKeys())
+        return GenericUtils.stream(loadKeys(session))
                 .map(KeyUtils::getKeyType)
                 .filter(GenericUtils::isNotEmpty)
                 .collect(Collectors.toSet());
@@ -148,7 +148,7 @@ public interface KeyPairProvider extends KeyIdentityProvider {
     static KeyPairProvider wrap(Iterable<KeyPair> pairs) {
         return (pairs == null) ? EMPTY_KEYPAIR_PROVIDER : new KeyPairProvider() {
             @Override
-            public Iterable<KeyPair> loadKeys() {
+            public Iterable<KeyPair> loadKeys(SessionContext session) {
                 return pairs;
             }
 

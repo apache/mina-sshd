@@ -437,7 +437,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
             if (ServerAuthenticationManager.AUTO_WELCOME_BANNER_VALUE.equalsIgnoreCase(message)) {
                 try {
-                    return KeyRandomArt.combine(' ', session.getKeyPairProvider());
+                    return KeyRandomArt.combine(session, ' ', session.getKeyPairProvider());
                 } catch (Exception e) {
                     if (e instanceof IOException) {
                         throw (IOException) e;

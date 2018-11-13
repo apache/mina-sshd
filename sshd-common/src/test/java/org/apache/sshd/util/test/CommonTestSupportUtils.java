@@ -453,7 +453,7 @@ public final class CommonTestSupportUtils {
 
     public static KeyPair getFirstKeyPair(KeyIdentityProvider provider) {
         Objects.requireNonNull(provider, "No key pair provider");
-        Iterable<? extends KeyPair> pairs = Objects.requireNonNull(provider.loadKeys(), "No loaded keys");
+        Iterable<? extends KeyPair> pairs = Objects.requireNonNull(provider.loadKeys(null), "No loaded keys");
         Iterator<? extends KeyPair> iter = Objects.requireNonNull(pairs.iterator(), "No keys iterator");
         ValidateUtils.checkTrue(iter.hasNext(), "Empty loaded kyes iterator");
         return Objects.requireNonNull(iter.next(), "No key pair in iterator");
@@ -537,7 +537,7 @@ public final class CommonTestSupportUtils {
         Objects.requireNonNull(provider, "No provider");
 
         // get the I/O out of the way
-        Iterable<KeyPair> keys = Objects.requireNonNull(provider.loadKeys(), "No keys loaded");
+        Iterable<KeyPair> keys = Objects.requireNonNull(provider.loadKeys(null), "No keys loaded");
         if (keys instanceof Collection<?>) {
             ValidateUtils.checkNotNullAndNotEmpty((Collection<?>) keys, "Empty keys loaded");
         }

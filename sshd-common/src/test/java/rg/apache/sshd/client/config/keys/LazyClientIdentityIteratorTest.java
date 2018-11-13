@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.sshd.client.config.keys.ClientIdentityProvider;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -56,7 +57,7 @@ public class LazyClientIdentityIteratorTest extends JUnitTestSupport {
         Iterable<KeyPair> ids = ClientIdentityProvider.lazyKeysLoader(
             providers, p -> {
                 try {
-                    return p.getClientIdentity();
+                    return p.getClientIdentity(null);
                 } catch (Exception e) {
                     throw new RuntimeException("Unexpected " + e.getClass().getSimpleName() + ": " + e.getMessage(), e);
                 }
@@ -93,7 +94,7 @@ public class LazyClientIdentityIteratorTest extends JUnitTestSupport {
         }
 
         @Override
-        public KeyPair getClientIdentity() {
+        public KeyPair getClientIdentity(SessionContext session) {
             loadCount++;
             return getKeyPair();
         }
@@ -101,7 +102,7 @@ public class LazyClientIdentityIteratorTest extends JUnitTestSupport {
         @Override
         public String toString() {
             return getClass().getSimpleName()
-                + "[" + getClientIdentity() + "]"
+                + "[" + getKeyPair() + "]"
                 + ": loadCount=" + getLoadCount();
         }
     }

@@ -62,7 +62,7 @@ public class MappedKeyPairProvider implements KeyPairProvider {
     }
 
     @Override
-    public Iterable<KeyPair> loadKeys() {
+    public Iterable<KeyPair> loadKeys(SessionContext session) {
         return pairsMap.values();
     }
 

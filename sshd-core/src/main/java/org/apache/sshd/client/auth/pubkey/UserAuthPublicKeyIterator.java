@@ -95,7 +95,7 @@ public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKey
                 // Lazy load the keys the 1st time the iterator is called
                 if (keysHolder.get() == null) {
                     KeyIdentityProvider sessionKeysProvider = ClientSession.providerOf(session);
-                    keysHolder.set(sessionKeysProvider.loadKeys());
+                    keysHolder.set(sessionKeysProvider.loadKeys(session));
                 }
 
                 return new Iterator<KeyPairIdentity>() {

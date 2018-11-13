@@ -48,7 +48,7 @@ public class KeyPairProviderTest extends JUnitTestSupport {
     @Test
     public void testEmptyKeyProvider() {
         KeyPairProvider provider = KeyPairProvider.EMPTY_KEYPAIR_PROVIDER;
-        assertTrue("Non empty loaded keys", GenericUtils.isEmpty(provider.loadKeys()));
+        assertTrue("Non empty loaded keys", GenericUtils.isEmpty(provider.loadKeys(null)));
         assertTrue("Non empty key type", GenericUtils.isEmpty(provider.getKeyTypes(null)));
 
         for (String keyType : new String[]{null, "", getCurrentTestName()}) {
@@ -69,7 +69,7 @@ public class KeyPairProviderTest extends JUnitTestSupport {
 
         KeyPairProvider provider = MappedKeyPairProvider.MAP_TO_KEY_PAIR_PROVIDER.apply(pairsMap);
         assertEquals("Key types", pairsMap.keySet(), provider.getKeyTypes(null));
-        assertEquals("Key pairs", pairsMap.values(), provider.loadKeys());
+        assertEquals("Key pairs", pairsMap.values(), provider.loadKeys(null));
 
         pairsMap.forEach((keyType, expected) -> {
             KeyPair actual = provider.loadKey(null, keyType);

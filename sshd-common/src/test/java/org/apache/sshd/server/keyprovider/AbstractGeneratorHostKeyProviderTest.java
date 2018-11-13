@@ -27,6 +27,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
@@ -41,20 +42,20 @@ public class AbstractGeneratorHostKeyProviderTest extends JUnitTestSupport {
         super();
     }
 
-    @SuppressWarnings("synthetic-access")
     @Test
+    @SuppressWarnings("synthetic-access")
     public void testOverwriteKey() throws Exception {
         Path tempDir = assertHierarchyTargetFolderExists(getTempTargetFolder());
         Path keyPairFile = tempDir.resolve(getCurrentTestName() + ".key");
         Files.deleteIfExists(keyPairFile);
 
         TestProvider provider = new TestProvider(keyPairFile);
-        provider.loadKeys();
+        provider.loadKeys(null);
         assertEquals("Mismatched generate write count", 1, provider.getWriteCount());
 
         provider = new TestProvider(keyPairFile);
         provider.setOverwriteAllowed(false);
-        provider.loadKeys();
+        provider.loadKeys(null);
         assertEquals("Mismatched load write count", 0, provider.getWriteCount());
     }
 
@@ -67,12 +68,15 @@ public class AbstractGeneratorHostKeyProviderTest extends JUnitTestSupport {
         }
 
         @Override
-        protected KeyPair doReadKeyPair(String resourceKey, InputStream inputStream) throws IOException, GeneralSecurityException {
+        protected KeyPair doReadKeyPair(
+                SessionContext session, String resourceKey, InputStream inputStream)
+                    throws IOException, GeneralSecurityException {
             return null;
         }
 
         @Override
-        protected void doWriteKeyPair(String resourceKey, KeyPair kp, OutputStream outputStream) throws IOException, GeneralSecurityException {
+        protected void doWriteKeyPair(String resourceKey, KeyPair kp, OutputStream outputStream)
+                throws IOException, GeneralSecurityException {
             writes.incrementAndGet();
         }
 

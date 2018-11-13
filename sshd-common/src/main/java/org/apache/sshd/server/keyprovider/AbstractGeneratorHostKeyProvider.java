@@ -39,6 +39,7 @@ import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
@@ -120,20 +121,20 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
     }
 
     @Override   // co-variant return
-    public synchronized List<KeyPair> loadKeys() {
+    public synchronized List<KeyPair> loadKeys(SessionContext session) {
         Path keyPath = getPath();
         KeyPair kp;
         synchronized (keyPairHolder) {
             kp = keyPairHolder.get();
             if (kp == null) {
                 try {
-                    kp = resolveKeyPair(keyPath);
+                    kp = resolveKeyPair(session, keyPath);
                     if (kp != null) {
                         keyPairHolder.set(kp);
                     }
                 } catch (Throwable t) {
                     log.warn("loadKeys({}) Failed ({}) to resolve: {}",
-                            keyPath, t.getClass().getSimpleName(), t.getMessage());
+                        keyPath, t.getClass().getSimpleName(), t.getMessage());
                     if (log.isDebugEnabled()) {
                         log.debug("loadKeys(" + keyPath + ") resolution failure details", t);
                     }
@@ -148,12 +149,12 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
         }
     }
 
-    protected KeyPair resolveKeyPair(Path keyPath) throws IOException, GeneralSecurityException {
+    protected KeyPair resolveKeyPair(SessionContext session, Path keyPath) throws IOException, GeneralSecurityException {
         String alg = getAlgorithm();
         KeyPair kp;
         if (keyPath != null) {
             try {
-                kp = loadFromFile(alg, keyPath);
+                kp = loadFromFile(session, alg, keyPath);
                 if (kp != null) {
                     return kp;
                 }
@@ -203,13 +204,13 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
         return kp;
     }
 
-    protected KeyPair loadFromFile(String alg, Path keyPath) throws IOException, GeneralSecurityException {
+    protected KeyPair loadFromFile(SessionContext session, String alg, Path keyPath) throws IOException, GeneralSecurityException {
         LinkOption[] options = IoUtils.getLinkOptions(true);
         if ((!Files.exists(keyPath, options)) || (!Files.isRegularFile(keyPath, options))) {
             return null;
         }
 
-        KeyPair kp = readKeyPair(keyPath, IoUtils.EMPTY_OPEN_OPTIONS);
+        KeyPair kp = readKeyPair(session, keyPath, IoUtils.EMPTY_OPEN_OPTIONS);
         if (kp == null) {
             return null;
         }
@@ -225,7 +226,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
         if (Objects.equals(alg, keyAlgorithm)) {
             if (log.isDebugEnabled()) {
                 log.debug("resolveKeyPair({}) loaded key={}-{}",
-                          keyPath, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+                      keyPath, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
             }
             return kp;
         }
@@ -233,23 +234,26 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
         // Not same algorithm - start again
         if (log.isDebugEnabled()) {
             log.debug("resolveKeyPair({}) mismatched loaded key algorithm: expected={}, loaded={}",
-                      keyPath, alg, keyAlgorithm);
+                  keyPath, alg, keyAlgorithm);
         }
         Files.deleteIfExists(keyPath);
         return null;
     }
 
-    protected KeyPair readKeyPair(Path keyPath, OpenOption... options) throws IOException, GeneralSecurityException {
+    protected KeyPair readKeyPair(SessionContext session, Path keyPath, OpenOption... options)
+            throws IOException, GeneralSecurityException {
         try (InputStream inputStream = Files.newInputStream(keyPath, options)) {
-            return doReadKeyPair(keyPath.toString(), inputStream);
+            return doReadKeyPair(session, keyPath.toString(), inputStream);
         }
     }
 
-    protected KeyPair doReadKeyPair(String resourceKey, InputStream inputStream) throws IOException, GeneralSecurityException {
+    protected KeyPair doReadKeyPair(SessionContext session, String resourceKey, InputStream inputStream)
+            throws IOException, GeneralSecurityException {
         return SecurityUtils.loadKeyPairIdentity(resourceKey, inputStream, null);
     }
 
-    protected void writeKeyPair(KeyPair kp, Path keyPath, OpenOption... options) throws IOException, GeneralSecurityException {
+    protected void writeKeyPair(KeyPair kp, Path keyPath, OpenOption... options)
+            throws IOException, GeneralSecurityException {
         if ((!Files.exists(keyPath)) || isOverwriteAllowed()) {
             try (OutputStream os = Files.newOutputStream(keyPath, options)) {
                 doWriteKeyPair(keyPath.toString(), kp, os);

@@ -381,7 +381,7 @@ public interface ClientSession
         return (session == null)
             ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER
             : KeyIdentityProvider.resolveKeyIdentityProvider(
-                    session.getRegisteredIdentities(), session.getKeyPairProvider());
+                session.getRegisteredIdentities(), session.getKeyPairProvider());
     }
 
     /**
@@ -396,7 +396,7 @@ public interface ClientSession
      * @see ClientSession#getKeyPairProvider()
      */
     static Iterator<KeyPair> keyPairIteratorOf(ClientSession session) {
-        return KeyIdentityProvider.iteratorOf(providerOf(session));
+        return KeyIdentityProvider.iteratorOf(session, providerOf(session));
     }
 
     /**

@@ -183,7 +183,7 @@ public class SecurityUtilsTest extends JUnitTestSupport {
             String resourceKey, AbstractResourceKeyPairProvider<?> provider,
             Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
         provider.setPasswordFinder(TEST_PASSWORD_PROVIDER);
-        Iterable<KeyPair> iterator = provider.loadKeys();
+        Iterable<KeyPair> iterator = provider.loadKeys(null);
         List<KeyPair> pairs = new ArrayList<>();
         for (KeyPair kp : iterator) {
             pairs.add(kp);

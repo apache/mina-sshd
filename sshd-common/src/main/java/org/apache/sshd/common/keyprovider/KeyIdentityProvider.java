@@ -23,8 +23,8 @@ import java.security.KeyPair;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.function.Function;
 
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
@@ -38,7 +38,7 @@ public interface KeyIdentityProvider {
      */
     KeyIdentityProvider EMPTY_KEYS_PROVIDER = new KeyIdentityProvider() {
         @Override
-        public Iterable<KeyPair> loadKeys() {
+        public Iterable<KeyPair> loadKeys(SessionContext session) {
             return Collections.emptyList();
         }
 
@@ -49,40 +49,40 @@ public interface KeyIdentityProvider {
     };
 
     /**
-     * Invokes {@link KeyIdentityProvider#loadKeys()} and returns the result - ignores
-     * {@code null} providers (i.e., returns an empty iterable instance)
-     */
-    Function<KeyIdentityProvider, Iterable<KeyPair>> LOADER = p ->
-        (p == null) ? Collections.<KeyPair>emptyList() : p.loadKeys();
-
-    /**
      * Load available keys.
      *
+     * @param session The {@link SessionContext} for invoking this load command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
      * @return an {@link Iterable} instance of available keys - ignored if {@code null}
      */
-    Iterable<KeyPair> loadKeys();
+    Iterable<KeyPair> loadKeys(SessionContext session);
 
     /**
      * Creates a &quot;unified&quot; {@link Iterator} of {@link KeyPair}s out of 2 possible
      * {@link KeyIdentityProvider}
      *
+     * @param session The {@link SessionContext} for invoking this load command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
      * @param identities The registered keys identities
      * @param keys Extra available key pairs
      * @return The wrapping iterator
      * @see #resolveKeyIdentityProvider(KeyIdentityProvider, KeyIdentityProvider)
      */
-    static Iterator<KeyPair> iteratorOf(KeyIdentityProvider identities, KeyIdentityProvider keys) {
-        return iteratorOf(resolveKeyIdentityProvider(identities, keys));
+    static Iterator<KeyPair> iteratorOf(
+            SessionContext session, KeyIdentityProvider identities, KeyIdentityProvider keys) {
+        return iteratorOf(session, resolveKeyIdentityProvider(identities, keys));
     }
 
     /**
      * Resolves a non-{@code null} iterator of the available keys
      *
+     * @param session The {@link SessionContext} for invoking this load command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
      * @param provider The {@link KeyIdentityProvider} - ignored if {@code null}
      * @return A non-{@code null} iterator - which may be empty if no provider or no keys
      */
-    static Iterator<KeyPair> iteratorOf(KeyIdentityProvider provider) {
-        return GenericUtils.iteratorOf((provider == null) ? null : provider.loadKeys());
+    static Iterator<KeyPair> iteratorOf(SessionContext session, KeyIdentityProvider provider) {
+        return GenericUtils.iteratorOf((provider == null) ? null : provider.loadKeys(session));
     }
 
     /**
@@ -94,12 +94,14 @@ public interface KeyIdentityProvider {
      *      <LI>If both are the same instance then use it.</U>
      *      <LI>Otherwise, returns a wrapper that groups both providers.</LI>
      * </UL>
+     *
      * @param identities The registered key pair identities
      * @param keys The extra available key pairs
      * @return The resolved provider
      * @see #multiProvider(KeyIdentityProvider...)
      */
-    static KeyIdentityProvider resolveKeyIdentityProvider(KeyIdentityProvider identities, KeyIdentityProvider keys) {
+    static KeyIdentityProvider resolveKeyIdentityProvider(
+            KeyIdentityProvider identities, KeyIdentityProvider keys) {
         if ((keys == null) || (identities == keys)) {
             return identities;
         } else if (identities == null) {
@@ -124,6 +126,8 @@ public interface KeyIdentityProvider {
     /**
      * Wraps a group of {@link KeyIdentityProvider} into a single one
      *
+     * @param session The {@link SessionContext} for invoking this load command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
      * @param providers The providers - ignored if {@code null}/empty (i.e., returns
      * {@link #EMPTY_KEYS_PROVIDER})
      * @return The wrapping provider
@@ -143,22 +147,24 @@ public interface KeyIdentityProvider {
     /**
      * Wraps a group of {@link KeyIdentityProvider} into an {@link Iterable} of {@link KeyPair}s
      *
+     * @param session The {@link SessionContext} for invoking this load command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
      * @param providers The group of providers - ignored if {@code null}/empty (i.e., returns an
      * empty iterable instance)
      * @return The wrapping iterable
      */
-    static Iterable<KeyPair> iterableOf(Collection<? extends KeyIdentityProvider> providers) {
+    static Iterable<KeyPair> iterableOf(SessionContext session, Collection<? extends KeyIdentityProvider> providers) {
         int numProviders = GenericUtils.size(providers);
         if (numProviders <= 0) {
             return Collections.emptyList();
         } else if (numProviders == 1) {
             KeyIdentityProvider p = GenericUtils.head(providers);
-            return p.loadKeys();
+            return p.loadKeys(session);
         } else {
             return new Iterable<KeyPair>() {
                 @Override
                 public Iterator<KeyPair> iterator() {
-                    return new MultiKeyIdentityIterator(providers);
+                    return new MultiKeyIdentityIterator(session, providers);
                 }
 
                 @Override
@@ -188,6 +194,6 @@ public interface KeyIdentityProvider {
      * @return The provider wrapper
      */
     static KeyIdentityProvider wrapKeyPairs(Iterable<KeyPair> pairs) {
-        return (pairs == null) ? EMPTY_KEYS_PROVIDER : () -> pairs;
+        return (pairs == null) ? EMPTY_KEYS_PROVIDER : session -> pairs;
     }
 }

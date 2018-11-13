@@ -23,6 +23,8 @@ import java.security.KeyPair;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import org.apache.sshd.common.session.SessionContext;
+
 /**
  * Iterates over several {@link KeyIdentityProvider}-s exhausting their
  * keys one by one (lazily).
@@ -32,14 +34,20 @@ import java.util.NoSuchElementException;
 public class MultiKeyIdentityIterator implements Iterator<KeyPair> {
     protected Iterator<KeyPair> currentProvider;
     protected boolean finished;
+    private final SessionContext sessionContext;
     private final Iterator<? extends KeyIdentityProvider> providers;
 
-    public MultiKeyIdentityIterator(Iterable<? extends KeyIdentityProvider> providers) {
+    public MultiKeyIdentityIterator(SessionContext session, Iterable<? extends KeyIdentityProvider> providers) {
         this.providers = (providers == null) ? null : providers.iterator();
+        this.sessionContext = session;
     }
 
     public Iterator<? extends KeyIdentityProvider> getProviders() {
         return providers;
+    }
+
+    public SessionContext getSessionContext() {
+        return sessionContext;
     }
 
     @Override
@@ -58,9 +66,10 @@ public class MultiKeyIdentityIterator implements Iterator<KeyPair> {
             return true;
         }
 
+        SessionContext session = getSessionContext();
         while (provs.hasNext()) {
             KeyIdentityProvider p = provs.next();
-            Iterable<KeyPair> keys = (p == null) ? null : p.loadKeys();
+            Iterable<KeyPair> keys = (p == null) ? null : p.loadKeys(session);
             currentProvider = (keys == null) ? null : keys.iterator();
 
             if ((currentProvider != null) && currentProvider.hasNext()) {

@@ -90,7 +90,7 @@ public class KeyRandomArtTest extends JUnitTestSupport {
 
     @AfterClass
     public static void dumpAllArts() throws Exception {
-        KeyRandomArt.combine(System.out, ' ', () -> KEYS);
+        KeyRandomArt.combine(null, System.out, ' ', session -> KEYS);
     }
 
     @Test

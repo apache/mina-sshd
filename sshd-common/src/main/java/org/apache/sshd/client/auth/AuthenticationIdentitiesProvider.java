@@ -26,6 +26,7 @@ import java.util.List;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.helper.LazyMatchingTypeIterable;
 
 /**
@@ -82,7 +83,7 @@ public interface AuthenticationIdentitiesProvider extends KeyIdentityProvider, P
     static AuthenticationIdentitiesProvider wrapIdentities(Iterable<?> identities) {
         return new AuthenticationIdentitiesProvider() {
             @Override
-            public Iterable<KeyPair> loadKeys() {
+            public Iterable<KeyPair> loadKeys(SessionContext session) {
                 return LazyMatchingTypeIterable.lazySelectMatchingTypes(identities, KeyPair.class);
             }
 

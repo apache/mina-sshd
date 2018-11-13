@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.ModifiableFileWatcher;
@@ -84,7 +85,7 @@ public class ClientIdentityFileWatcher extends ModifiableFileWatcher implements 
     }
 
     @Override
-    public KeyPair getClientIdentity() throws IOException, GeneralSecurityException {
+    public KeyPair getClientIdentity(SessionContext session) throws IOException, GeneralSecurityException {
         if (!checkReloadRequired()) {
             return identityHolder.get();
         }
@@ -95,7 +96,7 @@ public class ClientIdentityFileWatcher extends ModifiableFileWatcher implements 
             return identityHolder.get();
         }
 
-        KeyPair id = reloadClientIdentity(path);
+        KeyPair id = reloadClientIdentity(session, path);
         if (!KeyUtils.compareKeyPairs(kp, id)) {
             if (log.isDebugEnabled()) {
                 log.debug("getClientIdentity({}) identity {}", path, (kp == null) ? "loaded" : "re-loaded");
@@ -107,7 +108,7 @@ public class ClientIdentityFileWatcher extends ModifiableFileWatcher implements 
         return identityHolder.get();
     }
 
-    protected KeyPair reloadClientIdentity(Path path) throws IOException, GeneralSecurityException {
+    protected KeyPair reloadClientIdentity(SessionContext session, Path path) throws IOException, GeneralSecurityException {
         if (isStrict()) {
             Map.Entry<String, Object> violation =
                 KeyUtils.validateStrictKeyFilePermissions(path, IoUtils.EMPTY_LINK_OPTIONS);

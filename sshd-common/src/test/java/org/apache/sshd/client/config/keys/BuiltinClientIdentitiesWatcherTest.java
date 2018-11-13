@@ -145,7 +145,7 @@ public class BuiltinClientIdentitiesWatcherTest extends JUnitTestSupport {
     }
 
     private static void testMultipleFilesWatch(String phase, KeyIdentityProvider watcher, Collection<? extends KeyPair> expected) {
-        Iterable<KeyPair> keys = watcher.loadKeys();
+        Iterable<KeyPair> keys = watcher.loadKeys(null);
         Collection<KeyPair> actual = new ArrayList<>();
         for (KeyPair kp : keys) {
             actual.add(kp);

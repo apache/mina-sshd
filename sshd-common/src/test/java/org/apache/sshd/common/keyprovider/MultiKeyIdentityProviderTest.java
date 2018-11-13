@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -66,7 +67,7 @@ public class MultiKeyIdentityProviderTest extends JUnitTestSupport {
         KeyIdentityProvider multiProvider = KeyIdentityProvider.multiProvider(providers);
         assertObjectInstanceOf(MultiKeyIdentityProvider.class.getSimpleName(), MultiKeyIdentityProvider.class, multiProvider);
 
-        Iterable<KeyPair> keys = multiProvider.loadKeys();
+        Iterable<KeyPair> keys = multiProvider.loadKeys(null);
         Iterator<KeyPair> iter = keys.iterator();
         for (int index = 0, count = expected.size(); index < count; index++) {
             KeyPair kpExpected = expected.get(index);
@@ -82,7 +83,7 @@ public class MultiKeyIdentityProviderTest extends JUnitTestSupport {
     private static KeyIdentityProvider wrapKeyPairs(AtomicInteger position, Iterable<KeyPair> keys) {
         return new KeyIdentityProvider() {
             @Override
-            public Iterable<KeyPair> loadKeys() {
+            public Iterable<KeyPair> loadKeys(SessionContext session) {
                 return new Iterable<KeyPair>() {
                     @Override
                     public Iterator<KeyPair> iterator() {

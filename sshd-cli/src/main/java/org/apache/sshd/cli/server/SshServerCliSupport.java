@@ -92,8 +92,8 @@ public abstract class SshServerCliSupport extends CliSupport {
                 hostKeyProvider.setKeySize(hostKeySize);
             }
 
-            List<KeyPair> keys = ValidateUtils.checkNotNullAndNotEmpty(hostKeyProvider.loadKeys(),
-                    "Failed to load keys from %s", hostKeyFile);
+            List<KeyPair> keys = ValidateUtils.checkNotNullAndNotEmpty(
+                hostKeyProvider.loadKeys(null), "Failed to load keys from %s", hostKeyFile);
             KeyPair kp = keys.get(0);
             PublicKey pubKey = kp.getPublic();
             String keyAlgorithm = pubKey.getAlgorithm();
