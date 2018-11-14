@@ -46,6 +46,8 @@ accept also an `AttributeRepository` connection context argument (propagated fro
 
 * `ClientIdentityProvider` accepts a `SessionContext` argument in its `getClientIdentity` method
 
+* `ApacheSshdSftpSessionFactory#get/setPrivateKey` has been renamed to `get/setPrivateKeyLocation`
+
 ## Behavioral changes and enhancements
 
 * [SSHD-849](https://issues.apache.org/jira/browse/SSHD-849) - Data forwarding code makes sure all

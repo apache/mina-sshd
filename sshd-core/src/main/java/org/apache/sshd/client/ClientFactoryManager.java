@@ -22,7 +22,7 @@ import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.config.keys.ClientIdentityLoader;
 import org.apache.sshd.client.session.ClientProxyConnectorHolder;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.FilePasswordProviderManager;
 
 /**
  * The <code>ClientFactoryManager</code> enable the retrieval of additional
@@ -33,6 +33,7 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 public interface ClientFactoryManager
         extends FactoryManager,
                 ClientProxyConnectorHolder,
+                FilePasswordProviderManager,
                 ClientAuthenticationManager {
 
     /**
@@ -91,13 +92,4 @@ public interface ClientFactoryManager
     ClientIdentityLoader getClientIdentityLoader();
 
     void setClientIdentityLoader(ClientIdentityLoader loader);
-
-    /**
-     * @return The {@link FilePasswordProvider} to use if need to load encrypted
-     * identities keys - never {@code null}
-     * @see FilePasswordProvider#EMPTY
-     */
-    FilePasswordProvider getFilePasswordProvider();
-
-    void setFilePasswordProvider(FilePasswordProvider provider);
 }

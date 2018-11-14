@@ -19,7 +19,9 @@
 
 package org.apache.sshd.spring.integration.sftp;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Collection;
@@ -40,6 +42,7 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.auth.MutableBasicCredentials;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.FilePasswordProviderManager;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.loader.pem.PEMResourceParserUtils;
 import org.apache.sshd.common.future.CloseFuture;
@@ -63,11 +66,8 @@ import org.springframework.integration.file.remote.session.SharedSessionCapable;
 public class ApacheSshdSftpSessionFactory
         extends AbstractLoggingBean
         implements SessionFactory<DirEntry>, SharedSessionCapable,
-        MutableBasicCredentials, SimpleClientConfigurator,
+        MutableBasicCredentials, FilePasswordProviderManager, SimpleClientConfigurator,
         InitializingBean, DisposableBean {
-
-    // TODO add support for loading multiple private keys
-    protected volatile KeyPair privateKeyPair;
 
     private final boolean sharedSession;
     private final AtomicReference<ClientSession> sharedSessionHolder = new AtomicReference<>();
@@ -76,8 +76,11 @@ public class ApacheSshdSftpSessionFactory
     private volatile int portValue = SshConstants.DEFAULT_PORT;
     private volatile String userValue;
     private volatile String passwordValue;
+    // TODO add support for loading multiple private keys
+    private volatile KeyPair privateKeyPair;
     private volatile Resource privateKey;
     private volatile String privateKeyPassphrase;
+    private volatile FilePasswordProvider passwordProvider;
     private volatile Properties sessionConfig;
     private volatile long connTimeout = DEFAULT_CONNECT_TIMEOUT;
     private volatile long authTimeout = DEFAULT_AUTHENTICATION_TIMEOUT;
@@ -142,17 +145,17 @@ public class ApacheSshdSftpSessionFactory
 
     /**
      * The password to authenticate against the remote host. If a password is
-     * not provided, then a {@link #setPrivateKey(Resource)} call is mandatory.
+     * not provided, then a {@link #setPrivateKeyLocation(Resource)} call is mandatory.
      *
      * @param password The password to use - if {@code null} then no password
-     * is set - in which case the {@link #getPrivateKey()} resource is used
+     * is set - in which case the {@link #getPrivateKeyLocation()} resource is used
      */
     @Override
     public void setPassword(String password) {
         this.passwordValue = password;
     }
 
-    public Resource getPrivateKey() {
+    public Resource getPrivateKeyLocation() {
         return privateKey;
     }
 
@@ -163,7 +166,7 @@ public class ApacheSshdSftpSessionFactory
      *
      * @param privateKey The private key {@link Resource}
      */
-    public void setPrivateKey(Resource privateKey) {
+    public void setPrivateKeyLocation(Resource privateKey) {
         this.privateKey = privateKey;
     }
 
@@ -177,6 +180,16 @@ public class ApacheSshdSftpSessionFactory
      */
     public void setPrivateKeyPassphrase(String privateKeyPassphrase) {
         this.privateKeyPassphrase = privateKeyPassphrase;
+    }
+
+    @Override
+    public FilePasswordProvider getFilePasswordProvider() {
+        return passwordProvider;
+    }
+
+    @Override
+    public void setFilePasswordProvider(FilePasswordProvider provider) {
+        this.passwordProvider = provider;
     }
 
     public KeyPair getPrivateKeyPair() {
@@ -268,11 +281,12 @@ public class ApacheSshdSftpSessionFactory
         synchronized (sharedSessionHolder) {
             sharedSession = sharedSessionHolder.getAndSet(null);
         }
+
         if (sharedSession != null) {
             log.info("resetSharedSession - session={}", sharedSession);
             sharedSession.close(false).addListener(new SshFutureListener<CloseFuture>() {
-                @SuppressWarnings("synthetic-access")
                 @Override
+                @SuppressWarnings("synthetic-access")
                 public void operationComplete(CloseFuture future) {
                     log.info("resetSharedSession - session closed: {}", sharedSession);
                 }
@@ -283,15 +297,10 @@ public class ApacheSshdSftpSessionFactory
     @Override
     public void afterPropertiesSet() throws Exception {
         KeyPair kp = getPrivateKeyPair();
-        if (kp == null) {
-            Resource privateKeyLocation = getPrivateKey();
-            if (privateKeyLocation != null) {
-                kp = loadPrivateKey(privateKeyLocation, getPrivateKeyPassphrase());
-                log.info("afterPropertiesSet() - loaded private key={}", privateKeyLocation);
-                setPrivateKeyPair(kp);
-            }
-        }
-        ValidateUtils.checkState(GenericUtils.isNotEmpty(getPassword()) || (kp != null), "Either password or private key must be set");
+        Resource privateKeyLocation = getPrivateKeyLocation();
+        ValidateUtils.checkState(
+            GenericUtils.isNotEmpty(getPassword()) || (kp != null) || (privateKeyLocation != null),
+            "Either password or private key must be provided");
 
         SshClient client = getSshClient();
         if (client == null) {
@@ -320,19 +329,66 @@ public class ApacheSshdSftpSessionFactory
         }
     }
 
-    protected KeyPair loadPrivateKey(Resource keyResource, String keyPassword) throws Exception {
-        FilePasswordProvider passwordProvider = GenericUtils.isEmpty(keyPassword)
-                ? FilePasswordProvider.EMPTY
-                : FilePasswordProvider.of(keyPassword);
+    protected KeyPair resolveKeyIdentity(ClientSession session) throws IOException, GeneralSecurityException {
+        KeyPair kp = getPrivateKeyPair();
+        if (kp != null) {
+            return kp;
+        }
+
+        Resource location = getPrivateKeyLocation();
+        if (location == null) {
+            return null;
+        }
+
+        kp = loadPrivateKey(session, location, getPrivateKeyPassphrase());
+        if (kp != null) {
+            setPrivateKeyPair(kp);  // cache it for re-use
+        }
+
+        return kp;
+    }
+
+    protected FilePasswordProvider resolveFilePasswordProvider(ClientSession session, Resource keyResource, String keyPassword) {
+        FilePasswordProvider provider = getFilePasswordProvider();
+        if (provider != null) {
+            return provider;
+        }
+
+        return GenericUtils.isEmpty(keyPassword)
+             ? FilePasswordProvider.EMPTY
+             : FilePasswordProvider.of(keyPassword);
+    }
+
+    protected KeyPair loadPrivateKey(ClientSession session, Resource keyResource, String keyPassword)
+            throws IOException, GeneralSecurityException {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
+            log.debug("loadPrivateKey({}) loading from {}", session, keyResource);
+        }
+
+        FilePasswordProvider provider = resolveFilePasswordProvider(session, keyResource, keyPassword);
         Collection<KeyPair> keyPairs;
         try (InputStream inputStream = keyResource.getInputStream()) {
-            keyPairs = PEMResourceParserUtils.PROXY.loadKeyPairs(keyResource.toString(), passwordProvider, inputStream);
+            keyPairs = PEMResourceParserUtils.PROXY.loadKeyPairs(keyResource.toString(), provider, inputStream);
         }
 
         int numLoaded = GenericUtils.size(keyPairs);
-        ValidateUtils.checkState(numLoaded > 0, "No keys loaded from %s", keyResource);
+        if (numLoaded <= 0) {
+            if (debugEnabled) {
+                log.debug("loadPrivateKey({}) no keys loaded from {}", session, keyResource);
+            }
+        }
+
+        // TODO add support for multiple keys
         ValidateUtils.checkState(numLoaded == 1, "Multiple keys loaded from %s", keyResource);
-        return keyPairs.iterator().next();
+
+        KeyPair kp = GenericUtils.head(keyPairs);
+        if (debugEnabled) {
+            PublicKey pubKey = kp.getPublic();
+            log.debug("loadPrivateKey({}) loaded {} key={} from {}",
+                session, KeyUtils.getKeyType(pubKey), KeyUtils.getFingerPrint(pubKey), keyResource);
+        }
+        return kp;
     }
 
     @Override
@@ -344,7 +400,8 @@ public class ApacheSshdSftpSessionFactory
                 session = resolveClientSession(sharedInstance);
 
                 SftpVersionSelector selector = getSftpVersionSelector();
-                SftpClient sftpClient = SftpClientFactory.instance().createSftpClient(session, selector);
+                SftpClientFactory sftpFactory = SftpClientFactory.instance();
+                SftpClient sftpClient = sftpFactory.createSftpClient(session, selector);
                 try {
                     ClientSession sessionInstance = session;
                     Session<DirEntry> result = sharedInstance
@@ -402,14 +459,10 @@ public class ApacheSshdSftpSessionFactory
     protected ClientSession createClientSession() throws Exception {
         String hostname = ValidateUtils.checkNotNullAndNotEmpty(getHost(), "Host must not be empty");
         String username = ValidateUtils.checkNotNullAndNotEmpty(getUsername(), "User must not be empty");
-        String passwordIdentity = getPassword();
-        KeyPair kp = getPrivateKeyPair();
-        ValidateUtils.checkState(GenericUtils.isNotEmpty(passwordIdentity) || (kp != null),
-                "Either password or private key must be set");
         ClientSession session = createClientSession(hostname, username, getPort(), getEffectiveTimeoutValue(getConnectTimeout()));
         try {
             session = configureClientSessionProperties(session, getSessionConfig());
-            session = authenticateClientSession(session, passwordIdentity, kp, getEffectiveTimeoutValue(getAuthenticationTimeout()));
+            session = authenticateClientSession(session, getEffectiveTimeoutValue(getAuthenticationTimeout()));
 
             ClientSession newSession = session;
             if (log.isDebugEnabled()) {
@@ -424,7 +477,7 @@ public class ApacheSshdSftpSessionFactory
         }
     }
 
-    protected ClientSession createClientSession(String hostname, String username, int port, long timeout) throws Exception {
+    protected ClientSession createClientSession(String hostname, String username, int port, long timeout) throws IOException {
         SshClient client = getSshClient();
         if (log.isDebugEnabled()) {
             log.debug("createClientSession({}@{}:{}) waitTimeout={}", username, hostname, port, timeout);
@@ -433,7 +486,7 @@ public class ApacheSshdSftpSessionFactory
         return connectFuture.verify(timeout).getSession();
     }
 
-    protected ClientSession configureClientSessionProperties(ClientSession session, Properties props) throws Exception {
+    protected ClientSession configureClientSessionProperties(ClientSession session, Properties props) throws IOException {
         if (GenericUtils.isEmpty(props)) {
             return session;
         }
@@ -450,22 +503,31 @@ public class ApacheSshdSftpSessionFactory
         return session;
     }
 
-    protected ClientSession authenticateClientSession(
-            ClientSession session, String passwordIdentity, KeyPair privateKeyIdentity, long timeout) throws Exception {
-        if (log.isDebugEnabled()) {
-            PublicKey key = (privateKeyIdentity == null) ? null : privateKeyIdentity.getPublic();
-            log.debug("authenticateClientSession({}) password?={}, key={}/{}",
-                    session, GenericUtils.isNotEmpty(passwordIdentity), KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
-        }
+    protected ClientSession authenticateClientSession(ClientSession session, long timeout)
+            throws IOException, GeneralSecurityException {
+        boolean debugEnabled = log.isDebugEnabled();
 
+        String passwordIdentity = getPassword();
         if (GenericUtils.isNotEmpty(passwordIdentity)) {
+            if (debugEnabled) {
+                log.debug("authenticateClientSession({}) using password identity", session);
+            }
             session.addPasswordIdentity(passwordIdentity);
         }
 
+        KeyPair privateKeyIdentity = resolveKeyIdentity(session);
         if (privateKeyIdentity != null) {
+            if (debugEnabled) {
+                PublicKey pubKey = privateKeyIdentity.getPublic();
+                log.debug("authenticateClientSession({}) using {} key={}",
+                    session, KeyUtils.getKeyType(pubKey), KeyUtils.getFingerPrint(pubKey));
+            }
             session.addPublicKeyIdentity(privateKeyIdentity);
         }
 
+        if (debugEnabled) {
+            log.debug("authenticateClientSession({}) authenticate - timeout=", session, timeout);
+        }
         session.auth().verify(timeout);
         return session;
     }
