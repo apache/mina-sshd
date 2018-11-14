@@ -123,8 +123,7 @@ public class ClientIdentityFileWatcher extends ModifiableFileWatcher implements 
         String location = path.toString();
         ClientIdentityLoader idLoader = Objects.requireNonNull(getClientIdentityLoader(), "No client identity loader");
         if (idLoader.isValidLocation(location)) {
-            KeyPair kp = idLoader.loadClientIdentity(
-                location, Objects.requireNonNull(getFilePasswordProvider(), "No file password provider"));
+            KeyPair kp = idLoader.loadClientIdentity(session, location, getFilePasswordProvider());
             if (log.isTraceEnabled()) {
                 PublicKey key = (kp == null) ? null : kp.getPublic();
                 if (key != null) {

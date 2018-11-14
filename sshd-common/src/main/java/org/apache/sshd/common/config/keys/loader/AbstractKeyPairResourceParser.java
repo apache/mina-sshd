@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.logging.Level;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -84,8 +85,9 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
     }
 
     @Override
-    public Collection<KeyPair> loadKeyPairs(String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
-            throws IOException, GeneralSecurityException {
+    public Collection<KeyPair> loadKeyPairs(
+            SessionContext session, String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
+                throws IOException, GeneralSecurityException {
         Collection<KeyPair> keyPairs = Collections.emptyList();
         List<String> beginMarkers = getBeginners();
         List<List<String>> endMarkers = getEndingMarkers();
@@ -103,8 +105,8 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
 
             int endIndex = markerPos.getKey();
             String endLine = lines.get(endIndex);
-            Collection<KeyPair> kps =
-                extractKeyPairs(resourceKey, startLine, endLine, passwordProvider, lines.subList(startIndex, endIndex));
+            Collection<KeyPair> kps = extractKeyPairs(session, resourceKey,
+                startLine, endLine, passwordProvider, lines.subList(startIndex, endIndex));
             if (GenericUtils.isNotEmpty(kps)) {
                 if (GenericUtils.isEmpty(keyPairs)) {
                     keyPairs = new LinkedList<>(kps);
@@ -124,6 +126,8 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
      * Extracts the key pairs within a <U>single</U> delimited by markers block of lines. By
      * default cleans up the empty lines, joins them and converts them from BASE64
      *
+     * @param session The {@link SessionContext} for invoking this load command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
      * @param resourceKey A hint as to the origin of the text lines
      * @param beginMarker The line containing the begin marker
      * @param endMarker The line containing the end marker
@@ -136,12 +140,17 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
      * @see #extractKeyPairs(String, String, String, FilePasswordProvider, byte[])
      */
     public Collection<KeyPair> extractKeyPairs(
-            String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, List<String> lines)
+            SessionContext session, String resourceKey,
+            String beginMarker, String endMarker,
+            FilePasswordProvider passwordProvider,
+            List<String> lines)
                 throws IOException, GeneralSecurityException {
-        return extractKeyPairs(resourceKey, beginMarker, endMarker, passwordProvider, KeyPairResourceParser.extractDataBytes(lines));
+        return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, KeyPairResourceParser.extractDataBytes(lines));
     }
 
     /**
+     * @param session The {@link SessionContext} for invoking this load command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
      * @param resourceKey A hint as to the origin of the text lines
      * @param beginMarker The line containing the begin marker
      * @param endMarker The line containing the end marker
@@ -154,18 +163,23 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
      * @see #extractKeyPairs(String, String, String, FilePasswordProvider, InputStream)
      */
     public Collection<KeyPair> extractKeyPairs(
-            String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, byte[] bytes)
-                    throws IOException, GeneralSecurityException {
+            SessionContext session, String resourceKey,
+            String beginMarker, String endMarker,
+            FilePasswordProvider passwordProvider,
+            byte[] bytes)
+                throws IOException, GeneralSecurityException {
         if (log.isTraceEnabled()) {
             BufferUtils.dumpHex(getSimplifiedLogger(), Level.FINER, beginMarker, ':', 16, bytes);
         }
 
         try (InputStream bais = new ByteArrayInputStream(bytes)) {
-            return extractKeyPairs(resourceKey, beginMarker, endMarker, passwordProvider, bais);
+            return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, bais);
         }
     }
 
     /**
+     * @param session The {@link SessionContext} for invoking this load command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
      * @param resourceKey A hint as to the origin of the text lines
      * @param beginMarker The line containing the begin marker
      * @param endMarker The line containing the end marker
@@ -177,6 +191,8 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
      * @throws GeneralSecurityException If failed to generate the keys
      */
     public abstract Collection<KeyPair> extractKeyPairs(
-            String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, InputStream stream)
-                    throws IOException, GeneralSecurityException;
+        SessionContext session, String resourceKey,
+        String beginMarker, String endMarker,
+        FilePasswordProvider passwordProvider, InputStream stream)
+            throws IOException, GeneralSecurityException;
 }

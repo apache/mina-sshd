@@ -19,6 +19,8 @@
 
 package org.apache.sshd.common.keyprovider;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -69,7 +71,13 @@ public class MultiKeyIdentityIterator implements Iterator<KeyPair> {
         SessionContext session = getSessionContext();
         while (provs.hasNext()) {
             KeyIdentityProvider p = provs.next();
-            Iterable<KeyPair> keys = (p == null) ? null : p.loadKeys(session);
+            Iterable<KeyPair> keys;
+            try {
+                keys = (p == null) ? null : p.loadKeys(session);
+            } catch (IOException | GeneralSecurityException e) {
+                throw new RuntimeException("Unexpected " + e.getClass().getSimpleName() + ")"
+                    + " keys loading exception: " + e.getMessage(), e);
+            }
             currentProvider = (keys == null) ? null : keys.iterator();
 
             if ((currentProvider != null) && currentProvider.hasNext()) {

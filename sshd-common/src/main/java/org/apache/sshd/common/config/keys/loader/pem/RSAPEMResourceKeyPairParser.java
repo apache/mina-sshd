@@ -37,6 +37,7 @@ import java.util.List;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.der.ASN1Object;
 import org.apache.sshd.common.util.io.der.ASN1Type;
@@ -69,7 +70,10 @@ public class RSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParse
 
     @Override
     public Collection<KeyPair> extractKeyPairs(
-            String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, InputStream stream)
+            SessionContext session, String resourceKey,
+            String beginMarker, String endMarker,
+            FilePasswordProvider passwordProvider,
+            InputStream stream)
                 throws IOException, GeneralSecurityException {
         KeyPair kp = decodeRSAKeyPair(SecurityUtils.getKeyFactory(KeyUtils.RSA_ALGORITHM), stream, false);
         return Collections.singletonList(kp);

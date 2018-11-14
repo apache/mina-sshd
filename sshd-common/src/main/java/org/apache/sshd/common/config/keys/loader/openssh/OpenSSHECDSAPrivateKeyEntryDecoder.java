@@ -43,6 +43,7 @@ import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.impl.AbstractPrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.impl.ECDSAPublicKeyEntryDecoder;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
@@ -56,8 +57,9 @@ public class OpenSSHECDSAPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryD
     }
 
     @Override
-    public ECPrivateKey decodePrivateKey(String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
-            throws IOException, GeneralSecurityException {
+    public ECPrivateKey decodePrivateKey(
+            SessionContext session, String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
+                throws IOException, GeneralSecurityException {
         ECCurves curve = ECCurves.fromKeyType(keyType);
         if (curve == null) {
             throw new InvalidKeySpecException("Not an EC curve name: " + keyType);

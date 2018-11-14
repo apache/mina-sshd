@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceParser;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -43,11 +44,11 @@ public final class PEMResourceParserUtils {
     public static final KeyPairResourceParser PROXY = new KeyPairResourceParser() {
         @Override
         public Collection<KeyPair> loadKeyPairs(
-                String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
-                        throws IOException, GeneralSecurityException {
+                SessionContext session, String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
+                    throws IOException, GeneralSecurityException {
             @SuppressWarnings("synthetic-access")
             KeyPairResourceParser proxy = PROXY_HOLDER.get();
-            return (proxy == null) ? Collections.<KeyPair>emptyList() : proxy.loadKeyPairs(resourceKey, passwordProvider, lines);
+            return (proxy == null) ? Collections.emptyList() : proxy.loadKeyPairs(session, resourceKey, passwordProvider, lines);
         }
 
         @Override

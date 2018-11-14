@@ -249,7 +249,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
 
     protected KeyPair doReadKeyPair(SessionContext session, String resourceKey, InputStream inputStream)
             throws IOException, GeneralSecurityException {
-        return SecurityUtils.loadKeyPairIdentity(resourceKey, inputStream, null);
+        return SecurityUtils.loadKeyPairIdentity(session, resourceKey, inputStream, null);
     }
 
     protected void writeKeyPair(KeyPair kp, Path keyPath, OpenOption... options)

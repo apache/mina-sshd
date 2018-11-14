@@ -35,6 +35,7 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeRes
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.loader.openssh.OpenSSHKeyPairResourceParser;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
@@ -49,6 +50,7 @@ import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.mockito.Mockito;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -113,7 +115,7 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
         URL url = getClass().getResource(regularFile);
         assertNotNull("Missing test resource: " + regularFile, url);
 
-        Collection<KeyPair> keys = parser.loadKeyPairs(url, null);
+        Collection<KeyPair> keys = parser.loadKeyPairs(null, url, null);
         assertEquals("Mismatched loaded keys count from " + regularFile, 1, GenericUtils.size(keys));
         assertLoadedKeyPair(regularFile, keys.iterator().next());
     }
@@ -125,7 +127,7 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
         Assume.assumeTrue("Skip non-existent encrypted file: " + encryptedFile, url != null);
         assertNotNull("Missing test resource: " + encryptedFile, url);
 
-        Collection<KeyPair> keys = parser.loadKeyPairs(url, (r, index) -> PASSWORD);
+        Collection<KeyPair> keys = parser.loadKeyPairs(null, url, (s, r, index) -> PASSWORD);
         assertEquals("Mismatched loaded keys count from " + encryptedFile, 1, GenericUtils.size(keys));
 
         assertLoadedKeyPair(encryptedFile, keys.iterator().next());
@@ -139,11 +141,14 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
         assertNotNull("Missing test resource: " + encryptedFile, url);
 
         int maxRetries = 3;
+        SessionContext mockSession = Mockito.mock(SessionContext.class);
         for (ResourceDecodeResult result : ResourceDecodeResult.values()) {
             AtomicInteger retriesCount = new AtomicInteger(0);
             FilePasswordProvider provider = new FilePasswordProvider() {
                 @Override
-                public String getPassword(String resourceKey, int retryIndex) throws IOException {
+                public String getPassword(SessionContext session, String resourceKey, int retryIndex) throws IOException {
+                    assertSame("Mismatched session context", mockSession, session);
+
                     switch (result) {
                         case IGNORE:
                         case TERMINATE:
@@ -166,8 +171,9 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
 
                 @Override
                 public ResourceDecodeResult handleDecodeAttemptResult(
-                        String resourceKey, int retryIndex, String password, Exception err)
+                        SessionContext session, String resourceKey, int retryIndex, String password, Exception err)
                             throws IOException, GeneralSecurityException {
+                    assertSame("Mismatched session context", mockSession, session);
                     if (err == null) {
                         return null;
                     }
@@ -188,14 +194,14 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
             };
 
             try {
-                Collection<KeyPair> keys = parser.loadKeyPairs(url, provider);
+                Collection<KeyPair> keys = parser.loadKeyPairs(mockSession, url, provider);
                 if (result == ResourceDecodeResult.IGNORE) {
                     assertEquals("Unexpected loaded keys count from " + encryptedFile, 0, GenericUtils.size(keys));
                     assertEquals("Mismatched " + result + " retries count", 0, retriesCount.get());
                 } else {
                     assertEquals("Mismatched loaded keys count from " + encryptedFile, 1, GenericUtils.size(keys));
                     assertEquals("Mismatched " + result + " retries count", maxRetries, retriesCount.get());
-                    assertLoadedKeyPair(encryptedFile, keys.iterator().next());
+                    assertLoadedKeyPair(encryptedFile, GenericUtils.head(keys));
                 }
             } catch (IOException | GeneralSecurityException | RuntimeException e) {
                 if (result != ResourceDecodeResult.TERMINATE) {

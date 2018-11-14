@@ -19,6 +19,8 @@
 
 package org.apache.sshd.common.keyprovider;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -47,7 +49,7 @@ public class MultiKeyIdentityProviderTest extends JUnitTestSupport {
     }
 
     @Test   // see SSHD-860
-    public void testLazyKeyIdentityMultiProvider() {
+    public void testLazyKeyIdentityMultiProvider() throws IOException, GeneralSecurityException {
         List<KeyPair> expected = new ArrayList<>();
         for (int index = 1; index <= Short.SIZE; index++) {
             PublicKey pub = Mockito.mock(PublicKey.class);

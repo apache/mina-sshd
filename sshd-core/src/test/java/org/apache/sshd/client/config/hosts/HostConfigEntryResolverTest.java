@@ -153,8 +153,9 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
             }
 
             @Override
-            public KeyPair loadClientIdentity(String location, FilePasswordProvider provider)
-                    throws IOException, GeneralSecurityException {
+            public KeyPair loadClientIdentity(
+                    SessionContext session, String location, FilePasswordProvider provider)
+                        throws IOException, GeneralSecurityException {
                 if (isValidLocation(location)) {
                     return identity;
                 }
@@ -218,8 +219,9 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
             }
 
             @Override
-            public KeyPair loadClientIdentity(String location, FilePasswordProvider provider)
-                    throws IOException, GeneralSecurityException {
+            public KeyPair loadClientIdentity(
+                    SessionContext session, String location, FilePasswordProvider provider)
+                        throws IOException, GeneralSecurityException {
                 if (isValidLocation(location)) {
                     return specificIdentity;
                 }

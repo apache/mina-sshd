@@ -40,6 +40,7 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -78,7 +79,9 @@ public class BuiltinClientIdentitiesWatcherTest extends JUnitTestSupport {
 
         ClientIdentityLoader loader = new ClientIdentityLoader() {
             @Override
-            public KeyPair loadClientIdentity(String location, FilePasswordProvider provider) throws IOException, GeneralSecurityException {
+            public KeyPair loadClientIdentity(
+                    SessionContext session, String location, FilePasswordProvider provider)
+                        throws IOException, GeneralSecurityException {
                 BuiltinIdentities id = findIdentity(location);
                 assertNotNull("Invalid location: " + location, id);
                 return idsMap.get(id);
@@ -144,7 +147,9 @@ public class BuiltinClientIdentitiesWatcherTest extends JUnitTestSupport {
         }
     }
 
-    private static void testMultipleFilesWatch(String phase, KeyIdentityProvider watcher, Collection<? extends KeyPair> expected) {
+    private static void testMultipleFilesWatch(
+            String phase, KeyIdentityProvider watcher, Collection<? extends KeyPair> expected)
+                throws IOException, GeneralSecurityException {
         Iterable<KeyPair> keys = watcher.loadKeys(null);
         Collection<KeyPair> actual = new ArrayList<>();
         for (KeyPair kp : keys) {

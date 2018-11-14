@@ -36,6 +36,7 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.impl.AbstractPrivateKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
@@ -62,8 +63,9 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
     }
 
     @Override
-    public EdDSAPrivateKey decodePrivateKey(String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
-            throws IOException, GeneralSecurityException {
+    public EdDSAPrivateKey decodePrivateKey(
+            SessionContext session, String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
+                throws IOException, GeneralSecurityException {
         if (!KeyPairProvider.SSH_ED25519.equals(keyType)) {
             throw new InvalidKeyException("Unsupported key type: " + keyType);
         }

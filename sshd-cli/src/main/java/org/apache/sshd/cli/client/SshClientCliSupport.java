@@ -346,7 +346,7 @@ public abstract class SshClientCliSupport extends CliSupport {
     public static FileKeyPairProvider setupSessionIdentities(ClientFactoryManager client, Collection<? extends Path> identities,
             BufferedReader stdin, PrintStream stdout, PrintStream stderr)
                 throws Throwable {
-        client.setFilePasswordProvider((file, index) -> {
+        client.setFilePasswordProvider((session, file, index) -> {
             stdout.print("Enter password for private key file=" + file + ": ");
             return stdin.readLine();
         });

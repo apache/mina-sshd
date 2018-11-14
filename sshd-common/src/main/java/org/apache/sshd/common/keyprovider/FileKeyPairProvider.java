@@ -77,12 +77,15 @@ public class FileKeyPairProvider extends AbstractResourceKeyPairProvider<Path> {
     }
 
     @Override
-    protected KeyPair doLoadKey(SessionContext session, Path resource) throws IOException, GeneralSecurityException {
+    protected KeyPair doLoadKey(SessionContext session, Path resource)
+            throws IOException, GeneralSecurityException {
         return super.doLoadKey(session, (resource == null) ? null : resource.toAbsolutePath());
     }
 
     @Override
-    protected InputStream openKeyPairResource(String resourceKey, Path resource) throws IOException {
+    protected InputStream openKeyPairResource(
+            SessionContext session, String resourceKey, Path resource)
+                throws IOException {
         return Files.newInputStream(resource, IoUtils.EMPTY_OPEN_OPTIONS);
     }
 }

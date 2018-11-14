@@ -67,7 +67,7 @@ public class SecurityUtilsTest extends JUnitTestSupport {
           + "." + SecurityProviderRegistrar.NAMED_PROVIDER_PROPERTY;
 
     private static final String DEFAULT_PASSWORD = "super secret passphrase";
-    private static final FilePasswordProvider TEST_PASSWORD_PROVIDER = (file, index) -> DEFAULT_PASSWORD;
+    private static final FilePasswordProvider TEST_PASSWORD_PROVIDER = (session, file, index) -> DEFAULT_PASSWORD;
 
     public SecurityUtilsTest() {
         super();
@@ -155,7 +155,7 @@ public class SecurityUtilsTest extends JUnitTestSupport {
         KeyPair kpFile = testLoadPrivateKeyFile(file, pubType, prvType);
         if (SecurityUtils.isBouncyCastleRegistered()) {
             KeyPairResourceLoader bcLoader = SecurityUtils.getBouncycastleKeyPairResourceParser();
-            Collection<KeyPair> kpList = bcLoader.loadKeyPairs(file, TEST_PASSWORD_PROVIDER);
+            Collection<KeyPair> kpList = bcLoader.loadKeyPairs(null, file, TEST_PASSWORD_PROVIDER);
             assertEquals(name + ": Mismatched loaded BouncyCastle keys count", 1, GenericUtils.size(kpList));
 
             KeyPair kpBC = kpList.iterator().next();
@@ -170,18 +170,21 @@ public class SecurityUtilsTest extends JUnitTestSupport {
     }
 
     private static KeyPair testLoadPrivateKeyResource(
-            String name, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
+            String name, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType)
+                throws IOException, GeneralSecurityException {
         return testLoadPrivateKey(name, new ClassLoadableResourceKeyPairProvider(name), pubType, prvType);
     }
 
     private static KeyPair testLoadPrivateKeyFile(
-            Path file, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
+            Path file, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType)
+                throws IOException, GeneralSecurityException {
         return testLoadPrivateKey(file.toString(), new FileKeyPairProvider(file), pubType, prvType);
     }
 
     private static KeyPair testLoadPrivateKey(
             String resourceKey, AbstractResourceKeyPairProvider<?> provider,
-            Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
+            Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType)
+                throws IOException, GeneralSecurityException {
         provider.setPasswordFinder(TEST_PASSWORD_PROVIDER);
         Iterable<KeyPair> iterator = provider.loadKeys(null);
         List<KeyPair> pairs = new ArrayList<>();

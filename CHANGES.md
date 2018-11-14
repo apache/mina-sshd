@@ -2,19 +2,19 @@
 
 ## Major code re-factoring
 
-* `AttributeStore` "read" methods moved to (new class) `AttributeRepository`
+* `AttributeStore` "read" methods moved to (new class) `AttributeRepository`.
 
-    * `AttributeKey` moved to `AttributeRepository`
+    * `AttributeKey` moved to `AttributeRepository`.
 
-    * `getAttribute` and `resolveAttribute` moved to `AttributeRepository`
+    * `getAttribute` and `resolveAttribute` moved to `AttributeRepository`.
 
     * Added `attributeKeys` enumeration method to `AttributeRepository`.
 
-* `DEFAULT_PORT` moved from `SshConfigFileReader` to `SshConstants`
+* `DEFAULT_PORT` moved from `SshConfigFileReader` to `SshConstants`.
 
-* Moved some session "summary" related definitions from `Session` to `SessionContext` (which `Session` extends)
+* Moved some session "summary" related definitions from `Session` to `SessionContext` (which `Session` extends).
 
-* Added new `sessionDisconnect` method to `SessionListener`
+* Added new `sessionDisconnect` method to `SessionListener`.
 
 * `ReservedSessionMessagesHandler#handleUnimplementedMessage` has an extra `cmd` argument
 and is called both for `SSH_MSG_UNIMPLEMENTED` as well as for any other unexpected/unrecognized
@@ -35,44 +35,45 @@ accept also an `AttributeRepository` connection context argument (propagated fro
     * The interface methods are also provided with a retry index that indicates the number of
     times they have been re-invoked for the same resource (including on success).
 
+    * The available session context (if any) is also provided as an argument to the interface methods.
+
 * `SshAgent#getIdentities` returns an `Iterable` rather than a `List`
 
 * `SftpFileSystemProvider` and its associated helper classes have been moved to
-`org.apache.sshd.client.subsystem.sftp.fs` package
+`org.apache.sshd.client.subsystem.sftp.fs` package.
 
-* `KeyPairProvider` accepts a `SessionContext` argument in its `getKeyTypes/loadKey` methods
+* `KeyPairProvider` accepts a `SessionContext` argument in its `getKeyTypes/loadKey` methods.
 
-* `KeyIdentityProvider` accepts a `SessionContext` argument in its `loadKeys` method
+* `KeyIdentityProvider` accepts a `SessionContext` argument in its `loadKeys` method.
 
-* `ClientIdentityProvider` accepts a `SessionContext` argument in its `getClientIdentity` method
+* `ClientIdentityProvider` accepts a `SessionContext` argument in its `getClientIdentity` method.
 
-* `ApacheSshdSftpSessionFactory#get/setPrivateKey` has been renamed to `get/setPrivateKeyLocation`
+* `ClientIdentityLoader` accepts a `SessionContext` argument in its `loadClientIdentity` method.
+
+* `ApacheSshdSftpSessionFactory#get/setPrivateKey` has been renamed to `get/setPrivateKeyLocation`.
 
 ## Behavioral changes and enhancements
 
 * [SSHD-849](https://issues.apache.org/jira/browse/SSHD-849) - Data forwarding code makes sure all
 pending packets have been sent to the peer channel when closing the tunnel gracefully.
 
-* [SSHD-850](https://issues.apache.org/jira/browse/SSHD-850) - Add capability to retry a failed private key decryption
+* [SSHD-850](https://issues.apache.org/jira/browse/SSHD-850) - Add capability to retry a failed private key decryption.
 
-* [SSHD-857](https://issues.apache.org/jira/browse/SSHD-857) - Add session disconnect event signalling to SessionListener
+* [SSHD-857](https://issues.apache.org/jira/browse/SSHD-857) - Add session disconnect event signalling to SessionListener.
 
     * Also calling `ReservedSessionMessagesHandler#handleUnimplementedMessage` not only for `SSH_MSG_UNIMPLEMENTED` but
     also for any unexpected/unrecognized command encountered during the session message processing loop.
 
-* [SSHD-859](https://issues.apache.org/jira/browse/SSHD-859) - Provide client session connection context that is propagated to the SSH session
+* [SSHD-859](https://issues.apache.org/jira/browse/SSHD-859) - Provide client session connection context that is propagated to the SSH session.
 
     * Also added connection context argument (propagated from the `ClientSessionCreator#connect` invocation)
     to`connectionEstablished` and `abortEstablishedConnection` methods of `IoServiceEventListener`.
 
-* [SSHD-860](https://issues.apache.org/jira/browse/SSHD-860) - `UserAuthPublicKeyIterator` uses lazy loading of public key
-identities both from agent and client session
+* [SSHD-860](https://issues.apache.org/jira/browse/SSHD-860) - Use lazy loading of public key identities.
 
-    * Also using lazy identity `KeyPair`(s) loading in `ClientIdentitiesWatcher`
-
-* [SSHD-861](https://issues.apache.org/jira/browse/SSHD-861) - Fixed username/password encoding for `SftpFileSystem` URI(s)
+* [SSHD-861](https://issues.apache.org/jira/browse/SSHD-861) - Fixed username/password encoding for `SftpFileSystem` URI(s).
 
     * Also added `SftpFileSystemClientSessionInitializer` support in `SftpFileSystemProvider`
 
-* [SSHD-862](https://issues.apache.org/jira/browse/SSHD-862) - Provide session context argument when
-key loading methods are invoked
+* [SSHD-862](https://issues.apache.org/jira/browse/SSHD-862) - Provide session context argument (if available) when
+key loading methods are invoked.

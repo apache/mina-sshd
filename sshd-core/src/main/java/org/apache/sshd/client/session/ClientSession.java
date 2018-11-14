@@ -385,21 +385,6 @@ public interface ClientSession
     }
 
     /**
-     * Creates a &quot;unified&quot; {@link Iterator} of key pairs out of the registered
-     * {@link KeyPair} identities and the extra available ones as a single iterator
-     * of key pairs
-     *
-     * @param session The {@link ClientSession} - ignored if {@code null} (i.e., empty
-     * iterator returned)
-     * @return The wrapping iterator
-     * @see ClientSession#getRegisteredIdentities()
-     * @see ClientSession#getKeyPairProvider()
-     */
-    static Iterator<KeyPair> keyPairIteratorOf(ClientSession session) {
-        return KeyIdentityProvider.iteratorOf(session, providerOf(session));
-    }
-
-    /**
      * Creates a &quot;unified&quot; {@link Iterator} of passwords out of the registered
      * passwords and the extra available ones as a single iterator of passwords
      *

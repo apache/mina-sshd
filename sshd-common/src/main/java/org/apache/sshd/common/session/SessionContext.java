@@ -19,7 +19,7 @@
 
 package org.apache.sshd.common.session;
 
-import org.apache.sshd.common.AttributeRepository;
+import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.auth.UsernameHolder;
 import org.apache.sshd.common.util.GenericUtils;
@@ -34,7 +34,7 @@ public interface SessionContext
         extends ConnectionEndpointsIndicator,
                 UsernameHolder,
                 PropertyResolver,
-                AttributeRepository {
+                AttributeStore {
     /**
      * Default prefix expected for the client / server identification string
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>

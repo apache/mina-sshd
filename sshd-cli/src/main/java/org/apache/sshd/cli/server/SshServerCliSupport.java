@@ -116,7 +116,7 @@ public abstract class SshServerCliSupport extends CliSupport {
             for (String keyFilePath : keyFiles) {
                 Path path = Paths.get(keyFilePath);
                 try (InputStream inputStream = Files.newInputStream(path)) {
-                    KeyPair kp = SecurityUtils.loadKeyPairIdentity(keyFilePath, inputStream, null);
+                    KeyPair kp = SecurityUtils.loadKeyPairIdentity(null, keyFilePath, inputStream, null);
                     pairs.add(kp);
                 } catch (Exception e) {
                     stderr.append("Failed (").append(e.getClass().getSimpleName()).append(')')

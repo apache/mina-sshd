@@ -73,7 +73,7 @@ public class OpenSSHKeyPairResourceParserTest extends JUnitTestSupport {
         URL urlKeyPair = getClass().getResource(resourceKey);
         assertNotNull("Missing key-pair resource: " + resourceKey, urlKeyPair);
 
-        Collection<KeyPair> pairs = PARSER.loadKeyPairs(urlKeyPair, FilePasswordProvider.EMPTY);
+        Collection<KeyPair> pairs = PARSER.loadKeyPairs(null, urlKeyPair, FilePasswordProvider.EMPTY);
         assertEquals("Mismatched pairs count", 1, GenericUtils.size(pairs));
 
         URL urlPubKey = getClass().getResource(resourceKey + ".pub");

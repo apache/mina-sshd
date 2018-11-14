@@ -60,7 +60,9 @@ public class ClientIdentityFileWatcherTest extends JUnitTestSupport {
         KeyPair identity = CommonTestSupportUtils.getFirstKeyPair(createTestHostKeyProvider());
         ClientIdentityLoader loader = new ClientIdentityLoader() {
             @Override
-            public KeyPair loadClientIdentity(String location, FilePasswordProvider provider) throws IOException, GeneralSecurityException {
+            public KeyPair loadClientIdentity(
+                    SessionContext session, String location, FilePasswordProvider provider)
+                        throws IOException, GeneralSecurityException {
                 assertTrue("Invalid location: " + location, isValidLocation(location));
                 return identity;
             }

@@ -24,7 +24,6 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.AttributeRepository;
-import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerHolder;
@@ -54,7 +53,6 @@ import org.apache.sshd.common.util.buffer.Buffer;
  */
 public interface Session
         extends SessionContext,
-                AttributeStore,
                 MutableUserHolder,
                 KexFactoryManager,
                 SessionListenerManager,

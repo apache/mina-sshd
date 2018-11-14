@@ -31,6 +31,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -45,7 +46,7 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
     KeyPairResourceParser EMPTY = new KeyPairResourceParser() {
         @Override
         public Collection<KeyPair> loadKeyPairs(
-                String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
+                SessionContext session, String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
                     throws IOException, GeneralSecurityException {
             return Collections.emptyList();
         }
@@ -153,7 +154,7 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
         return new KeyPairResourceParser() {
             @Override
             public Collection<KeyPair> loadKeyPairs(
-                    String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
+                    SessionContext session, String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
                         throws IOException, GeneralSecurityException {
                 Collection<KeyPair> keyPairs = Collections.emptyList();
                 for (KeyPairResourceParser p : parsers) {
@@ -161,7 +162,7 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
                         continue;
                     }
 
-                    Collection<KeyPair> kps = p.loadKeyPairs(resourceKey, passwordProvider, lines);
+                    Collection<KeyPair> kps = p.loadKeyPairs(session, resourceKey, passwordProvider, lines);
                     if (GenericUtils.isEmpty(kps)) {
                         continue;
                     }

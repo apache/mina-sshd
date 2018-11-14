@@ -369,7 +369,7 @@ public class ApacheSshdSftpSessionFactory
         FilePasswordProvider provider = resolveFilePasswordProvider(session, keyResource, keyPassword);
         Collection<KeyPair> keyPairs;
         try (InputStream inputStream = keyResource.getInputStream()) {
-            keyPairs = PEMResourceParserUtils.PROXY.loadKeyPairs(keyResource.toString(), provider, inputStream);
+            keyPairs = PEMResourceParserUtils.PROXY.loadKeyPairs(session, keyResource.toString(), provider, inputStream);
         }
 
         int numLoaded = GenericUtils.size(keyPairs);

@@ -61,6 +61,7 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.loader.AbstractKeyPairResourceParser;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -102,7 +103,10 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
 
     @Override
     public Collection<KeyPair> extractKeyPairs(
-            String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, List<String> lines)
+            SessionContext session, String resourceKey,
+            String beginMarker, String endMarker,
+            FilePasswordProvider passwordProvider,
+            List<String> lines)
                 throws IOException, GeneralSecurityException {
         // We need to re-construct the original data - including start/end markers
         String eol = System.lineSeparator();
@@ -119,15 +123,18 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
 
         String keyData = sb.toString();
         byte[] dataBytes = keyData.getBytes(StandardCharsets.US_ASCII);
-        return extractKeyPairs(resourceKey, beginMarker, endMarker, passwordProvider, dataBytes);
+        return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, dataBytes);
     }
 
     @Override
     public Collection<KeyPair> extractKeyPairs(
-            String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, InputStream stream)
+            SessionContext session, String resourceKey,
+            String beginMarker, String endMarker,
+            FilePasswordProvider passwordProvider,
+            InputStream stream)
                 throws IOException, GeneralSecurityException {
         for (int retryCount = 0;; retryCount++) {
-            String password = (passwordProvider == null) ? null : passwordProvider.getPassword(resourceKey, retryCount);
+            String password = (passwordProvider == null) ? null : passwordProvider.getPassword(session, resourceKey, retryCount);
             Collection<KeyPair> keys;
             try {
                 if (retryCount > 0) {
@@ -144,7 +151,7 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
                 keys = extractKeyPairs(resourceKey, key.getSubkeys());
             } catch (IOException | GeneralSecurityException | PGPException | RuntimeException e) {
                 ResourceDecodeResult result = (passwordProvider != null)
-                    ? passwordProvider.handleDecodeAttemptResult(resourceKey, retryCount, password, e)
+                    ? passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryCount, password, e)
                     : ResourceDecodeResult.TERMINATE;
                 if (result == null) {
                     result = ResourceDecodeResult.TERMINATE;
@@ -173,7 +180,7 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
             }
 
             if (passwordProvider != null) {
-                passwordProvider.handleDecodeAttemptResult(resourceKey, retryCount, password, null);
+                passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryCount, password, null);
             }
             return keys;
         }

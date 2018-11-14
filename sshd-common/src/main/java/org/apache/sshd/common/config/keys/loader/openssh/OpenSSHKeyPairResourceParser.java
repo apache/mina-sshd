@@ -48,6 +48,7 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.loader.AbstractKeyPairResourceParser;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -98,9 +99,12 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
 
     @Override
     public Collection<KeyPair> extractKeyPairs(
-            String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, InputStream stream)
+            SessionContext session, String resourceKey,
+            String beginMarker, String endMarker,
+            FilePasswordProvider passwordProvider,
+            InputStream stream)
                 throws IOException, GeneralSecurityException {
-        stream = validateStreamMagicMarker(resourceKey, stream);
+        stream = validateStreamMagicMarker(session, resourceKey, stream);
 
         String cipher = KeyEntryResolver.decodeString(stream, MAX_CIPHER_NAME_LENGTH);
         if (!OpenSSHParserContext.IS_NONE_CIPHER.test(cipher)) {
@@ -135,7 +139,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         OpenSSHParserContext context = new OpenSSHParserContext(cipher, kdfName, kdfOptions);
         boolean traceEnabled = log.isTraceEnabled();
         for (int index = 1; index <= numKeys; index++) {
-            PublicKey pubKey = readPublicKey(resourceKey, context, stream);
+            PublicKey pubKey = readPublicKey(session, resourceKey, context, stream);
             ValidateUtils.checkNotNull(pubKey, "Empty public key #%d in %s", index, resourceKey);
             if (traceEnabled) {
                 log.trace("extractKeyPairs({}) read public key #{}: {} {}",
@@ -146,13 +150,13 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
 
         byte[] privateData = KeyEntryResolver.readRLEBytes(stream, MAX_PRIVATE_KEY_DATA_SIZE);
         try (InputStream bais = new ByteArrayInputStream(privateData)) {
-            return readPrivateKeys(resourceKey, context, publicKeys, passwordProvider, bais);
+            return readPrivateKeys(session, resourceKey, context, publicKeys, passwordProvider, bais);
         }
     }
 
     protected PublicKey readPublicKey(
-            String resourceKey, OpenSSHParserContext context, InputStream stream)
-                    throws IOException, GeneralSecurityException {
+            SessionContext session, String resourceKey, OpenSSHParserContext context, InputStream stream)
+                throws IOException, GeneralSecurityException {
         byte[] keyData = KeyEntryResolver.readRLEBytes(stream, MAX_PUBLIC_KEY_DATA_SIZE);
         try (InputStream bais = new ByteArrayInputStream(keyData)) {
             String keyType = KeyEntryResolver.decodeString(bais, MAX_KEY_TYPE_NAME_LENGTH);
@@ -166,7 +170,8 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     }
 
     protected List<KeyPair> readPrivateKeys(
-            String resourceKey, OpenSSHParserContext context, Collection<? extends PublicKey> publicKeys,
+            SessionContext session, String resourceKey,
+            OpenSSHParserContext context, Collection<? extends PublicKey> publicKeys,
             FilePasswordProvider passwordProvider, InputStream stream)
                 throws IOException, GeneralSecurityException {
         if (GenericUtils.isEmpty(publicKeys)) {
@@ -190,7 +195,8 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
                     resourceKey, keyIndex, pubType);
             }
 
-            Map.Entry<PrivateKey, String> prvData = readPrivateKey(resourceKey, context, pubType, passwordProvider, stream);
+            Map.Entry<PrivateKey, String> prvData =
+                readPrivateKey(session, resourceKey, context, pubType, passwordProvider, stream);
             PrivateKey prvKey = (prvData == null) ? null : prvData.getKey();
             ValidateUtils.checkNotNull(prvKey, "Empty private key #%d in %s", keyIndex, resourceKey);
 
@@ -210,7 +216,9 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     }
 
     protected SimpleImmutableEntry<PrivateKey, String> readPrivateKey(
-            String resourceKey, OpenSSHParserContext context, String keyType, FilePasswordProvider passwordProvider, InputStream stream)
+            SessionContext session, String resourceKey,
+            OpenSSHParserContext context, String keyType,
+            FilePasswordProvider passwordProvider, InputStream stream)
                 throws IOException, GeneralSecurityException {
         String prvType = KeyEntryResolver.decodeString(stream, MAX_KEY_TYPE_NAME_LENGTH);
         if (!Objects.equals(keyType, prvType)) {
@@ -224,7 +232,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
             throw new NoSuchAlgorithmException("Unsupported key type (" + prvType + ") in " + resourceKey);
         }
 
-        PrivateKey prvKey = decoder.decodePrivateKey(prvType, passwordProvider, stream);
+        PrivateKey prvKey = decoder.decodePrivateKey(session, prvType, passwordProvider, stream);
         if (prvKey == null) {
             throw new InvalidKeyException("Cannot parse key type (" + prvType + ") in " + resourceKey);
         }
@@ -233,7 +241,9 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         return new SimpleImmutableEntry<>(prvKey, comment);
     }
 
-    protected <S extends InputStream> S validateStreamMagicMarker(String resourceKey, S stream) throws IOException {
+    protected <S extends InputStream> S validateStreamMagicMarker(
+            SessionContext session, String resourceKey, S stream)
+                throws IOException {
         byte[] actual = new byte[AUTH_MAGIC_BYTES.length];
         IoUtils.readFully(stream, actual);
         if (!Arrays.equals(AUTH_MAGIC_BYTES, actual)) {

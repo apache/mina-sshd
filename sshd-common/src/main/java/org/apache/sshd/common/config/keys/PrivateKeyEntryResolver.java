@@ -24,6 +24,8 @@ import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.spec.InvalidKeySpecException;
 
+import org.apache.sshd.common.session.SessionContext;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -34,7 +36,8 @@ public interface PrivateKeyEntryResolver {
      */
     PrivateKeyEntryResolver IGNORING = new PrivateKeyEntryResolver() {
         @Override
-        public PrivateKey resolve(String keyType, byte[] keyData) throws IOException, GeneralSecurityException {
+        public PrivateKey resolve(SessionContext session, String keyType, byte[] keyData)
+                throws IOException, GeneralSecurityException {
             return null;
         }
 
@@ -49,7 +52,8 @@ public interface PrivateKeyEntryResolver {
      */
     PrivateKeyEntryResolver FAILING = new PrivateKeyEntryResolver() {
         @Override
-        public PrivateKey resolve(String keyType, byte[] keyData) throws IOException, GeneralSecurityException {
+        public PrivateKey resolve(SessionContext session, String keyType, byte[] keyData)
+                throws IOException, GeneralSecurityException {
             throw new InvalidKeySpecException("Failing resolver on key type=" + keyType);
         }
 
@@ -60,11 +64,14 @@ public interface PrivateKeyEntryResolver {
     };
 
     /**
+     * @param session The {@link SessionContext} for invoking this load command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
      * @param keyType The {@code OpenSSH} reported key type
      * @param keyData The {@code OpenSSH} encoded key data
      * @return The extracted {@link PrivateKey} - ignored if {@code null}
      * @throws IOException If failed to parse the key data
      * @throws GeneralSecurityException If failed to generate the key
      */
-    PrivateKey resolve(String keyType, byte[] keyData) throws IOException, GeneralSecurityException;
+    PrivateKey resolve(SessionContext session, String keyType, byte[] keyData)
+        throws IOException, GeneralSecurityException;
 }

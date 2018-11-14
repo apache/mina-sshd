@@ -22,6 +22,7 @@ package org.apache.sshd.server.session;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.Collection;
 import java.util.List;
@@ -247,7 +248,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     }
 
     @Override
-    protected String resolveAvailableSignaturesProposal(FactoryManager proposedManager) {
+    protected String resolveAvailableSignaturesProposal(FactoryManager proposedManager)
+            throws IOException, GeneralSecurityException {
         /*
          * Make sure we can provide key(s) for the available signatures
          */
@@ -319,7 +321,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     }
 
     @Override
-    protected boolean readIdentification(Buffer buffer) throws IOException {
+    protected boolean readIdentification(Buffer buffer) throws IOException, GeneralSecurityException {
         ServerProxyAcceptor acceptor = getServerProxyAcceptor();
         int rpos = buffer.rpos();
         boolean debugEnabled = log.isDebugEnabled();
@@ -395,7 +397,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         KeyPairProvider provider = Objects.requireNonNull(getKeyPairProvider(), "No host keys provider");
         try {
             return provider.loadKey(this, keyType);
-        } catch (Error e) {
+        } catch (IOException | GeneralSecurityException | Error e) {
             log.warn("getHostKey({}) failed ({}) to load key of type={}: {}",
                  this, e.getClass().getSimpleName(), keyType, e.getMessage());
             if (log.isDebugEnabled()) {

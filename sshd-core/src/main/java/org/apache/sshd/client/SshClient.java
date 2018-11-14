@@ -524,7 +524,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         List<KeyPair> ids = new ArrayList<>(locations.size());
         boolean ignoreNonExisting = this.getBooleanProperty(IGNORE_INVALID_IDENTITIES, DEFAULT_IGNORE_INVALID_IDENTITIES);
         ClientIdentityLoader loader = Objects.requireNonNull(getClientIdentityLoader(), "No ClientIdentityLoader");
-        FilePasswordProvider provider = Objects.requireNonNull(getFilePasswordProvider(), "No FilePasswordProvider");
+        FilePasswordProvider provider = getFilePasswordProvider();
         boolean debugEnabled = log.isDebugEnabled();
         for (String l : locations) {
             if (!loader.isValidLocation(l)) {
@@ -539,14 +539,14 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             }
 
             try {
-                KeyPair kp = loader.loadClientIdentity(l, provider);
+                KeyPair kp = loader.loadClientIdentity(null /* TODO use lazy-load here as well */, l, provider);
                 if (kp == null) {
                     throw new IOException("No identity loaded from " + l);
                 }
 
                 if (debugEnabled) {
                     log.debug("loadClientIdentities({}) type={}, fingerprint={}",
-                              l, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
+                          l, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
                 }
 
                 ids.add(kp);
@@ -561,7 +561,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     protected ConnectFuture doConnect(
             String username, SocketAddress targetAddress,
             AttributeRepository context, SocketAddress localAddress,
-            Collection<? extends KeyPair> identities, boolean useDefaultIdentities)
+            Iterable<? extends KeyPair> identities, boolean useDefaultIdentities)
                 throws IOException {
         if (connector == null) {
             throw new IllegalStateException("SshClient not started. Please call start() method before connecting to a server");
@@ -578,7 +578,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     protected SshFutureListener<IoConnectFuture> createConnectCompletionListener(
             ConnectFuture connectFuture, String username, SocketAddress address,
-            Collection<? extends KeyPair> identities, boolean useDefaultIdentities) {
+            Iterable<? extends KeyPair> identities, boolean useDefaultIdentities) {
         return new SshFutureListener<IoConnectFuture>() {
             @Override
             @SuppressWarnings("synthetic-access")
@@ -621,7 +621,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     protected void onConnectOperationComplete(
             IoSession ioSession, ConnectFuture connectFuture,  String username,
-            SocketAddress address, Collection<? extends KeyPair> identities, boolean useDefaultIdentities) {
+            SocketAddress address, Iterable<? extends KeyPair> identities, boolean useDefaultIdentities) {
         AbstractClientSession session = (AbstractClientSession) AbstractSession.getSession(ioSession);
         session.setUsername(username);
         session.setConnectAddress(address);
@@ -630,12 +630,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             setupDefaultSessionIdentities(session);
         }
 
-        int numIds = GenericUtils.size(identities);
-        if (numIds > 0) {
-            if (log.isDebugEnabled()) {
-                log.debug("onConnectOperationComplete({}) adding {} identities", session, numIds);
-            }
-
+        if (identities != null) {
             boolean traceEnabled = log.isTraceEnabled();
             for (KeyPair kp : identities) {
                 if (traceEnabled) {
@@ -792,7 +787,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
      *                      supported internally
      * @param provider      A {@link FilePasswordProvider} - may be {@code null}
      *                      if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
-     *                      to {@link FilePasswordProvider#getPassword(String, int)} is the path of the
+     *                      to {@code FilePasswordProvider#getPassword} is the path of the
      *                      file whose key is to be loaded
      * @param options       The {@link LinkOption}s to apply when checking
      *                      for existence
@@ -818,7 +813,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
      *                      supported internally
      * @param provider      A {@link FilePasswordProvider} - may be {@code null}
      *                      if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
-     *                      to {@link FilePasswordProvider#getPassword(String, int)} is the path of the
+     *                      to {@code FilePasswordProvider#getPassword} is the path of the
      *                      file whose key is to be loaded
      * @param options       The {@link LinkOption}s to apply when checking
      *                      for existence

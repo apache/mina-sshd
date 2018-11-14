@@ -117,9 +117,11 @@ public final class ServerIdentity {
      * @see #findIdentities(Properties, LinkOption...)
      * @see IdentityUtils#loadIdentities(Map, org.apache.sshd.common.config.keys.FilePasswordProvider, java.nio.file.OpenOption...)
      */
-    public static Map<String, KeyPair> loadIdentities(Properties props, LinkOption... options) throws IOException, GeneralSecurityException {
+    public static Map<String, KeyPair> loadIdentities(Properties props, LinkOption... options)
+            throws IOException, GeneralSecurityException {
         Map<String, Path> ids = findIdentities(props, options);
-        return IdentityUtils.loadIdentities(ids, null /* server key files are never encrypted */, IoUtils.EMPTY_OPEN_OPTIONS);
+        return IdentityUtils.loadIdentities(
+                null /* server keys are not loaded in a session context */, ids, null /* server key files are never encrypted */, IoUtils.EMPTY_OPEN_OPTIONS);
     }
 
     /**

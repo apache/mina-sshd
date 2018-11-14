@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
@@ -69,7 +70,7 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
         this.passwordProvider = new FilePasswordProvider() {
             @Override
             @SuppressWarnings("synthetic-access")
-            public String getPassword(String resourceKey, int retryIndex) throws IOException {
+            public String getPassword(SessionContext session, String resourceKey, int retryIndex) throws IOException {
                 switch (result) {
                     case IGNORE:
                     case TERMINATE:
@@ -93,7 +94,7 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
             @Override
             @SuppressWarnings("synthetic-access")
             public ResourceDecodeResult handleDecodeAttemptResult(
-                    String resourceKey, int retryIndex, String password, Exception err)
+                    SessionContext session, String resourceKey, int retryIndex, String password, Exception err)
                         throws IOException, GeneralSecurityException {
                 if (err == null) {
                     return null;
@@ -141,7 +142,7 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
 
         Collection<KeyPair> keys;
         try {
-            keys = PGPKeyPairResourceParser.INSTANCE.loadKeyPairs(resourceName, passwordProvider, stream);
+            keys = PGPKeyPairResourceParser.INSTANCE.loadKeyPairs(null, resourceName, passwordProvider, stream);
         } catch (Exception e) {
             if (result != ResourceDecodeResult.TERMINATE) {
                 fail("Mismatched result mode for " + e.getClass().getSimpleName() + "[" + e.getMessage() + "]");

@@ -213,4 +213,16 @@ public final class ValidateUtils {
         return constructor.apply(message);
     }
 
+    public static <T extends Throwable> T initializeExceptionCause(T err, Throwable cause) {
+        if (cause == null) {
+            return err;
+        }
+
+        if (err.getCause() != null) {
+            return err; // already initialized - avoid IllegalStateException
+        }
+
+        err.initCause(cause);
+        return err;
+    }
 }

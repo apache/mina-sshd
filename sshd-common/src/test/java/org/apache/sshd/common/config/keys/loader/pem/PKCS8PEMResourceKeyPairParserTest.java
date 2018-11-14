@@ -92,7 +92,7 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
             os.close();
 
             try (ByteArrayInputStream bais = new ByteArrayInputStream(os.toByteArray())) {
-                KeyPair kp2 = SecurityUtils.loadKeyPairIdentity(getCurrentTestName(), bais, null);
+                KeyPair kp2 = SecurityUtils.loadKeyPairIdentity(null, getCurrentTestName(), bais, null);
 
                 assertEquals("Mismatched public key", kp.getPublic(), kp2.getPublic());
                 assertEquals("Mismatched private key", prv1, kp2.getPrivate());

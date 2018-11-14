@@ -35,6 +35,7 @@ import java.util.List;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -65,27 +66,28 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
 
     @Override
     public Collection<KeyPair> extractKeyPairs(
-            String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, InputStream stream)
+            SessionContext session, String resourceKey,
+            String beginMarker, String endMarker,
+            FilePasswordProvider passwordProvider,
+            InputStream stream)
                 throws IOException, GeneralSecurityException {
         // Save the data before getting the algorithm OID since we will need it
         byte[] encBytes = IoUtils.toByteArray(stream);
         List<Integer> oidAlgorithm = getPKCS8AlgorithmIdentifier(encBytes);
-        PrivateKey prvKey = decodePEMPrivateKeyPKCS8(oidAlgorithm, encBytes, passwordProvider);
+        PrivateKey prvKey = decodePEMPrivateKeyPKCS8(oidAlgorithm, encBytes);
         PublicKey pubKey = ValidateUtils.checkNotNull(KeyUtils.recoverPublicKey(prvKey),
                 "Failed to recover public key of OID=%s", oidAlgorithm);
         KeyPair kp = new KeyPair(pubKey, prvKey);
         return Collections.singletonList(kp);
     }
 
-    public static PrivateKey decodePEMPrivateKeyPKCS8(
-            List<Integer> oidAlgorithm, byte[] keyBytes, FilePasswordProvider passwordProvider)
-                throws GeneralSecurityException {
+    public static PrivateKey decodePEMPrivateKeyPKCS8(List<Integer> oidAlgorithm, byte[] keyBytes)
+            throws GeneralSecurityException {
         ValidateUtils.checkNotNullAndNotEmpty(oidAlgorithm, "No PKCS8 algorithm OID");
-        return decodePEMPrivateKeyPKCS8(GenericUtils.join(oidAlgorithm, '.'), keyBytes, passwordProvider);
+        return decodePEMPrivateKeyPKCS8(GenericUtils.join(oidAlgorithm, '.'), keyBytes);
     }
 
-    public static PrivateKey decodePEMPrivateKeyPKCS8(
-            String oid, byte[] keyBytes, FilePasswordProvider passwordProvider)
+    public static PrivateKey decodePEMPrivateKeyPKCS8(String oid, byte[] keyBytes)
                 throws GeneralSecurityException {
         KeyPairPEMResourceParser parser =
             PEMResourceParserUtils.getPEMResourceParserByOid(

@@ -33,6 +33,7 @@ import java.util.TreeMap;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.keyprovider.MappedKeyPairProvider;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -123,11 +124,13 @@ public final class IdentityUtils {
     }
 
     /**
+     * @param session The {@link SessionContext} for invoking this load command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
      * @param paths    A {@link Map} of the identities where key=identity type (case
      *                 <U>insensitive</U>), value=the {@link Path} of file with the identity key
      * @param provider A {@link FilePasswordProvider} - may be {@code null}
      *                 if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
-     *                 to {@link FilePasswordProvider#getPassword(String, int)} is the path of the
+     *                 to {@code FilePasswordProvider#getPassword} is the path of the
      *                 file whose key is to be loaded
      * @param options  The {@link OpenOption}s to use when reading the key data
      * @return A {@link Map} of the identities where key=identity type (case
@@ -136,8 +139,9 @@ public final class IdentityUtils {
      * @throws GeneralSecurityException If failed to load the keys
      * @see SecurityUtils#loadKeyPairIdentity(String, InputStream, FilePasswordProvider)
      */
-    public static Map<String, KeyPair> loadIdentities(Map<String, ? extends Path> paths, FilePasswordProvider provider, OpenOption... options)
-            throws IOException, GeneralSecurityException {
+    public static Map<String, KeyPair> loadIdentities(
+            SessionContext session, Map<String, ? extends Path> paths, FilePasswordProvider provider, OpenOption... options)
+                throws IOException, GeneralSecurityException {
         if (GenericUtils.isEmpty(paths)) {
             return Collections.emptyMap();
         }
@@ -148,7 +152,7 @@ public final class IdentityUtils {
             String type = pe.getKey();
             Path path = pe.getValue();
             try (InputStream inputStream = Files.newInputStream(path, options)) {
-                KeyPair kp = SecurityUtils.loadKeyPairIdentity(path.toString(), inputStream, provider);
+                KeyPair kp = SecurityUtils.loadKeyPairIdentity(session, path.toString(), inputStream, provider);
                 KeyPair prev = ids.put(type, kp);
                 ValidateUtils.checkTrue(prev == null, "Multiple keys for type=%s", type);
             }

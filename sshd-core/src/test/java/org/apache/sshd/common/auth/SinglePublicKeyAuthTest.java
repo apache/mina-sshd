@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.common.auth;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Map;
@@ -57,7 +59,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
     private KeyPair pairRsaBad;
     private PublickeyAuthenticator delegate;
 
-    public SinglePublicKeyAuthTest() {
+    public SinglePublicKeyAuthTest() throws IOException, GeneralSecurityException {
         SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
         provider.setAlgorithm(KeyUtils.RSA_ALGORITHM);
         pairRsaBad = provider.loadKey(null, KeyPairProvider.SSH_RSA);

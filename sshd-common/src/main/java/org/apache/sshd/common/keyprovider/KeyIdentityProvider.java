@@ -19,6 +19,8 @@
 
 package org.apache.sshd.common.keyprovider;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.Collection;
 import java.util.Collections;
@@ -53,37 +55,11 @@ public interface KeyIdentityProvider {
      *
      * @param session The {@link SessionContext} for invoking this load command - may
      * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
+     * @throws IOException If failed to read/parse the keys data
+     * @throws GeneralSecurityException If failed to generate the keys
      * @return an {@link Iterable} instance of available keys - ignored if {@code null}
      */
-    Iterable<KeyPair> loadKeys(SessionContext session);
-
-    /**
-     * Creates a &quot;unified&quot; {@link Iterator} of {@link KeyPair}s out of 2 possible
-     * {@link KeyIdentityProvider}
-     *
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
-     * @param identities The registered keys identities
-     * @param keys Extra available key pairs
-     * @return The wrapping iterator
-     * @see #resolveKeyIdentityProvider(KeyIdentityProvider, KeyIdentityProvider)
-     */
-    static Iterator<KeyPair> iteratorOf(
-            SessionContext session, KeyIdentityProvider identities, KeyIdentityProvider keys) {
-        return iteratorOf(session, resolveKeyIdentityProvider(identities, keys));
-    }
-
-    /**
-     * Resolves a non-{@code null} iterator of the available keys
-     *
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
-     * @param provider The {@link KeyIdentityProvider} - ignored if {@code null}
-     * @return A non-{@code null} iterator - which may be empty if no provider or no keys
-     */
-    static Iterator<KeyPair> iteratorOf(SessionContext session, KeyIdentityProvider provider) {
-        return GenericUtils.iteratorOf((provider == null) ? null : provider.loadKeys(session));
-    }
+    Iterable<KeyPair> loadKeys(SessionContext session) throws IOException, GeneralSecurityException;
 
     /**
      * <P>Creates a &quot;unified&quot; {@link KeyIdentityProvider} out of 2 possible ones
@@ -159,7 +135,12 @@ public interface KeyIdentityProvider {
             return Collections.emptyList();
         } else if (numProviders == 1) {
             KeyIdentityProvider p = GenericUtils.head(providers);
-            return p.loadKeys(session);
+            try {
+                return p.loadKeys(session);
+            } catch (IOException | GeneralSecurityException e) {
+                throw new RuntimeException("Unexpected " + e.getClass().getSimpleName() + ")"
+                    + " keys loading exception: " + e.getMessage(), e);
+            }
         } else {
             return new Iterable<KeyPair>() {
                 @Override

@@ -39,6 +39,7 @@ import org.apache.sshd.common.config.keys.loader.AbstractKeyPairResourceParser;
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceParser;
 import org.apache.sshd.common.config.keys.loader.PrivateKeyEncryptionContext;
 import org.apache.sshd.common.config.keys.loader.PrivateKeyObfuscator;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -73,7 +74,10 @@ public abstract class AbstractPEMResourceKeyPairParser
 
     @Override
     public Collection<KeyPair> extractKeyPairs(
-            String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, List<String> lines)
+            SessionContext session, String resourceKey,
+            String beginMarker, String endMarker,
+            FilePasswordProvider passwordProvider,
+            List<String> lines)
                 throws IOException, GeneralSecurityException {
         if (GenericUtils.isEmpty(lines)) {
             return Collections.emptyList();
@@ -133,7 +137,7 @@ public abstract class AbstractPEMResourceKeyPairParser
             }
 
             for (int retryIndex = 0;; retryIndex++) {
-                String password = passwordProvider.getPassword(resourceKey, retryIndex);
+                String password = passwordProvider.getPassword(session, resourceKey, retryIndex);
                 Collection<KeyPair> keys;
                 try {
                     if (GenericUtils.isEmpty(password)) {
@@ -146,11 +150,11 @@ public abstract class AbstractPEMResourceKeyPairParser
                     byte[] encryptedData = KeyPairResourceParser.extractDataBytes(dataLines);
                     byte[] decodedData = applyPrivateKeyCipher(encryptedData, encContext, false);
                     try (InputStream bais = new ByteArrayInputStream(decodedData)) {
-                        keys = extractKeyPairs(resourceKey, beginMarker, endMarker, passwordProvider, bais);
+                        keys = extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, bais);
                     }
                 } catch (IOException | GeneralSecurityException | RuntimeException e) {
                     ResourceDecodeResult result =
-                        passwordProvider.handleDecodeAttemptResult(resourceKey, retryIndex, password, e);
+                        passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, e);
                     if (result == null) {
                         result = ResourceDecodeResult.TERMINATE;
                     }
@@ -166,12 +170,12 @@ public abstract class AbstractPEMResourceKeyPairParser
                     }
                 }
 
-                passwordProvider.handleDecodeAttemptResult(resourceKey, retryIndex, password, null);
+                passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, null);
                 return keys;
             }
         }
 
-        return super.extractKeyPairs(resourceKey, beginMarker, endMarker, passwordProvider, dataLines);
+        return super.extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, dataLines);
     }
 
     protected byte[] applyPrivateKeyCipher(

@@ -20,8 +20,10 @@ package org.apache.sshd.common.session.helpers;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.net.ProtocolException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -711,7 +713,16 @@ public abstract class AbstractSession extends SessionHelper {
             return doWritePacket(buffer);
         } finally {
             resetIdleTimeout();
-            checkRekey();
+            try {
+                checkRekey();
+            } catch (GeneralSecurityException e) {
+                if (log.isDebugEnabled()) {
+                    log.debug("writePacket(" + this + ") rekey security exception details", e);
+                }
+                throw ValidateUtils.initializeExceptionCause(
+                    new ProtocolException("Failed (" + e.getClass().getSimpleName() + ")"
+                        + " to check re-key necessity: " + e.getMessage()), e);
+            }
         }
     }
 
@@ -1101,8 +1112,9 @@ public abstract class AbstractSession extends SessionHelper {
      * @return <code>true</code> if the identification has been fully read or
      * <code>false</code> if more data is needed
      * @throws IOException if an error occurs such as a bad protocol version
+     * @throws GeneralSecurityException If unsuccessful KEX was involved
      */
-    protected abstract boolean readIdentification(Buffer buffer) throws IOException;
+    protected abstract boolean readIdentification(Buffer buffer) throws IOException, GeneralSecurityException;
 
     /**
      * Send the key exchange initialization packet.
@@ -1607,7 +1619,17 @@ public abstract class AbstractSession extends SessionHelper {
 
     @Override
     public KeyExchangeFuture reExchangeKeys() throws IOException {
-        requestNewKeysExchange();
+        try {
+            requestNewKeysExchange();
+        } catch (GeneralSecurityException e) {
+            if (log.isDebugEnabled()) {
+                log.debug("reExchangeKeys(" + this + ") security exception details", e);
+            }
+            throw ValidateUtils.initializeExceptionCause(
+                new ProtocolException("Failed (" + e.getClass().getSimpleName() + ")"
+                    + " to generate keys for exchange: " + e.getMessage()), e);
+        }
+
         return ValidateUtils.checkNotNull(kexFutureHolder.get(), "No current KEX future on state=%s", kexState.get());
     }
 
@@ -1616,11 +1638,12 @@ public abstract class AbstractSession extends SessionHelper {
      *
      * @return A {@link KeyExchangeFuture} to wait for the initiated exchange
      * or {@code null} if no need to re-key or an exchange is already in progress
-     * @throws IOException If failed to send the request
+     * @throws IOException If failed load the keys or send the request
+     * @throws GeneralSecurityException If failed to generate the necessary keys
      * @see #isRekeyRequired()
      * @see #requestNewKeysExchange()
      */
-    protected KeyExchangeFuture checkRekey() throws IOException {
+    protected KeyExchangeFuture checkRekey() throws IOException, GeneralSecurityException {
         return isRekeyRequired() ? requestNewKeysExchange() : null;
     }
 
@@ -1629,9 +1652,10 @@ public abstract class AbstractSession extends SessionHelper {
      *
      * @return A {@link KeyExchangeFuture} to wait for the initiated exchange
      * or {@code null} if an exchange is already in progress
-     * @throws IOException If failed to send the request
+     * @throws IOException If failed to load the keys or send the request
+     * @throws GeneralSecurityException If failed to generate the keys
      */
-    protected KeyExchangeFuture requestNewKeysExchange() throws IOException {
+    protected KeyExchangeFuture requestNewKeysExchange() throws IOException, GeneralSecurityException {
         if (!kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
             if (log.isDebugEnabled()) {
                 log.debug("requestNewKeysExchange({}) KEX state not DONE: {}", this, kexState.get());
@@ -1740,7 +1764,7 @@ public abstract class AbstractSession extends SessionHelper {
         return rekey;
     }
 
-    protected byte[] sendKexInit() throws IOException {
+    protected byte[] sendKexInit() throws IOException, GeneralSecurityException {
         String resolvedAlgorithms = resolveAvailableSignaturesProposal();
         if (GenericUtils.isEmpty(resolvedAlgorithms)) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_HOST_KEY_NOT_VERIFIABLE,
@@ -1794,10 +1818,12 @@ public abstract class AbstractSession extends SessionHelper {
     /**
      * @return A comma-separated list of all the signature protocols to be
      * included in the proposal - {@code null}/empty if no proposal
+     * @throws IOException If failed to read/parse the keys data
+     * @throws GeneralSecurityException If failed to generate the keys
      * @see #getFactoryManager()
      * @see #resolveAvailableSignaturesProposal(FactoryManager)
      */
-    protected String resolveAvailableSignaturesProposal() {
+    protected String resolveAvailableSignaturesProposal() throws IOException, GeneralSecurityException {
         return resolveAvailableSignaturesProposal(getFactoryManager());
     }
 
@@ -1805,8 +1831,11 @@ public abstract class AbstractSession extends SessionHelper {
      * @param manager The {@link FactoryManager}
      * @return A comma-separated list of all the signature protocols to be
      * included in the proposal - {@code null}/empty if no proposal
+     * @throws IOException If failed to read/parse the keys data
+     * @throws GeneralSecurityException If failed to generate the keys
      */
-    protected abstract String resolveAvailableSignaturesProposal(FactoryManager manager);
+    protected abstract String resolveAvailableSignaturesProposal(FactoryManager manager)
+            throws IOException, GeneralSecurityException;
 
     /**
      * Indicates the the key exchange is completed and the exchanged keys

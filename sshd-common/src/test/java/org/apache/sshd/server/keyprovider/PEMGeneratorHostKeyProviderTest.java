@@ -21,6 +21,7 @@ package org.apache.sshd.server.keyprovider;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
@@ -51,19 +52,19 @@ public class PEMGeneratorHostKeyProviderTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testDSA() throws IOException {
+    public void testDSA() throws IOException, GeneralSecurityException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         testPEMGeneratorHostKeyProvider(KeyUtils.DSS_ALGORITHM, KeyPairProvider.SSH_DSS, 512, null);
     }
 
     @Test
-    public void testRSA() throws IOException {
+    public void testRSA() throws IOException, GeneralSecurityException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         testPEMGeneratorHostKeyProvider(KeyUtils.RSA_ALGORITHM, KeyPairProvider.SSH_RSA, 512, null);
     }
 
     @Test
-    public void testECnistp256() throws IOException {
+    public void testECnistp256() throws IOException, GeneralSecurityException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         Assume.assumeTrue("ECC not supported", SecurityUtils.isECCSupported());
         Assume.assumeTrue(ECCurves.nistp256 + " N/A", ECCurves.nistp256.isSupported());
@@ -71,7 +72,7 @@ public class PEMGeneratorHostKeyProviderTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testECnistp384() throws IOException {
+    public void testECnistp384() throws IOException, GeneralSecurityException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         Assume.assumeTrue("ECC not supported", SecurityUtils.isECCSupported());
         Assume.assumeTrue(ECCurves.nistp384 + " N/A", ECCurves.nistp384.isSupported());
@@ -79,14 +80,16 @@ public class PEMGeneratorHostKeyProviderTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testECnistp521() throws IOException {
+    public void testECnistp521() throws IOException, GeneralSecurityException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         Assume.assumeTrue("ECC not supported", SecurityUtils.isECCSupported());
         Assume.assumeTrue(ECCurves.nistp521 + " N/A", ECCurves.nistp521.isSupported());
         testPEMGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP521, -1, new ECGenParameterSpec("P-521"));
     }
 
-    private Path testPEMGeneratorHostKeyProvider(String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec) throws IOException {
+    private Path testPEMGeneratorHostKeyProvider(
+            String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec)
+                throws IOException, GeneralSecurityException {
         Path path = initKeyFileLocation(algorithm);
         KeyPair kpWrite = invokePEMGeneratorHostKeyProvider(path, algorithm, keyType, keySize, keySpec);
         assertTrue("Key file not generated: " + path, Files.exists(path, IoUtils.EMPTY_LINK_OPTIONS));
@@ -103,7 +106,9 @@ public class PEMGeneratorHostKeyProviderTest extends JUnitTestSupport {
         return path;
     }
 
-    private static KeyPair invokePEMGeneratorHostKeyProvider(Path path, String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec) {
+    private static KeyPair invokePEMGeneratorHostKeyProvider(
+            Path path, String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec)
+                throws IOException, GeneralSecurityException {
         AbstractGeneratorHostKeyProvider provider = SecurityUtils.createGeneratorHostKeyProvider(path.toAbsolutePath().normalize());
         provider.setAlgorithm(algorithm);
         provider.setOverwriteAllowed(true);
@@ -117,7 +122,8 @@ public class PEMGeneratorHostKeyProviderTest extends JUnitTestSupport {
         return validateKeyPairProvider(provider, keyType);
     }
 
-    private static KeyPair validateKeyPairProvider(KeyPairProvider provider, String keyType) {
+    private static KeyPair validateKeyPairProvider(KeyPairProvider provider, String keyType)
+            throws IOException, GeneralSecurityException {
         Iterable<String> types = provider.getKeyTypes(null);
         KeyPair kp = null;
         for (String type : types) {

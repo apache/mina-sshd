@@ -90,7 +90,9 @@ public class ClassLoadableResourceKeyPairProvider extends AbstractResourceKeyPai
     }
 
     @Override
-    protected InputStream openKeyPairResource(String resourceKey, String resource) throws IOException {
+    protected InputStream openKeyPairResource(
+            SessionContext session, String resourceKey, String resource)
+                throws IOException {
         ClassLoader cl = resolveClassLoader();
         if (cl == null) {
             throw new StreamCorruptedException("No resource loader for " + resource);

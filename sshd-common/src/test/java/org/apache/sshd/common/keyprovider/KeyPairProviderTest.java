@@ -19,6 +19,8 @@
 
 package org.apache.sshd.common.keyprovider;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -46,7 +48,7 @@ public class KeyPairProviderTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testEmptyKeyProvider() {
+    public void testEmptyKeyProvider() throws IOException, GeneralSecurityException {
         KeyPairProvider provider = KeyPairProvider.EMPTY_KEYPAIR_PROVIDER;
         assertTrue("Non empty loaded keys", GenericUtils.isEmpty(provider.loadKeys(null)));
         assertTrue("Non empty key type", GenericUtils.isEmpty(provider.getKeyTypes(null)));
@@ -57,7 +59,7 @@ public class KeyPairProviderTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testMapToKeyPairProvider() {
+    public void testMapToKeyPairProvider() throws IOException, GeneralSecurityException {
         PublicKey pubKey = Mockito.mock(PublicKey.class);
         PrivateKey prvKey = Mockito.mock(PrivateKey.class);
         String[] testKeys = {getCurrentTestName(), getClass().getSimpleName()};
@@ -71,9 +73,11 @@ public class KeyPairProviderTest extends JUnitTestSupport {
         assertEquals("Key types", pairsMap.keySet(), provider.getKeyTypes(null));
         assertEquals("Key pairs", pairsMap.values(), provider.loadKeys(null));
 
-        pairsMap.forEach((keyType, expected) -> {
+        for (Map.Entry<String, KeyPair> pe : pairsMap.entrySet()) {
+            String keyType = pe.getKey();
+            KeyPair expected = pe.getValue();
             KeyPair actual = provider.loadKey(null, keyType);
             assertSame(keyType, expected, actual);
-        });
+        }
     }
 }

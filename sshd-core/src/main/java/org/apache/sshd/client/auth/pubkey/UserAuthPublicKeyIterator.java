@@ -21,6 +21,7 @@ package org.apache.sshd.client.auth.pubkey;
 
 import java.io.IOException;
 import java.nio.channels.Channel;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.ArrayList;
@@ -84,6 +85,7 @@ public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKey
         }
     }
 
+    @SuppressWarnings("checkstyle:anoninnerlength")
     protected Iterable<KeyPairIdentity> initializeSessionIdentities(
             ClientSession session, SignatureFactoriesManager signatureFactories) {
         return new Iterable<KeyPairIdentity>() {
@@ -94,8 +96,13 @@ public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKey
             public Iterator<KeyPairIdentity> iterator() {
                 // Lazy load the keys the 1st time the iterator is called
                 if (keysHolder.get() == null) {
-                    KeyIdentityProvider sessionKeysProvider = ClientSession.providerOf(session);
-                    keysHolder.set(sessionKeysProvider.loadKeys(session));
+                    try {
+                        KeyIdentityProvider sessionKeysProvider = ClientSession.providerOf(session);
+                        keysHolder.set(sessionKeysProvider.loadKeys(session));
+                    } catch (IOException | GeneralSecurityException e) {
+                        throw new RuntimeException("Unexpected " + e.getClass().getSimpleName() + ")"
+                            + " keys loading exception: " + e.getMessage(), e);
+                    }
                 }
 
                 return new Iterator<KeyPairIdentity>() {

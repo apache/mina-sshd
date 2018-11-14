@@ -28,6 +28,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -51,10 +52,12 @@ public interface ClientIdentityLoader {
         }
 
         @Override
-        public KeyPair loadClientIdentity(String location, FilePasswordProvider provider) throws IOException, GeneralSecurityException {
+        public KeyPair loadClientIdentity(
+                SessionContext session, String location, FilePasswordProvider provider)
+                    throws IOException, GeneralSecurityException {
             Path path = toPath(location);
             try (InputStream inputStream = Files.newInputStream(path, IoUtils.EMPTY_OPEN_OPTIONS)) {
-                return SecurityUtils.loadKeyPairIdentity(path.toString(), inputStream, provider);
+                return SecurityUtils.loadKeyPairIdentity(session, path.toString(), inputStream, provider);
             }
         }
 
@@ -81,6 +84,8 @@ public interface ClientIdentityLoader {
     boolean isValidLocation(String location) throws IOException;
 
     /**
+     * @param session The {@link SessionContext} for invoking this load command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool).
      * @param location The identity key-pair location - the actual meaning (file, URL, etc.)
      * depends on the implementation.
      * @param provider The {@link FilePasswordProvider} to consult if the location contains
@@ -91,5 +96,7 @@ public interface ClientIdentityLoader {
      * @throws GeneralSecurityException If failed to convert the contents into
      * a valid identity
      */
-    KeyPair loadClientIdentity(String location, FilePasswordProvider provider) throws IOException, GeneralSecurityException;
+    KeyPair loadClientIdentity(
+        SessionContext session, String location, FilePasswordProvider provider)
+            throws IOException, GeneralSecurityException;
 }

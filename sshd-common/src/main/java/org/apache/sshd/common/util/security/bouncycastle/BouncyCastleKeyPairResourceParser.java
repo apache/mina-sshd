@@ -39,6 +39,7 @@ import javax.security.auth.login.FailedLoginException;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
 import org.apache.sshd.common.config.keys.loader.AbstractKeyPairResourceParser;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.security.SecurityProviderRegistrar;
@@ -76,7 +77,7 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
 
     @Override
     public Collection<KeyPair> extractKeyPairs(
-            String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, List<String> lines)
+            SessionContext session, String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, List<String> lines)
                 throws IOException, GeneralSecurityException {
         StringBuilder writer = new StringBuilder(beginMarker.length() + endMarker.length() + lines.size() * 80);
         writer.append(beginMarker).append(IoUtils.EOL);
@@ -86,20 +87,24 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
         String data = writer.toString();
         byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
         try (InputStream bais = new ByteArrayInputStream(dataBytes)) {
-            return extractKeyPairs(resourceKey, beginMarker, endMarker, passwordProvider, bais);
+            return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, bais);
         }
     }
 
     @Override
     public Collection<KeyPair> extractKeyPairs(
-            String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, InputStream stream)
+            SessionContext session, String resourceKey,
+            String beginMarker, String endMarker,
+            FilePasswordProvider passwordProvider,
+            InputStream stream)
                 throws IOException, GeneralSecurityException {
-        KeyPair kp = loadKeyPair(resourceKey, stream, passwordProvider);
+        KeyPair kp = loadKeyPair(session, resourceKey, stream, passwordProvider);
         return (kp == null) ? Collections.emptyList() : Collections.singletonList(kp);
     }
 
-    public static KeyPair loadKeyPair(String resourceKey, InputStream inputStream, FilePasswordProvider provider)
-            throws IOException, GeneralSecurityException {
+    public static KeyPair loadKeyPair(
+            SessionContext session, String resourceKey, InputStream inputStream, FilePasswordProvider provider)
+                throws IOException, GeneralSecurityException {
         try (PEMParser r = new PEMParser(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             Object o = r.readObject();
 
@@ -122,7 +127,7 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
                 }
 
                 for (int retryIndex = 0;; retryIndex++) {
-                    String password = provider.getPassword(resourceKey, retryIndex);
+                    String password = provider.getPassword(session, resourceKey, retryIndex);
                     PEMKeyPair decoded;
                     try {
                         if (GenericUtils.isEmpty(password)) {
@@ -134,7 +139,7 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
                         decoded = ((PEMEncryptedKeyPair) o).decryptKeyPair(pemDecryptor);
                     } catch (IOException | GeneralSecurityException | RuntimeException e) {
                         ResourceDecodeResult result =
-                            provider.handleDecodeAttemptResult(resourceKey, retryIndex, password, e);
+                            provider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, e);
                         if (result == null) {
                             result = ResourceDecodeResult.TERMINATE;
                         }
@@ -151,7 +156,7 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
                     }
 
                     o = decoded;
-                    provider.handleDecodeAttemptResult(resourceKey, retryIndex, password, null);
+                    provider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, null);
                     break;
                 }
             }

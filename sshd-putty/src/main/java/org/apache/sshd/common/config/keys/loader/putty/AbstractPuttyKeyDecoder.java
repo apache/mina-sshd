@@ -40,6 +40,7 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
 import org.apache.sshd.common.config.keys.impl.AbstractIdentityResourceLoader;
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceParser;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -85,8 +86,8 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
 
     @Override
     public Collection<KeyPair> loadKeyPairs(
-            String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
-                    throws IOException, GeneralSecurityException {
+            SessionContext session, String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
+                throws IOException, GeneralSecurityException {
         List<String> pubLines = Collections.emptyList();
         List<String> prvLines = Collections.emptyList();
         String prvEncryption = null;
@@ -119,7 +120,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
             }
         }
 
-        return loadKeyPairs(resourceKey, pubLines, prvLines, prvEncryption, passwordProvider);
+        return loadKeyPairs(session, resourceKey, pubLines, prvLines, prvEncryption, passwordProvider);
     }
 
     public static List<String> extractDataLines(
@@ -146,15 +147,19 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
     }
 
     public Collection<KeyPair> loadKeyPairs(
-            String resourceKey, List<String> pubLines, List<String> prvLines, String prvEncryption, FilePasswordProvider passwordProvider)
+            SessionContext session, String resourceKey,
+            List<String> pubLines, List<String> prvLines, String prvEncryption,
+            FilePasswordProvider passwordProvider)
                 throws IOException, GeneralSecurityException {
-        return loadKeyPairs(resourceKey,
+        return loadKeyPairs(session, resourceKey,
                 KeyPairResourceParser.joinDataLines(pubLines), KeyPairResourceParser.joinDataLines(prvLines),
                 prvEncryption, passwordProvider);
     }
 
     public Collection<KeyPair> loadKeyPairs(
-            String resourceKey, String pubData, String prvData, String prvEncryption, FilePasswordProvider passwordProvider)
+            SessionContext session, String resourceKey,
+            String pubData, String prvData, String prvEncryption,
+            FilePasswordProvider passwordProvider)
                 throws IOException, GeneralSecurityException {
         Decoder b64Decoder = Base64.getDecoder();
         byte[] pubBytes = b64Decoder.decode(pubData);
@@ -187,7 +192,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
         }
 
         for (int retryIndex = 0;; retryIndex++) {
-            String password = passwordProvider.getPassword(resourceKey, retryIndex);
+            String password = passwordProvider.getPassword(session, resourceKey, retryIndex);
 
             Collection<KeyPair> keys;
             try {
@@ -199,7 +204,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
                 keys = loadKeyPairs(resourceKey, pubBytes, decBytes);
             } catch (IOException | GeneralSecurityException | RuntimeException e) {
                 ResourceDecodeResult result =
-                    passwordProvider.handleDecodeAttemptResult(resourceKey, retryIndex, password, e);
+                    passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, e);
                 if (result == null) {
                     result = ResourceDecodeResult.TERMINATE;
                 }
@@ -215,7 +220,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
                 }
             }
 
-            passwordProvider.handleDecodeAttemptResult(resourceKey, retryIndex, password, null);
+            passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, null);
             return keys;
         }
     }

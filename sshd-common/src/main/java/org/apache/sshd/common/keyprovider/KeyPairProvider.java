@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.common.keyprovider;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.Collection;
@@ -105,8 +107,11 @@ public interface KeyPairProvider extends KeyIdentityProvider {
      * be {@code null} if not invoked within a session context (e.g., offline tool).
      * @param type the type of key to load
      * @return a valid key pair or {@code null} if this type of key is not available
+     * @throws IOException If failed to read/parse the keys data
+     * @throws GeneralSecurityException If failed to generate the keys
      */
-    default KeyPair loadKey(SessionContext session, String type) {
+    default KeyPair loadKey(SessionContext session, String type)
+            throws IOException, GeneralSecurityException {
         ValidateUtils.checkNotNullAndNotEmpty(type, "No key type to load");
         return GenericUtils.stream(loadKeys(session))
                 .filter(key -> type.equals(KeyUtils.getKeyType(key)))
@@ -118,8 +123,11 @@ public interface KeyPairProvider extends KeyIdentityProvider {
      * @param session The {@link SessionContext} for invoking this load command - may
      * be {@code null} if not invoked within a session context (e.g., offline tool).
      * @return The available {@link Iterable} key types in preferred order - never {@code null}
+     * @throws IOException If failed to read/parse the keys data
+     * @throws GeneralSecurityException If failed to generate the keys
      */
-    default Iterable<String> getKeyTypes(SessionContext session) {
+    default Iterable<String> getKeyTypes(SessionContext session)
+            throws IOException, GeneralSecurityException {
         return GenericUtils.stream(loadKeys(session))
                 .map(KeyUtils::getKeyType)
                 .filter(GenericUtils::isNotEmpty)

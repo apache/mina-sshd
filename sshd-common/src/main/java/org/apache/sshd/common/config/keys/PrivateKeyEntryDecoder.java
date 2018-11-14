@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.Objects;
 
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceLoader;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -45,17 +46,19 @@ public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends Priva
             extends KeyEntryResolver<PUB, PRV>, PrivateKeyEntryResolver {
 
     @Override
-    default PrivateKey resolve(String keyType, byte[] keyData) throws IOException, GeneralSecurityException {
+    default PrivateKey resolve(SessionContext session, String keyType, byte[] keyData) throws IOException, GeneralSecurityException {
         ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type provided");
         Collection<String> supported = getSupportedTypeNames();
         if ((GenericUtils.size(supported) > 0) && supported.contains(keyType)) {
-            return decodePrivateKey(FilePasswordProvider.EMPTY, keyData);
+            return decodePrivateKey(session, FilePasswordProvider.EMPTY, keyData);
         }
 
         throw new InvalidKeySpecException("resolve(" + keyType + ") not in listed supported types: " + supported);
     }
 
     /**
+     * @param session The {@link SessionContext} for invoking this load command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
      * @param passwordProvider The {@link FilePasswordProvider} to use
      * in case the data is encrypted - may be {@code null} if no encrypted
      * data is expected
@@ -65,24 +68,27 @@ public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends Priva
      * @throws IOException              If failed to decode the key
      * @throws GeneralSecurityException If failed to generate the key
      */
-    default PRV decodePrivateKey(FilePasswordProvider passwordProvider, byte... keyData)
-            throws IOException, GeneralSecurityException {
-        return decodePrivateKey(passwordProvider, keyData, 0, NumberUtils.length(keyData));
+    default PRV decodePrivateKey(
+            SessionContext session, FilePasswordProvider passwordProvider, byte... keyData)
+                throws IOException, GeneralSecurityException {
+        return decodePrivateKey(session, passwordProvider, keyData, 0, NumberUtils.length(keyData));
     }
 
-    default PRV decodePrivateKey(FilePasswordProvider passwordProvider, byte[] keyData, int offset, int length)
-            throws IOException, GeneralSecurityException {
+    default PRV decodePrivateKey(
+            SessionContext session, FilePasswordProvider passwordProvider, byte[] keyData, int offset, int length)
+                throws IOException, GeneralSecurityException {
         if (length <= 0) {
             return null;
         }
 
         try (InputStream stream = new ByteArrayInputStream(keyData, offset, length)) {
-            return decodePrivateKey(passwordProvider, stream);
+            return decodePrivateKey(session, passwordProvider, stream);
         }
     }
 
-    default PRV decodePrivateKey(FilePasswordProvider passwordProvider, InputStream keyData)
-            throws IOException, GeneralSecurityException {
+    default PRV decodePrivateKey(
+            SessionContext session, FilePasswordProvider passwordProvider, InputStream keyData)
+                throws IOException, GeneralSecurityException {
         // the actual data is preceded by a string that repeats the key type
         String type = KeyEntryResolver.decodeString(keyData, KeyPairResourceLoader.MAX_KEY_TYPE_NAME_LENGTH);
         if (GenericUtils.isEmpty(type)) {
@@ -94,10 +100,12 @@ public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends Priva
             throw new InvalidKeySpecException("Reported key type (" + type + ") not in supported list: " + supported);
         }
 
-        return decodePrivateKey(type, passwordProvider, keyData);
+        return decodePrivateKey(session, type, passwordProvider, keyData);
     }
 
     /**
+     * @param session The {@link SessionContext} for invoking this load command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
      * @param keyType The reported / encode key type
      * @param passwordProvider The {@link FilePasswordProvider} to use
      * in case the data is encrypted - may be {@code null} if no encrypted
@@ -108,7 +116,8 @@ public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends Priva
      * @throws IOException              If failed to read from the data stream
      * @throws GeneralSecurityException If failed to generate the key
      */
-    PRV decodePrivateKey(String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
+    PRV decodePrivateKey(
+        SessionContext session, String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
             throws IOException, GeneralSecurityException;
 
     /**

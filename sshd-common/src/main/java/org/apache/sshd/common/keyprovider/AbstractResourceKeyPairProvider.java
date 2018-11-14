@@ -166,16 +166,17 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
 
     protected KeyPair doLoadKey(SessionContext session, String resourceKey, R resource, FilePasswordProvider provider)
             throws IOException, GeneralSecurityException {
-        try (InputStream inputStream = openKeyPairResource(resourceKey, resource)) {
+        try (InputStream inputStream = openKeyPairResource(session, resourceKey, resource)) {
             return doLoadKey(session, resourceKey, inputStream, provider);
         }
     }
 
-    protected abstract InputStream openKeyPairResource(String resourceKey, R resource) throws IOException;
+    protected abstract InputStream openKeyPairResource(SessionContext session, String resourceKey, R resource) throws IOException;
 
-    protected KeyPair doLoadKey(SessionContext session, String resourceKey, InputStream inputStream, FilePasswordProvider provider)
-            throws IOException, GeneralSecurityException {
-        return SecurityUtils.loadKeyPairIdentity(resourceKey, inputStream, provider);
+    protected KeyPair doLoadKey(
+            SessionContext session, String resourceKey, InputStream inputStream, FilePasswordProvider provider)
+                throws IOException, GeneralSecurityException {
+        return SecurityUtils.loadKeyPairIdentity(session, resourceKey, inputStream, provider);
     }
 
     protected class KeyPairIterator implements Iterator<KeyPair> {

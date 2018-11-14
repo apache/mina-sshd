@@ -67,6 +67,7 @@ import org.apache.sshd.common.config.keys.loader.pem.PEMResourceParserUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.random.JceRandomFactory;
 import org.apache.sshd.common.random.RandomFactory;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -468,9 +469,10 @@ public final class SecurityUtils {
     /* -------------------------------------------------------------------- */
 
     /**
+     * @param session The {@link SessionContext} for invoking this load command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool).
      * @param resourceKey An identifier of the key being loaded - used as
-     *                    argument to the {@link FilePasswordProvider#getPassword(String, int)}
-     *                    invocation
+     * argument to the {@code FilePasswordProvider#getPassword} invocation
      * @param inputStream The {@link InputStream} for the <U>private</U> key
      * @param provider    A {@link FilePasswordProvider} - may be {@code null}
      *                    if the loaded key is <U>guaranteed</U> not to be encrypted
@@ -478,23 +480,25 @@ public final class SecurityUtils {
      * @throws IOException              If failed to read/parse the input stream
      * @throws GeneralSecurityException If failed to generate the keys
      */
-    public static KeyPair loadKeyPairIdentity(String resourceKey, InputStream inputStream, FilePasswordProvider provider)
-            throws IOException, GeneralSecurityException {
+    public static KeyPair loadKeyPairIdentity(
+            SessionContext session, String resourceKey, InputStream inputStream, FilePasswordProvider provider)
+                throws IOException, GeneralSecurityException {
         KeyPairResourceParser parser = getKeyPairResourceParser();
         if (parser == null) {
             throw new NoSuchProviderException("No registered key-pair resource parser");
         }
 
-        Collection<KeyPair> ids = parser.loadKeyPairs(resourceKey, provider, inputStream);
+        Collection<KeyPair> ids = parser.loadKeyPairs(session, resourceKey, provider, inputStream);
         int numLoaded = GenericUtils.size(ids);
         if (numLoaded <= 0) {
-            throw new InvalidKeyException("Unsupported private key file format: " + resourceKey);
+            return null;
         }
+
         if (numLoaded != 1) {
             throw new InvalidKeySpecException("Multiple private key pairs N/A: " + resourceKey);
         }
 
-        return ids.iterator().next();
+        return GenericUtils.head(ids);
     }
 
     /* -------------------------------------------------------------------- */
