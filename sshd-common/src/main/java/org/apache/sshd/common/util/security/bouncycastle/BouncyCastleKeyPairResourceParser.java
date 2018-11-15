@@ -36,6 +36,7 @@ import java.util.List;
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.FailedLoginException;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
 import org.apache.sshd.common.config.keys.loader.AbstractKeyPairResourceParser;
@@ -77,7 +78,10 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
 
     @Override
     public Collection<KeyPair> extractKeyPairs(
-            SessionContext session, String resourceKey, String beginMarker, String endMarker, FilePasswordProvider passwordProvider, List<String> lines)
+            SessionContext session, NamedResource resourceKey,
+            String beginMarker, String endMarker,
+            FilePasswordProvider passwordProvider,
+            List<String> lines)
                 throws IOException, GeneralSecurityException {
         StringBuilder writer = new StringBuilder(beginMarker.length() + endMarker.length() + lines.size() * 80);
         writer.append(beginMarker).append(IoUtils.EOL);
@@ -93,7 +97,7 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
 
     @Override
     public Collection<KeyPair> extractKeyPairs(
-            SessionContext session, String resourceKey,
+            SessionContext session, NamedResource resourceKey,
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
             InputStream stream)
@@ -103,7 +107,7 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
     }
 
     public static KeyPair loadKeyPair(
-            SessionContext session, String resourceKey, InputStream inputStream, FilePasswordProvider provider)
+            SessionContext session, NamedResource resourceKey, InputStream inputStream, FilePasswordProvider provider)
                 throws IOException, GeneralSecurityException {
         try (PEMParser r = new PEMParser(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             Object o = r.readObject();

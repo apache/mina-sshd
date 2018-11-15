@@ -308,7 +308,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
                     acceptor.bind(new InetSocketAddress(inetAddress, port));
                     if (port == 0) {
-                        port = ((InetSocketAddress) acceptor.getBoundAddresses().iterator().next()).getPort();
+                        SocketAddress selectedAddress = GenericUtils.head(acceptor.getBoundAddresses());
+                        port = ((InetSocketAddress) selectedAddress).getPort();
                         log.info("start() listen on auto-allocated port=" + port);
                     }
                 }
@@ -316,7 +317,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         } else {
             acceptor.bind(new InetSocketAddress(port));
             if (port == 0) {
-                port = ((InetSocketAddress) acceptor.getBoundAddresses().iterator().next()).getPort();
+                SocketAddress selectedAddress = GenericUtils.head(acceptor.getBoundAddresses());
+                port = ((InetSocketAddress) selectedAddress).getPort();
                 log.info("start() listen on auto-allocated port=" + port);
             }
         }

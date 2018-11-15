@@ -21,6 +21,7 @@ package org.apache.sshd.common.keyprovider;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StreamCorruptedException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PublicKey;
@@ -33,11 +34,14 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.resource.IoResource;
+import org.apache.sshd.common.util.io.resource.ResourceStreamProvider;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
@@ -118,9 +122,16 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
         }
     }
 
+    protected IoResource<?> getIoResource(SessionContext session, R resource) {
+        return IoResource.forResource(resource);
+    }
+
     protected KeyPair doLoadKey(SessionContext session, R resource)
             throws IOException, GeneralSecurityException {
-        String resourceKey = ValidateUtils.checkNotNullAndNotEmpty(Objects.toString(resource, null), "No resource string value");
+        IoResource<?> ioResource =
+            ValidateUtils.checkNotNull(getIoResource(session, resource), "No I/O resource available for %s", resource);
+        String resourceKey =
+            ValidateUtils.checkNotNullAndNotEmpty(ioResource.getName(), "No resource string value for %s", resource);
         KeyPair kp;
         synchronized (cacheMap) {
             // check if lucky enough to have already loaded this file
@@ -136,7 +147,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
             return kp;
         }
 
-        kp = doLoadKey(session, resourceKey, resource, getPasswordFinder());
+        kp = doLoadKey(session, ioResource, resource, getPasswordFinder());
         if (kp != null) {
             boolean reusedKey;
             synchronized (cacheMap) {
@@ -164,17 +175,26 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
         return kp;
     }
 
-    protected KeyPair doLoadKey(SessionContext session, String resourceKey, R resource, FilePasswordProvider provider)
-            throws IOException, GeneralSecurityException {
+    protected KeyPair doLoadKey(
+            SessionContext session, NamedResource resourceKey, R resource, FilePasswordProvider provider)
+                throws IOException, GeneralSecurityException {
         try (InputStream inputStream = openKeyPairResource(session, resourceKey, resource)) {
             return doLoadKey(session, resourceKey, inputStream, provider);
         }
     }
 
-    protected abstract InputStream openKeyPairResource(SessionContext session, String resourceKey, R resource) throws IOException;
+    protected InputStream openKeyPairResource(
+            SessionContext session, NamedResource resourceKey, R resource)
+                throws IOException {
+        if (resourceKey instanceof ResourceStreamProvider) {
+            return ((ResourceStreamProvider) resourceKey).openInputStream();
+        }
+
+        throw new StreamCorruptedException("Cannot open resource data for " + resource);
+    }
 
     protected KeyPair doLoadKey(
-            SessionContext session, String resourceKey, InputStream inputStream, FilePasswordProvider provider)
+            SessionContext session, NamedResource resourceKey, InputStream inputStream, FilePasswordProvider provider)
                 throws IOException, GeneralSecurityException {
         return SecurityUtils.loadKeyPairIdentity(session, resourceKey, inputStream, provider);
     }

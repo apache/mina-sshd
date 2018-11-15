@@ -29,6 +29,7 @@ import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -36,6 +37,7 @@ import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.config.keys.ClientIdentityLoader;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -148,13 +150,13 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         String clientIdentity = getCurrentTestName();
         client.setClientIdentityLoader(new ClientIdentityLoader() {
             @Override
-            public boolean isValidLocation(String location) throws IOException {
-                return clientIdentity.equals(location);
+            public boolean isValidLocation(NamedResource location) throws IOException {
+                return Objects.equals(clientIdentity, location.getName());
             }
 
             @Override
             public KeyPair loadClientIdentity(
-                    SessionContext session, String location, FilePasswordProvider provider)
+                    SessionContext session, NamedResource location, FilePasswordProvider provider)
                         throws IOException, GeneralSecurityException {
                 if (isValidLocation(location)) {
                     return identity;
@@ -214,13 +216,13 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
 
         client.setClientIdentityLoader(new ClientIdentityLoader() {
             @Override
-            public boolean isValidLocation(String location) throws IOException {
-                return clientIdentity.equals(location);
+            public boolean isValidLocation(NamedResource location) throws IOException {
+                return Objects.equals(clientIdentity, location.getName());
             }
 
             @Override
             public KeyPair loadClientIdentity(
-                    SessionContext session, String location, FilePasswordProvider provider)
+                    SessionContext session, NamedResource location, FilePasswordProvider provider)
                         throws IOException, GeneralSecurityException {
                 if (isValidLocation(location)) {
                     return specificIdentity;

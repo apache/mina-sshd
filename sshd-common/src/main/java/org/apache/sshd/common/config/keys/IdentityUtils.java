@@ -21,7 +21,6 @@ package org.apache.sshd.common.config.keys;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,6 +35,7 @@ import org.apache.sshd.common.keyprovider.MappedKeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
@@ -151,8 +151,9 @@ public final class IdentityUtils {
         for (Map.Entry<String, ? extends Path> pe : paths.entrySet()) {
             String type = pe.getKey();
             Path path = pe.getValue();
-            try (InputStream inputStream = Files.newInputStream(path, options)) {
-                KeyPair kp = SecurityUtils.loadKeyPairIdentity(session, path.toString(), inputStream, provider);
+            PathResource location = new PathResource(path);
+            try (InputStream inputStream = location.openInputStream()) {
+                KeyPair kp = SecurityUtils.loadKeyPairIdentity(session, location, inputStream, provider);
                 KeyPair prev = ids.put(type, kp);
                 ValidateUtils.checkTrue(prev == null, "Multiple keys for type=%s", type);
             }

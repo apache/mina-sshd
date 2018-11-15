@@ -35,12 +35,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
@@ -242,12 +244,13 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
 
     protected KeyPair readKeyPair(SessionContext session, Path keyPath, OpenOption... options)
             throws IOException, GeneralSecurityException {
-        try (InputStream inputStream = Files.newInputStream(keyPath, options)) {
-            return doReadKeyPair(session, keyPath.toString(), inputStream);
+        PathResource location = new PathResource(keyPath, options);
+        try (InputStream inputStream = location.openInputStream()) {
+            return doReadKeyPair(session, location, inputStream);
         }
     }
 
-    protected KeyPair doReadKeyPair(SessionContext session, String resourceKey, InputStream inputStream)
+    protected KeyPair doReadKeyPair(SessionContext session, NamedResource resourceKey, InputStream inputStream)
             throws IOException, GeneralSecurityException {
         return SecurityUtils.loadKeyPairIdentity(session, resourceKey, inputStream, null);
     }
@@ -255,8 +258,9 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
     protected void writeKeyPair(KeyPair kp, Path keyPath, OpenOption... options)
             throws IOException, GeneralSecurityException {
         if ((!Files.exists(keyPath)) || isOverwriteAllowed()) {
+            PathResource location = new PathResource(keyPath); // The options are for write (!!)
             try (OutputStream os = Files.newOutputStream(keyPath, options)) {
-                doWriteKeyPair(keyPath.toString(), kp, os);
+                doWriteKeyPair(location, kp, os);
             } catch (Throwable e) {
                 log.warn("writeKeyPair({}) failed ({}) to write key {}: {}",
                          keyPath, e.getClass().getSimpleName(), e.getMessage());
@@ -266,11 +270,13 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
             }
         } else {
             log.error("Overwriting key ({}) is disabled: using throwaway {}: {}",
-                      keyPath, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint((kp == null) ? null : kp.getPublic()));
+                  keyPath, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint((kp == null) ? null : kp.getPublic()));
         }
     }
 
-    protected abstract void doWriteKeyPair(String resourceKey, KeyPair kp, OutputStream outputStream) throws IOException, GeneralSecurityException;
+    protected abstract void doWriteKeyPair(
+            NamedResource resourceKey, KeyPair kp, OutputStream outputStream)
+                throws IOException, GeneralSecurityException;
 
     protected KeyPair generateKeyPair(String algorithm) throws GeneralSecurityException {
         KeyPairGenerator generator = SecurityUtils.getKeyPairGenerator(algorithm);

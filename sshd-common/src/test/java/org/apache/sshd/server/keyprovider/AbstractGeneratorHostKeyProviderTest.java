@@ -27,6 +27,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
@@ -69,13 +70,13 @@ public class AbstractGeneratorHostKeyProviderTest extends JUnitTestSupport {
 
         @Override
         protected KeyPair doReadKeyPair(
-                SessionContext session, String resourceKey, InputStream inputStream)
+                SessionContext session, NamedResource resourceKey, InputStream inputStream)
                     throws IOException, GeneralSecurityException {
             return null;
         }
 
         @Override
-        protected void doWriteKeyPair(String resourceKey, KeyPair kp, OutputStream outputStream)
+        protected void doWriteKeyPair(NamedResource resourceKey, KeyPair kp, OutputStream outputStream)
                 throws IOException, GeneralSecurityException {
             writes.incrementAndGet();
         }

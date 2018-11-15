@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
@@ -97,7 +98,8 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
             }
 
             List<String> lines = IoUtils.readAllLines(url);
-            assertTrue(resource + " - can extract key pair", parser.canExtractKeyPairs(resource, lines));
+            NamedResource resourceKey = NamedResource.ofName(resource);
+            assertTrue(resource + " - can extract key pair", parser.canExtractKeyPairs(resourceKey, lines));
 
             for (PuttyKeyPairResourceParser<?, ?> other : PuttyKeyUtils.BY_KEY_TYPE.values()) {
                 if (parser == other) {
@@ -105,7 +107,7 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
                 }
 
                 assertFalse(other.getClass().getSimpleName() + "/" + resource + " - unexpected extraction capability",
-                    other.canExtractKeyPairs(resource, lines));
+                    other.canExtractKeyPairs(resourceKey, lines));
             }
         }
     }
@@ -117,7 +119,7 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
 
         Collection<KeyPair> keys = parser.loadKeyPairs(null, url, null);
         assertEquals("Mismatched loaded keys count from " + regularFile, 1, GenericUtils.size(keys));
-        assertLoadedKeyPair(regularFile, keys.iterator().next());
+        assertLoadedKeyPair(regularFile, GenericUtils.head(keys));
     }
 
     @Test
@@ -130,7 +132,7 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
         Collection<KeyPair> keys = parser.loadKeyPairs(null, url, (s, r, index) -> PASSWORD);
         assertEquals("Mismatched loaded keys count from " + encryptedFile, 1, GenericUtils.size(keys));
 
-        assertLoadedKeyPair(encryptedFile, keys.iterator().next());
+        assertLoadedKeyPair(encryptedFile, GenericUtils.head(keys));
     }
 
     @Test
@@ -146,7 +148,7 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
             AtomicInteger retriesCount = new AtomicInteger(0);
             FilePasswordProvider provider = new FilePasswordProvider() {
                 @Override
-                public String getPassword(SessionContext session, String resourceKey, int retryIndex) throws IOException {
+                public String getPassword(SessionContext session, NamedResource resourceKey, int retryIndex) throws IOException {
                     assertSame("Mismatched session context", mockSession, session);
 
                     switch (result) {
@@ -171,7 +173,7 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
 
                 @Override
                 public ResourceDecodeResult handleDecodeAttemptResult(
-                        SessionContext session, String resourceKey, int retryIndex, String password, Exception err)
+                        SessionContext session, NamedResource resourceKey, int retryIndex, String password, Exception err)
                             throws IOException, GeneralSecurityException {
                     assertSame("Mismatched session context", mockSession, session);
                     if (err == null) {

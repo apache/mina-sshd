@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 
 /**
@@ -38,7 +39,7 @@ public class BouncyCastleGeneratorHostKeyProvider extends AbstractGeneratorHostK
 
     @SuppressWarnings("deprecation")
     @Override
-    protected void doWriteKeyPair(String resourceKey, KeyPair kp, OutputStream outputStream) throws IOException, GeneralSecurityException {
+    protected void doWriteKeyPair(NamedResource resourceKey, KeyPair kp, OutputStream outputStream) throws IOException, GeneralSecurityException {
         try (org.bouncycastle.openssl.PEMWriter w =
                      new org.bouncycastle.openssl.PEMWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8))) {
             w.writeObject(kp);

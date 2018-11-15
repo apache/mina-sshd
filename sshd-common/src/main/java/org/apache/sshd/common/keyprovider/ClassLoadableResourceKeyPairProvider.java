@@ -18,16 +18,14 @@
  */
 package org.apache.sshd.common.keyprovider;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StreamCorruptedException;
 import java.security.KeyPair;
 import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.resource.ClassLoaderResource;
+import org.apache.sshd.common.util.io.resource.IoResource;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
@@ -90,20 +88,8 @@ public class ClassLoadableResourceKeyPairProvider extends AbstractResourceKeyPai
     }
 
     @Override
-    protected InputStream openKeyPairResource(
-            SessionContext session, String resourceKey, String resource)
-                throws IOException {
-        ClassLoader cl = resolveClassLoader();
-        if (cl == null) {
-            throw new StreamCorruptedException("No resource loader for " + resource);
-        }
-
-        InputStream input = cl.getResourceAsStream(resource);
-        if (input == null) {
-            throw new FileNotFoundException("Cannot find resource " + resource);
-        }
-
-        return input;
+    protected IoResource<?> getIoResource(SessionContext session, String resource) {
+        return new ClassLoaderResource(resolveClassLoader(), resource);
     }
 
     protected ClassLoader resolveClassLoader() {

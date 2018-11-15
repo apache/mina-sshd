@@ -35,6 +35,7 @@ import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.ModifiableFileWatcher;
+import org.apache.sshd.common.util.io.resource.PathResource;
 
 /**
  * A {@link ClientIdentityProvider} that watches a given key file re-loading
@@ -120,7 +121,7 @@ public class ClientIdentityFileWatcher extends ModifiableFileWatcher implements 
             }
         }
 
-        String location = path.toString();
+        PathResource location = new PathResource(path);
         ClientIdentityLoader idLoader = Objects.requireNonNull(getClientIdentityLoader(), "No client identity loader");
         if (idLoader.isValidLocation(location)) {
             KeyPair kp = idLoader.loadClientIdentity(session, location, getFilePasswordProvider());

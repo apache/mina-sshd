@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceParser;
 import org.apache.sshd.common.session.SessionContext;
@@ -44,7 +45,7 @@ public final class PEMResourceParserUtils {
     public static final KeyPairResourceParser PROXY = new KeyPairResourceParser() {
         @Override
         public Collection<KeyPair> loadKeyPairs(
-                SessionContext session, String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
+                SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
                     throws IOException, GeneralSecurityException {
             @SuppressWarnings("synthetic-access")
             KeyPairResourceParser proxy = PROXY_HOLDER.get();
@@ -52,7 +53,7 @@ public final class PEMResourceParserUtils {
         }
 
         @Override
-        public boolean canExtractKeyPairs(String resourceKey, List<String> lines)
+        public boolean canExtractKeyPairs(NamedResource resourceKey, List<String> lines)
                 throws IOException, GeneralSecurityException {
             @SuppressWarnings("synthetic-access")
             KeyPairResourceParser proxy = PROXY_HOLDER.get();

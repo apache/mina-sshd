@@ -28,6 +28,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.spec.InvalidKeySpecException;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.session.SessionContext;
 
 /**
@@ -45,7 +46,7 @@ public class SimpleGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProv
     }
 
     @Override
-    protected KeyPair doReadKeyPair(SessionContext session, String resourceKey, InputStream inputStream)
+    protected KeyPair doReadKeyPair(SessionContext session, NamedResource resourceKey, InputStream inputStream)
             throws IOException, GeneralSecurityException {
         try (ObjectInputStream r = new ObjectInputStream(inputStream)) {
             try {
@@ -57,7 +58,7 @@ public class SimpleGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProv
     }
 
     @Override
-    protected void doWriteKeyPair(String resourceKey, KeyPair kp, OutputStream outputStream)
+    protected void doWriteKeyPair(NamedResource resourceKey, KeyPair kp, OutputStream outputStream)
             throws IOException, GeneralSecurityException {
         try (ObjectOutputStream w = new ObjectOutputStream(outputStream)) {
             w.writeObject(kp);

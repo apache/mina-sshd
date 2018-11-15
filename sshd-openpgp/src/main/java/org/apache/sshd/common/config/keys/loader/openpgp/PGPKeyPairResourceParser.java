@@ -56,6 +56,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
@@ -103,7 +104,7 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
 
     @Override
     public Collection<KeyPair> extractKeyPairs(
-            SessionContext session, String resourceKey,
+            SessionContext session, NamedResource resourceKey,
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
             List<String> lines)
@@ -128,7 +129,7 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
 
     @Override
     public Collection<KeyPair> extractKeyPairs(
-            SessionContext session, String resourceKey,
+            SessionContext session, NamedResource resourceKey,
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
             InputStream stream)
@@ -186,7 +187,7 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
         }
     }
 
-    public List<KeyPair> extractKeyPairs(String resourceKey, Collection<? extends Subkey> subKeys)
+    public List<KeyPair> extractKeyPairs(NamedResource resourceKey, Collection<? extends Subkey> subKeys)
             throws IOException, GeneralSecurityException {
         if (GenericUtils.isEmpty(subKeys)) {
             return Collections.emptyList();
@@ -249,7 +250,7 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
         return kpList;
     }
 
-    public PublicKey extractPublicKey(String resourceKey, Subkey sk) throws IOException, GeneralSecurityException {
+    public PublicKey extractPublicKey(NamedResource resourceKey, Subkey sk) throws IOException, GeneralSecurityException {
         if (sk == null) {
             return null;
         }
@@ -268,7 +269,7 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
         }
     }
 
-    public RSAPublicKey extractRSAPublicKey(String resourceKey, RSAPublicBCPGKey bcKey) throws GeneralSecurityException {
+    public RSAPublicKey extractRSAPublicKey(NamedResource resourceKey, RSAPublicBCPGKey bcKey) throws GeneralSecurityException {
         if (bcKey == null) {
             return null;
         }
@@ -278,7 +279,7 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
         return generatePublicKey(KeyUtils.RSA_ALGORITHM, RSAPublicKey.class, new RSAPublicKeySpec(n, e));
     }
 
-    public PublicKey extractECPublicKey(String resourceKey, ECPublicBCPGKey bcKey) throws GeneralSecurityException {
+    public PublicKey extractECPublicKey(NamedResource resourceKey, ECPublicBCPGKey bcKey) throws GeneralSecurityException {
         if (bcKey == null) {
             return null;
         } else if (bcKey instanceof EdDSAPublicBCPGKey) {
@@ -290,7 +291,7 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
         }
     }
 
-    public ECPublicKey extractECDSAPublicKey(String resourceKey, ECDSAPublicBCPGKey bcKey) throws GeneralSecurityException {
+    public ECPublicKey extractECDSAPublicKey(NamedResource resourceKey, ECDSAPublicBCPGKey bcKey) throws GeneralSecurityException {
         if (bcKey == null) {
             return null;
         }
@@ -326,7 +327,7 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
         return generatePublicKey(KeyUtils.EC_ALGORITHM, ECPublicKey.class, new ECPublicKeySpec(w, paramSpec));
     }
 
-    public PublicKey extractEdDSAPublicKey(String resourceKey, EdDSAPublicBCPGKey bcKey)  throws GeneralSecurityException {
+    public PublicKey extractEdDSAPublicKey(NamedResource resourceKey, EdDSAPublicBCPGKey bcKey)  throws GeneralSecurityException {
         if (bcKey == null) {
             return null;
         }
@@ -338,7 +339,7 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
         throw new NoSuchAlgorithmException("Unsupported EdDSA public key type: " + bcKey.getClass().getSimpleName());
     }
 
-    public DSAPublicKey extractDSSPublicKey(String resourceKey, DSAPublicBCPGKey bcKey) throws GeneralSecurityException {
+    public DSAPublicKey extractDSSPublicKey(NamedResource resourceKey, DSAPublicBCPGKey bcKey) throws GeneralSecurityException {
         if (bcKey == null) {
             return null;
         }
@@ -357,7 +358,7 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
         return keyType.cast(pubKey);
     }
 
-    public PrivateKey extractPrivateKey(String resourceKey, Subkey sk, PublicKey pubKey)
+    public PrivateKey extractPrivateKey(NamedResource resourceKey, Subkey sk, PublicKey pubKey)
             throws IOException, GeneralSecurityException, PGPException {
         if (sk == null) {
             return null;
@@ -378,7 +379,7 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
         }
     }
 
-    public ECPrivateKey extractECDSAPrivateKey(String resourceKey, ECPublicKey pubKey, ECSecretBCPGKey bcKey)
+    public ECPrivateKey extractECDSAPrivateKey(NamedResource resourceKey, ECPublicKey pubKey, ECSecretBCPGKey bcKey)
             throws GeneralSecurityException {
         if (bcKey == null) {
             return null;
@@ -393,7 +394,7 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
         return generatePrivateKey(KeyUtils.EC_ALGORITHM, ECPrivateKey.class, new ECPrivateKeySpec(x, params));
     }
 
-    public PrivateKey extractEdDSAPrivateKey(String resourceKey, PublicKey pubKey, EdSecretBCPGKey bcKey)
+    public PrivateKey extractEdDSAPrivateKey(NamedResource resourceKey, PublicKey pubKey, EdSecretBCPGKey bcKey)
             throws GeneralSecurityException {
         if (bcKey == null) {
             return null;
@@ -406,7 +407,7 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
         throw new NoSuchAlgorithmException("Unsupported EdDSA private key type: " + bcKey.getClass().getSimpleName());
     }
 
-    public RSAPrivateKey extractRSAPrivateKey(String resourceKey, RSAPublicKey pubKey, RSASecretBCPGKey bcKey)
+    public RSAPrivateKey extractRSAPrivateKey(NamedResource resourceKey, RSAPublicKey pubKey, RSASecretBCPGKey bcKey)
             throws GeneralSecurityException {
         if (bcKey == null) {
             return null;
@@ -424,7 +425,7 @@ public class PGPKeyPairResourceParser extends AbstractKeyPairResourceParser {
                         bcKey.getCrtCoefficient()));
     }
 
-    public DSAPrivateKey extractDSSPrivateKey(String resourceKey, DSAPublicKey pubKey, DSASecretBCPGKey bcKey)
+    public DSAPrivateKey extractDSSPrivateKey(NamedResource resourceKey, DSAPublicKey pubKey, DSASecretBCPGKey bcKey)
             throws GeneralSecurityException {
         if (bcKey == null) {
             return null;

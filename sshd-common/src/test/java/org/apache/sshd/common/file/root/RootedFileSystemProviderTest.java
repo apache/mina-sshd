@@ -37,6 +37,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.TreeSet;
 
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.BeforeClass;
@@ -231,7 +232,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
     @Test
     public void testResolveRoot() throws IOException {
-        Path root = fileSystem.getRootDirectories().iterator().next();
+        Path root = GenericUtils.head(fileSystem.getRootDirectories());
         Path dir = root.resolve("tsd");
         FileHelper.createDirectory(dir);
         Path f1 = FileHelper.createFile(dir.resolve("test.txt"));

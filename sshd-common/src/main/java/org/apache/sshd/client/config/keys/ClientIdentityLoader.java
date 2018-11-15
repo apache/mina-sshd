@@ -26,11 +26,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.util.Objects;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
@@ -46,18 +49,19 @@ public interface ClientIdentityLoader {
      */
     ClientIdentityLoader DEFAULT = new ClientIdentityLoader() {
         @Override
-        public boolean isValidLocation(String location) throws IOException {
+        public boolean isValidLocation(NamedResource location) throws IOException {
             Path path = toPath(location);
             return Files.exists(path, IoUtils.EMPTY_LINK_OPTIONS);
         }
 
         @Override
         public KeyPair loadClientIdentity(
-                SessionContext session, String location, FilePasswordProvider provider)
+                SessionContext session, NamedResource location, FilePasswordProvider provider)
                     throws IOException, GeneralSecurityException {
             Path path = toPath(location);
-            try (InputStream inputStream = Files.newInputStream(path, IoUtils.EMPTY_OPEN_OPTIONS)) {
-                return SecurityUtils.loadKeyPairIdentity(session, path.toString(), inputStream, provider);
+            PathResource resource = new PathResource(path);
+            try (InputStream inputStream = resource.openInputStream()) {
+                return SecurityUtils.loadKeyPairIdentity(session, resource, inputStream, provider);
             }
         }
 
@@ -66,8 +70,10 @@ public interface ClientIdentityLoader {
             return "DEFAULT";
         }
 
-        private Path toPath(String location) {
-            Path path = Paths.get(ValidateUtils.checkNotNullAndNotEmpty(location, "No location"));
+        private Path toPath(NamedResource location) {
+            Objects.requireNonNull(location, "No location provided");
+
+            Path path = Paths.get(ValidateUtils.checkNotNullAndNotEmpty(location.getName(), "No location value for %s", location));
             path = path.toAbsolutePath();
             path = path.normalize();
             return path;
@@ -81,7 +87,7 @@ public interface ClientIdentityLoader {
      * the validity depends on the implementation
      * @throws IOException If failed to validate the location
      */
-    boolean isValidLocation(String location) throws IOException;
+    boolean isValidLocation(NamedResource location) throws IOException;
 
     /**
      * @param session The {@link SessionContext} for invoking this load command - may
@@ -97,6 +103,6 @@ public interface ClientIdentityLoader {
      * a valid identity
      */
     KeyPair loadClientIdentity(
-        SessionContext session, String location, FilePasswordProvider provider)
+        SessionContext session, NamedResource location, FilePasswordProvider provider)
             throws IOException, GeneralSecurityException;
 }

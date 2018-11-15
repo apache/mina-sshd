@@ -257,6 +257,13 @@ it will start a loop where it prompts for the password, attempts to decode the k
 the outcome - success or failure. If failure is signaled, then the provider can decide whether to retry using a new password, abort (with exception)
 or ignore. If the provider chooses to ignore the failure, then the code will make a best effort to proceed without the (undecoded) key.
 
+The methods are provided with a `NamedResource` that provides an indication of the key source "name" that is being attempted. This name can
+be used in order to prompt the user interactively and provide a useful "hint" as to the password that needs to be provided. Furthermore, the
+vast majority of the provided `NamedResource`-s also implement `IoResource` - which means that the code can find out what type of resource
+is being attempted - e.g., a file [Path](https://docs.oracle.com/javase/8/docs/api/index.html?java/nio/file/Path.html),
+a [URL](https://docs.oracle.com/javase/8/docs/api/java/net/URL.html), a [URI](https://docs.oracle.com/javase/8/docs/api/java/net/URI.html),
+etc. - and modify it's behavior accordingly.
+
 ### UserInteraction
 
 This interface is required for full support of `keyboard-interactive` authentication protocol as described in [RFC 4256](https://www.ietf.org/rfc/rfc4256.txt).

@@ -32,6 +32,7 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -61,15 +62,15 @@ public class ClientIdentityFileWatcherTest extends JUnitTestSupport {
         ClientIdentityLoader loader = new ClientIdentityLoader() {
             @Override
             public KeyPair loadClientIdentity(
-                    SessionContext session, String location, FilePasswordProvider provider)
+                    SessionContext session, NamedResource location, FilePasswordProvider provider)
                         throws IOException, GeneralSecurityException {
                 assertTrue("Invalid location: " + location, isValidLocation(location));
                 return identity;
             }
 
             @Override
-            public boolean isValidLocation(String location) throws IOException {
-                return Objects.equals(location, toString());
+            public boolean isValidLocation(NamedResource location) throws IOException {
+                return Objects.equals(location.getName(), toString());
             }
 
             @Override

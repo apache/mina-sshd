@@ -20,7 +20,6 @@
 package org.apache.sshd.spring.integration.sftp;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PublicKey;
@@ -367,11 +366,8 @@ public class ApacheSshdSftpSessionFactory
         }
 
         FilePasswordProvider provider = resolveFilePasswordProvider(session, keyResource, keyPassword);
-        Collection<KeyPair> keyPairs;
-        try (InputStream inputStream = keyResource.getInputStream()) {
-            keyPairs = PEMResourceParserUtils.PROXY.loadKeyPairs(session, keyResource.toString(), provider, inputStream);
-        }
-
+        SpringIoResource location = new SpringIoResource(keyResource);
+        Collection<KeyPair> keyPairs = PEMResourceParserUtils.PROXY.loadKeyPairs(session, location, provider);
         int numLoaded = GenericUtils.size(keyPairs);
         if (numLoaded <= 0) {
             if (debugEnabled) {

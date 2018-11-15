@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
@@ -44,6 +45,7 @@ import org.apache.sshd.common.keyprovider.AbstractResourceKeyPairProvider;
 import org.apache.sshd.common.keyprovider.ClassLoadableResourceKeyPairProvider;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.AfterClass;
@@ -158,7 +160,7 @@ public class SecurityUtilsTest extends JUnitTestSupport {
             Collection<KeyPair> kpList = bcLoader.loadKeyPairs(null, file, TEST_PASSWORD_PROVIDER);
             assertEquals(name + ": Mismatched loaded BouncyCastle keys count", 1, GenericUtils.size(kpList));
 
-            KeyPair kpBC = kpList.iterator().next();
+            KeyPair kpBC = GenericUtils.head(kpList);
             assertTrue(name + ": Mismatched BouncyCastle vs. file values", KeyUtils.compareKeyPairs(kpFile, kpBC));
         }
 
@@ -172,20 +174,22 @@ public class SecurityUtilsTest extends JUnitTestSupport {
     private static KeyPair testLoadPrivateKeyResource(
             String name, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType)
                 throws IOException, GeneralSecurityException {
-        return testLoadPrivateKey(name, new ClassLoadableResourceKeyPairProvider(name), pubType, prvType);
+        return testLoadPrivateKey(
+            NamedResource.ofName(name), new ClassLoadableResourceKeyPairProvider(name), pubType, prvType);
     }
 
     private static KeyPair testLoadPrivateKeyFile(
             Path file, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType)
                 throws IOException, GeneralSecurityException {
-        return testLoadPrivateKey(file.toString(), new FileKeyPairProvider(file), pubType, prvType);
+        return testLoadPrivateKey(new PathResource(file), new FileKeyPairProvider(file), pubType, prvType);
     }
 
     private static KeyPair testLoadPrivateKey(
-            String resourceKey, AbstractResourceKeyPairProvider<?> provider,
+            NamedResource resourceKey, AbstractResourceKeyPairProvider<?> provider,
             Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType)
                 throws IOException, GeneralSecurityException {
         provider.setPasswordFinder(TEST_PASSWORD_PROVIDER);
+
         Iterable<KeyPair> iterator = provider.loadKeys(null);
         List<KeyPair> pairs = new ArrayList<>();
         for (KeyPair kp : iterator) {

@@ -35,6 +35,7 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -80,7 +81,7 @@ public class BuiltinClientIdentitiesWatcherTest extends JUnitTestSupport {
         ClientIdentityLoader loader = new ClientIdentityLoader() {
             @Override
             public KeyPair loadClientIdentity(
-                    SessionContext session, String location, FilePasswordProvider provider)
+                    SessionContext session, NamedResource location, FilePasswordProvider provider)
                         throws IOException, GeneralSecurityException {
                 BuiltinIdentities id = findIdentity(location);
                 assertNotNull("Invalid location: " + location, id);
@@ -88,18 +89,19 @@ public class BuiltinClientIdentitiesWatcherTest extends JUnitTestSupport {
             }
 
             @Override
-            public boolean isValidLocation(String location) throws IOException {
+            public boolean isValidLocation(NamedResource location) throws IOException {
                 return findIdentity(location) != null;
             }
 
-            private BuiltinIdentities findIdentity(String location) {
-                if (GenericUtils.isEmpty(location)) {
+            private BuiltinIdentities findIdentity(NamedResource location) {
+                String idPath = (location == null) ? null : location.getName();
+                if (GenericUtils.isEmpty(idPath)) {
                     return null;
                 }
 
                 for (Map.Entry<BuiltinIdentities, Path> le : locationsMap.entrySet()) {
                     Path path = le.getValue();
-                    if (String.CASE_INSENSITIVE_ORDER.compare(location, path.toString()) == 0) {
+                    if (String.CASE_INSENSITIVE_ORDER.compare(idPath, path.toString()) == 0) {
                         return le.getKey();
                     }
                 }

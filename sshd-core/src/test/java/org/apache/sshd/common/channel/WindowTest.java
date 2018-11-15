@@ -43,6 +43,7 @@ import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoReadFuture;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.SshServer;
@@ -152,14 +153,17 @@ public class WindowTest extends BaseTestSupport {
         PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
             try (ChannelShell channel = session.createShellChannel()) {
                 channel.open().verify(5L, TimeUnit.SECONDS);
 
-                try (Channel serverChannel = sshd.getActiveSessions().iterator().next().getService(ServerConnectionService.class).getChannels().iterator().next()) {
+                try (Channel serverChannel = GenericUtils.head(GenericUtils.head(sshd.getActiveSessions())
+                        .getService(ServerConnectionService.class).getChannels())) {
                     Window clientLocal = channel.getLocalWindow();
                     Window clientRemote = channel.getRemoteWindow();
                     Window serverLocal = serverChannel.getLocalWindow();
@@ -168,8 +172,10 @@ public class WindowTest extends BaseTestSupport {
                     final String message = "0123456789";
                     final int nbMessages = 500;
 
-                    try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(channel.getInvertedIn(), StandardCharsets.UTF_8));
-                         BufferedReader reader = new BufferedReader(new InputStreamReader(channel.getInvertedOut(), StandardCharsets.UTF_8))) {
+                    try (BufferedWriter writer = new BufferedWriter(
+                            new OutputStreamWriter(channel.getInvertedIn(), StandardCharsets.UTF_8));
+                         BufferedReader reader = new BufferedReader(
+                             new InputStreamReader(channel.getInvertedOut(), StandardCharsets.UTF_8))) {
 
                         for (int i = 0; i < nbMessages; i++) {
                             writer.write(message);
@@ -200,7 +206,9 @@ public class WindowTest extends BaseTestSupport {
 
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -214,7 +222,8 @@ public class WindowTest extends BaseTestSupport {
                 channel.setOut(outPos);
                 channel.open().verify(7L, TimeUnit.SECONDS);
 
-                try (Channel serverChannel = sshd.getActiveSessions().iterator().next().getService(ServerConnectionService.class).getChannels().iterator().next()) {
+                try (Channel serverChannel = GenericUtils.head(GenericUtils.head(sshd.getActiveSessions())
+                        .getService(ServerConnectionService.class).getChannels())) {
                     Window clientLocal = channel.getLocalWindow();
                     Window clientRemote = channel.getRemoteWindow();
                     Window serverLocal = serverChannel.getLocalWindow();
@@ -223,8 +232,10 @@ public class WindowTest extends BaseTestSupport {
                     final String message = "0123456789";
                     final int nbMessages = 500;
 
-                    try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(inPos, StandardCharsets.UTF_8));
-                         BufferedReader reader = new BufferedReader(new InputStreamReader(outPis, StandardCharsets.UTF_8))) {
+                    try (BufferedWriter writer = new BufferedWriter(
+                            new OutputStreamWriter(inPos, StandardCharsets.UTF_8));
+                         BufferedReader reader = new BufferedReader(
+                             new InputStreamReader(outPis, StandardCharsets.UTF_8))) {
                         for (int i = 0; i < nbMessages; i++) {
                             writer.write(message);
                             writer.write('\n');
@@ -254,7 +265,9 @@ public class WindowTest extends BaseTestSupport {
 
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -262,7 +275,8 @@ public class WindowTest extends BaseTestSupport {
                 channel.setStreaming(ClientChannel.Streaming.Async);
                 channel.open().verify(5L, TimeUnit.SECONDS);
 
-                try (Channel serverChannel = sshd.getActiveSessions().iterator().next().getService(ServerConnectionService.class).getChannels().iterator().next()) {
+                try (Channel serverChannel = GenericUtils.head(GenericUtils.head(sshd.getActiveSessions())
+                        .getService(ServerConnectionService.class).getChannels())) {
                     Window clientLocal = channel.getLocalWindow();
                     Window clientRemote = channel.getRemoteWindow();
                     Window serverLocal = serverChannel.getLocalWindow();

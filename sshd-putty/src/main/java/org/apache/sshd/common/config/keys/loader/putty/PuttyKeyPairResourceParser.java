@@ -37,6 +37,7 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.IdentityResourceLoader;
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceParser;
 import org.apache.sshd.common.digest.BuiltinDigests;
@@ -112,7 +113,7 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
     String NO_PRIVATE_KEY_ENCRYPTION_VALUE = "none";
 
     @Override
-    default boolean canExtractKeyPairs(String resourceKey, List<String> lines)
+    default boolean canExtractKeyPairs(NamedResource resourceKey, List<String> lines)
             throws IOException, GeneralSecurityException {
         if (GenericUtils.isEmpty(lines)) {
             return false;

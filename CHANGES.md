@@ -37,6 +37,8 @@ accept also an `AttributeRepository` connection context argument (propagated fro
 
     * The available session context (if any) is also provided as an argument to the interface methods.
 
+    * The interface methods use a `NamedResource` as the resource key instead of a plain string.
+
 * `SshAgent#getIdentities` returns an `Iterable` rather than a `List`
 
 * `SftpFileSystemProvider` and its associated helper classes have been moved to
@@ -48,7 +50,10 @@ accept also an `AttributeRepository` connection context argument (propagated fro
 
 * `ClientIdentityProvider` accepts a `SessionContext` argument in its `getClientIdentity` method.
 
-* `ClientIdentityLoader` accepts a `SessionContext` argument in its `loadClientIdentity` method.
+* `ClientIdentityLoader`
+    * Accepts a `SessionContext` argument in its `loadClientIdentity` method.
+
+    * Uses a `NamedResource` as the identity location indicator instead of a plain old string.
 
 * `ApacheSshdSftpSessionFactory#get/setPrivateKey` has been renamed to `get/setPrivateKeyLocation`.
 
@@ -77,3 +82,6 @@ pending packets have been sent to the peer channel when closing the tunnel grace
 
 * [SSHD-862](https://issues.apache.org/jira/browse/SSHD-862) - Provide session context argument (if available) when
 key loading methods are invoked.
+
+* [SSHD-864](https://issues.apache.org/jira/browse/SSHD-864) - Using a `NamedResource` instead of plain old string
+in order to provide key file(s) location information

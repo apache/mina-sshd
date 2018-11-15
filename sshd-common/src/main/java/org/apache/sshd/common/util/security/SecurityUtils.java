@@ -57,6 +57,7 @@ import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
 import javax.crypto.spec.DHParameterSpec;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
@@ -481,7 +482,7 @@ public final class SecurityUtils {
      * @throws GeneralSecurityException If failed to generate the keys
      */
     public static KeyPair loadKeyPairIdentity(
-            SessionContext session, String resourceKey, InputStream inputStream, FilePasswordProvider provider)
+            SessionContext session, NamedResource resourceKey, InputStream inputStream, FilePasswordProvider provider)
                 throws IOException, GeneralSecurityException {
         KeyPairResourceParser parser = getKeyPairResourceParser();
         if (parser == null) {

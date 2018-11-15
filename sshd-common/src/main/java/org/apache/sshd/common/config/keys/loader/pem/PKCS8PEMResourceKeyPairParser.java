@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.SessionContext;
@@ -66,7 +67,7 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
 
     @Override
     public Collection<KeyPair> extractKeyPairs(
-            SessionContext session, String resourceKey,
+            SessionContext session, NamedResource resourceKey,
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
             InputStream stream)

@@ -200,15 +200,18 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
                     }
                 }
 
-                validateHashResult(file, file.checkFileName(srcPath, algorithms, 0L, 0L, hashBlockSize), algorithms.get(0), expectedHash);
+                String hashAlgo = algorithms.get(0);
+                validateHashResult(file, file.checkFileName(srcPath, algorithms, 0L, 0L, hashBlockSize), hashAlgo, expectedHash);
                 try (CloseableHandle fileHandle = sftp.open(srcPath, SftpClient.OpenMode.Read)) {
-                    validateHashResult(hndl, hndl.checkFileHandle(fileHandle, algorithms, 0L, 0L, hashBlockSize), algorithms.get(0), expectedHash);
+                    validateHashResult(hndl, hndl.checkFileHandle(fileHandle, algorithms, 0L, 0L, hashBlockSize), hashAlgo, expectedHash);
                 }
             }
         }
     }
 
-    private void validateHashResult(NamedResource hasher, Map.Entry<String, ? extends Collection<byte[]>> result, String expectedAlgorithm, byte[] expectedHash) {
+    private void validateHashResult(
+            NamedResource hasher, Map.Entry<String, ? extends Collection<byte[]>> result,
+            String expectedAlgorithm, byte[] expectedHash) {
         String name = hasher.getName();
         assertNotNull("No result for hash=" + name, result);
         assertEquals("Mismatched hash algorithms for " + name, expectedAlgorithm, result.getKey());
@@ -217,7 +220,7 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
             Collection<byte[]> values = result.getValue();
             assertEquals("Mismatched hash values count for " + name, 1, GenericUtils.size(values));
 
-            byte[] actualHash = values.iterator().next();
+            byte[] actualHash = GenericUtils.head(values);
             if (!Arrays.equals(expectedHash, actualHash)) {
                 fail("Mismatched hashes for " + name
                     + ": expected=" + BufferUtils.toHex(':', expectedHash)

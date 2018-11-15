@@ -47,6 +47,7 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.keyprovider.MappedKeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.ServerAuthenticationManager;
@@ -115,8 +116,9 @@ public abstract class SshServerCliSupport extends CliSupport {
             List<KeyPair> pairs = new ArrayList<>(keyFiles.size());
             for (String keyFilePath : keyFiles) {
                 Path path = Paths.get(keyFilePath);
-                try (InputStream inputStream = Files.newInputStream(path)) {
-                    KeyPair kp = SecurityUtils.loadKeyPairIdentity(null, keyFilePath, inputStream, null);
+                PathResource location = new PathResource(path);
+                try (InputStream inputStream = location.openInputStream()) {
+                    KeyPair kp = SecurityUtils.loadKeyPairIdentity(null, location, inputStream, null);
                     pairs.add(kp);
                 } catch (Exception e) {
                     stderr.append("Failed (").append(e.getClass().getSimpleName()).append(')')

@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -73,7 +74,7 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
 
     @Override
     public Collection<KeyPair> extractKeyPairs(
-            SessionContext session, String resourceKey,
+            SessionContext session, NamedResource resourceKey,
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
             InputStream stream)

@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
@@ -46,13 +47,13 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
     KeyPairResourceParser EMPTY = new KeyPairResourceParser() {
         @Override
         public Collection<KeyPair> loadKeyPairs(
-                SessionContext session, String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
+                SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
                     throws IOException, GeneralSecurityException {
             return Collections.emptyList();
         }
 
         @Override
-        public boolean canExtractKeyPairs(String resourceKey, List<String> lines)
+        public boolean canExtractKeyPairs(NamedResource resourceKey, List<String> lines)
                 throws IOException, GeneralSecurityException {
             return false;
         }
@@ -71,7 +72,7 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
      * @throws GeneralSecurityException If failed to extract information regarding
      * the possibility to extract the key pairs
      */
-    boolean canExtractKeyPairs(String resourceKey, List<String> lines)
+    boolean canExtractKeyPairs(NamedResource resourceKey, List<String> lines)
         throws IOException, GeneralSecurityException;
 
     /**
@@ -154,7 +155,7 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
         return new KeyPairResourceParser() {
             @Override
             public Collection<KeyPair> loadKeyPairs(
-                    SessionContext session, String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
+                    SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
                         throws IOException, GeneralSecurityException {
                 Collection<KeyPair> keyPairs = Collections.emptyList();
                 for (KeyPairResourceParser p : parsers) {
@@ -178,7 +179,7 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
             }
 
             @Override
-            public boolean canExtractKeyPairs(String resourceKey, List<String> lines)
+            public boolean canExtractKeyPairs(NamedResource resourceKey, List<String> lines)
                     throws IOException, GeneralSecurityException {
                 for (KeyPairResourceParser p : parsers) {
                     if (p.canExtractKeyPairs(resourceKey, lines)) {

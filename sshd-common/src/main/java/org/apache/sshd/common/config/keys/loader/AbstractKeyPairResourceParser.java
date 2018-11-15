@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
@@ -79,14 +80,14 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
     }
 
     @Override
-    public boolean canExtractKeyPairs(String resourceKey, List<String> lines)
+    public boolean canExtractKeyPairs(NamedResource resourceKey, List<String> lines)
             throws IOException, GeneralSecurityException {
         return KeyPairResourceParser.containsMarkerLine(lines, getBeginners());
     }
 
     @Override
     public Collection<KeyPair> loadKeyPairs(
-            SessionContext session, String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
+            SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
                 throws IOException, GeneralSecurityException {
         Collection<KeyPair> keyPairs = Collections.emptyList();
         List<String> beginMarkers = getBeginners();
@@ -140,7 +141,7 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
      * @see #extractKeyPairs(String, String, String, FilePasswordProvider, byte[])
      */
     public Collection<KeyPair> extractKeyPairs(
-            SessionContext session, String resourceKey,
+            SessionContext session, NamedResource resourceKey,
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
             List<String> lines)
@@ -163,7 +164,7 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
      * @see #extractKeyPairs(String, String, String, FilePasswordProvider, InputStream)
      */
     public Collection<KeyPair> extractKeyPairs(
-            SessionContext session, String resourceKey,
+            SessionContext session, NamedResource resourceKey,
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
             byte[] bytes)
@@ -191,7 +192,7 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
      * @throws GeneralSecurityException If failed to generate the keys
      */
     public abstract Collection<KeyPair> extractKeyPairs(
-        SessionContext session, String resourceKey,
+        SessionContext session, NamedResource resourceKey,
         String beginMarker, String endMarker,
         FilePasswordProvider passwordProvider, InputStream stream)
             throws IOException, GeneralSecurityException;

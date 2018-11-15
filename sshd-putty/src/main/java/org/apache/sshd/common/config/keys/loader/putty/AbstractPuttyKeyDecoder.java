@@ -36,6 +36,7 @@ import java.util.List;
 
 import javax.security.auth.login.FailedLoginException;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
 import org.apache.sshd.common.config.keys.impl.AbstractIdentityResourceLoader;
@@ -59,7 +60,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
     }
 
     @Override
-    public boolean canExtractKeyPairs(String resourceKey, List<String> lines)
+    public boolean canExtractKeyPairs(NamedResource resourceKey, List<String> lines)
             throws IOException, GeneralSecurityException {
         if (!PuttyKeyPairResourceParser.super.canExtractKeyPairs(resourceKey, lines)) {
             return false;
@@ -86,7 +87,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
 
     @Override
     public Collection<KeyPair> loadKeyPairs(
-            SessionContext session, String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
+            SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
                 throws IOException, GeneralSecurityException {
         List<String> pubLines = Collections.emptyList();
         List<String> prvLines = Collections.emptyList();
@@ -124,7 +125,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
     }
 
     public static List<String> extractDataLines(
-            String resourceKey, List<String> lines, int startIndex, String hdrName, String hdrValue, List<String> curLines)
+            NamedResource resourceKey, List<String> lines, int startIndex, String hdrName, String hdrValue, List<String> curLines)
                 throws IOException {
         if (GenericUtils.size(curLines) > 0) {
             throw new StreamCorruptedException("Duplicate " + hdrName + " in " + resourceKey);
@@ -147,7 +148,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
     }
 
     public Collection<KeyPair> loadKeyPairs(
-            SessionContext session, String resourceKey,
+            SessionContext session, NamedResource resourceKey,
             List<String> pubLines, List<String> prvLines, String prvEncryption,
             FilePasswordProvider passwordProvider)
                 throws IOException, GeneralSecurityException {
@@ -157,7 +158,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
     }
 
     public Collection<KeyPair> loadKeyPairs(
-            SessionContext session, String resourceKey,
+            SessionContext session, NamedResource resourceKey,
             String pubData, String prvData, String prvEncryption,
             FilePasswordProvider passwordProvider)
                 throws IOException, GeneralSecurityException {
@@ -225,7 +226,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
         }
     }
 
-    public Collection<KeyPair> loadKeyPairs(String resourceKey, byte[] pubData, byte[] prvData)
+    public Collection<KeyPair> loadKeyPairs(NamedResource resourceKey, byte[] pubData, byte[] prvData)
             throws IOException, GeneralSecurityException {
         ValidateUtils.checkNotNullAndNotEmpty(pubData, "No public key data in %s", resourceKey);
         ValidateUtils.checkNotNullAndNotEmpty(prvData, "No private key data in %s", resourceKey);
@@ -235,7 +236,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
         }
     }
 
-    public Collection<KeyPair> loadKeyPairs(String resourceKey, InputStream pubData, InputStream prvData)
+    public Collection<KeyPair> loadKeyPairs(NamedResource resourceKey, InputStream pubData, InputStream prvData)
             throws IOException, GeneralSecurityException {
         try (PuttyKeyReader pubReader =
                 new PuttyKeyReader(ValidateUtils.checkNotNull(pubData, "No public key data in %s", resourceKey));
@@ -245,6 +246,6 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
         }
     }
 
-    public abstract Collection<KeyPair> loadKeyPairs(String resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader)
+    public abstract Collection<KeyPair> loadKeyPairs(NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader)
             throws IOException, GeneralSecurityException;
 }

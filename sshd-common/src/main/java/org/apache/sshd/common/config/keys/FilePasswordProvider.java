@@ -22,6 +22,7 @@ package org.apache.sshd.common.config.keys;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.session.SessionContext;
 
 /**
@@ -53,7 +54,7 @@ public interface FilePasswordProvider {
      * @throws IOException if cannot resolve password
      * @see #handleDecodeAttemptResult(String, int, String, Exception)
      */
-    String getPassword(SessionContext session, String resourceKey, int retryIndex) throws IOException;
+    String getPassword(SessionContext session, NamedResource resourceKey, int retryIndex) throws IOException;
 
     /**
      * Invoked to inform the password provide about the decoding result. <b>Note:</b>
@@ -74,7 +75,7 @@ public interface FilePasswordProvider {
      * @throws GeneralSecurityException If not attempting to resolve a new password
      */
     default ResourceDecodeResult handleDecodeAttemptResult(
-            SessionContext session, String resourceKey, int retryIndex, String password, Exception err)
+            SessionContext session, NamedResource resourceKey, int retryIndex, String password, Exception err)
                 throws IOException, GeneralSecurityException {
         return ResourceDecodeResult.TERMINATE;
     }

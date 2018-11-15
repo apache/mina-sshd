@@ -45,6 +45,7 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -61,6 +62,7 @@ import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.io.resource.URLResource;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.ServerAuthenticationManager;
@@ -894,12 +896,19 @@ public class AuthenticationTest extends BaseTestSupport {
                 String keyLocation = "super-secret-passphrase-RSA-AES-128-key";
                 FilePasswordProvider passwordProvider = new FilePasswordProvider() {
                     @Override
+                    @SuppressWarnings("synthetic-access")
                     public String getPassword(
-                            SessionContext session, String resourceKey, int retryIndex)
+                            SessionContext session, NamedResource resourceKey, int retryIndex)
                                 throws IOException {
                         assertSame("Mismatched session context", s, session);
                         assertEquals("Mismatched retry index", 0, retryIndex);
-                        assertEquals("Mismatched location", keyLocation, resourceKey);
+
+                        String name = resourceKey.getName();
+                        int pos = name.lastIndexOf('/');
+                        if (pos >= 0) {
+                            name = name.substring(pos + 1);
+                        }
+                        assertEquals("Mismatched location", keyLocation, name);
 
                         Boolean passwordRequested = session.getAttribute(PASSWORD_ATTR);
                         assertNull("Password already requested", passwordRequested);
@@ -915,10 +924,11 @@ public class AuthenticationTest extends BaseTestSupport {
                         assertNotNull("Missing key file " + keyLocation, location);
 
                         KeyPair kp;
-                        try (InputStream keyData = location.openStream()) {
-                            kp = SecurityUtils.loadKeyPairIdentity(session, keyLocation, keyData, passwordProvider);
+                        URLResource resourceKey = new URLResource(location);
+                        try (InputStream keyData = resourceKey.openInputStream()) {
+                            kp = SecurityUtils.loadKeyPairIdentity(session, resourceKey, keyData, passwordProvider);
                         }
-                        assertNotNull("No identity loaded from " + keyLocation, kp);
+                        assertNotNull("No identity loaded from " + resourceKey, kp);
                         return Collections.singletonList(kp);
                     }
                 });

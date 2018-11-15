@@ -26,6 +26,7 @@ import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
@@ -67,6 +69,7 @@ import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
@@ -81,7 +84,7 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
@@ -511,12 +514,19 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         int port = hostConfig.getPort();
         ValidateUtils.checkTrue(port > 0, "Invalid port: %d", port);
 
-        Collection<KeyPair> keys = loadClientIdentities(hostConfig.getIdentities(), IoUtils.EMPTY_LINK_OPTIONS);
+        Collection<String> hostIds = hostConfig.getIdentities();
+        Collection<PathResource> idFiles = GenericUtils.isEmpty(hostIds)
+            ? Collections.emptyList()
+            : hostIds.stream()
+                .map(l -> Paths.get(l))
+                .map(PathResource::new)
+                .collect(Collectors.toCollection(() -> new ArrayList<>(hostIds.size())));
+        Collection<KeyPair> keys = loadClientIdentities(idFiles);
         return doConnect(hostConfig.getUsername(), new InetSocketAddress(host, port),
                 context, localAddress, keys, !hostConfig.isIdentitiesOnly());
     }
 
-    protected List<KeyPair> loadClientIdentities(Collection<String> locations, LinkOption... options) throws IOException {
+    protected List<KeyPair> loadClientIdentities(Collection<? extends NamedResource> locations) throws IOException {
         if (GenericUtils.isEmpty(locations)) {
             return Collections.emptyList();
         }
@@ -526,7 +536,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         ClientIdentityLoader loader = Objects.requireNonNull(getClientIdentityLoader(), "No ClientIdentityLoader");
         FilePasswordProvider provider = getFilePasswordProvider();
         boolean debugEnabled = log.isDebugEnabled();
-        for (String l : locations) {
+        for (NamedResource l : locations) {
             if (!loader.isValidLocation(l)) {
                 if (ignoreNonExisting) {
                     if (debugEnabled) {

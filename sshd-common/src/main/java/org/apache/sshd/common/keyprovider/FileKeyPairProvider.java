@@ -19,8 +19,6 @@
 package org.apache.sshd.common.keyprovider;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
@@ -31,7 +29,8 @@ import java.util.Objects;
 
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.io.resource.IoResource;
+import org.apache.sshd.common.util.io.resource.PathResource;
 
 /**
  * This host key provider loads private keys from the specified files. The
@@ -77,15 +76,13 @@ public class FileKeyPairProvider extends AbstractResourceKeyPairProvider<Path> {
     }
 
     @Override
-    protected KeyPair doLoadKey(SessionContext session, Path resource)
-            throws IOException, GeneralSecurityException {
-        return super.doLoadKey(session, (resource == null) ? null : resource.toAbsolutePath());
+    protected IoResource<Path> getIoResource(SessionContext session, Path resource) {
+        return (resource == null) ? null : new PathResource(resource);
     }
 
     @Override
-    protected InputStream openKeyPairResource(
-            SessionContext session, String resourceKey, Path resource)
-                throws IOException {
-        return Files.newInputStream(resource, IoUtils.EMPTY_OPEN_OPTIONS);
+    protected KeyPair doLoadKey(SessionContext session, Path resource)
+            throws IOException, GeneralSecurityException {
+        return super.doLoadKey(session, (resource == null) ? null : resource.toAbsolutePath());
     }
 }

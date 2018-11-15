@@ -28,7 +28,6 @@ import java.io.StringReader;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
@@ -38,9 +37,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.io.resource.IoResource;
+import org.apache.sshd.common.util.io.resource.PathResource;
+import org.apache.sshd.common.util.io.resource.URLResource;
 
 /**
  * Loads {@link KeyPair}s from text resources
@@ -86,9 +89,7 @@ public interface KeyPairResourceLoader {
     default Collection<KeyPair> loadKeyPairs(
             SessionContext session, Path path, FilePasswordProvider passwordProvider, Charset cs, OpenOption... options)
                 throws IOException, GeneralSecurityException {
-        try (InputStream stream = Files.newInputStream(path, options)) {
-            return loadKeyPairs(session, path.toString(), passwordProvider, stream, cs);
-        }
+        return loadKeyPairs(session, new PathResource(path, options), passwordProvider, cs);
     }
 
     default Collection<KeyPair> loadKeyPairs(
@@ -100,13 +101,25 @@ public interface KeyPairResourceLoader {
     default Collection<KeyPair> loadKeyPairs(
             SessionContext session, URL url, FilePasswordProvider passwordProvider, Charset cs)
                 throws IOException, GeneralSecurityException {
-        try (InputStream stream = Objects.requireNonNull(url, "No URL").openStream()) {
-            return loadKeyPairs(session, url.toExternalForm(), passwordProvider, stream, cs);
+        return loadKeyPairs(session, new URLResource(url), passwordProvider, cs);
+    }
+
+    default Collection<KeyPair> loadKeyPairs(
+            SessionContext session, IoResource<?> resource, FilePasswordProvider passwordProvider)
+                throws IOException, GeneralSecurityException {
+        return loadKeyPairs(session, resource, passwordProvider, StandardCharsets.UTF_8);
+    }
+
+    default Collection<KeyPair> loadKeyPairs(
+            SessionContext session, IoResource<?> resource, FilePasswordProvider passwordProvider, Charset cs)
+                throws IOException, GeneralSecurityException {
+        try (InputStream stream = Objects.requireNonNull(resource, "No resource data").openInputStream()) {
+            return loadKeyPairs(session, resource, passwordProvider, stream, cs);
         }
     }
 
     default Collection<KeyPair> loadKeyPairs(
-            SessionContext session, String resourceKey, FilePasswordProvider passwordProvider, String data)
+            SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, String data)
                 throws IOException, GeneralSecurityException {
         try (Reader reader = new StringReader((data == null) ? "" : data)) {
             return loadKeyPairs(session, resourceKey, passwordProvider, reader);
@@ -114,13 +127,13 @@ public interface KeyPairResourceLoader {
     }
 
     default Collection<KeyPair> loadKeyPairs(
-            SessionContext session, String resourceKey, FilePasswordProvider passwordProvider, InputStream stream)
+            SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, InputStream stream)
                 throws IOException, GeneralSecurityException {
         return loadKeyPairs(session, resourceKey, passwordProvider, stream, StandardCharsets.UTF_8);
     }
 
     default Collection<KeyPair> loadKeyPairs(
-            SessionContext session, String resourceKey, FilePasswordProvider passwordProvider, InputStream stream, Charset cs)
+            SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, InputStream stream, Charset cs)
                 throws IOException, GeneralSecurityException {
         try (Reader reader = new InputStreamReader(
                 Objects.requireNonNull(stream, "No stream instance"), Objects.requireNonNull(cs, "No charset"))) {
@@ -129,7 +142,7 @@ public interface KeyPairResourceLoader {
     }
 
     default Collection<KeyPair> loadKeyPairs(
-            SessionContext session, String resourceKey, FilePasswordProvider passwordProvider, Reader r)
+            SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, Reader r)
                 throws IOException, GeneralSecurityException {
         try (BufferedReader br = new BufferedReader(Objects.requireNonNull(r, "No reader instance"), IoUtils.DEFAULT_COPY_SIZE)) {
             return loadKeyPairs(session, resourceKey, passwordProvider, br);
@@ -137,7 +150,7 @@ public interface KeyPairResourceLoader {
     }
 
     default Collection<KeyPair> loadKeyPairs(
-            SessionContext session, String resourceKey, FilePasswordProvider passwordProvider, BufferedReader r)
+            SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, BufferedReader r)
                 throws IOException, GeneralSecurityException {
         return loadKeyPairs(session, resourceKey, passwordProvider, IoUtils.readAllLines(r));
     }
@@ -160,6 +173,6 @@ public interface KeyPairResourceLoader {
      * parsed data
      */
     Collection<KeyPair> loadKeyPairs(
-        SessionContext session, String resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
+        SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
             throws IOException, GeneralSecurityException;
 }

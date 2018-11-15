@@ -36,6 +36,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -54,7 +55,7 @@ public class ECDSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<ECPublicKey, E
     }
 
     @Override
-    public Collection<KeyPair> loadKeyPairs(String resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader)
+    public Collection<KeyPair> loadKeyPairs(NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader)
             throws IOException, GeneralSecurityException {
         if (!SecurityUtils.isECCSupported()) {
             throw new NoSuchAlgorithmException("ECC not supported for " + resourceKey);

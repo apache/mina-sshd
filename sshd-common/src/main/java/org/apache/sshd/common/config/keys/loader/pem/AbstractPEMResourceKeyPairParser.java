@@ -33,6 +33,7 @@ import java.util.List;
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.FailedLoginException;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
 import org.apache.sshd.common.config.keys.loader.AbstractKeyPairResourceParser;
@@ -74,7 +75,7 @@ public abstract class AbstractPEMResourceKeyPairParser
 
     @Override
     public Collection<KeyPair> extractKeyPairs(
-            SessionContext session, String resourceKey,
+            SessionContext session, NamedResource resourceKey,
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
             List<String> lines)

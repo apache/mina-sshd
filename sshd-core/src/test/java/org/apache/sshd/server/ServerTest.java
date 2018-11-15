@@ -333,11 +333,11 @@ public class ServerTest extends BaseTestSupport {
             assertTrue("No changes in activated channels", channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS));
             assertTrue("No changes in open channels", channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS));
 
-            try (AbstractSession serverSession = sshd.getActiveSessions().iterator().next()) {
+            try (AbstractSession serverSession = GenericUtils.head(sshd.getActiveSessions())) {
                 AbstractConnectionService service = serverSession.getService(AbstractConnectionService.class);
                 Collection<? extends Channel> channels = service.getChannels();
 
-                try (Channel channel = channels.iterator().next()) {
+                try (Channel channel = GenericUtils.head(channels)) {
                     final long maxTimeoutValue = idleTimeoutValue + disconnectTimeoutValue + TimeUnit.SECONDS.toMillis(3L);
                     final long maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(maxTimeoutValue);
                     Window wRemote = channel.getRemoteWindow();

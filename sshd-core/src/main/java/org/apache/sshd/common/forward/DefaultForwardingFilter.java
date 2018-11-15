@@ -978,7 +978,7 @@ public class DefaultForwardingFilter
             if (after.size() > 1) {
                 throw new IOException("Multiple local addresses have been bound for " + address + "[" + bindAddress + "]");
             }
-            return (InetSocketAddress) after.iterator().next();
+            return (InetSocketAddress) GenericUtils.head(after);
         } catch (IOException bindErr) {
             Set<SocketAddress> after = acceptor.getBoundAddresses();
             if (GenericUtils.isEmpty(after)) {

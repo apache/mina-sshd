@@ -101,4 +101,24 @@ public interface NamedResource {
                 .findFirst()
                 .orElse(null);
     }
+
+    /**
+     * Wraps a name value inside a {@link NamedResource}
+     *
+     * @param name The name value to wrap
+     * @return The wrapper instance
+     */
+    static NamedResource ofName(String name) {
+        return new NamedResource() {
+            @Override
+            public String getName() {
+                return name;
+            }
+
+            @Override
+            public String toString() {
+                return getName();
+            }
+        };
+    }
 }

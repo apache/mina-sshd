@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -99,7 +100,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
 
     @Override
     public Collection<KeyPair> extractKeyPairs(
-            SessionContext session, String resourceKey,
+            SessionContext session, NamedResource resourceKey,
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
             InputStream stream)
@@ -155,7 +156,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     }
 
     protected PublicKey readPublicKey(
-            SessionContext session, String resourceKey, OpenSSHParserContext context, InputStream stream)
+            SessionContext session, NamedResource resourceKey, OpenSSHParserContext context, InputStream stream)
                 throws IOException, GeneralSecurityException {
         byte[] keyData = KeyEntryResolver.readRLEBytes(stream, MAX_PUBLIC_KEY_DATA_SIZE);
         try (InputStream bais = new ByteArrayInputStream(keyData)) {
@@ -170,7 +171,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     }
 
     protected List<KeyPair> readPrivateKeys(
-            SessionContext session, String resourceKey,
+            SessionContext session, NamedResource resourceKey,
             OpenSSHParserContext context, Collection<? extends PublicKey> publicKeys,
             FilePasswordProvider passwordProvider, InputStream stream)
                 throws IOException, GeneralSecurityException {
@@ -216,7 +217,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     }
 
     protected SimpleImmutableEntry<PrivateKey, String> readPrivateKey(
-            SessionContext session, String resourceKey,
+            SessionContext session, NamedResource resourceKey,
             OpenSSHParserContext context, String keyType,
             FilePasswordProvider passwordProvider, InputStream stream)
                 throws IOException, GeneralSecurityException {
@@ -242,7 +243,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     }
 
     protected <S extends InputStream> S validateStreamMagicMarker(
-            SessionContext session, String resourceKey, S stream)
+            SessionContext session, NamedResource resourceKey, S stream)
                 throws IOException {
         byte[] actual = new byte[AUTH_MAGIC_BYTES.length];
         IoUtils.readFully(stream, actual);
