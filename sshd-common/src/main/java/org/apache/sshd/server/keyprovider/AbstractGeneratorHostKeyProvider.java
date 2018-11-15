@@ -118,7 +118,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
         if ((kp != null) & log.isDebugEnabled()) {
             PublicKey key = kp.getPublic();
             log.debug("clearLoadedKeys({}) removed key={}-{}",
-                      getPath(), KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+                  getPath(), KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
         }
     }
 
@@ -162,7 +162,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
                 }
             } catch (Throwable e) {
                 log.warn("resolveKeyPair({}) Failed ({}) to load: {}",
-                        keyPath, e.getClass().getSimpleName(), e.getMessage());
+                    keyPath, e.getClass().getSimpleName(), e.getMessage());
                 if (log.isDebugEnabled()) {
                     log.debug("resolveKeyPair(" + keyPath + ") load failure details", e);
                 }

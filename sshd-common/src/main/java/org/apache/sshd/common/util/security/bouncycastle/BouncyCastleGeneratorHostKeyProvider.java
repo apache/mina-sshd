@@ -22,12 +22,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -37,11 +41,27 @@ public class BouncyCastleGeneratorHostKeyProvider extends AbstractGeneratorHostK
         setPath(path);
     }
 
-    @SuppressWarnings("deprecation")
     @Override
-    protected void doWriteKeyPair(NamedResource resourceKey, KeyPair kp, OutputStream outputStream) throws IOException, GeneralSecurityException {
-        try (org.bouncycastle.openssl.PEMWriter w =
-                     new org.bouncycastle.openssl.PEMWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8))) {
+    protected void doWriteKeyPair(NamedResource resourceKey, KeyPair kp, OutputStream outputStream)
+            throws IOException, GeneralSecurityException {
+        writePEMKeyPair(kp, outputStream);
+    }
+
+    public static void writePEMKeyPair(KeyPair kp, Path targetPath) throws IOException {
+        writePEMKeyPair(kp, targetPath, IoUtils.EMPTY_OPEN_OPTIONS);
+    }
+
+    public static void writePEMKeyPair(
+            KeyPair kp, Path targetPath, OpenOption... options)
+                throws IOException {
+        try (OutputStream os = Files.newOutputStream(targetPath, options)) {
+            writePEMKeyPair(kp, os);
+        }
+    }
+
+    public static void writePEMKeyPair(KeyPair kp, OutputStream outputStream) throws IOException {
+        try (JcaPEMWriter w = new JcaPEMWriter(
+                new OutputStreamWriter(outputStream, StandardCharsets.UTF_8))) {
             w.writeObject(kp);
             w.flush();
         }
