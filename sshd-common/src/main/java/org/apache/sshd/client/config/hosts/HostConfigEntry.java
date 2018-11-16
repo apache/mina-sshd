@@ -283,7 +283,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
         Map<String, String> props = getProperties();
         if (GenericUtils.isEmpty(props)) {
-            return null;
+            return defaultValue;
         }
 
         String value = props.get(key);
