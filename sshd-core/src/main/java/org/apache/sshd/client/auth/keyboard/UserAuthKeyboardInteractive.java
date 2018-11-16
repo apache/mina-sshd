@@ -87,7 +87,8 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     public void init(ClientSession session, String service) throws Exception {
         super.init(session, service);
         passwords = ClientSession.passwordIteratorOf(session);
-        maxTrials = session.getIntProperty(ClientAuthenticationManager.PASSWORD_PROMPTS, ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS);
+        maxTrials = session.getIntProperty(
+            ClientAuthenticationManager.PASSWORD_PROMPTS, ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS);
         ValidateUtils.checkTrue(maxTrials > 0, "Non-positive max. trials: %d", maxTrials);
     }
 
@@ -98,7 +99,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         if (requestPending.get()) {
             if (debugEnabled) {
                 log.debug("sendAuthDataRequest({})[{}] no reply for previous request for {}",
-                          session, service, name);
+                      session, service, name);
             }
             return false;
         }
@@ -112,7 +113,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         String subMethods = getExchangeSubMethods(session);
         if (debugEnabled) {
             log.debug("sendAuthDataRequest({})[{}] send SSH_MSG_USERAUTH_REQUEST for {}: lang={}, methods={}",
-                      session, service, name, lang, subMethods);
+                  session, service, name, lang, subMethods);
         }
 
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
@@ -134,14 +135,10 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         int cmd = buffer.getUByte();
         if (cmd != SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST) {
             throw new IllegalStateException("processAuthDataRequest(" + session + ")[" + service + "]"
-                            + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
+                    + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
         }
 
         requestPending.set(false);
-
-        if (!verifyTrialsCount(session, service, cmd, trialsCount.incrementAndGet(), maxTrials)) {
-            return false;
-        }
 
         String name = buffer.getString();
         String instruction = buffer.getString();
@@ -150,11 +147,18 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("processAuthDataRequest({})[{}] SSH_MSG_USERAUTH_INFO_REQUEST name={}, instruction={}, language={}, num-prompts={}",
-                      session, service, name, instruction, lang, num);
+                  session, service, name, instruction, lang, num);
         }
 
-        String[] prompt = new String[num];
-        boolean[] echo = new boolean[num];
+        if (num > 0) {
+            // SSHD-866
+            if (!verifyTrialsCount(session, service, cmd, trialsCount.incrementAndGet(), maxTrials)) {
+                return false;
+            }
+        }
+
+        String[] prompt = (num > 0) ? new String[num] : GenericUtils.EMPTY_STRING_ARRAY;
+        boolean[] echo =  (num > 0) ? new boolean[num] : GenericUtils.EMPTY_BOOLEAN_ARRAY;
         for (int i = 0; i < num; i++) {
             // according to RFC4256: "The prompt field(s) MUST NOT be empty strings."
             prompt[i] = buffer.getString();
@@ -186,12 +190,13 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
          */
         if (num != rep.length) {
             log.warn("processAuthDataRequest({})[{}] Mismatched prompts ({}) vs. responses count ({})",
-                     session, service, num, rep.length);
+                session, service, num, rep.length);
         }
 
-        buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE, rep.length * Long.SIZE + Byte.SIZE);
-        buffer.putInt(rep.length);
-        for (int index = 0; index < rep.length; index++) {
+        int numResponses = rep.length;
+        buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE, numResponses * Long.SIZE + Byte.SIZE);
+        buffer.putInt(numResponses);
+        for (int index = 0; index < numResponses; index++) {
             String r = rep[index];
             if (traceEnabled) {
                 log.trace("processAuthDataRequest({})[{}] response #{}: {}", session, service, index + 1, r);
@@ -219,10 +224,11 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         }
     }
 
-    protected boolean verifyTrialsCount(ClientSession session, String service, int cmd, int nbTrials, int maxAllowed) {
+    protected boolean verifyTrialsCount(
+            ClientSession session, String service, int cmd, int nbTrials, int maxAllowed) {
         if (log.isDebugEnabled()) {
             log.debug("verifyTrialsCount({})[{}] cmd={} - {} out of {}",
-                      session, service, getAuthCommandName(cmd), nbTrials, maxAllowed);
+                  session, service, getAuthCommandName(cmd), nbTrials, maxAllowed);
         }
 
         return nbTrials <= maxAllowed;
@@ -243,10 +249,18 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
      * enforce this we do not validate the response (other than logging it as
      * a warning...)
      */
-    protected String[] getUserResponses(String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+    protected String[] getUserResponses(
+            String name, String instruction, String lang, String[] prompt, boolean[] echo) {
         ClientSession session = getClientSession();
         int num = GenericUtils.length(prompt);
         boolean debugEnabled = log.isDebugEnabled();
+        /*
+         * According to RFC 4256 - section 3.4
+         *
+         *      In the case that the server sends a `0' num-prompts field in the
+         *      request message, the client MUST send a response message with a `0'
+         *      num-responses field to complete the exchange.
+         */
         if (num == 0) {
             if (debugEnabled) {
                 log.debug("getUserResponses({}) no prompts for interaction={}", session, name);
@@ -269,7 +283,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             }
         } catch (Error e) {
             log.warn("getUserResponses({}) failed ({}) to consult interaction: {}",
-                     session, e.getClass().getSimpleName(), e.getMessage());
+                 session, e.getClass().getSimpleName(), e.getMessage());
             if (debugEnabled) {
                 log.debug("getUserResponses(" + session + ") interaction consultation failure details", e);
             }

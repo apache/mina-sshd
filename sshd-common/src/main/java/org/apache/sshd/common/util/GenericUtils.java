@@ -65,6 +65,7 @@ public final class GenericUtils {
     public static final char[] EMPTY_CHAR_ARRAY = {};
     public static final String[] EMPTY_STRING_ARRAY = {};
     public static final Object[] EMPTY_OBJECT_ARRAY = {};
+    public static final boolean[] EMPTY_BOOLEAN_ARRAY = {};
 
     /**
      * A value indicating a {@code null} value - to be used as a placeholder
