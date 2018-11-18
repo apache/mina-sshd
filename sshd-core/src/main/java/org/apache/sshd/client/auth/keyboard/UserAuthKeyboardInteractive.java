@@ -76,6 +76,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
     private final AtomicBoolean requestPending = new AtomicBoolean(false);
     private final AtomicInteger trialsCount = new AtomicInteger(0);
+    private final AtomicInteger emptyCount = new AtomicInteger(0);
     private Iterator<String> passwords;
     private int maxTrials;
 
@@ -150,11 +151,10 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                   session, service, name, instruction, lang, num);
         }
 
-        if (num > 0) {
-            // SSHD-866
-            if (!verifyTrialsCount(session, service, cmd, trialsCount.incrementAndGet(), maxTrials)) {
-                return false;
-            }
+        // SSHD-866
+        int retriesCount = (num > 0) ? trialsCount.incrementAndGet() : emptyCount.incrementAndGet();
+        if (!verifyTrialsCount(session, service, cmd, retriesCount, maxTrials)) {
+            return false;
         }
 
         String[] prompt = (num > 0) ? new String[num] : GenericUtils.EMPTY_STRING_ARRAY;

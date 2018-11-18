@@ -85,3 +85,6 @@ key loading methods are invoked.
 
 * [SSHD-864](https://issues.apache.org/jira/browse/SSHD-864) - Using a `NamedResource` instead of plain old string
 in order to provide key file(s) location information
+
+* [SSHD-866](https://issues.apache.org/jira/browse/SSHD-866) - Counting empty challenges separately when enforcing
+max. attempts during `keyboard-interactive` authentication
