@@ -17,13 +17,13 @@
  * under the License.
  */
 
-package org.apache.sshd.common.config.keys;
+package org.apache.sshd.client.config.keys;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface FilePasswordProviderManager extends FilePasswordProviderHolder {
-    void setFilePasswordProvider(FilePasswordProvider provider);
+public interface ClientIdentityLoaderManager extends ClientIdentityLoaderHolder {
+    void setClientIdentityLoader(ClientIdentityLoader loader);
 }

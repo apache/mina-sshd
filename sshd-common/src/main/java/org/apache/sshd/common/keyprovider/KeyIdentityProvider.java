@@ -62,12 +62,20 @@ public interface KeyIdentityProvider {
     Iterable<KeyPair> loadKeys(SessionContext session) throws IOException, GeneralSecurityException;
 
     /**
+     * @param provider The {@link KeyIdentityProvider} instance to verify
+     * @return {@code true} if instance is {@code null} or the {@link #EMPTY_KEYS_PROVIDER}
+     */
+    static boolean isEmpty(KeyIdentityProvider provider) {
+        return (provider == null) || GenericUtils.isSameReference(provider, EMPTY_KEYS_PROVIDER);
+    }
+
+    /**
      * <P>Creates a &quot;unified&quot; {@link KeyIdentityProvider} out of 2 possible ones
      * as follows:</P></BR>
      * <UL>
      *      <LI>If both are {@code null} then return {@code null}.</LI>
-     *      <LI>If either one is {@code null} then use the non-{@code null} one.</LI>
-     *      <LI>If both are the same instance then use it.</U>
+     *      <LI>If either one is {@code null}/{@link #EMPTY_KEYS_PROVIDER empty} then use the non-{@code null} one.</LI>
+     *      <LI>If both are the same instance then use the instance.</U>
      *      <LI>Otherwise, returns a wrapper that groups both providers.</LI>
      * </UL>
      *
@@ -78,9 +86,10 @@ public interface KeyIdentityProvider {
      */
     static KeyIdentityProvider resolveKeyIdentityProvider(
             KeyIdentityProvider identities, KeyIdentityProvider keys) {
-        if ((keys == null) || (identities == keys)) {
-            return identities;
-        } else if (identities == null) {
+        if (isEmpty(keys) || GenericUtils.isSameReference(identities, keys)) {
+            // Prefer EMPTY over null
+            return (identities == null) ? keys : identities;
+        } else if (isEmpty(identities)) {
             return keys;
         } else {
             return multiProvider(identities, keys);

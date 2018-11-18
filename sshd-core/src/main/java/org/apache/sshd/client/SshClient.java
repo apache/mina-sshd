@@ -18,9 +18,7 @@
  */
 package org.apache.sshd.client;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.StreamCorruptedException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
@@ -501,7 +499,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     log.debug("connect({}@{}:{}) no overrides", username, host, port);
                 }
 
-                return doConnect(username, targetAddress, context, localAddress, Collections.emptyList(), true);
+                return doConnect(username, targetAddress, context, localAddress, KeyIdentityProvider.EMPTY_KEYS_PROVIDER, true);
             } else {
                 if (log.isDebugEnabled()) {
                     log.debug("connect({}@{}:{}) effective: {}", username, host, port, entry);
@@ -513,7 +511,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             if (log.isDebugEnabled()) {
                 log.debug("connect({}@{}) not an InetSocketAddress: {}", username, targetAddress, targetAddress.getClass().getName());
             }
-            return doConnect(username, targetAddress, context, localAddress, Collections.emptyList(), true);
+            return doConnect(username, targetAddress, context, localAddress, KeyIdentityProvider.EMPTY_KEYS_PROVIDER, true);
         }
     }
 
@@ -530,60 +528,27 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         Collection<PathResource> idFiles = GenericUtils.isEmpty(hostIds)
             ? Collections.emptyList()
             : hostIds.stream()
-                .map(l -> Paths.get(l))
+                .map(Paths::get)
                 .map(PathResource::new)
                 .collect(Collectors.toCollection(() -> new ArrayList<>(hostIds.size())));
-        Collection<KeyPair> keys = loadClientIdentities(idFiles);
+        KeyIdentityProvider keys = preloadClientIdentities(idFiles);
         return doConnect(hostConfig.getUsername(), new InetSocketAddress(host, port),
                 context, localAddress, keys, !hostConfig.isIdentitiesOnly());
     }
 
-    protected List<KeyPair> loadClientIdentities(Collection<? extends NamedResource> locations) throws IOException {
-        if (GenericUtils.isEmpty(locations)) {
-            return Collections.emptyList();
-        }
-
-        List<KeyPair> ids = new ArrayList<>(locations.size());
-        boolean ignoreNonExisting = this.getBooleanProperty(IGNORE_INVALID_IDENTITIES, DEFAULT_IGNORE_INVALID_IDENTITIES);
-        ClientIdentityLoader loader = Objects.requireNonNull(getClientIdentityLoader(), "No ClientIdentityLoader");
-        FilePasswordProvider provider = getFilePasswordProvider();
-        boolean debugEnabled = log.isDebugEnabled();
-        for (NamedResource l : locations) {
-            if (!loader.isValidLocation(l)) {
-                if (ignoreNonExisting) {
-                    if (debugEnabled) {
-                        log.debug("loadClientIdentities - skip non-existing identity location: {}", l);
-                    }
-                    continue;
-                }
-
-                throw new FileNotFoundException("Invalid identity location: " + l);
-            }
-
-            try {
-                KeyPair kp = loader.loadClientIdentity(null /* TODO use lazy-load here as well */, l, provider);
-                if (kp == null) {
-                    throw new IOException("No identity loaded from " + l);
-                }
-
-                if (debugEnabled) {
-                    log.debug("loadClientIdentities({}) type={}, fingerprint={}",
-                          l, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
-                }
-
-                ids.add(kp);
-            } catch (GeneralSecurityException e) {
-                throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ") to load identity from " + l + ": " + e.getMessage());
-            }
-        }
-
-        return ids;
+    protected KeyIdentityProvider preloadClientIdentities(Collection<? extends NamedResource> locations) throws IOException {
+        return GenericUtils.isEmpty(locations)
+             ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER
+             : ClientIdentityLoader.asKeyIdentityProvider(
+                     Objects.requireNonNull(getClientIdentityLoader(), "No ClientIdentityLoader"),
+                     locations, getFilePasswordProvider(),
+                     this.getBooleanProperty(IGNORE_INVALID_IDENTITIES, DEFAULT_IGNORE_INVALID_IDENTITIES));
     }
 
     protected ConnectFuture doConnect(
             String username, SocketAddress targetAddress,
             AttributeRepository context, SocketAddress localAddress,
-            Iterable<? extends KeyPair> identities, boolean useDefaultIdentities)
+            KeyIdentityProvider identities, boolean useDefaultIdentities)
                 throws IOException {
         if (connector == null) {
             throw new IllegalStateException("SshClient not started. Please call start() method before connecting to a server");
@@ -600,7 +565,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     protected SshFutureListener<IoConnectFuture> createConnectCompletionListener(
             ConnectFuture connectFuture, String username, SocketAddress address,
-            Iterable<? extends KeyPair> identities, boolean useDefaultIdentities) {
+            KeyIdentityProvider identities, boolean useDefaultIdentities) {
         return new SshFutureListener<IoConnectFuture>() {
             @Override
             @SuppressWarnings("synthetic-access")
@@ -643,53 +608,46 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     protected void onConnectOperationComplete(
             IoSession ioSession, ConnectFuture connectFuture,  String username,
-            SocketAddress address, Iterable<? extends KeyPair> identities, boolean useDefaultIdentities) {
+            SocketAddress address, KeyIdentityProvider identities, boolean useDefaultIdentities) {
         AbstractClientSession session = (AbstractClientSession) AbstractSession.getSession(ioSession);
         session.setUsername(username);
         session.setConnectAddress(address);
 
         if (useDefaultIdentities) {
-            setupDefaultSessionIdentities(session);
-        }
-
-        if (identities != null) {
-            boolean traceEnabled = log.isTraceEnabled();
-            for (KeyPair kp : identities) {
-                if (traceEnabled) {
-                    log.trace("onConnectOperationComplete({}) add identity type={}, fingerprint={}",
-                        session, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
-                }
-                session.addPublicKeyIdentity(kp);
-            }
+            setupDefaultSessionIdentities(session, identities);
+        } else {
+            session.setKeyIdentityProvider((identities == null) ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER : identities);
         }
 
         connectFuture.setSession(session);
     }
 
-    protected void setupDefaultSessionIdentities(ClientSession session) {
+    protected void setupDefaultSessionIdentities(ClientSession session, KeyIdentityProvider extraIdentities) {
+        boolean debugEnabled = log.isDebugEnabled();
         // check if session listener intervened
         KeyIdentityProvider kpSession = session.getKeyIdentityProvider();
         KeyIdentityProvider kpClient = getKeyIdentityProvider();
-        boolean debugEnabled = log.isDebugEnabled();
-        if (kpSession == null) {
-            session.setKeyIdentityProvider(kpClient);
-        } else {
-            if (kpSession != kpClient) {
-                if (debugEnabled) {
-                    log.debug("setupDefaultSessionIdentities({}) key identity provider override", session);
-                }
+        if (GenericUtils.isSameReference(kpSession, kpClient)) {
+            if (debugEnabled) {
+                log.debug("setupDefaultSessionIdentities({}) key identity provider override in session listener", session);
             }
+        }
+
+        // Prefer the extra identities to come first since they were probably indicate by the host-config entry
+        KeyIdentityProvider kpEffective =
+            KeyIdentityProvider.resolveKeyIdentityProvider(extraIdentities, kpSession);
+        if (!GenericUtils.isSameReference(kpSession, kpEffective)) {
+            if (debugEnabled) {
+                log.debug("setupDefaultSessionIdentities({}) key identity provider enhanced", session);
+            }
+            session.setKeyIdentityProvider(kpEffective);
         }
 
         PasswordIdentityProvider passSession = session.getPasswordIdentityProvider();
         PasswordIdentityProvider passClient = getPasswordIdentityProvider();
-        if (passSession == null) {
-            session.setPasswordIdentityProvider(passClient);
-        } else {
-            if (passSession != passClient) {
-                if (debugEnabled) {
-                    log.debug("setupDefaultSessionIdentities({}) password provider override", session);
-                }
+        if (!GenericUtils.isSameReference(passSession, passClient)) {
+            if (debugEnabled) {
+                log.debug("setupDefaultSessionIdentities({}) password provider override", session);
             }
         }
 

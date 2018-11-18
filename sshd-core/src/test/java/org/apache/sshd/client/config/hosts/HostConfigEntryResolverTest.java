@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
@@ -214,6 +215,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         entry.addIdentity(clientIdentity);
         entry.setIdentitiesOnly(true);
 
+        AtomicInteger specificIdentityLoadCount = new AtomicInteger(0);
         client.setClientIdentityLoader(new ClientIdentityLoader() {
             @Override
             public boolean isValidLocation(NamedResource location) throws IOException {
@@ -225,6 +227,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
                     SessionContext session, NamedResource location, FilePasswordProvider provider)
                         throws IOException, GeneralSecurityException {
                 if (isValidLocation(location)) {
+                    specificIdentityLoadCount.incrementAndGet();
                     return specificIdentity;
                 }
 
@@ -243,12 +246,13 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         client.setKeyIdentityProvider(provider);
 
         client.start();
-        try (ClientSession session = client.connect(entry).verify(7L, TimeUnit.SECONDS).getSession()) {
-            assertSame("Unexpected session key pairs provider", provider, session.getKeyIdentityProvider());
+        try (ClientSession session = client.connect(entry)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.auth().verify(5L, TimeUnit.SECONDS);
             assertFalse("Unexpected default client identity attempted", defaultClientIdentityAttempted.get());
             assertNull("Default client identity auto-added", session.removePublicKeyIdentity(defaultIdentity));
-            assertNotNull("Entry identity not automatically added", session.removePublicKeyIdentity(specificIdentity));
+            assertEquals("Entry identity not used", 1, specificIdentityLoadCount.get());
             assertEffectiveRemoteAddress(session, entry);
         } finally {
             client.stop();

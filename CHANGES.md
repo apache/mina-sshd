@@ -60,6 +60,9 @@ accept also an `AttributeRepository` connection context argument (propagated fro
 * `SshClient` and `ClientSession` use a `KeyIdentityProvider` instead of a full blown `KeyPairProvider`.
 `KeyPairProvider` is used only in the context of an `SshServer` and/or `ServerSession`.
 
+* `SshClient#loadClientIdentities` has been renamed to `preloadClientIdentities` + it returns a
+`KeyIdentityProvider` instead of a collection of strings representing paths.
+
 ## Behavioral changes and enhancements
 
 * [SSHD-849](https://issues.apache.org/jira/browse/SSHD-849) - Data forwarding code makes sure all

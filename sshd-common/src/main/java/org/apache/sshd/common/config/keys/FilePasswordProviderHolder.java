@@ -24,6 +24,12 @@ package org.apache.sshd.common.config.keys;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface FilePasswordProviderManager extends FilePasswordProviderHolder {
-    void setFilePasswordProvider(FilePasswordProvider provider);
+@FunctionalInterface
+public interface FilePasswordProviderHolder {
+    /**
+     * @return The {@link FilePasswordProvider} to use if need to load encrypted
+     * identities keys - never {@code null}
+     * @see FilePasswordProvider#EMPTY
+     */
+    FilePasswordProvider getFilePasswordProvider();
 }

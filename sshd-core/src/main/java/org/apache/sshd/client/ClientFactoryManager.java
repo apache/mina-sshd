@@ -20,6 +20,7 @@ package org.apache.sshd.client;
 
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.config.keys.ClientIdentityLoader;
+import org.apache.sshd.client.config.keys.ClientIdentityLoaderManager;
 import org.apache.sshd.client.session.ClientProxyConnectorHolder;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.config.keys.FilePasswordProviderManager;
@@ -34,6 +35,7 @@ public interface ClientFactoryManager
         extends FactoryManager,
                 ClientProxyConnectorHolder,
                 FilePasswordProviderManager,
+                ClientIdentityLoaderManager,
                 ClientAuthenticationManager {
 
     /**
@@ -84,12 +86,4 @@ public interface ClientFactoryManager
     HostConfigEntryResolver getHostConfigEntryResolver();
 
     void setHostConfigEntryResolver(HostConfigEntryResolver resolver);
-
-    /**
-     * @return The {@link ClientIdentityLoader} to use in order to load client
-     * key pair identities - never {@code null}
-     */
-    ClientIdentityLoader getClientIdentityLoader();
-
-    void setClientIdentityLoader(ClientIdentityLoader loader);
 }

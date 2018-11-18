@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.FilePasswordProviderHolder;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
@@ -43,7 +44,9 @@ import org.apache.sshd.common.util.io.resource.PathResource;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ClientIdentityFileWatcher extends ModifiableFileWatcher implements ClientIdentityProvider {
+public class ClientIdentityFileWatcher
+        extends ModifiableFileWatcher
+        implements ClientIdentityProvider, ClientIdentityLoaderHolder, FilePasswordProviderHolder {
     private final AtomicReference<KeyPair> identityHolder = new AtomicReference<>(null);
     private final Supplier<? extends ClientIdentityLoader> loaderHolder;
     private final Supplier<? extends FilePasswordProvider> providerHolder;
@@ -73,15 +76,17 @@ public class ClientIdentityFileWatcher extends ModifiableFileWatcher implements 
         this.strict = strict;
     }
 
-    public final boolean isStrict() {
+    public boolean isStrict() {
         return strict;
     }
 
-    public final ClientIdentityLoader getClientIdentityLoader() {
+    @Override
+    public ClientIdentityLoader getClientIdentityLoader() {
         return loaderHolder.get();
     }
 
-    public final FilePasswordProvider getFilePasswordProvider() {
+    @Override
+    public FilePasswordProvider getFilePasswordProvider() {
         return providerHolder.get();
     }
 

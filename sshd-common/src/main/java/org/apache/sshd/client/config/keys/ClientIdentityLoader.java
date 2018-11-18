@@ -26,11 +26,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.util.Collection;
 import java.util.Objects;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.resource.PathResource;
@@ -105,4 +108,23 @@ public interface ClientIdentityLoader {
     KeyPair loadClientIdentity(
         SessionContext session, NamedResource location, FilePasswordProvider provider)
             throws IOException, GeneralSecurityException;
+
+    /**
+     * Uses the provided {@link ClientIdentityLoader} to <U>lazy</U> load the keys locations
+     *
+     * @param loader The loader instance to use
+     * @param locations The locations to load - ignored if {@code null}/empty
+     * @param passwordProvider The {@link FilePasswordProvider} to use if any
+     * encrypted keys found
+     * @param ignoreNonExisting Whether to ignore non existing locations as indicated
+     * by {@link #isValidLocation(NamedResource)}
+     * @return The {@link KeyIdentityProvider} wrapper
+     */
+    static KeyIdentityProvider asKeyIdentityProvider(
+            ClientIdentityLoader loader, Collection<? extends NamedResource> locations,
+            FilePasswordProvider passwordProvider, boolean ignoreNonExisting) {
+        return GenericUtils.isEmpty(locations)
+            ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER
+            : new LazyClientKeyIdentityProvider(loader, locations, passwordProvider, ignoreNonExisting);
+    }
 }
