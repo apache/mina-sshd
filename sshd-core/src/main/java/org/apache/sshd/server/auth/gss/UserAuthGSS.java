@@ -32,6 +32,7 @@ import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
 import org.ietf.jgss.GSSManager;
+import org.ietf.jgss.GSSName;
 import org.ietf.jgss.MessageProp;
 import org.ietf.jgss.Oid;
 
@@ -62,60 +63,66 @@ public class UserAuthGSS extends AbstractUserAuth {
     protected Boolean doAuth(Buffer buffer, boolean initial) throws Exception {
         ServerSession session = getServerSession();
         GSSAuthenticator auth = Objects.requireNonNull(session.getGSSAuthenticator(), "No GSSAuthenticator configured");
-
+        String user = getUsername();
         boolean debugEnabled = log.isDebugEnabled();
+
         if (initial) {
             // Get mechanism count from buffer and look for Kerberos 5.
-
             int num = buffer.getInt();
+            // Protect against malicious or corrupted packets
+            if ((num < 0) || (num > SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT)) {
+                log.error("doAuth({}@{}) Illogical OID entries count: {}", user, session, num);
+                throw new IndexOutOfBoundsException("Illogical OID entries count: " + num);
+            }
 
-            for (int i = 0; i < num; i++) {
+            boolean traceEnabled = log.isTraceEnabled();
+            for (int i = 1; i <= num; i++) {
                 Oid oid = new Oid(buffer.getBytes());
-
-                if (oid.equals(KRB5_MECH)) {
-                    if (debugEnabled) {
-                        log.debug("doAuth({}@{}) found Kerberos 5", getUsername(), session);
+                if (!oid.equals(KRB5_MECH)) {
+                    if (traceEnabled) {
+                        log.trace("doAuth({}@{}) skip OID {}/{}: {}", user, session, i, num, oid);
                     }
-
-                    // Validate initial user before proceeding
-
-                    if (!auth.validateInitialUser(session, getUsername())) {
-                        return Boolean.FALSE;
-                    }
-
-                    GSSManager mgr = auth.getGSSManager();
-                    GSSCredential creds = auth.getGSSCredential(mgr);
-
-                    if (creds == null) {
-                        return Boolean.FALSE;
-                    }
-
-                    context = mgr.createContext(creds);
-
-                    // Send the matching mechanism back to the client
-
-                    byte[] out = oid.getDER();
-                    Buffer b = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST, out.length + Integer.SIZE);
-                    b.putBytes(out);
-                    session.writePacket(b);
-
-                    return null;
+                    continue;
                 }
+                if (debugEnabled) {
+                    log.debug("doAuth({}@{}) found Kerberos 5 after {}/{} OID(s)", user, session, i, num);
+                }
+
+                // Validate initial user before proceeding
+                if (!auth.validateInitialUser(session, user)) {
+                    return Boolean.FALSE;
+                }
+
+                GSSManager mgr = auth.getGSSManager();
+                GSSCredential creds = auth.getGSSCredential(mgr);
+                if (creds == null) {
+                    return Boolean.FALSE;
+                }
+
+                context = mgr.createContext(creds);
+
+                // Send the matching mechanism back to the client
+
+                byte[] out = oid.getDER();
+                Buffer b = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST, out.length + Integer.SIZE);
+                b.putBytes(out);
+                session.writePacket(b);
+
+                return null;
             }
 
             // No matching mechanism found
-
             return Boolean.FALSE;
         } else {
             int msg = buffer.getUByte();
             if (!((msg == SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE)
                     || ((msg == SshConstants.SSH_MSG_USERAUTH_GSSAPI_MIC)) && context.isEstablished())) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
-                        "Packet not supported by user authentication method: " + SshConstants.getCommandMessageName(msg));
+                    "Packet not supported by user authentication method: " + SshConstants.getCommandMessageName(msg));
             }
 
             if (debugEnabled) {
-                log.debug("doAuth({}@{}) In krb5.next: msg = {}", getUsername(), session, SshConstants.getCommandMessageName(msg));
+                log.debug("doAuth({}@{}) In krb5.next: msg = {}", user, session, SshConstants.getCommandMessageName(msg));
             }
 
             // If the context is established, this must be a MIC message
@@ -145,7 +152,7 @@ public class UserAuthGSS extends AbstractUserAuth {
                 } catch (GSSException e) {
                     if (debugEnabled) {
                         log.debug("doAuth({}@{}) GSS verification {} error: {}",
-                                  getUsername(), session, e.getClass().getSimpleName(), e.getMessage());
+                            user, session, e.getClass().getSimpleName(), e.getMessage());
                     }
                     return Boolean.FALSE;
                 }
@@ -157,9 +164,10 @@ public class UserAuthGSS extends AbstractUserAuth {
 
                 // Validate identity if context is now established
                 if (established && (identity == null)) {
-                    identity = context.getSrcName().toString();
+                    GSSName srcName = context.getSrcName();
+                    identity = srcName.toString();
                     if (debugEnabled) {
-                        log.debug("doAuth({}@{}) GSS identity is {}", getUsername(), session, identity);
+                        log.debug("doAuth({}@{}) GSS identity is {}", user, session, identity);
                     }
 
                     if (!auth.validateIdentity(session, identity)) {

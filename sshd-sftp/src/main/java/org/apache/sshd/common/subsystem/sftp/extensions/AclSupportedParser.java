@@ -29,9 +29,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.AclSupportedParser.AclCapabilities;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.logging.LoggingUtils;
@@ -55,6 +57,9 @@ public class AclSupportedParser extends AbstractParser<AclCapabilities> {
         }
 
         public AclCapabilities(int capabilities) {
+            // Protect against malicious or malformed packets
+            ValidateUtils.checkTrue((capabilities >= 0) && (capabilities < SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT),
+                "Illogical ACL capabilities count: %d", capabilities);
             this.capabilities = capabilities;
         }
 

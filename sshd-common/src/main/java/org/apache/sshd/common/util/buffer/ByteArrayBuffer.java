@@ -68,6 +68,9 @@ public class ByteArrayBuffer extends Buffer {
     }
 
     public ByteArrayBuffer(byte[] data, int off, int len, boolean read) {
+        if ((off < 0) || (len < 0)) {
+            throw new IndexOutOfBoundsException("Invalid offset(" + off + ")/length(" + len + ")");
+        }
         this.data = data;
         this.rpos = off;
         this.wpos = (read ? len : 0) + off;
@@ -171,13 +174,9 @@ public class ByteArrayBuffer extends Buffer {
 
     @Override
     public String getString(Charset charset) {
-        int len = getInt();
-        if (len < 0) {
-            throw new BufferException("Bad item length: " + len);
-        }
-        ensureAvailable(len);
-
         Objects.requireNonNull(charset, "No charset specified");
+
+        int len = ensureAvailable(getInt());
         String s = new String(data, rpos, len, charset);
         rpos += len;
         return s;
@@ -192,6 +191,10 @@ public class ByteArrayBuffer extends Buffer {
 
     @Override
     protected void copyRawBytes(int offset, byte[] buf, int pos, int len) {
+        if ((offset < 0) || (pos < 0) || (len < 0)) {
+            throw new IndexOutOfBoundsException(
+                "Invalid offset(" + offset + ")/position(" + pos + ")/length(" + len + ") required");
+        }
         System.arraycopy(data, rpos + offset, buf, pos, len);
     }
 

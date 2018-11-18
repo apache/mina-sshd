@@ -81,14 +81,22 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
         String keyType = buffer.getString();
         int keyLen = buffer.getInt();
         int keyOffset = buffer.rpos();
+        int remaining = buffer.available();
+        // Protect against malicious or corrupted packets
+        if ((keyLen < 0) || (keyLen > remaining)) {
+            log.error("doAuth({}@{}) Illogical {} key length={} (max. available={})",
+                username, session, keyType, keyLen, remaining);
+            throw new IndexOutOfBoundsException("Illogical " + keyType + " key length: " + keyLen);
+        }
 
         Buffer buf = new ByteArrayBuffer(buffer.array(), keyOffset, keyLen, true);
         PublicKey clientKey = buf.getRawPublicKey();
         List<X509Certificate> certs = Collections.emptyList();
-        if (buf.available() > 0) {
+        remaining = buf.available();
+        if (remaining > 0) {
             CertificateFactory cf = SecurityUtils.getCertificateFactory("X.509");
             certs = new ArrayList<>();
-            try (ByteArrayInputStream bais = new ByteArrayInputStream(buf.array(), buf.rpos(), buf.available())) {
+            try (ByteArrayInputStream bais = new ByteArrayInputStream(buf.array(), buf.rpos(), remaining)) {
                 X509Certificate c = (X509Certificate) cf.generateCertificate(bais);
                 certs.add(c);
             }

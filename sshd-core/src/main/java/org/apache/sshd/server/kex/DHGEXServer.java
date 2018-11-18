@@ -114,7 +114,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             prf = buffer.getInt();
             max = SecurityUtils.getMaxDHGroupExchangeKeySize();
 
-            if (max < min || prf < min || max < prf) {
+            if ((max < min) || (prf < min) || (max < prf)) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                         "Protocol error: bad parameters " + min + " !< " + prf + " !< " + max);
             }
@@ -140,7 +140,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             min = buffer.getInt();
             prf = buffer.getInt();
             max = buffer.getInt();
-            if (prf < min || max < prf) {
+            if ((prf < min) || (max < prf)) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                         "Protocol error: bad parameters " + min + " !< " + prf + " !< " + max);
             }

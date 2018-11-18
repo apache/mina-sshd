@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.client.auth.keyboard;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -145,6 +144,13 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         String instruction = buffer.getString();
         String lang = buffer.getString();
         int num = buffer.getInt();
+        // Protect against malicious or corrupted packets
+        if ((num < 0) || (num > SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT)) {
+            log.error("processAuthDataRequest({})[{}] illogical challenges count ({}) for name={}, instruction={}",
+                    session, service, num, name, instruction);
+            throw new IndexOutOfBoundsException("Illogical challenges count: " + num);
+        }
+
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("processAuthDataRequest({})[{}] SSH_MSG_USERAUTH_INFO_REQUEST name={}, instruction={}, language={}, num-prompts={}",
@@ -159,16 +165,16 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
         String[] prompt = (num > 0) ? new String[num] : GenericUtils.EMPTY_STRING_ARRAY;
         boolean[] echo =  (num > 0) ? new boolean[num] : GenericUtils.EMPTY_BOOLEAN_ARRAY;
+        boolean traceEnabled = log.isTraceEnabled();
         for (int i = 0; i < num; i++) {
-            // according to RFC4256: "The prompt field(s) MUST NOT be empty strings."
+            // TODO according to RFC4256: "The prompt field(s) MUST NOT be empty strings."
             prompt[i] = buffer.getString();
             echo[i] = buffer.getBoolean();
-        }
 
-        boolean traceEnabled = log.isTraceEnabled();
-        if (traceEnabled) {
-            log.trace("processAuthDataRequest({})[{}] Prompt: {}", session, service, Arrays.toString(prompt));
-            log.trace("processAuthDataRequest({})[{}] Echo: {}", session, service, Arrays.toString(echo));
+            if (traceEnabled) {
+                log.trace("processAuthDataRequest({})[{}]({}) {}/{}: echo={}, prompt={}",
+                    session, service, name, i + 1, num, echo[i], prompt[i]);
+            }
         }
 
         String[] rep = getUserResponses(name, instruction, lang, prompt, echo);

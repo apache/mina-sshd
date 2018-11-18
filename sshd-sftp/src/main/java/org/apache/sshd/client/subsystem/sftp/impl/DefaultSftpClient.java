@@ -46,6 +46,7 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
@@ -214,6 +215,9 @@ public class DefaultSftpClient extends AbstractSftpClient {
             int length = incoming.getInt();
             if (length < 5) {
                 throw new IOException("Illegal sftp packet length: " + length);
+            }
+            if (length > (8 * SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT)) {
+                throw new StreamCorruptedException("Illogical sftp packet length: " + length);
             }
             if ((wpos - rpos) >= (length + 4)) {
                 incoming.rpos(rpos);

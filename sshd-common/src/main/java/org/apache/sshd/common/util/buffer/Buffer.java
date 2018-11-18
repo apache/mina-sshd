@@ -56,6 +56,7 @@ import java.util.function.IntUnaryOperator;
 import java.util.logging.Level;
 
 import org.apache.sshd.common.PropertyResolver;
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -313,12 +314,15 @@ public abstract class Buffer implements Readable {
      * @see #getString(Charset)
      */
     public List<String> getStringList(int count, Charset charset) {
+        if ((count < 0) || (count > SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT)) {
+            throw new IndexOutOfBoundsException("Illogical string list length: " + count);
+        }
         if (count == 0) {
             return Collections.emptyList();
         }
 
         List<String> list = new ArrayList<>(count);
-        for (int index = 0; index < count; index++) {
+        for (int index = 1; index <= count; index++) {
             String s = getString(charset);
             list.add(s);
         }
@@ -337,11 +341,7 @@ public abstract class Buffer implements Readable {
     }
 
     public byte[] getBytes() {
-        int len = getInt();
-        if (len < 0) {
-            throw new BufferException("Bad item length: " + len);
-        }
-        ensureAvailable(len);
+        int len = ensureAvailable(getInt());
         byte[] b = new byte[len];
         getRawBytes(b);
         return b;
@@ -365,6 +365,10 @@ public abstract class Buffer implements Readable {
     public PublicKey getPublicKey(BufferPublicKeyParser<? extends PublicKey> parser) throws SshException {
         int ow = wpos();
         int len = getInt();
+        if (len < 0) {
+            throw new SshException("Illogical public key length: " + len);
+        }
+
         wpos(rpos() + len);
         try {
             return getRawPublicKey(parser);
@@ -470,11 +474,24 @@ public abstract class Buffer implements Readable {
         return new KeyPair(pubKey, privKey);
     }
 
-    public void ensureAvailable(int reqLen) throws BufferException {
+    /**
+     * Makes sure the buffer contains enough data to accommodate the requested length
+     *
+     * @param reqLen Requested data in bytes
+     * @return Same as input if validation successful
+     * @throws BufferException If negative length or beyond available requested
+     */
+    public int ensureAvailable(int reqLen) throws BufferException {
+        if (reqLen < 0) {
+            throw new BufferException("Bad item length: " + reqLen);
+        }
+
         int availLen = available();
         if (availLen < reqLen) {
             throw new BufferException("Underflow: requested=" + reqLen + ", available=" + availLen);
         }
+
+        return reqLen;
     }
 
     /*======================

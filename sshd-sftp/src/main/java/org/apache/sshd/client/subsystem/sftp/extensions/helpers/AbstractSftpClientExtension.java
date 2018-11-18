@@ -107,11 +107,9 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
 
     /**
      * @param buffer The {@link Buffer}
-     * @param target A target path {@link String} or {@link Handle} or {@code byte[]}
-     *               to be encoded in the buffer
+     * @param target A target path {@link String} or {@link Handle} or {@code byte[]} to be encoded in the buffer
      * @return The updated buffer
-     * @throws UnsupportedOperationException If target is not one of the above
-     *                                       supported types
+     * @throws UnsupportedOperationException If target is not one of the above supported types
      */
     public Buffer putTarget(Buffer buffer, Object target) {
         if (target instanceof CharSequence) {
@@ -128,8 +126,7 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
     }
 
     /**
-     * @param target A target path {@link String} or {@link Handle} or {@code byte[]}
-     *               to be encoded in the buffer
+     * @param target A target path {@link String} or {@link Handle} or {@code byte[]} to be encoded in the buffer
      * @return A {@link Buffer} with the extension name set
      * @see #getCommandBuffer(Object, int)
      */
@@ -138,8 +135,7 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
     }
 
     /**
-     * @param target    A target path {@link String} or {@link Handle} or {@code byte[]}
-     *                  to be encoded in the buffer
+     * @param target A target path {@link String} or {@link Handle} or {@code byte[]} to be encoded in the buffer
      * @param extraSize Extra size - beyond the path/handle to be allocated
      * @return A {@link Buffer} with the extension name set
      * @see #getCommandBuffer(int)
@@ -173,7 +169,7 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
      * or {@code null} if this is a {@link SftpConstants#SSH_FXP_STATUS} carrying
      * an {@link SftpConstants#SSH_FX_OK} result
      * @throws IOException If a non-{@link SftpConstants#SSH_FX_OK} result or
-     *                     not a {@link SftpConstants#SSH_FXP_EXTENDED_REPLY} buffer
+     * not a {@link SftpConstants#SSH_FXP_EXTENDED_REPLY} buffer
      */
     protected Buffer checkExtendedReplyBuffer(Buffer buffer) throws IOException {
         int length = buffer.getInt();

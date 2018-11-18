@@ -19,6 +19,7 @@
 package org.apache.sshd.agent.common;
 
 import java.io.IOException;
+import java.io.StreamCorruptedException;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Collection;
@@ -55,6 +56,10 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
 
         int rpos = buffer.rpos();
         int len = buffer.getInt();
+        // Protect against malicious or corrupted packets
+        if (len < 0) {
+            throw new StreamCorruptedException("Illogical message length: " + len);
+        }
         buffer.rpos(rpos);
 
         avail = buffer.available();
@@ -77,7 +82,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
         } catch (Exception e) {
             if (log.isDebugEnabled()) {
                 log.debug("Failed ({}) to handle command={}: {}",
-                          e.getClass().getSimpleName(), cmd, e.getMessage());
+                      e.getClass().getSimpleName(), cmd, e.getMessage());
             }
             if (log.isTraceEnabled()) {
                 log.trace("Received command=" + cmd + " handling failure details", e);

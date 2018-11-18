@@ -24,6 +24,7 @@ import java.util.Arrays;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -69,11 +70,18 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                     String language_tag = buffer.getString();
                     if (debugEnabled) {
                         log.debug("next({}) Received SSH_MSG_USERAUTH_INFO_REQUEST - name={}, instruction={}, lang={}",
-                                 session, name, instruction, language_tag);
+                             session, name, instruction, language_tag);
                     }
                     int num = buffer.getInt();
-                    String[] prompt = new String[num];
-                    boolean[] echo = new boolean[num];
+                    // Protect against malicious or corrupted packets
+                    if ((num < 0) || (num > SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT)) {
+                        log.error("next({}) illogical challenges count ({}) for name={}, instruction={}",
+                            session, num, name, instruction);
+                        throw new IndexOutOfBoundsException("Illogical challenges count: " + num);
+                    }
+
+                    String[] prompt = (num <= 0) ? GenericUtils.EMPTY_STRING_ARRAY : new String[num];
+                    boolean[] echo = (num <= 0) ? GenericUtils.EMPTY_BOOLEAN_ARRAY : new boolean[num];
                     for (int i = 0; i < num; i++) {
                         prompt[i] = buffer.getString();
                         echo[i] = buffer.getBoolean();
@@ -85,8 +93,9 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
                     String[] rep = null;
                     if (num == 0) {
-                        rep = new String[0];
-                    } else if (num == 1 && password != null && !echo[0] && prompt[0].toLowerCase().startsWith("password:")) {
+                        rep = GenericUtils.EMPTY_STRING_ARRAY;
+                    } else if ((num == 1) && (password != null) && (!echo[0])
+                            && prompt[0].toLowerCase().startsWith("password:")) {
                         rep = new String[]{password};
                     } else {
                         UserInteraction ui = session.getUserInteraction();

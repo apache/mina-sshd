@@ -83,8 +83,8 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
         }
 
         int nbIdentities = buffer.getInt();
-        if (nbIdentities > 1024) {
-            throw new SshException("Bad identities count: " + nbIdentities);
+        if ((nbIdentities < 0) || (nbIdentities > 1024)) {
+            throw new SshException("Illogical identities count: " + nbIdentities);
         }
 
         List<SimpleImmutableEntry<PublicKey, String>> keys = new ArrayList<>(nbIdentities);
@@ -94,7 +94,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
             String comment = buffer.getString();
             if (debugEnabled) {
                 log.debug("getIdentities() key type={}, comment={}, fingerprint={}",
-                          KeyUtils.getKeyType(key), comment, KeyUtils.getFingerPrint(key));
+                      KeyUtils.getKeyType(key), comment, KeyUtils.getFingerPrint(key));
             }
             keys.add(new SimpleImmutableEntry<>(key, comment));
         }

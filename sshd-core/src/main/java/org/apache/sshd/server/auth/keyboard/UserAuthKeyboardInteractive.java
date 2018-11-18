@@ -111,12 +111,18 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         }
 
         int num = buffer.getInt();
+        // Protect against malicious or corrupted packets
+        if ((num < 0) || (num > SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT)) {
+            log.error("doValidateAuthResponse({}@{}) illogical response count: {}", username, session, num);
+            throw new IndexOutOfBoundsException("Illogical response count: " + num);
+        }
+
         List<String> responses = (num <= 0) ? Collections.emptyList() : new ArrayList<>(num);
         boolean traceEnabled = log.isTraceEnabled();
-        for (int index = 0; index < num; index++) {
+        for (int index = 1; index <= num; index++) {
             String value = buffer.getString();
             if (traceEnabled) {
-                log.trace("doAuth({}@{}) response #{}: {}", username, session, index + 1, value);
+                log.trace("doAuth({}@{}) response {}/{}: {}", username, session, index, num, value);
             }
             responses.add(value);
         }
@@ -125,7 +131,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         if (auth == null) {
             if (debugEnabled) {
                 log.debug("doAuth({}@{}) no interactive authenticator to validate {} responses",
-                          username, session, num);
+                      username, session, num);
             }
             return false;
         }
@@ -135,7 +141,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             authed = auth.authenticate(session, username, responses);
         } catch (Error e) {
             log.warn("doAuth({}@{}) failed ({}) to consult authenticator: {}",
-                     username, session, e.getClass().getSimpleName(), e.getMessage());
+                 username, session, e.getClass().getSimpleName(), e.getMessage());
             if (debugEnabled) {
                 log.debug("doAuth(" + username + "@" + session + ") authenticator consultation failure details", e);
             }
@@ -144,7 +150,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
         if (debugEnabled) {
             log.debug("doAuth({}@{}) authenticate {} responses result: {}",
-                      username, session, num, authed);
+                  username, session, num, authed);
         }
 
         return authed;

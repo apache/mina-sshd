@@ -54,6 +54,7 @@ import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.PropertyResolver;
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -640,9 +641,14 @@ public final class SftpHelper {
 
     public static NavigableMap<String, byte[]> readExtensions(Buffer buffer) {
         int count = buffer.getInt();
+        // Protect against malicious or malformed packets
+        if ((count < 0) || (count > SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT)) {
+            throw new IndexOutOfBoundsException("Illogical extensions count: " + count);
+        }
+
         // NOTE
         NavigableMap<String, byte[]> extended = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (int i = 0; i < count; i++) {
+        for (int i = 1; i <= count; i++) {
             String key = buffer.getString();
             byte[] val = buffer.getBytes();
             byte[] prev = extended.put(key, val);
@@ -659,16 +665,16 @@ public final class SftpHelper {
             return buffer;
         }
 
-        extensions.forEach((key, value) -> {
-            Objects.requireNonNull(key, "No extension type");
-            Objects.requireNonNull(value, "No extension value");
+        for (Map.Entry<?, ?> ee : extensions.entrySet()) {
+            Object key = Objects.requireNonNull(ee.getKey(), "No extension type");
+            Object value = Objects.requireNonNull(ee.getValue(), "No extension value");
             buffer.putString(key.toString());
             if (value instanceof byte[]) {
                 buffer.putBytes((byte[]) value);
             } else {
                 buffer.putString(value.toString());
             }
-        });
+        }
 
         return buffer;
     }
@@ -680,11 +686,12 @@ public final class SftpHelper {
 
         // NOTE: even though extensions are probably case sensitive we do not allow duplicate name that differs only in case
         NavigableMap<String, String> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        extensions.forEach((key, value) -> {
-            ValidateUtils.checkNotNull(value, "No value for extension=%s", key);
-            String prev = map.put(key, (value instanceof byte[]) ? new String((byte[]) value, StandardCharsets.UTF_8) : value.toString());
+        for (Map.Entry<?, ?> ee : extensions.entrySet()) {
+            Object key = Objects.requireNonNull(ee.getKey(), "No extension type");
+            Object value = ValidateUtils.checkNotNull(ee.getValue(), "No value for extension=%s", key);
+            String prev = map.put(key.toString(), (value instanceof byte[]) ? new String((byte[]) value, StandardCharsets.UTF_8) : value.toString());
             ValidateUtils.checkTrue(prev == null, "Multiple values for extension=%s", key);
-        });
+        }
 
         return map;
     }
@@ -709,6 +716,11 @@ public final class SftpHelper {
     // for v6 see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-21
     public static List<AclEntry> readACLs(Buffer buffer, int version) {
         int aclSize = buffer.getInt();
+        // Protect against malicious or malformed packets
+        if ((aclSize < 0) || (aclSize > (2 * SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT))) {
+            throw new IndexOutOfBoundsException("Illogical ACL entries size: " + aclSize);
+        }
+
         int startPos = buffer.rpos();
         Buffer aclBuffer = new ByteArrayBuffer(buffer.array(), startPos, aclSize, true);
         List<AclEntry> acl = decodeACLs(aclBuffer, version);
@@ -724,14 +736,21 @@ public final class SftpHelper {
         }
 
         int count = buffer.getInt();
-        // NOTE: although the value is defined as UINT32 we do not expected a count greater than Integer.MAX_VALUE
+        /*
+         * NOTE: although the value is defined as UINT32 we do not expected a count greater
+         * than several hundreds + protect against malicious or corrupted packets
+         */
+        if ((count < 0) || (count > SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT)) {
+            throw new IndexOutOfBoundsException("Illogical ACL entries count: " + count);
+        }
+
         ValidateUtils.checkTrue(count >= 0, "Invalid ACL entries count: %d", count);
         if (count == 0) {
             return Collections.emptyList();
         }
 
         List<AclEntry> acls = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) {
+        for (int i = 1; i <= count; i++) {
             int aclType = buffer.getInt();
             int aclFlag = buffer.getInt();
             int aclMask = buffer.getInt();
@@ -745,11 +764,11 @@ public final class SftpHelper {
     public static AclEntry buildAclEntry(int aclType, int aclFlag, int aclMask, String aclWho) {
         UserPrincipal who = new DefaultGroupPrincipal(aclWho);
         return AclEntry.newBuilder()
-                .setType(ValidateUtils.checkNotNull(decodeAclEntryType(aclType), "Unknown ACL type: %d", aclType))
-                .setFlags(decodeAclFlags(aclFlag))
-                .setPermissions(decodeAclMask(aclMask))
-                .setPrincipal(who)
-                .build();
+            .setType(ValidateUtils.checkNotNull(decodeAclEntryType(aclType), "Unknown ACL type: %d", aclType))
+            .setFlags(decodeAclFlags(aclFlag))
+            .setPermissions(decodeAclMask(aclMask))
+            .setPrincipal(who)
+            .build();
     }
 
     /**

@@ -38,6 +38,7 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensions;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtensionFactory;
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
@@ -770,7 +771,9 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         return checkData(SftpConstants.SSH_FXP_READ, buffer, dstOffset, dst, eofSignalled);
     }
 
-    protected int checkData(int cmd, Buffer request, int dstOffset, byte[] dst, AtomicReference<Boolean> eofSignalled) throws IOException {
+    protected int checkData(
+            int cmd, Buffer request, int dstOffset, byte[] dst, AtomicReference<Boolean> eofSignalled)
+                throws IOException {
         if (eofSignalled != null) {
             eofSignalled.set(null);
         }
@@ -779,7 +782,9 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         return checkDataResponse(cmd, response, dstOffset, dst, eofSignalled);
     }
 
-    protected int checkDataResponse(int cmd, Buffer buffer, int dstoff, byte[] dst, AtomicReference<Boolean> eofSignalled) throws IOException {
+    protected int checkDataResponse(
+            int cmd, Buffer buffer, int dstoff, byte[] dst, AtomicReference<Boolean> eofSignalled)
+                throws IOException {
         if (eofSignalled != null) {
             eofSignalled.set(null);
         }
@@ -944,17 +949,23 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         int id = buffer.getInt();
         boolean traceEnabled = log.isTraceEnabled();
         if (type == SftpConstants.SSH_FXP_NAME) {
-            int len = buffer.getInt();
-            int version = getVersion();
             ClientChannel channel = getClientChannel();
-            boolean debugEnabled = log.isDebugEnabled();
-            if (debugEnabled) {
-                log.debug("checkDirResponse({}}[id={}] reading {} entries", channel, id, len);
+            int count = buffer.getInt();
+            int version = getVersion();
+            // Protect against malicious or corrupted packets
+            if ((count < 0) || (count > SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT)) {
+                log.error("checkDirResponse({})[id={}] illogical dir entries count: {}", channel, id, count);
+                throw new SshException("Illogical dir entries count: " + count);
             }
 
-            List<DirEntry> entries = new ArrayList<>(len);
+            boolean debugEnabled = log.isDebugEnabled();
+            if (debugEnabled) {
+                log.debug("checkDirResponse({}}[id={}] reading {} entries", channel, id, count);
+            }
+
+            List<DirEntry> entries = new ArrayList<>(count);
             AtomicInteger nameIndex = new AtomicInteger(0);
-            for (int i = 0; i < len; i++) {
+            for (int index = 1; index <= count; index++) {
                 String name = getReferencedName(cmd, buffer, nameIndex.getAndIncrement());
                 String longName = null;
                 if (version == SftpConstants.SFTP_V3) {
@@ -963,8 +974,8 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
 
                 Attributes attrs = readAttributes(cmd, buffer, nameIndex);
                 if (traceEnabled) {
-                    log.trace("checkDirResponse({})[id={}][{}] ({})[{}]: {}",
-                          channel, id, i, name, longName, attrs);
+                    log.trace("checkDirResponse({})[id={}][{}/{}] ({})[{}]: {}",
+                          channel, id, index, count, name, longName, attrs);
                 }
 
                 entries.add(new DirEntry(name, longName, attrs));
@@ -1000,7 +1011,9 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         return handleUnknownDirListingPacket(cmd, id, type, length, buffer);
     }
 
-    protected List<DirEntry> handleUnknownDirListingPacket(int cmd, int id, int type, int length, Buffer buffer) throws IOException {
+    protected List<DirEntry> handleUnknownDirListingPacket(
+            int cmd, int id, int type, int length, Buffer buffer)
+                throws IOException {
         IOException err = handleUnexpectedPacket(cmd, SftpConstants.SSH_FXP_NAME, id, type, length, buffer);
         if (err != null) {
             throw err;
@@ -1008,7 +1021,9 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         return Collections.emptyList();
     }
 
-    protected IOException handleUnexpectedPacket(int cmd, int expected, int id, int type, int length, Buffer buffer) throws IOException {
+    protected IOException handleUnexpectedPacket(
+            int cmd, int expected, int id, int type, int length, Buffer buffer)
+                throws IOException {
         throw new SshException("Unexpected SFTP packet received while awaiting " + SftpConstants.getCommandMessageName(expected)
                 + " response to " + SftpConstants.getCommandMessageName(cmd)
                 + ": type=" + SftpConstants.getCommandMessageName(type) + ", id=" + id + ", length=" + length);

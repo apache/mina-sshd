@@ -791,7 +791,8 @@ public class SftpSubsystem
         }
 
         if (remaining < length) {
-            throw new IllegalStateException("Not enough buffer data for writing to " + fh + ": required=" + length + ", available=" + remaining);
+            throw new IllegalStateException("Not enough buffer data for writing to " + fh
+                + ": required=" + length + ", available=" + remaining);
         }
 
         SftpEventListener listener = getSftpEventListenerProxy();

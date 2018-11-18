@@ -20,6 +20,7 @@ package org.apache.sshd.agent.unix;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.io.StreamCorruptedException;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Future;
@@ -118,8 +119,12 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
             if (receiveBuffer.available() >= 4) {
                 int rpos = receiveBuffer.rpos();
                 int len = receiveBuffer.getInt();
+                // Protect against malicious or corrupted packets
+                if (len < 0) {
+                    throw new StreamCorruptedException("Illogical message length: " + len);
+                }
                 receiveBuffer.rpos(rpos);
-                if (receiveBuffer.available() >= 4 + len) {
+                if (receiveBuffer.available() >= (4 + len)) {
                     message = new ByteArrayBuffer(receiveBuffer.getBytes());
                     receiveBuffer.compact();
                 }

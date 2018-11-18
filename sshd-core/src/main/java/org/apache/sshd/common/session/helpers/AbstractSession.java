@@ -1014,8 +1014,12 @@ public abstract class AbstractSession extends SessionHelper {
                     }
                     // Read packet length
                     decoderLength = decoderBuffer.getInt();
-                    // Check packet length validity
-                    if ((decoderLength < SshConstants.SSH_PACKET_HEADER_LEN) || (decoderLength > (256 * 1024))) {
+                    /*
+                     * Check packet length validity - we allow 8 times the minimum required packet length support
+                     * in order to be aligned with some OpenSSH versions that allow up to 256k
+                     */
+                    if ((decoderLength < SshConstants.SSH_PACKET_HEADER_LEN)
+                            || (decoderLength > (8 * SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT))) {
                         log.warn("decode({}) Error decoding packet(invalid length): {}", this, decoderLength);
                         decoderBuffer.dumpHex(getSimplifiedLogger(), "decode(" + this + ") invalid length packet", this);
                         throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,

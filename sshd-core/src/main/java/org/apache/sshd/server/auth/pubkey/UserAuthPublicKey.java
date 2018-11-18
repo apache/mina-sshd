@@ -70,16 +70,24 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
     @Override
     public Boolean doAuth(Buffer buffer, boolean init) throws Exception {
         ValidateUtils.checkTrue(init, "Instance not initialized");
+        ServerSession session = getServerSession();
+        String username = getUsername();
 
         boolean hasSig = buffer.getBoolean();
         String alg = buffer.getString();
         int oldLim = buffer.wpos();
         int oldPos = buffer.rpos();
         int len = buffer.getInt();
+        int remaining = buffer.available();
+        // Protect against malicious or corrupted packets
+        if ((len < 0) || (len > remaining)) {
+            log.error("doAuth({}@{}) illogical algorithm={} signature length ({}) when remaining={}",
+                username, session, alg, len, remaining);
+            throw new IndexOutOfBoundsException("Illogical signature length (" + len + ") for algorithm=" + alg);
+        }
+
         buffer.wpos(buffer.rpos() + len);
 
-        ServerSession session = getServerSession();
-        String username = getUsername();
         PublicKey key = buffer.getRawPublicKey();
         Collection<NamedFactory<Signature>> factories =
             ValidateUtils.checkNotNullAndNotEmpty(
