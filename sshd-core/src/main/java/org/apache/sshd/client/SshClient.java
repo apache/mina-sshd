@@ -80,6 +80,7 @@ import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
@@ -167,6 +168,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     private ServerKeyVerifier serverKeyVerifier;
     private HostConfigEntryResolver hostConfigEntryResolver;
     private ClientIdentityLoader clientIdentityLoader;
+    private KeyIdentityProvider keyIdentityProvider;
     private FilePasswordProvider filePasswordProvider;
     private PasswordIdentityProvider passwordIdentityProvider;
 
@@ -325,6 +327,16 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     @Override
+    public KeyIdentityProvider getKeyIdentityProvider() {
+        return keyIdentityProvider;
+    }
+
+    @Override
+    public void setKeyIdentityProvider(KeyIdentityProvider keyIdentityProvider) {
+        this.keyIdentityProvider = keyIdentityProvider;
+    }
+
+    @Override
     protected void checkConfig() {
         super.checkConfig();
 
@@ -335,17 +347,17 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         Objects.requireNonNull(getFilePasswordProvider(), "FilePasswordProvider not set");
 
         // if no client identities override use the default
-        KeyPairProvider defaultIdentities = getKeyPairProvider();
+        KeyIdentityProvider defaultIdentities = getKeyIdentityProvider();
         if (defaultIdentities == null) {
-            setKeyPairProvider(new DefaultClientIdentitiesWatcher(this::getClientIdentityLoader, this::getFilePasswordProvider));
+            setKeyIdentityProvider(new DefaultClientIdentitiesWatcher(this::getClientIdentityLoader, this::getFilePasswordProvider));
         }
 
         // Register the additional agent forwarding channel if needed
         SshAgentFactory agentFactory = getAgentFactory();
         if (agentFactory != null) {
             List<NamedFactory<Channel>> forwarders =
-                    ValidateUtils.checkNotNullAndNotEmpty(
-                            agentFactory.getChannelForwardingFactories(this), "No agent channel forwarding factories for %s", agentFactory);
+                ValidateUtils.checkNotNullAndNotEmpty(
+                    agentFactory.getChannelForwardingFactories(this), "No agent channel forwarding factories for %s", agentFactory);
             List<NamedFactory<Channel>> factories = getChannelFactories();
             if (GenericUtils.isEmpty(factories)) {
                 factories = forwarders;
@@ -656,15 +668,15 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     protected void setupDefaultSessionIdentities(ClientSession session) {
         // check if session listener intervened
-        KeyPairProvider kpSession = session.getKeyPairProvider();
-        KeyPairProvider kpClient = getKeyPairProvider();
+        KeyIdentityProvider kpSession = session.getKeyIdentityProvider();
+        KeyIdentityProvider kpClient = getKeyIdentityProvider();
         boolean debugEnabled = log.isDebugEnabled();
         if (kpSession == null) {
-            session.setKeyPairProvider(kpClient);
+            session.setKeyIdentityProvider(kpClient);
         } else {
             if (kpSession != kpClient) {
                 if (debugEnabled) {
-                    log.debug("setupDefaultSessionIdentities({}) key-pair provider override", session);
+                    log.debug("setupDefaultSessionIdentities({}) key identity provider override", session);
                 }
             }
         }
@@ -828,7 +840,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
      * @param options       The {@link LinkOption}s to apply when checking
      *                      for existence
      * @return The updated <tt>client</tt> instance - provided a non-{@code null}
-     * {@link KeyPairProvider} was generated
+     * {@link KeyIdentityProvider} was generated
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
      * @see ClientIdentity#loadDefaultKeyPairProvider(Path, boolean, boolean, FilePasswordProvider, LinkOption...)
@@ -836,10 +848,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     public static <C extends SshClient> C setKeyPairProvider(
             C client, Path dir, boolean strict, boolean supportedOnly, FilePasswordProvider provider, LinkOption... options)
                 throws IOException, GeneralSecurityException {
-        KeyPairProvider kpp =
+        KeyIdentityProvider kpp =
             ClientIdentity.loadDefaultKeyPairProvider(dir, strict, supportedOnly, provider, options);
         if (kpp != null) {
-            client.setKeyPairProvider(kpp);
+            client.setKeyIdentityProvider(kpp);
         }
 
         return client;

@@ -57,6 +57,9 @@ accept also an `AttributeRepository` connection context argument (propagated fro
 
 * `ApacheSshdSftpSessionFactory#get/setPrivateKey` has been renamed to `get/setPrivateKeyLocation`.
 
+* `SshClient` and `ClientSession` use a `KeyIdentityProvider` instead of a full blown `KeyPairProvider`.
+`KeyPairProvider` is used only in the context of an `SshServer` and/or `ServerSession`.
+
 ## Behavioral changes and enhancements
 
 * [SSHD-849](https://issues.apache.org/jira/browse/SSHD-849) - Data forwarding code makes sure all

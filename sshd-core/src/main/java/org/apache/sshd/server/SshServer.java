@@ -40,6 +40,7 @@ import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -103,6 +104,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     private CommandFactory commandFactory;
     private List<NamedFactory<Command>> subsystemFactories;
     private List<NamedFactory<UserAuth>> userAuthFactories;
+    private KeyPairProvider keyPairProvider;
     private PasswordAuthenticator passwordAuthenticator;
     private PublickeyAuthenticator publickeyAuthenticator;
     private KeyboardInteractiveAuthenticator interactiveAuthenticator;
@@ -246,6 +248,16 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     @Override
     public void setHostBasedAuthenticator(HostBasedAuthenticator hostBasedAuthenticator) {
         this.hostBasedAuthenticator = hostBasedAuthenticator;
+    }
+
+    @Override
+    public KeyPairProvider getKeyPairProvider() {
+        return keyPairProvider;
+    }
+
+    @Override
+    public void setKeyPairProvider(KeyPairProvider keyPairProvider) {
+        this.keyPairProvider = keyPairProvider;
     }
 
     @Override

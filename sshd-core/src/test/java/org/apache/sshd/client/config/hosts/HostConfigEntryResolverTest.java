@@ -43,7 +43,7 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -185,13 +185,13 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
     @Test
     public void testUseIdentitiesOnly() throws Exception {
         Path clientIdFile = assertHierarchyTargetFolderExists(getTempTargetRelativeFile(getClass().getSimpleName()));
-        KeyPairProvider clientIdProvider =
+        KeyIdentityProvider clientIdProvider =
             CommonTestSupportUtils.createTestHostKeyProvider(clientIdFile.resolve(getCurrentTestName() + ".pem"));
         KeyPair specificIdentity = CommonTestSupportUtils.getFirstKeyPair(sshd);
         KeyPair defaultIdentity = CommonTestSupportUtils.getFirstKeyPair(clientIdProvider);
         ValidateUtils.checkTrue(!KeyUtils.compareKeyPairs(specificIdentity, defaultIdentity),
                 "client identity not different then entry one");
-        client.setKeyPairProvider(clientIdProvider);
+        client.setKeyIdentityProvider(clientIdProvider);
 
         String user = getCurrentTestName();
         AtomicBoolean defaultClientIdentityAttempted = new AtomicBoolean(false);
@@ -234,17 +234,17 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         PropertyResolverUtils.updateProperty(client, ClientFactoryManager.IGNORE_INVALID_IDENTITIES, false);
 
         Collection<KeyPair> clientIdentities = Collections.singletonList(defaultIdentity);
-        KeyPairProvider provider = new AbstractKeyPairProvider() {
+        KeyIdentityProvider provider = new AbstractKeyPairProvider() {
             @Override
             public Iterable<KeyPair> loadKeys(SessionContext session) {
                 return clientIdentities;
             }
         };
-        client.setKeyPairProvider(provider);
+        client.setKeyIdentityProvider(provider);
 
         client.start();
         try (ClientSession session = client.connect(entry).verify(7L, TimeUnit.SECONDS).getSession()) {
-            assertSame("Unexpected session key pairs provider", provider, session.getKeyPairProvider());
+            assertSame("Unexpected session key pairs provider", provider, session.getKeyIdentityProvider());
             session.auth().verify(5L, TimeUnit.SECONDS);
             assertFalse("Unexpected default client identity attempted", defaultClientIdentityAttempted.get());
             assertNull("Default client identity auto-added", session.removePublicKeyIdentity(defaultIdentity));

@@ -40,6 +40,7 @@ import org.apache.sshd.common.auth.AbstractUserAuthServiceFactory;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -50,6 +51,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.server.ServerAuthenticationManager;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.auth.UserAuth;
 import org.apache.sshd.server.auth.WelcomeBannerPhase;
@@ -73,6 +75,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     private GSSAuthenticator gssAuthenticator;
     private HostBasedAuthenticator hostBasedAuthenticator;
     private List<NamedFactory<UserAuth>> userAuthFactories;
+    private KeyPairProvider keyPairProvider;
 
     protected AbstractServerSession(ServerFactoryManager factoryManager, IoSession ioSession) {
         super(true, factoryManager, ioSession);
@@ -166,6 +169,18 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     @Override
     public void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories) {
         this.userAuthFactories = userAuthFactories; // OK if null/empty - inherit from parent
+    }
+
+    @Override
+    public KeyPairProvider getKeyPairProvider() {
+        KexFactoryManager parent = getDelegate();
+        return resolveEffectiveProvider(KeyPairProvider.class, keyPairProvider,
+            (parent == null) ? null : ((ServerAuthenticationManager) parent).getKeyPairProvider());
+    }
+
+    @Override
+    public void setKeyPairProvider(KeyPairProvider keyPairProvider) {
+        this.keyPairProvider = keyPairProvider;
     }
 
     /**

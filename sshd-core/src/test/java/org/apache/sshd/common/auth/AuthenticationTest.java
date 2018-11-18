@@ -53,6 +53,7 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionContext;
@@ -916,7 +917,7 @@ public class AuthenticationTest extends BaseTestSupport {
                         return "super secret passphrase";
                     }
                 };
-                s.setKeyPairProvider(new KeyPairProvider() {
+                s.setKeyIdentityProvider(new KeyIdentityProvider() {
                     @Override
                     public Iterable<KeyPair> loadKeys(SessionContext session) throws IOException, GeneralSecurityException {
                         assertSame("Mismatched session context", s, session);

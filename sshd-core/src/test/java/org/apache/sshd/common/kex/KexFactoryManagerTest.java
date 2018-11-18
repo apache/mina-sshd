@@ -27,7 +27,6 @@ import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.Compression;
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.signature.BuiltinSignatures;
@@ -126,16 +125,6 @@ public class KexFactoryManagerTest extends BaseTestSupport {
 
         TestKexFactoryManager() {
             super();
-        }
-
-        @Override
-        public KeyPairProvider getKeyPairProvider() {
-            return null;
-        }
-
-        @Override
-        public void setKeyPairProvider(KeyPairProvider keyPairProvider) {
-            throw new UnsupportedOperationException("N/A");
         }
 
         @Override

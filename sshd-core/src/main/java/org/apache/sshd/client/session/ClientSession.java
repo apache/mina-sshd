@@ -381,7 +381,7 @@ public interface ClientSession
         return (session == null)
             ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER
             : KeyIdentityProvider.resolveKeyIdentityProvider(
-                session.getRegisteredIdentities(), session.getKeyPairProvider());
+                session.getRegisteredIdentities(), session.getKeyIdentityProvider());
     }
 
     /**

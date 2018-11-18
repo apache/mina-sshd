@@ -343,7 +343,8 @@ public abstract class SshClientCliSupport extends CliSupport {
         }
     }
 
-    public static FileKeyPairProvider setupSessionIdentities(ClientFactoryManager client, Collection<? extends Path> identities,
+    public static FileKeyPairProvider setupSessionIdentities(
+            ClientFactoryManager client, Collection<? extends Path> identities,
             BufferedReader stdin, PrintStream stdout, PrintStream stderr)
                 throws Throwable {
         client.setFilePasswordProvider((session, file, index) -> {
@@ -362,7 +363,7 @@ public abstract class SshClientCliSupport extends CliSupport {
             }
         };
         provider.setPaths(identities);
-        client.setKeyPairProvider(provider);
+        client.setKeyIdentityProvider(provider);
         return provider;
     }
 

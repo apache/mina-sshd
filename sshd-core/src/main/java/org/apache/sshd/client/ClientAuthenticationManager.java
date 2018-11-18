@@ -33,7 +33,7 @@ import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.keyprovider.KeyPairProviderHolder;
+import org.apache.sshd.common.keyprovider.KeyIdentityProviderHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -41,7 +41,7 @@ import org.apache.sshd.common.util.ValidateUtils;
  * Holds information required for the client to perform authentication with the server
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ClientAuthenticationManager extends KeyPairProviderHolder {
+public interface ClientAuthenticationManager extends KeyIdentityProviderHolder {
 
     /**
      * Ordered comma separated list of authentications methods.
@@ -74,7 +74,8 @@ public interface ClientAuthenticationManager extends KeyPairProviderHolder {
      * candidates
      *
      * @return The {@link PasswordIdentityProvider} instance - ignored if {@code null}
-     * (i.e., no passwords available)
+     * (i.e., no passwords available).
+     * @see #addPasswordIdentity(String)
      */
     PasswordIdentityProvider getPasswordIdentityProvider();
 

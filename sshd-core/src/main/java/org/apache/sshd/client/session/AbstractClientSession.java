@@ -58,6 +58,7 @@ import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
+import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.session.helpers.AbstractConnectionService;
@@ -80,6 +81,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     private ServerKeyVerifier serverKeyVerifier;
     private UserInteraction userInteraction;
     private PasswordIdentityProvider passwordIdentityProvider;
+    private KeyIdentityProvider keyIdentityProvider;
     private List<NamedFactory<UserAuth>> userAuthFactories;
     private SocketAddress connectAddress;
     private ClientProxyConnector proxyConnector;
@@ -157,6 +159,17 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     @Override
     public void setPasswordIdentityProvider(PasswordIdentityProvider provider) {
         passwordIdentityProvider = provider;
+    }
+
+    @Override
+    public KeyIdentityProvider getKeyIdentityProvider() {
+        ClientFactoryManager manager = getFactoryManager();
+        return resolveEffectiveProvider(KeyIdentityProvider.class, keyIdentityProvider, manager.getKeyIdentityProvider());
+    }
+
+    @Override
+    public void setKeyIdentityProvider(KeyIdentityProvider keyIdentityProvider) {
+        this.keyIdentityProvider = keyIdentityProvider;
     }
 
     @Override

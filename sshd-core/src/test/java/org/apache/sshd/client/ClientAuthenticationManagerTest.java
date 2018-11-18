@@ -43,7 +43,7 @@ import org.apache.sshd.common.forward.DefaultForwarderFactory;
 import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.random.JceRandomFactory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.random.SingletonRandomFactory;
@@ -81,13 +81,13 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
             }
 
             @Override
-            public KeyPairProvider getKeyPairProvider() {
+            public KeyIdentityProvider getKeyIdentityProvider() {
                 return null;
             }
 
             @Override
-            public void setKeyPairProvider(KeyPairProvider keyPairProvider) {
-                throw new UnsupportedOperationException("setKeyPairProvider(" + keyPairProvider + ")");
+            public void setKeyIdentityProvider(KeyIdentityProvider provider) {
+                throw new UnsupportedOperationException("setKeyIdentityProvider(" + provider + ")");
             }
 
             @Override
@@ -183,7 +183,7 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
                     PasswordIdentityProvider.class,
                     ServerKeyVerifier.class,
                     UserInteraction.class,
-                    KeyPairProvider.class
+                    KeyIdentityProvider.class
                 }) {
                     testClientProvidersPropagation(provider, client, session);
                 }
@@ -191,7 +191,9 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
         }
     }
 
-    private void testClientProvidersPropagation(Class<?> type, ClientAuthenticationManager client, ClientAuthenticationManager session) throws Exception {
+    private void testClientProvidersPropagation(
+            Class<?> type, ClientAuthenticationManager client, ClientAuthenticationManager session)
+                throws Exception {
         String baseName = type.getSimpleName();
         outputDebugMessage("testClientProvidersPropagation(%s)", baseName);
         assertTrue(baseName + ": not an interface", type.isInterface());

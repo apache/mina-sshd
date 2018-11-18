@@ -40,7 +40,8 @@ public class DefaultClientIdentitiesWatcher extends BuiltinClientIdentitiesWatch
         this(true, loader, provider, strict);
     }
 
-    public DefaultClientIdentitiesWatcher(boolean supportedOnly, ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
+    public DefaultClientIdentitiesWatcher(
+            boolean supportedOnly, ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
         this(supportedOnly,
              GenericUtils.supplierOf(Objects.requireNonNull(loader, "No client identity loader")),
              GenericUtils.supplierOf(Objects.requireNonNull(provider, "No password provider")),

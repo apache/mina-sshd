@@ -27,6 +27,7 @@ import java.util.List;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.keyprovider.KeyPairProviderHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.auth.BuiltinUserAuthFactories;
@@ -46,7 +47,7 @@ import org.apache.sshd.server.auth.pubkey.UserAuthPublicKeyFactory;
  * Holds providers and helpers related to the server side authentication process
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ServerAuthenticationManager {
+public interface ServerAuthenticationManager extends KeyPairProviderHolder {
     /**
      * Key used to retrieve the value in the configuration properties map
      * of the maximum number of failed authentication requests before the

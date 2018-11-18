@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.auth.BuiltinUserAuthFactories;
 import org.apache.sshd.server.auth.UserAuth;
@@ -112,6 +113,16 @@ public class ServerAuthenticationManagerTest extends BaseTestSupport {
             @Override
             public void setHostBasedAuthenticator(HostBasedAuthenticator hostBasedAuthenticator) {
                 throw new UnsupportedOperationException("setHostBasedAuthenticator(" + hostBasedAuthenticator + ")");
+            }
+
+            @Override
+            public KeyPairProvider getKeyPairProvider() {
+                return null;
+            }
+
+            @Override
+            public void setKeyPairProvider(KeyPairProvider keyPairProvider) {
+                throw new UnsupportedOperationException("setKeyPairProvider(" + keyPairProvider + ")");
             }
         };
         assertEquals("Mismatched initial factories list", "", manager.getUserAuthFactoriesNameList());
