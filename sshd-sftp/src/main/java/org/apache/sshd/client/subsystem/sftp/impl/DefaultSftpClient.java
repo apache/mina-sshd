@@ -413,7 +413,12 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
             throwStatusException(SftpConstants.SSH_FXP_INIT, id, substatus, msg, lang);
         } else {
-            handleUnexpectedPacket(SftpConstants.SSH_FXP_INIT, SftpConstants.SSH_FXP_VERSION, id, type, length, buffer);
+            IOException err = handleUnexpectedPacket(
+                SftpConstants.SSH_FXP_INIT, SftpConstants.SSH_FXP_VERSION, id, type, length, buffer);
+            if (err != null) {
+                throw err;
+            }
+
         }
     }
 

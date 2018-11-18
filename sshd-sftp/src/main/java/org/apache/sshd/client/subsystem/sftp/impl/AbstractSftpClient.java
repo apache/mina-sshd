@@ -182,8 +182,10 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             String lang = buffer.getString();
             checkResponseStatus(cmd, id, substatus, msg, lang);
         } else {
-            //noinspection ThrowableResultOfMethodCallIgnored
-            handleUnexpectedPacket(cmd, SftpConstants.SSH_FXP_STATUS, id, type, length, buffer);
+            IOException err = handleUnexpectedPacket(cmd, SftpConstants.SSH_FXP_STATUS, id, type, length, buffer);
+            if (err != null) {
+                throw err;
+            }
         }
     }
 
@@ -253,7 +255,11 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
     }
 
     protected byte[] handleUnexpectedHandlePacket(int cmd, int id, int type, int length, Buffer buffer) throws IOException {
-        handleUnexpectedPacket(cmd, SftpConstants.SSH_FXP_HANDLE, id, type, length, buffer);
+        IOException err = handleUnexpectedPacket(cmd, SftpConstants.SSH_FXP_HANDLE, id, type, length, buffer);
+        if (err != null) {
+            throw err;
+        }
+
         throw new SshException("No handling for unexpected handle packet id=" + id
                  + ", type=" + SftpConstants.getCommandMessageName(type) + ", length=" + length);
     }
@@ -1044,10 +1050,22 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         return Collections.emptyList();
     }
 
+    /**
+     * @param cmd The initial command sent
+     * @param expected The expected packet type
+     * @param id The reported identifier
+     * @param type The reported SFTP response type
+     * @param length The packet length
+     * @param buffer The {@link Buffer} after reading from it whatever data
+     * led to this call
+     * @return The exception to throw - if {@code null} then implementor assumed
+     * to handle the exception internal. Otherwise, the exception is re-thrown
+     * @throws IOException If failed to handle the exception internally
+     */
     protected IOException handleUnexpectedPacket(
             int cmd, int expected, int id, int type, int length, Buffer buffer)
                 throws IOException {
-        throw new SshException("Unexpected SFTP packet received while awaiting " + SftpConstants.getCommandMessageName(expected)
+        return new SshException("Unexpected SFTP packet received while awaiting " + SftpConstants.getCommandMessageName(expected)
                 + " response to " + SftpConstants.getCommandMessageName(cmd)
                 + ": type=" + SftpConstants.getCommandMessageName(type) + ", id=" + id + ", length=" + length);
     }
