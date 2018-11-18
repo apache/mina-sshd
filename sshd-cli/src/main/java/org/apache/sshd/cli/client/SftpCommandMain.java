@@ -41,6 +41,7 @@ import java.util.ServiceLoader;
 import java.util.TreeMap;
 import java.util.logging.Level;
 
+import org.apache.sshd.cli.client.helper.SftpFileTransferProgressOutputStream;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
@@ -89,6 +90,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
     private final Map<String, SftpCommandExecutor> commandsMap;
     private String cwdRemote;
     private String cwdLocal;
+    private boolean showProgress = true;
 
     public SftpCommandMain(SftpClient client) {
         this.client = Objects.requireNonNull(client, "No client");
@@ -113,6 +115,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
                 new StatVfsCommandExecutor(),
                 new GetCommandExecutor(),
                 new PutCommandExecutor(),
+                new ProgressCommandExecutor(),
                 new HelpCommandExecutor()
         )) {
             String name = e.getName();
@@ -205,9 +208,11 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
     }
 
-    protected <A extends Appendable> A appendFileAttributes(A stdout, SftpClient sftp, String path, Attributes attrs) throws IOException {
-        stdout.append('\t').append(Long.toString(attrs.getSize()))
-              .append('\t').append(SftpFileSystemProvider.getRWXPermissions(attrs.getPermissions()));
+    protected <A extends Appendable> A appendFileAttributes(
+            A stdout, SftpClient sftp, String path, Attributes attrs)
+                throws IOException {
+        stdout.append("    ").append(Long.toString(attrs.getSize()))
+              .append("    ").append(SftpFileSystemProvider.getRWXPermissions(attrs.getPermissions()));
         if (attrs.isSymbolicLink()) {
             String linkValue = sftp.readLink(path);
             stdout.append(" => ")
@@ -234,6 +239,14 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         cwdLocal = path;
     }
 
+    public boolean isShowProgress() {
+        return showProgress;
+    }
+
+    public void setShowProgress(boolean showProgress) {
+        this.showProgress = showProgress;
+    }
+
     @Override
     public boolean isOpen() {
         return client.isOpen();
@@ -249,7 +262,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
     //////////////////////////////////////////////////////////////////////////
 
     public static <A extends Appendable> A appendInfoValue(A sb, CharSequence name, Object value) throws IOException {
-        sb.append('\t').append(name).append(": ").append(Objects.toString(value));
+        sb.append("    ").append(name).append(": ").append(Objects.toString(value));
         return sb;
     }
 
@@ -309,7 +322,9 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
                 setupLogging(level, stdout, stderr, logStream);
             }
 
-            ClientSession session = (logStream == null) ? null : setupClientSession(SFTP_PORT_OPTION, stdin, stdout, stderr, args);
+            ClientSession session = (logStream == null)
+                ? null
+                : setupClientSession(SFTP_PORT_OPTION, stdin, stdout, stderr, args);
             if (session == null) {
                 System.err.println("usage: sftp [-v[v][v]] [-E logoutput] [-i identity] [-io nio2|mina|netty]"
                         + " [-l login] [" + SFTP_PORT_OPTION + " port] [-o option=value]"
@@ -347,7 +362,9 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
 
         @Override
-        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
             ValidateUtils.checkTrue(GenericUtils.isEmpty(args), "Unexpected arguments: %s", args);
             stdout.println("Exiting");
             return true;
@@ -365,10 +382,12 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
 
         @Override
-        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
             ValidateUtils.checkTrue(GenericUtils.isEmpty(args), "Unexpected arguments: %s", args);
-            stdout.append('\t').append("Remote: ").println(getCurrentRemoteDirectory());
-            stdout.append('\t').append("Local: ").println(getCurrentLocalDirectory());
+            stdout.append("    ").append("Remote: ").println(getCurrentRemoteDirectory());
+            stdout.append("    ").append("Local: ").println(getCurrentLocalDirectory());
             return false;
         }
     }
@@ -384,7 +403,9 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
 
         @Override
-        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
             ValidateUtils.checkTrue(GenericUtils.isEmpty(args), "Unexpected arguments: %s", args);
             SftpClient sftp = getClient();
             ClientSession session = sftp.getSession();
@@ -414,7 +435,9 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
 
         @Override
-        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
             ValidateUtils.checkTrue(GenericUtils.isEmpty(args), "Unexpected arguments: %s", args);
             SftpClient sftp = getClient();
             ClientSession session = sftp.getSession();
@@ -442,11 +465,13 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
 
         @Override
-        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
             ValidateUtils.checkTrue(GenericUtils.isEmpty(args), "Unexpected arguments: %s", args);
             SftpClient sftp = getClient();
             Session session = sftp.getSession();
-            stdout.append('\t').println(session.getServerVersion());
+            stdout.append("    ").println(session.getServerVersion());
 
             Map<String, byte[]> extensions = sftp.getServerExtensions();
             Map<String, ?> parsed = ParserUtils.parse(extensions);
@@ -457,7 +482,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             extensions.forEach((name, value) -> {
                 Object info = parsed.get(name);
 
-                stdout.append('\t').append(name).append(": ");
+                stdout.append("    ").append(name).append(": ");
                 if (info == null) {
                     stdout.println(BufferUtils.toHex(value));
                 } else {
@@ -480,10 +505,12 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
 
         @Override
-        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
             ValidateUtils.checkTrue(GenericUtils.isEmpty(args), "Unexpected arguments: %s", args);
             SftpClient sftp = getClient();
-            stdout.append('\t').println(sftp.getVersion());
+            stdout.append("    ").println(sftp.getVersion());
             return false;
         }
     }
@@ -499,7 +526,9 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
 
         @Override
-        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
             ValidateUtils.checkNotNullAndNotEmpty(args, "No remote directory specified");
 
             String newPath = resolveRemotePath(args);
@@ -520,7 +549,9 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
 
         @Override
-        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
             if (GenericUtils.isEmpty(args)) {
                 setCurrentLocalDirectory(System.getProperty("user.home"));
             } else {
@@ -545,7 +576,9 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
 
         @Override
-        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
             ValidateUtils.checkNotNullAndNotEmpty(args, "No remote directory specified");
 
             String path = resolveRemotePath(args);
@@ -566,7 +599,9 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
 
         @Override
-        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
             String[] comps = GenericUtils.split(args, ' ');
             int numComps = GenericUtils.length(comps);
             String pathArg = (numComps <= 0) ? null : GenericUtils.trimToEmpty(comps[numComps - 1]);
@@ -584,7 +619,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             for (SftpClient.DirEntry entry : sftp.readDir(path)) {
                 String fileName = entry.getFilename();
                 SftpClient.Attributes attrs = entry.getAttributes();
-                appendFileAttributes(stdout.append('\t').append(fileName), sftp, path + "/" + fileName, attrs).println();
+                appendFileAttributes(stdout.append("    ").append(fileName), sftp, path + "/" + fileName, attrs).println();
                 if (showLongName) {
                     stdout.append("\t\tlong-name: ").println(entry.getLongFilename());
                 }
@@ -605,7 +640,9 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
 
         @Override
-        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
             String[] comps = GenericUtils.split(args, ' ');
             int numArgs = GenericUtils.length(comps);
             ValidateUtils.checkTrue(numArgs >= 1, "No arguments");
@@ -643,14 +680,16 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             } else {
                 sftp.remove(path);
                 if (verbose) {
-                    stdout.append('\t').append("Removed ").println(path);
+                    stdout.append("    ").append("Removed ").println(path);
                 }
             }
 
             return false;
         }
 
-        private void removeRecursive(SftpClient sftp, String path, Attributes attrs, PrintStream stdout, boolean verbose) throws IOException {
+        private void removeRecursive(
+                SftpClient sftp, String path, Attributes attrs, PrintStream stdout, boolean verbose)
+                    throws IOException {
             if (attrs.isDirectory()) {
                 for (DirEntry entry : sftp.readDir(path)) {
                     String name = entry.getFilename();
@@ -666,13 +705,13 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
                 sftp.remove(path);
             } else {
                 if (verbose) {
-                    stdout.append('\t').append("Skip special file ").println(path);
+                    stdout.append("    ").append("Skip special file ").println(path);
                     return;
                 }
             }
 
             if (verbose) {
-                stdout.append('\t').append("Removed ").println(path);
+                stdout.append("    ").append("Removed ").println(path);
             }
         }
     }
@@ -688,7 +727,9 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
 
         @Override
-        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
             ValidateUtils.checkNotNullAndNotEmpty(args, "No remote directory specified");
 
             String path = resolveRemotePath(args);
@@ -709,7 +750,9 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
 
         @Override
-        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
             String[] comps = GenericUtils.split(args, ' ');
             ValidateUtils.checkTrue(GenericUtils.length(comps) == 2, "Invalid number of arguments: %s", args);
 
@@ -732,7 +775,9 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
 
         @Override
-        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
             String[] comps = GenericUtils.split(args, ' ');
             int numArgs = GenericUtils.length(comps);
             ValidateUtils.checkTrue(numArgs <= 1, "Invalid number of arguments: %s", args);
@@ -741,7 +786,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             OpenSSHStatPathExtension ext = sftp.getExtension(OpenSSHStatPathExtension.class);
             ValidateUtils.checkTrue(ext.isSupported(), "Extension not supported by server: %s", ext.getName());
 
-            String remPath = resolveRemotePath((numArgs >= 1) ? GenericUtils.trimToEmpty(comps[0]) :  GenericUtils.trimToEmpty(args));
+            String remPath = resolveRemotePath(
+                (numArgs >= 1) ? GenericUtils.trimToEmpty(comps[0]) :  GenericUtils.trimToEmpty(args));
             OpenSSHStatExtensionInfo info = ext.stat(remPath);
             Field[] fields = info.getClass().getFields();
             for (Field f : fields) {
@@ -752,7 +798,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
                 }
 
                 Object value = f.get(info);
-                stdout.append('\t').append(name).append(": ").println(value);
+                stdout.append("    ").append(name).append(": ").println(value);
             }
 
             return false;
@@ -770,7 +816,9 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
 
         @Override
-        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
             String[] comps = GenericUtils.split(args, ' ');
             ValidateUtils.checkTrue(GenericUtils.length(comps) <= 1, "Invalid number of arguments: %s", args);
 
@@ -800,7 +848,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             String path = GenericUtils.trimToEmpty(resolveRemotePath(args));
             SftpClient client = getClient();
             String linkData = client.readLink(path);
-            stdout.append('\t').println(linkData);
+            stdout.append("    ").println(linkData);
             return false;
         }
     }
@@ -817,10 +865,12 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
 
         @Override
         @SuppressWarnings("synthetic-access")
-        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
             ValidateUtils.checkTrue(GenericUtils.isEmpty(args), "Unexpected arguments: %s", args);
             for (String cmd : commandsMap.keySet()) {
-                stdout.append('\t').println(cmd);
+                stdout.append("    ").println(cmd);
             }
             return false;
         }
@@ -846,7 +896,9 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             createDirectories(sftp, remotePath.substring(0, pos));
         }
 
-        protected void transferFile(SftpClient sftp, Path localPath, String remotePath, boolean upload, PrintStream stdout, boolean verbose) throws IOException {
+        protected void transferFile(
+                SftpClient sftp, Path localPath, String remotePath, boolean upload, PrintStream stdout, boolean verbose)
+                    throws IOException {
             // Create the file's hierarchy
             if (upload) {
                 int pos = remotePath.lastIndexOf('/');
@@ -856,19 +908,33 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
                 Files.createDirectories(localPath.getParent());
             }
 
+            boolean withProgress = isShowProgress();
+            long copySize;
             try (InputStream input = upload ? Files.newInputStream(localPath) : sftp.read(remotePath);
-                 OutputStream output = upload ? sftp.write(remotePath) : Files.newOutputStream(localPath)) {
-                IoUtils.copy(input, output, SftpClient.IO_BUFFER_SIZE);
+                 OutputStream target = upload ? sftp.write(remotePath) : Files.newOutputStream(localPath);
+                 OutputStream output = withProgress ? new SftpFileTransferProgressOutputStream(target, stdout) : target) {
+                if (withProgress) {
+                    stdout.println();
+                }
+
+                copySize = IoUtils.copy(input, output, SftpClient.IO_BUFFER_SIZE);
+
+                if (withProgress) {
+                    stdout.println();
+                }
             }
 
             if (verbose) {
-                stdout.append('\t')
-                      .append("Copied ").append(upload ? localPath.toString() : remotePath)
-                      .append(" to ").println(upload ? remotePath : localPath.toString());
+                stdout.append("    ")
+                  .append("Copied ").append(Long.toString(copySize)).append(" bytes")
+                  .append(" from ").append(upload ? localPath.toString() : remotePath)
+                  .append(" to ").println(upload ? remotePath : localPath.toString());
             }
         }
 
-        protected void transferRemoteDir(SftpClient sftp, Path localPath, String remotePath, Attributes attrs, PrintStream stdout, boolean verbose) throws IOException {
+        protected void transferRemoteDir(
+                SftpClient sftp, Path localPath, String remotePath, Attributes attrs, PrintStream stdout, boolean verbose)
+                    throws IOException {
             if (attrs.isDirectory()) {
                 for (DirEntry entry : sftp.readDir(remotePath)) {
                     String name = entry.getFilename();
@@ -882,12 +948,14 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
                 transferFile(sftp, localPath, remotePath, false, stdout, verbose);
             } else {
                 if (verbose) {
-                    stdout.append('\t').append("Skip remote special file ").println(remotePath);
+                    stdout.append("    ").append("Skip remote special file ").println(remotePath);
                 }
             }
         }
 
-        protected void transferLocalDir(SftpClient sftp, Path localPath, String remotePath, PrintStream stdout, boolean verbose) throws IOException {
+        protected void transferLocalDir(
+                SftpClient sftp, Path localPath, String remotePath, PrintStream stdout, boolean verbose)
+                    throws IOException {
             if (Files.isDirectory(localPath)) {
                 try (DirectoryStream<Path> ds = Files.newDirectoryStream(localPath)) {
                     for (Path entry : ds) {
@@ -899,7 +967,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
                 transferFile(sftp, localPath, remotePath, true, stdout, verbose);
             } else {
                 if (verbose) {
-                    stdout.append('\t').append("Skip local special file ").println(localPath);
+                    stdout.append("    ").append("Skip local special file ").println(localPath);
                 }
             }
         }
@@ -980,7 +1048,9 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
 
         @Override
-        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
             executeCommand(args, false, stdout);
             return false;
         }
@@ -997,8 +1067,45 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
 
         @Override
-        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
             executeCommand(args, true, stdout);
+            return false;
+        }
+    }
+
+    private class ProgressCommandExecutor implements SftpCommandExecutor {
+        ProgressCommandExecutor() {
+            super();
+        }
+
+        @Override
+        public String getName() {
+            return "progress";
+        }
+
+        @Override
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
+            String[] comps = GenericUtils.split(args, ' ');
+            int numArgs = GenericUtils.length(comps);
+            if (numArgs <= 0) {
+                stdout.append("    ").append(getName()).append(' ').println(isShowProgress() ? "on" : "off");
+            } else {
+                ValidateUtils.checkTrue(numArgs == 1, "Invalid arguments count: %d", numArgs);
+
+                String argVal = comps[0];
+                if ("on".equalsIgnoreCase(argVal)) {
+                    setShowProgress(true);
+                } else if ("off".equalsIgnoreCase(argVal)) {
+                    setShowProgress(false);
+                } else {
+                    throw new IllegalArgumentException("Unknown value: " + argVal);
+                }
+            }
+
             return false;
         }
     }

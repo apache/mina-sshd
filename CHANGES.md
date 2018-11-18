@@ -88,3 +88,17 @@ in order to provide key file(s) location information
 
 * [SSHD-866](https://issues.apache.org/jira/browse/SSHD-866) - Counting empty challenges separately when enforcing
 max. attempts during `keyboard-interactive` authentication
+
+* `SftpCommandMain` shows by default `get/put` command progress using the hash sign (`#`) marker. The marker
+can be enabled/disabled via the `progress` command:
+
+```
+    > progress
+
+    ... reponse is whether it is 'on' or 'off'
+
+    > progress on/off
+
+    ... set the progress marker indicator  ...
+
+```
