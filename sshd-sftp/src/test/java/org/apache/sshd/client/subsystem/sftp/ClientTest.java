@@ -236,7 +236,8 @@ public class ClientTest extends BaseTestSupport {
             });
             testClientListener(channelHolder, SftpClient.class, () -> {
                 try {
-                    return SftpClientFactory.instance().createSftpClient(session);
+                    SftpClientFactory clientFactory = SftpClientFactory.instance();
+                    return clientFactory.createSftpClient(session);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -246,7 +247,9 @@ public class ClientTest extends BaseTestSupport {
         }
     }
 
-    private <C extends Closeable> void testClientListener(AtomicReference<Channel> channelHolder, Class<C> channelType, Factory<? extends C> factory) throws Exception {
+    private <C extends Closeable> void testClientListener(
+            AtomicReference<Channel> channelHolder, Class<C> channelType, Factory<? extends C> factory)
+                throws Exception {
         assertNull(channelType.getSimpleName() + ": Unexpected currently active channel", channelHolder.get());
 
         try (C instance = factory.create()) {
@@ -333,29 +336,35 @@ public class ClientTest extends BaseTestSupport {
         assertListenerSizes("ClientStop", clientListeners, 0, 1);
     }
 
-    private static void assertListenerSizes(String phase, Map<String, ? extends TestChannelListener> listeners, int activeSize, int openSize) {
+    private static void assertListenerSizes(
+            String phase, Map<String, ? extends TestChannelListener> listeners, int activeSize, int openSize) {
         assertListenerSizes(phase, listeners.values(), activeSize, openSize);
     }
 
-    private static void assertListenerSizes(String phase, Collection<? extends TestChannelListener> listeners, int activeSize, int openSize) {
+    private static void assertListenerSizes(
+            String phase, Collection<? extends TestChannelListener> listeners, int activeSize, int openSize) {
         if (GenericUtils.isEmpty(listeners)) {
             return;
         }
 
         for (TestChannelListener l : listeners) {
             if (activeSize >= 0) {
-                assertEquals(phase + ": mismatched active channels size for " + l.getName() + " listener", activeSize, GenericUtils.size(l.getActiveChannels()));
+                assertEquals(phase + ": mismatched active channels size for " + l.getName() + " listener",
+                    activeSize, GenericUtils.size(l.getActiveChannels()));
             }
 
             if (openSize >= 0) {
-                assertEquals(phase + ": mismatched open channels size for " + l.getName() + " listener", openSize, GenericUtils.size(l.getOpenChannels()));
+                assertEquals(phase + ": mismatched open channels size for " + l.getName() + " listener",
+                    openSize, GenericUtils.size(l.getOpenChannels()));
             }
 
-            assertEquals(phase + ": unexpected failed channels size for " + l.getName() + " listener", 0, GenericUtils.size(l.getFailedChannels()));
+            assertEquals(phase + ": unexpected failed channels size for " + l.getName() + " listener",
+                0, GenericUtils.size(l.getFailedChannels()));
         }
     }
 
-    private static <L extends ChannelListener & NamedResource> void addChannelListener(Map<String, L> listeners, ChannelListenerManager manager, L listener) {
+    private static <L extends ChannelListener & NamedResource> void addChannelListener(
+            Map<String, L> listeners, ChannelListenerManager manager, L listener) {
         String name = listener.getName();
         assertNull("Duplicate listener named " + name, listeners.put(name, listener));
         manager.addChannelListener(listener);
@@ -378,7 +387,9 @@ public class ClientTest extends BaseTestSupport {
     }
 
     private ClientSession createTestClientSession(String host) throws IOException {
-        ClientSession session = client.connect(getCurrentTestName(), host, port).verify(7L, TimeUnit.SECONDS).getSession();
+        ClientSession session = client.connect(getCurrentTestName(), host, port)
+            .verify(7L, TimeUnit.SECONDS)
+            .getSession();
         try {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.addPasswordIdentity(getCurrentTestName());

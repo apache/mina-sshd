@@ -174,6 +174,8 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
+        validateIncomingResponse(cmd, id, type, length, buffer);
+
         if (type == SftpConstants.SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
@@ -229,6 +231,8 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
+        validateIncomingResponse(cmd, id, type, length, buffer);
+
         if (type == SftpConstants.SSH_FXP_HANDLE) {
             return ValidateUtils.checkNotNullAndNotEmpty(buffer.getBytes(), "Null/empty handle in buffer", GenericUtils.EMPTY_OBJECT_ARRAY);
         }
@@ -273,6 +277,8 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
+        validateIncomingResponse(cmd, id, type, length, buffer);
+
         if (type == SftpConstants.SSH_FXP_ATTRS) {
             return readAttributes(cmd, buffer, new AtomicInteger(0));
         }
@@ -320,6 +326,8 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
+        validateIncomingResponse(cmd, id, type, length, buffer);
+
         if (type == SftpConstants.SSH_FXP_NAME) {
             int len = buffer.getInt();
             if (len != 1) {
@@ -792,6 +800,8 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
+        validateIncomingResponse(cmd, id, type, length, buffer);
+
         if (type == SftpConstants.SSH_FXP_DATA) {
             int len = buffer.getInt();
             buffer.getRawBytes(dst, dstoff, len);
@@ -947,6 +957,8 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
+        validateIncomingResponse(cmd, id, type, length, buffer);
+
         boolean traceEnabled = log.isTraceEnabled();
         if (type == SftpConstants.SSH_FXP_NAME) {
             ClientChannel channel = getClientChannel();
@@ -1009,6 +1021,17 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         }
 
         return handleUnknownDirListingPacket(cmd, id, type, length, buffer);
+    }
+
+    protected void validateIncomingResponse(
+            int cmd, int id, int type, int length, Buffer buffer)
+                throws IOException {
+        int remaining = buffer.available();
+        if ((length < 0) || (length > (remaining + 5 /* type + id */))) {
+            throw new SshException("Bad length (" + length + ") for remaining data (" + remaining + ")"
+                + " in response to " + SftpConstants.getCommandMessageName(cmd)
+                + ": type=" + SftpConstants.getCommandMessageName(type) + ", id=" + id);
+        }
     }
 
     protected List<DirEntry> handleUnknownDirListingPacket(

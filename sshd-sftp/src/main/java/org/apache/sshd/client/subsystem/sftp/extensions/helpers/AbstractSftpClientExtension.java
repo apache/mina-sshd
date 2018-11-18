@@ -175,6 +175,8 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
+        validateIncomingResponse(SftpConstants.SSH_FXP_EXTENDED, id, type, length, buffer);
+
         if (type == SftpConstants.SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
@@ -193,6 +195,17 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
             return buffer;
         } else {
             throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
+        }
+    }
+
+    protected void validateIncomingResponse(
+            int cmd, int id, int type, int length, Buffer buffer)
+                throws IOException {
+        int remaining = buffer.available();
+        if ((length < 0) || (length > (remaining + 5 /* type + id */))) {
+            throw new SshException("Bad length (" + length + ") for remaining data (" + remaining + ")"
+                + " in response to " + SftpConstants.getCommandMessageName(cmd)
+                + ": type=" + SftpConstants.getCommandMessageName(type) + ", id=" + id);
         }
     }
 
