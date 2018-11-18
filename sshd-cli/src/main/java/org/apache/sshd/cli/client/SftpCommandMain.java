@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import org.apache.sshd.cli.client.helper.SftpFileTransferProgressOutputStream;
@@ -881,7 +882,9 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             super();
         }
 
-        protected void createDirectories(SftpClient sftp, String remotePath) throws IOException {
+        protected void createDirectories(
+                SftpClient sftp, String remotePath, PrintStream stdout, boolean verbose)
+                    throws IOException {
             try {
                 Attributes attrs = sftp.stat(remotePath);
                 ValidateUtils.checkTrue(attrs.isDirectory(), "Remote path already exists but is not a directory: %s", remotePath);
@@ -893,7 +896,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
 
             int pos = remotePath.lastIndexOf('/');
             ValidateUtils.checkTrue(pos > 0, "No more parents for %s", remotePath);
-            createDirectories(sftp, remotePath.substring(0, pos));
+            createDirectories(sftp, remotePath.substring(0, pos), stdout, verbose);
         }
 
         protected void transferFile(
@@ -903,13 +906,27 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             if (upload) {
                 int pos = remotePath.lastIndexOf('/');
                 ValidateUtils.checkTrue(pos > 0, "Missing full remote file path: %s", remotePath);
-                createDirectories(sftp, remotePath.substring(0, pos));
+                createDirectories(sftp, remotePath.substring(0, pos), stdout, verbose);
+
+                if (verbose) {
+                    stdout.append("    Uploading ").append(Long.toString(Files.size(localPath)))
+                        .append(" bytes from ").append(localPath.toString())
+                        .append(" to ").println(remotePath);
+                }
             } else {
                 Files.createDirectories(localPath.getParent());
+
+                if (verbose) {
+                    Attributes attrs = sftp.stat(remotePath);
+                    stdout.append("    Downloading ").append(Long.toString(attrs.getSize()))
+                        .append(" bytes from ").append(remotePath)
+                        .append(" to ").println(localPath);
+                }
             }
 
             boolean withProgress = isShowProgress();
             long copySize;
+            long startTime = System.currentTimeMillis();
             try (InputStream input = upload ? Files.newInputStream(localPath) : sftp.read(remotePath);
                  OutputStream target = upload ? sftp.write(remotePath) : Files.newOutputStream(localPath);
                  OutputStream output = withProgress ? new SftpFileTransferProgressOutputStream(target, stdout) : target) {
@@ -925,9 +942,9 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             }
 
             if (verbose) {
-                stdout.append("    ")
-                  .append("Copied ").append(Long.toString(copySize)).append(" bytes")
-                  .append(" from ").append(upload ? localPath.toString() : remotePath)
+                stdout.append("    Copied ").append(Long.toString(copySize)).append(" bytes")
+                  .append(" in ").append(Long.toString(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime)))
+                  .append(" seconds from ").append(upload ? localPath.toString() : remotePath)
                   .append(" to ").println(upload ? remotePath : localPath.toString());
             }
         }
@@ -959,7 +976,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             if (Files.isDirectory(localPath)) {
                 try (DirectoryStream<Path> ds = Files.newDirectoryStream(localPath)) {
                     for (Path entry : ds) {
-                        String name = entry.getFileName().toString();
+                        Path fileName = entry.getFileName();
+                        String name = fileName.toString();
                         transferLocalDir(sftp, localPath.resolve(name), remotePath + "/" + name, stdout, verbose);
                     }
                 }
