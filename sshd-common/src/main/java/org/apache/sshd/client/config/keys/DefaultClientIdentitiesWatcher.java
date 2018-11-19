@@ -22,11 +22,10 @@ package org.apache.sshd.client.config.keys;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.FilePasswordProviderHolder;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
-import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -43,21 +42,21 @@ public class DefaultClientIdentitiesWatcher extends BuiltinClientIdentitiesWatch
     public DefaultClientIdentitiesWatcher(
             boolean supportedOnly, ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
         this(supportedOnly,
-             GenericUtils.supplierOf(Objects.requireNonNull(loader, "No client identity loader")),
-             GenericUtils.supplierOf(Objects.requireNonNull(provider, "No password provider")),
+             ClientIdentityLoaderHolder.loaderHolderOf(Objects.requireNonNull(loader, "No client identity loader")),
+             FilePasswordProviderHolder.providerHolderOf(Objects.requireNonNull(provider, "No password provider")),
              strict);
     }
 
-    public DefaultClientIdentitiesWatcher(Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider) {
+    public DefaultClientIdentitiesWatcher(ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider) {
         this(loader, provider, true);
     }
 
-    public DefaultClientIdentitiesWatcher(Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider, boolean strict) {
+    public DefaultClientIdentitiesWatcher(ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider, boolean strict) {
         this(true, loader, provider, strict);
     }
 
     public DefaultClientIdentitiesWatcher(boolean supportedOnly,
-            Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider, boolean strict) {
+            ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider, boolean strict) {
         super(PublicKeyEntry.getDefaultKeysFolderPath(), supportedOnly, loader, provider, strict);
     }
 

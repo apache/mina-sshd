@@ -20,8 +20,6 @@
 package org.apache.sshd.common.config.keys;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FunctionalInterface
@@ -32,4 +30,8 @@ public interface FilePasswordProviderHolder {
      * @see FilePasswordProvider#EMPTY
      */
     FilePasswordProvider getFilePasswordProvider();
+
+    static FilePasswordProviderHolder providerHolderOf(FilePasswordProvider provider) {
+        return () -> provider;
+    }
 }

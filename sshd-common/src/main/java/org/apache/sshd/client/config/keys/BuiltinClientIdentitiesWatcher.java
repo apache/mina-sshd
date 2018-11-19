@@ -26,11 +26,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.FilePasswordProviderHolder;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
@@ -49,18 +49,18 @@ public class BuiltinClientIdentitiesWatcher extends ClientIdentitiesWatcher {
     public BuiltinClientIdentitiesWatcher(Path keysFolder, Collection<String> ids, boolean supportedOnly,
             ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
         this(keysFolder, ids, supportedOnly,
-             GenericUtils.supplierOf(Objects.requireNonNull(loader, "No client identity loader")),
-             GenericUtils.supplierOf(Objects.requireNonNull(provider, "No password provider")),
+             ClientIdentityLoaderHolder.loaderHolderOf(Objects.requireNonNull(loader, "No client identity loader")),
+             FilePasswordProviderHolder.providerHolderOf(Objects.requireNonNull(provider, "No password provider")),
              strict);
     }
 
     public BuiltinClientIdentitiesWatcher(Path keysFolder, boolean supportedOnly,
-            Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider, boolean strict) {
+            ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider, boolean strict) {
         this(keysFolder, NamedResource.getNameList(BuiltinIdentities.VALUES), supportedOnly, loader, provider, strict);
     }
 
     public BuiltinClientIdentitiesWatcher(Path keysFolder, Collection<String> ids, boolean supportedOnly,
-            Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider, boolean strict) {
+            ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider, boolean strict) {
         super(getBuiltinIdentitiesPaths(keysFolder, ids), loader, provider, strict);
         this.supportedOnly = supportedOnly;
     }

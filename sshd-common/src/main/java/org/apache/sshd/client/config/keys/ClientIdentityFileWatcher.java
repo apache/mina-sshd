@@ -27,13 +27,11 @@ import java.security.PublicKey;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.FilePasswordProviderHolder;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.SessionContext;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.ModifiableFileWatcher;
 import org.apache.sshd.common.util.io.resource.PathResource;
@@ -48,8 +46,8 @@ public class ClientIdentityFileWatcher
         extends ModifiableFileWatcher
         implements ClientIdentityProvider, ClientIdentityLoaderHolder, FilePasswordProviderHolder {
     private final AtomicReference<KeyPair> identityHolder = new AtomicReference<>(null);
-    private final Supplier<? extends ClientIdentityLoader> loaderHolder;
-    private final Supplier<? extends FilePasswordProvider> providerHolder;
+    private final ClientIdentityLoaderHolder loaderHolder;
+    private final FilePasswordProviderHolder providerHolder;
     private final boolean strict;
 
     public ClientIdentityFileWatcher(Path path, ClientIdentityLoader loader, FilePasswordProvider provider) {
@@ -58,18 +56,18 @@ public class ClientIdentityFileWatcher
 
     public ClientIdentityFileWatcher(Path path, ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
         this(path,
-             GenericUtils.supplierOf(Objects.requireNonNull(loader, "No client identity loader")),
-             GenericUtils.supplierOf(Objects.requireNonNull(provider, "No password provider")),
+             ClientIdentityLoaderHolder.loaderHolderOf(Objects.requireNonNull(loader, "No client identity loader")),
+             FilePasswordProviderHolder.providerHolderOf(Objects.requireNonNull(provider, "No password provider")),
              strict);
     }
 
     public ClientIdentityFileWatcher(
-            Path path, Supplier<? extends ClientIdentityLoader> loader, Supplier<? extends FilePasswordProvider> provider) {
+            Path path, ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider) {
         this(path, loader, provider, true);
     }
 
     public ClientIdentityFileWatcher(
-            Path path, Supplier<? extends ClientIdentityLoader> loader, Supplier<? extends FilePasswordProvider> provider, boolean strict) {
+            Path path, ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider, boolean strict) {
         super(path);
         this.loaderHolder = Objects.requireNonNull(loader, "No client identity loader");
         this.providerHolder = Objects.requireNonNull(provider, "No password provider");
@@ -82,12 +80,12 @@ public class ClientIdentityFileWatcher
 
     @Override
     public ClientIdentityLoader getClientIdentityLoader() {
-        return loaderHolder.get();
+        return loaderHolder.getClientIdentityLoader();
     }
 
     @Override
     public FilePasswordProvider getFilePasswordProvider() {
-        return providerHolder.get();
+        return providerHolder.getFilePasswordProvider();
     }
 
     @Override

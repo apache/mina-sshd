@@ -26,9 +26,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.FilePasswordProviderHolder;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
@@ -50,18 +50,18 @@ public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements 
     public ClientIdentitiesWatcher(Collection<? extends Path> paths,
             ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
         this(paths,
-             GenericUtils.supplierOf(Objects.requireNonNull(loader, "No client identity loader")),
-             GenericUtils.supplierOf(Objects.requireNonNull(provider, "No password provider")),
+             ClientIdentityLoaderHolder.loaderHolderOf(Objects.requireNonNull(loader, "No client identity loader")),
+             FilePasswordProviderHolder.providerHolderOf(Objects.requireNonNull(provider, "No password provider")),
              strict);
     }
 
     public ClientIdentitiesWatcher(Collection<? extends Path> paths,
-            Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider) {
+            ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider) {
         this(paths, loader, provider, true);
     }
 
     public ClientIdentitiesWatcher(Collection<? extends Path> paths,
-            Supplier<ClientIdentityLoader> loader, Supplier<FilePasswordProvider> provider, boolean strict) {
+            ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider, boolean strict) {
         this(buildProviders(paths, loader, provider, strict));
     }
 
@@ -102,14 +102,14 @@ public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements 
     public static List<ClientIdentityProvider> buildProviders(
             Collection<? extends Path> paths, ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
         return buildProviders(paths,
-                GenericUtils.supplierOf(Objects.requireNonNull(loader, "No client identity loader")),
-                GenericUtils.supplierOf(Objects.requireNonNull(provider, "No password provider")),
+                ClientIdentityLoaderHolder.loaderHolderOf(Objects.requireNonNull(loader, "No client identity loader")),
+                FilePasswordProviderHolder.providerHolderOf(Objects.requireNonNull(provider, "No password provider")),
                 strict);
     }
 
     public static List<ClientIdentityProvider> buildProviders(
-            Collection<? extends Path> paths, Supplier<? extends ClientIdentityLoader> loader,
-            Supplier<? extends FilePasswordProvider> provider, boolean strict) {
+            Collection<? extends Path> paths, ClientIdentityLoaderHolder loader,
+            FilePasswordProviderHolder provider, boolean strict) {
         if (GenericUtils.isEmpty(paths)) {
             return Collections.emptyList();
         }

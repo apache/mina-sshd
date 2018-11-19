@@ -61,8 +61,8 @@ import org.apache.sshd.common.util.io.NoCloseReader;
 
 /**
  * Represents an entry in the client's configuration file as defined by
- * the <A HREF="http://www.gsp.com/cgi-bin/man.cgi?topic=ssh_config">configuration
- * file format</A>
+ * the <A HREF="http://www.gsp.com/cgi-bin/man.cgi?topic=ssh_config">ssh_config</A>
+ * configuration file format
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class HostConfigEntry extends HostPatternsHolder implements MutableUserHolder {

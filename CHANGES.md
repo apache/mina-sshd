@@ -63,6 +63,9 @@ accept also an `AttributeRepository` connection context argument (propagated fro
 * `SshClient#loadClientIdentities` has been renamed to `preloadClientIdentities` + it returns a
 `KeyIdentityProvider` instead of a collection of strings representing paths.
 
+* The various `ClientIdentitiesWatcher`(s) use a type-safe `ClientIdentityLoaderHolder` and
+`FilePasswordProviderHolder` instead of the generic `Supplier` definition.
+
 ## Behavioral changes and enhancements
 
 * [SSHD-849](https://issues.apache.org/jira/browse/SSHD-849) - Data forwarding code makes sure all
@@ -91,6 +94,9 @@ key loading methods are invoked.
 
 * [SSHD-864](https://issues.apache.org/jira/browse/SSHD-864) - Using a `NamedResource` instead of plain old string
 in order to provide key file(s) location information
+
+* [SSHD-865](https://issues.apache.org/jira/browse/SSHD-865) - Key identities overrides specified in the
+[ssh_config](http://www.gsp.com/cgi-bin/man.cgi?topic=ssh_config) configuration file are also lazy loaded
 
 * [SSHD-866](https://issues.apache.org/jira/browse/SSHD-866) - Counting empty challenges separately when enforcing
 max. attempts during `keyboard-interactive` authentication

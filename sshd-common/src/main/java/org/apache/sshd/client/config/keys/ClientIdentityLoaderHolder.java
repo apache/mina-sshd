@@ -20,8 +20,6 @@
 package org.apache.sshd.client.config.keys;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FunctionalInterface
@@ -31,4 +29,8 @@ public interface ClientIdentityLoaderHolder {
      * key pair identities - never {@code null}
      */
     ClientIdentityLoader getClientIdentityLoader();
+
+    static ClientIdentityLoaderHolder loaderHolderOf(ClientIdentityLoader loader) {
+        return () -> loader;
+    }
 }
