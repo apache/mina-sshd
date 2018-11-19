@@ -21,20 +21,17 @@ package org.apache.sshd.common.signature;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
+import org.apache.sshd.common.AlgorithmNameProvider;
 import org.apache.sshd.common.util.NumberUtils;
 
 /**
- * Signature interface for SSH used to sign or verify packets
- * Usually wraps a javax.crypto.Signature object
+ * Signature interface for SSH used to sign or verify packets. Usually wraps a
+ * {@code javax.crypto.Signature} object. The reported algorithm name refers to
+ * the signature type being applied.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Signature {
-    /**
-     * @return The signature algorithm name
-     */
-    String getAlgorithm();
-
+public interface Signature extends AlgorithmNameProvider {
     /**
      * @param key The {@link PublicKey} to be used for verifying signatures
      * @throws Exception If failed to initialize

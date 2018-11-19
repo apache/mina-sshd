@@ -20,7 +20,6 @@ package org.apache.sshd.client.config.hosts;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -787,12 +786,6 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     public static List<HostConfigEntry> readHostConfigEntries(URL url) throws IOException {
         try (InputStream input = url.openStream()) {
             return readHostConfigEntries(input, true);
-        }
-    }
-
-    public static List<HostConfigEntry> readHostConfigEntries(String filePath) throws IOException {
-        try (InputStream inStream = new FileInputStream(filePath)) {
-            return readHostConfigEntries(inStream, true);
         }
     }
 

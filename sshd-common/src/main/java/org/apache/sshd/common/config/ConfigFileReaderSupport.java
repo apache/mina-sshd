@@ -20,7 +20,6 @@
 package org.apache.sshd.common.config;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -119,12 +118,6 @@ public final class ConfigFileReaderSupport {
 
     public static Properties readConfigFile(URL url) throws IOException {
         try (InputStream input = url.openStream()) {
-            return readConfigFile(input, true);
-        }
-    }
-
-    public static Properties readConfigFile(String path) throws IOException {
-        try (InputStream input = new FileInputStream(path)) {
             return readConfigFile(input, true);
         }
     }

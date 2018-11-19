@@ -22,20 +22,17 @@ package org.apache.sshd.common.config.keys;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
+import org.apache.sshd.common.AlgorithmNameProvider;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.OptionalFeature;
 
 /**
- * Represents an SSH key type
+ * Represents an SSH key type - the referenced algorithm is the one used to generate
+ * the key - e.g., &quot;RSA&quot;, &quot;DSA&quot;, &quot;EC&quot;.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Identity extends NamedResource, OptionalFeature {
-    /**
-     * @return The key algorithm - e.g., RSA, DSA, EC
-     */
-    String getAlgorithm();
-
+public interface Identity extends AlgorithmNameProvider, NamedResource, OptionalFeature {
     Class<? extends PublicKey> getPublicKeyType();
 
     Class<? extends PrivateKey> getPrivateKeyType();

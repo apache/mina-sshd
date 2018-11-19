@@ -19,15 +19,15 @@
 
 package org.apache.sshd.common.cipher;
 
+import org.apache.sshd.common.AlgorithmNameProvider;
+import org.apache.sshd.common.keyprovider.KeySizeIndicator;
+
 /**
+ * The reported algorithm name refers to the cipher base name - e.g., &quot;AES&quot;, &quot;ARCFOUR&quot;, etc.
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface CipherInformation {
-    /**
-     * @return The cipher's algorithm
-     */
-    String getAlgorithm();
-
+public interface CipherInformation extends AlgorithmNameProvider, KeySizeIndicator {
     /**
      * @return The actual transformation used - e.g., AES/CBC/NoPadding
      */

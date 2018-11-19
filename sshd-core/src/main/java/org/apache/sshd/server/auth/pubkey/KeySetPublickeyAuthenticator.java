@@ -21,6 +21,7 @@ package org.apache.sshd.server.auth.pubkey;
 import java.security.PublicKey;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.GenericUtils;
@@ -32,9 +33,18 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public class KeySetPublickeyAuthenticator extends AbstractLoggingBean implements PublickeyAuthenticator {
     private final Collection<? extends PublicKey> keySet;
+    private final Object id;
 
-    public KeySetPublickeyAuthenticator(Collection<? extends PublicKey> keySet) {
+    public KeySetPublickeyAuthenticator(Object id, Collection<? extends PublicKey> keySet) {
+        this.id = id;
         this.keySet = (keySet == null) ? Collections.emptyList() : keySet;
+    }
+
+    /**
+     * @return Some kind of mnemonic identifier for the authenticator - used also in {@link #toString()}
+     */
+    public Object getId() {
+        return id;
     }
 
     public final Collection<? extends PublicKey> getKeySet() {
@@ -61,5 +71,10 @@ public class KeySetPublickeyAuthenticator extends AbstractLoggingBean implements
             log.debug("authenticate(" + username + ")[" + session + "] match found=" + matchFound);
         }
         return matchFound;
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toString(getId());
     }
 }

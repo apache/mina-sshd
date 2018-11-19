@@ -19,9 +19,11 @@
 
 package org.apache.sshd.common.config.keys;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.util.Collection;
 import java.util.List;
@@ -122,11 +124,13 @@ public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
         return entries;
     }
 
-    private PublickeyAuthenticator testAuthorizedKeysAuth(Collection<AuthorizedKeyEntry> entries) throws Exception {
+    private PublickeyAuthenticator testAuthorizedKeysAuth(Collection<AuthorizedKeyEntry> entries)
+            throws IOException, GeneralSecurityException {
         Collection<PublicKey> keySet =
             AuthorizedKeyEntry.resolveAuthorizedKeys(PublicKeyEntryResolver.FAILING, entries);
         PublickeyAuthenticator auth =
-            PublickeyAuthenticator.fromAuthorizedEntries(PublicKeyEntryResolver.FAILING, entries);
+            PublickeyAuthenticator.fromAuthorizedEntries(
+                getCurrentTestName(), PublicKeyEntryResolver.FAILING, entries);
         for (PublicKey key : keySet) {
             assertTrue("Failed to authenticate with key=" + key.getAlgorithm(), auth.authenticate(getCurrentTestName(), key, null));
         }

@@ -39,6 +39,8 @@ import org.apache.sshd.common.config.keys.impl.DSSPublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.impl.ECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.impl.RSAPublicKeyDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.keyprovider.KeySizeIndicator;
+import org.apache.sshd.common.keyprovider.KeyTypeIndicator;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -63,7 +65,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-public class SignatureFactoriesTest extends BaseTestSupport implements OptionalFeature {
+public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIndicator, KeySizeIndicator, OptionalFeature {
     private static SshServer sshd;
     private static SshClient client;
     private static int port;
@@ -84,11 +86,6 @@ public class SignatureFactoriesTest extends BaseTestSupport implements OptionalF
         this.keySize = keySize;
         this.supported = supported;
         this.pubKeyDecoder = supported ? Objects.requireNonNull(decoder, "No public key decoder provided") : null;
-    }
-
-    @Override
-    public boolean isSupported() {
-        return supported;
     }
 
     @Parameters(name = "type={0}, size={2}")
@@ -150,10 +147,17 @@ public class SignatureFactoriesTest extends BaseTestSupport implements OptionalF
         }
     }
 
+    @Override
+    public final boolean isSupported() {
+        return supported;
+    }
+
+    @Override
     public final int getKeySize() {
         return keySize;
     }
 
+    @Override
     public final String getKeyType() {
         return keyType;
     }
@@ -180,7 +184,7 @@ public class SignatureFactoriesTest extends BaseTestSupport implements OptionalF
 
     protected void testKeyPairProvider(
             String keyName, Factory<Iterable<KeyPair>> keyPairFactory, List<NamedFactory<Signature>> signatures)
-                    throws Exception {
+                throws Exception {
         Iterable<KeyPair> iter = keyPairFactory.create();
         testKeyPairProvider(new KeyPairProvider() {
             @Override
@@ -190,10 +194,14 @@ public class SignatureFactoriesTest extends BaseTestSupport implements OptionalF
         }, signatures);
     }
 
-    protected void testKeyPairProvider(KeyPairProvider provider, List<NamedFactory<Signature>> signatures) throws Exception {
+    protected void testKeyPairProvider(
+            KeyPairProvider provider, List<NamedFactory<Signature>> signatures)
+                throws Exception {
         sshd.setKeyPairProvider(provider);
         client.setSignatureFactories(signatures);
-        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             s.addPasswordIdentity(getCurrentTestName());
             // allow a rather long timeout since generating some keys may take some time
             s.auth().verify(30L, TimeUnit.SECONDS);

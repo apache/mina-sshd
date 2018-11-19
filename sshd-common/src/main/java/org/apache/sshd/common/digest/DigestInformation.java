@@ -19,18 +19,16 @@
 
 package org.apache.sshd.common.digest;
 
+import org.apache.sshd.common.AlgorithmNameProvider;
+
 /**
+ * The reported algorithm name refers to the type of digest being calculated.
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface DigestInformation {
-    /**
-     * @return The digest algorithm name
-     */
-    String getAlgorithm();
-
+public interface DigestInformation extends AlgorithmNameProvider {
     /**
      * @return The number of bytes in the digest's output
      */
     int getBlockSize();
-
 }

@@ -49,14 +49,23 @@ public interface PublickeyAuthenticator {
      */
     boolean authenticate(String username, PublicKey key, ServerSession session) throws AsyncAuthException;
 
+    /**
+     * @param id Some kind of mnemonic identifier for the authenticator - used also in {@link #toString()}
+     * @param fallbackResolver The public key resolver to use if none of the default registered ones works
+     * @param entries The entries to parse - ignored if {@code null}/empty
+     * @return A wrapper with all the parsed keys
+     * @throws IOException If failed to parse the keys data
+     * @throws GeneralSecurityException If failed to generate the relevant keys from the parsed data
+     */
     static PublickeyAuthenticator fromAuthorizedEntries(
-                PublicKeyEntryResolver fallbackResolver, Collection<? extends AuthorizedKeyEntry> entries)
-            throws IOException, GeneralSecurityException {
-        Collection<PublicKey> keys = AuthorizedKeyEntry.resolveAuthorizedKeys(fallbackResolver, entries);
+            Object id, PublicKeyEntryResolver fallbackResolver, Collection<? extends AuthorizedKeyEntry> entries)
+                throws IOException, GeneralSecurityException {
+        Collection<PublicKey> keys =
+            AuthorizedKeyEntry.resolveAuthorizedKeys(fallbackResolver, entries);
         if (GenericUtils.isEmpty(keys)) {
             return RejectAllPublickeyAuthenticator.INSTANCE;
         } else {
-            return new KeySetPublickeyAuthenticator(keys);
+            return new KeySetPublickeyAuthenticator(id, keys);
         }
     }
 }

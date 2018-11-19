@@ -65,19 +65,27 @@ public final class BufferUtils {
         throw new UnsupportedOperationException("No instance allowed");
     }
 
-    public static void dumpHex(SimplifiedLog logger, Level level, String prefix, PropertyResolver resolver, char sep, byte... data) {
+    public static void dumpHex(
+            SimplifiedLog logger, Level level, String prefix, PropertyResolver resolver, char sep, byte... data) {
         dumpHex(logger, level, prefix, resolver, sep, data, 0, NumberUtils.length(data));
     }
 
-    public static void dumpHex(SimplifiedLog logger, Level level, String prefix, PropertyResolver resolver, char sep, byte[] data, int offset, int len) {
-        dumpHex(logger, level, prefix, sep, resolver.getIntProperty(HEXDUMP_CHUNK_SIZE, DEFAULT_HEXDUMP_CHUNK_SIZE), data, offset, len);
+    public static void dumpHex(
+            SimplifiedLog logger, Level level, String prefix, PropertyResolver resolver,
+            char sep, byte[] data, int offset, int len) {
+        dumpHex(logger, level, prefix, sep,
+            resolver.getIntProperty(HEXDUMP_CHUNK_SIZE, DEFAULT_HEXDUMP_CHUNK_SIZE),
+            data, offset, len);
     }
 
-    public static void dumpHex(SimplifiedLog logger, Level level, String prefix, char sep, int chunkSize, byte... data) {
+    public static void dumpHex(
+            SimplifiedLog logger, Level level, String prefix, char sep, int chunkSize, byte... data) {
         dumpHex(logger, level, prefix, sep, chunkSize, data, 0, NumberUtils.length(data));
     }
 
-    public static void dumpHex(SimplifiedLog logger, Level level, String prefix, char sep, int chunkSize, byte[] data, int offset, int len) {
+    public static void dumpHex(
+            SimplifiedLog logger, Level level, String prefix, char sep,
+            int chunkSize, byte[] data, int offset, int len) {
         if ((logger == null) || (level == null) || (!logger.isEnabled(level))) {
             return;
         }
@@ -151,7 +159,9 @@ public final class BufferUtils {
         return appendHex(sb, array, 0, NumberUtils.length(array), sep);
     }
 
-    public static <A extends Appendable> A appendHex(A sb, byte[] array, int offset, int len, char sep) throws IOException {
+    public static <A extends Appendable> A appendHex(
+            A sb, byte[] array, int offset, int len, char sep)
+                throws IOException {
         if (len <= 0) {
             return sb;
         }
@@ -244,7 +254,9 @@ public final class BufferUtils {
      * @throws IllegalArgumentException If invalid HEX sequence length
      * @throws NumberFormatException If invalid HEX characters found
      */
-    public static <S extends OutputStream> int decodeHex(S stream, char separator, CharSequence csq, int start, int end) throws IOException {
+    public static <S extends OutputStream> int decodeHex(
+            S stream, char separator, CharSequence csq, int start, int end)
+                throws IOException {
         int len = end - start;
         ValidateUtils.checkTrue(len >= 0, "Bad HEX sequence length: %d", len);
 
@@ -399,7 +411,9 @@ public final class BufferUtils {
      * @throws IOException If failed to write the value or work buffer to small
      * @see #writeUInt(OutputStream, long, byte[], int, int)
      */
-    public static void writeInt(OutputStream output, int value, byte[] buf, int off, int len) throws IOException {
+    public static void writeInt(
+            OutputStream output, int value, byte[] buf, int off, int len)
+                throws IOException {
         writeUInt(output, value & 0xFFFFFFFFL, buf, off, len);
     }
 
@@ -427,7 +441,9 @@ public final class BufferUtils {
      * @throws IOException If failed to write the value or work buffer to small
      * @see #putUInt(long, byte[], int, int)
      */
-    public static void writeUInt(OutputStream output, long value, byte[] buf, int off, int len) throws IOException {
+    public static void writeUInt(
+            OutputStream output, long value, byte[] buf, int off, int len)
+                throws IOException {
         try {
             int writeLen = putUInt(value, buf, off, len);
             output.write(buf, off, writeLen);

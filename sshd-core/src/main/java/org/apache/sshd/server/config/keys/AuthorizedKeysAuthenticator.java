@@ -82,7 +82,8 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
         boolean debugEnabled = log.isDebugEnabled();
         if (!isValidUsername(username, session)) {
             if (debugEnabled) {
-                log.debug("authenticate(" + username + ")[" + session + "][" + key.getAlgorithm() + "] invalid user name - file = " + getPath());
+                log.debug("authenticate({})[{}][{}] invalid user name - file = {}",
+                    username, session, key.getAlgorithm(), getPath());
             }
             return false;
         }
@@ -92,15 +93,15 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
                 Objects.requireNonNull(resolvePublickeyAuthenticator(username, session), "No delegate");
             boolean accepted = delegate.authenticate(username, key, session);
             if (debugEnabled) {
-                log.debug("authenticate(" + username + ")[" + session + "][" + key.getAlgorithm() + "] accepted " + accepted + " from " + getPath());
+                log.debug("authenticate({})[{}][{}] invalid user name - accepted={} from file = {}",
+                    username, session, key.getAlgorithm(), accepted, getPath());
             }
 
             return accepted;
         } catch (Throwable e) {
             if (debugEnabled) {
-                log.debug("authenticate(" + username + ")[" + session + "][" + getPath() + "]"
-                        + " failed (" + e.getClass().getSimpleName() + ")"
-                        + " to resolve delegate: " + e.getMessage());
+                log.debug("authenticate({})[{}] failed ({}) to authenticate {} key from {}: {}",
+                    username, session, e.getClass().getSimpleName(), key.getAlgorithm(), getPath(), e.getMessage());
             }
 
             if (log.isTraceEnabled()) {
@@ -127,24 +128,33 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
                 Collection<AuthorizedKeyEntry> entries = reloadAuthorizedKeys(path, username, session);
                 if (GenericUtils.size(entries) > 0) {
                     PublickeyAuthenticator authDelegate =
-                        PublickeyAuthenticator.fromAuthorizedEntries(getFallbackPublicKeyEntryResolver(), entries);
+                        createDelegateAuthenticator(path, entries, getFallbackPublicKeyEntryResolver());
                     delegateHolder.set(authDelegate);
                 }
             } else {
-                log.info("resolvePublickeyAuthenticator(" + username + ")[" + session + "] no authorized keys file at " + path);
+                log.info("resolvePublickeyAuthenticator({})[{}] no authorized keys file at {}", username, session, path);
             }
         }
 
         return delegateHolder.get();
     }
 
+    protected PublickeyAuthenticator createDelegateAuthenticator(
+            Path path, Collection<AuthorizedKeyEntry> entries, PublicKeyEntryResolver fallbackResolver)
+                throws IOException, GeneralSecurityException {
+        return PublickeyAuthenticator.fromAuthorizedEntries(path, fallbackResolver, entries);
+    }
+
     protected PublicKeyEntryResolver getFallbackPublicKeyEntryResolver() {
         return PublicKeyEntryResolver.IGNORING;
     }
 
-    protected Collection<AuthorizedKeyEntry> reloadAuthorizedKeys(Path path, String username, ServerSession session) throws IOException {
+    protected Collection<AuthorizedKeyEntry> reloadAuthorizedKeys(
+            Path path, String username, ServerSession session)
+                throws IOException, GeneralSecurityException {
         Collection<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(path);
-        log.info("reloadAuthorizedKeys(" + username + ")[" + session + "] loaded " + GenericUtils.size(entries) + " keys from " + path);
+        log.info("reloadAuthorizedKeys({})[{}] loaded {} keys from {}",
+            username, session, GenericUtils.size(entries), path);
         updateReloadAttributes();
         return entries;
     }

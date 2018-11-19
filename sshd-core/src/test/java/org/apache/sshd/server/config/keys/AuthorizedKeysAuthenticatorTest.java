@@ -24,6 +24,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.util.Collection;
 import java.util.List;
@@ -60,13 +61,16 @@ public class AuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
         AtomicInteger reloadCount = new AtomicInteger(0);
         PublickeyAuthenticator auth = new AuthorizedKeysAuthenticator(file) {
             @Override
-            protected Collection<AuthorizedKeyEntry> reloadAuthorizedKeys(Path path, String username, ServerSession session) throws IOException {
+            protected Collection<AuthorizedKeyEntry> reloadAuthorizedKeys(
+                    Path path, String username, ServerSession session)
+                        throws IOException, GeneralSecurityException {
                 assertSame("Mismatched reload path", file, path);
                 reloadCount.incrementAndGet();
                 return super.reloadAuthorizedKeys(path, username, session);
             }
         };
-        assertFalse("Unexpected authentication success for missing file " + file, auth.authenticate(getCurrentTestName(), Mockito.mock(PublicKey.class), null));
+        assertFalse("Unexpected authentication success for missing file " + file,
+            auth.authenticate(getCurrentTestName(), Mockito.mock(PublicKey.class), null));
 
         List<String> keyLines = loadDefaultSupportedKeys();
         assertHierarchyTargetFolderExists(file.getParent());
@@ -94,17 +98,18 @@ public class AuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
                 String keyData = keyLines.get(index);  // we know they are 1-1 matching
 
                 assertTrue("Failed to authenticate with key #" + (index + 1) + " " + k.getAlgorithm() + "[" + keyData + "] on file=" + file,
-                           auth.authenticate(getCurrentTestName(), k, null));
+                       auth.authenticate(getCurrentTestName(), k, null));
 
                 // we expect EXACTLY ONE re-load call since we did not modify the file during the authentication
                 assertEquals("Unexpected keys re-loading of " + keyLines.size() + " remaining at key #" + (index + 1) + " on file=" + file,
-                             1, reloadCount.get());
+                         1, reloadCount.get());
             }
 
             keyLines.remove(0);
         }
 
         assertTrue("File no longer exists: " + file, Files.exists(file));
-        assertFalse("Unexpected authentication success for empty file " + file, auth.authenticate(getCurrentTestName(), Mockito.mock(PublicKey.class), null));
+        assertFalse("Unexpected authentication success for empty file " + file,
+            auth.authenticate(getCurrentTestName(), Mockito.mock(PublicKey.class), null));
     }
 }

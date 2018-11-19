@@ -66,7 +66,12 @@ accept also an `AttributeRepository` connection context argument (propagated fro
 * The various `ClientIdentitiesWatcher`(s) use a type-safe `ClientIdentityLoaderHolder` and
 `FilePasswordProviderHolder` instead of the generic `Supplier` definition.
 
+* Removed API(s) that used string file paths to create `FileInputStream`-s - using only `java.nio.file.Path`-s
+
 ## Behavioral changes and enhancements
+
+* [SSHD-757](https://issues.apache.org/jira/browse/SSHD-757) - Added hooks and some initial code to allow (limited) usage
+of [OpenPGP](https://www.openpgp.org/) key files - e.g. in `authorized_keys` files or as client identities.
 
 * [SSHD-849](https://issues.apache.org/jira/browse/SSHD-849) - Data forwarding code makes sure all
 pending packets have been sent to the peer channel when closing the tunnel gracefully.

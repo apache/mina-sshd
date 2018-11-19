@@ -37,6 +37,11 @@ public class CipherNone implements Cipher {
     }
 
     @Override
+    public int getKeySize() {
+        return 0;
+    }
+
+    @Override
     public String getTransformation() {
         return "none";
     }

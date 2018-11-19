@@ -55,9 +55,11 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Factory;
@@ -292,8 +294,7 @@ public final class KeyUtils {
 
     /**
      * @param decoder The decoder to register
-     * @throws IllegalArgumentException if no decoder or not key type or no
-     *                                  supported names for the decoder
+     * @throws IllegalArgumentException if no decoder or not key type or no supported names for the decoder
      * @see PublicKeyEntryDecoder#getPublicKeyType()
      * @see PublicKeyEntryDecoder#getSupportedTypeNames()
      */
@@ -307,21 +308,111 @@ public final class KeyUtils {
             BY_KEY_CLASS_DECODERS_MAP.put(prvType, decoder);
         }
 
-        Collection<String> names = ValidateUtils.checkNotNullAndNotEmpty(decoder.getSupportedTypeNames(), "No supported key type");
-        synchronized (BY_KEY_TYPE_DECODERS_MAP) {
-            for (String n : names) {
-                PublicKeyEntryDecoder<?, ?> prev = BY_KEY_TYPE_DECODERS_MAP.put(n, decoder);
-                if (prev != null) {
-                    //noinspection UnnecessaryContinue
-                    continue;   // debug breakpoint
-                }
+        registerPublicKeyEntryDecoderKeyTypes(decoder);
+    }
+
+    /**
+     * Registers the specified decoder for all the types it {@link PublicKeyEntryDecoder#getSupportedTypeNames() supports}
+     *
+     * @param decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to register
+     * @see #registerPublicKeyEntryDecoderForKeyType(String, PublicKeyEntryDecoder)
+     */
+    public static void registerPublicKeyEntryDecoderKeyTypes(PublicKeyEntryDecoder<?, ?> decoder) {
+        Objects.requireNonNull(decoder, "No decoder specified");
+
+        Collection<String> names =
+            ValidateUtils.checkNotNullAndNotEmpty(decoder.getSupportedTypeNames(), "No supported key types");
+        for (String n : names) {
+            PublicKeyEntryDecoder<?, ?> prev = registerPublicKeyEntryDecoderForKeyType(n, decoder);
+            if (prev != null) {
+                //noinspection UnnecessaryContinue
+                continue;   // debug breakpoint
             }
         }
     }
 
     /**
-     * @param keyType The {@code OpenSSH} key type string -  e.g., {@code ssh-rsa, ssh-dss}
-     *                - ignored if {@code null}/empty
+     * @param keyType The key (never {@code null}/empty) key type
+     * @param decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to register
+     * @return The previously registered decoder for this key type - {@code null} if none
+     */
+    public static PublicKeyEntryDecoder<?, ?> registerPublicKeyEntryDecoderForKeyType(String keyType, PublicKeyEntryDecoder<?, ?> decoder) {
+        keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified");
+        Objects.requireNonNull(decoder, "No decoder specified");
+
+        synchronized (BY_KEY_TYPE_DECODERS_MAP) {
+            return BY_KEY_TYPE_DECODERS_MAP.put(keyType, decoder);
+        }
+    }
+
+    /**
+     * @param decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to unregister
+     * @return The case <U>insensitive</U> {@link NavigableSet} of all the effectively un-registered key types
+     * out of all the {@link PublicKeyEntryDecoder#getSupportedTypeNames() supported} ones.
+     * @see #unregisterPublicKeyEntryDecoderKeyTypes(PublicKeyEntryDecoder)
+     */
+    public static NavigableSet<String> unregisterPublicKeyEntryDecoder(PublicKeyEntryDecoder<?, ?> decoder) {
+        Objects.requireNonNull(decoder, "No decoder specified");
+
+        Class<?> pubType = Objects.requireNonNull(decoder.getPublicKeyType(), "No public key type declared");
+        Class<?> prvType = Objects.requireNonNull(decoder.getPrivateKeyType(), "No private key type declared");
+        synchronized (BY_KEY_CLASS_DECODERS_MAP) {
+            BY_KEY_CLASS_DECODERS_MAP.remove(pubType);
+            BY_KEY_CLASS_DECODERS_MAP.remove(prvType);
+        }
+
+        return unregisterPublicKeyEntryDecoderKeyTypes(decoder);
+    }
+
+    /**
+     * Unregisters the specified decoder for all the types it supports
+     *
+     * @param decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to unregister
+     * @return The case <U>insensitive</U> {@link NavigableSet} of all the effectively un-registered key types
+     * out of all the {@link PublicKeyEntryDecoder#getSupportedTypeNames() supported} ones.
+     * @see #unregisterPublicKeyEntryDecoderForKeyType(String)
+     */
+    public static NavigableSet<String> unregisterPublicKeyEntryDecoderKeyTypes(PublicKeyEntryDecoder<?, ?> decoder) {
+        Objects.requireNonNull(decoder, "No decoder specified");
+
+        Collection<String> names = ValidateUtils.checkNotNullAndNotEmpty(
+            decoder.getSupportedTypeNames(), "No supported key types");
+        NavigableSet<String> removed = Collections.emptyNavigableSet();
+        for (String n : names) {
+            PublicKeyEntryDecoder<?, ?> prev = unregisterPublicKeyEntryDecoderForKeyType(n);
+            if (prev == null) {
+                continue;
+            }
+
+            if (removed.isEmpty()) {
+                removed = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+            }
+
+            if (!removed.add(n)) {
+                //noinspection UnnecessaryContinue
+                continue;   // debug breakpoint
+            }
+        }
+
+        return removed;
+    }
+
+    /**
+     * Unregister the decoder registered for the specified key type
+     *
+     * @param keyType The key (never {@code null}/empty) key type
+     * @return The unregistered {@link PublicKeyEntryDecoder} - {@code null} if none registered for this key type
+     */
+    public static PublicKeyEntryDecoder<?, ?> unregisterPublicKeyEntryDecoderForKeyType(String keyType) {
+        keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified");
+
+        synchronized (BY_KEY_TYPE_DECODERS_MAP) {
+            return BY_KEY_TYPE_DECODERS_MAP.remove(keyType);
+        }
+    }
+
+    /**
+     * @param keyType The {@code OpenSSH} key type string -  e.g., {@code ssh-rsa, ssh-dss} - ignored if {@code null}/empty
      * @return The registered {@link PublicKeyEntryDecoder} or {code null} if not found
      */
     public static PublicKeyEntryDecoder<?, ?> getPublicKeyEntryDecoder(String keyType) {

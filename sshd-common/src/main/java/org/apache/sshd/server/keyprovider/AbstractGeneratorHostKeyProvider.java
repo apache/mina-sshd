@@ -35,11 +35,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.common.AlgorithmNameProvider;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
+import org.apache.sshd.common.keyprovider.KeySizeIndicator;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.resource.PathResource;
@@ -53,7 +55,9 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairProvider {
+public abstract class AbstractGeneratorHostKeyProvider
+        extends AbstractKeyPairProvider
+        implements AlgorithmNameProvider, KeySizeIndicator {
     public static final String DEFAULT_ALGORITHM = KeyUtils.RSA_ALGORITHM;
     public static final boolean DEFAULT_ALLOWED_TO_OVERWRITE = true;
 
@@ -77,6 +81,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
         this.path = (path == null) ? null : path.toAbsolutePath();
     }
 
+    @Override
     public String getAlgorithm() {
         return algorithm;
     }
@@ -85,6 +90,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
         this.algorithm = algorithm;
     }
 
+    @Override
     public int getKeySize() {
         return keySize;
     }

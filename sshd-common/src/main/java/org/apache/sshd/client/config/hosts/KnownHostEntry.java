@@ -20,7 +20,6 @@
 package org.apache.sshd.client.config.hosts;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -152,12 +151,6 @@ public class KnownHostEntry extends HostPatternsHolder {
     public static List<KnownHostEntry> readKnownHostEntries(URL url) throws IOException {
         try (InputStream input = url.openStream()) {
             return readKnownHostEntries(input, true);
-        }
-    }
-
-    public static List<KnownHostEntry> readKnownHostEntries(String filePath) throws IOException {
-        try (InputStream inStream = new FileInputStream(filePath)) {
-            return readKnownHostEntries(inStream, true);
         }
     }
 

@@ -36,19 +36,30 @@ public class BaseCipher implements Cipher {
     private final int ivsize;
     private final int bsize;
     private final String algorithm;
+    private final int keySize;
     private final String transformation;
     private String s;
 
     public BaseCipher(int ivsize, int bsize, String algorithm, String transformation) {
+        this(ivsize, bsize, algorithm, bsize * Byte.SIZE, transformation);
+    }
+
+    public BaseCipher(int ivsize, int bsize, String algorithm, int keySize, String transformation) {
         this.ivsize = ivsize;
         this.bsize = bsize;
         this.algorithm = ValidateUtils.checkNotNullAndNotEmpty(algorithm, "No algorithm");
+        this.keySize = keySize;
         this.transformation = ValidateUtils.checkNotNullAndNotEmpty(transformation, "No transformation");
     }
 
     @Override
     public String getAlgorithm() {
         return algorithm;
+    }
+
+    @Override
+    public int getKeySize() {
+        return keySize;
     }
 
     @Override

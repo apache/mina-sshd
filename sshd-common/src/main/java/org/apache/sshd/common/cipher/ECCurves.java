@@ -45,6 +45,8 @@ import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.digest.DigestFactory;
+import org.apache.sshd.common.keyprovider.KeySizeIndicator;
+import org.apache.sshd.common.keyprovider.KeyTypeIndicator;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -55,7 +57,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public enum ECCurves implements NamedResource, OptionalFeature {
+public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResource, OptionalFeature {
     nistp256(Constants.NISTP256, new int[]{1, 2, 840, 10045, 3, 1, 7},
             new ECParameterSpec(
                     new EllipticCurve(
@@ -153,7 +155,7 @@ public enum ECCurves implements NamedResource, OptionalFeature {
         this.digestFactory = Objects.requireNonNull(digestFactory, "No digestFactory");
     }
 
-    @Override   // The curve name
+    @Override   // The curve's standard name
     public final String getName() {
         return name;
     }
@@ -166,9 +168,7 @@ public enum ECCurves implements NamedResource, OptionalFeature {
         return oidValue;
     }
 
-    /**
-     * @return The standard key type used to represent this curve
-     */
+    @Override
     public final String getKeyType() {
         return keyType;
     }
@@ -182,9 +182,7 @@ public enum ECCurves implements NamedResource, OptionalFeature {
         return params;
     }
 
-    /**
-     * @return The size (in bits) of the key
-     */
+    @Override
     public final int getKeySize() {
         return keySize;
     }

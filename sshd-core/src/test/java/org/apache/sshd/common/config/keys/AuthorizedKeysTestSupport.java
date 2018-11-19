@@ -77,9 +77,9 @@ public abstract class AuthorizedKeysTestSupport extends BaseTestSupport {
 
     protected List<String> loadDefaultSupportedKeys() throws IOException {
         return loadSupportedKeys(
-                Objects.requireNonNull(
-                        getClass().getResource(AuthorizedKeysAuthenticator.STD_AUTHORIZED_KEYS_FILENAME),
-                        "Missing resource=" + AuthorizedKeysAuthenticator.STD_AUTHORIZED_KEYS_FILENAME));
+            Objects.requireNonNull(
+                getClass().getResource(AuthorizedKeysAuthenticator.STD_AUTHORIZED_KEYS_FILENAME),
+                "Missing resource=" + AuthorizedKeysAuthenticator.STD_AUTHORIZED_KEYS_FILENAME));
     }
 
     public static List<String> loadSupportedKeys(URL url) throws IOException {
@@ -87,7 +87,8 @@ public abstract class AuthorizedKeysTestSupport extends BaseTestSupport {
     }
 
     public static List<String> loadSupportedKeys(InputStream input, boolean okToClose) throws IOException {
-        try (Reader r = new InputStreamReader(NoCloseInputStream.resolveInputStream(input, okToClose), StandardCharsets.UTF_8)) {
+        try (Reader r = new InputStreamReader(
+                NoCloseInputStream.resolveInputStream(input, okToClose), StandardCharsets.UTF_8)) {
             return loadSupportedKeys(r, true);
         }
     }

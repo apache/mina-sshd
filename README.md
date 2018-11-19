@@ -1932,6 +1932,20 @@ This code relies on the [jpgpgj](https://github.com/justinludwig/jpgpj) support 
 
 (which in turn automatically uses _Bouncycastle_ - so if one does not want _Bouncycastle_ one cannot use this module).
 
+#### Using OpenPGP authorized keys entries
+
+In order to be able to read `authorized_keys` files that may contain _OpenPGP_ keys references, one needs to register
+the relevant `PublicKeyEntryDataResolver`-s. This is done by calling `PGPPublicKeyEntryDataResolver#registerDefaultKeyEntryDataResolvers`
+once during the _main_ code setup. This will enable the code to read authorized keys entries having the format
+specified in the [OpenSSH PGP configuration](https://www.red-bean.com/~nemo/openssh-gpg/):
+
+```
+    pgp-sign-dss 87C36E60187451050A4F26B134824FC95C781A18 with-comment
+    pgp-sign-rsa 87C36E60187451050A4F26B134824FC95C781A18
+```
+
+Where the key data following the key type specification is the fingerprint value of the referenced key.
+
 ## Useful extra components in _sshd-contrib_
 
 * `InteractivePasswordIdentityProvider` - helps implement a `PasswordIdentityProvider` by delegating calls

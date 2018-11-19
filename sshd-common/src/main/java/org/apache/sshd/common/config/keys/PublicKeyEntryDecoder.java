@@ -50,34 +50,37 @@ public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends Privat
         ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type provided");
         Collection<String> supported = getSupportedTypeNames();
         if ((GenericUtils.size(supported) > 0) && supported.contains(keyType)) {
-            return decodePublicKey(keyData);
+            return decodePublicKey(keyType, keyData);
         }
 
         throw new InvalidKeySpecException("resolve(" + keyType + ") not in listed supported types: " + supported);
     }
 
     /**
-     * @param keyData The key data bytes in {@code OpenSSH} format (after
-     *                BASE64 decoding) - ignored if {@code null}/empty
+     * @param keyType The {@code OpenSSH} reported key type
+     * @param keyData The key data bytes in {@code OpenSSH} format (after BASE64
+     * decoding) - ignored if {@code null}/empty
      * @return The decoded {@link PublicKey} - or {@code null} if no data
      * @throws IOException              If failed to decode the key
      * @throws GeneralSecurityException If failed to generate the key
      */
-    default PUB decodePublicKey(byte... keyData) throws IOException, GeneralSecurityException {
-        return decodePublicKey(keyData, 0, NumberUtils.length(keyData));
+    default PUB decodePublicKey(String keyType, byte... keyData) throws IOException, GeneralSecurityException {
+        return decodePublicKey(keyType, keyData, 0, NumberUtils.length(keyData));
     }
 
-    default PUB decodePublicKey(byte[] keyData, int offset, int length) throws IOException, GeneralSecurityException {
+    default PUB decodePublicKey(String keyType, byte[] keyData, int offset, int length)
+            throws IOException, GeneralSecurityException {
         if (length <= 0) {
             return null;
         }
 
         try (InputStream stream = new ByteArrayInputStream(keyData, offset, length)) {
-            return decodePublicKey(stream);
+            return decodePublicKeyByType(keyType, stream);
         }
     }
 
-    default PUB decodePublicKey(InputStream keyData) throws IOException, GeneralSecurityException {
+    default PUB decodePublicKeyByType(String keyType, InputStream keyData)
+            throws IOException, GeneralSecurityException {
         // the actual data is preceded by a string that repeats the key type
         String type = KeyEntryResolver.decodeString(keyData, KeyPairResourceLoader.MAX_KEY_TYPE_NAME_LENGTH);
         if (GenericUtils.isEmpty(type)) {

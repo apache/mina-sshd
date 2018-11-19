@@ -17,24 +17,11 @@
  * under the License.
  */
 
-package org.apache.sshd.common.mac;
-
-import org.apache.sshd.common.AlgorithmNameProvider;
+package org.apache.sshd.common;
 
 /**
- * The reported algorithm name refers to the MAC being used
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface MacInformation extends AlgorithmNameProvider {
-    /**
-     * @return MAC output block size in bytes - may be less than the default
-     * - e.g., MD5-96
-     */
-    int getBlockSize();
-
-    /**
-     * @return The &quot;natural&quot; MAC block size in bytes
-     */
-    int getDefaultBlockSize();
+public interface AlgorithmNameProvider {
+    String getAlgorithm();
 }

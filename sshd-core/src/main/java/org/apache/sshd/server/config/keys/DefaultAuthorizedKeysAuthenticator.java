@@ -24,6 +24,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
+import java.security.GeneralSecurityException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -97,7 +98,9 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
     }
 
     @Override
-    protected Collection<AuthorizedKeyEntry> reloadAuthorizedKeys(Path path, String username, ServerSession session) throws IOException {
+    protected Collection<AuthorizedKeyEntry> reloadAuthorizedKeys(
+            Path path, String username, ServerSession session)
+                throws IOException, GeneralSecurityException {
         if (isStrict()) {
             if (log.isDebugEnabled()) {
                 log.debug("reloadAuthorizedKeys({})[{}] check permissions of {}", username, session, path);

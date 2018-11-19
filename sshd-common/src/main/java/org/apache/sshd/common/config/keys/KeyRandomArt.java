@@ -31,9 +31,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.sshd.common.AlgorithmNameProvider;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
+import org.apache.sshd.common.keyprovider.KeySizeIndicator;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -52,7 +54,7 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @see <a href="http://sparrow.ece.cmu.edu/~adrian/projects/validation/validation.pdf">Original article</a>
  * @see <a href="http://opensource.apple.com/source/OpenSSH/OpenSSH-175/openssh/key.c">C implementation</a>
  */
-public class KeyRandomArt {
+public class KeyRandomArt implements AlgorithmNameProvider, KeySizeIndicator {
     public static final int FLDBASE = 8;
     public static final int FLDSIZE_Y = FLDBASE + 1;
     public static final int FLDSIZE_X = FLDBASE * 2 + 1;
@@ -117,10 +119,16 @@ public class KeyRandomArt {
         field[x][y] = (char) len;
     }
 
+    /**
+     * @return The algorithm that was used to generate the key - e.g.,
+     * &quot;RSA&quot;, &quot;DSA&quot;, &quot;EC&quot;.
+     */
+    @Override
     public String getAlgorithm() {
         return algorithm;
     }
 
+    @Override
     public int getKeySize() {
         return keySize;
     }

@@ -19,17 +19,15 @@
 
 package org.apache.sshd.common.config.keys.loader.pem;
 
+import org.apache.sshd.common.AlgorithmNameProvider;
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceParser;
 
 /**
+ * The reported algorithm name refers to the encryption algorithm name - e.g., &quot;RSA&quot;, &quot;DSA&quot;
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface KeyPairPEMResourceParser extends KeyPairResourceParser {
-    /**
-     * @return The encryption algorithm name - e.g., &quot;RSA&quot;, &quot;DSA&quot;
-     */
-    String getAlgorithm();
-
+public interface KeyPairPEMResourceParser extends AlgorithmNameProvider, KeyPairResourceParser {
     /**
      * @return The OID used to identify this algorithm in DER encodings - e.g., RSA=1.2.840.113549.1.1.1
      */

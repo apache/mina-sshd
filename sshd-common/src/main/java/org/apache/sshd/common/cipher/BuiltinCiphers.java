@@ -67,7 +67,7 @@ public enum BuiltinCiphers implements CipherFactory {
     arcfour256(Constants.ARCFOUR256, 8, 32, "ARCFOUR", "RC4") {
         @Override
         public Cipher create() {
-            return new BaseRC4Cipher(getIVSize(), getBlockSize());
+            return new BaseRC4Cipher(getIVSize(), getBlockSize(), getKeySize());
         }
     },
     blowfishcbc(Constants.BLOWFISH_CBC, 8, 16, "Blowfish", "Blowfish/CBC/NoPadding"),
@@ -123,9 +123,7 @@ public enum BuiltinCiphers implements CipherFactory {
         return supported;
     }
 
-    /**
-     * @return The key size (in bits) for the cipher
-     */
+    @Override
     public int getKeySize() {
         return keysize;
     }
@@ -152,7 +150,7 @@ public enum BuiltinCiphers implements CipherFactory {
 
     @Override
     public Cipher create() {
-        return new BaseCipher(getIVSize(), getBlockSize(), getAlgorithm(), getTransformation());
+        return new BaseCipher(getIVSize(), getBlockSize(), getAlgorithm(), getKeySize(), getTransformation());
     }
 
     /**

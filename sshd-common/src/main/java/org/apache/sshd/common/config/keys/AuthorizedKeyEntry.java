@@ -20,7 +20,6 @@
 package org.apache.sshd.common.config.keys;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -90,7 +89,8 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     }
 
     @Override
-    public PublicKey appendPublicKey(Appendable sb, PublicKeyEntryResolver fallbackResolver) throws IOException, GeneralSecurityException {
+    public PublicKey appendPublicKey(Appendable sb, PublicKeyEntryResolver fallbackResolver)
+            throws IOException, GeneralSecurityException {
         Map<String, String> options = getLoginOptions();
         if (!GenericUtils.isEmpty(options)) {
             int index = 0;
@@ -146,7 +146,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
 
     public static List<PublicKey> resolveAuthorizedKeys(
             PublicKeyEntryResolver fallbackResolver, Collection<? extends AuthorizedKeyEntry> entries)
-                    throws IOException, GeneralSecurityException {
+                throws IOException, GeneralSecurityException {
         if (GenericUtils.isEmpty(entries)) {
             return Collections.emptyList();
         }
@@ -163,7 +163,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     }
 
     /**
-     * Reads read the contents of an <code>authorized_keys</code> file
+     * Reads read the contents of an {@code authorized_keys} file
      *
      * @param url The {@link URL} to read from
      * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
@@ -177,7 +177,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     }
 
     /**
-     * Reads read the contents of an <code>authorized_keys</code> file
+     * Reads read the contents of an {@code authorized_keys} file
      *
      * @param path    {@link Path} to read from
      * @param options The {@link OpenOption}s to use - if unspecified then appropriate
@@ -194,41 +194,26 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     }
 
     /**
-     * Reads read the contents of an <code>authorized_keys</code> file
+     * Reads read the contents of an {@code authorized_keys} file
      *
-     * @param filePath The file path to read from
-     * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
-     * @throws IOException If failed to read or parse the entries
-     * @see #readAuthorizedKeys(InputStream, boolean)
-     */
-    public static List<AuthorizedKeyEntry> readAuthorizedKeys(String filePath) throws IOException {
-        try (InputStream in = new FileInputStream(filePath)) {
-            return readAuthorizedKeys(in, true);
-        }
-    }
-
-    /**
-     * Reads read the contents of an <code>authorized_keys</code> file
-     *
-     * @param in        The {@link InputStream}
-     * @param okToClose <code>true</code> if method may close the input stream
-     *                  regardless of whether successful or failed
+     * @param in The {@link InputStream} to use to read the contents of an {@code authorized_keys} file
+     * @param okToClose {@code true if method may close the input regardless success or failure
      * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
      * @see #readAuthorizedKeys(Reader, boolean)
      */
     public static List<AuthorizedKeyEntry> readAuthorizedKeys(InputStream in, boolean okToClose) throws IOException {
-        try (Reader rdr = new InputStreamReader(NoCloseInputStream.resolveInputStream(in, okToClose), StandardCharsets.UTF_8)) {
+        try (Reader rdr = new InputStreamReader(
+                NoCloseInputStream.resolveInputStream(in, okToClose), StandardCharsets.UTF_8)) {
             return readAuthorizedKeys(rdr, true);
         }
     }
 
     /**
-     * Reads read the contents of an <code>authorized_keys</code> file
+     * Reads read the contents of an {@code authorized_keys} file
      *
-     * @param rdr       The {@link Reader}
-     * @param okToClose <code>true</code> if method may close the input stream
-     *                  regardless of whether successful or failed
+     * @param rdr The {@link Reader} to use to read the contents of an {@code authorized_keys} file
+     * @param okToClose {@code true if method may close the input regardless success or failure
      * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
      * @see #readAuthorizedKeys(BufferedReader)
@@ -240,21 +225,19 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     }
 
     /**
-     * @param rdr The {@link BufferedReader} to use to read the contents of
-     *            an <code>authorized_keys</code> file
+     * @param rdr The {@link BufferedReader} to use to read the contents of an {@code authorized_keys} file
      * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
      * @see #parseAuthorizedKeyEntry(String)
      */
     public static List<AuthorizedKeyEntry> readAuthorizedKeys(BufferedReader rdr) throws IOException {
         List<AuthorizedKeyEntry> entries = null;
-
         for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
             AuthorizedKeyEntry entry;
             try {
                 entry = parseAuthorizedKeyEntry(line);
-                if (entry == null) {    // null, empty or comment line
-                    continue;
+                if (entry == null) {
+                    continue;   // null, empty or comment line
                 }
             } catch (RuntimeException | Error e) {
                 throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ")"
@@ -276,13 +259,27 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     }
 
     /**
-     * @param value Original line from an <code>authorized_keys</code> file
+     * @param value Original line from an {@code authorized_keys} file
      * @return {@link AuthorizedKeyEntry} or {@code null} if the line is
      * {@code null}/empty or a comment line
      * @throws IllegalArgumentException If failed to parse/decode the line
-     * @see #COMMENT_CHAR
+     * @see #parseAuthorizedKeyEntry(String, PublicKeyEntryDataResolver)
      */
     public static AuthorizedKeyEntry parseAuthorizedKeyEntry(String value) throws IllegalArgumentException {
+        return parseAuthorizedKeyEntry(value, null);
+    }
+
+    /**
+     * @param value Original line from an {@code authorized_keys} file
+     * @param resolver The {@link PublicKeyEntryDataResolver} to use - if {@code null}
+     * one will be automatically resolved from the key type
+     * @return {@link AuthorizedKeyEntry} or {@code null} if the line is
+     * {@code null}/empty or a comment line
+     * @throws IllegalArgumentException If failed to parse/decode the line
+     */
+    public static AuthorizedKeyEntry parseAuthorizedKeyEntry(
+            String value, PublicKeyEntryDataResolver resolver)
+                throws IllegalArgumentException {
         String line = GenericUtils.replaceWhitespaceAndTrim(value);
         if (GenericUtils.isEmpty(line) || (line.charAt(0) == COMMENT_CHAR) /* comment ? */) {
             return null;
@@ -310,7 +307,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         } else {
             String encData = (endPos < (line.length() - 1)) ? line.substring(0, endPos).trim() : line;
             String comment = (endPos < (line.length() - 1)) ? line.substring(endPos + 1).trim() : null;
-            entry = parsePublicKeyEntry(new AuthorizedKeyEntry(), encData);
+            entry = parsePublicKeyEntry(new AuthorizedKeyEntry(), encData, resolver);
             entry.setComment(comment);
         }
 
@@ -318,7 +315,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     }
 
     /**
-     * Parses a single line from an <code>authorized_keys</code> file that is <U>known</U>
+     * Parses a single line from an {@code authorized_keys} file that is <U>known</U>
      * to contain login options and separates it to the options and the rest of the line.
      *
      * @param entryLine The line to be parsed

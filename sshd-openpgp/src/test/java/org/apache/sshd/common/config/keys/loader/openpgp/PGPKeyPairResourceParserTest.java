@@ -40,6 +40,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
+import org.bouncycastle.openpgp.PGPException;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -137,13 +138,14 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testDecodePrivateKeyPair() throws IOException, GeneralSecurityException {
+    public void testDecodePrivateKeyPair() throws IOException, GeneralSecurityException, PGPException {
         InputStream stream = getClass().getResourceAsStream(resourceName);
         assertNotNull("Missing " + resourceName, stream);
 
         Collection<KeyPair> keys;
         try {
-            keys = PGPKeyPairResourceParser.INSTANCE.loadKeyPairs(null, NamedResource.ofName(resourceName), passwordProvider, stream);
+            keys = PGPKeyPairResourceParser.INSTANCE.loadKeyPairs(
+                null, NamedResource.ofName(resourceName), passwordProvider, stream);
         } catch (Exception e) {
             if (result != ResourceDecodeResult.TERMINATE) {
                 fail("Mismatched result mode for " + e.getClass().getSimpleName() + "[" + e.getMessage() + "]");
