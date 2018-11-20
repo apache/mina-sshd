@@ -22,7 +22,6 @@ package org.apache.sshd.common.config.keys.loader.openpgp;
 import java.util.Collections;
 import java.util.NavigableSet;
 
-import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDataResolver;
 import org.apache.sshd.common.util.GenericUtils;
@@ -54,17 +53,25 @@ public class PGPPublicKeyEntryDataResolver implements PublicKeyEntryDataResolver
 
     @Override
     public byte[] decodeEntryKeyData(String encData) {
+        return decodeKeyFingerprint(encData);
+    }
+
+    @Override
+    public String encodeEntryKeyData(byte[] keyData) {
+        return encodeKeyFingerprint(keyData);
+    }
+
+    public static byte[] decodeKeyFingerprint(String encData) {
         if (GenericUtils.isEmpty(encData)) {
-            return GenericUtils.EMPTY_BYTE_ARRAY;
+            return GenericUtils.EMPTY_BYTE_ARRAY;   // debug breakpoint
         }
 
         return BufferUtils.decodeHex(BufferUtils.EMPTY_HEX_SEPARATOR, encData);
     }
 
-    @Override
-    public String encodeEntryKeyData(byte[] keyData) {
+    public static String encodeKeyFingerprint(byte[] keyData) {
         if (NumberUtils.isEmpty(keyData)) {
-            return "";
+            return "";  // debug breakpoint
         }
 
         return BufferUtils.toHex(BufferUtils.EMPTY_HEX_SEPARATOR, keyData).toUpperCase();
@@ -77,11 +84,8 @@ public class PGPPublicKeyEntryDataResolver implements PublicKeyEntryDataResolver
      * @see PublicKeyEntry#registerKeyDataEntryResolver(String, PublicKeyEntryDataResolver)
      */
     public static void registerDefaultKeyEntryDataResolvers() {
-        // TODO fix this code once SSHD-757 fully implemented
-        PGPPublicKeyEntryDecoder dummy = new PGPPublicKeyEntryDecoder();
         for (String keyType : PGP_KEY_TYPES) {
             PublicKeyEntry.registerKeyDataEntryResolver(keyType, DEFAULT);
-            KeyUtils.registerPublicKeyEntryDecoderForKeyType(keyType, dummy);
         }
     }
 

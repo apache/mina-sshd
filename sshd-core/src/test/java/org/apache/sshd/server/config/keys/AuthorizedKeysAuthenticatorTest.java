@@ -89,7 +89,7 @@ public class AuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
             List<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(file);
             assertEquals("Mismatched number of loaded entries", keyLines.size(), entries.size());
 
-            List<PublicKey> keySet = AuthorizedKeyEntry.resolveAuthorizedKeys(PublicKeyEntryResolver.FAILING, entries);
+            List<PublicKey> keySet = PublicKeyEntry.resolvePublicKeyEntries(entries, PublicKeyEntryResolver.FAILING);
             assertEquals("Mismatched number of loaded keys", entries.size(), keySet.size());
 
             reloadCount.set(0);

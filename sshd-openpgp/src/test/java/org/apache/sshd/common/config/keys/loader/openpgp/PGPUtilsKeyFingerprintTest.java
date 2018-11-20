@@ -22,11 +22,16 @@ package org.apache.sshd.common.config.keys.loader.openpgp;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
+import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.TreeSet;
 
@@ -160,11 +165,54 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
         for (PublicKeyEntry entry : authKeys) {
             PublicKeyEntryDataResolver resolver = entry.getKeyDataResolver();
             assertSame("Mismatched key data resolver for " + entry, PGPPublicKeyEntryDataResolver.DEFAULT, resolver);
+
             String fingerprint = resolver.encodeEntryKeyData(entry.getKeyData());
             assertTrue("Unknown fingerprint recovered: " + fingerprint, written.remove(fingerprint));
         }
 
         assertTrue(resourceName + " - incomplete fingerprints: " + written, written.isEmpty());
+    }
+
+    @Test
+    public void testResolveAuthorizedEntries()
+            throws IOException, GeneralSecurityException, PGPException {
+        Collection<? extends Subkey> subKeys = key.getSubkeys();
+        assertFalse("No sub keys available in " + resourceName, GenericUtils.isEmpty(subKeys));
+
+        Collection<PublicKeyEntry> available = new ArrayList<>(subKeys.size());
+        for (Subkey sk : subKeys) {
+            String fingerprint = sk.getFingerprint();
+            PGPPublicKey publicKey = sk.getPublicKey();
+            String keyType = PGPPublicKeyEntryDataResolver.getKeyType(publicKey);
+            if (GenericUtils.isEmpty(keyType)) {
+                outputDebugMessage("%s: skip fingerprint=%s due to unknown key type", resourceName, fingerprint);
+                continue;
+            }
+
+            byte[] keyData = PGPPublicKeyEntryDataResolver.decodeKeyFingerprint(fingerprint);
+            PublicKeyEntry pke = new PublicKeyEntry(keyType, keyData);
+            available.add(pke);
+        }
+
+        // Can happen for ECC or EDDSA keys
+        Assume.assumeFalse(resourceName + " - no fingerprints extracted", available.isEmpty());
+
+        Path dir = getTempTargetRelativeFile(getClass().getSimpleName());
+        Path file = Files.createDirectories(dir).resolve(resourceName + ".txt");
+        try (InputStream input = getClass().getResourceAsStream(resourceName);
+             OutputStream output = Files.newOutputStream(file)) {
+            IoUtils.copy(input, output);
+        }
+
+        PGPAuthorizedEntriesTracker tracker = new PGPAuthorizedEntriesTracker(file);
+        for (PublicKeyEntry pke : available) {
+            Collection<PublicKey> keys = tracker.loadMatchingAuthorizedEntries(null, Collections.singletonList(pke));
+            assertEquals("Mismatched recovered keys count for " + pke, 1, GenericUtils.size(keys));
+
+            PublicKey expected = pke.resolvePublicKey(tracker);
+            PublicKey actual = GenericUtils.head(keys);
+            assertKeyEquals(pke.toString(), expected, actual);
+        }
     }
 
     @Override

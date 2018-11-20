@@ -22,9 +22,12 @@ package org.apache.sshd.common.config.keys.loader.openpgp;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.NavigableMap;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.c02e.jpgpj.CompressionAlgorithm;
 import org.c02e.jpgpj.EncryptionAlgorithm;
 import org.c02e.jpgpj.Key;
@@ -85,6 +88,42 @@ public final class PGPUtils {
                 .findFirst()
                 .orElse(null);
         }
+    }
+
+    /**
+     * @param key The {@link Key} whose sub-keys to map - ignored if {@code null} or no sub-keys available
+     * @return A {@link NavigableMap} where key=the (case <U>insensitive</U>) fingerprint
+     * value, value=the matching {@link SubKey}
+     * @throws NullPointerException If key with {@code null} fingerprint encountered
+     * @throws IllegalArgumentException If key with empty fingerprint encountered
+     * @throws IllegalStateException If more than one key with same fingerprint found
+     * @see #mapSubKeysByFingerprint(Collection)
+     */
+    public static NavigableMap<String, Subkey> mapSubKeysByFingerprint(Key key) {
+        return mapSubKeysByFingerprint((key == null) ? Collections.emptyList() : key.getSubkeys());
+    }
+
+    /**
+     * @param subKeys The {@link Subkey}-s to map - ignored if {@code null}/empty
+     * @return A {@link NavigableMap} where key=the (case <U>insensitive</U>) fingerprint
+     * value, value=the matching {@link SubKey}
+     * @throws NullPointerException If key with {@code null} fingerprint encountered
+     * @throws IllegalArgumentException If key with empty fingerprint encountered
+     * @throws IllegalStateException If more than one key with same fingerprint found
+     */
+    public static NavigableMap<String, Subkey> mapSubKeysByFingerprint(Collection<? extends Subkey> subKeys) {
+        if (GenericUtils.isEmpty(subKeys)) {
+            return Collections.emptyNavigableMap();
+        }
+
+        NavigableMap<String, Subkey> keysMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (Subkey sk : subKeys) {
+            String fp = ValidateUtils.checkNotNullAndNotEmpty(sk.getFingerprint(), "No fingerprint for %s", sk);
+            Subkey prev = keysMap.put(fp, sk);
+            ValidateUtils.checkState(prev == null, "Multiple sub-keys with fingerprint=%s: %s / %s", fp, sk, prev);
+        }
+
+        return keysMap;
     }
 
     /**

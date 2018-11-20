@@ -22,6 +22,7 @@ package org.apache.sshd.common.util.io;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
@@ -38,6 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -178,6 +180,14 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
         }
 
         resetReloadAttributes();
+    }
+
+    public PathResource toPathResource() {
+        return toPathResource(IoUtils.EMPTY_OPEN_OPTIONS);
+    }
+
+    public PathResource toPathResource(OpenOption... options) {
+        return new PathResource(getPath(), options);
     }
 
     @Override

@@ -70,7 +70,7 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
         new AtomicReference<>(RejectAllPublickeyAuthenticator.INSTANCE);
 
     public AuthorizedKeysAuthenticator(Path file) {
-        this(file, IoUtils.EMPTY_LINK_OPTIONS);
+        this(file, IoUtils.getLinkOptions(false));
     }
 
     public AuthorizedKeysAuthenticator(Path file, LinkOption... options) {
@@ -128,7 +128,7 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
                 Collection<AuthorizedKeyEntry> entries = reloadAuthorizedKeys(path, username, session);
                 if (GenericUtils.size(entries) > 0) {
                     PublickeyAuthenticator authDelegate =
-                        createDelegateAuthenticator(path, entries, getFallbackPublicKeyEntryResolver());
+                        createDelegateAuthenticator(username, session, path, entries, getFallbackPublicKeyEntryResolver());
                     delegateHolder.set(authDelegate);
                 }
             } else {
@@ -140,9 +140,10 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
     }
 
     protected PublickeyAuthenticator createDelegateAuthenticator(
-            Path path, Collection<AuthorizedKeyEntry> entries, PublicKeyEntryResolver fallbackResolver)
+            String username, ServerSession session, Path path,
+            Collection<AuthorizedKeyEntry> entries, PublicKeyEntryResolver fallbackResolver)
                 throws IOException, GeneralSecurityException {
-        return PublickeyAuthenticator.fromAuthorizedEntries(path, fallbackResolver, entries);
+        return PublickeyAuthenticator.fromAuthorizedEntries(path, entries, fallbackResolver);
     }
 
     protected PublicKeyEntryResolver getFallbackPublicKeyEntryResolver() {

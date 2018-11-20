@@ -24,6 +24,7 @@ import java.security.PublicKey;
 import java.util.Collection;
 
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
+import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.auth.AsyncAuthException;
@@ -51,17 +52,17 @@ public interface PublickeyAuthenticator {
 
     /**
      * @param id Some kind of mnemonic identifier for the authenticator - used also in {@link #toString()}
-     * @param fallbackResolver The public key resolver to use if none of the default registered ones works
      * @param entries The entries to parse - ignored if {@code null}/empty
+     * @param fallbackResolver The public key resolver to use if none of the default registered ones works
      * @return A wrapper with all the parsed keys
      * @throws IOException If failed to parse the keys data
      * @throws GeneralSecurityException If failed to generate the relevant keys from the parsed data
      */
     static PublickeyAuthenticator fromAuthorizedEntries(
-            Object id, PublicKeyEntryResolver fallbackResolver, Collection<? extends AuthorizedKeyEntry> entries)
+            Object id, Collection<? extends AuthorizedKeyEntry> entries, PublicKeyEntryResolver fallbackResolver)
                 throws IOException, GeneralSecurityException {
         Collection<PublicKey> keys =
-            AuthorizedKeyEntry.resolveAuthorizedKeys(fallbackResolver, entries);
+            PublicKeyEntry.resolvePublicKeyEntries(entries, fallbackResolver);
         if (GenericUtils.isEmpty(keys)) {
             return RejectAllPublickeyAuthenticator.INSTANCE;
         } else {

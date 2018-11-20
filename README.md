@@ -1944,7 +1944,31 @@ specified in the [OpenSSH PGP configuration](https://www.red-bean.com/~nemo/open
     pgp-sign-rsa 87C36E60187451050A4F26B134824FC95C781A18
 ```
 
-Where the key data following the key type specification is the fingerprint value of the referenced key.
+Where the key data following the key type specification is the fingerprint value of the referenced key. In order to
+use a "mixed mode" file (i.e., one that has both SSH and _OpenPGP_ keys) one needs to replace the default `AuthorizedKeysAuthenticator`
+instance with one that is derived from it and overrides the `createDelegateAuthenticator` method in a manner similar
+as shown below:
+
+```java
+public class MyAuthorizedKeysAuthenticatorWithBothPGPAndSsh extends AuthorizedKeysAuthenticator {
+    ... constructor(s) ...
+
+    @Override
+    protected PublickeyAuthenticator createDelegateAuthenticator(
+            String username, ServerSession session, Path path,
+            Collection<AuthorizedKeyEntry> entries, PublicKeyEntryResolver fallbackResolver)
+                throws IOException, GeneralSecurityException {
+        PGPAuthorizedEntriesTracker tracker = ... obtain an instance ...
+        // Note: need to catch the PGPException and transform it into either an IOException or a GeneralSecurityException
+        Collection<PublicKey> keys = tracker.resolveAuthorizedEntries(session, entries, fallbackResolver);
+        if (GenericUtils.isEmpty(keys)) {
+            return RejectAllPublickeyAuthenticator.INSTANCE;
+        } else {
+            return new KeySetPublickeyAuthenticator(id, keys);
+        }
+    }
+}
+```
 
 ## Useful extra components in _sshd-contrib_
 

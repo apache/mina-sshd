@@ -34,7 +34,8 @@ public interface PublicKeyEntryResolver {
      */
     PublicKeyEntryResolver IGNORING = new PublicKeyEntryResolver() {
         @Override
-        public PublicKey resolve(String keyType, byte[] keyData) throws IOException, GeneralSecurityException {
+        public PublicKey resolve(String keyType, byte[] keyData)
+                throws IOException, GeneralSecurityException {
             return null;
         }
 
@@ -49,7 +50,8 @@ public interface PublicKeyEntryResolver {
      */
     PublicKeyEntryResolver FAILING = new PublicKeyEntryResolver() {
         @Override
-        public PublicKey resolve(String keyType, byte[] keyData) throws IOException, GeneralSecurityException {
+        public PublicKey resolve(String keyType, byte[] keyData)
+                throws IOException, GeneralSecurityException {
             throw new InvalidKeySpecException("Failing resolver on key type=" + keyType);
         }
 
@@ -66,5 +68,6 @@ public interface PublicKeyEntryResolver {
      * @throws IOException If failed to parse the key data
      * @throws GeneralSecurityException If failed to generate the key
      */
-    PublicKey resolve(String keyType, byte[] keyData) throws IOException, GeneralSecurityException;
+    PublicKey resolve(String keyType, byte[] keyData)
+        throws IOException, GeneralSecurityException;
 }

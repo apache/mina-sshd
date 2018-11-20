@@ -19,6 +19,15 @@
 
 package org.apache.sshd.common.keyprovider;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.NavigableMap;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+
+import org.apache.sshd.common.util.GenericUtils;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -28,4 +37,18 @@ public interface KeyTypeIndicator {
      * @return The <U>SSH</U> key type name - e.g., &quot;ssh-rsa&quot;, &quot;sshd-dss&quot; etc.
      */
     String getKeyType();
+
+    /**
+     * @param <I> The {@link KeyTypeIndicator}
+     * @param indicators The indicators to group
+     * @return A {@link NavigableMap} where key=the case <U>insensitive</U> {@link #getKeyType() key type},
+     * value = the {@link List} of all indicators having the same key type
+     */
+    static <I extends KeyTypeIndicator> NavigableMap<String, List<I>> groupByKeyType(Collection<? extends I> indicators) {
+        return GenericUtils.isEmpty(indicators)
+             ? Collections.emptyNavigableMap()
+             : indicators.stream()
+                 .collect(Collectors.groupingBy(
+                     KeyTypeIndicator::getKeyType, () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER), Collectors.toList()));
+    }
 }

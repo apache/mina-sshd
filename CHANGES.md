@@ -71,6 +71,10 @@ accept also an `AttributeRepository` connection context argument (propagated fro
 * Converted most of the key-pair identity loaders (e.g., `ClientIdentityLoader`, `ClientIdentityProvider`, etc.)
 to return an `Iterable<KeyPair>` instead of single `KeyPair` instance.
 
+* Code that converts authorized keys entries into `PublicKey`-s has been renamed to `resolvePublicKeyEntries`
+and moved to `PublicKeyEntry` class.
+    * Note that the parameters **order** has also been modified
+
 ## Behavioral changes and enhancements
 
 * [SSHD-757](https://issues.apache.org/jira/browse/SSHD-757) - Added hooks and some initial code to allow (limited) usage

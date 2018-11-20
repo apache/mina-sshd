@@ -25,6 +25,7 @@ import java.util.Collection;
 
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.AuthorizedKeysTestSupport;
+import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
@@ -47,7 +48,8 @@ public class DefaultAuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSu
         writeDefaultSupportedKeys(file);
 
         Collection<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(file);
-        Collection<PublicKey> keySet = AuthorizedKeyEntry.resolveAuthorizedKeys(PublicKeyEntryResolver.FAILING, entries);
+        Collection<PublicKey> keySet =
+            PublicKeyEntry.resolvePublicKeyEntries(entries, PublicKeyEntryResolver.FAILING);
         PublickeyAuthenticator auth = new DefaultAuthorizedKeysAuthenticator(file, false);
         String thisUser = OsUtils.getCurrentUser();
         for (String username : new String[]{null, "", thisUser, getClass().getName() + "#" + getCurrentTestName()}) {

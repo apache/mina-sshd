@@ -27,8 +27,11 @@ import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -194,6 +197,36 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     }
 
     /**
+     * @param entries The entries to convert - ignored if {@code null}/empty
+     * @param fallbackResolver The {@link PublicKeyEntryResolver} to consult if
+     * none of the built-in ones can be used. If {@code null} and no built-in
+     * resolver can be used then an {@link InvalidKeySpecException} is thrown.
+     * @return The {@link List} of all {@link PublicKey}-s that have been resolved
+     * @throws IOException If failed to decode the key data
+     * @throws GeneralSecurityException If failed to generate the {@link PublicKey}
+     * from the decoded data
+     * @see #resolvePublicKey(PublicKeyEntryResolver)
+     */
+    public static List<PublicKey> resolvePublicKeyEntries(
+            Collection<? extends PublicKeyEntry> entries, PublicKeyEntryResolver fallbackResolver)
+                throws IOException, GeneralSecurityException {
+        int numEntries = GenericUtils.size(entries);
+        if (numEntries <= 0) {
+            return Collections.emptyList();
+        }
+
+        List<PublicKey> keys = new ArrayList<>(numEntries);
+        for (PublicKeyEntry e : entries) {
+            PublicKey k = e.resolvePublicKey(fallbackResolver);
+            if (k != null) {
+                keys.add(k);
+            }
+        }
+
+        return keys;
+    }
+
+    /**
      * Registers a specialized decoder for the public key entry data bytes instead of the
      * {@link PublicKeyEntryDataResolver#DEFAULT default} one.
      *
@@ -216,6 +249,20 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
      * - e.g., &quot;ssh-rsa&quot;, &quot;pgp-sign-dss&quot;, etc.
      * @return The registered resolver instance - {@code null} if none was registered
      */
+    public static PublicKeyEntryDataResolver getKeyDataEntryResolver(String keyType) {
+        keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type provided");
+
+        synchronized (KEY_DATA_RESOLVERS) {
+            return KEY_DATA_RESOLVERS.get(keyType);
+        }
+    }
+
+    /**
+     * @param keyType The key-type value (case <U>insensitive</U>) that may have been
+     * previously {@link #registerKeyDataDecoder(String, PublicKeyEntryDataResolver) registered}
+     * - e.g., &quot;ssh-rsa&quot;, &quot;pgp-sign-dss&quot;, etc.
+     * @return The un-registered resolver instance - {@code null} if none was registered
+     */
     public static PublicKeyEntryDataResolver unregisterKeyDataEntryResolver(String keyType) {
         keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type provided");
 
@@ -234,11 +281,7 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     public static PublicKeyEntryDataResolver resolveKeyDataEntryResolver(String keyType) {
         keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type provided");
 
-        PublicKeyEntryDataResolver resolver;
-        synchronized (KEY_DATA_RESOLVERS) {
-            resolver = KEY_DATA_RESOLVERS.get(keyType);
-        }
-
+        PublicKeyEntryDataResolver resolver = getKeyDataEntryResolver(keyType);
         if (resolver != null) {
             return resolver; // debug breakpoint
         }

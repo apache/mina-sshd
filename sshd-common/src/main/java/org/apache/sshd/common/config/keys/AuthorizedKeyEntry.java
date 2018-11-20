@@ -34,7 +34,6 @@ import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -104,7 +103,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
                 sb.append(key);
                 // TODO figure out a way to remember which options where quoted
                 // TODO figure out a way to remember which options had no value
-                if (!Boolean.TRUE.toString().equals(value)) {
+                if (!"true".equals(value)) {
                     sb.append('=').append(value);
                 }
                 index++;
@@ -142,24 +141,6 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         return (GenericUtils.isEmpty(ko) ? "" : ko.toString() + " ")
                 + entry
                 + (GenericUtils.isEmpty(kc) ? "" : " " + kc);
-    }
-
-    public static List<PublicKey> resolveAuthorizedKeys(
-            PublicKeyEntryResolver fallbackResolver, Collection<? extends AuthorizedKeyEntry> entries)
-                throws IOException, GeneralSecurityException {
-        if (GenericUtils.isEmpty(entries)) {
-            return Collections.emptyList();
-        }
-
-        List<PublicKey> keys = new ArrayList<>(entries.size());
-        for (AuthorizedKeyEntry e : entries) {
-            PublicKey k = e.resolvePublicKey(fallbackResolver);
-            if (k != null) {
-                keys.add(k);
-            }
-        }
-
-        return keys;
     }
 
     /**
@@ -296,7 +277,11 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         }
 
         String keyType = line.substring(0, startPos);
-        PublicKeyEntryDecoder<?, ?> decoder = KeyUtils.getPublicKeyEntryDecoder(keyType);
+        Object decoder = PublicKeyEntry.getKeyDataEntryResolver(keyType);
+        if (decoder == null) {
+            decoder = KeyUtils.getPublicKeyEntryDecoder(keyType);
+        }
+
         AuthorizedKeyEntry entry;
         // assume this is due to the fact that it starts with login options
         if (decoder == null) {
