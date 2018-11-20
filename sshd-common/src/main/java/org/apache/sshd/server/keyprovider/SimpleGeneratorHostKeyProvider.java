@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Collections;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.session.SessionContext;
@@ -46,15 +47,18 @@ public class SimpleGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProv
     }
 
     @Override
-    protected KeyPair doReadKeyPair(SessionContext session, NamedResource resourceKey, InputStream inputStream)
+    protected Iterable<KeyPair> doReadKeyPairs(SessionContext session, NamedResource resourceKey, InputStream inputStream)
             throws IOException, GeneralSecurityException {
+        KeyPair kp;
         try (ObjectInputStream r = new ObjectInputStream(inputStream)) {
             try {
-                return (KeyPair) r.readObject();
+                kp = (KeyPair) r.readObject();
             } catch (ClassNotFoundException e) {
                 throw new InvalidKeySpecException("Missing classes: " + e.getMessage(), e);
             }
         }
+
+        return Collections.singletonList(kp);
     }
 
     @Override

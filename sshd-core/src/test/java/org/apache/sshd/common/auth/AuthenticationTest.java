@@ -924,11 +924,12 @@ public class AuthenticationTest extends BaseTestSupport {
                         URL location = getClass().getResource(keyLocation);
                         assertNotNull("Missing key file " + keyLocation, location);
 
-                        KeyPair kp;
                         URLResource resourceKey = new URLResource(location);
+                        Iterable<KeyPair> ids;
                         try (InputStream keyData = resourceKey.openInputStream()) {
-                            kp = SecurityUtils.loadKeyPairIdentity(session, resourceKey, keyData, passwordProvider);
+                            ids = SecurityUtils.loadKeyPairIdentities(session, resourceKey, keyData, passwordProvider);
                         }
+                        KeyPair kp = GenericUtils.head(ids);
                         assertNotNull("No identity loaded from " + resourceKey, kp);
                         return Collections.singletonList(kp);
                     }

@@ -156,11 +156,11 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
             }
 
             @Override
-            public KeyPair loadClientIdentity(
+            public Iterable<KeyPair> loadClientIdentities(
                     SessionContext session, NamedResource location, FilePasswordProvider provider)
                         throws IOException, GeneralSecurityException {
                 if (isValidLocation(location)) {
-                    return identity;
+                    return Collections.singletonList(identity);
                 }
 
                 throw new FileNotFoundException("Unknown location: " + location);
@@ -223,12 +223,12 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
             }
 
             @Override
-            public KeyPair loadClientIdentity(
+            public Iterable<KeyPair> loadClientIdentities(
                     SessionContext session, NamedResource location, FilePasswordProvider provider)
                         throws IOException, GeneralSecurityException {
                 if (isValidLocation(location)) {
                     specificIdentityLoadCount.incrementAndGet();
-                    return specificIdentity;
+                    return Collections.singletonList(specificIdentity);
                 }
 
                 throw new FileNotFoundException("Unknown location: " + location);

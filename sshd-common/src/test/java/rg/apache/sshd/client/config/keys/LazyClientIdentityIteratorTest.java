@@ -23,6 +23,7 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -57,7 +58,7 @@ public class LazyClientIdentityIteratorTest extends JUnitTestSupport {
         Iterable<KeyPair> ids = ClientIdentityProvider.lazyKeysLoader(
             providers, p -> {
                 try {
-                    return p.getClientIdentity(null);
+                    return p.getClientIdentities(null);
                 } catch (Exception e) {
                     throw new RuntimeException("Unexpected " + e.getClass().getSimpleName() + ": " + e.getMessage(), e);
                 }
@@ -94,9 +95,9 @@ public class LazyClientIdentityIteratorTest extends JUnitTestSupport {
         }
 
         @Override
-        public KeyPair getClientIdentity(SessionContext session) {
+        public Iterable<KeyPair> getClientIdentities(SessionContext session) {
             loadCount++;
-            return getKeyPair();
+            return Collections.singletonList(getKeyPair());
         }
 
         @Override

@@ -28,6 +28,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.Collections;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.TreeMap;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -133,29 +134,37 @@ public final class IdentityUtils {
      *                 to {@code FilePasswordProvider#getPassword} is the path of the
      *                 file whose key is to be loaded
      * @param options  The {@link OpenOption}s to use when reading the key data
-     * @return A {@link Map} of the identities where key=identity type (case
+     * @return A {@link NavigableMap} of the identities where key=identity type (case
      * <U>insensitive</U>), value=the {@link KeyPair} of the identity
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
      * @see SecurityUtils#loadKeyPairIdentity(String, InputStream, FilePasswordProvider)
      */
-    public static Map<String, KeyPair> loadIdentities(
+    public static NavigableMap<String, KeyPair> loadIdentities(
             SessionContext session, Map<String, ? extends Path> paths, FilePasswordProvider provider, OpenOption... options)
                 throws IOException, GeneralSecurityException {
         if (GenericUtils.isEmpty(paths)) {
-            return Collections.emptyMap();
+            return Collections.emptyNavigableMap();
         }
 
-        Map<String, KeyPair> ids = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        NavigableMap<String, KeyPair> ids = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         // Cannot use forEach because the potential for IOExceptions being thrown
         for (Map.Entry<String, ? extends Path> pe : paths.entrySet()) {
             String type = pe.getKey();
             Path path = pe.getValue();
-            PathResource location = new PathResource(path);
+            PathResource location = new PathResource(path, options);
+            Iterable<KeyPair> pairs;
             try (InputStream inputStream = location.openInputStream()) {
-                KeyPair kp = SecurityUtils.loadKeyPairIdentity(session, location, inputStream, provider);
+                pairs = SecurityUtils.loadKeyPairIdentities(session, location, inputStream, provider);
+            }
+
+            if (pairs == null) {
+                continue;
+            }
+
+            for (KeyPair kp : pairs) {
                 KeyPair prev = ids.put(type, kp);
-                ValidateUtils.checkTrue(prev == null, "Multiple keys for type=%s", type);
+                ValidateUtils.checkTrue(prev == null, "Multiple keys for type=%s due to %s", type, path);
             }
         }
 

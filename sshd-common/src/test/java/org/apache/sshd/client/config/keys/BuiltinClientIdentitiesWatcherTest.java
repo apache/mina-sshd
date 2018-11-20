@@ -30,6 +30,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.Map;
@@ -80,12 +81,13 @@ public class BuiltinClientIdentitiesWatcherTest extends JUnitTestSupport {
 
         ClientIdentityLoader loader = new ClientIdentityLoader() {
             @Override
-            public KeyPair loadClientIdentity(
+            public Iterable<KeyPair> loadClientIdentities(
                     SessionContext session, NamedResource location, FilePasswordProvider provider)
                         throws IOException, GeneralSecurityException {
                 BuiltinIdentities id = findIdentity(location);
                 assertNotNull("Invalid location: " + location, id);
-                return idsMap.get(id);
+                KeyPair kp = idsMap.get(id);
+                return (kp == null) ? null : Collections.singletonList(kp);
             }
 
             @Override

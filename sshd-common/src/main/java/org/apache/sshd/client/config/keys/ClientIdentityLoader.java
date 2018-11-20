@@ -58,13 +58,13 @@ public interface ClientIdentityLoader {
         }
 
         @Override
-        public KeyPair loadClientIdentity(
+        public Iterable<KeyPair> loadClientIdentities(
                 SessionContext session, NamedResource location, FilePasswordProvider provider)
                     throws IOException, GeneralSecurityException {
             Path path = toPath(location);
             PathResource resource = new PathResource(path);
             try (InputStream inputStream = resource.openInputStream()) {
-                return SecurityUtils.loadKeyPairIdentity(session, resource, inputStream, provider);
+                return SecurityUtils.loadKeyPairIdentities(session, resource, inputStream, provider);
             }
         }
 
@@ -105,7 +105,7 @@ public interface ClientIdentityLoader {
      * @throws GeneralSecurityException If failed to convert the contents into
      * a valid identity
      */
-    KeyPair loadClientIdentity(
+    Iterable<KeyPair> loadClientIdentities(
         SessionContext session, NamedResource location, FilePasswordProvider provider)
             throws IOException, GeneralSecurityException;
 

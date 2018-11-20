@@ -26,6 +26,8 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
+
 /**
  * Wraps several {@link ClientIdentityProvider} into a {@link KeyPair}
  * {@link Iterator} that invokes each provider &quot;lazily&quot; - i.e.,
@@ -36,10 +38,11 @@ import java.util.function.Predicate;
  */
 public class LazyClientIdentityIterator implements Iterator<KeyPair> {
     protected boolean finished;
+    protected Iterator<? extends KeyPair> currentIdentities;
     protected KeyPair currentPair;
 
     private final Iterator<? extends ClientIdentityProvider> providers;
-    private final Function<? super ClientIdentityProvider, ? extends KeyPair> kpExtractor;
+    private final Function<? super ClientIdentityProvider, ? extends Iterable<? extends KeyPair>> kpExtractor;
     private final Predicate<? super KeyPair> filter;
 
     /**
@@ -52,7 +55,7 @@ public class LazyClientIdentityIterator implements Iterator<KeyPair> {
      */
     public LazyClientIdentityIterator(
             Iterator<? extends ClientIdentityProvider> providers,
-            Function<? super ClientIdentityProvider, ? extends KeyPair> kpExtractor,
+            Function<? super ClientIdentityProvider, ? extends Iterable<? extends KeyPair>> kpExtractor,
             Predicate<? super KeyPair> filter) {
         this.providers = providers;
         this.kpExtractor = Objects.requireNonNull(kpExtractor, "No key pair extractor provided");
@@ -63,7 +66,7 @@ public class LazyClientIdentityIterator implements Iterator<KeyPair> {
         return providers;
     }
 
-    public Function<? super ClientIdentityProvider, ? extends KeyPair> getIdentityExtractor() {
+    public Function<? super ClientIdentityProvider, ? extends Iterable<? extends KeyPair>> getIdentitiesExtractor() {
         return kpExtractor;
     }
 
@@ -83,7 +86,12 @@ public class LazyClientIdentityIterator implements Iterator<KeyPair> {
             return false;
         }
 
-        Function<? super ClientIdentityProvider, ? extends KeyPair> x = getIdentityExtractor();
+        currentPair = KeyIdentityProvider.exhaustCurrentIdentities(currentIdentities);
+        if (currentPair != null) {
+            return true;
+        }
+
+        Function<? super ClientIdentityProvider, ? extends Iterable<? extends KeyPair>> x = getIdentitiesExtractor();
         Predicate<? super KeyPair> f = getFilter();
         while (provs.hasNext()) {
             ClientIdentityProvider p = provs.next();
@@ -91,7 +99,9 @@ public class LazyClientIdentityIterator implements Iterator<KeyPair> {
                 continue;
             }
 
-            currentPair = x.apply(p);
+            Iterable<? extends KeyPair> ids = x.apply(p);
+            currentIdentities = (ids == null) ? null : ids.iterator();
+            currentPair = KeyIdentityProvider.exhaustCurrentIdentities(currentIdentities);
             if (currentPair == null) {
                 continue;
             }

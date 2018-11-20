@@ -1936,7 +1936,7 @@ This code relies on the [jpgpgj](https://github.com/justinludwig/jpgpj) support 
 
 In order to be able to read `authorized_keys` files that may contain _OpenPGP_ keys references, one needs to register
 the relevant `PublicKeyEntryDataResolver`-s. This is done by calling `PGPPublicKeyEntryDataResolver#registerDefaultKeyEntryDataResolvers`
-once during the _main_ code setup. This will enable the code to read authorized keys entries having the format
+once during the _main_ code setup. This will enable the code to safely read authorized keys entries having the format
 specified in the [OpenSSH PGP configuration](https://www.red-bean.com/~nemo/openssh-gpg/):
 
 ```

@@ -75,12 +75,12 @@ public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements 
     }
 
     protected Iterable<KeyPair> loadKeys(SessionContext session, Predicate<? super KeyPair> filter) {
-        return ClientIdentityProvider.lazyKeysLoader(providers, p -> doGetKeyPair(session, p), filter);
+        return ClientIdentityProvider.lazyKeysLoader(providers, p -> doGetKeyPairs(session, p), filter);
     }
 
-    protected KeyPair doGetKeyPair(SessionContext session, ClientIdentityProvider p) {
+    protected Iterable<KeyPair> doGetKeyPairs(SessionContext session, ClientIdentityProvider p) {
         try {
-            KeyPair kp = p.getClientIdentity(session);
+            Iterable<KeyPair> kp = p.getClientIdentities(session);
             if (kp == null) {
                 if (log.isDebugEnabled()) {
                     log.debug("loadKeys({}) no key loaded", p);

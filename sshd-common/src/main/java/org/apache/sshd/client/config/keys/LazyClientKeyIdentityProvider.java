@@ -75,6 +75,7 @@ public class LazyClientKeyIdentityProvider implements KeyIdentityProvider, Clien
     }
 
     @Override
+    @SuppressWarnings("checkstyle:anoninnerlength")
     public Iterable<KeyPair> loadKeys(SessionContext session)
             throws IOException, GeneralSecurityException {
         Collection<? extends NamedResource> locs = getLocations();
@@ -84,6 +85,7 @@ public class LazyClientKeyIdentityProvider implements KeyIdentityProvider, Clien
 
         return () -> new Iterator<KeyPair>() {
             private final Iterator<? extends NamedResource> iter = locs.iterator();
+            private Iterator<KeyPair> currentIdentities;
             private KeyPair currentPair;
             private boolean finished;
 
@@ -93,15 +95,23 @@ public class LazyClientKeyIdentityProvider implements KeyIdentityProvider, Clien
                     return false;
                 }
 
+                currentPair = KeyIdentityProvider.exhaustCurrentIdentities(currentIdentities);
+                if (currentPair != null) {
+                    return true;
+                }
+
                 while (iter.hasNext()) {
                     NamedResource l = iter.next();
+                    Iterable<KeyPair> ids;
                     try {
-                        currentPair = loadClientIdentity(session, l);
+                        ids = loadClientIdentities(session, l);
                     } catch (IOException | GeneralSecurityException e) {
                         throw new RuntimeException("Failed (" + e.getClass().getSimpleName() + ")"
                             + " to load key from " + l.getName() + ": " + e.getMessage(), e);
                     }
 
+                    currentIdentities = (ids == null) ? null : ids.iterator();
+                    currentPair = KeyIdentityProvider.exhaustCurrentIdentities(currentIdentities);
                     if (currentPair != null) {
                         return true;
                     }
@@ -132,7 +142,7 @@ public class LazyClientKeyIdentityProvider implements KeyIdentityProvider, Clien
         };
     }
 
-    protected KeyPair loadClientIdentity(SessionContext session, NamedResource location)
+    protected Iterable<KeyPair> loadClientIdentities(SessionContext session, NamedResource location)
             throws IOException, GeneralSecurityException {
         ClientIdentityLoader loader = getClientIdentityLoader();
         boolean ignoreInvalid = isIgnoreNonExisting();
@@ -152,6 +162,6 @@ public class LazyClientKeyIdentityProvider implements KeyIdentityProvider, Clien
             throw e;
         }
 
-        return loader.loadClientIdentity(session, location, getFilePasswordProvider());
+        return loader.loadClientIdentities(session, location, getFilePasswordProvider());
     }
 }

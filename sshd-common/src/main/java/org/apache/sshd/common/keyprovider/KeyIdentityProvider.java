@@ -186,4 +186,22 @@ public interface KeyIdentityProvider {
     static KeyIdentityProvider wrapKeyPairs(Iterable<KeyPair> pairs) {
         return (pairs == null) ? EMPTY_KEYS_PROVIDER : session -> pairs;
     }
+
+    /**
+     * Attempts to find the first non-{@code null} {@link KeyPair}
+     *
+     * @param ids The {@link Iterator} - ignored if {@code null} or no next element available
+     * @return The first non-{@code null} key pair found in the iterator - {@code null} if
+     * all elements exhausted without such an entry
+     */
+    static KeyPair exhaustCurrentIdentities(Iterator<? extends KeyPair> ids) {
+        while ((ids != null) && ids.hasNext()) {
+            KeyPair kp = ids.next();
+            if (kp != null) {
+                return kp;
+            }
+        }
+
+        return null;
+    }
 }

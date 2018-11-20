@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,6 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
@@ -61,11 +63,11 @@ public class ClientIdentityFileWatcherTest extends JUnitTestSupport {
         KeyPair identity = CommonTestSupportUtils.getFirstKeyPair(createTestHostKeyProvider());
         ClientIdentityLoader loader = new ClientIdentityLoader() {
             @Override
-            public KeyPair loadClientIdentity(
+            public Iterable<KeyPair> loadClientIdentities(
                     SessionContext session, NamedResource location, FilePasswordProvider provider)
                         throws IOException, GeneralSecurityException {
                 assertTrue("Invalid location: " + location, isValidLocation(location));
-                return identity;
+                return Collections.singletonList(identity);
             }
 
             @Override
@@ -82,10 +84,11 @@ public class ClientIdentityFileWatcherTest extends JUnitTestSupport {
         AtomicInteger reloadCount = new AtomicInteger(0);
         ClientIdentityProvider idProvider = new ClientIdentityFileWatcher(idFile, loader, FilePasswordProvider.EMPTY, false) {
             @Override
-            protected KeyPair reloadClientIdentity(SessionContext session, Path path) throws IOException, GeneralSecurityException {
+            protected Iterable<KeyPair> reloadClientIdentities(SessionContext session, Path path)
+                    throws IOException, GeneralSecurityException {
                 assertEquals("Mismatched client identity path", idFile, path);
                 reloadCount.incrementAndGet();
-                return super.reloadClientIdentity(session, path);
+                return super.reloadClientIdentities(session, path);
             }
         };
         Files.deleteIfExists(idFile);
@@ -118,7 +121,8 @@ public class ClientIdentityFileWatcherTest extends JUnitTestSupport {
     private static void testIdentityReload(
             String phase, Number reloadCount, ClientIdentityProvider provider, KeyPair expectedIdentity, int expectedCount)
                 throws Exception {
-        KeyPair actualIdentity = provider.getClientIdentity(null);
+        Iterable<KeyPair> ids = provider.getClientIdentities(null);
+        KeyPair actualIdentity = GenericUtils.head(ids);
         assertSame(phase + ": mismatched identity", expectedIdentity, actualIdentity);
         assertEquals(phase + ": mismatched re-load count", expectedCount, reloadCount.intValue());
     }

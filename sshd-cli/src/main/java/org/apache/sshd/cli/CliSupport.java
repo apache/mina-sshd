@@ -48,7 +48,7 @@ public abstract class CliSupport {
     }
 
     public static boolean showError(PrintStream stderr, String message) {
-        stderr.println(message);
+        stderr.append("ERROR: ").println(message);
         return true;
     }
 

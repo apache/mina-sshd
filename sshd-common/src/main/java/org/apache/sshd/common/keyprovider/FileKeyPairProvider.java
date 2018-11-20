@@ -81,8 +81,8 @@ public class FileKeyPairProvider extends AbstractResourceKeyPairProvider<Path> {
     }
 
     @Override
-    protected KeyPair doLoadKey(SessionContext session, Path resource)
+    protected Iterable<KeyPair> doLoadKeys(SessionContext session, Path resource)
             throws IOException, GeneralSecurityException {
-        return super.doLoadKey(session, (resource == null) ? null : resource.toAbsolutePath());
+        return super.doLoadKeys(session, (resource == null) ? null : resource.toAbsolutePath());
     }
 }

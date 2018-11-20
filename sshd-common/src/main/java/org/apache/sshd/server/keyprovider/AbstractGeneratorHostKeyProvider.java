@@ -30,6 +30,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.security.spec.AlgorithmParameterSpec;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -43,6 +44,7 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeySizeIndicator;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -61,7 +63,7 @@ public abstract class AbstractGeneratorHostKeyProvider
     public static final String DEFAULT_ALGORITHM = KeyUtils.RSA_ALGORITHM;
     public static final boolean DEFAULT_ALLOWED_TO_OVERWRITE = true;
 
-    private final AtomicReference<KeyPair> keyPairHolder = new AtomicReference<>();
+    private final AtomicReference<Iterable<KeyPair>> keyPairHolder = new AtomicReference<>();
 
     private Path path;
     private String algorithm = DEFAULT_ALGORITHM;
@@ -116,29 +118,27 @@ public abstract class AbstractGeneratorHostKeyProvider
     }
 
     public void clearLoadedKeys() {
-        KeyPair kp;
+        Iterable<KeyPair> ids;
         synchronized (keyPairHolder) {
-            kp = keyPairHolder.getAndSet(null);
+            ids = keyPairHolder.getAndSet(null);
         }
 
-        if ((kp != null) & log.isDebugEnabled()) {
-            PublicKey key = kp.getPublic();
-            log.debug("clearLoadedKeys({}) removed key={}-{}",
-                  getPath(), KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+        if ((ids != null) & log.isDebugEnabled()) {
+            log.debug("clearLoadedKeys({}) removed keys", getPath());
         }
     }
 
     @Override   // co-variant return
     public synchronized List<KeyPair> loadKeys(SessionContext session) {
         Path keyPath = getPath();
-        KeyPair kp;
+        Iterable<KeyPair> ids;
         synchronized (keyPairHolder) {
-            kp = keyPairHolder.get();
-            if (kp == null) {
+            ids = keyPairHolder.get();
+            if (ids == null) {
                 try {
-                    kp = resolveKeyPair(session, keyPath);
-                    if (kp != null) {
-                        keyPairHolder.set(kp);
+                    ids = resolveKeyPairs(session, keyPath);
+                    if (ids != null) {
+                        keyPairHolder.set(ids);
                     }
                 } catch (Throwable t) {
                     log.warn("loadKeys({}) Failed ({}) to resolve: {}",
@@ -150,21 +150,32 @@ public abstract class AbstractGeneratorHostKeyProvider
             }
         }
 
-        if (kp == null) {
-            return Collections.emptyList();
-        } else {
-            return Collections.singletonList(kp);
+        List<KeyPair> pairs = Collections.emptyList();
+        if (ids instanceof List<?>) {
+            pairs = (List<KeyPair>) ids;
+        } else if (ids != null) {
+            pairs = new ArrayList<>();
+            for (KeyPair kp : ids) {
+                if (kp == null) {
+                    continue;
+                }
+
+                pairs.add(kp);
+            }
         }
+
+        return pairs;
     }
 
-    protected KeyPair resolveKeyPair(SessionContext session, Path keyPath) throws IOException, GeneralSecurityException {
+    protected Iterable<KeyPair> resolveKeyPairs(SessionContext session, Path keyPath)
+            throws IOException, GeneralSecurityException {
         String alg = getAlgorithm();
-        KeyPair kp;
         if (keyPath != null) {
             try {
-                kp = loadFromFile(session, alg, keyPath);
+                Iterable<KeyPair> ids = loadFromFile(session, alg, keyPath);
+                KeyPair kp = GenericUtils.head(ids);
                 if (kp != null) {
-                    return kp;
+                    return ids;
                 }
             } catch (Throwable e) {
                 log.warn("resolveKeyPair({}) Failed ({}) to load: {}",
@@ -176,6 +187,7 @@ public abstract class AbstractGeneratorHostKeyProvider
         }
 
         // either no file specified or no key in file
+        KeyPair kp = null;
         try {
             kp = generateKeyPair(alg);
             if (kp == null) {
@@ -185,11 +197,11 @@ public abstract class AbstractGeneratorHostKeyProvider
             if (log.isDebugEnabled()) {
                 PublicKey key = kp.getPublic();
                 log.debug("resolveKeyPair({}) generated {} key={}-{}",
-                          keyPath, alg, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+                      keyPath, alg, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
             }
         } catch (Throwable e) {
             log.warn("resolveKeyPair({})[{}] Failed ({}) to generate {} key-pair: {}",
-                     keyPath, alg, e.getClass().getSimpleName(), alg, e.getMessage());
+                 keyPath, alg, e.getClass().getSimpleName(), alg, e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("resolveKeyPair(" + keyPath + ")[" + alg + "] key-pair generation failure details", e);
             }
@@ -209,20 +221,23 @@ public abstract class AbstractGeneratorHostKeyProvider
             }
         }
 
-        return kp;
+        return Collections.singletonList(kp);
     }
 
-    protected KeyPair loadFromFile(SessionContext session, String alg, Path keyPath) throws IOException, GeneralSecurityException {
+    protected Iterable<KeyPair> loadFromFile(SessionContext session, String alg, Path keyPath)
+            throws IOException, GeneralSecurityException {
         LinkOption[] options = IoUtils.getLinkOptions(true);
         if ((!Files.exists(keyPath, options)) || (!Files.isRegularFile(keyPath, options))) {
             return null;
         }
 
-        KeyPair kp = readKeyPair(session, keyPath, IoUtils.EMPTY_OPEN_OPTIONS);
+        Iterable<KeyPair> ids = readKeyPairs(session, keyPath, IoUtils.EMPTY_OPEN_OPTIONS);
+        KeyPair kp = GenericUtils.head(ids);
         if (kp == null) {
             return null;
         }
 
+        // Assume all keys are of same type
         PublicKey key = kp.getPublic();
         String keyAlgorithm = key.getAlgorithm();
         if (BuiltinIdentities.Constants.ECDSA.equalsIgnoreCase(keyAlgorithm)) {
@@ -236,7 +251,7 @@ public abstract class AbstractGeneratorHostKeyProvider
                 log.debug("resolveKeyPair({}) loaded key={}-{}",
                       keyPath, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
             }
-            return kp;
+            return ids;
         }
 
         // Not same algorithm - start again
@@ -248,17 +263,17 @@ public abstract class AbstractGeneratorHostKeyProvider
         return null;
     }
 
-    protected KeyPair readKeyPair(SessionContext session, Path keyPath, OpenOption... options)
+    protected Iterable<KeyPair> readKeyPairs(SessionContext session, Path keyPath, OpenOption... options)
             throws IOException, GeneralSecurityException {
         PathResource location = new PathResource(keyPath, options);
         try (InputStream inputStream = location.openInputStream()) {
-            return doReadKeyPair(session, location, inputStream);
+            return doReadKeyPairs(session, location, inputStream);
         }
     }
 
-    protected KeyPair doReadKeyPair(SessionContext session, NamedResource resourceKey, InputStream inputStream)
+    protected Iterable<KeyPair> doReadKeyPairs(SessionContext session, NamedResource resourceKey, InputStream inputStream)
             throws IOException, GeneralSecurityException {
-        return SecurityUtils.loadKeyPairIdentity(session, resourceKey, inputStream, null);
+        return SecurityUtils.loadKeyPairIdentities(session, resourceKey, inputStream, null);
     }
 
     protected void writeKeyPair(KeyPair kp, Path keyPath, OpenOption... options)

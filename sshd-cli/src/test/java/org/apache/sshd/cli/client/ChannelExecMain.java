@@ -59,7 +59,7 @@ public class ChannelExecMain extends BaseTestSupport {
                         stdout.append('\t').println(l);
                     }
                 } catch (Exception e) {
-                    stderr.append(e.getClass().getSimpleName()).append(": ").println(e.getMessage());
+                    stderr.append("WARNING: ").append(e.getClass().getSimpleName()).append(": ").println(e.getMessage());
                 }
 
                 stdout.append("Execute ").append(command).print(" again [y]/n ");

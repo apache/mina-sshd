@@ -69,7 +69,7 @@ public class AbstractGeneratorHostKeyProviderTest extends JUnitTestSupport {
         }
 
         @Override
-        protected KeyPair doReadKeyPair(
+        protected Iterable<KeyPair> doReadKeyPairs(
                 SessionContext session, NamedResource resourceKey, InputStream inputStream)
                     throws IOException, GeneralSecurityException {
             return null;

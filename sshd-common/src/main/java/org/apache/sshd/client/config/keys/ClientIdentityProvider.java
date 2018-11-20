@@ -40,24 +40,25 @@ public interface ClientIdentityProvider {
      *
      * @param session The {@link SessionContext} for invoking this load command - may
      * be {@code null} if not invoked within a session context (e.g., offline tool).
-     * @return The client identity - may be {@code null} if no currently
+     * @return The client identities - may be {@code null}/empty if no currently
      * available identity from this provider. <B>Note:</B> the provider
      * may return a <U>different</U> value every time this method is called
      * - e.g., if it is (re-)loading contents from a file.
      * @throws IOException If failed to load the identity
      * @throws GeneralSecurityException If failed to parse the identity
      */
-    KeyPair getClientIdentity(SessionContext session) throws IOException, GeneralSecurityException;
+    Iterable<KeyPair> getClientIdentities(SessionContext session)
+        throws IOException, GeneralSecurityException;
 
     /**
      * Wraps a {@link KeyPair} into a {@link ClientIdentityProvider} that
-     * simply returns this value as it {@link #getClientIdentity()}.
+     * simply returns this value as it {@link #getClientIdentities(SessionContext)}.
      *
      * @param kp The {@link KeyPair} instance (including {@code null})
      * @return The wrapping provider
      */
     static ClientIdentityProvider of(KeyPair kp) {
-        return session -> kp;
+        return session -> Collections.singletonList(kp);
     }
 
     /**
@@ -80,7 +81,7 @@ public interface ClientIdentityProvider {
      */
     static Iterable<KeyPair> lazyKeysLoader(
             Iterable<? extends ClientIdentityProvider> providers,
-            Function<? super ClientIdentityProvider, ? extends KeyPair> kpExtractor,
+            Function<? super ClientIdentityProvider, ? extends Iterable<? extends KeyPair>> kpExtractor,
             Predicate<? super KeyPair> filter) {
         Objects.requireNonNull(kpExtractor, "No key pair extractor provided");
         if (providers == null) {
@@ -116,7 +117,7 @@ public interface ClientIdentityProvider {
      */
     static Iterator<KeyPair> lazyKeysIterator(
             Iterator<? extends ClientIdentityProvider> providers,
-            Function<? super ClientIdentityProvider, ? extends KeyPair> kpExtractor,
+            Function<? super ClientIdentityProvider, ? extends Iterable<? extends KeyPair>> kpExtractor,
             Predicate<? super KeyPair> filter) {
         Objects.requireNonNull(kpExtractor, "No key pair extractor provided");
         return (providers == null)

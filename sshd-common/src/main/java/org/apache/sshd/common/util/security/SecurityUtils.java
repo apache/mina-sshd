@@ -35,7 +35,6 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.cert.CertificateFactory;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -477,11 +476,11 @@ public final class SecurityUtils {
      * @param inputStream The {@link InputStream} for the <U>private</U> key
      * @param provider    A {@link FilePasswordProvider} - may be {@code null}
      *                    if the loaded key is <U>guaranteed</U> not to be encrypted
-     * @return The loaded {@link KeyPair}
+     * @return The loaded {@link KeyPair}-s - or {@code null} if none loaded
      * @throws IOException              If failed to read/parse the input stream
      * @throws GeneralSecurityException If failed to generate the keys
      */
-    public static KeyPair loadKeyPairIdentity(
+    public static Iterable<KeyPair> loadKeyPairIdentities(
             SessionContext session, NamedResource resourceKey, InputStream inputStream, FilePasswordProvider provider)
                 throws IOException, GeneralSecurityException {
         KeyPairResourceParser parser = getKeyPairResourceParser();
@@ -495,11 +494,7 @@ public final class SecurityUtils {
             return null;
         }
 
-        if (numLoaded != 1) {
-            throw new InvalidKeySpecException("Multiple private key pairs N/A: " + resourceKey);
-        }
-
-        return GenericUtils.head(ids);
+        return ids;
     }
 
     /* -------------------------------------------------------------------- */

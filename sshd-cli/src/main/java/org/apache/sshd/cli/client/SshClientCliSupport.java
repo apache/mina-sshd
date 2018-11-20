@@ -397,7 +397,8 @@ public abstract class SshClientCliSupport extends CliSupport {
                         answers[i] = stdin.readLine();
                     }
                 } catch (IOException e) {
-                    stderr.append(e.getClass().getSimpleName()).append(" while read prompts: ").println(e.getMessage());
+                    stderr.append("WARNING: ").append(e.getClass().getSimpleName())
+                        .append(" while read prompts: ").println(e.getMessage());
                 }
                 return answers;
             }
@@ -408,7 +409,8 @@ public abstract class SshClientCliSupport extends CliSupport {
                 try {
                     return stdin.readLine();
                 } catch (IOException e) {
-                    stderr.append(e.getClass().getSimpleName()).append(" while read password: ").println(e.getMessage());
+                    stderr.append("WARNING: ").append(e.getClass().getSimpleName())
+                        .append(" while read password: ").println(e.getMessage());
                     return null;
                 }
             }
@@ -438,11 +440,11 @@ public abstract class SshClientCliSupport extends CliSupport {
         }
 
         ((KnownHostsServerKeyVerifier) current).setModifiedServerKeyAcceptor((clientSession, remoteAddress, entry, expected, actual) -> {
-            stderr.append("Mismatched keys presented by ").append(Objects.toString(remoteAddress))
+            stderr.append("WARNING: Mismatched keys presented by ").append(Objects.toString(remoteAddress))
                   .append(" for entry=").println(entry);
-            stderr.append('\t').append("Expected=").append(KeyUtils.getKeyType(expected))
+            stderr.append("    ").append("Expected=").append(KeyUtils.getKeyType(expected))
                   .append('-').println(KeyUtils.getFingerPrint(expected));
-            stderr.append('\t').append("Actual=").append(KeyUtils.getKeyType(actual))
+            stderr.append("    ").append("Actual=").append(KeyUtils.getKeyType(actual))
                   .append('-').println(KeyUtils.getFingerPrint(actual));
             stderr.flush(); // just making sure
 
@@ -538,7 +540,7 @@ public abstract class SshClientCliSupport extends CliSupport {
 
         Collection<String> unsupported = result.getUnsupportedFactories();
         if (GenericUtils.size(unsupported) > 0) {
-            stderr.append("Ignored unsupported compressions: ").println(GenericUtils.join(unsupported, ','));
+            stderr.append("WARNING: Ignored unsupported compressions: ").println(GenericUtils.join(unsupported, ','));
         }
 
         return new ArrayList<>(available);
@@ -566,7 +568,7 @@ public abstract class SshClientCliSupport extends CliSupport {
 
         Collection<String> unsupported = result.getUnsupportedFactories();
         if (GenericUtils.size(unsupported) > 0) {
-            stderr.append("Ignored unsupported MACs: ").println(GenericUtils.join(unsupported, ','));
+            stderr.append("WARNING: Ignored unsupported MACs: ").println(GenericUtils.join(unsupported, ','));
         }
 
         return new ArrayList<>(available);
@@ -589,13 +591,13 @@ public abstract class SshClientCliSupport extends CliSupport {
         BuiltinCiphers.ParseResult result = BuiltinCiphers.parseCiphersList(argVal);
         Collection<? extends NamedFactory<Cipher>> available = result.getParsedFactories();
         if (GenericUtils.isEmpty(available)) {
-            showError(stderr, "No known ciphers in " + argVal);
+            showError(stderr, "WARNING: No known ciphers in " + argVal);
             return null;
         }
 
         Collection<String> unsupported = result.getUnsupportedFactories();
         if (GenericUtils.size(unsupported) > 0) {
-            stderr.append("Ignored unsupported ciphers: ").println(GenericUtils.join(unsupported, ','));
+            stderr.append("WARNING: Ignored unsupported ciphers: ").println(GenericUtils.join(unsupported, ','));
         }
 
         return new ArrayList<>(available);

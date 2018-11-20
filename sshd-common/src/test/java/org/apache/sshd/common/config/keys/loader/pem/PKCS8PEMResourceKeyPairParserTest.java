@@ -33,6 +33,7 @@ import org.apache.commons.ssl.PEMItem;
 import org.apache.commons.ssl.PEMUtil;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
@@ -93,10 +94,12 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
             os.close();
 
             try (ByteArrayInputStream bais = new ByteArrayInputStream(os.toByteArray())) {
-                KeyPair kp2 = SecurityUtils.loadKeyPairIdentity(null, NamedResource.ofName(getCurrentTestName()), bais, null);
-
-                assertEquals("Mismatched public key", kp.getPublic(), kp2.getPublic());
-                assertEquals("Mismatched private key", prv1, kp2.getPrivate());
+                Iterable<KeyPair> ids = SecurityUtils.loadKeyPairIdentities(
+                        null, NamedResource.ofName(getCurrentTestName()), bais, null);
+                KeyPair kp2 = GenericUtils.head(ids);
+                assertNotNull("No identity loaded", kp2);
+                assertKeyEquals("Mismatched public key", kp.getPublic(), kp2.getPublic());
+                assertKeyEquals("Mismatched private key", prv1, kp2.getPrivate());
             }
         }
     }

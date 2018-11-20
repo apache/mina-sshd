@@ -126,7 +126,7 @@ public final class SshFsMounter extends SshServerCliSupport {
                 callback.onExit(0);
             } catch (Exception e) {
                 log.error("run(" + username + ")[" + command + "] " + e.getClass().getSimpleName() + ": " + e.getMessage(), e);
-                stderr.append(e.getClass().getSimpleName()).append(": ").println(e.getMessage());
+                stderr.append("ERROR: ").append(e.getClass().getSimpleName()).append(": ").println(e.getMessage());
                 callback.onExit(-1, e.toString());
             }
         }

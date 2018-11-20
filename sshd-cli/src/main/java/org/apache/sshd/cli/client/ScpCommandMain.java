@@ -149,7 +149,7 @@ public class ScpCommandMain extends SshClientCliSupport {
             Class<?> clazz = cl.loadClass(className);
             return ScpClientCreator.class.cast(clazz.newInstance());
         } catch (Exception e) {
-            stderr.append("Failed (").append(e.getClass().getSimpleName()).append(')')
+            stderr.append("WARNING: Failed (").append(e.getClass().getSimpleName()).append(')')
                 .append(" to instantiate ").append(className)
                 .append(": ").println(e.getMessage());
             stderr.flush();

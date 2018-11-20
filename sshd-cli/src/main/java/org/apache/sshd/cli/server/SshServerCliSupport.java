@@ -117,19 +117,33 @@ public abstract class SshServerCliSupport extends CliSupport {
             for (String keyFilePath : keyFiles) {
                 Path path = Paths.get(keyFilePath);
                 PathResource location = new PathResource(path);
+                Iterable<KeyPair> ids;
                 try (InputStream inputStream = location.openInputStream()) {
-                    KeyPair kp = SecurityUtils.loadKeyPairIdentity(null, location, inputStream, null);
-                    pairs.add(kp);
+                    ids = SecurityUtils.loadKeyPairIdentities(null, location, inputStream, null);
                 } catch (Exception e) {
-                    stderr.append("Failed (").append(e.getClass().getSimpleName()).append(')')
+                    stderr.append("ERROR: Failed (").append(e.getClass().getSimpleName()).append(')')
                         .append(" to load host key file=").append(keyFilePath)
                         .append(": ").println(e.getMessage());
                     stderr.flush();
                     throw e;
                 }
+
+                if (ids == null) {
+                    stderr.append("WARNING: No keys loaded from ").println(keyFilePath);
+                    continue;
+                }
+
+                for (KeyPair kp : ids) {
+                    if (kp == null) {
+                        stderr.append("WARNING: empty key found in ").println(keyFilePath);
+                        continue;   // debug breakpoint
+                    }
+                    pairs.add(kp);
+                }
             }
 
-            return new MappedKeyPairProvider(pairs);
+            return new MappedKeyPairProvider(
+                ValidateUtils.checkNotNullAndNotEmpty(pairs, "No key pairs loaded for provided key files"));
         }
     }
 
@@ -157,7 +171,7 @@ public abstract class SshServerCliSupport extends CliSupport {
                     SubsystemFactory factory = SubsystemFactory.class.cast(clazz.newInstance());
                     subsystems.add(factory);
                 } catch (Exception e) {
-                    stderr.append("Failed (").append(e.getClass().getSimpleName()).append(')')
+                    stderr.append("ERROR: Failed (").append(e.getClass().getSimpleName()).append(')')
                         .append(" to instantiate subsystem=").append(fqcn)
                         .append(": ").println(e.getMessage());
                     stderr.flush();
@@ -208,7 +222,7 @@ public abstract class SshServerCliSupport extends CliSupport {
             Object instance = clazz.newInstance();
             return ShellFactory.class.cast(instance);
         } catch (Exception e) {
-            stderr.append("Failed (").append(e.getClass().getSimpleName()).append(')')
+            stderr.append("ERROR: Failed (").append(e.getClass().getSimpleName()).append(')')
                 .append(" to instantiate shell factory=").append(factory)
                 .append(": ").println(e.getMessage());
             stderr.flush();
