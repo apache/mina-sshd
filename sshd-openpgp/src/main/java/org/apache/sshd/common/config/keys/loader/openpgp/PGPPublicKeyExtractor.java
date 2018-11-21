@@ -45,6 +45,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.bcpg.BCPGKey;
 import org.bouncycastle.bcpg.DSAPublicBCPGKey;
+import org.bouncycastle.bcpg.ECDHPublicBCPGKey;
 import org.bouncycastle.bcpg.ECDSAPublicBCPGKey;
 import org.bouncycastle.bcpg.ECPublicBCPGKey;
 import org.bouncycastle.bcpg.EdDSAPublicBCPGKey;
@@ -97,14 +98,14 @@ public interface PGPPublicKeyExtractor {
             return null;
         } else if (bcKey instanceof EdDSAPublicBCPGKey) {
             return extractEdDSAPublicKey(resourceKey, (EdDSAPublicBCPGKey) bcKey);
-        } else if (bcKey instanceof ECDSAPublicBCPGKey) {
-            return extractECDSAPublicKey(resourceKey, (ECDSAPublicBCPGKey) bcKey);
+        } else if ((bcKey instanceof ECDSAPublicBCPGKey) || (bcKey instanceof ECDHPublicBCPGKey)) {
+            return extractECDSAPublicKey(resourceKey, bcKey);
         } else {
             throw new NoSuchAlgorithmException("Unsupported EC public key type: " + bcKey.getClass().getSimpleName());
         }
     }
 
-    default ECPublicKey extractECDSAPublicKey(NamedResource resourceKey, ECDSAPublicBCPGKey bcKey)
+    default ECPublicKey extractECDSAPublicKey(NamedResource resourceKey, ECPublicBCPGKey bcKey)
             throws IOException, GeneralSecurityException {
         if (bcKey == null) {
             return null;

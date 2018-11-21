@@ -92,7 +92,9 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
     @Parameters(name = "{0}")
     public static List<Object[]> parameters() {
         return parameterize(Arrays.asList(
+            "EC-256-gpg2-public.asc",
             "EC-348-v1p0-public.asc",
+            "EC-521-gpg2-public.asc",
             "RSA-2048-v1p0-public.asc",
             "RSA-2048-v1p6p1-public.asc",
             "RSA-4096-vp2p0p8-public.asc",

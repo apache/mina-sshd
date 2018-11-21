@@ -130,7 +130,9 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
                     add(new Object[] {"super-secret-passphrase-RSA-2048-v1p6p1-private.gpg", result, PASSWORD});
                     add(new Object[] {"super-secret-passphrase-RSA-4096-v2p0p8-private.gpg", result, PASSWORD});
                     add(new Object[] {"super-secret-passphrase-DSA-2048-gpg4win-3.1.3.gpg", result, PASSWORD});
+                    add(new Object[] {"super-secret-passphrase-EC-256-gpg2-private.gpg", result, PASSWORD});
                     add(new Object[] {"super-secret-passphrase-EC-384-v1p0-private.gpg", result, PASSWORD});
+                    add(new Object[] {"super-secret-passphrase-EC-521-gpg2-private.gpg", result, PASSWORD});
                     // TODO add(new Object[] {"super-secret-passphrase-ed25519-gpg4win-3.1.3.gpg, result", PASSWORD});
                 }
             }
