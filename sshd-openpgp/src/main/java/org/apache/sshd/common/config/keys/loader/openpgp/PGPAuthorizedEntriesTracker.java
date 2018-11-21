@@ -101,7 +101,7 @@ public class PGPAuthorizedEntriesTracker
     }
 
     @Override
-    public PublicKey resolve(String keyType, byte[] keyData)
+    public PublicKey resolve(SessionContext session, String keyType, byte[] keyData)
             throws IOException, GeneralSecurityException {
         if (!PGPPublicKeyEntryDataResolver.PGP_KEY_TYPES.contains(keyType)) {
             return null;
@@ -114,7 +114,7 @@ public class PGPAuthorizedEntriesTracker
 
         Collection<PublicKey> keys;
         try {
-            keys = loadMatchingKeyFingerprints(null, Collections.singletonList(fingerprint));
+            keys = loadMatchingKeyFingerprints(session, Collections.singletonList(fingerprint));
         } catch (PGPException e) {
             throw new InvalidKeyException("Failed (" + e.getClass().getSimpleName() + ")"
                     + " to load key type=" + keyType + " with fingerprint=" + fingerprint
@@ -150,7 +150,7 @@ public class PGPAuthorizedEntriesTracker
             Collection<PublicKeyEntry> keyEntries = te.getValue();
             Collection<PublicKey> subKeys = PGPPublicKeyEntryDataResolver.PGP_KEY_TYPES.contains(keyType)
                 ? loadMatchingAuthorizedEntries(session, keyEntries)
-                : PublicKeyEntry.resolvePublicKeyEntries(keyEntries, fallbackResolver);
+                : PublicKeyEntry.resolvePublicKeyEntries(session, keyEntries, fallbackResolver);
             if (GenericUtils.isEmpty(subKeys)) {
                 continue;
             }

@@ -166,7 +166,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
                 throw new NoSuchAlgorithmException("Unsupported key type (" + keyType + ") in " + resourceKey);
             }
 
-            return decoder.decodePublicKey(keyType, bais);
+            return decoder.decodePublicKey(session, keyType, bais);
         }
     }
 

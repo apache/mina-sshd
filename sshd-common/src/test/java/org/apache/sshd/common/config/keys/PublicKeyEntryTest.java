@@ -44,14 +44,14 @@ public class PublicKeyEntryTest extends JUnitTestSupport {
 
     @Test
     public void testFallbackResolver() throws Exception {
-        PublicKeyEntry entry =  // TODO use some
-                PublicKeyEntry.parsePublicKeyEntry(
-                        GenericUtils.join(
-                                Arrays.asList(getCurrentTestName(), "AAAA", getClass().getSimpleName()), ' '));
+        PublicKeyEntry entry =
+            PublicKeyEntry.parsePublicKeyEntry(
+                GenericUtils.join(
+                    Arrays.asList(getCurrentTestName(), "AAAA", getClass().getSimpleName()), ' '));
         for (PublicKeyEntryResolver resolver : new PublicKeyEntryResolver[]{
             null, PublicKeyEntryResolver.FAILING, PublicKeyEntryResolver.IGNORING}) {
             try {
-                PublicKey key = entry.resolvePublicKey(resolver);
+                PublicKey key = entry.resolvePublicKey(null, resolver);
                 assertSame("Mismatched successful resolver", PublicKeyEntryResolver.IGNORING, resolver);
                 assertNull("Unexpected success for resolver=" + resolver + ": " + KeyUtils.getFingerPrint(key), key);
             } catch (GeneralSecurityException e) {

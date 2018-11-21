@@ -118,7 +118,8 @@ public class KeyUtilsFingerprintGenerationTest extends JUnitTestSupport {
         for (Map.Entry<String, ? extends Collection<? extends Map.Entry<DigestFactory, String>>> kentry : keyEntries) {
             String keyValue = kentry.getKey();
             try {
-                PublicKey key = PublicKeyEntry.parsePublicKeyEntry(keyValue).resolvePublicKey(PublicKeyEntryResolver.FAILING);
+                PublicKeyEntry keyEntry = PublicKeyEntry.parsePublicKeyEntry(keyValue);
+                PublicKey key = keyEntry.resolvePublicKey(null, PublicKeyEntryResolver.FAILING);
                 for (Map.Entry<DigestFactory, String> dentry : kentry.getValue()) {
                     DigestFactory factory = dentry.getKey();
                     String fingerprint = dentry.getValue();

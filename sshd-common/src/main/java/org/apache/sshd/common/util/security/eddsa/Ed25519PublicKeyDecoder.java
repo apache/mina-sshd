@@ -30,6 +30,7 @@ import java.util.Objects;
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.impl.AbstractPublicKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
@@ -90,7 +91,8 @@ public final class Ed25519PublicKeyDecoder extends AbstractPublicKeyEntryDecoder
     }
 
     @Override
-    public EdDSAPublicKey decodePublicKey(String keyType, InputStream keyData) throws IOException, GeneralSecurityException {
+    public EdDSAPublicKey decodePublicKey(SessionContext session, String keyType, InputStream keyData)
+            throws IOException, GeneralSecurityException {
         byte[] seed = KeyEntryResolver.readRLEBytes(keyData, MAX_ALLOWED_SEED_LEN);
         return EdDSAPublicKey.class.cast(SecurityUtils.generateEDDSAPublicKey(keyType, seed));
     }

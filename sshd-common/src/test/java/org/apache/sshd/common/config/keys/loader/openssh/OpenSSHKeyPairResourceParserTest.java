@@ -83,7 +83,7 @@ public class OpenSSHKeyPairResourceParserTest extends JUnitTestSupport {
         assertEquals("Mismatched public keys count", 1, GenericUtils.size(entries));
 
         AuthorizedKeyEntry entry = entries.get(0);
-        PublicKey pubEntry = entry.resolvePublicKey(PublicKeyEntryResolver.FAILING);
+        PublicKey pubEntry = entry.resolvePublicKey(null, PublicKeyEntryResolver.FAILING);
         assertNotNull("Cannot retrieve public key", pubEntry);
 
         Class<? extends PublicKey> pubType = identity.getPublicKeyType();

@@ -70,7 +70,8 @@ public class KeyUtilsFingerprintCaseSensitivityTest extends JUnitTestSupport {
 
     @BeforeClass
     public static void beforeClass() throws GeneralSecurityException, IOException {
-        key = PublicKeyEntry.parsePublicKeyEntry(KEY_STRING).resolvePublicKey(PublicKeyEntryResolver.FAILING);
+        PublicKeyEntry keyEntry = PublicKeyEntry.parsePublicKeyEntry(KEY_STRING);
+        key = keyEntry.resolvePublicKey(null, PublicKeyEntryResolver.FAILING);
     }
 
     @Parameters(name = "expected={0}, test={1}")

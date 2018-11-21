@@ -52,6 +52,8 @@ public interface PublickeyAuthenticator {
 
     /**
      * @param id Some kind of mnemonic identifier for the authenticator - used also in {@link #toString()}
+     * @param session The {@link ServerSession} that triggered this call - may be {@code null} if invoked
+     * by offline tool (e.g., unit test) or session context unknown to caller.
      * @param entries The entries to parse - ignored if {@code null}/empty
      * @param fallbackResolver The public key resolver to use if none of the default registered ones works
      * @return A wrapper with all the parsed keys
@@ -59,10 +61,12 @@ public interface PublickeyAuthenticator {
      * @throws GeneralSecurityException If failed to generate the relevant keys from the parsed data
      */
     static PublickeyAuthenticator fromAuthorizedEntries(
-            Object id, Collection<? extends AuthorizedKeyEntry> entries, PublicKeyEntryResolver fallbackResolver)
+            Object id, ServerSession session,
+            Collection<? extends AuthorizedKeyEntry> entries,
+            PublicKeyEntryResolver fallbackResolver)
                 throws IOException, GeneralSecurityException {
         Collection<PublicKey> keys =
-            PublicKeyEntry.resolvePublicKeyEntries(entries, fallbackResolver);
+            PublicKeyEntry.resolvePublicKeyEntries(session, entries, fallbackResolver);
         if (GenericUtils.isEmpty(keys)) {
             return RejectAllPublickeyAuthenticator.INSTANCE;
         } else {

@@ -194,14 +194,15 @@ public class LdapPublickeyAuthenticator extends LdapAuthenticator implements Pub
      * @throws GeneralSecurityException If failed to recover the public key
      * @throws IOException If failed to parse the public key data
      */
-    protected PublicKey parsePublicKeyValue(String username, PublicKey expected, ServerSession session, Map<String, ?> attrs, Object keyData)
-            throws GeneralSecurityException, IOException {
+    protected PublicKey parsePublicKeyValue(
+            String username, PublicKey expected, ServerSession session, Map<String, ?> attrs, Object keyData)
+                throws GeneralSecurityException, IOException {
         if (keyData == null) {
             return null;
         }
 
         AuthorizedKeyEntry entry = AuthorizedKeyEntry.parseAuthorizedKeyEntry(Objects.toString(keyData, null));
-        PublicKey key = Objects.requireNonNull(entry, "No key extracted").resolvePublicKey(PublicKeyEntryResolver.FAILING);
+        PublicKey key = Objects.requireNonNull(entry, "No key extracted").resolvePublicKey(session, PublicKeyEntryResolver.FAILING);
         if (log.isTraceEnabled()) {
             log.trace("parsePublicKeyValue({}@{}) {}-{}",
                       username, session, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));

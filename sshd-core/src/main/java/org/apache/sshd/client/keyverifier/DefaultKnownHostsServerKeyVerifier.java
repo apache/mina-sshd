@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.apache.sshd.client.config.hosts.KnownHostEntry;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.io.IoUtils;
 
 /**
@@ -70,7 +71,8 @@ public class DefaultKnownHostsServerKeyVerifier extends KnownHostsServerKeyVerif
     }
 
     @Override
-    protected List<HostEntryPair> reloadKnownHosts(Path file) throws IOException, GeneralSecurityException {
+    protected List<HostEntryPair> reloadKnownHosts(ClientSession session, Path file)
+            throws IOException, GeneralSecurityException {
         if (isStrict()) {
             if (log.isDebugEnabled()) {
                 log.debug("reloadKnownHosts({}) check permissions", file);
@@ -84,6 +86,6 @@ public class DefaultKnownHostsServerKeyVerifier extends KnownHostsServerKeyVerif
             }
         }
 
-        return super.reloadKnownHosts(file);
+        return super.reloadKnownHosts(session, file);
     }
 }

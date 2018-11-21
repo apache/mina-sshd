@@ -39,6 +39,7 @@ import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDataResolver;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
@@ -61,6 +62,7 @@ import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.mockito.Mockito;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -205,11 +207,12 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
         }
 
         PGPAuthorizedEntriesTracker tracker = new PGPAuthorizedEntriesTracker(file);
+        SessionContext session = Mockito.mock(SessionContext.class);
         for (PublicKeyEntry pke : available) {
-            Collection<PublicKey> keys = tracker.loadMatchingAuthorizedEntries(null, Collections.singletonList(pke));
+            Collection<PublicKey> keys = tracker.loadMatchingAuthorizedEntries(session, Collections.singletonList(pke));
             assertEquals("Mismatched recovered keys count for " + pke, 1, GenericUtils.size(keys));
 
-            PublicKey expected = pke.resolvePublicKey(tracker);
+            PublicKey expected = pke.resolvePublicKey(session, tracker);
             PublicKey actual = GenericUtils.head(keys);
             assertKeyEquals(pke.toString(), expected, actual);
         }

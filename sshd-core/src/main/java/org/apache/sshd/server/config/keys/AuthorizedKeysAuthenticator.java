@@ -143,7 +143,7 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
             String username, ServerSession session, Path path,
             Collection<AuthorizedKeyEntry> entries, PublicKeyEntryResolver fallbackResolver)
                 throws IOException, GeneralSecurityException {
-        return PublickeyAuthenticator.fromAuthorizedEntries(path, entries, fallbackResolver);
+        return PublickeyAuthenticator.fromAuthorizedEntries(path, session, entries, fallbackResolver);
     }
 
     protected PublicKeyEntryResolver getFallbackPublicKeyEntryResolver() {

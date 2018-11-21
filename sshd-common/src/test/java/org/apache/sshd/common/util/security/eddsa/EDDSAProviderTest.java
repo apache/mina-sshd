@@ -103,7 +103,7 @@ public class EDDSAProviderTest extends JUnitTestSupport {
         assertEquals("Mismatched comment", comment, keyEntry.getComment());
 
         StringBuilder sb = new StringBuilder(expected.length());
-        PublicKey pubKey = keyEntry.appendPublicKey(sb, null);
+        PublicKey pubKey = keyEntry.appendPublicKey(null, sb, null);
         assertEquals("Mismatched encoded result", expected, sb.toString());
 
         testPublicKeyRecovery(pubKey);

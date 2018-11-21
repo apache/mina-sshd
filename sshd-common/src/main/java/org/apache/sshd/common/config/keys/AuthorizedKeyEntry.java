@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
@@ -88,8 +89,9 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     }
 
     @Override
-    public PublicKey appendPublicKey(Appendable sb, PublicKeyEntryResolver fallbackResolver)
-            throws IOException, GeneralSecurityException {
+    public PublicKey appendPublicKey(
+            SessionContext session, Appendable sb, PublicKeyEntryResolver fallbackResolver)
+                throws IOException, GeneralSecurityException {
         Map<String, String> options = getLoginOptions();
         if (!GenericUtils.isEmpty(options)) {
             int index = 0;
@@ -114,7 +116,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
             }
         }
 
-        PublicKey key = super.appendPublicKey(sb, fallbackResolver);
+        PublicKey key = super.appendPublicKey(session, sb, fallbackResolver);
         String kc = getComment();
         if (!GenericUtils.isEmpty(kc)) {
             sb.append(' ').append(kc);

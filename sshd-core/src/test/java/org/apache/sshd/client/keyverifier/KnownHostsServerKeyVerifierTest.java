@@ -88,7 +88,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             SshdSocketAddress hostIdentity = ke.getKey();
             KnownHostEntry entry = ke.getValue();
             AuthorizedKeyEntry authEntry = ValidateUtils.checkNotNull(entry.getKeyEntry(), "No key extracted from %s", entry);
-            PublicKey key = authEntry.resolvePublicKey(PublicKeyEntryResolver.FAILING);
+            PublicKey key = authEntry.resolvePublicKey(null, PublicKeyEntryResolver.FAILING);
             assertNull("Multiple keys for host=" + hostIdentity, HOST_KEYS.put(hostIdentity, key));
         }
     }
@@ -211,7 +211,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         });
 
         // force re-read to ensure all values are hashed
-        Collection<HostEntryPair> keys = verifier.reloadKnownHosts(path);
+        Collection<HostEntryPair> keys = verifier.reloadKnownHosts(session, path);
         for (HostEntryPair ke : keys) {
             KnownHostEntry entry = ke.getHostEntry();
             assertNotNull("No hashing for entry=" + entry, entry.getHashedEntry());

@@ -66,7 +66,7 @@ public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
         for (Map.Entry<String, String> ce : credentials.entrySet()) {
             String username = ce.getKey();
             AuthorizedKeyEntry entry = AuthorizedKeyEntry.parseAuthorizedKeyEntry(ce.getValue());
-            PublicKey key = Objects.requireNonNull(entry, "No key extracted").resolvePublicKey(PublicKeyEntryResolver.FAILING);
+            PublicKey key = Objects.requireNonNull(entry, "No key extracted").resolvePublicKey(null, PublicKeyEntryResolver.FAILING);
             KEYS_MAP.put(username, key);
         }
     }

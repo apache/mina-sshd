@@ -29,9 +29,11 @@ import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
+import org.apache.sshd.server.session.ServerSession;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import org.mockito.Mockito;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -49,13 +51,14 @@ public class DefaultAuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSu
 
         Collection<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(file);
         Collection<PublicKey> keySet =
-            PublicKeyEntry.resolvePublicKeyEntries(entries, PublicKeyEntryResolver.FAILING);
+            PublicKeyEntry.resolvePublicKeyEntries(null, entries, PublicKeyEntryResolver.FAILING);
         PublickeyAuthenticator auth = new DefaultAuthorizedKeysAuthenticator(file, false);
         String thisUser = OsUtils.getCurrentUser();
+        ServerSession session = Mockito.mock(ServerSession.class);
         for (String username : new String[]{null, "", thisUser, getClass().getName() + "#" + getCurrentTestName()}) {
             boolean expected = thisUser.equals(username);
             for (PublicKey key : keySet) {
-                boolean actual = auth.authenticate(username, key, null);
+                boolean actual = auth.authenticate(username, key, session);
                 assertEquals("Mismatched authentication results for user='" + username + "'", expected, actual);
             }
         }

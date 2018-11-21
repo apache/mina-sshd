@@ -72,7 +72,7 @@ public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
                 sb.setLength(0);
             }
 
-            PublicKey key = entry.appendPublicKey(sb, PublicKeyEntryResolver.FAILING);
+            PublicKey key = entry.appendPublicKey(null, sb, PublicKeyEntryResolver.FAILING);
             assertNotNull("No key for line=" + line, key);
 
             String encoded = sb.toString();
@@ -102,13 +102,16 @@ public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
         testAuthorizedKeysAuth(entries);
     }
 
-    private static Collection<AuthorizedKeyEntry> testReadAuthorizedKeys(Collection<AuthorizedKeyEntry> entries) throws Exception {
+    private static Collection<AuthorizedKeyEntry> testReadAuthorizedKeys(
+            Collection<AuthorizedKeyEntry> entries)
+                throws Exception {
         assertFalse("No entries read", GenericUtils.isEmpty(entries));
 
         Exception err = null;
         for (AuthorizedKeyEntry entry : entries) {
             try {
-                ValidateUtils.checkNotNull(entry.resolvePublicKey(PublicKeyEntryResolver.FAILING), "No public key resolved from %s", entry);
+                ValidateUtils.checkNotNull(entry.resolvePublicKey(null, PublicKeyEntryResolver.FAILING),
+                        "No public key resolved from %s", entry);
             } catch (Exception e) {
                 System.err.append("Failed (").append(e.getClass().getSimpleName()).append(')')
                         .append(" to resolve key of entry=").append(entry.toString())
@@ -127,10 +130,10 @@ public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
     private PublickeyAuthenticator testAuthorizedKeysAuth(Collection<AuthorizedKeyEntry> entries)
             throws IOException, GeneralSecurityException {
         Collection<PublicKey> keySet =
-            PublicKeyEntry.resolvePublicKeyEntries(entries, PublicKeyEntryResolver.FAILING);
+            PublicKeyEntry.resolvePublicKeyEntries(null, entries, PublicKeyEntryResolver.FAILING);
         PublickeyAuthenticator auth =
             PublickeyAuthenticator.fromAuthorizedEntries(
-                getCurrentTestName(), entries, PublicKeyEntryResolver.FAILING);
+                getCurrentTestName(), null, entries, PublicKeyEntryResolver.FAILING);
         for (PublicKey key : keySet) {
             assertTrue("Failed to authenticate with key=" + key.getAlgorithm(), auth.authenticate(getCurrentTestName(), key, null));
         }

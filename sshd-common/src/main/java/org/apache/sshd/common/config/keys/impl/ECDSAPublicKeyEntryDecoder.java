@@ -41,6 +41,7 @@ import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.IdentityResourceLoader;
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
@@ -63,7 +64,8 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
     }
 
     @Override
-    public ECPublicKey decodePublicKey(String keyType, InputStream keyData) throws IOException, GeneralSecurityException {
+    public ECPublicKey decodePublicKey(SessionContext session, String keyType, InputStream keyData)
+            throws IOException, GeneralSecurityException {
         ECCurves curve = ECCurves.fromKeyType(keyType);
         if (curve == null) {
             throw new InvalidKeySpecException("Not an EC curve name: " + keyType);

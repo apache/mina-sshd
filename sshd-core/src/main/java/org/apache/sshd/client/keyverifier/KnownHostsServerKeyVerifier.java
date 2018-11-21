@@ -52,6 +52,7 @@ import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.random.Random;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -159,7 +160,7 @@ public class KnownHostsServerKeyVerifier
             if (checkReloadRequired()) {
                 Path file = getPath();
                 if (exists()) {
-                    knownHosts = reloadKnownHosts(file);
+                    knownHosts = reloadKnownHosts(clientSession, file);
                 } else {
                     if (log.isDebugEnabled()) {
                         log.debug("verifyServerKey({})[{}] missing known hosts file {}",
@@ -186,12 +187,14 @@ public class KnownHostsServerKeyVerifier
     }
 
     /**
+     * @param session The {@link ClientSession} that triggered this request
      * @param file The {@link Path} to reload from
      * @return A {@link List} of the loaded {@link HostEntryPair}s - may be {@code null}/empty
      * @throws IOException If failed to parse the file
      * @throws GeneralSecurityException If failed to resolve the encoded public keys
      */
-    protected List<HostEntryPair> reloadKnownHosts(Path file) throws IOException, GeneralSecurityException {
+    protected List<HostEntryPair> reloadKnownHosts(ClientSession session, Path file)
+            throws IOException, GeneralSecurityException {
         Collection<KnownHostEntry> entries = KnownHostEntry.readKnownHostEntries(file);
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
@@ -207,7 +210,7 @@ public class KnownHostsServerKeyVerifier
         PublicKeyEntryResolver resolver = getFallbackPublicKeyEntryResolver();
         for (KnownHostEntry entry : entries) {
             try {
-                PublicKey key = resolveHostKey(entry, resolver);
+                PublicKey key = resolveHostKey(session, entry, resolver);
                 if (key != null) {
                     keys.add(new HostEntryPair(entry, key));
                 }
@@ -226,6 +229,7 @@ public class KnownHostsServerKeyVerifier
     /**
      * Recover the associated public key from a known host entry
      *
+     * @param session The {@link ClientSession} that triggered this request
      * @param entry The {@link KnownHostEntry} - ignored if {@code null}
      * @param resolver The {@link PublicKeyEntryResolver} to use if immediate
      * - decoding does not work - ignored if {@code null}
@@ -233,17 +237,18 @@ public class KnownHostsServerKeyVerifier
      * @throws IOException If failed to decode the key
      * @throws GeneralSecurityException If failed to generate the key
      * @see #getFallbackPublicKeyEntryResolver()
-     * @see AuthorizedKeyEntry#resolvePublicKey(PublicKeyEntryResolver)
+     * @see AuthorizedKeyEntry#resolvePublicKey(SessionContext, PublicKeyEntryResolver)
      */
-    protected PublicKey resolveHostKey(KnownHostEntry entry, PublicKeyEntryResolver resolver)
-            throws IOException, GeneralSecurityException {
+    protected PublicKey resolveHostKey(
+            ClientSession session, KnownHostEntry entry, PublicKeyEntryResolver resolver)
+                throws IOException, GeneralSecurityException {
         if (entry == null) {
             return null;
         }
 
         AuthorizedKeyEntry authEntry =
             ValidateUtils.checkNotNull(entry.getKeyEntry(), "No key extracted from %s", entry);
-        PublicKey key = authEntry.resolvePublicKey(resolver);
+        PublicKey key = authEntry.resolvePublicKey(session, resolver);
         if (log.isDebugEnabled()) {
             log.debug("resolveHostKey({}) loaded {}-{}", entry, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
         }

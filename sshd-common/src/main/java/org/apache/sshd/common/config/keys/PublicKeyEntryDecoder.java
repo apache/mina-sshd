@@ -31,6 +31,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.Collection;
 
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceLoader;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -46,17 +47,20 @@ public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends Privat
         extends KeyEntryResolver<PUB, PRV>, PublicKeyEntryResolver {
 
     @Override
-    default PublicKey resolve(String keyType, byte[] keyData) throws IOException, GeneralSecurityException {
+    default PublicKey resolve(SessionContext session, String keyType, byte[] keyData)
+            throws IOException, GeneralSecurityException {
         ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type provided");
         Collection<String> supported = getSupportedTypeNames();
         if ((GenericUtils.size(supported) > 0) && supported.contains(keyType)) {
-            return decodePublicKey(keyType, keyData);
+            return decodePublicKey(session, keyType, keyData);
         }
 
         throw new InvalidKeySpecException("resolve(" + keyType + ") not in listed supported types: " + supported);
     }
 
     /**
+     * @param session The {@link SessionContext} for invoking this command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
      * @param keyType The {@code OpenSSH} reported key type
      * @param keyData The key data bytes in {@code OpenSSH} format (after BASE64
      * decoding) - ignored if {@code null}/empty
@@ -64,22 +68,23 @@ public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends Privat
      * @throws IOException              If failed to decode the key
      * @throws GeneralSecurityException If failed to generate the key
      */
-    default PUB decodePublicKey(String keyType, byte... keyData) throws IOException, GeneralSecurityException {
-        return decodePublicKey(keyType, keyData, 0, NumberUtils.length(keyData));
+    default PUB decodePublicKey(SessionContext session, String keyType, byte... keyData)
+            throws IOException, GeneralSecurityException {
+        return decodePublicKey(session, keyType, keyData, 0, NumberUtils.length(keyData));
     }
 
-    default PUB decodePublicKey(String keyType, byte[] keyData, int offset, int length)
+    default PUB decodePublicKey(SessionContext session, String keyType, byte[] keyData, int offset, int length)
             throws IOException, GeneralSecurityException {
         if (length <= 0) {
             return null;
         }
 
         try (InputStream stream = new ByteArrayInputStream(keyData, offset, length)) {
-            return decodePublicKeyByType(keyType, stream);
+            return decodePublicKeyByType(session, keyType, stream);
         }
     }
 
-    default PUB decodePublicKeyByType(String keyType, InputStream keyData)
+    default PUB decodePublicKeyByType(SessionContext session, String keyType, InputStream keyData)
             throws IOException, GeneralSecurityException {
         // the actual data is preceded by a string that repeats the key type
         String type = KeyEntryResolver.decodeString(keyData, KeyPairResourceLoader.MAX_KEY_TYPE_NAME_LENGTH);
@@ -92,10 +97,12 @@ public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends Privat
             throw new InvalidKeySpecException("Reported key type (" + type + ") not in supported list: " + supported);
         }
 
-        return decodePublicKey(type, keyData);
+        return decodePublicKey(session, type, keyData);
     }
 
     /**
+     * @param session The {@link SessionContext} for invoking this command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
      * @param keyType The reported / encode key type
      * @param keyData The key data bytes stream positioned after the key type decoding
      *                and making sure it is one of the supported types
@@ -103,7 +110,8 @@ public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends Privat
      * @throws IOException              If failed to read from the data stream
      * @throws GeneralSecurityException If failed to generate the key
      */
-    PUB decodePublicKey(String keyType, InputStream keyData) throws IOException, GeneralSecurityException;
+    PUB decodePublicKey(SessionContext session, String keyType, InputStream keyData)
+        throws IOException, GeneralSecurityException;
 
     /**
      * Encodes the {@link PublicKey} using the {@code OpenSSH} format - same

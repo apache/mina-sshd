@@ -24,6 +24,8 @@ import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 
+import org.apache.sshd.common.session.SessionContext;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -34,7 +36,7 @@ public interface PublicKeyEntryResolver {
      */
     PublicKeyEntryResolver IGNORING = new PublicKeyEntryResolver() {
         @Override
-        public PublicKey resolve(String keyType, byte[] keyData)
+        public PublicKey resolve(SessionContext session, String keyType, byte[] keyData)
                 throws IOException, GeneralSecurityException {
             return null;
         }
@@ -50,7 +52,7 @@ public interface PublicKeyEntryResolver {
      */
     PublicKeyEntryResolver FAILING = new PublicKeyEntryResolver() {
         @Override
-        public PublicKey resolve(String keyType, byte[] keyData)
+        public PublicKey resolve(SessionContext session, String keyType, byte[] keyData)
                 throws IOException, GeneralSecurityException {
             throw new InvalidKeySpecException("Failing resolver on key type=" + keyType);
         }
@@ -62,12 +64,14 @@ public interface PublicKeyEntryResolver {
     };
 
     /**
+     * @param session The {@link SessionContext} for invoking this load command - may
+     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
      * @param keyType The {@code OpenSSH} reported key type
      * @param keyData The {@code OpenSSH} encoded key data
      * @return The extracted {@link PublicKey} - ignored if {@code null}
      * @throws IOException If failed to parse the key data
      * @throws GeneralSecurityException If failed to generate the key
      */
-    PublicKey resolve(String keyType, byte[] keyData)
+    PublicKey resolve(SessionContext session, String keyType, byte[] keyData)
         throws IOException, GeneralSecurityException;
 }

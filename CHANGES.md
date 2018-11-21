@@ -75,6 +75,8 @@ to return an `Iterable<KeyPair>` instead of single `KeyPair` instance.
 and moved to `PublicKeyEntry` class.
     * Note that the parameters **order** has also been modified
 
+* `PublicKeyEntryResolver` (and its derived classes) accept an extra `SessionContext` parameter.
+
 ## Behavioral changes and enhancements
 
 * [SSHD-757](https://issues.apache.org/jira/browse/SSHD-757) - Added hooks and some initial code to allow (limited) usage
