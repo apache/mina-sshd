@@ -64,12 +64,12 @@ public class DefaultScpFileOpener extends AbstractLoggingBean implements ScpFile
     }
 
     @Override
-    public ScpSourceStreamResolver createScpSourceStreamResolver(Path path) throws IOException {
+    public ScpSourceStreamResolver createScpSourceStreamResolver(Session session, Path path) throws IOException {
         return new LocalFileScpSourceStreamResolver(path, this);
     }
 
     @Override
-    public ScpTargetStreamResolver createScpTargetStreamResolver(Path path) throws IOException {
+    public ScpTargetStreamResolver createScpTargetStreamResolver(Session session, Path path) throws IOException {
         return new LocalFileScpTargetStreamResolver(path, this);
     }
 }

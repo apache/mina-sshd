@@ -55,7 +55,8 @@ public class LocalFileScpSourceStreamResolver extends AbstractLoggingBean implem
         this.name = path.getFileName();
         this.perms = IoUtils.getPermissions(path);
 
-        BasicFileAttributes basic = Files.getFileAttributeView(path, BasicFileAttributeView.class).readAttributes();
+        BasicFileAttributeView view = Files.getFileAttributeView(path, BasicFileAttributeView.class);
+        BasicFileAttributes basic = view.readAttributes();
         this.size = basic.size();
         this.time = new ScpTimestamp(basic.lastModifiedTime().toMillis(), basic.lastAccessTime().toMillis());
     }

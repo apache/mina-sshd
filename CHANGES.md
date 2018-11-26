@@ -79,6 +79,7 @@ and moved to `PublicKeyEntry` class.
 
 * All methods `ScpTransferEventListener` accept an extra `Session` parameter indicating the SSH client/server
 session context for the listener's invocation.
+    * Same applies for `ScpFileOpener`
 
 ## Behavioral changes and enhancements
 

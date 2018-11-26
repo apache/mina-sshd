@@ -58,6 +58,7 @@ public interface ScpFileOpener {
     /**
      * Invoked when receiving a new file to via a directory command
      *
+     * @param session The client/server {@link Session} through which the transfer is being executed
      * @param localPath The target local path
      * @param name The target file name
      * @param preserve Whether requested to preserve the permissions and timestamp
@@ -68,8 +69,8 @@ public interface ScpFileOpener {
      * @see #updateFileProperties(Path, Set, ScpTimestamp) updateFileProperties
      */
     default Path resolveIncomingFilePath(
-            Path localPath, String name, boolean preserve, Set<PosixFilePermission> permissions, ScpTimestamp time)
-                    throws IOException {
+            Session session, Path localPath, String name, boolean preserve, Set<PosixFilePermission> permissions, ScpTimestamp time)
+                throws IOException {
         LinkOption[] options = IoUtils.getLinkOptions(true);
         Boolean status = IoUtils.checkFileExists(localPath, options);
         if (status == null) {
@@ -116,11 +117,12 @@ public interface ScpFileOpener {
     /**
      * Invoked when required to send a pattern of files
      *
+     * @param session The client/server {@link Session} through which the transfer is being executed
      * @param basedir The base directory - may be {@code null}/empty to indicate CWD
      * @param pattern The required pattern
      * @return The matching <U>relative paths</U> of the children to send
      */
-    default Iterable<String> getMatchingFilesToSend(String basedir, String pattern) {
+    default Iterable<String> getMatchingFilesToSend(Session session, String basedir, String pattern) {
         String[] matches = new DirectoryScanner(basedir, pattern).scan();
         if (GenericUtils.isEmpty(matches)) {
             return Collections.emptyList();
@@ -133,13 +135,15 @@ public interface ScpFileOpener {
      * Invoked on a local path in order to decide whether it should be sent
      * as a file or as a directory
      *
+     * @param session The client/server {@link Session} through which the transfer is being executed
      * @param path The local {@link Path}
      * @param options The {@link LinkOption}-s
      * @return Whether to send the file as a regular one - <B>Note:</B> if {@code false}
      * then the {@link #sendAsDirectory(Path, LinkOption...)} is consulted.
      * @throws IOException If failed to decide
      */
-    default boolean sendAsRegularFile(Path path, LinkOption... options) throws IOException {
+    default boolean sendAsRegularFile(Session session, Path path, LinkOption... options)
+            throws IOException {
         return Files.isRegularFile(path, options);
     }
 
@@ -147,20 +151,23 @@ public interface ScpFileOpener {
      * Invoked on a local path in order to decide whether it should be sent
      * as a file or as a directory
      *
+     * @param session The client/server {@link Session} through which the transfer is being executed
      * @param path The local {@link Path}
      * @param options The {@link LinkOption}-s
      * @return Whether to send the file as a directory - <B>Note:</B> if {@code true}
      * then {@link #getLocalFolderChildren(Path)} is consulted
      * @throws IOException If failed to decide
      */
-    default boolean sendAsDirectory(Path path, LinkOption... options) throws IOException {
+    default boolean sendAsDirectory(Session session, Path path, LinkOption... options)
+            throws IOException {
         return Files.isDirectory(path, options);
     }
 
     /**
      * Invoked when required to send all children of a local directory
      *
-     * @param path The local folder {@link Path}{
+     * @param session The client/server {@link Session} through which the transfer is being executed
+     * @param path The local folder {@link Path}
      * @return The {@link DirectoryStream} of children to send - <B>Note:</B> for each child
      * the decision whether to send it as a file or a directory will be reached by consulting
      * the respective {@link #sendAsRegularFile(Path, LinkOption...) sendAsRegularFile} and
@@ -168,26 +175,33 @@ public interface ScpFileOpener {
      * @throws IOException If failed to provide the children stream
      * @see #sendAsDirectory(Path, LinkOption...) sendAsDirectory
      */
-    default DirectoryStream<Path> getLocalFolderChildren(Path path) throws IOException {
+    default DirectoryStream<Path> getLocalFolderChildren(Session session, Path path) throws IOException {
         return Files.newDirectoryStream(path);
     }
 
-    default BasicFileAttributes getLocalBasicFileAttributes(Path path, LinkOption... options) throws IOException {
-        return Files.getFileAttributeView(path, BasicFileAttributeView.class, options).readAttributes();
+    default BasicFileAttributes getLocalBasicFileAttributes(
+            Session session, Path path, LinkOption... options)
+                throws IOException {
+        BasicFileAttributeView view = Files.getFileAttributeView(path, BasicFileAttributeView.class, options);
+        return view.readAttributes();
     }
 
-    default Set<PosixFilePermission> getLocalFilePermissions(Path path, LinkOption... options) throws IOException {
+    default Set<PosixFilePermission> getLocalFilePermissions(
+            Session session, Path path, LinkOption... options)
+                throws IOException {
         return IoUtils.getPermissions(path, options);
     }
 
     /**
+     * @param session The client/server {@link Session} through which the transfer is being executed
      * @param fileSystem The <U>local</U> {@link FileSystem} on which local file should reside
      * @param commandPath The command path using the <U>local</U> file separator
      * @return The resolved absolute and normalized local {@link Path}
      * @throws IOException If failed to resolve the path
      * @throws InvalidPathException If invalid local path value
      */
-    default Path resolveLocalPath(FileSystem fileSystem, String commandPath) throws IOException, InvalidPathException {
+    default Path resolveLocalPath(Session session, FileSystem fileSystem, String commandPath)
+            throws IOException, InvalidPathException {
         String path = SelectorUtils.translateToLocalFileSystemPath(commandPath, File.separatorChar, fileSystem);
         Path lcl = fileSystem.getPath(path);
         Path abs = lcl.isAbsolute() ? lcl : lcl.toAbsolutePath();
@@ -197,6 +211,7 @@ public interface ScpFileOpener {
     /**
      * Invoked when a request to receive something is processed
      *
+     * @param session The client/server {@link Session} through which the transfer is being executed
      * @param path The local target {@link Path} of the request
      * @param recursive Whether the request is recursive
      * @param shouldBeDir Whether target path is expected to be a directory
@@ -205,7 +220,7 @@ public interface ScpFileOpener {
      * @throws IOException If failed to resolve target location
      */
     default Path resolveIncomingReceiveLocation(
-            Path path, boolean recursive, boolean shouldBeDir, boolean preserve)
+            Session session, Path path, boolean recursive, boolean shouldBeDir, boolean preserve)
                 throws IOException {
         if (!shouldBeDir) {
             return path;
@@ -228,12 +243,15 @@ public interface ScpFileOpener {
     /**
      * Called when there is a candidate file/folder for sending
      *
+     * @param session The client/server {@link Session} through which the transfer is being executed
      * @param localPath The original file/folder {@link Path} for sending
      * @param options The {@link LinkOption}-s to use for validation
      * @return The effective outgoing file path (default=same as input)
      * @throws IOException If failed to resolve
      */
-    default Path resolveOutgoingFilePath(Path localPath, LinkOption... options) throws IOException {
+    default Path resolveOutgoingFilePath(
+            Session session, Path localPath, LinkOption... options)
+                throws IOException {
         Boolean status = IoUtils.checkFileExists(localPath, options);
         if (status == null) {
             throw new AccessDeniedException("Send file existence status cannot be determined: " + localPath);
@@ -256,7 +274,7 @@ public interface ScpFileOpener {
      */
     InputStream openRead(Session session, Path file, OpenOption... options) throws IOException;
 
-    ScpSourceStreamResolver createScpSourceStreamResolver(Path path) throws IOException;
+    ScpSourceStreamResolver createScpSourceStreamResolver(Session session, Path path) throws IOException;
 
     /**
      * Create an output stream to write to a file
@@ -269,7 +287,7 @@ public interface ScpFileOpener {
      */
     OutputStream openWrite(Session session, Path file, OpenOption... options) throws IOException;
 
-    ScpTargetStreamResolver createScpTargetStreamResolver(Path path) throws IOException;
+    ScpTargetStreamResolver createScpTargetStreamResolver(Session session, Path path) throws IOException;
 
     static void updateFileProperties(Path file, Set<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
         IoUtils.setPermissions(file, perms);
