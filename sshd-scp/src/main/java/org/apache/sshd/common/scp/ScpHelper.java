@@ -116,7 +116,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     }
 
     public void receiveFileStream(OutputStream local, int bufferSize) throws IOException {
-        receive((line, isDir, timestamp) -> {
+        receive((session, line, isDir, timestamp) -> {
             if (isDir) {
                 throw new StreamCorruptedException("Cannot download a directory into a file stream: " + line);
             }
@@ -130,7 +130,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                             throws IOException {
                     if (log.isDebugEnabled()) {
                         log.debug("resolveTargetStream({}) name={}, perms={}, len={} - started local stream download",
-                                  ScpHelper.this, name, perms, length);
+                              ScpHelper.this, name, perms, length);
                     }
                     return local;
                 }
@@ -147,7 +147,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                             throws IOException {
                     if (log.isDebugEnabled()) {
                         log.debug("postProcessReceivedData({}) name={}, perms={}, preserve={} time={}",
-                                  ScpHelper.this, name, perms, preserve, time);
+                              ScpHelper.this, name, perms, preserve, time);
                     }
                 }
 
@@ -162,7 +162,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     public void receive(Path local, boolean recursive, boolean shouldBeDir, boolean preserve, int bufferSize) throws IOException {
         Path localPath = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
         Path path = opener.resolveIncomingReceiveLocation(getSession(), localPath, recursive, shouldBeDir, preserve);
-        receive((line, isDir, time) -> {
+        receive((session, line, isDir, time) -> {
             if (recursive && isDir) {
                 receiveDir(line, path, time, preserve, bufferSize);
             } else {
@@ -174,7 +174,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     protected void receive(ScpReceiveLineHandler handler) throws IOException {
         ack();
         ScpTimestamp time = null;
-        for (;;) {
+        for (Session session = getSession();;) {
             String line;
             boolean isDir = false;
             int c = readAck(true);
@@ -219,7 +219,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             }
 
             try {
-                handler.process(line, isDir, time);
+                handler.process(session, line, isDir, time);
             } finally {
                 time = null;
             }

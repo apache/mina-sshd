@@ -44,8 +44,9 @@ public interface ScpTargetStreamResolver {
      * @return The {@link OutputStream} to write the incoming data
      * @throws IOException If failed to create the stream
      */
-    OutputStream resolveTargetStream(Session session, String name, long length,
-            Set<PosixFilePermission> perms, OpenOption... options) throws IOException;
+    OutputStream resolveTargetStream(
+        Session session, String name, long length, Set<PosixFilePermission> perms, OpenOption... options)
+            throws IOException;
 
     /**
      * @return The {@link Path} to use when invoking the {@link ScpTransferEventListener}
@@ -63,5 +64,7 @@ public interface ScpTargetStreamResolver {
      *                 incoming data
      * @throws IOException If failed to post-process the incoming data
      */
-    void postProcessReceivedData(String name, boolean preserve, Set<PosixFilePermission> perms, ScpTimestamp time) throws IOException;
+    void postProcessReceivedData(
+            String name, boolean preserve, Set<PosixFilePermission> perms, ScpTimestamp time)
+                throws IOException;
 }
