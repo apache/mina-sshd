@@ -39,6 +39,7 @@ import org.apache.sshd.client.scp.ScpClientCreator;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.scp.ScpLocation;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.threads.ThreadUtils;
@@ -206,28 +207,37 @@ public class ScpCommandMain extends SshClientCliSupport {
                 if (!quiet) {
                     creator.setScpTransferEventListener(new ScpTransferEventListener() {
                         @Override
-                        public void startFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms) {
-                            logEvent("startFolderEvent", op, file, -1L, perms, null);
+                        public void startFolderEvent(
+                                Session session, FileOperation op, Path file, Set<PosixFilePermission> perms) {
+                            logEvent("startFolderEvent", session, op, file, -1L, perms, null);
                         }
 
                         @Override
-                        public void endFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown) {
-                            logEvent("endFolderEvent", op, file, -1L, perms, thrown);
+                        public void endFolderEvent(
+                                Session session, FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown) {
+                            logEvent("endFolderEvent", session, op, file, -1L, perms, thrown);
                         }
 
                         @Override
-                        public void startFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms) {
-                            logEvent("startFileEvent", op, file, length, perms, null);
+                        public void startFileEvent(
+                                Session session, FileOperation op, Path file, long length, Set<PosixFilePermission> perms) {
+                            logEvent("startFileEvent", session, op, file, length, perms, null);
                         }
 
                         @Override
-                        public void endFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown) {
-                            logEvent("endFileEvent", op, file, length, perms, thrown);
+                        public void endFileEvent(
+                                Session session, FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown) {
+                            logEvent("endFileEvent", session, op, file, length, perms, thrown);
                         }
 
-                        private void logEvent(String name, FileOperation op, Path file, long length, Collection<PosixFilePermission> perms, Throwable thrown) {
+                        private void logEvent(
+                                String name, Session session, FileOperation op, Path file, long length,
+                                Collection<PosixFilePermission> perms, Throwable thrown) {
                             PrintStream ps = (thrown == null) ? stdout : stderr;
-                            ps.append('\t').append(name).append('[').append(op.name()).append(']').append(' ').append(file.toString());
+                            ps.append("    ").append(name)
+                                .append('[').append(session.toString()).append(']')
+                                .append('[').append(op.name()).append(']')
+                                .append(' ').append(file.toString());
                             if (length > 0L) {
                                 ps.append(' ').append("length=").append(Long.toString(length));
                             }

@@ -92,32 +92,39 @@ import ch.ethz.ssh2.SCPClient;
 public class ScpTest extends BaseTestSupport {
     private static final ScpTransferEventListener DEBUG_LISTENER = new ScpTransferEventListener() {
         @Override
-        public void startFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms) {
-            logEvent("starFolderEvent", op, file, false, -1L, perms, null);
+        public void startFolderEvent(
+                Session s, FileOperation op, Path file, Set<PosixFilePermission> perms) {
+            logEvent("starFolderEvent", s, op, file, false, -1L, perms, null);
         }
 
         @Override
-        public void startFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms) {
-            logEvent("startFileEvent", op, file, true, length, perms, null);
+        public void startFileEvent(
+                Session s, FileOperation op, Path file, long length, Set<PosixFilePermission> perms) {
+            logEvent("startFileEvent", s, op, file, true, length, perms, null);
 
         }
 
         @Override
-        public void endFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown) {
-            logEvent("endFolderEvent", op, file, false, -1L, perms, thrown);
+        public void endFolderEvent(
+                Session s, FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown) {
+            logEvent("endFolderEvent", s, op, file, false, -1L, perms, thrown);
         }
 
         @Override
-        public void endFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown) {
-            logEvent("endFileEvent", op, file, true, length, perms, thrown);
+        public void endFileEvent(
+                Session s, FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown) {
+            logEvent("endFileEvent", s, op, file, true, length, perms, thrown);
         }
 
-        private void logEvent(String type, FileOperation op, Path path, boolean isFile, long length, Collection<PosixFilePermission> perms, Throwable t) {
+        private void logEvent(
+                String type, Session s, FileOperation op, Path path, boolean isFile,
+                long length, Collection<PosixFilePermission> perms, Throwable t) {
             if (!OUTPUT_DEBUG_MESSAGES) {
                 return; // just in case
             }
             StringBuilder sb = new StringBuilder(Byte.MAX_VALUE);
-            sb.append('\t').append(type)
+            sb.append("    ").append(type)
+                    .append('[').append(s).append(']')
                     .append('[').append(op).append(']')
                     .append(' ').append(isFile ? "File" : "Directory").append('=').append(path)
                     .append(' ').append("length=").append(length)

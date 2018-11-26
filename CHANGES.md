@@ -77,6 +77,9 @@ and moved to `PublicKeyEntry` class.
 
 * `PublicKeyEntryResolver` (and its derived classes) accept an extra `SessionContext` parameter.
 
+* All methods `ScpTransferEventListener` accept an extra `Session` parameter indicating the SSH client/server
+session context for the listener's invocation.
+
 ## Behavioral changes and enhancements
 
 * [SSHD-757](https://issues.apache.org/jira/browse/SSHD-757) - Added hooks and some initial code to allow (limited) usage

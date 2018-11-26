@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Set;
 
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.SshdEventListener;
 
 /**
@@ -48,6 +49,7 @@ public interface ScpTransferEventListener extends SshdEventListener {
     };
 
     /**
+     * @param session The client/server {@link Session} through which the transfer is being executed
      * @param op     The {@link FileOperation}
      * @param file   The <U>local</U> referenced file {@link Path}
      * @param length Size (in bytes) of transferred data
@@ -55,11 +57,14 @@ public interface ScpTransferEventListener extends SshdEventListener {
      *               once transfer is complete
      * @throws IOException If failed to handle the event
      */
-    default void startFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms) throws IOException {
+    default void startFileEvent(
+        Session session, FileOperation op, Path file, long length, Set<PosixFilePermission> perms)
+            throws IOException {
         // ignored
     }
 
     /**
+     * @param session The client/server {@link Session} through which the transfer is being executed
      * @param op     The {@link FileOperation}
      * @param file   The <U>local</U> referenced file {@link Path}
      * @param length Size (in bytes) of transferred data
@@ -69,23 +74,28 @@ public interface ScpTransferEventListener extends SshdEventListener {
      *               reception was successful
      * @throws IOException If failed to handle the event
      */
-    default void endFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown)
+    default void endFileEvent(
+        Session session, FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown)
             throws IOException {
                 // ignored
     }
 
     /**
+     * @param session The client/server {@link Session} through which the transfer is being executed
      * @param op    The {@link FileOperation}
      * @param file  The <U>local</U> referenced folder {@link Path}
      * @param perms A {@link Set} of {@link PosixFilePermission}s to be applied
      *              once transfer is complete
      * @throws IOException If failed to handle the event
      */
-    default void startFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms) throws IOException {
+    default void startFolderEvent(
+        Session session, FileOperation op, Path file, Set<PosixFilePermission> perms)
+            throws IOException {
         // ignored
     }
 
     /**
+     * @param session The client/server {@link Session} through which the transfer is being executed
      * @param op     The {@link FileOperation}
      * @param file   The <U>local</U> referenced file {@link Path}
      * @param perms  A {@link Set} of {@link PosixFilePermission}s to be applied
@@ -94,7 +104,8 @@ public interface ScpTransferEventListener extends SshdEventListener {
      *               reception was successful
      * @throws IOException If failed to handle the event
      */
-    default void endFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown)
+    default void endFolderEvent(
+        Session session, FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown)
             throws IOException {
         // ignored
     }

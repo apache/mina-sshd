@@ -248,7 +248,9 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         ack();
 
         time = null;
-        listener.startFolderEvent(FileOperation.RECEIVE, path, perms);
+
+        Session session = getSession();
+        listener.startFolderEvent(session, FileOperation.RECEIVE, path, perms);
         try {
             for (;;) {
                 header = readLine();
@@ -272,10 +274,10 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                 }
             }
         } catch (IOException | RuntimeException e) {
-            listener.endFolderEvent(FileOperation.RECEIVE, path, perms, e);
+            listener.endFolderEvent(session, FileOperation.RECEIVE, path, perms, e);
             throw e;
         }
-        listener.endFolderEvent(FileOperation.RECEIVE, path, perms, null);
+        listener.endFolderEvent(session, FileOperation.RECEIVE, path, perms, null);
     }
 
     public void receiveFile(String header, Path local, ScpTimestamp time, boolean preserve, int bufferSize) throws IOException {
@@ -330,14 +332,15 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             ack();
 
             Path file = resolver.getEventListenerFilePath();
-            listener.startFileEvent(FileOperation.RECEIVE, file, length, perms);
+            Session session = getSession();
+            listener.startFileEvent(session, FileOperation.RECEIVE, file, length, perms);
             try {
                 IoUtils.copy(is, os, bufSize);
             } catch (IOException | RuntimeException e) {
-                listener.endFileEvent(FileOperation.RECEIVE, file, length, perms, e);
+                listener.endFileEvent(session, FileOperation.RECEIVE, file, length, perms, e);
                 throw e;
             }
-            listener.endFileEvent(FileOperation.RECEIVE, file, length, perms, null);
+            listener.endFileEvent(session, FileOperation.RECEIVE, file, length, perms, null);
         }
 
         resolver.postProcessReceivedData(name, preserve, perms, time);
@@ -545,16 +548,17 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         }
         validateAckReplyCode(cmd, resolver, readyCode, false);
 
-        try (InputStream in = resolver.resolveSourceStream(getSession())) {
+        Session session = getSession();
+        try (InputStream in = resolver.resolveSourceStream(session)) {
             Path path = resolver.getEventListenerFilePath();
-            listener.startFileEvent(FileOperation.SEND, path, fileSize, perms);
+            listener.startFileEvent(session, FileOperation.SEND, path, fileSize, perms);
             try {
                 IoUtils.copy(in, out, bufSize);
             } catch (IOException | RuntimeException e) {
-                listener.endFileEvent(FileOperation.SEND, path, fileSize, perms, e);
+                listener.endFileEvent(session, FileOperation.SEND, path, fileSize, perms, e);
                 throw e;
             }
-            listener.endFileEvent(FileOperation.SEND, path, fileSize, perms, null);
+            listener.endFileEvent(session, FileOperation.SEND, path, fileSize, perms, null);
         }
         ack();
 
@@ -640,8 +644,9 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         }
         validateAckReplyCode(cmd, path, readyCode, false);
 
+        Session session = getSession();
         try (DirectoryStream<Path> children = opener.getLocalFolderChildren(path)) {
-            listener.startFolderEvent(FileOperation.SEND, path, perms);
+            listener.startFolderEvent(session, FileOperation.SEND, path, perms);
 
             try {
                 for (Path child : children) {
@@ -652,11 +657,11 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                     }
                 }
             } catch (IOException | RuntimeException e) {
-                listener.endFolderEvent(FileOperation.SEND, path, perms, e);
+                listener.endFolderEvent(session, FileOperation.SEND, path, perms, e);
                 throw e;
             }
 
-            listener.endFolderEvent(FileOperation.SEND, path, perms, null);
+            listener.endFolderEvent(session, FileOperation.SEND, path, perms, null);
         }
 
         if (debugEnabled) {

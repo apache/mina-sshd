@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Set;
 
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -40,35 +41,42 @@ public abstract class AbstractScpTransferEventListenerAdapter
     }
 
     @Override
-    public void startFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms)
-            throws IOException {
+    public void startFileEvent(
+            Session session, FileOperation op, Path file, long length, Set<PosixFilePermission> perms)
+                throws IOException {
         if (log.isTraceEnabled()) {
-            log.trace("startFileEvent(op=" + op + ", file=" + file + ", length=" + length + ", permissions=" + perms + ")");
+            log.trace("startFileEvent({})[{}] - length={}, permissions={}, file={}", session, op, length, perms, file);
         }
     }
 
     @Override
-    public void endFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown)
-            throws IOException {
+    public void endFileEvent(
+            Session session, FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown)
+                throws IOException {
         if (log.isTraceEnabled()) {
-            log.trace("endFileEvent(op=" + op + ", file=" + file + ", length=" + length + ", permissions=" + perms + ")"
-                    + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+            log.trace("endFileEvent({})[{}] - length={}, permissions={}, file={} - {}",
+                session, op, length, perms, file,
+                (thrown == null) ? "OK" : thrown.getClass().getSimpleName() + ": " + thrown.getMessage());
         }
     }
 
     @Override
-    public void startFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms) throws IOException {
+    public void startFolderEvent(
+            Session session, FileOperation op, Path file, Set<PosixFilePermission> perms)
+                throws IOException {
         if (log.isTraceEnabled()) {
-            log.trace("startFolderEvent(op=" + op + ", file=" + file + ", permissions=" + perms + ")");
+            log.trace("startFolderEvent({})[{}] - permissions={}, file={}", session, op, perms, file);
         }
     }
 
     @Override
-    public void endFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown)
-            throws IOException {
+    public void endFolderEvent(
+            Session session, FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown)
+                throws IOException {
         if (log.isTraceEnabled()) {
-            log.trace("endFolderEvent(op=" + op + ", file=" + file + ", permissions=" + perms + ")"
-                    + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+            log.trace("endFolderEvent({})[{}] - permissions={}, file={} - {}",
+                session, op, perms, file,
+                (thrown == null) ? "OK" : thrown.getClass().getSimpleName() + ": " + thrown.getMessage());
         }
     }
 }
