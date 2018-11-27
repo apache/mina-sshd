@@ -79,7 +79,9 @@ and moved to `PublicKeyEntry` class.
 
 * All methods `ScpTransferEventListener` accept an extra `Session` parameter indicating the SSH client/server
 session context for the listener's invocation.
-    * Same applies for `ScpFileOpener`
+    * Same applies for `ScpFileOpener` and `ScpReceiveLineHandler`
+
+* Re-provide expected SCP byte count transfer and permissions when invoking `ScpFileOpener#openRead/openWrite`
 
 ## Behavioral changes and enhancements
 

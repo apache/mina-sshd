@@ -762,17 +762,42 @@ A default `ScpClientCreator` instance is provided as part of the module - see `S
 As part of the `ScpClientCreator`, the SCP module also uses a `ScpFileOpener` instance in order to access
 the local files. The default implementation simply opens an [InputStream](https://docs.oracle.com/javase/8/docs/api/java/io/InputStream.html)
 or [OutputStream](https://docs.oracle.com/javase/8/docs/api/java/io/OutputStream.html) on the requested local path. However,
-the user may replace it and intercept the calls - e.g., for logging, for wrapping/filtering the streams, etc... The user may
-attach a default opener that will be automatically attached to **all** clients created unless specifically overridden:
+the user may replace it and intercept the calls - e.g., for logging, monitoring transfer progess, wrapping/filtering the streams, etc...
+The user may attach a default opener that will be automatically attached to **all** clients created unless specifically overridden:
 
 ```java
 
+/**
+ * Example of using a non-default opener for monitoring and reporting on transfer progress
+ */
+public class ScpTransferProgressMonitor extends DefaultScpFileOpener {
+    public static ScpTransferProgressMonitor MONITOR = new ScpTransferProgressMonitor();
+
+    public ScpTransferProgressMonitor() {
+        super();
+    }
+
+    @Override
+    public InputStream openRead(
+            Session session, Path file, long size, Set<PosixFilePermission> permissions, OpenOption... options)
+                throws IOException {
+        return new MyProgressReportingInputStream(super.openRead(session, file, size, permissions, options), size /* how much is expected */);
+    }
+
+    @Override
+    public OutputStream openWrite(
+            Session session, Path file, long size, Set<PosixFilePermission> permissions, OpenOption... options)
+                throws IOException {
+        return new MyProgressReportingOutputStream(super.openWrite(session, file, size, permissions, options), size /* how much is expected */);
+    }
+}
+
 ClientSession session = ... obtain an instance ...
 ScpClientCreator creator = ... obtain an instance ...
-creator.setScpFileOpener(new MySuperDuperOpener());
+creator.setScpFileOpener(ScpTransferProgressMonitor.INSTANCE);
 
-ScpClient client1 = creator.createScpClient(session);   // <<== automatically uses MySuperDuperOpener
-ScpClient client2 = creator.createScpClient(session, new SomeOtherOpener());   // <<== uses SomeOtherOpener instead of MySuperDuperOpener
+ScpClient client1 = creator.createScpClient(session);   // <<== automatically uses ScpTransferProgressMonitor
+ScpClient client2 = creator.createScpClient(session, new SomeOtherOpener());   // <<== uses SomeOtherOpener instead of ScpTransferProgressMonitor
 
 ```
 

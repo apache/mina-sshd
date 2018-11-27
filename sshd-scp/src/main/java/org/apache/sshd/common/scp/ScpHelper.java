@@ -328,7 +328,8 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
 
         try (
                 InputStream is = new LimitInputStream(this.in, length);
-                OutputStream os = resolver.resolveTargetStream(getSession(), name, length, perms)
+                OutputStream os = resolver.resolveTargetStream(
+                    getSession(), name, length, perms, IoUtils.EMPTY_OPEN_OPTIONS)
         ) {
             ack();
 
@@ -553,7 +554,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         validateAckReplyCode(cmd, resolver, readyCode, false);
 
         Session session = getSession();
-        try (InputStream in = resolver.resolveSourceStream(session)) {
+        try (InputStream in = resolver.resolveSourceStream(session, fileSize, perms, IoUtils.EMPTY_OPEN_OPTIONS)) {
             Path path = resolver.getEventListenerFilePath();
             listener.startFileEvent(session, FileOperation.SEND, path, fileSize, perms);
             try {

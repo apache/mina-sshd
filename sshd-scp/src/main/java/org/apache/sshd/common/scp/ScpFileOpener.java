@@ -268,11 +268,15 @@ public interface ScpFileOpener {
      *
      * @param session The {@link Session} requesting the access
      * @param file The requested local file {@link Path}
+     * @param size The expected transfer bytes count
+     * @param permissions The requested file permissions
      * @param options The {@link OpenOption}s - may be {@code null}/empty
      * @return The open {@link InputStream} never {@code null}
      * @throws IOException If failed to open the file
      */
-    InputStream openRead(Session session, Path file, OpenOption... options) throws IOException;
+    InputStream openRead(
+        Session session, Path file, long size, Set<PosixFilePermission> permissions, OpenOption... options)
+            throws IOException;
 
     ScpSourceStreamResolver createScpSourceStreamResolver(Session session, Path path) throws IOException;
 
@@ -281,11 +285,15 @@ public interface ScpFileOpener {
      *
      * @param session The {@link Session} requesting the access
      * @param file The requested local file {@link Path}
+     * @param size The expected transfer byte count
+     * @param permissions The requested file permissions
      * @param options The {@link OpenOption}s - may be {@code null}/empty
      * @return The open {@link OutputStream} never {@code null}
      * @throws IOException If failed to open the file
      */
-    OutputStream openWrite(Session session, Path file, OpenOption... options) throws IOException;
+    OutputStream openWrite(
+        Session session, Path file, long size, Set<PosixFilePermission> permissions, OpenOption... options)
+            throws IOException;
 
     ScpTargetStreamResolver createScpTargetStreamResolver(Session session, Path path) throws IOException;
 

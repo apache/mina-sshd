@@ -25,6 +25,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
+import java.util.Set;
 
 import org.apache.sshd.common.session.Session;
 
@@ -65,9 +66,13 @@ public interface ScpSourceStreamResolver {
 
     /**
      * @param session The {@link Session} through which file is transmitted
+     * @param fileSize The expected transfer byte count
+     * @param permissions The requested file permissions
      * @param options The {@link OpenOption}s may be {@code null}/empty
      * @return The {@link InputStream} containing the data to be uploaded
      * @throws IOException If failed to create the stream
      */
-    InputStream resolveSourceStream(Session session, OpenOption... options) throws IOException;
+    InputStream resolveSourceStream(
+        Session session, long fileSize, Set<PosixFilePermission> permissions, OpenOption... options)
+            throws IOException;
 }

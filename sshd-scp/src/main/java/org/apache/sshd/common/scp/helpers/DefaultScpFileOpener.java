@@ -25,7 +25,9 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.Arrays;
+import java.util.Set;
 
 import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpSourceStreamResolver;
@@ -44,20 +46,24 @@ public class DefaultScpFileOpener extends AbstractLoggingBean implements ScpFile
     }
 
     @Override
-    public InputStream openRead(Session session, Path file, OpenOption... options) throws IOException {
+    public InputStream openRead(
+            Session session, Path file, long size, Set<PosixFilePermission> permissions, OpenOption... options)
+                throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("openRead({}) file={}, options={}",
-                      session, file, Arrays.toString(options));
+            log.debug("openRead({}) size={}, permissions={}, file={}, options={}",
+                  session, size, permissions, file, Arrays.toString(options));
         }
 
         return Files.newInputStream(file, options);
     }
 
     @Override
-    public OutputStream openWrite(Session session, Path file, OpenOption... options) throws IOException {
+    public OutputStream openWrite(
+            Session session, Path file, long size, Set<PosixFilePermission> permissions, OpenOption... options)
+                throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("openWrite({}) file={}, options={}",
-                      session, file, Arrays.toString(options));
+            log.debug("openWrite({}) size={}, permissions={}, file={}, options={}",
+                  session, size, permissions, file, Arrays.toString(options));
         }
 
         return Files.newOutputStream(file, options);

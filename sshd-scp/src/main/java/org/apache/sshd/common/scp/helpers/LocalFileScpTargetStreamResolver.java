@@ -62,8 +62,9 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
     }
 
     @Override
-    public OutputStream resolveTargetStream(Session session, String name, long length,
-            Set<PosixFilePermission> perms, OpenOption... options) throws IOException {
+    public OutputStream resolveTargetStream(
+            Session session, String name, long length, Set<PosixFilePermission> perms, OpenOption... options)
+                throws IOException {
         if (file != null) {
             throw new StreamCorruptedException("resolveTargetStream(" + name + ")[" + perms + "] already resolved: " + file);
         }
@@ -110,7 +111,7 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
             log.trace("resolveTargetStream(" + name + "): " + file);
         }
 
-        return opener.openWrite(session, file, options);
+        return opener.openWrite(session, file, length, perms, options);
     }
 
     @Override
@@ -123,7 +124,9 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
     }
 
     @Override
-    public void postProcessReceivedData(String name, boolean preserve, Set<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
+    public void postProcessReceivedData(
+            String name, boolean preserve, Set<PosixFilePermission> perms, ScpTimestamp time)
+                throws IOException {
         if (file == null) {
             throw new StreamCorruptedException("postProcessReceivedData(" + name + ")[" + perms + "] No currently resolved data");
         }
@@ -133,7 +136,9 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
         }
     }
 
-    protected void updateFileProperties(String name, Path path, Set<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
+    protected void updateFileProperties(
+            String name, Path path, Set<PosixFilePermission> perms, ScpTimestamp time)
+                throws IOException {
         boolean traceEnabled = log.isTraceEnabled();
         if (traceEnabled) {
             log.trace("updateFileProperties(" + name + ")[" + path + "] permissions: " + perms);

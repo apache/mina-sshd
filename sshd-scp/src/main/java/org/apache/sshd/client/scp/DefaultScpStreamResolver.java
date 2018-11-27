@@ -24,6 +24,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
+import java.util.Set;
 
 import org.apache.sshd.common.scp.ScpSourceStreamResolver;
 import org.apache.sshd.common.scp.ScpTimestamp;
@@ -38,10 +39,12 @@ public class DefaultScpStreamResolver implements ScpSourceStreamResolver {
     private final Collection<PosixFilePermission> perms;
     private final ScpTimestamp time;
     private final long size;
-    private final java.io.InputStream local;
+    private final InputStream local;
     private final String cmd;
 
-    public DefaultScpStreamResolver(String name, Path mockPath, Collection<PosixFilePermission> perms, ScpTimestamp time, long size, InputStream local, String cmd) {
+    public DefaultScpStreamResolver(
+            String name, Path mockPath, Collection<PosixFilePermission> perms,
+            ScpTimestamp time, long size, InputStream local, String cmd) {
         this.name = name;
         this.mockPath = mockPath;
         this.perms = perms;
@@ -77,7 +80,9 @@ public class DefaultScpStreamResolver implements ScpSourceStreamResolver {
     }
 
     @Override
-    public InputStream resolveSourceStream(Session session, OpenOption... options) throws IOException {
+    public InputStream resolveSourceStream(
+            Session session, long length, Set<PosixFilePermission> permissions, OpenOption... options)
+                throws IOException {
         return local;
     }
 

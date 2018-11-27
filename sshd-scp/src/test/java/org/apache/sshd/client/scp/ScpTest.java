@@ -745,17 +745,23 @@ public class ScpTest extends BaseTestSupport {
             }
 
             @Override
-            public InputStream openRead(Session session, Path file, OpenOption... options) throws IOException {
+            public InputStream openRead(
+                    Session session, Path file, long size, Set<PosixFilePermission> permissions, OpenOption... options)
+                        throws IOException {
                 int count = readCount.incrementAndGet();
-                outputDebugMessage("openRead(%s)[%s] count=%d", session, file, count);
-                return super.openRead(session, file, options);
+                outputDebugMessage("openRead(%s)[size=%d][%s] permissions=%s: count=%d",
+                    session, size, file, permissions, count);
+                return super.openRead(session, file, size, permissions, options);
             }
 
             @Override
-            public OutputStream openWrite(Session session, Path file, OpenOption... options) throws IOException {
+            public OutputStream openWrite(
+                    Session session, Path file, long size, Set<PosixFilePermission> permissions, OpenOption... options)
+                        throws IOException {
                 int count = writeCount.incrementAndGet();
-                outputDebugMessage("openWrite(%s)[%s] count=%d", session, file, count);
-                return super.openWrite(session, file, options);
+                outputDebugMessage("openWrite(%s)[size=%d][%s] permissions=%s: count=%d",
+                    session, size, file, permissions, count);
+                return super.openWrite(session, file, size, permissions, options);
             }
         }
 
