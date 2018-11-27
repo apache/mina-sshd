@@ -15,4 +15,9 @@ RemoteSystemsTempFiles/
 .idea
 .springBeans
 .externalToolBuilders
+
+# Serialized objects
 *.ser
+
+# Locks and temporary files
+*~

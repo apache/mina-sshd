@@ -121,6 +121,9 @@ in order to provide key file(s) location information
 * [SSHD-866](https://issues.apache.org/jira/browse/SSHD-866) - Counting empty challenges separately when enforcing
 max. attempts during `keyboard-interactive` authentication
 
+* [SSHD-870](https://issues.apache.org/jira/browse/SSHD-870) - Added hooks and some initial code to allow (limited) usage
+of [OpenPGP](https://www.openpgp.org/) key rings in `authorized_keys` files
+
 * `SftpCommandMain` shows by default `get/put` command progress using the hash sign (`#`) marker. The marker
 can be enabled/disabled via the `progress` command:
 

@@ -1975,6 +1975,7 @@ instance with one that is derived from it and overrides the `createDelegateAuthe
 as shown below:
 
 ```java
+// Using PGPAuthorizedEntriesTracker
 public class MyAuthorizedKeysAuthenticatorWithBothPGPAndSsh extends AuthorizedKeysAuthenticator {
     ... constructor(s) ...
 
@@ -1993,7 +1994,30 @@ public class MyAuthorizedKeysAuthenticatorWithBothPGPAndSsh extends AuthorizedKe
         }
     }
 }
+
+// Using PGPPublicRingWatcher
+public class MyAuthorizedKeysAuthenticatorWithBothPGPAndSsh extends AuthorizedKeysAuthenticator {
+    ... constructor(s) ...
+
+    @Override
+    protected PublickeyAuthenticator createDelegateAuthenticator(
+            String username, ServerSession session, Path path,
+            Collection<AuthorizedKeyEntry> entries, PublicKeyEntryResolver fallbackResolver)
+                throws IOException, GeneralSecurityException {
+        PGPPublicRingWatcher watcher = ... obtain an instance ...
+        // Note: need to catch the PGPException and transform it into either an IOException or a GeneralSecurityException
+        Collection<PublicKey> keys = watcher.resolveAuthorizedEntries(session, entries, fallbackResolver);
+        if (GenericUtils.isEmpty(keys)) {
+            return RejectAllPublickeyAuthenticator.INSTANCE;
+        } else {
+            return new KeySetPublickeyAuthenticator(id, keys);
+        }
+    }
+}
+
 ```
+
+**Note:** seems that currently, this capability is limited to v1.x key rings (see [jpgpj - issue 21](https://github.com/justinludwig/jpgpj/issues/21))
 
 ## Useful extra components in _sshd-contrib_
 

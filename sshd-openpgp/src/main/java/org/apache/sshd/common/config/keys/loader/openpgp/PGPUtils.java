@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.config.keys.loader.openpgp;
 
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -26,7 +27,9 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.apache.sshd.common.config.keys.IdentityUtils;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.c02e.jpgpj.CompressionAlgorithm;
 import org.c02e.jpgpj.EncryptionAlgorithm;
@@ -40,6 +43,9 @@ import org.c02e.jpgpj.Subkey;
  */
 public final class PGPUtils {
     public static final String DEFAULT_PGP_FILE_SUFFIX = ".gpg";
+
+    public static final String STD_LINUX_PGP_FOLDER_NAME = ".gnupg";
+    public static final String STD_WINDOWS_PGP_FOLDER_NAME = "gnupg";
 
     /** Default MIME type for PGP encrypted files */
     public static final String PGP_ENCRYPTED_FILE = "application/pgp-encrypted";
@@ -151,4 +157,24 @@ public final class PGPUtils {
             .findFirst()
             .orElse(null);
     }
+
+    private static final class LazyDefaultPgpKeysFolderHolder {
+        private static final Path PATH =
+            IdentityUtils.getUserHomeFolder()
+                .resolve(OsUtils.isUNIX() ? STD_LINUX_PGP_FOLDER_NAME : STD_WINDOWS_PGP_FOLDER_NAME);
+
+        private LazyDefaultPgpKeysFolderHolder() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
+    }
+
+    /**
+     * @return The default <A HREF="https://www.gnupg.org/">Gnu Privacy Guard</A> folder used
+     * to hold key files.
+     */
+    @SuppressWarnings("synthetic-access")
+    public static Path getDefaultPgpFolderPath() {
+        return LazyDefaultPgpKeysFolderHolder.PATH;
+    }
+
 }

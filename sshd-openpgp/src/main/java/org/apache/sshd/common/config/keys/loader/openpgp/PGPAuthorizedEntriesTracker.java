@@ -20,10 +20,8 @@
 package org.apache.sshd.common.config.keys.loader.openpgp;
 
 import java.io.IOException;
-import java.io.StreamCorruptedException;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.KeySpec;
@@ -33,15 +31,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.FilePasswordProviderManager;
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.config.keys.PublicKeyEntry;
-import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
-import org.apache.sshd.common.keyprovider.KeyTypeIndicator;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.resource.PathResource;
@@ -58,7 +52,8 @@ import org.c02e.jpgpj.Subkey;
  */
 public class PGPAuthorizedEntriesTracker
         extends AbstractLoggingBean
-        implements PGPPublicKeyExtractor, FilePasswordProviderManager, PublicKeyEntryResolver {
+        implements PGPAuthorizedKeyEntriesLoader,
+        FilePasswordProviderManager {
     private FilePasswordProvider filePasswordProvider;
     private final List<PGPPublicKeyFileWatcher> keyFiles;
 
@@ -100,97 +95,13 @@ public class PGPAuthorizedEntriesTracker
         return keyFiles;
     }
 
-    @Override
-    public PublicKey resolve(SessionContext session, String keyType, byte[] keyData)
-            throws IOException, GeneralSecurityException {
-        if (!PGPPublicKeyEntryDataResolver.PGP_KEY_TYPES.contains(keyType)) {
-            return null;
-        }
-
-        String fingerprint = PGPPublicKeyEntryDataResolver.encodeKeyFingerprint(keyData);
-        if (GenericUtils.isEmpty(fingerprint)) {
-            return null;
-        }
-
-        Collection<PublicKey> keys;
-        try {
-            keys = loadMatchingKeyFingerprints(session, Collections.singletonList(fingerprint));
-        } catch (PGPException e) {
-            throw new InvalidKeyException("Failed (" + e.getClass().getSimpleName() + ")"
-                    + " to load key type=" + keyType + " with fingerprint=" + fingerprint
-                    + ": " + e.getMessage(), e);
-        }
-
-        int numKeys = GenericUtils.size(keys);
-        if (numKeys > 1) {
-            throw new StreamCorruptedException("Multiple matches (" + numKeys + ")"
-                + " for " + keyType + " fingerprint=" + fingerprint);
-        }
-
-        return GenericUtils.head(keys);
-    }
-
     public void addWatchedFile(Path p) {
         Objects.requireNonNull(p, "No file provided");
         List<PGPPublicKeyFileWatcher> files = getWatchedFiles();
         files.add(new PGPPublicKeyFileWatcher(p));
     }
 
-    public List<PublicKey> resolveAuthorizedEntries(
-            SessionContext session, Collection<? extends PublicKeyEntry> entries, PublicKeyEntryResolver fallbackResolver)
-                throws IOException, GeneralSecurityException, PGPException {
-        Map<String, ? extends Collection<PublicKeyEntry>> typesMap = KeyTypeIndicator.groupByKeyType(entries);
-        if (GenericUtils.isEmpty(typesMap)) {
-            return Collections.emptyList();
-        }
-
-        List<PublicKey> keys = new ArrayList<>(entries.size());
-        for (Map.Entry<String, ? extends Collection<PublicKeyEntry>> te : typesMap.entrySet()) {
-            String keyType = te.getKey();
-            Collection<PublicKeyEntry> keyEntries = te.getValue();
-            Collection<PublicKey> subKeys = PGPPublicKeyEntryDataResolver.PGP_KEY_TYPES.contains(keyType)
-                ? loadMatchingAuthorizedEntries(session, keyEntries)
-                : PublicKeyEntry.resolvePublicKeyEntries(session, keyEntries, fallbackResolver);
-            if (GenericUtils.isEmpty(subKeys)) {
-                continue;
-            }
-
-            keys.addAll(subKeys);
-        }
-
-        return keys;
-    }
-
-    public List<PublicKey> loadMatchingAuthorizedEntries(
-            SessionContext session, Collection<? extends PublicKeyEntry> entries)
-                throws IOException, GeneralSecurityException, PGPException {
-        int numEntries = GenericUtils.size(entries);
-        if (numEntries <= 0) {
-            return Collections.emptyList();
-        }
-
-        Collection<String> fingerprints = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-        for (PublicKeyEntry pke : entries) {
-            String keyType = pke.getKeyType();
-            if (GenericUtils.isEmpty(keyType)
-                    || (!PGPPublicKeyEntryDataResolver.PGP_KEY_TYPES.contains(keyType))) {
-                continue;
-            }
-
-            String fp = PGPPublicKeyEntryDataResolver.DEFAULT.encodeEntryKeyData(pke.getKeyData());
-            if (GenericUtils.isEmpty(fp)) {
-                continue;
-            }
-
-            if (!fingerprints.add(fp)) {
-                //noinspection UnnecessaryContinue
-                continue;   // debug breakpoint
-            }
-        }
-
-        return loadMatchingKeyFingerprints(session, fingerprints);
-    }
-
+    @Override
     public List<PublicKey> loadMatchingKeyFingerprints(
             SessionContext session, Collection<String> fingerprints)
                 throws IOException, GeneralSecurityException, PGPException {

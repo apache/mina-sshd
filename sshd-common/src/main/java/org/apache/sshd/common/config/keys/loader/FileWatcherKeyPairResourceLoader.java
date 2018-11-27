@@ -86,7 +86,7 @@ public class FileWatcherKeyPairResourceLoader extends ModifiableFileWatcher impl
             int numKeys = GenericUtils.size(ids);
             if (log.isDebugEnabled()) {
                 log.debug("loadKeyPairs({})[{}] reloaded {} keys from {}",
-                        session, resourceKey, numKeys, path);
+                    session, resourceKey, numKeys, path);
             }
 
             if (numKeys > 0) {
