@@ -172,7 +172,7 @@ public class CipherTest extends BaseTestSupport {
 
     private static void loadTest(NamedFactory<Cipher> factory, Random random, int numRounds) throws Exception {
         Cipher cipher = factory.create();
-        byte[] key = new byte[cipher.getBlockSize()];
+        byte[] key = new byte[cipher.getKdfSize()];
         byte[] iv = new byte[cipher.getIVSize()];
         random.fill(key, 0, key.length);
         random.fill(iv, 0, iv.length);

@@ -973,7 +973,7 @@ public abstract class AbstractSession extends SessionHelper {
             if (outCipher != null) {
                 outCipher.update(buffer.array(), off, len + 4);
 
-                int blocksCount = (len + 4) / outCipher.getBlockSize();
+                int blocksCount = (len + 4) / outCipher.getKdfSize();
                 outBlocksCount.addAndGet(Math.max(1, blocksCount));
             }
             // Increment packet id
@@ -1009,7 +1009,7 @@ public abstract class AbstractSession extends SessionHelper {
                     if (inCipher != null) {
                         inCipher.update(decoderBuffer.array(), 0, inCipherSize);
 
-                        int blocksCount = inCipherSize / inCipher.getBlockSize();
+                        int blocksCount = inCipherSize / inCipher.getKdfSize();
                         inBlocksCount.addAndGet(Math.max(1, blocksCount));
                     }
                     // Read packet length
@@ -1044,7 +1044,7 @@ public abstract class AbstractSession extends SessionHelper {
                         int updateLen = decoderLength + 4 - inCipherSize;
                         inCipher.update(data, inCipherSize, updateLen);
 
-                        int blocksCount = updateLen / inCipher.getBlockSize();
+                        int blocksCount = updateLen / inCipher.getKdfSize();
                         inBlocksCount.addAndGet(Math.max(1, blocksCount));
                     }
                     // Check the mac of the packet
@@ -1276,7 +1276,7 @@ public abstract class AbstractSession extends SessionHelper {
         boolean serverSession = isServerSession();
         String value = getNegotiatedKexParameter(KexProposalOption.S2CENC);
         Cipher s2ccipher = ValidateUtils.checkNotNull(NamedFactory.create(getCipherFactories(), value), "Unknown s2c cipher: %s", value);
-        e_s2c = resizeKey(e_s2c, s2ccipher.getBlockSize(), hash, k, h);
+        e_s2c = resizeKey(e_s2c, s2ccipher.getKdfSize(), hash, k, h);
         s2ccipher.init(serverSession ? Cipher.Mode.Encrypt : Cipher.Mode.Decrypt, e_s2c, iv_s2c);
 
         value = getNegotiatedKexParameter(KexProposalOption.S2CMAC);
@@ -1295,7 +1295,7 @@ public abstract class AbstractSession extends SessionHelper {
 
         value = getNegotiatedKexParameter(KexProposalOption.C2SENC);
         Cipher c2scipher = ValidateUtils.checkNotNull(NamedFactory.create(getCipherFactories(), value), "Unknown c2s cipher: %s", value);
-        e_c2s = resizeKey(e_c2s, c2scipher.getBlockSize(), hash, k, h);
+        e_c2s = resizeKey(e_c2s, c2scipher.getKdfSize(), hash, k, h);
         c2scipher.init(serverSession ? Cipher.Mode.Decrypt : Cipher.Mode.Encrypt, e_c2s, iv_c2s);
 
         value = getNegotiatedKexParameter(KexProposalOption.C2SMAC);
@@ -1337,8 +1337,8 @@ public abstract class AbstractSession extends SessionHelper {
         inCompression.init(Compression.Type.Inflater, -1);
 
         // see https://tools.ietf.org/html/rfc4344#section-3.2
-        int inBlockSize = inCipher.getBlockSize();
-        int outBlockSize = outCipher.getBlockSize();
+        int inBlockSize = inCipher.getKdfSize();
+        int outBlockSize = outCipher.getKdfSize();
         // select the lowest cipher size
         int avgCipherBlockSize = Math.min(inBlockSize, outBlockSize);
         long recommendedByteRekeyBlocks = 1L << Math.min((avgCipherBlockSize * Byte.SIZE) / 4, 63);    // in case (block-size / 4) > 63

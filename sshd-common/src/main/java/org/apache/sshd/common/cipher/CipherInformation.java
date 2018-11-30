@@ -39,7 +39,7 @@ public interface CipherInformation extends AlgorithmNameProvider, KeySizeIndicat
     int getIVSize();
 
     /**
-     * @return The block size (in bytes) for this cipher
+     * @return The block size (in bytes) used to derive the secret key for this cipher
      */
-    int getBlockSize();
+    int getKdfSize();
 }

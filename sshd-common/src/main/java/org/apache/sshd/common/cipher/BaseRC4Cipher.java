@@ -29,21 +29,20 @@ public class BaseRC4Cipher extends BaseCipher {
 
     public static final int SKIP_SIZE = 1536;
 
-    public BaseRC4Cipher(int ivsize, int bsize) {
-        this(ivsize, bsize, bsize * Byte.SIZE);
-    }
-
-    public BaseRC4Cipher(int ivsize, int bsize, int keySize) {
-        super(ivsize, bsize, "ARCFOUR", keySize, "RC4");
+    public BaseRC4Cipher(int ivsize, int kdfSize, int keySize) {
+        super(ivsize, kdfSize, "ARCFOUR", keySize, "RC4");
     }
 
     @Override
     public void init(Mode mode, byte[] key, byte[] iv) throws Exception {
-        key = resize(key, getBlockSize());
+        key = initializeKeyData(mode, key, getKdfSize());
         try {
             cipher = SecurityUtils.getCipher(getTransformation());
-            cipher.init(Mode.Encrypt.equals(mode)  ? javax.crypto.Cipher.ENCRYPT_MODE : javax.crypto.Cipher.DECRYPT_MODE,
-                    new SecretKeySpec(key, getAlgorithm()));
+            cipher.init(
+                Mode.Encrypt.equals(mode)
+                    ? javax.crypto.Cipher.ENCRYPT_MODE
+                    : javax.crypto.Cipher.DECRYPT_MODE,
+                new SecretKeySpec(key, getAlgorithm()));
 
             byte[] foo = new byte[1];
             for (int i = 0; i < SKIP_SIZE; i++) {
@@ -54,5 +53,4 @@ public class BaseRC4Cipher extends BaseCipher {
             throw e;
         }
     }
-
 }

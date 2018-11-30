@@ -186,13 +186,13 @@ public class BuiltinCiphersTest extends BaseTestSupport {
     }
 
     private static void testCipherEncryption(Random rnd, Cipher cipher) throws Exception {
-        byte[] key = new byte[cipher.getBlockSize()];
+        byte[] key = new byte[cipher.getKdfSize()];
         rnd.nextBytes(key);
         byte[] iv = new byte[cipher.getIVSize()];
         rnd.nextBytes(iv);
         cipher.init(Cipher.Mode.Encrypt, key, iv);
 
-        byte[] data = new byte[cipher.getBlockSize()];
+        byte[] data = new byte[cipher.getKdfSize()];
         rnd.nextBytes(data);
 
         cipher.update(data);

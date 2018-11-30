@@ -34,19 +34,15 @@ public class BaseCipher implements Cipher {
 
     protected javax.crypto.Cipher cipher;
     private final int ivsize;
-    private final int bsize;
+    private final int kdfSize;
     private final String algorithm;
     private final int keySize;
     private final String transformation;
     private String s;
 
-    public BaseCipher(int ivsize, int bsize, String algorithm, String transformation) {
-        this(ivsize, bsize, algorithm, bsize * Byte.SIZE, transformation);
-    }
-
-    public BaseCipher(int ivsize, int bsize, String algorithm, int keySize, String transformation) {
+    public BaseCipher(int ivsize, int kdfSize, String algorithm, int keySize, String transformation) {
         this.ivsize = ivsize;
-        this.bsize = bsize;
+        this.kdfSize = kdfSize;
         this.algorithm = ValidateUtils.checkNotNullAndNotEmpty(algorithm, "No algorithm");
         this.keySize = keySize;
         this.transformation = ValidateUtils.checkNotNullAndNotEmpty(transformation, "No transformation");
@@ -73,23 +69,34 @@ public class BaseCipher implements Cipher {
     }
 
     @Override
-    public int getBlockSize() {
-        return bsize;
+    public int getKdfSize() {
+        return kdfSize;
     }
 
     @Override
     public void init(Mode mode, byte[] key, byte[] iv) throws Exception {
-        key = resize(key, getBlockSize());
-        iv = resize(iv, getIVSize());
+        key = initializeKeyData(mode, key, getKdfSize());
+        iv = initializeIVData(mode, iv, getIVSize());
         try {
             cipher = SecurityUtils.getCipher(getTransformation());
-            cipher.init(Mode.Encrypt.equals(mode) ? javax.crypto.Cipher.ENCRYPT_MODE : javax.crypto.Cipher.DECRYPT_MODE,
-                    new SecretKeySpec(key, getAlgorithm()),
-                    new IvParameterSpec(iv));
+            cipher.init(
+                Mode.Encrypt.equals(mode)
+                    ? javax.crypto.Cipher.ENCRYPT_MODE
+                    : javax.crypto.Cipher.DECRYPT_MODE,
+                new SecretKeySpec(key, getAlgorithm()),
+                new IvParameterSpec(iv));
         } catch (Exception e) {
             cipher = null;
             throw new SshException("Unable to initialize cipher " + this, e);
         }
+    }
+
+    protected byte[] initializeKeyData(Mode mode, byte[] key, int reqLen) {
+        return resize(key, reqLen);
+    }
+
+    protected byte[] initializeIVData(Mode mode, byte[] iv, int reqLen) {
+        return resize(iv, reqLen);
     }
 
     @Override
@@ -112,8 +119,8 @@ public class BaseCipher implements Cipher {
             if (s == null) {
                 s = getClass().getSimpleName()
                     + "[" + getAlgorithm()
-                    + "," + getIVSize()
-                    + "," + getBlockSize()
+                    + ", ivSize=" + getIVSize()
+                    + ", kdfSize=" + getKdfSize()
                     + "," + getTransformation()
                     + "]";
             }

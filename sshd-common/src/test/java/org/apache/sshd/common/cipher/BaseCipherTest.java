@@ -75,7 +75,7 @@ public abstract class BaseCipherTest extends JUnitTestSupport {
     protected void testEncryptDecrypt(NamedFactory<Cipher> factory) throws Exception {
         String facName = factory.getName();
         Cipher enc = factory.create();
-        int keySize = enc.getBlockSize();
+        int keySize = enc.getKdfSize();
         int ivSize = enc.getIVSize();
         byte[] key = new byte[keySize];
         byte[] iv = new byte[ivSize];

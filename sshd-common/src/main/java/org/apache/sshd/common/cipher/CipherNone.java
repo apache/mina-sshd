@@ -52,7 +52,7 @@ public class CipherNone implements Cipher {
     }
 
     @Override
-    public int getBlockSize() {
+    public int getKdfSize() {
         return 16;  // dummy
     }
 

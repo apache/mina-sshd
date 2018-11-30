@@ -83,6 +83,10 @@ session context for the listener's invocation.
 
 * Re-provide expected SCP byte count transfer and permissions when invoking `ScpFileOpener#openRead/openWrite`
 
+* `CipherInformation#getBlockSize` has been renamed to `getKdfSize` in order to emphasize that its value
+represents the number of bytes used to derive the cipher's secret key value and not the cipher's underlying
+block size.
+
 ## Behavioral changes and enhancements
 
 * [SSHD-757](https://issues.apache.org/jira/browse/SSHD-757) - Added hooks and some initial code to allow (limited) usage
