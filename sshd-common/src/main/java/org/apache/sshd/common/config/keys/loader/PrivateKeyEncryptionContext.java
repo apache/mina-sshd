@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,15 +42,17 @@ public class PrivateKeyEncryptionContext implements MutablePassword, Cloneable {
     public static final String  DEFAULT_CIPHER_MODE = "CBC";
 
     private static final Map<String, PrivateKeyObfuscator> OBFUSCATORS =
-            Stream.of(AESPrivateKeyObfuscator.INSTANCE, DESPrivateKeyObfuscator.INSTANCE)
-                .collect(Collectors.toMap(AbstractPrivateKeyObfuscator::getCipherName, Function.identity()));
+        Stream.of(AESPrivateKeyObfuscator.INSTANCE, DESPrivateKeyObfuscator.INSTANCE)
+            .collect(Collectors.toMap(
+                AbstractPrivateKeyObfuscator::getCipherName, Function.identity(),
+                GenericUtils.throwingMerger(), () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
 
-    private String  cipherName;
+    private String cipherName;
     private String cipherType;
     private String cipherMode = DEFAULT_CIPHER_MODE;
     private String password;
-    private byte[]  initVector;
-    private transient PrivateKeyObfuscator  obfuscator;
+    private byte[] initVector;
+    private transient PrivateKeyObfuscator obfuscator;
 
     public PrivateKeyEncryptionContext() {
         super();

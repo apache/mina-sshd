@@ -28,8 +28,8 @@ import java.io.InputStream;
 @FunctionalInterface
 public interface ResourceStreamProvider {
     /**
-     * Return an {@link InputStream} for the resource's data
+     * @return an {@link InputStream} for the resource's data
+     * @throws IOException If failed to open the stream
      */
     InputStream openInputStream() throws IOException;
-
 }

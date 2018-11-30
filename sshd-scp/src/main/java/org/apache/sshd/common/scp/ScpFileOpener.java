@@ -139,7 +139,7 @@ public interface ScpFileOpener {
      * @param path The local {@link Path}
      * @param options The {@link LinkOption}-s
      * @return Whether to send the file as a regular one - <B>Note:</B> if {@code false}
-     * then the {@link #sendAsDirectory(Path, LinkOption...)} is consulted.
+     * then the {@link #sendAsDirectory(Session, Path, LinkOption...)} is consulted.
      * @throws IOException If failed to decide
      */
     default boolean sendAsRegularFile(Session session, Path path, LinkOption... options)
@@ -155,7 +155,7 @@ public interface ScpFileOpener {
      * @param path The local {@link Path}
      * @param options The {@link LinkOption}-s
      * @return Whether to send the file as a directory - <B>Note:</B> if {@code true}
-     * then {@link #getLocalFolderChildren(Path)} is consulted
+     * then {@link #getLocalFolderChildren(Session, Path)} is consulted
      * @throws IOException If failed to decide
      */
     default boolean sendAsDirectory(Session session, Path path, LinkOption... options)
@@ -170,10 +170,10 @@ public interface ScpFileOpener {
      * @param path The local folder {@link Path}
      * @return The {@link DirectoryStream} of children to send - <B>Note:</B> for each child
      * the decision whether to send it as a file or a directory will be reached by consulting
-     * the respective {@link #sendAsRegularFile(Path, LinkOption...) sendAsRegularFile} and
-     * {@link #sendAsDirectory(Path, LinkOption...) sendAsDirectory} methods
+     * the respective {@link #sendAsRegularFile(Session, Path, LinkOption...) sendAsRegularFile} and
+     * {@link #sendAsDirectory(Session, Path, LinkOption...) sendAsDirectory} methods
      * @throws IOException If failed to provide the children stream
-     * @see #sendAsDirectory(Path, LinkOption...) sendAsDirectory
+     * @see #sendAsDirectory(Session, Path, LinkOption...) sendAsDirectory
      */
     default DirectoryStream<Path> getLocalFolderChildren(Session session, Path path) throws IOException {
         return Files.newDirectoryStream(path);

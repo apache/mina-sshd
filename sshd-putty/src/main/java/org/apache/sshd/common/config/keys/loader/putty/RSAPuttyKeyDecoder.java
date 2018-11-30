@@ -50,8 +50,9 @@ public class RSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<RSAPublicKey, RS
     }
 
     @Override
-    public Collection<KeyPair> loadKeyPairs(NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader)
-            throws IOException, GeneralSecurityException {
+    public Collection<KeyPair> loadKeyPairs(
+            NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader)
+                throws IOException, GeneralSecurityException {
         pubReader.skip();   // skip version
 
         KeyFactory kf = SecurityUtils.getKeyFactory(KeyUtils.RSA_ALGORITHM);

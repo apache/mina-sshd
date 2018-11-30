@@ -38,7 +38,9 @@ public class DESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
     }
 
     @Override
-    public byte[] applyPrivateKeyCipher(byte[] bytes, PrivateKeyEncryptionContext encContext, boolean encryptIt) throws GeneralSecurityException {
+    public byte[] applyPrivateKeyCipher(
+            byte[] bytes, PrivateKeyEncryptionContext encContext, boolean encryptIt)
+                throws GeneralSecurityException {
         PrivateKeyEncryptionContext effContext = resolveEffectiveContext(encContext);
         byte[] keyValue = deriveEncryptionKey(effContext, DEFAULT_KEY_LENGTH);
         return applyPrivateKeyCipher(bytes, effContext, keyValue.length * Byte.SIZE, keyValue, encryptIt);

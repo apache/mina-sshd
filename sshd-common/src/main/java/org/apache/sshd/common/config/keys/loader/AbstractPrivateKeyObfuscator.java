@@ -55,12 +55,15 @@ public abstract class AbstractPrivateKeyObfuscator implements PrivateKeyObfuscat
     }
 
     @Override
-    public byte[] generateInitializationVector(PrivateKeyEncryptionContext encContext) throws GeneralSecurityException {
+    public byte[] generateInitializationVector(PrivateKeyEncryptionContext encContext)
+            throws GeneralSecurityException {
         return generateInitializationVector(resolveKeyLength(encContext));
     }
 
     @Override
-    public <A extends Appendable> A appendPrivateKeyEncryptionContext(A sb, PrivateKeyEncryptionContext encContext) throws IOException {
+    public <A extends Appendable> A appendPrivateKeyEncryptionContext(
+            A sb, PrivateKeyEncryptionContext encContext)
+                throws IOException {
         if (encContext == null) {
             return sb;
         }
@@ -94,7 +97,8 @@ public abstract class AbstractPrivateKeyObfuscator implements PrivateKeyObfuscat
     // see http://martin.kleppmann.com/2013/05/24/improving-security-of-ssh-private-keys.html
     // see http://www.ict.griffith.edu.au/anthony/info/crypto/openssl.hints (Password to Encryption Key section)
     // see http://openssl.6102.n7.nabble.com/DES-EDE3-CBC-technical-details-td24883.html
-    protected byte[] deriveEncryptionKey(PrivateKeyEncryptionContext encContext, int outputKeyLength) throws GeneralSecurityException {
+    protected byte[] deriveEncryptionKey(PrivateKeyEncryptionContext encContext, int outputKeyLength)
+            throws GeneralSecurityException {
         Objects.requireNonNull(encContext, "No encryption context");
         ValidateUtils.checkNotNullAndNotEmpty(encContext.getCipherName(), "No cipher name");
         ValidateUtils.checkNotNullAndNotEmpty(encContext.getCipherType(), "No cipher type");
@@ -125,8 +129,9 @@ public abstract class AbstractPrivateKeyObfuscator implements PrivateKeyObfuscat
         return keyValue;
     }
 
-    protected byte[] applyPrivateKeyCipher(byte[] bytes, PrivateKeyEncryptionContext encContext, int numBits, byte[] keyValue, boolean encryptIt)
-            throws GeneralSecurityException {
+    protected byte[] applyPrivateKeyCipher(
+            byte[] bytes, PrivateKeyEncryptionContext encContext, int numBits, byte[] keyValue, boolean encryptIt)
+                throws GeneralSecurityException {
         Objects.requireNonNull(encContext, "No encryption context");
         String cipherName = ValidateUtils.checkNotNullAndNotEmpty(encContext.getCipherName(), "No cipher name");
         ValidateUtils.checkNotNullAndNotEmpty(encContext.getCipherType(), "No cipher type");
@@ -143,9 +148,10 @@ public abstract class AbstractPrivateKeyObfuscator implements PrivateKeyObfuscat
         int maxAllowedBits = Cipher.getMaxAllowedKeyLength(xform);
         // see http://www.javamex.com/tutorials/cryptography/unrestricted_policy_files.shtml
         if (numBits > maxAllowedBits) {
-            throw new InvalidKeySpecException("applyPrivateKeyCipher(" + xform + ")[encrypt=" + encryptIt + "]"
-                                            + " required key length (" + numBits + ")"
-                                            + " exceeds max. available: " + maxAllowedBits);
+            throw new InvalidKeySpecException(
+                "applyPrivateKeyCipher(" + xform + ")[encrypt=" + encryptIt + "]"
+                    + " required key length (" + numBits + ")"
+                    + " exceeds max. available: " + maxAllowedBits);
         }
 
         SecretKeySpec skeySpec = new SecretKeySpec(keyValue, cipherName);
@@ -181,9 +187,10 @@ public abstract class AbstractPrivateKeyObfuscator implements PrivateKeyObfuscat
                 baos.close();
             }
         } catch (IOException e) {
-            throw new GeneralSecurityException("applyPrivateKeyCipher(" + xform + ")[encrypt=" + encryptIt + "]"
-                                             + " failed (" + e.getClass().getSimpleName() + ")"
-                                             + " to split-write: " + e.getMessage(), e);
+            throw new GeneralSecurityException(
+                "applyPrivateKeyCipher(" + xform + ")[encrypt=" + encryptIt + "]"
+                 + " failed (" + e.getClass().getSimpleName() + ")"
+                 + " to split-write: " + e.getMessage(), e);
         }
 
         return baos.toByteArray();

@@ -57,7 +57,9 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
         this.beginners = ValidateUtils.checkNotNullAndNotEmpty(beginners, "No begin markers");
         this.enders = ValidateUtils.checkNotNullAndNotEmpty(enders, "No end markers");
         ValidateUtils.checkTrue(
-                beginners.size() == enders.size(), "Mismatched begin(%d)/end(%d) markers sizes", beginners.size(), enders.size());
+            beginners.size() == enders.size(),
+            "Mismatched begin(%d)/end(%d) markers sizes",
+            beginners.size(), enders.size());
         endingMarkers = new ArrayList<>(enders.size());
         enders.forEach(m -> endingMarkers.add(Collections.singletonList(m)));
     }
@@ -145,8 +147,8 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
             FilePasswordProvider passwordProvider,
             List<String> lines)
                 throws IOException, GeneralSecurityException {
-        return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider,
-            KeyPairResourceParser.extractDataBytes(lines));
+        return extractKeyPairs(session, resourceKey, beginMarker, endMarker,
+            passwordProvider, KeyPairResourceParser.extractDataBytes(lines));
     }
 
     /**

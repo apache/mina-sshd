@@ -51,8 +51,8 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends PrivateKey>
-                extends AbstractIdentityResourceLoader<PUB, PRV>
-                implements PuttyKeyPairResourceParser<PUB, PRV> {
+            extends AbstractIdentityResourceLoader<PUB, PRV>
+            implements PuttyKeyPairResourceParser<PUB, PRV> {
     public static final String ENCRYPTION_HEADER = "Encryption";
 
     protected AbstractPuttyKeyDecoder(Class<PUB> pubType, Class<PRV> prvType, Collection<String> names) {

@@ -49,8 +49,9 @@ public class DSSPuttyKeyDecoder extends AbstractPuttyKeyDecoder<DSAPublicKey, DS
     }
 
     @Override
-    public Collection<KeyPair> loadKeyPairs(NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader)
-            throws IOException, GeneralSecurityException {
+    public Collection<KeyPair> loadKeyPairs(
+            NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader)
+                throws IOException, GeneralSecurityException {
         pubReader.skip();   // skip version
 
         BigInteger p = pubReader.readInt();

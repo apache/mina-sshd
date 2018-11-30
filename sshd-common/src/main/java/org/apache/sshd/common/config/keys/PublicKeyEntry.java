@@ -152,7 +152,7 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
      * @return The {@link PublicKey} or {@code null} if could not resolve it
      * @throws IOException              If failed to decode/encode the key
      * @throws GeneralSecurityException If failed to generate the key
-     * @see #resolvePublicKey(PublicKeyEntryResolver)
+     * @see #resolvePublicKey(SessionContext, PublicKeyEntryResolver)
      */
     public PublicKey appendPublicKey(
             SessionContext session, Appendable sb, PublicKeyEntryResolver fallbackResolver)
@@ -213,7 +213,7 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
      * @throws IOException If failed to decode the key data
      * @throws GeneralSecurityException If failed to generate the {@link PublicKey}
      * from the decoded data
-     * @see #resolvePublicKey(PublicKeyEntryResolver)
+     * @see #resolvePublicKey(SessionContext, PublicKeyEntryResolver)
      */
     public static List<PublicKey> resolvePublicKeyEntries(
             SessionContext session, Collection<? extends PublicKeyEntry> entries, PublicKeyEntryResolver fallbackResolver)
@@ -240,7 +240,7 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
      *
      * @param keyType The key-type value (case <U>insensitive</U>) that will trigger the
      * usage of this decoder - e.g., &quot;ssh-rsa&quot;, &quot;pgp-sign-dss&quot;, etc.
-     * @param decoder The decoder to use
+     * @param resolver The decoder to use
      */
     public static void registerKeyDataEntryResolver(String keyType, PublicKeyEntryDataResolver resolver) {
         ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type provided");
@@ -253,7 +253,7 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
 
     /**
      * @param keyType The key-type value (case <U>insensitive</U>) that may have been
-     * previously {@link #registerKeyDataDecoder(String, PublicKeyEntryDataResolver) registered}
+     * previously {@link #registerKeyDataEntryResolver(String, PublicKeyEntryDataResolver) registered}
      * - e.g., &quot;ssh-rsa&quot;, &quot;pgp-sign-dss&quot;, etc.
      * @return The registered resolver instance - {@code null} if none was registered
      */
@@ -267,7 +267,7 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
 
     /**
      * @param keyType The key-type value (case <U>insensitive</U>) that may have been
-     * previously {@link #registerKeyDataDecoder(String, PublicKeyEntryDataResolver) registered}
+     * previously {@link #registerKeyDataEntryResolver(String, PublicKeyEntryDataResolver) registered}
      * - e.g., &quot;ssh-rsa&quot;, &quot;pgp-sign-dss&quot;, etc.
      * @return The un-registered resolver instance - {@code null} if none was registered
      */
@@ -283,7 +283,7 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
      * @param keyType keyType The key-type value (case <U>insensitive</U>) whose data is to
      * be resolved - e.g., &quot;ssh-rsa&quot;, &quot;pgp-sign-dss&quot;, etc.
      * @return If a specific resolver has been previously
-     * {@link #registerKeyDataDecoder(String, PublicKeyEntryDataResolver) registered} then uses it,
+     * {@link #registerKeyDataEntryResolver(String, PublicKeyEntryDataResolver) registered} then uses it,
      * otherwise the {@link PublicKeyEntryDataResolver#DEFAULT default} one.
      */
     public static PublicKeyEntryDataResolver resolveKeyDataEntryResolver(String keyType) {

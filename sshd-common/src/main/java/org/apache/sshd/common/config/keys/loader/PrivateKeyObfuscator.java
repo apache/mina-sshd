@@ -44,14 +44,17 @@ public interface PrivateKeyObfuscator {
      * @return Same appendable instance
      * @throws IOException
      */
-    <A extends Appendable> A appendPrivateKeyEncryptionContext(A sb, PrivateKeyEncryptionContext encContext) throws IOException;
+    <A extends Appendable> A appendPrivateKeyEncryptionContext(
+        A sb, PrivateKeyEncryptionContext encContext)
+            throws IOException;
 
     /**
      * @param encContext The encryption context
      * @return An initialization vector suitable to the specified context
      * @throws GeneralSecurityException
      */
-    byte[] generateInitializationVector(PrivateKeyEncryptionContext encContext) throws GeneralSecurityException;
+    byte[] generateInitializationVector(PrivateKeyEncryptionContext encContext)
+        throws GeneralSecurityException;
 
     /**
      * @param bytes Original bytes
@@ -60,5 +63,7 @@ public interface PrivateKeyObfuscator {
      * @return The result of applying the cipher to the original bytes
      * @throws GeneralSecurityException If cannot encrypt/decrypt
      */
-    byte[] applyPrivateKeyCipher(byte[] bytes, PrivateKeyEncryptionContext encContext, boolean encryptIt) throws GeneralSecurityException;
+    byte[] applyPrivateKeyCipher(
+        byte[] bytes, PrivateKeyEncryptionContext encContext, boolean encryptIt)
+            throws GeneralSecurityException;
 }

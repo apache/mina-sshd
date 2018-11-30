@@ -444,7 +444,7 @@ public final class GenericUtils {
         return Collectors.toMap(keyMapper, valueMapper, throwingMerger(), () -> new TreeMap<>(comparator));
     }
 
-    private static <T> BinaryOperator<T> throwingMerger() {
+    public static <T> BinaryOperator<T> throwingMerger() {
         return (u, v) -> {
             throw new IllegalStateException(String.format("Duplicate key %s", u));
         };

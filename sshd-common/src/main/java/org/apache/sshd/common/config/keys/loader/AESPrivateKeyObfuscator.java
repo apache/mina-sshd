@@ -47,7 +47,9 @@ public class AESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
     }
 
     @Override
-    public byte[] applyPrivateKeyCipher(byte[] bytes, PrivateKeyEncryptionContext encContext, boolean encryptIt) throws GeneralSecurityException {
+    public byte[] applyPrivateKeyCipher(
+            byte[] bytes, PrivateKeyEncryptionContext encContext, boolean encryptIt)
+                throws GeneralSecurityException {
         int keyLength = resolveKeyLength(encContext);
         byte[] keyValue = deriveEncryptionKey(encContext, keyLength / Byte.SIZE);
         return applyPrivateKeyCipher(bytes, encContext, keyLength, keyValue, encryptIt);

@@ -49,8 +49,9 @@ public class EdDSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<EdDSAPublicKey
     }
 
     @Override
-    public Collection<KeyPair> loadKeyPairs(NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader)
-            throws IOException, GeneralSecurityException {
+    public Collection<KeyPair> loadKeyPairs(
+            NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader)
+                throws IOException, GeneralSecurityException {
         if (!SecurityUtils.isEDDSACurveSupported()) {
             throw new NoSuchAlgorithmException(SecurityUtils.EDDSA + " provider not supported for " + resourceKey);
         }
