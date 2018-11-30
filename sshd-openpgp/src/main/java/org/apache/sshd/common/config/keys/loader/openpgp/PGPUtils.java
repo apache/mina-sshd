@@ -99,7 +99,7 @@ public final class PGPUtils {
     /**
      * @param key The {@link Key} whose sub-keys to map - ignored if {@code null} or no sub-keys available
      * @return A {@link NavigableMap} where key=the (case <U>insensitive</U>) fingerprint
-     * value, value=the matching {@link SubKey}
+     * value, value=the matching {@link Subkey}
      * @throws NullPointerException If key with {@code null} fingerprint encountered
      * @throws IllegalArgumentException If key with empty fingerprint encountered
      * @throws IllegalStateException If more than one key with same fingerprint found
@@ -112,7 +112,7 @@ public final class PGPUtils {
     /**
      * @param subKeys The {@link Subkey}-s to map - ignored if {@code null}/empty
      * @return A {@link NavigableMap} where key=the (case <U>insensitive</U>) fingerprint
-     * value, value=the matching {@link SubKey}
+     * value, value=the matching {@link Subkey}
      * @throws NullPointerException If key with {@code null} fingerprint encountered
      * @throws IllegalArgumentException If key with empty fingerprint encountered
      * @throws IllegalStateException If more than one key with same fingerprint found

@@ -181,7 +181,6 @@ public final class ClientIdentity {
      * <U>insensitive</U>), value=the {@link KeyPair} of the identity
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see #loadIdentities(Path, boolean, Collection, Function, FilePasswordProvider, LinkOption...)
      * @see BuiltinIdentities
      */
     public static Map<String, KeyPair> loadDefaultIdentities(
@@ -211,8 +210,6 @@ public final class ClientIdentity {
      * <U>insensitive</U>), value=the {@link KeyPair} of the identity
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see #scanIdentitiesFolder(Path, boolean, Collection, Function, LinkOption...)
-     * @see IdentityUtils#loadIdentities(Map, FilePasswordProvider, java.nio.file.OpenOption...)
      */
     public static Map<String, KeyPair> loadIdentities(
             SessionContext session, Path dir, boolean strict,

@@ -897,7 +897,7 @@ public final class GenericUtils {
 
     /**
      * @param <T> Generic return type
-     * @param The source values - ignored if {@code null}
+     * @param values The source values - ignored if {@code null}
      * @param type The (never @code null) type of values to select - any value
      * whose type is assignable to this type will be selected by the iterator.
      * @return The first value that matches the specified type - {@code null} if none found

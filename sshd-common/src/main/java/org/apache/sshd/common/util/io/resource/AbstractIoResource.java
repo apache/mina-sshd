@@ -24,6 +24,7 @@ import java.util.Objects;
 /**
  * TODO Add javadoc
  *
+ * @param <T> Type of resource
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractIoResource<T> implements IoResource<T> {

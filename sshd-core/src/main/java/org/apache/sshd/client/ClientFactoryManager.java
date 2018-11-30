@@ -70,7 +70,7 @@ public interface ClientFactoryManager
     /**
      * Whether to ignore invalid identities files when pre-initializing
      * the client session
-     * @see ClientIdentityLoader#isValidLocation(String)
+     * @see ClientIdentityLoader#isValidLocation(org.apache.sshd.common.NamedResource)
      */
     String IGNORE_INVALID_IDENTITIES = "ignore-invalid-identities";
 

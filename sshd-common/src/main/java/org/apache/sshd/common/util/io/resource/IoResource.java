@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import org.apache.sshd.common.NamedResource;
 
 /**
+ * @param <T> Type of resource
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface IoResource<T> extends NamedResource, ResourceStreamProvider {

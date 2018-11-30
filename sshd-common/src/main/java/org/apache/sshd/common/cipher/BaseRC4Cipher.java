@@ -26,31 +26,31 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class BaseRC4Cipher extends BaseCipher {
-
     public static final int SKIP_SIZE = 1536;
 
-    public BaseRC4Cipher(int ivsize, int kdfSize, int keySize) {
-        super(ivsize, kdfSize, "ARCFOUR", keySize, "RC4");
+    public BaseRC4Cipher(int ivsize, int kdfSize, int keySize, int blkSize) {
+        super(ivsize, kdfSize, "ARCFOUR", keySize, "RC4", blkSize);
     }
 
     @Override
-    public void init(Mode mode, byte[] key, byte[] iv) throws Exception {
-        key = initializeKeyData(mode, key, getKdfSize());
-        try {
-            cipher = SecurityUtils.getCipher(getTransformation());
-            cipher.init(
-                Mode.Encrypt.equals(mode)
-                    ? javax.crypto.Cipher.ENCRYPT_MODE
-                    : javax.crypto.Cipher.DECRYPT_MODE,
-                new SecretKeySpec(key, getAlgorithm()));
+    protected byte[] initializeIVData(Mode mode, byte[] iv, int reqLen) {
+        return iv;  // not used in any way
+    }
 
-            byte[] foo = new byte[1];
-            for (int i = 0; i < SKIP_SIZE; i++) {
-                cipher.update(foo, 0, 1, foo, 0);
-            }
-        } catch (Exception e) {
-            cipher = null;
-            throw e;
+    @Override
+    protected javax.crypto.Cipher createCipherInstance(Mode mode, byte[] key, byte[] iv) throws Exception {
+        javax.crypto.Cipher instance = SecurityUtils.getCipher(getTransformation());
+        instance.init(
+            Mode.Encrypt.equals(mode)
+                ? javax.crypto.Cipher.ENCRYPT_MODE
+                : javax.crypto.Cipher.DECRYPT_MODE,
+            new SecretKeySpec(key, getAlgorithm()));
+
+        byte[] foo = new byte[1];
+        for (int i = 0; i < SKIP_SIZE; i++) {
+            instance.update(foo, 0, 1, foo, 0);
         }
+
+        return instance;
     }
 }

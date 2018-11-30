@@ -48,16 +48,21 @@ public class CipherNone implements Cipher {
 
     @Override
     public int getIVSize() {
-        return 8;   // dummy
+        return 8;   // dummy - not zero in order to avoid some code that uses it as divisor
     }
 
     @Override
     public int getKdfSize() {
-        return 16;  // dummy
+        return 16;   // dummy - not zero in order to avoid some code that uses it as divisor
     }
 
     @Override
-    public void init(Mode mode, byte[] bytes, byte[] bytes1) throws Exception {
+    public int getCipherBlockSize() {
+        return 8;   // dummy - not zero in order to avoid some code that uses it as divisor
+    }
+
+    @Override
+    public void init(Mode mode, byte[] key, byte[] iv) throws Exception {
         // ignored - always succeeds
     }
 

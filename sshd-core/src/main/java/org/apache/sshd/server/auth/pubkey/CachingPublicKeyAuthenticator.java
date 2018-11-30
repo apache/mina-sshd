@@ -37,7 +37,8 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public class CachingPublicKeyAuthenticator extends AbstractLoggingBean implements PublickeyAuthenticator {
     /**
-     * The {@link AttributeRepository.AttributeKey} used to store the cached authentication results on the session instance
+     * The {@link org.apache.sshd.common.AttributeRepository.AttributeKey AttributeKey}
+     * used to store the cached authentication results on the session instance
      */
     public static final AttributeRepository.AttributeKey<Map<PublicKey, Boolean>> CACHE_ATTRIBUTE = new AttributeRepository.AttributeKey<>();
 

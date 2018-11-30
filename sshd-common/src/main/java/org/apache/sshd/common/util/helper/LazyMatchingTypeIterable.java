@@ -67,7 +67,7 @@ public class LazyMatchingTypeIterable<T> implements Iterable<T> {
 
     /**
      * @param <T> Type if iterated element
-     * @param The source values - ignored if {@code null}
+     * @param values The source values - ignored if {@code null}
      * @param type The (never @code null) type of values to select - any value
      * whose type is assignable to this type will be selected by the iterator.
      * @return {@link Iterable} whose {@link Iterator} selects only values

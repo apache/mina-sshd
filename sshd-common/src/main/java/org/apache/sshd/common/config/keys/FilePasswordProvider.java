@@ -52,7 +52,7 @@ public interface FilePasswordProvider {
      * resource (in case invoked several times for the same resource)
      * @return The password - if {@code null}/empty then no password is required
      * @throws IOException if cannot resolve password
-     * @see #handleDecodeAttemptResult(String, int, String, Exception)
+     * @see #handleDecodeAttemptResult(SessionContext, NamedResource, int, String, Exception)
      */
     String getPassword(SessionContext session, NamedResource resourceKey, int retryIndex) throws IOException;
 

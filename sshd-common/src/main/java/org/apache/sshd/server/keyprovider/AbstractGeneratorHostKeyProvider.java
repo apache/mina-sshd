@@ -51,7 +51,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * Holds a <U>single</U> {@link KeyPair} which is generated the 1st time
- * {@link #loadKeys()} is called. If there is a file backing it up and the
+ * {@link #loadKeys(SessionContext)} is called. If there is a file backing it up and the
  * file exists, the key is loaded from it. Otherwise a new key pair is
  * generated and saved (provided a path is configured and {@link #isOverwriteAllowed()}
  *

@@ -101,11 +101,10 @@ public class ClientIdentityFileWatcher
             return identitiesHolder.get();
         }
 
-        Iterable<KeyPair> id = reloadClientIdentities(session, path);
-
+        kp = reloadClientIdentities(session, path);
         updateReloadAttributes();
-        identitiesHolder.set(id);
-        return identitiesHolder.get();
+        identitiesHolder.set(kp);
+        return kp;
     }
 
     protected Iterable<KeyPair> reloadClientIdentities(SessionContext session, Path path)

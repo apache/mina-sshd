@@ -557,16 +557,16 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
      * Method used while putting new keys into use that will resize the key used to
      * initialize the cipher to the needed length.
      *
-     * @param e         the key to resize
-     * @param blockSize the cipher block size (in bytes)
-     * @param hash      the hash algorithm
-     * @param k         the key exchange k parameter
-     * @param h         the key exchange h parameter
+     * @param e       the key to resize
+     * @param kdfSize the cipher key-derivation-factor (in bytes)
+     * @param hash    the hash algorithm
+     * @param k       the key exchange k parameter
+     * @param h       the key exchange h parameter
      * @return the resized key
      * @throws Exception if a problem occur while resizing the key
      */
-    protected byte[] resizeKey(byte[] e, int blockSize, Digest hash, byte[] k, byte[] h) throws Exception {
-        for (Buffer buffer = null; blockSize > e.length; buffer = BufferUtils.clear(buffer)) {
+    protected byte[] resizeKey(byte[] e, int kdfSize, Digest hash, byte[] k, byte[] h) throws Exception {
+        for (Buffer buffer = null; kdfSize > e.length; buffer = BufferUtils.clear(buffer)) {
             if (buffer == null) {
                 buffer = new ByteArrayBuffer();
             }

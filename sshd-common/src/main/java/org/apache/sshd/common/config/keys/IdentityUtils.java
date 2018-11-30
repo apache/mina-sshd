@@ -138,7 +138,6 @@ public final class IdentityUtils {
      * <U>insensitive</U>), value=the {@link KeyPair} of the identity
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see SecurityUtils#loadKeyPairIdentity(String, InputStream, FilePasswordProvider)
      */
     public static NavigableMap<String, KeyPair> loadIdentities(
             SessionContext session, Map<String, ? extends Path> paths, FilePasswordProvider provider, OpenOption... options)

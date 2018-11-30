@@ -46,32 +46,32 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public enum BuiltinCiphers implements CipherFactory {
-    none(Constants.NONE, 0, 0, "None", 0, "None") {
+    none(Constants.NONE, 0, 0, "None", 0, "None", 0) {
         @Override
         public Cipher create() {
             return new CipherNone();
         }
     },
-    aes128cbc(Constants.AES128_CBC, 16, 16, "AES", 128, "AES/CBC/NoPadding"),
-    aes128ctr(Constants.AES128_CTR, 16, 16, "AES", 128, "AES/CTR/NoPadding"),
-    aes192cbc(Constants.AES192_CBC, 16, 24, "AES", 192, "AES/CBC/NoPadding"),
-    aes192ctr(Constants.AES192_CTR, 16, 24, "AES", 192, "AES/CTR/NoPadding"),
-    aes256cbc(Constants.AES256_CBC, 16, 32, "AES", 256, "AES/CBC/NoPadding"),
-    aes256ctr(Constants.AES256_CTR, 16, 32, "AES", 256, "AES/CTR/NoPadding"),
-    arcfour128(Constants.ARCFOUR128, 8, 16, "ARCFOUR", 128, "RC4") {
+    aes128cbc(Constants.AES128_CBC, 16, 16, "AES", 128, "AES/CBC/NoPadding", 16),
+    aes128ctr(Constants.AES128_CTR, 16, 16, "AES", 128, "AES/CTR/NoPadding", 16),
+    aes192cbc(Constants.AES192_CBC, 16, 24, "AES", 192, "AES/CBC/NoPadding", 16),
+    aes192ctr(Constants.AES192_CTR, 16, 24, "AES", 192, "AES/CTR/NoPadding", 16),
+    aes256cbc(Constants.AES256_CBC, 16, 32, "AES", 256, "AES/CBC/NoPadding", 16),
+    aes256ctr(Constants.AES256_CTR, 16, 32, "AES", 256, "AES/CTR/NoPadding", 16),
+    arcfour128(Constants.ARCFOUR128, 8, 16, "ARCFOUR", 128, "RC4", 16) {
         @Override
         public Cipher create() {
-            return new BaseRC4Cipher(getIVSize(), getKdfSize(), getKeySize());
+            return new BaseRC4Cipher(getIVSize(), getKdfSize(), getKeySize(), getCipherBlockSize());
         }
     },
-    arcfour256(Constants.ARCFOUR256, 8, 32, "ARCFOUR", 256, "RC4") {
+    arcfour256(Constants.ARCFOUR256, 8, 32, "ARCFOUR", 256, "RC4", 32) {
         @Override
         public Cipher create() {
-            return new BaseRC4Cipher(getIVSize(), getKdfSize(), getKeySize());
+            return new BaseRC4Cipher(getIVSize(), getKdfSize(), getKeySize(), getCipherBlockSize());
         }
     },
-    blowfishcbc(Constants.BLOWFISH_CBC, 8, 16, "Blowfish", 128, "Blowfish/CBC/NoPadding"),
-    tripledescbc(Constants.TRIPLE_DES_CBC, 8, 24, "DESede", 192, "DESede/CBC/NoPadding");
+    blowfishcbc(Constants.BLOWFISH_CBC, 8, 16, "Blowfish", 128, "Blowfish/CBC/NoPadding", 8),
+    tripledescbc(Constants.TRIPLE_DES_CBC, 8, 24, "DESede", 192, "DESede/CBC/NoPadding", 8);
 
     public static final Set<BuiltinCiphers> VALUES =
         Collections.unmodifiableSet(EnumSet.allOf(BuiltinCiphers.class));
@@ -83,17 +83,21 @@ public enum BuiltinCiphers implements CipherFactory {
     private final int ivsize;
     private final int kdfSize;
     private final int keysize;
+    private final int blkSize;
     private final String algorithm;
     private final String transformation;
     private final boolean supported;
 
-    BuiltinCiphers(String factoryName, int ivsize, int kdfSize, String algorithm, int keySize, String transformation) {
+    BuiltinCiphers(
+            String factoryName, int ivsize, int kdfSize,
+            String algorithm, int keySize, String transformation, int blkSize) {
         this.factoryName = factoryName;
         this.ivsize = ivsize;
         this.kdfSize = kdfSize;
         this.keysize = keySize;
         this.algorithm = algorithm;
         this.transformation = transformation;
+        this.blkSize = blkSize;
         /*
          * This can be done once since in order to change the support the JVM
          * needs to be stopped, some unlimited-strength files need be installed
@@ -139,6 +143,11 @@ public enum BuiltinCiphers implements CipherFactory {
     }
 
     @Override
+    public int getCipherBlockSize() {
+        return blkSize;
+    }
+
+    @Override
     public String getAlgorithm() {
         return algorithm;
     }
@@ -150,7 +159,9 @@ public enum BuiltinCiphers implements CipherFactory {
 
     @Override
     public Cipher create() {
-        return new BaseCipher(getIVSize(), getKdfSize(), getAlgorithm(), getKeySize(), getTransformation());
+        return new BaseCipher(
+            getIVSize(), getKdfSize(), getAlgorithm(),
+            getKeySize(), getTransformation(), getCipherBlockSize());
     }
 
     /**

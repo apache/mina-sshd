@@ -47,7 +47,7 @@ public interface ClientIdentityLoader {
      * <P>A default implementation that assumes a file location that <U>must</U> exist.</P>
      *
      * <P>
-     * <B>Note:</B> It calls {@link SecurityUtils#loadKeyPairIdentity(String, InputStream, FilePasswordProvider)}
+     * <B>Note:</B> It calls {@link SecurityUtils#loadKeyPairIdentities(SessionContext, NamedResource, InputStream, FilePasswordProvider)}
      * </P>
      */
     ClientIdentityLoader DEFAULT = new ClientIdentityLoader() {

@@ -192,7 +192,7 @@ public class BuiltinCiphersTest extends BaseTestSupport {
         rnd.nextBytes(iv);
         cipher.init(Cipher.Mode.Encrypt, key, iv);
 
-        byte[] data = new byte[cipher.getKdfSize()];
+        byte[] data = new byte[cipher.getCipherBlockSize()];
         rnd.nextBytes(data);
 
         cipher.update(data);

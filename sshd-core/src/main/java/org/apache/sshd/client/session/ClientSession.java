@@ -375,7 +375,7 @@ public interface ClientSession
      * iterator returned)
      * @return The wrapping KeyIdentityProvider
      * @see ClientSession#getRegisteredIdentities()
-     * @see ClientSession#getKeyPairProvider()
+     * @see ClientSession#getKeyIdentityProvider()
      */
     static KeyIdentityProvider providerOf(ClientSession session) {
         return (session == null)

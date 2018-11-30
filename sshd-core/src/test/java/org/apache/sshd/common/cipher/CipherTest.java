@@ -178,7 +178,7 @@ public class CipherTest extends BaseTestSupport {
         random.fill(iv, 0, iv.length);
         cipher.init(Cipher.Mode.Encrypt, key, iv);
 
-        byte[] input = new byte[BufferUtils.getNextPowerOf2(key.length)];
+        byte[] input = new byte[BufferUtils.getNextPowerOf2(cipher.getCipherBlockSize())];
         random.fill(input, 0, input.length);
         long t0 = System.currentTimeMillis();
         for (int i = 0; i < numRounds; i++) {

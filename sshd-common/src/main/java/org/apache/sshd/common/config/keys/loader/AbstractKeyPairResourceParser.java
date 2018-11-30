@@ -138,7 +138,6 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
      * @return The extracted {@link KeyPair}s - may be {@code null}/empty if none.
      * @throws IOException If failed to parse the data
      * @throws GeneralSecurityException If failed to generate the keys
-     * @see #extractKeyPairs(String, String, String, FilePasswordProvider, byte[])
      */
     public Collection<KeyPair> extractKeyPairs(
             SessionContext session, NamedResource resourceKey,
@@ -146,7 +145,8 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
             FilePasswordProvider passwordProvider,
             List<String> lines)
                 throws IOException, GeneralSecurityException {
-        return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, KeyPairResourceParser.extractDataBytes(lines));
+        return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider,
+            KeyPairResourceParser.extractDataBytes(lines));
     }
 
     /**
@@ -161,7 +161,6 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
      * @return The extracted {@link KeyPair}s - may be {@code null}/empty if none.
      * @throws IOException If failed to parse the data
      * @throws GeneralSecurityException If failed to generate the keys
-     * @see #extractKeyPairs(String, String, String, FilePasswordProvider, InputStream)
      */
     public Collection<KeyPair> extractKeyPairs(
             SessionContext session, NamedResource resourceKey,

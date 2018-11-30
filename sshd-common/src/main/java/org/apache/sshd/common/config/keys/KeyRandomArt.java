@@ -214,7 +214,7 @@ public class KeyRandomArt implements AlgorithmNameProvider, KeySizeIndicator {
      * or has no keys to provide
      * @return The combined representation
      * @throws Exception If failed to extract or combine the entries
-     * @see #combine(Appendable, char, KeyIdentityProvider)
+     * @see #combine(SessionContext, Appendable, char, KeyIdentityProvider)
      */
     public static String combine(
             SessionContext session, char separator, KeyIdentityProvider provider)
@@ -235,7 +235,7 @@ public class KeyRandomArt implements AlgorithmNameProvider, KeySizeIndicator {
      * or has no keys to provide
      * @return The updated writer instance
      * @throws Exception If failed to extract or write the entries
-     * @see #generate(KeyIdentityProvider)
+     * @see #generate(SessionContext, KeyIdentityProvider)
      * @see #combine(Appendable, char, Collection)
      */
     public static <A extends Appendable> A combine(
@@ -252,9 +252,11 @@ public class KeyRandomArt implements AlgorithmNameProvider, KeySizeIndicator {
      * or has no keys to provide
      * @return The extracted {@link KeyRandomArt}s
      * @throws Exception If failed to extract the entries
-     * @see KeyIdentityProvider#loadKeys()
+     * @see KeyIdentityProvider#loadKeys(SessionContext)
      */
-    public static Collection<KeyRandomArt> generate(SessionContext session, KeyIdentityProvider provider) throws Exception {
+    public static Collection<KeyRandomArt> generate(
+            SessionContext session, KeyIdentityProvider provider)
+                throws Exception {
         Iterable<KeyPair> keys = (provider == null) ? null : provider.loadKeys(session);
         Iterator<KeyPair> iter = (keys == null) ? null : keys.iterator();
         if ((iter == null) || (!iter.hasNext())) {

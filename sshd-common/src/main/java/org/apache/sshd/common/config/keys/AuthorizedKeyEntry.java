@@ -180,7 +180,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
      * Reads read the contents of an {@code authorized_keys} file
      *
      * @param in The {@link InputStream} to use to read the contents of an {@code authorized_keys} file
-     * @param okToClose {@code true if method may close the input regardless success or failure
+     * @param okToClose {@code true} if method may close the input regardless success or failure
      * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
      * @see #readAuthorizedKeys(Reader, boolean)
@@ -196,7 +196,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
      * Reads read the contents of an {@code authorized_keys} file
      *
      * @param rdr The {@link Reader} to use to read the contents of an {@code authorized_keys} file
-     * @param okToClose {@code true if method may close the input regardless success or failure
+     * @param okToClose {@code true} if method may close the input regardless success or failure
      * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
      * @see #readAuthorizedKeys(BufferedReader)

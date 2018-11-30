@@ -973,7 +973,7 @@ public abstract class AbstractSession extends SessionHelper {
             if (outCipher != null) {
                 outCipher.update(buffer.array(), off, len + 4);
 
-                int blocksCount = (len + 4) / outCipher.getKdfSize();
+                int blocksCount = (len + 4) / outCipher.getCipherBlockSize();
                 outBlocksCount.addAndGet(Math.max(1, blocksCount));
             }
             // Increment packet id
@@ -1009,7 +1009,7 @@ public abstract class AbstractSession extends SessionHelper {
                     if (inCipher != null) {
                         inCipher.update(decoderBuffer.array(), 0, inCipherSize);
 
-                        int blocksCount = inCipherSize / inCipher.getKdfSize();
+                        int blocksCount = inCipherSize / inCipher.getCipherBlockSize();
                         inBlocksCount.addAndGet(Math.max(1, blocksCount));
                     }
                     // Read packet length
@@ -1044,7 +1044,7 @@ public abstract class AbstractSession extends SessionHelper {
                         int updateLen = decoderLength + 4 - inCipherSize;
                         inCipher.update(data, inCipherSize, updateLen);
 
-                        int blocksCount = updateLen / inCipher.getKdfSize();
+                        int blocksCount = updateLen / inCipher.getCipherBlockSize();
                         inBlocksCount.addAndGet(Math.max(1, blocksCount));
                     }
                     // Check the mac of the packet
@@ -1337,8 +1337,8 @@ public abstract class AbstractSession extends SessionHelper {
         inCompression.init(Compression.Type.Inflater, -1);
 
         // see https://tools.ietf.org/html/rfc4344#section-3.2
-        int inBlockSize = inCipher.getKdfSize();
-        int outBlockSize = outCipher.getKdfSize();
+        int inBlockSize = inCipher.getCipherBlockSize();
+        int outBlockSize = outCipher.getCipherBlockSize();
         // select the lowest cipher size
         int avgCipherBlockSize = Math.min(inBlockSize, outBlockSize);
         long recommendedByteRekeyBlocks = 1L << Math.min((avgCipherBlockSize * Byte.SIZE) / 4, 63);    // in case (block-size / 4) > 63

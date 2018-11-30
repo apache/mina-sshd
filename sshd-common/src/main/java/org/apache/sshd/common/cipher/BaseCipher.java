@@ -21,7 +21,6 @@ package org.apache.sshd.common.cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
@@ -32,20 +31,24 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  */
 public class BaseCipher implements Cipher {
 
-    protected javax.crypto.Cipher cipher;
+    private javax.crypto.Cipher cipher;
     private final int ivsize;
     private final int kdfSize;
     private final String algorithm;
     private final int keySize;
+    private final int blkSize;
     private final String transformation;
     private String s;
 
-    public BaseCipher(int ivsize, int kdfSize, String algorithm, int keySize, String transformation) {
+    public BaseCipher(
+            int ivsize, int kdfSize, String algorithm,
+            int keySize, String transformation, int blkSize) {
         this.ivsize = ivsize;
         this.kdfSize = kdfSize;
         this.algorithm = ValidateUtils.checkNotNullAndNotEmpty(algorithm, "No algorithm");
         this.keySize = keySize;
         this.transformation = ValidateUtils.checkNotNullAndNotEmpty(transformation, "No transformation");
+        this.blkSize = blkSize;
     }
 
     @Override
@@ -74,21 +77,30 @@ public class BaseCipher implements Cipher {
     }
 
     @Override
+    public int getCipherBlockSize() {
+        return blkSize;
+    }
+
+    @Override
     public void init(Mode mode, byte[] key, byte[] iv) throws Exception {
         key = initializeKeyData(mode, key, getKdfSize());
         iv = initializeIVData(mode, iv, getIVSize());
-        try {
-            cipher = SecurityUtils.getCipher(getTransformation());
-            cipher.init(
-                Mode.Encrypt.equals(mode)
-                    ? javax.crypto.Cipher.ENCRYPT_MODE
-                    : javax.crypto.Cipher.DECRYPT_MODE,
-                new SecretKeySpec(key, getAlgorithm()),
-                new IvParameterSpec(iv));
-        } catch (Exception e) {
-            cipher = null;
-            throw new SshException("Unable to initialize cipher " + this, e);
-        }
+        cipher = createCipherInstance(mode, key, iv);
+    }
+
+    protected javax.crypto.Cipher getCipherInstance() {
+        return cipher;
+    }
+
+    protected javax.crypto.Cipher createCipherInstance(Mode mode, byte[] key, byte[] iv) throws Exception {
+        javax.crypto.Cipher instance = SecurityUtils.getCipher(getTransformation());
+        instance.init(
+            Mode.Encrypt.equals(mode)
+                ? javax.crypto.Cipher.ENCRYPT_MODE
+                : javax.crypto.Cipher.DECRYPT_MODE,
+            new SecretKeySpec(key, getAlgorithm()),
+            new IvParameterSpec(iv));
+        return instance;
     }
 
     protected byte[] initializeKeyData(Mode mode, byte[] key, int reqLen) {
@@ -122,6 +134,7 @@ public class BaseCipher implements Cipher {
                     + ", ivSize=" + getIVSize()
                     + ", kdfSize=" + getKdfSize()
                     + "," + getTransformation()
+                    + ", blkSize=" + getCipherBlockSize()
                     + "]";
             }
         }

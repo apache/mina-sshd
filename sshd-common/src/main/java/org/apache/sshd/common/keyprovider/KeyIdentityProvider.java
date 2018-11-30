@@ -111,8 +111,6 @@ public interface KeyIdentityProvider {
     /**
      * Wraps a group of {@link KeyIdentityProvider} into a single one
      *
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
      * @param providers The providers - ignored if {@code null}/empty (i.e., returns
      * {@link #EMPTY_KEYS_PROVIDER})
      * @return The wrapping provider
