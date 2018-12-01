@@ -18,11 +18,14 @@
  */
 package org.apache.sshd.common.config.keys.loader.openssh;
 
+import static java.text.MessageFormat.format;
+
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StreamCorruptedException;
+import java.net.ProtocolException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
@@ -48,6 +51,7 @@ import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
+import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
 import org.apache.sshd.common.config.keys.loader.AbstractKeyPairResourceParser;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
@@ -108,9 +112,6 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         stream = validateStreamMagicMarker(session, resourceKey, stream);
 
         String cipher = KeyEntryResolver.decodeString(stream, MAX_CIPHER_NAME_LENGTH);
-        if (!OpenSSHParserContext.IS_NONE_CIPHER.test(cipher)) {
-            throw new NoSuchAlgorithmException("Unsupported cipher: " + cipher);
-        }
 
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
@@ -118,9 +119,6 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         }
 
         String kdfName = KeyEntryResolver.decodeString(stream, MAX_KDF_NAME_LENGTH);
-        if (!OpenSSHParserContext.IS_NONE_KDF.test(kdfName)) {
-            throw new NoSuchAlgorithmException("Unsupported KDF: " + kdfName);
-        }
 
         byte[] kdfOptions = KeyEntryResolver.readRLEBytes(stream, MAX_KDF_OPTIONS_SIZE);
         if (debugEnabled) {
@@ -137,7 +135,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         }
 
         List<PublicKey> publicKeys = new ArrayList<>(numKeys);
-        OpenSSHParserContext context = new OpenSSHParserContext(cipher, kdfName, kdfOptions);
+        OpenSSHParserContext context = new OpenSSHParserContext(resourceKey, cipher, kdfName, kdfOptions);
         boolean traceEnabled = log.isTraceEnabled();
         for (int index = 1; index <= numKeys; index++) {
             PublicKey pubKey = readPublicKey(session, resourceKey, context, stream);
@@ -150,8 +148,10 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         }
 
         byte[] privateData = KeyEntryResolver.readRLEBytes(stream, MAX_PRIVATE_KEY_DATA_SIZE);
-        try (InputStream bais = new ByteArrayInputStream(privateData)) {
-            return readPrivateKeys(session, resourceKey, context, publicKeys, passwordProvider, bais);
+        try {
+            return readPrivateKeys(session, resourceKey, context, publicKeys, passwordProvider, privateData);
+        } finally {
+            Arrays.fill(privateData, (byte) 0);
         }
     }
 
@@ -173,6 +173,66 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     protected List<KeyPair> readPrivateKeys(
             SessionContext session, NamedResource resourceKey,
             OpenSSHParserContext context, Collection<? extends PublicKey> publicKeys,
+            FilePasswordProvider passwordProvider, byte[] data)
+                throws IOException, GeneralSecurityException {
+        if (!context.isEncrypted()) {
+            try (InputStream stream = new ByteArrayInputStream(data)) {
+                return readPrivateKeys(session, resourceKey, context, publicKeys, passwordProvider, stream);
+            }
+        }
+        // Encrypted keys
+        if (passwordProvider == null) {
+            throw new StreamCorruptedException(format("No password provider for encrypted key {0}", resourceKey.getName()));
+        }
+        if (!context.validate(data)) {
+            throw new StreamCorruptedException(format("Invalid data in encrypted key {0}", resourceKey.getName()));
+        }
+        List<KeyPair> keys = null;
+        for (int retryCount = 0;;retryCount++) {
+            String pwd = passwordProvider.getPassword(session, resourceKey, retryCount);
+            if (GenericUtils.isEmpty(pwd)) {
+                return Collections.emptyList();
+            }
+            byte[] password = pwd.getBytes(StandardCharsets.UTF_8);
+            byte[] clearText = null;
+            try {
+                clearText = context.decrypt(data, password);
+                try (InputStream stream = new ByteArrayInputStream(clearText)) {
+                    keys = readPrivateKeys(session, resourceKey, context, publicKeys, passwordProvider, stream);
+                }
+            } catch (IOException | GeneralSecurityException | RuntimeException e) {
+                ResourceDecodeResult result =
+                        passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryCount, pwd, e);
+                if (result == null) {
+                    result = ResourceDecodeResult.TERMINATE;
+                }
+                switch (result) {
+                    case TERMINATE:
+                        throw e;
+                    case RETRY:
+                        continue;
+                    case IGNORE:
+                        return Collections.emptyList();
+                    default:
+                        throw new ProtocolException("Unsupported decode attempt result (" + result + ") for " + resourceKey);
+                }
+            } finally {
+                if (clearText != null) {
+                    Arrays.fill(clearText, (byte) 0);
+                }
+                if (password != null) {
+                    Arrays.fill(password, (byte) 0);
+                }
+            }
+            passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryCount, pwd, null);
+            break;
+        }
+        return keys;
+    }
+
+    protected List<KeyPair> readPrivateKeys(
+            SessionContext session, NamedResource resourceKey,
+            OpenSSHParserContext context, Collection<? extends PublicKey> publicKeys,
             FilePasswordProvider passwordProvider, InputStream stream)
                 throws IOException, GeneralSecurityException {
         if (GenericUtils.isEmpty(publicKeys)) {
@@ -182,9 +242,8 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         boolean traceEnabled = log.isTraceEnabled();
         int check1 = KeyEntryResolver.decodeInt(stream);
         int check2 = KeyEntryResolver.decodeInt(stream);
-        if (traceEnabled) {
-            log.trace("readPrivateKeys({}) check1=0x{}, check2=0x{}",
-                resourceKey, Integer.toHexString(check1), Integer.toHexString(check2));
+        if (check1 != check2) {
+            throw new StreamCorruptedException(format("Check number mismatch in key {0}", resourceKey.getName()));
         }
 
         List<KeyPair> keyPairs = new ArrayList<>(publicKeys.size());

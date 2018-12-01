@@ -65,15 +65,17 @@ public class OpenSSHKeyPairResourceParserTest extends JUnitTestSupport {
         return parameterize(BuiltinIdentities.VALUES);
     }
 
-    @Test
-    public void testLoadKeyPairs() throws Exception {
+    private void load(String prefix, FilePasswordProvider passwordProvider) throws Exception {
         Assume.assumeTrue(identity + " not supported", identity.isSupported());
 
         String resourceKey = getClass().getSimpleName() + "-" + identity.getName().toUpperCase() + "-" + KeyPair.class.getSimpleName();
+        if (!GenericUtils.isEmpty(prefix)) {
+            resourceKey = prefix + '-' + resourceKey;
+        }
         URL urlKeyPair = getClass().getResource(resourceKey);
         assertNotNull("Missing key-pair resource: " + resourceKey, urlKeyPair);
 
-        Collection<KeyPair> pairs = PARSER.loadKeyPairs(null, urlKeyPair, FilePasswordProvider.EMPTY);
+        Collection<KeyPair> pairs = PARSER.loadKeyPairs(null, urlKeyPair, passwordProvider);
         assertEquals("Mismatched pairs count", 1, GenericUtils.size(pairs));
 
         URL urlPubKey = getClass().getResource(resourceKey + ".pub");
@@ -104,5 +106,15 @@ public class OpenSSHKeyPairResourceParserTest extends JUnitTestSupport {
                 assertKeyEquals("Mismatched recovered public key", pubKey, recKey);
             }
         }
+    }
+
+    @Test
+    public void testLoadKeyPairs() throws Exception {
+        load("", FilePasswordProvider.EMPTY);
+    }
+
+    @Test
+    public void testLoadEncryptedKeyPairs() throws Exception {
+        load("encrypted", (c, r, i) -> "super secret passphrase");
     }
 }
