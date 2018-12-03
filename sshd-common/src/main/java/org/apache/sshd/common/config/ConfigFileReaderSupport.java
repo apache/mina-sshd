@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
@@ -191,16 +192,18 @@ public final class ConfigFileReaderSupport {
     }
 
     /**
-     * @param v Checks if the value is &quot;yes&quot;, &quot;y&quot;
-     *          or &quot;on&quot; or &quot;true&quot;.
+     * @param v Checks if the value is &quot;yes&quot;, &quot;y&quot;,
+     * &quot;on&quot;, &quot;t&quot; or &quot;true&quot;.
      * @return The result - <B>Note:</B> {@code null}/empty values are
      * interpreted as {@code false}
+     * @see PropertyResolverUtils#TRUE_VALUES
      */
     public static boolean parseBooleanValue(String v) {
-        return "yes".equalsIgnoreCase(v)
-            || "y".equalsIgnoreCase(v)
-            || "on".equalsIgnoreCase(v)
-            || "true".equalsIgnoreCase(v);
+        if (GenericUtils.isEmpty(v)) {
+            return false;
+        }
+
+        return PropertyResolverUtils.TRUE_VALUES.contains(v);
     }
 
     /**

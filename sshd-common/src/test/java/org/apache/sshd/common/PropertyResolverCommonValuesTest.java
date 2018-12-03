@@ -19,10 +19,10 @@
 
 package org.apache.sshd.common;
 
-import java.util.Map;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.common.config.VersionProperties;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
@@ -35,14 +35,32 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
-public class VersionPropertiesTest extends JUnitTestSupport {
-    public VersionPropertiesTest() {
+public class PropertyResolverCommonValuesTest extends JUnitTestSupport {
+    public PropertyResolverCommonValuesTest() {
         super();
     }
 
     @Test
-    public void testNonEmptyProperties() {
-        Map<?, ?> props = VersionProperties.getVersionProperties();
-        assertTrue(GenericUtils.isNotEmpty(props));
+    public void testToBooleanOnNonBooleanValues() {
+        for (Object v : new Object[] {1, 2L, 3.0f, 4.0d, new Date(), Calendar.class, TimeUnit.DAYS}) {
+            try {
+                Boolean result = PropertyResolverUtils.toBoolean(v);
+                fail("Unexpected success for value=" + v + ": " + result);
+            } catch (UnsupportedOperationException e) {
+                // expected - ignored
+            }
+        }
+    }
+
+    @Test
+    public void testParseBooleanOnNonBooleanValues() {
+        for (String v : new String[] {getCurrentTestName(), "0", "1"}) {
+            try {
+                Boolean result = PropertyResolverUtils.parseBoolean(v);
+                fail("Unexpected success for value=" + v + ": " + result);
+            } catch (IllegalArgumentException e) {
+                // expected - ignored
+            }
+        }
     }
 }
