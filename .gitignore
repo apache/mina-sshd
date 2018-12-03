@@ -21,3 +21,4 @@ RemoteSystemsTempFiles/
 
 # Locks and temporary files
 *~
+.attach_pid*
