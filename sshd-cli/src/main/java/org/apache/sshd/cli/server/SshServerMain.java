@@ -147,7 +147,9 @@ public class SshServerMain extends SshServerCliSupport {
             }
         }
 
-        SshServer sshd = error ? null : setupIoServiceFactory(SshServer.setUpDefaultServer(), options, System.out, System.err, args);
+        SshServer sshd = error
+            ? null
+            : setupIoServiceFactory(SshServer.setUpDefaultServer(), options, System.out, System.err, args);
         if (sshd == null) {
             error = true;
         }
@@ -185,7 +187,8 @@ public class SshServerMain extends SshServerCliSupport {
             .withDelegate(ProcessShellCommandFactory.INSTANCE)
             .build());
 
-        List<NamedFactory<Command>> subsystems = resolveServerSubsystems(System.err, resolver);
+        List<NamedFactory<Command>> subsystems =
+            resolveServerSubsystems(System.out, System.err, resolver);
         if (GenericUtils.isNotEmpty(subsystems)) {
             System.out.append("Setup subsystems=").println(NamedResource.getNames(subsystems));
             sshd.setSubsystemFactories(subsystems);

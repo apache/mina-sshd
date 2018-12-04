@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.sshd.cli.CliSupport;
+import org.apache.sshd.cli.server.helper.SftpServerSubSystemEventListener;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
@@ -61,6 +62,8 @@ import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.shell.InteractiveProcessShellFactory;
 import org.apache.sshd.server.shell.ShellFactory;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
+import org.apache.sshd.server.subsystem.sftp.SftpEventListener;
+import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 
 /**
  * TODO Add javadoc
@@ -159,7 +162,9 @@ public abstract class SshServerCliSupport extends CliSupport {
         return banner;
     }
 
-    public static List<NamedFactory<Command>> resolveServerSubsystems(PrintStream stderr, PropertyResolver options) throws Exception {
+    public static List<NamedFactory<Command>> resolveServerSubsystems(
+            PrintStream stdout, PrintStream stderr, PropertyResolver options)
+                throws Exception {
         ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(SubsystemFactory.class);
         String classList = System.getProperty(SubsystemFactory.class.getName());
         if (GenericUtils.isNotEmpty(classList)) {
@@ -169,6 +174,7 @@ public abstract class SshServerCliSupport extends CliSupport {
                 try {
                     Class<?> clazz = cl.loadClass(fqcn);
                     SubsystemFactory factory = SubsystemFactory.class.cast(clazz.newInstance());
+                    factory = registerSubsystemFactoryListeners(stdout, stderr, options, factory);
                     subsystems.add(factory);
                 } catch (Exception e) {
                     stderr.append("ERROR: Failed (").append(e.getClass().getSimpleName()).append(')')
@@ -182,7 +188,8 @@ public abstract class SshServerCliSupport extends CliSupport {
             return subsystems;
         }
 
-        String nameList = (options == null) ? null : options.getString(ConfigFileReaderSupport.SUBSYSTEM_CONFIG_PROP);
+        String nameList =
+            (options == null) ? null : options.getString(ConfigFileReaderSupport.SUBSYSTEM_CONFIG_PROP);
         if ("none".equalsIgnoreCase(nameList)) {
             return Collections.emptyList();
         }
@@ -200,10 +207,22 @@ public abstract class SshServerCliSupport extends CliSupport {
                 continue;
             }
 
+            factory = registerSubsystemFactoryListeners(stdout, stderr, options, factory);
             subsystems.add(factory);
         }
 
         return subsystems;
+    }
+
+    public static <F extends SubsystemFactory> F registerSubsystemFactoryListeners(
+            PrintStream stdout, PrintStream stderr, PropertyResolver options, F factory)
+                throws Exception {
+        if (factory instanceof SftpSubsystemFactory) {
+            SftpEventListener listener = new SftpServerSubSystemEventListener(stdout, stderr);
+            ((SftpSubsystemFactory) factory).addSftpEventListener(listener);
+        }
+
+        return factory;
     }
 
     public static ShellFactory resolveShellFactory(PrintStream stderr, PropertyResolver options) throws Exception {
