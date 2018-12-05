@@ -122,8 +122,11 @@
         <module name="EmptyForInitializerPad" />
         <module name="MethodParamPad" />
         <module name="WhitespaceAfter" />
+        <module name="NoWhitespaceBefore">
+            <property name="tokens" value="COMMA,ELLIPSIS,SEMI,POST_INC,POST_DEC,METHOD_REF" />
+        </module>
         <module name="NoWhitespaceAfter">
-            <property name="tokens" value="ARRAY_INIT,BNOT,DEC,DOT,INC,AT,LNOT,UNARY_MINUS,UNARY_PLUS" />
+            <property name="tokens" value="ARRAY_INIT,BNOT,DEC,DOT,INC,AT,LNOT,UNARY_MINUS,UNARY_PLUS,METHOD_REF" />
         </module>
         <module name="EmptyLineSeparator">
             <property name="tokens" value="IMPORT,CLASS_DEF,INTERFACE_DEF,STATIC_INIT,INSTANCE_INIT,METHOD_DEF,CTOR_DEF" />
@@ -131,7 +134,6 @@
             <property name="allowNoEmptyLineBetweenFields" value="true" />
             <property name="allowMultipleEmptyLinesInsideClassMembers" value="false" />
         </module>
-        <module name="NoWhitespaceBefore" />
         <module name="GenericWhitespace"/>
         <module name="OperatorWrap" />
         <module name="ParenPad" />
