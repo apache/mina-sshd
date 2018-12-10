@@ -39,7 +39,7 @@ public interface AttributeRepository {
      * {@code get/set methods} e.g:
      * </P>
      *
-     * <pre>
+     * <pre><code>
      * public static final AttributeKey&lt;MyValue&gt; MY_KEY = new AttributeKey&lt;MyValue&gt;();
      *
      * public static MyValue getMyValue(Session s) {
@@ -49,7 +49,7 @@ public interface AttributeRepository {
      * public static void setMyValue(Session s, MyValue value) {
      *   s.setAttribute(MY_KEY, value);
      * }
-     * </pre>
+     * </code></pre>
      *
      * @param <T> type of value stored in the attribute.
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

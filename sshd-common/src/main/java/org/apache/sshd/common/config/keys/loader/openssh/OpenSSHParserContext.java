@@ -19,33 +19,42 @@
 
 package org.apache.sshd.common.config.keys.loader.openssh;
 
+import java.io.IOException;
+import java.io.StreamCorruptedException;
+import java.security.GeneralSecurityException;
 import java.util.function.Predicate;
 
+import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class OpenSSHParserContext {
+public class OpenSSHParserContext implements OpenSSHKeyDecryptor {
     public static final String NONE_CIPHER = "none";
     public static final Predicate<String> IS_NONE_CIPHER = c -> GenericUtils.isEmpty(c) || NONE_CIPHER.equalsIgnoreCase(c);
 
-    public static final String NONE_KDF = "none";
-    public static final Predicate<String> IS_NONE_KDF = c -> GenericUtils.isEmpty(c) || NONE_KDF.equalsIgnoreCase(c);
-
     private String cipherName;
-    private String kdfName;
-    private byte[] kdfOptions;
+    private OpenSSHKdfOptions kdfOptions;
 
     public OpenSSHParserContext() {
         super();
     }
 
-    public OpenSSHParserContext(String cipherName, String kdfName, byte... kdfOptions) {
-        this.cipherName = cipherName;
-        this.kdfName = kdfName;
-        this.kdfOptions = kdfOptions;
+    public OpenSSHParserContext(String cipherName, OpenSSHKdfOptions kdfOptions) {
+        setCipherName(cipherName);
+        setKdfOptions(kdfOptions);
+    }
+
+    @Override
+    public boolean isEncrypted() {
+        if (!IS_NONE_CIPHER.test(getCipherName())) {
+            return true;
+        }
+
+        OpenSSHKdfOptions options = getKdfOptions();
+        return (options != null) && options.isEncrypted();
     }
 
     public String getCipherName() {
@@ -56,28 +65,31 @@ public class OpenSSHParserContext {
         this.cipherName = cipherName;
     }
 
-    public String getKdfName() {
-        return kdfName;
-    }
-
-    public void setKdfName(String kdfName) {
-        this.kdfName = kdfName;
-    }
-
-    public byte[] getKdfOptions() {
+    public OpenSSHKdfOptions getKdfOptions() {
         return kdfOptions;
     }
 
-    public void setKdfOptions(byte[] kdfOptions) {
+    public void setKdfOptions(OpenSSHKdfOptions kdfOptions) {
         this.kdfOptions = kdfOptions;
+    }
+
+    @Override
+    public byte[] decodePrivateKeyBytes(
+            SessionContext session, NamedResource resourceKey, String cipherName, byte[] privateDataBytes, String password)
+                throws IOException, GeneralSecurityException {
+        OpenSSHKdfOptions options = getKdfOptions();
+        if (options == null) {
+            throw new StreamCorruptedException("No KDF options available for decrypting " + resourceKey);
+        }
+
+        return options.decodePrivateKeyBytes(session, resourceKey, cipherName, privateDataBytes, password);
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName()
             + "[cipher=" + getCipherName()
-            + ", kdfName=" + getKdfName()
-            + ", kdfOptions=" + BufferUtils.toHex(':', getKdfOptions())
+            + ", kdfOptions=" + getKdfOptions()
             + "]";
     }
 }

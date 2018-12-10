@@ -50,13 +50,13 @@ public interface IoSession extends ConnectionEndpointsIndicator, PacketWriter, C
      * Sets a user defined attribute if the attribute with the specified key
      * is not set yet. This method is same with the following code except
      * that the operation is performed atomically.
-     * <code><pre>
+     * <pre><code>
      * if (containsAttribute(key)) {
      *     return getAttribute(key);
      * } else {
      *     return setAttribute(key, value);
      * }
-     * </pre></code>
+     * </code></pre>
      *
      * @param key The key of the attribute we want to set
      * @param value The value we want to set

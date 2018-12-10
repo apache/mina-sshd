@@ -34,7 +34,7 @@ import org.apache.sshd.common.util.GenericUtils;
  * to {@link UserInteraction#getUpdatedPassword(ClientSession, String, String)}.
  * The way to use it would be as follows:
  * </P>
- * <CODE><PRE>
+ * <pre><code>
  * try (ClientSession session = client.connect(login, host, port).await().getSession()) {
  *     session.setUserInteraction(...);     // this can also be set at the client level
  *     PasswordIdentityProvider passwordIdentityProvider =
@@ -52,7 +52,7 @@ import org.apache.sshd.common.util.GenericUtils;
  *     session.setPasswordIdentityProvider(passwordIdentityProvider);
  *     session.auth.verify(...timeout...);
  * }
- * </PRE></CODE>
+ * </code></pre>
  *
  * <B>Note:</B> {@link UserInteraction#isInteractionAllowed(ClientSession)} is consulted
  * prior to invoking {@code getUpdatedPassword} - if returns {@code false} then password

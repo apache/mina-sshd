@@ -242,6 +242,10 @@ public final class NumberUtils {
         return sb.toString();
     }
 
+    public static byte[] emptyIfNull(byte[] a) {
+        return (a == null) ? GenericUtils.EMPTY_BYTE_ARRAY : a;
+    }
+
     public static boolean isEmpty(byte[] a) {
         return NumberUtils.length(a) <= 0;
     }

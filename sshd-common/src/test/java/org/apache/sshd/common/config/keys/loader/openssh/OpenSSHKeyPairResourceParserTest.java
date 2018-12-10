@@ -37,6 +37,7 @@ import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.Assume;
 import org.junit.FixMethodOrder;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -54,6 +55,10 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @Category({ NoIoTestCase.class })
 public class OpenSSHKeyPairResourceParserTest extends JUnitTestSupport {
     private static final OpenSSHKeyPairResourceParser PARSER = OpenSSHKeyPairResourceParser.INSTANCE;
+    private static final String PASSWORD = "super secret passphrase";
+    private static final FilePasswordProvider PASSWORD_PROVIDER = FilePasswordProvider.of(PASSWORD);
+    private static final String ENCRYPTED_RESOURCE_PREFIX = PASSWORD.replace(' ', '-');
+
     private final BuiltinIdentities identity;
 
     public OpenSSHKeyPairResourceParserTest(BuiltinIdentities identity) {
@@ -66,14 +71,32 @@ public class OpenSSHKeyPairResourceParserTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testLoadKeyPairs() throws Exception {
+    public void testLoadUnencryptedKeyPairs() throws Exception {
+        testLoadKeyPairs(false);
+    }
+
+    @Test
+    @Ignore("SSHD-708")
+    public void testLoadEncryptedKeyPairs() throws Exception {
+        testLoadKeyPairs(true);
+    }
+
+    private void testLoadKeyPairs(boolean encrypted) throws Exception {
         Assume.assumeTrue(identity + " not supported", identity.isSupported());
 
         String resourceKey = getClass().getSimpleName() + "-" + identity.getName().toUpperCase() + "-" + KeyPair.class.getSimpleName();
-        URL urlKeyPair = getClass().getResource(resourceKey);
-        assertNotNull("Missing key-pair resource: " + resourceKey, urlKeyPair);
+        if (encrypted) {
+            resourceKey = ENCRYPTED_RESOURCE_PREFIX + "-" + resourceKey;
+        }
 
-        Collection<KeyPair> pairs = PARSER.loadKeyPairs(null, urlKeyPair, FilePasswordProvider.EMPTY);
+        URL urlKeyPair = getClass().getResource(resourceKey);
+        if (encrypted) {
+            Assume.assumeTrue(identity + " no encrypted test data", urlKeyPair != null);
+        } else {
+            assertNotNull("Missing key-pair resource: " + resourceKey, urlKeyPair);
+        }
+
+        Collection<KeyPair> pairs = PARSER.loadKeyPairs(null, urlKeyPair, PASSWORD_PROVIDER);
         assertEquals("Mismatched pairs count", 1, GenericUtils.size(pairs));
 
         URL urlPubKey = getClass().getResource(resourceKey + ".pub");

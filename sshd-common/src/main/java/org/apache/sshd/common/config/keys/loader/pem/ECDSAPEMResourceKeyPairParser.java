@@ -189,9 +189,9 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
 
     /**
      * <P>ASN.1 syntax according to rfc5915 is:</P></BR>
-     * <PRE>
+     * <pre><code>
      *      publicKey  [1] BIT STRING OPTIONAL
-     * </PRE>
+     * </code></pre>
      * @param curve The {@link ECCurves} curve
      * @param parser The {@link DERParser} assumed to be positioned at the
      * start of the data

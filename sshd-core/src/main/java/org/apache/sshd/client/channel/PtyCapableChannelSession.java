@@ -41,7 +41,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  * open. If they are invoked afterwards then they have no effect (silently
  * ignored).</P>
  * <P>A typical code snippet would be:</P>
- * <PRE>
+ * <pre><code>
  * try (client = SshClient.setUpDefaultClient()) {
  *      client.start();
  *
@@ -70,7 +70,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  *          client.stop();
  *      }
  * }
- * </PRE>
+ * </code></pre>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

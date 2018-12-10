@@ -27,7 +27,7 @@ import org.junit.runners.parameterized.TestWithParameters;
 /**
  * Avoids re-creating a test class instance for each parameterized test method. Usage:
  *
- * <PRE><code>
+ * <pre><code>
  * @FixMethodOrder(MethodSorters.NAME_ASCENDING)
  * @RunWith(Parameterized.class)
  * @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
@@ -41,7 +41,7 @@ import org.junit.runners.parameterized.TestWithParameters;
  *          ...
  *      }
  * }
- * </code></PRE>
+ * </code></pre>
  *
  * @see JUnit4ClassRunnerWithParameters
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

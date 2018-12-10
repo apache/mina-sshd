@@ -642,8 +642,8 @@ public final class SecurityUtils {
             }
 
             parser = KeyPairResourceParser.aggregate(
-                    PEMResourceParserUtils.PROXY,
-                    OpenSSHKeyPairResourceParser.INSTANCE);
+                PEMResourceParserUtils.PROXY,
+                OpenSSHKeyPairResourceParser.INSTANCE);
             KEYPAIRS_PARSER_HODLER.set(parser);
         }
 
@@ -669,16 +669,15 @@ public final class SecurityUtils {
         Map<String, SecurityEntityFactory<?>> factoriesMap;
         synchronized (SECURITY_ENTITY_FACTORIES) {
             factoriesMap =
-                    SECURITY_ENTITY_FACTORIES.computeIfAbsent(
-                            entityType, k -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER));
+                SECURITY_ENTITY_FACTORIES.computeIfAbsent(
+                    entityType, k -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER));
         }
 
         String effectiveName = SecurityProviderRegistrar.getEffectiveSecurityEntityName(entityType, algorithm);
         SecurityEntityFactory<?> factoryEntry;
         synchronized (factoriesMap) {
-            factoryEntry =
-                    factoriesMap.computeIfAbsent(
-                            effectiveName, k -> createSecurityEntityFactory(entityType, entitySelector));
+            factoryEntry = factoriesMap.computeIfAbsent(
+                effectiveName, k -> createSecurityEntityFactory(entityType, entitySelector));
         }
 
         return (SecurityEntityFactory<T>) factoryEntry;
@@ -692,7 +691,7 @@ public final class SecurityUtils {
         synchronized (REGISTERED_PROVIDERS) {
             registrar =
                  SecurityProviderRegistrar.findSecurityProviderRegistrarBySecurityEntity(
-                         entitySelector, REGISTERED_PROVIDERS.values());
+                     entitySelector, REGISTERED_PROVIDERS.values());
         }
 
         try {
@@ -711,49 +710,49 @@ public final class SecurityUtils {
 
     public static KeyFactory getKeyFactory(String algorithm) throws GeneralSecurityException {
         SecurityEntityFactory<KeyFactory> factory =
-                resolveSecurityEntityFactory(KeyFactory.class, algorithm, r -> r.isKeyFactorySupported(algorithm));
+            resolveSecurityEntityFactory(KeyFactory.class, algorithm, r -> r.isKeyFactorySupported(algorithm));
         return factory.getInstance(algorithm);
     }
 
     public static Cipher getCipher(String transformation) throws GeneralSecurityException {
         SecurityEntityFactory<Cipher> factory =
-                resolveSecurityEntityFactory(Cipher.class, transformation, r -> r.isCipherSupported(transformation));
+            resolveSecurityEntityFactory(Cipher.class, transformation, r -> r.isCipherSupported(transformation));
         return factory.getInstance(transformation);
     }
 
     public static MessageDigest getMessageDigest(String algorithm) throws GeneralSecurityException {
         SecurityEntityFactory<MessageDigest> factory =
-                resolveSecurityEntityFactory(MessageDigest.class, algorithm, r -> r.isMessageDigestSupported(algorithm));
+            resolveSecurityEntityFactory(MessageDigest.class, algorithm, r -> r.isMessageDigestSupported(algorithm));
         return factory.getInstance(algorithm);
     }
 
     public static KeyPairGenerator getKeyPairGenerator(String algorithm) throws GeneralSecurityException {
         SecurityEntityFactory<KeyPairGenerator> factory =
-                resolveSecurityEntityFactory(KeyPairGenerator.class, algorithm, r -> r.isKeyPairGeneratorSupported(algorithm));
+            resolveSecurityEntityFactory(KeyPairGenerator.class, algorithm, r -> r.isKeyPairGeneratorSupported(algorithm));
         return factory.getInstance(algorithm);
     }
 
     public static KeyAgreement getKeyAgreement(String algorithm) throws GeneralSecurityException {
         SecurityEntityFactory<KeyAgreement> factory =
-                resolveSecurityEntityFactory(KeyAgreement.class, algorithm, r -> r.isKeyAgreementSupported(algorithm));
+            resolveSecurityEntityFactory(KeyAgreement.class, algorithm, r -> r.isKeyAgreementSupported(algorithm));
         return factory.getInstance(algorithm);
     }
 
     public static Mac getMac(String algorithm) throws GeneralSecurityException {
         SecurityEntityFactory<Mac> factory =
-                resolveSecurityEntityFactory(Mac.class, algorithm, r -> r.isMacSupported(algorithm));
+            resolveSecurityEntityFactory(Mac.class, algorithm, r -> r.isMacSupported(algorithm));
         return factory.getInstance(algorithm);
     }
 
     public static Signature getSignature(String algorithm) throws GeneralSecurityException {
         SecurityEntityFactory<Signature> factory =
-                resolveSecurityEntityFactory(Signature.class, algorithm, r -> r.isSignatureSupported(algorithm));
+            resolveSecurityEntityFactory(Signature.class, algorithm, r -> r.isSignatureSupported(algorithm));
         return factory.getInstance(algorithm);
     }
 
     public static CertificateFactory getCertificateFactory(String type) throws GeneralSecurityException {
         SecurityEntityFactory<CertificateFactory> factory =
-                resolveSecurityEntityFactory(CertificateFactory.class, type, r -> r.isCertificateFactorySupported(type));
+            resolveSecurityEntityFactory(CertificateFactory.class, type, r -> r.isCertificateFactorySupported(type));
         return factory.getInstance(type);
     }
 }

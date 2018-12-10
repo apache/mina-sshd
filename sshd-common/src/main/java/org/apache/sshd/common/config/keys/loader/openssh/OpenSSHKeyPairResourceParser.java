@@ -23,6 +23,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StreamCorruptedException;
+import java.net.ProtocolException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
@@ -44,11 +45,14 @@ import java.util.TreeMap;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.loader.AbstractKeyPairResourceParser;
+import org.apache.sshd.common.config.keys.loader.openssh.kdf.BCryptKdfOptions;
+import org.apache.sshd.common.config.keys.loader.openssh.kdf.RawKdfOptions;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -61,9 +65,6 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser {
-    public static final int MAX_KDF_NAME_LENGTH = 1024;
-    public static final int MAX_KDF_OPTIONS_SIZE = Short.MAX_VALUE;
-
     public static final String BEGIN_MARKER = "BEGIN OPENSSH PRIVATE KEY";
     public static final List<String> BEGINNERS =
         Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
@@ -105,39 +106,27 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
             FilePasswordProvider passwordProvider,
             InputStream stream)
                 throws IOException, GeneralSecurityException {
+        boolean debugEnabled = log.isDebugEnabled();
+
         stream = validateStreamMagicMarker(session, resourceKey, stream);
 
         String cipher = KeyEntryResolver.decodeString(stream, MAX_CIPHER_NAME_LENGTH);
-        if (!OpenSSHParserContext.IS_NONE_CIPHER.test(cipher)) {
-            throw new NoSuchAlgorithmException("Unsupported cipher: " + cipher);
-        }
-
-        boolean debugEnabled = log.isDebugEnabled();
-        if (debugEnabled) {
-            log.debug("extractKeyPairs({}) cipher={}", resourceKey, cipher);
-        }
-
-        String kdfName = KeyEntryResolver.decodeString(stream, MAX_KDF_NAME_LENGTH);
-        if (!OpenSSHParserContext.IS_NONE_KDF.test(kdfName)) {
-            throw new NoSuchAlgorithmException("Unsupported KDF: " + kdfName);
-        }
-
-        byte[] kdfOptions = KeyEntryResolver.readRLEBytes(stream, MAX_KDF_OPTIONS_SIZE);
-        if (debugEnabled) {
-            log.debug("extractKeyPairs({}) KDF={}, options={}",
-                  resourceKey, kdfName, BufferUtils.toHex(':', kdfOptions));
-        }
-
+        OpenSSHKdfOptions kdfOptions =
+            resolveKdfOptions(session, resourceKey, beginMarker, endMarker, stream);
+        OpenSSHParserContext context = new OpenSSHParserContext(cipher, kdfOptions);
         int numKeys = KeyEntryResolver.decodeInt(stream);
         if (numKeys <= 0) {
             if (debugEnabled) {
-                log.debug("extractKeyPairs({}) no encoded keys", resourceKey);
+                log.debug("extractKeyPairs({}) no encoded keys for context={}", resourceKey, context);
             }
             return Collections.emptyList();
         }
 
+        if (debugEnabled) {
+            log.debug("extractKeyPairs({}) decode {} keys using context={}", resourceKey, numKeys, context);
+        }
+
         List<PublicKey> publicKeys = new ArrayList<>(numKeys);
-        OpenSSHParserContext context = new OpenSSHParserContext(cipher, kdfName, kdfOptions);
         boolean traceEnabled = log.isTraceEnabled();
         for (int index = 1; index <= numKeys; index++) {
             PublicKey pubKey = readPublicKey(session, resourceKey, context, stream);
@@ -150,9 +139,74 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         }
 
         byte[] privateData = KeyEntryResolver.readRLEBytes(stream, MAX_PRIVATE_KEY_DATA_SIZE);
-        try (InputStream bais = new ByteArrayInputStream(privateData)) {
-            return readPrivateKeys(session, resourceKey, context, publicKeys, passwordProvider, bais);
+        if (!context.isEncrypted()) {
+            try (InputStream bais = new ByteArrayInputStream(privateData)) {
+                return readPrivateKeys(session, resourceKey, context, publicKeys, passwordProvider, bais);
+            }
         }
+
+        if (passwordProvider == null) {
+            throw new StreamCorruptedException("No password provider for encrypted key in " + resourceKey);
+        }
+
+        for (int retryCount = 0;; retryCount++) {
+            String pwd = passwordProvider.getPassword(session, resourceKey, retryCount);
+            if (GenericUtils.isEmpty(pwd)) {
+                return Collections.emptyList();
+            }
+
+            byte[] decryptedData = GenericUtils.EMPTY_BYTE_ARRAY;
+            List<KeyPair> keys;
+            try {
+                decryptedData = kdfOptions.decodePrivateKeyBytes(
+                    session, resourceKey, context.getCipherName(), privateData, pwd);
+
+                try (InputStream bais = new ByteArrayInputStream(decryptedData)) {
+                    keys = readPrivateKeys(session, resourceKey, context, publicKeys, passwordProvider, bais);
+                }
+            } catch (IOException | GeneralSecurityException | RuntimeException e) {
+                ResourceDecodeResult result =
+                    passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryCount, pwd, e);
+                if (result == null) {
+                    result = ResourceDecodeResult.TERMINATE;
+                }
+
+                switch (result) {
+                    case TERMINATE:
+                        throw e;
+                    case RETRY:
+                        continue;
+                    case IGNORE:
+                        return Collections.emptyList();
+                    default:
+                        throw new ProtocolException("Unsupported decode attempt result (" + result + ") for " + resourceKey);
+                }
+            } finally {
+                // don't keep decoded private key data in memory longer than necessary
+                Arrays.fill(decryptedData, (byte) 0);
+            }
+
+            passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryCount, pwd, null);
+            return keys;
+        }
+    }
+
+    protected OpenSSHKdfOptions resolveKdfOptions(
+            SessionContext session, NamedResource resourceKey,
+            String beginMarker, String endMarker, InputStream stream)
+                throws IOException, GeneralSecurityException {
+        String kdfName = KeyEntryResolver.decodeString(stream, OpenSSHKdfOptions.MAX_KDF_NAME_LENGTH);
+        byte[] kdfOptions = KeyEntryResolver.readRLEBytes(stream, OpenSSHKdfOptions.MAX_KDF_OPTIONS_SIZE);
+        OpenSSHKdfOptions options;
+        // TODO define a factory class where users can register extra KDF options
+        if (BCryptKdfOptions.NAME.equalsIgnoreCase(kdfName)) {
+            options = new BCryptKdfOptions();
+        } else {
+            options = new RawKdfOptions();
+        }
+
+        options.initialize(kdfName, kdfOptions);
+        return options;
     }
 
     protected PublicKey readPublicKey(
@@ -170,6 +224,11 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         }
     }
 
+    /*
+     * NOTE: called AFTER decrypting the original bytes, however we still
+     * propagate the password provider - just in case some "sub-encryption"
+     * is detected
+     */
     protected List<KeyPair> readPrivateKeys(
             SessionContext session, NamedResource resourceKey,
             OpenSSHParserContext context, Collection<? extends PublicKey> publicKeys,
@@ -185,6 +244,19 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         if (traceEnabled) {
             log.trace("readPrivateKeys({}) check1=0x{}, check2=0x{}",
                 resourceKey, Integer.toHexString(check1), Integer.toHexString(check2));
+        }
+
+        /*
+         * According to the documentation:
+         *
+         *      Before the key is encrypted, a random integer is assigned
+         *      to both checkint fields so successful decryption can be
+         *      quickly checked by verifying that both checkint fields
+         *      hold the same value.
+         */
+        if (check1 != check2) {
+            throw new StreamCorruptedException("Mismatched private key check values ("
+                + Integer.toHexString(check1) + "/" + Integer.toHexString(check2) + ") in " + resourceKey);
         }
 
         List<KeyPair> keyPairs = new ArrayList<>(publicKeys.size());
@@ -216,7 +288,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         return keyPairs;
     }
 
-    protected SimpleImmutableEntry<PrivateKey, String> readPrivateKey(
+    protected Map.Entry<PrivateKey, String> readPrivateKey(
             SessionContext session, NamedResource resourceKey,
             OpenSSHParserContext context, String keyType,
             FilePasswordProvider passwordProvider, InputStream stream)
