@@ -69,7 +69,16 @@ public class OpenSSHDSSPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryDec
         Objects.requireNonNull(y, "No public key data");   // TODO run some validation on it
         BigInteger x = KeyEntryResolver.decodeBigInt(keyData);
 
-        return generatePrivateKey(new DSAPrivateKeySpec(x, p, q, g));
+        try {
+            return generatePrivateKey(new DSAPrivateKeySpec(x, p, q, g));
+        } finally {
+            // get rid of sensitive data a.s.a.p
+            p = null;
+            q = null;
+            g = null;
+            y = null;
+            x = null;
+        }
     }
 
     @Override

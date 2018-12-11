@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.config.keys.loader;
 
+import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.spec.InvalidKeySpecException;
@@ -49,7 +50,7 @@ public class AESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
     @Override
     public byte[] applyPrivateKeyCipher(
             byte[] bytes, PrivateKeyEncryptionContext encContext, boolean encryptIt)
-                throws GeneralSecurityException {
+                throws GeneralSecurityException, IOException {
         int keyLength = resolveKeyLength(encContext);
         byte[] keyValue = deriveEncryptionKey(encContext, keyLength / Byte.SIZE);
         return applyPrivateKeyCipher(bytes, encContext, keyLength, keyValue, encryptIt);

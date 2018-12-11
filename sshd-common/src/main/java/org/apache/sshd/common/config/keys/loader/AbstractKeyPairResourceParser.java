@@ -26,6 +26,7 @@ import java.io.StreamCorruptedException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -147,8 +148,12 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
             FilePasswordProvider passwordProvider,
             List<String> lines)
                 throws IOException, GeneralSecurityException {
-        return extractKeyPairs(session, resourceKey, beginMarker, endMarker,
-            passwordProvider, KeyPairResourceParser.extractDataBytes(lines));
+        byte[] dataBytes = KeyPairResourceParser.extractDataBytes(lines);
+        try {
+            return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, dataBytes);
+        } finally {
+            Arrays.fill(dataBytes, (byte) 0);   // clean up sensitive data a.s.a.p.
+        }
     }
 
     /**

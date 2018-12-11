@@ -37,6 +37,7 @@ import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.impl.AbstractPrivateKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
@@ -78,40 +79,52 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
         // we expect to find two byte arrays with the following structure (type:size):
         // [pk:32], [sk:32,pk:32]
 
-        byte[] pk = KeyEntryResolver.readRLEBytes(keyData, PK_SIZE * 2);
-        byte[] keypair = KeyEntryResolver.readRLEBytes(keyData, KEYPAIR_SIZE * 2);
+        byte[] pk = GenericUtils.EMPTY_BYTE_ARRAY;
+        byte[] keypair = GenericUtils.EMPTY_BYTE_ARRAY;
+        try {
+            pk = KeyEntryResolver.readRLEBytes(keyData, PK_SIZE * 2);
+            keypair = KeyEntryResolver.readRLEBytes(keyData, KEYPAIR_SIZE * 2);
+            if (pk.length != PK_SIZE) {
+                throw new InvalidKeyException(String.format(Locale.ENGLISH, "Unexpected pk size: %s (expected %s)", pk.length, PK_SIZE));
+            }
 
-        if (pk.length != PK_SIZE) {
-            throw new InvalidKeyException(String.format(Locale.ENGLISH, "Unexpected pk size: %s (expected %s)", pk.length, PK_SIZE));
+            if (keypair.length != KEYPAIR_SIZE) {
+                throw new InvalidKeyException(String.format(Locale.ENGLISH, "Unexpected keypair size: %s (expected %s)", keypair.length, KEYPAIR_SIZE));
+            }
+
+            // verify that the keypair contains the expected pk
+            // yes, it's stored redundant, this seems to mimic the output structure of the keypair generation interface
+            if (!Arrays.equals(pk, Arrays.copyOfRange(keypair, SK_SIZE, KEYPAIR_SIZE))) {
+                throw new InvalidKeyException("Keypair did not contain the public key.");
+            }
+
+            byte[] sk = Arrays.copyOf(keypair, SK_SIZE);
+            EdDSAPrivateKey privateKey;
+            try {
+                // create the private key
+                EdDSAParameterSpec params = EdDSANamedCurveTable.getByName(EdDSASecurityProviderUtils.CURVE_ED25519_SHA512);
+                privateKey = generatePrivateKey(new EdDSAPrivateKeySpec(sk, params));
+            } finally {
+                // get rid of sensitive data a.s.a.p
+                Arrays.fill(sk, (byte) 0);
+            }
+
+            // the private key class contains the calculated public key (Abyte)
+            // pointers to the corresponding code:
+            // EdDSAPrivateKeySpec.EdDSAPrivateKeySpec(byte[], EdDSAParameterSpec): A = spec.getB().scalarMultiply(a);
+            // EdDSAPrivateKey.EdDSAPrivateKey(EdDSAPrivateKeySpec): this.Abyte = this.A.toByteArray();
+
+            // we can now verify the generated pk matches the one we read
+            if (!Arrays.equals(privateKey.getAbyte(), pk)) {
+                throw new InvalidKeyException("The provided pk does NOT match the computed pk for the given sk.");
+            }
+
+            return privateKey;
+        } finally {
+            // get rid of sensitive data a.s.a.p
+            Arrays.fill(pk, (byte) 0);
+            Arrays.fill(keypair, (byte) 0);
         }
-
-        if (keypair.length != KEYPAIR_SIZE) {
-            throw new InvalidKeyException(String.format(Locale.ENGLISH, "Unexpected keypair size: %s (expected %s)", keypair.length, KEYPAIR_SIZE));
-        }
-
-        byte[] sk = Arrays.copyOf(keypair, SK_SIZE);
-
-        // verify that the keypair contains the expected pk
-        // yes, it's stored redundant, this seems to mimic the output structure of the keypair generation interface
-        if (!Arrays.equals(pk, Arrays.copyOfRange(keypair, SK_SIZE, KEYPAIR_SIZE))) {
-            throw new InvalidKeyException("Keypair did not contain the public key.");
-        }
-
-        // create the private key
-        EdDSAParameterSpec params = EdDSANamedCurveTable.getByName(EdDSASecurityProviderUtils.CURVE_ED25519_SHA512);
-        EdDSAPrivateKey privateKey = generatePrivateKey(new EdDSAPrivateKeySpec(sk, params));
-
-        // the private key class contains the calculated public key (Abyte)
-        // pointers to the corresponding code:
-        // EdDSAPrivateKeySpec.EdDSAPrivateKeySpec(byte[], EdDSAParameterSpec): A = spec.getB().scalarMultiply(a);
-        // EdDSAPrivateKey.EdDSAPrivateKey(EdDSAPrivateKeySpec): this.Abyte = this.A.toByteArray();
-
-        // we can now verify the generated pk matches the one we read
-        if (!Arrays.equals(privateKey.getAbyte(), pk)) {
-            throw new InvalidKeyException("The provided pk does NOT match the computed pk for the given sk.");
-        }
-
-        return privateKey;
     }
 
     @Override

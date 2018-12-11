@@ -61,9 +61,10 @@ public interface PrivateKeyObfuscator {
      * @param encContext The encryption context
      * @param encryptIt If {@code true} then encrypt the original bytes, otherwise decrypt them
      * @return The result of applying the cipher to the original bytes
+     * @throws IOException If malformed input
      * @throws GeneralSecurityException If cannot encrypt/decrypt
      */
     byte[] applyPrivateKeyCipher(
         byte[] bytes, PrivateKeyEncryptionContext encContext, boolean encryptIt)
-            throws GeneralSecurityException;
+            throws IOException, GeneralSecurityException;
 }

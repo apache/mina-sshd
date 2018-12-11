@@ -152,7 +152,12 @@ public interface KeyPairResourceLoader {
     default Collection<KeyPair> loadKeyPairs(
             SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, BufferedReader r)
                 throws IOException, GeneralSecurityException {
-        return loadKeyPairs(session, resourceKey, passwordProvider, IoUtils.readAllLines(r));
+        List<String> lines = IoUtils.readAllLines(r);
+        try {
+            return loadKeyPairs(session, resourceKey, passwordProvider, lines);
+        } finally {
+            lines.clear();   // clean up sensitive data a.s.a.p.
+        }
     }
 
     /**

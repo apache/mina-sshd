@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.config.keys.loader;
 
+import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.List;
@@ -40,7 +41,7 @@ public class DESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
     @Override
     public byte[] applyPrivateKeyCipher(
             byte[] bytes, PrivateKeyEncryptionContext encContext, boolean encryptIt)
-                throws GeneralSecurityException {
+                throws GeneralSecurityException, IOException {
         PrivateKeyEncryptionContext effContext = resolveEffectiveContext(encContext);
         byte[] keyValue = deriveEncryptionKey(effContext, DEFAULT_KEY_LENGTH);
         return applyPrivateKeyCipher(bytes, effContext, keyValue.length * Byte.SIZE, keyValue, encryptIt);

@@ -36,5 +36,4 @@ public abstract class AbstractPrivateKeyEntryDecoder<PUB extends PublicKey, PRV 
     protected AbstractPrivateKeyEntryDecoder(Class<PUB> pubType, Class<PRV> prvType, Collection<String> names) {
         super(pubType, prvType, names);
     }
-
 }

@@ -31,6 +31,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.KeySpec;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -91,7 +92,11 @@ public class PGPKeyPairResourceParser
 
         String keyData = sb.toString();
         byte[] dataBytes = keyData.getBytes(StandardCharsets.US_ASCII);
-        return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, dataBytes);
+        try {
+            return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, dataBytes);
+        } finally {
+            Arrays.fill(dataBytes, (byte) 0);   // clean up sensitive data a.s.a.p.
+        }
     }
 
     @Override
@@ -111,10 +116,12 @@ public class PGPKeyPairResourceParser
 
                 Key key = PGPKeyLoader.loadPGPKey(stream, password);
                 keys = extractKeyPairs(resourceKey, key.getSubkeys());
+                key = null; // get rid of sensitive data a.s.a.p.
             } catch (IOException | GeneralSecurityException | PGPException | RuntimeException e) {
                 ResourceDecodeResult result = (passwordProvider != null)
                     ? passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryCount, password, e)
                     : ResourceDecodeResult.TERMINATE;
+                password = null; // get rid of sensitive data a.s.a.p.
                 if (result == null) {
                     result = ResourceDecodeResult.TERMINATE;
                 }
@@ -143,7 +150,9 @@ public class PGPKeyPairResourceParser
 
             if (passwordProvider != null) {
                 passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryCount, password, null);
+                password = null; // get rid of sensitive data a.s.a.p.
             }
+
             return keys;
         }
     }

@@ -46,7 +46,9 @@ public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends Priva
             extends KeyEntryResolver<PUB, PRV>, PrivateKeyEntryResolver {
 
     @Override
-    default PrivateKey resolve(SessionContext session, String keyType, byte[] keyData) throws IOException, GeneralSecurityException {
+    default PrivateKey resolve(
+            SessionContext session, String keyType, byte[] keyData)
+                throws IOException, GeneralSecurityException {
         ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type provided");
         Collection<String> supported = getSupportedKeyTypes();
         if ((GenericUtils.size(supported) > 0) && supported.contains(keyType)) {

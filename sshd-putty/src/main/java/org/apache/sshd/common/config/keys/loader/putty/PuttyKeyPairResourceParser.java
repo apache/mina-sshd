@@ -131,8 +131,9 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
         return false;
     }
 
-    static byte[] decodePrivateKeyBytes(byte[] prvBytes, String algName, int numBits, String algMode, String password)
-            throws GeneralSecurityException {
+    static byte[] decodePrivateKeyBytes(
+            byte[] prvBytes, String algName, int numBits, String algMode, String password)
+                throws GeneralSecurityException {
         Objects.requireNonNull(prvBytes, "No encrypted key bytes");
         ValidateUtils.checkNotNullAndNotEmpty(algName, "No encryption algorithm", GenericUtils.EMPTY_OBJECT_ARRAY);
         ValidateUtils.checkTrue(numBits > 0, "Invalid encryption key size: %d", numBits);
@@ -143,18 +144,25 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
             throw new NoSuchAlgorithmException("decodePrivateKeyBytes(" + algName + "-" + numBits + "-" + algMode + ") N/A");
         }
 
-        return decodePrivateKeyBytes(prvBytes, algName, algMode, numBits, new byte[16], toEncryptionKey(password));
+        byte[] initVector = new byte[16];
+        byte[] keyValue = toEncryptionKey(password);
+        try {
+            return decodePrivateKeyBytes(prvBytes, algName, algMode, numBits, initVector, keyValue);
+        } finally {
+            Arrays.fill(initVector, (byte) 0);   // eliminate sensitive data a.s.a.p.
+            Arrays.fill(keyValue, (byte) 0);   // eliminate sensitive data a.s.a.p.
+        }
     }
 
     static byte[] decodePrivateKeyBytes(
             byte[] encBytes, String cipherName, String cipherMode, int numBits, byte[] initVector, byte[] keyValue)
-                    throws GeneralSecurityException {
+                throws GeneralSecurityException {
         String xform = cipherName + "/" + cipherMode + "/NoPadding";
         int maxAllowedBits = Cipher.getMaxAllowedKeyLength(xform);
         // see http://www.javamex.com/tutorials/cryptography/unrestricted_policy_files.shtml
         if (numBits > maxAllowedBits) {
             throw new InvalidKeySpecException("decodePrivateKeyBytes(" + xform + ")"
-                    + " required key length (" + numBits + ") exceeds max. available: " + maxAllowedBits);
+                + " required key length (" + numBits + ") exceeds max. available: " + maxAllowedBits);
         }
 
         SecretKeySpec skeySpec = new SecretKeySpec(keyValue, cipherName);
@@ -170,32 +178,44 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
      * Used to decrypt the private key when it's encrypted.
      * @param passphrase the Password to be used as seed for the key - ignored
      * if {@code null}/empty
-     * @return The encryption key bytes - {@code null} if no pass-phrase
+     * @return The encryption key bytes - {@code null/empty} if no pass-phrase
      * @throws GeneralSecurityException If cannot retrieve SHA-1 digest
      * @see <A HREF="http://security.stackexchange.com/questions/71341/how-does-putty-derive-the-encryption-key-in-its-ppk-format">
      * How does Putty derive the encryption key in its .ppk format ?</A>
      */
     static byte[] toEncryptionKey(String passphrase) throws GeneralSecurityException {
         if (GenericUtils.isEmpty(passphrase)) {
-            return null;
+            return GenericUtils.EMPTY_BYTE_ARRAY;
         }
 
-        MessageDigest hash = SecurityUtils.getMessageDigest(BuiltinDigests.sha1.getAlgorithm());
-        byte[] stateValue = {0, 0, 0, 0};
         byte[] passBytes = passphrase.getBytes(StandardCharsets.UTF_8);
-        byte[] keyValue = new byte[32];
-        for (int i = 0, remLen = keyValue.length; i < 2; i++) {
-            hash.reset(); // just making sure
+        try {
+            MessageDigest hash = SecurityUtils.getMessageDigest(BuiltinDigests.sha1.getAlgorithm());
+            byte[] stateValue = {0, 0, 0, 0};
+            byte[] keyValue = new byte[32];
+            try {
+                for (int i = 0, remLen = keyValue.length; i < 2; i++) {
+                    hash.reset(); // just making sure
 
-            stateValue[3] = (byte) i;
-            hash.update(stateValue);
-            hash.update(passBytes);
+                    stateValue[3] = (byte) i;
+                    hash.update(stateValue);
+                    hash.update(passBytes);
 
-            byte[] digest = hash.digest();
-            System.arraycopy(digest, 0, keyValue, i * 20, Math.min(20, remLen));
-            remLen -= 20;
+                    byte[] digest = hash.digest();
+                    try {
+                        System.arraycopy(digest, 0, keyValue, i * 20, Math.min(20, remLen));
+                    } finally {
+                        Arrays.fill(digest, (byte) 0);   // eliminate sensitive data a.s.a.p.
+                    }
+                    remLen -= 20;
+                }
+            } finally {
+                Arrays.fill(stateValue, (byte) 0);   // eliminate sensitive data a.s.a.p.
+            }
+
+            return keyValue;
+        } finally {
+            Arrays.fill(passBytes, (byte) 0);   // eliminate sensitive data a.s.a.p.
         }
-
-        return keyValue;
     }
 }

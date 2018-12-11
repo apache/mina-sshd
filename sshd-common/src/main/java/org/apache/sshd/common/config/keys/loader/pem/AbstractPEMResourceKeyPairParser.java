@@ -26,6 +26,7 @@ import java.net.ProtocolException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -148,17 +149,27 @@ public abstract class AbstractPEMResourceKeyPairParser
                     PrivateKeyEncryptionContext encContext = new PrivateKeyEncryptionContext(algInfo);
                     encContext.setPassword(password);
                     encContext.setInitVector(initVector);
-                    byte[] encryptedData = KeyPairResourceParser.extractDataBytes(dataLines);
-                    byte[] decodedData = applyPrivateKeyCipher(encryptedData, encContext, false);
-                    try (InputStream bais = new ByteArrayInputStream(decodedData)) {
-                        keys = extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, bais);
+
+                    byte[] encryptedData = GenericUtils.EMPTY_BYTE_ARRAY;
+                    byte[] decodedData = GenericUtils.EMPTY_BYTE_ARRAY;
+                    try {
+                        encryptedData = KeyPairResourceParser.extractDataBytes(dataLines);
+                        decodedData = applyPrivateKeyCipher(encryptedData, encContext, false);
+                        try (InputStream bais = new ByteArrayInputStream(decodedData)) {
+                            keys = extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, bais);
+                        }
+                    } finally {
+                        Arrays.fill(encryptedData, (byte) 0); // get rid of sensitive data a.s.a.p.
+                        Arrays.fill(decodedData, (byte) 0); // get rid of sensitive data a.s.a.p.
                     }
                 } catch (IOException | GeneralSecurityException | RuntimeException e) {
                     ResourceDecodeResult result =
                         passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, e);
+                    password = null; // get rid of sensitive data a.s.a.p.
                     if (result == null) {
                         result = ResourceDecodeResult.TERMINATE;
                     }
+
                     switch (result) {
                         case TERMINATE:
                             throw e;
@@ -172,6 +183,7 @@ public abstract class AbstractPEMResourceKeyPairParser
                 }
 
                 passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, null);
+                password = null; // get rid of sensitive data a.s.a.p.
                 return keys;
             }
         }
@@ -181,7 +193,7 @@ public abstract class AbstractPEMResourceKeyPairParser
 
     protected byte[] applyPrivateKeyCipher(
             byte[] bytes, PrivateKeyEncryptionContext encContext, boolean encryptIt)
-                throws GeneralSecurityException {
+                throws GeneralSecurityException, IOException {
         String cipherName = encContext.getCipherName();
         PrivateKeyObfuscator o = encContext.resolvePrivateKeyObfuscator();
         if (o == null) {
