@@ -188,4 +188,21 @@
             </licenses>
         </project>    
     </supplement>
+    <supplement>
+        <project>
+            <groupId>org.connectbot.jbcrypt</groupId>
+            <artifactId>jbcrypt</artifactId>
+            <name>jbcrypt</name>
+            <organization>
+                <name>mindrot</name>
+                <url>http://http://mindrot.org/</url>
+            </organization>
+            <licenses>
+                <license>
+                    <name>Free</name>
+                    <url>https://github.com/kruton/jbcrypt/blob/master/LICENSE</url>
+                </license>
+            </licenses>
+        </project>    
+    </supplement>
 </supplementalDataModels>

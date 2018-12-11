@@ -37,7 +37,6 @@ import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.Assume;
 import org.junit.FixMethodOrder;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -57,7 +56,7 @@ public class OpenSSHKeyPairResourceParserTest extends JUnitTestSupport {
     private static final OpenSSHKeyPairResourceParser PARSER = OpenSSHKeyPairResourceParser.INSTANCE;
     private static final String PASSWORD = "super secret passphrase";
     private static final FilePasswordProvider PASSWORD_PROVIDER = FilePasswordProvider.of(PASSWORD);
-    private static final String ENCRYPTED_RESOURCE_PREFIX = PASSWORD.replace(' ', '-');
+    private static final String ENCRYPTED_RESOURCE_PREFIX = "encrypted";
 
     private final BuiltinIdentities identity;
 
@@ -76,7 +75,6 @@ public class OpenSSHKeyPairResourceParserTest extends JUnitTestSupport {
     }
 
     @Test
-    @Ignore("SSHD-708")
     public void testLoadEncryptedKeyPairs() throws Exception {
         testLoadKeyPairs(true);
     }

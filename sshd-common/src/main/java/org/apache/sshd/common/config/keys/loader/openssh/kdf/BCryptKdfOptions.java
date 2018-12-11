@@ -38,6 +38,7 @@ import org.apache.sshd.common.cipher.CipherFactory;
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.loader.openssh.OpenSSHKdfOptions;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -163,6 +164,25 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
                 Arrays.fill(kv, (byte) 0);
                 Arrays.fill(iv, (byte) 0);
             }
+        } catch (RuntimeException e) {
+            Throwable t = GenericUtils.peelException(e);
+            Throwable err = null;
+            if ((t instanceof IOException) || (t instanceof GeneralSecurityException)) {
+                err = t;
+            } else {
+                t = GenericUtils.resolveExceptionCause(e);
+                if ((t instanceof IOException) || (t instanceof GeneralSecurityException)) {
+                    err = t;
+                }
+            }
+
+            if (err instanceof IOException) {
+                throw (IOException) err;
+            } else if (err instanceof GeneralSecurityException) {
+                throw (GeneralSecurityException) err;
+            } else {
+                throw e;
+            }
         } finally {
             Arrays.fill(pwd, (byte) 0); // Don't keep password data in memory longer than necessary
             Arrays.fill(cipherInput, (byte) 0); // Don't keep cipher data in memory longer than necessary
@@ -170,7 +190,8 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
     }
 
     protected void bcryptKdf(byte[] password, byte[] output) throws IOException, GeneralSecurityException {
-        throw new NoSuchAlgorithmException("Unsupported KDF (" + this + ")");
+        BCrypt bcrypt = new BCrypt();
+        bcrypt.pbkdf(password, getSalt(), getNumRounds(), output);
     }
 
     @Override

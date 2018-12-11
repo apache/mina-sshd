@@ -625,6 +625,8 @@
                             <exclude>*findbugs*</exclude>
                             <exclude>*suppressions*</exclude>
                             <exclude>**/big-msg.txt</exclude>
+                            <!-- Special file imported from another project that we want to keep as-is -->
+                            <exclude>**/BCrypt.java</exclude>
                             <exclude>LICENSE*</exclude>
                             <exclude>NOTICE*</exclude>
                                 <!-- IDE files -->
@@ -905,6 +907,10 @@
                        <excludeRoots>
                            <excludeRoot>target/generated-sources/java</excludeRoot>
                        </excludeRoots>
+                       <excludes>
+                            <!-- Imported file that we want to preserve as-is -->
+                            <exclude>**/BCrypt.java</exclude>
+                       </excludes>
                    </configuration>
                    <dependencies>
                        <dependency>
