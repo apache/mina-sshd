@@ -21,6 +21,9 @@ package org.apache.sshd.common.config.keys;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Set;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.session.SessionContext;
@@ -37,6 +40,9 @@ public interface FilePasswordProvider {
         RETRY,
         /** Skip attempt and see if can proceed without the key */
         IGNORE;
+
+        public static final Set<ResourceDecodeResult> VALUES =
+            Collections.unmodifiableSet(EnumSet.allOf(ResourceDecodeResult.class));
     }
 
     /**

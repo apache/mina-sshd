@@ -96,7 +96,7 @@ block size.
 
 ## Behavioral changes and enhancements
 
-* [SSHD-708](https://issues.apache.org/jira/browse/SSHD-708) - Add support for password encrypted OpenSSH private key files
+* [SSHD-708](https://issues.apache.org/jira/browse/SSHD-708) - Add support for password encrypted OpenSSH private key files.
 
 * [SSHD-757](https://issues.apache.org/jira/browse/SSHD-757) - Added hooks and some initial code to allow (limited) usage
 of [OpenPGP](https://www.openpgp.org/) key files - e.g. in `authorized_keys` files or as client identities.
